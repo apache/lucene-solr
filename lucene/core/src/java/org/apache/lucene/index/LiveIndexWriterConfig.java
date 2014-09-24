@@ -464,7 +464,7 @@ public class LiveIndexWriterConfig {
   }
   
   /**
-   * Sets if {@link IndexWriter} should call {@link AtomicReader#checkIntegrity()}
+   * Sets if {@link IndexWriter} should call {@link LeafReader#checkIntegrity()}
    * on existing segments before merging them into a new one.
    * <p>
    * Use <code>true</code> to enable this safety check, which can help
@@ -477,7 +477,7 @@ public class LiveIndexWriterConfig {
     return this;
   }
   
-  /** Returns true if {@link AtomicReader#checkIntegrity()} is called before 
+  /** Returns true if {@link LeafReader#checkIntegrity()} is called before 
    *  merging segments. */
   public boolean getCheckIntegrityAtMerge() {
     return checkIntegrityAtMerge;

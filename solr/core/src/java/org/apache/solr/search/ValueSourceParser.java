@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 import com.spatial4j.core.distance.DistanceUtils;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -35,9 +35,7 @@ import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
@@ -999,7 +997,7 @@ class LongConstValueSource extends ConstNumberSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     return new LongDocValues(this) {
       @Override
       public float floatVal(int doc) {
@@ -1106,7 +1104,7 @@ abstract class DoubleParser extends NamedParser {
     }
 
     @Override
-    public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
       final FunctionValues vals =  source.getValues(context, readerContext);
       return new DoubleDocValues(this) {
         @Override
@@ -1154,7 +1152,7 @@ abstract class Double2Parser extends NamedParser {
     }
 
     @Override
-    public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
       final FunctionValues aVals =  a.getValues(context, readerContext);
       final FunctionValues bVals =  b.getValues(context, readerContext);
       return new DoubleDocValues(this) {
@@ -1208,7 +1206,7 @@ class BoolConstValueSource extends ConstNumberSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
@@ -1269,7 +1267,7 @@ class TestValueSource extends ValueSource {
   }
   
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     if (context.get(this) == null) {
       SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "testfunc: unweighted value source detected.  delegate="+source + " request=" + (requestInfo==null ? "null" : requestInfo.getReq()));

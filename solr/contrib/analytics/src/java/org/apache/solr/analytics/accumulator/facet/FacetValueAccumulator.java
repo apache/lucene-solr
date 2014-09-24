@@ -19,7 +19,7 @@ package org.apache.solr.analytics.accumulator.facet;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * Interface that describes the methods needed for an Accumulator to be able to handle 
@@ -30,7 +30,7 @@ public interface FacetValueAccumulator {
   void collectField(int doc, String facetName, String facetValue) throws IOException;
   void collectQuery(int doc, String facetName, String facetValue) throws IOException;
   void collectRange(int doc, String facetName, String facetValue) throws IOException;
-  void setQueryStatsCollectorReaders(AtomicReaderContext context) throws IOException;
-  void setRangeStatsCollectorReaders(AtomicReaderContext context) throws IOException;
+  void setQueryStatsCollectorReaders(LeafReaderContext context) throws IOException;
+  void setRangeStatsCollectorReaders(LeafReaderContext context) throws IOException;
 
 }

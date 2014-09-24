@@ -19,7 +19,7 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
@@ -91,7 +91,7 @@ class DrillSidewaysQuery extends Query {
 
     return new Weight() {
       @Override
-      public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         return baseWeight.explain(context, doc);
       }
 
@@ -118,13 +118,13 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // We can only run as a top scorer:
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
         // TODO: it could be better if we take acceptDocs
         // into account instead of baseScorer?

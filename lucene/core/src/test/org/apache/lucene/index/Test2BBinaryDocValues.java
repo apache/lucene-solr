@@ -78,8 +78,8 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
     
     DirectoryReader r = DirectoryReader.open(dir);
     int expectedValue = 0;
-    for (AtomicReaderContext context : r.leaves()) {
-      AtomicReader reader = context.reader();
+    for (LeafReaderContext context : r.leaves()) {
+      LeafReader reader = context.reader();
       BinaryDocValues dv = reader.getBinaryDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
         bytes[0] = (byte)(expectedValue >> 24);
@@ -138,8 +138,8 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(dir);
     int expectedValue = 0;
     ByteArrayDataInput input = new ByteArrayDataInput();
-    for (AtomicReaderContext context : r.leaves()) {
-      AtomicReader reader = context.reader();
+    for (LeafReaderContext context : r.leaves()) {
+      LeafReader reader = context.reader();
       BinaryDocValues dv = reader.getBinaryDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
         final BytesRef term = dv.get(i);

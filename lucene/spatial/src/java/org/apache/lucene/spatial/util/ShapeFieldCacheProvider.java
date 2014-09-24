@@ -27,7 +27,7 @@ import java.util.WeakHashMap;
 import java.util.logging.Logger;
 
 /**
- * Provides access to a {@link ShapeFieldCache} for a given {@link AtomicReader}.
+ * Provides access to a {@link ShapeFieldCache} for a given {@link org.apache.lucene.index.LeafReader}.
  *
  * If a Cache does not exist for the Reader, then it is built by iterating over
  * the all terms for a given field, reconstructing the Shape from them, and adding
@@ -51,7 +51,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
 
   protected abstract T readShape( BytesRef term );
 
-  public synchronized ShapeFieldCache<T> getCache(AtomicReader reader) throws IOException {
+  public synchronized ShapeFieldCache<T> getCache(LeafReader reader) throws IOException {
     ShapeFieldCache<T> idx = sidx.get(reader);
     if (idx != null) {
       return idx;

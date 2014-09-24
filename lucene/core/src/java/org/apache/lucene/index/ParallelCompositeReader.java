@@ -96,7 +96,7 @@ public class ParallelCompositeReader extends BaseCompositeReader<IndexReader> {
       for (int i = 0; i < noSubs; i++) {
         final IndexReader r = firstSubReaders.get(i);
         childMaxDoc[i] = r.maxDoc();
-        childAtomic[i] = r instanceof AtomicReader;
+        childAtomic[i] = r instanceof LeafReader;
       }
       validate(readers, maxDoc, childMaxDoc, childAtomic);
       validate(storedFieldsReaders, maxDoc, childMaxDoc, childAtomic);
@@ -104,18 +104,18 @@ public class ParallelCompositeReader extends BaseCompositeReader<IndexReader> {
       // hierarchically build the same subreader structure as the first CompositeReader with Parallel*Readers:
       final IndexReader[] subReaders = new IndexReader[noSubs];
       for (int i = 0; i < subReaders.length; i++) {
-        if (firstSubReaders.get(i) instanceof AtomicReader) {
-          final AtomicReader[] atomicSubs = new AtomicReader[readers.length];
+        if (firstSubReaders.get(i) instanceof LeafReader) {
+          final LeafReader[] atomicSubs = new LeafReader[readers.length];
           for (int j = 0; j < readers.length; j++) {
-            atomicSubs[j] = (AtomicReader) readers[j].getSequentialSubReaders().get(i);
+            atomicSubs[j] = (LeafReader) readers[j].getSequentialSubReaders().get(i);
           }
-          final AtomicReader[] storedSubs = new AtomicReader[storedFieldsReaders.length];
+          final LeafReader[] storedSubs = new LeafReader[storedFieldsReaders.length];
           for (int j = 0; j < storedFieldsReaders.length; j++) {
-            storedSubs[j] = (AtomicReader) storedFieldsReaders[j].getSequentialSubReaders().get(i);
+            storedSubs[j] = (LeafReader) storedFieldsReaders[j].getSequentialSubReaders().get(i);
           }
           // We pass true for closeSubs and we prevent closing of subreaders in doClose():
           // By this the synthetic throw-away readers used here are completely invisible to ref-counting
-          subReaders[i] = new ParallelAtomicReader(true, atomicSubs, storedSubs) {
+          subReaders[i] = new ParallelLeafReader(true, atomicSubs, storedSubs) {
             @Override
             protected void doClose() {}
           };
@@ -157,7 +157,7 @@ public class ParallelCompositeReader extends BaseCompositeReader<IndexReader> {
         if (r.maxDoc() != childMaxDoc[subIDX]) {
           throw new IllegalArgumentException("All readers must have same corresponding subReader maxDoc");
         }
-        if (!(childAtomic[subIDX] ? (r instanceof AtomicReader) : (r instanceof CompositeReader))) {
+        if (!(childAtomic[subIDX] ? (r instanceof LeafReader) : (r instanceof CompositeReader))) {
           throw new IllegalArgumentException("All readers must have same corresponding subReader types (atomic or composite)");
         }
       }

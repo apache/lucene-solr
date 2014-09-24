@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriter;
@@ -95,7 +95,7 @@ public class TestBooleanCoord extends LuceneTestCase {
       }
 
       @Override
-      public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
         return new SimScorer() {
           @Override
           public float score(int doc, float freq) {

@@ -19,7 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
@@ -212,7 +212,7 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public final SimScorer simScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+  public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
     return new BM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
   }

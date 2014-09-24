@@ -19,12 +19,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.SortField;
 
 /** 
  * SortField for {@link SortedSetDocValues}.
@@ -124,7 +122,7 @@ public class SortedSetSortField extends SortField {
   public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
     return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
       @Override
-      protected SortedDocValues getSortedDocValues(AtomicReaderContext context, String field) throws IOException {
+      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
         SortedSetDocValues sortedSet = DocValues.getSortedSet(context.reader(), field);
         return SortedSetSelector.wrap(sortedSet, selector);
       }

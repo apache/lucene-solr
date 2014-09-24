@@ -25,14 +25,14 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader.OrdinalsSegmentReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
 /**
- * A {@link FilterAtomicReader} for updating facets ordinal references,
+ * A {@link org.apache.lucene.index.FilterLeafReader} for updating facets ordinal references,
  * based on an ordinal map. You should use this code in conjunction with merging
  * taxonomies - after you merge taxonomies, you receive an {@link OrdinalMap}
  * which maps the 'old' ordinals to the 'new' ones. You can use that map to
@@ -62,7 +62,7 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class OrdinalMappingAtomicReader extends FilterAtomicReader {
+public class OrdinalMappingLeafReader extends FilterLeafReader {
   
   // silly way, but we need to use dedupAndEncode and it's protected on FacetsConfig.
   private static class InnerFacetsConfig extends FacetsConfig {
@@ -117,7 +117,7 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
    * the provided {@link FacetsConfig} which was used to build the wrapped
    * reader.
    */
-  public OrdinalMappingAtomicReader(AtomicReader in, int[] ordinalMap, FacetsConfig srcConfig) {
+  public OrdinalMappingLeafReader(LeafReader in, int[] ordinalMap, FacetsConfig srcConfig) {
     super(in);
     this.ordinalMap = ordinalMap;
     facetsConfig = new InnerFacetsConfig();

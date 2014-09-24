@@ -28,13 +28,12 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blocktreeords.Ords41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
-import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -189,8 +188,8 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
     
     // compare per-segment
     DirectoryReader ir = writer.getReader();
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
       Terms terms = r.terms("indexed");
       if (terms != null) {
         assertEquals(terms.size(), r.getSortedSetDocValues("dv").getValueCount());
@@ -205,7 +204,7 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
     
     // now compare again after the merge
     ir = writer.getReader();
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     Terms terms = ar.terms("indexed");
     if (terms != null) {
       assertEquals(terms.size(), ar.getSortedSetDocValues("dv").getValueCount());

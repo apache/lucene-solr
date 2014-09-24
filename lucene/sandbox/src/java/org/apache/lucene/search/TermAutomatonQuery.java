@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -372,7 +372,7 @@ public class TermAutomatonQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
 
       // Initialize the enums; null for a given slot means that term didn't appear in this reader
       EnumAndScorer[] enums = new EnumAndScorer[idToTerm.size()];
@@ -395,7 +395,7 @@ public class TermAutomatonQuery extends Query {
     }
     
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       // TODO
       return null;
     }

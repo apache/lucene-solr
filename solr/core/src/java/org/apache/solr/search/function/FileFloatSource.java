@@ -21,7 +21,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -78,7 +77,7 @@ public class FileFloatSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
 

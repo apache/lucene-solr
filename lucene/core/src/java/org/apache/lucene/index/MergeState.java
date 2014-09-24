@@ -59,7 +59,7 @@ public class MergeState {
 
     /** Creates a {@link DocMap} instance appropriate for
      *  this reader. */
-    public static DocMap build(AtomicReader reader) {
+    public static DocMap build(LeafReader reader) {
       final int maxDoc = reader.maxDoc();
       if (!reader.hasDeletions()) {
         return new NoDelDocMap(maxDoc);
@@ -137,7 +137,7 @@ public class MergeState {
   public FieldInfos fieldInfos;
 
   /** Readers being merged. */
-  public final List<AtomicReader> readers;
+  public final List<LeafReader> readers;
 
   /** Maps docIDs around deletions. */
   public DocMap[] docMaps;
@@ -157,7 +157,7 @@ public class MergeState {
   public int checkAbortCount;
 
   /** Sole constructor. */
-  MergeState(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) {
+  MergeState(List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) {
     this.readers = readers;
     this.segmentInfo = segmentInfo;
     this.infoStream = infoStream;

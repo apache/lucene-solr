@@ -1223,7 +1223,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.addIndexes(empty);
     w.close();
     DirectoryReader dr = DirectoryReader.open(d1);
-    for (AtomicReaderContext ctx : dr.leaves()) {
+    for (LeafReaderContext ctx : dr.leaves()) {
       assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
     }
     dr.close();
@@ -1245,7 +1245,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.addIndexes(allDeletedReader);
     w.close();
     DirectoryReader dr = DirectoryReader.open(src);
-    for (AtomicReaderContext ctx : dr.leaves()) {
+    for (LeafReaderContext ctx : dr.leaves()) {
       assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
     }
     dr.close();

@@ -19,15 +19,14 @@ package org.apache.lucene.index;
 
 import java.util.List;
 
-import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 
 /**
  Instances of this reader type can only
  be used to get stored fields from the underlying AtomicReaders,
  but it is not possible to directly retrieve postings. To do that, get
- the {@link AtomicReaderContext} for all sub-readers via {@link #leaves()}.
- Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
+ the {@link LeafReaderContext} for all sub-readers via {@link #leaves()}.
+ Alternatively, you can mimic an {@link LeafReader} (with a serious slowdown),
  by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
  
  <p>IndexReader instances for indexes on disk are usually constructed
@@ -91,7 +90,7 @@ public abstract class CompositeReader extends IndexReader {
    *  return {@code null}.
    *  
    *  <p><b>NOTE:</b> In contrast to previous Lucene versions this method
-   *  is no longer public, code that wants to get all {@link AtomicReader}s
+   *  is no longer public, code that wants to get all {@link LeafReader}s
    *  this composite is composed of should use {@link IndexReader#leaves()}.
    * @see IndexReader#leaves()
    */

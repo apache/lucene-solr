@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -158,7 +158,7 @@ public class ToParentBlockJoinQuery extends Query {
     // NOTE: acceptDocs applies (and is checked) only in the
     // parent document space
     @Override
-    public Scorer scorer(AtomicReaderContext readerContext, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
 
       final Scorer childScorer = childWeight.scorer(readerContext, readerContext.reader().getLiveDocs());
       if (childScorer == null) {
@@ -191,7 +191,7 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, context.reader().getLiveDocs());
       if (scorer != null && scorer.advance(doc) == doc) {
         return scorer.explain(context.docBase);

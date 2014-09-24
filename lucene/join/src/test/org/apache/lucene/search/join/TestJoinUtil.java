@@ -37,8 +37,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum;
@@ -486,7 +486,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
             docBase = context.docBase;
             topScoreDocCollector.getLeafCollector(context);
           }
@@ -670,7 +670,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
             docTermOrds = DocValues.getSortedSet(context.reader(), fromField);
           }
 
@@ -706,7 +706,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
             terms = DocValues.getBinary(context.reader(), fromField);
             docsWithField = DocValues.getDocsWithField(context.reader(), fromField);
           }
@@ -726,7 +726,7 @@ public class TestJoinUtil extends LuceneTestCase {
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
         if (scoreDocsInOrder) {
-          AtomicReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(toSearcher.getIndexReader());
+          LeafReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(toSearcher.getIndexReader());
           Terms terms = slowCompositeReader.terms(toField);
           if (terms != null) {
             DocsEnum docsEnum = null;
@@ -775,7 +775,7 @@ public class TestJoinUtil extends LuceneTestCase {
             }
 
             @Override
-            protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+            protected void doSetNextReader(LeafReaderContext context) throws IOException {
               docBase = context.docBase;
               docTermOrds = DocValues.getSortedSet(context.reader(), toField);
             }
@@ -803,7 +803,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
             terms = DocValues.getBinary(context.reader(), toField);
             docBase = context.docBase;
           }

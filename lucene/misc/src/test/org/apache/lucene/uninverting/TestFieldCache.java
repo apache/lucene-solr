@@ -40,7 +40,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -64,7 +64,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestFieldCache extends LuceneTestCase {
-  private static AtomicReader reader;
+  private static LeafReader reader;
   private static int NUM_DOCS;
   private static int NUM_ORDS;
   private static String[] unicodeStrings;
@@ -292,7 +292,7 @@ public class TestFieldCache extends LuceneTestCase {
     IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(500));
     writer.close();
     IndexReader r = DirectoryReader.open(dir);
-    AtomicReader reader = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader reader = SlowCompositeReaderWrapper.wrap(r);
     FieldCache.DEFAULT.getTerms(reader, "foobar", true);
     FieldCache.DEFAULT.getTermsIndex(reader, "foobar");
     FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
@@ -435,7 +435,7 @@ public class TestFieldCache extends LuceneTestCase {
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     
     // Binary type: can be retrieved via getTerms()
     try {
@@ -565,7 +565,7 @@ public class TestFieldCache extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
@@ -623,7 +623,7 @@ public class TestFieldCache extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();

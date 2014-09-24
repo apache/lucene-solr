@@ -20,11 +20,10 @@ package org.apache.solr.analytics.util.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.StrDocValues;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
@@ -49,7 +48,7 @@ public abstract class SingleStringFunction extends ValueSource {
   abstract CharSequence func(int doc, FunctionValues vals);
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
     return new StrDocValues(this) {
       @Override

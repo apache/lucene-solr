@@ -356,9 +356,9 @@ public class TestBlockJoin extends LuceneTestCase {
   }
   
   private Document getParentDoc(IndexReader reader, Filter parents, int childDocID) throws IOException {
-    final List<AtomicReaderContext> leaves = reader.leaves();
+    final List<LeafReaderContext> leaves = reader.leaves();
     final int subIndex = ReaderUtil.subIndex(childDocID, leaves);
-    final AtomicReaderContext leaf = leaves.get(subIndex);
+    final LeafReaderContext leaf = leaves.get(subIndex);
     final FixedBitSet bits = (FixedBitSet) parents.getDocIdSet(leaf, null);
     return leaf.reader().document(bits.nextSetBit(childDocID - leaf.docBase));
   }

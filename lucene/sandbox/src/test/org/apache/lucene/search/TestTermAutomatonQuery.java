@@ -38,7 +38,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -51,7 +51,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
 
 public class TestTermAutomatonQuery extends LuceneTestCase {
@@ -627,7 +626,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
 
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
       int maxDoc = context.reader().maxDoc();
       FixedBitSet bits = new FixedBitSet(maxDoc);
       Random random = new Random(seed ^ context.docBase);

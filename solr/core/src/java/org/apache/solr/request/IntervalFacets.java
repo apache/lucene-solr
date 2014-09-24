@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -162,10 +162,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     if (numericType == null) {
       throw new IllegalStateException();
     }
-    final List<AtomicReaderContext> leaves = searcher.getIndexReader().leaves();
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    final Iterator<AtomicReaderContext> ctxIt = leaves.iterator();
-    AtomicReaderContext ctx = null;
+    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
+    LeafReaderContext ctx = null;
     NumericDocValues longs = null;
     Bits docsWithField = null;
     for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
@@ -220,9 +220,9 @@ public class IntervalFacets implements Iterable<FacetInterval> {
 
   private void getCountString() throws IOException {
     Filter filter = docs.getTopFilter();
-    List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
-      AtomicReaderContext leaf = leaves.get(subIndex);
+      LeafReaderContext leaf = leaves.get(subIndex);
       DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
       if (dis == null) {
         continue;

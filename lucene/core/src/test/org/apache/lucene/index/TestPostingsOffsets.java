@@ -290,9 +290,9 @@ public class TestPostingsOffsets extends LuceneTestCase {
     w.close();
 
     final String[] terms = new String[] {"a", "b", "c", "d"};
-    for(AtomicReaderContext ctx : r.leaves()) {
+    for(LeafReaderContext ctx : r.leaves()) {
       // TODO: improve this
-      AtomicReader sub = ctx.reader();
+      LeafReader sub = ctx.reader();
       //System.out.println("\nsub=" + sub);
       final TermsEnum termsEnum = sub.fields().terms("content").iterator(null);
       DocsEnum docs = null;
@@ -379,7 +379,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       riw.addDocument(doc);
     }
     CompositeReader ir = riw.getReader();
-    AtomicReader slow = SlowCompositeReaderWrapper.wrap(ir);
+    LeafReader slow = SlowCompositeReaderWrapper.wrap(ir);
     FieldInfos fis = slow.getFieldInfos();
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
     slow.close();

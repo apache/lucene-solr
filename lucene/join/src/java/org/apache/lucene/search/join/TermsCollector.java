@@ -19,7 +19,7 @@ package org.apache.lucene.search.join;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -81,7 +81,7 @@ abstract class TermsCollector extends SimpleCollector {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docTermOrds = DocValues.getSortedSet(context.reader(), field);
     }
   }
@@ -103,7 +103,7 @@ abstract class TermsCollector extends SimpleCollector {
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       fromDocTerms = DocValues.getBinary(context.reader(), field);
     }
   }

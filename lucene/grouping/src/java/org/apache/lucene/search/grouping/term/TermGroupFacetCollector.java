@@ -17,7 +17,7 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -121,7 +121,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       if (segmentFacetCounts != null) {
         segmentResults.add(createSegmentResult());
       }
@@ -273,7 +273,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     }
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       if (segmentFacetCounts != null) {
         segmentResults.add(createSegmentResult());
       }

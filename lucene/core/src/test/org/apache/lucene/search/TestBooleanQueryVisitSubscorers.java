@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -133,7 +133,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
       super(TopScoreDocCollector.create(10, true));
     }
 
-    public LeafCollector getLeafCollector(AtomicReaderContext context)
+    public LeafCollector getLeafCollector(LeafReaderContext context)
         throws IOException {
       final int docBase = context.docBase;
       return new FilterLeafCollector(super.getLeafCollector(context)) {
@@ -232,7 +232,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
 
     @Override
-    public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       return new LeafCollector() {
 
         @Override

@@ -25,7 +25,7 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -136,7 +136,7 @@ public class CheckHits {
       bag.add(Integer.valueOf(doc + base));
     }
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       base = context.docBase;
     }
     @Override
@@ -508,7 +508,7 @@ public class CheckHits {
                         exp.isMatch());
     }
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       base = context.docBase;
     }
     @Override

@@ -26,7 +26,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
-public class SortingAtomicReaderTest extends SorterTestBase {
+public class SortingLeafReaderTest extends SorterTestBase {
   
   @BeforeClass
   public static void beforeClassSortingAtomicReaderTest() throws Exception {
@@ -47,7 +47,7 @@ public class SortingAtomicReaderTest extends SorterTestBase {
     }
     
     // sort the index by id (as integer, in NUMERIC_DV_FIELD)
-    reader = SortingAtomicReader.wrap(reader, sort);
+    reader = SortingLeafReader.wrap(reader, sort);
     
     if (VERBOSE) {
       System.out.print("mapped-deleted-docs: ");
@@ -65,7 +65,7 @@ public class SortingAtomicReaderTest extends SorterTestBase {
   
   public void testBadSort() throws Exception {
     try {
-      SortingAtomicReader.wrap(reader, Sort.RELEVANCE);
+      SortingLeafReader.wrap(reader, Sort.RELEVANCE);
       fail("Didn't get expected exception");
     } catch (IllegalArgumentException e) {
       assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());

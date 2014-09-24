@@ -44,8 +44,8 @@ import org.apache.lucene.facet.MultiFacets;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -874,7 +874,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     final ValueSource vs = new ValueSource() {
         @SuppressWarnings("rawtypes")
         @Override
-        public FunctionValues getValues(Map ignored, AtomicReaderContext ignored2) {
+        public FunctionValues getValues(Map ignored, LeafReaderContext ignored2) {
           return new DoubleDocValues(null) {
             @Override
             public double doubleVal(int doc) {
@@ -921,7 +921,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       // Sort of silly:
       fastMatchFilter = new CachingWrapperFilter(new QueryWrapperFilter(new MatchAllDocsQuery())) {
           @Override
-          protected DocIdSet cacheImpl(DocIdSetIterator iterator, AtomicReader reader)
+          protected DocIdSet cacheImpl(DocIdSetIterator iterator, LeafReader reader)
             throws IOException {
             final FixedBitSet cached = new FixedBitSet(reader.maxDoc());
             filterWasUsed.set(true);

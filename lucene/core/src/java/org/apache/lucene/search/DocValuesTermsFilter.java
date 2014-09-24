@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
@@ -104,7 +104,7 @@ public class DocValuesTermsFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
     final FixedBitSet bits = new FixedBitSet(fcsi.getValueCount());
     for (int i=0;i<terms.length;i++) {

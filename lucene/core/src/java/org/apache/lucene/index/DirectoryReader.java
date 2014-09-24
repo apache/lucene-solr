@@ -49,7 +49,7 @@ import org.apache.lucene.store.Directory;
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
 */
-public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> {
+public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
 
   /** The index directory. */
   protected final Directory directory;
@@ -307,7 +307,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    * Subclasses of {@code DirectoryReader} should take care to not allow
    * modification of this internal array, e.g. {@link #doOpenIfChanged()}.
    */
-  protected DirectoryReader(Directory directory, AtomicReader[] segmentReaders) {
+  protected DirectoryReader(Directory directory, LeafReader[] segmentReaders) {
     super(segmentReaders);
     this.directory = directory;
   }

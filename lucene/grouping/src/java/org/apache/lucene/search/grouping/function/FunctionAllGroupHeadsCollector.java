@@ -17,10 +17,9 @@ package org.apache.lucene.search.grouping.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -48,7 +47,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
   private FunctionValues.ValueFiller filler;
   private MutableValue mval;
-  private AtomicReaderContext readerContext;
+  private LeafReaderContext readerContext;
   private Scorer scorer;
 
   /**
@@ -102,7 +101,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
   }
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     this.readerContext = context;
     FunctionValues values = groupBy.getValues(vsContext, context);
     filler = values.getValueFiller();

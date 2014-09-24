@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -41,7 +41,7 @@ public class NumDocsValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     // Searcher has no numdocs so we must use the reader instead
     return new ConstIntDocValues(ReaderUtil.getTopLevelContext(readerContext).reader().numDocs(), this);
   }

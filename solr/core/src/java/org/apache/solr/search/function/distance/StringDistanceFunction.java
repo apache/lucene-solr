@@ -17,7 +17,7 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -44,7 +44,7 @@ public class StringDistanceFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues str1DV = str1.getValues(context, readerContext);
     final FunctionValues str2DV = str2.getValues(context, readerContext);
     return new FloatDocValues(this) {

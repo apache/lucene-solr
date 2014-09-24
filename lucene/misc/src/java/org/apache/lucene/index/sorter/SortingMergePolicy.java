@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
@@ -64,27 +64,27 @@ public final class SortingMergePolicy extends MergePolicy {
   
   class SortingOneMerge extends OneMerge {
 
-    List<AtomicReader> unsortedReaders;
+    List<LeafReader> unsortedReaders;
     Sorter.DocMap docMap;
-    AtomicReader sortedView;
+    LeafReader sortedView;
 
     SortingOneMerge(List<SegmentCommitInfo> segments) {
       super(segments);
     }
 
     @Override
-    public List<AtomicReader> getMergeReaders() throws IOException {
+    public List<LeafReader> getMergeReaders() throws IOException {
       if (unsortedReaders == null) {
         unsortedReaders = super.getMergeReaders();
-        final AtomicReader atomicView;
+        final LeafReader atomicView;
         if (unsortedReaders.size() == 1) {
           atomicView = unsortedReaders.get(0);
         } else {
-          final IndexReader multiReader = new MultiReader(unsortedReaders.toArray(new AtomicReader[unsortedReaders.size()]));
+          final IndexReader multiReader = new MultiReader(unsortedReaders.toArray(new LeafReader[unsortedReaders.size()]));
           atomicView = SlowCompositeReaderWrapper.wrap(multiReader);
         }
         docMap = sorter.sort(atomicView);
-        sortedView = SortingAtomicReader.wrap(atomicView, docMap);
+        sortedView = SortingLeafReader.wrap(atomicView, docMap);
       }
       // a null doc map means that the readers are already sorted
       return docMap == null ? unsortedReaders : Collections.singletonList(sortedView);
@@ -97,10 +97,10 @@ public final class SortingMergePolicy extends MergePolicy {
       super.setInfo(info);
     }
 
-    private PackedLongValues getDeletes(List<AtomicReader> readers) {
+    private PackedLongValues getDeletes(List<LeafReader> readers) {
       PackedLongValues.Builder deletes = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
       int deleteCount = 0;
-      for (AtomicReader reader : readers) {
+      for (LeafReader reader : readers) {
         final int maxDoc = reader.maxDoc();
         final Bits liveDocs = reader.getLiveDocs();
         for (int i = 0; i < maxDoc; ++i) {
@@ -151,7 +151,7 @@ public final class SortingMergePolicy extends MergePolicy {
   }
 
   /** Returns {@code true} if the given {@code reader} is sorted by the specified {@code sort}. */
-  public static boolean isSorted(AtomicReader reader, Sort sort) {
+  public static boolean isSorted(LeafReader reader, Sort sort) {
     if (reader instanceof SegmentReader) {
       final SegmentReader segReader = (SegmentReader) reader;
       final Map<String, String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();

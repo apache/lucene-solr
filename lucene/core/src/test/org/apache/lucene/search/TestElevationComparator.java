@@ -187,7 +187,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
+     public FieldComparator<Integer> setNextReader(LeafReaderContext context) throws IOException {
        idIndex = DocValues.getSorted(context.reader(), fieldname);
        return this;
      }

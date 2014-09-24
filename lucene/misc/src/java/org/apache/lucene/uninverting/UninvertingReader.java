@@ -30,20 +30,18 @@ import org.apache.lucene.document.NumericDocValuesField; // javadocs
 import org.apache.lucene.document.SortedDocValuesField; // javadocs
 import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
 import org.apache.lucene.document.StringField; // javadocs
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.uninverting.FieldCache.CacheEntry;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 
 /**
  * A FilterReader that exposes <i>indexed</i> values as if they also had
@@ -52,11 +50,11 @@ import org.apache.lucene.util.NumericUtils;
  * This is accomplished by "inverting the inverted index" or "uninversion".
  * <p>
  * The uninversion process happens lazily: upon the first request for the 
- * field's docvalues (e.g. via {@link AtomicReader#getNumericDocValues(String)} 
+ * field's docvalues (e.g. via {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)} 
  * or similar), it will create the docvalues on-the-fly if needed and cache it,
  * based on the core cache key of the wrapped AtomicReader.
  */
-public class UninvertingReader extends FilterAtomicReader {
+public class UninvertingReader extends FilterLeafReader {
   
   /**
    * Specifies the type of uninversion to apply for the field. 
@@ -156,7 +154,7 @@ public class UninvertingReader extends FilterAtomicReader {
     public UninvertingDirectoryReader(DirectoryReader in, final Map<String,Type> mapping) {
       super(in, new FilterDirectoryReader.SubReaderWrapper() {
         @Override
-        public AtomicReader wrap(AtomicReader reader) {
+        public LeafReader wrap(LeafReader reader) {
           return new UninvertingReader(reader, mapping);
         }
       });
@@ -180,7 +178,7 @@ public class UninvertingReader extends FilterAtomicReader {
    *  
    * @lucene.internal
    */
-  public UninvertingReader(AtomicReader in, Map<String,Type> mapping) {
+  public UninvertingReader(LeafReader in, Map<String,Type> mapping) {
     super(in);
     this.mapping = mapping;
     ArrayList<FieldInfo> filteredInfos = new ArrayList<>();

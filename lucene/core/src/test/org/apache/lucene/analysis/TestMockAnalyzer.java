@@ -25,7 +25,7 @@ import java.util.Random;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Fields;
@@ -314,7 +314,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     doc.add(new Field("f", "a", ft));
     doc.add(new Field("f", "a", ft));
     writer.addDocument(doc, a);
-    final AtomicReader reader = getOnlySegmentReader(writer.getReader());
+    final LeafReader reader = getOnlySegmentReader(writer.getReader());
     final Fields fields = reader.getTermVectors(0);
     final Terms terms = fields.terms("f");
     final TermsEnum te = terms.iterator(null);

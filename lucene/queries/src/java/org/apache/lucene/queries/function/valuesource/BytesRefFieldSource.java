@@ -20,7 +20,7 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -42,7 +42,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
 
     // To be sorted or not to be sorted, that is the question

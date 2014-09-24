@@ -22,7 +22,7 @@ import java.util.Collections;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
@@ -47,7 +47,7 @@ public class TestSortedSetFieldSource extends LuceneTestCase {
     writer.close();
 
     DirectoryReader ir = DirectoryReader.open(dir);
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     
     ValueSource vs = new SortedSetFieldSource("value");
     FunctionValues values = vs.getValues(Collections.emptyMap(), ar.getContext());

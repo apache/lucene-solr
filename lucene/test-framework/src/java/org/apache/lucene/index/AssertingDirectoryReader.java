@@ -19,14 +19,14 @@ package org.apache.lucene.index;
 
 /**
  * A {@link DirectoryReader} that wraps all its subreaders with
- * {@link AssertingAtomicReader}
+ * {@link AssertingLeafReader}
  */
 public class AssertingDirectoryReader extends FilterDirectoryReader {
 
   static class AssertingSubReaderWrapper extends SubReaderWrapper {
     @Override
-    public AtomicReader wrap(AtomicReader reader) {
-      return new AssertingAtomicReader(reader);
+    public LeafReader wrap(LeafReader reader) {
+      return new AssertingLeafReader(reader);
     }
   }
 

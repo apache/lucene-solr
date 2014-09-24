@@ -19,8 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader; // javadocs
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 
 /** 
@@ -39,12 +38,12 @@ public abstract class Filter {
    * must refer to document IDs for that segment, not for
    * the top-level reader.
    * 
-   * @param context a {@link AtomicReaderContext} instance opened on the index currently
+   * @param context a {@link org.apache.lucene.index.LeafReaderContext} instance opened on the index currently
    *         searched on. Note, it is likely that the provided reader info does not
    *         represent the whole underlying index i.e. if the index has more than
    *         one segment the given reader only represents a single segment.
    *         The provided context is always an atomic context, so you can call 
-   *         {@link AtomicReader#fields()}
+   *         {@link org.apache.lucene.index.LeafReader#fields()}
    *         on the context's reader, for example.
    *
    * @param acceptDocs
@@ -56,5 +55,5 @@ public abstract class Filter {
    *         the filter doesn't accept any documents otherwise internal optimization might not apply
    *         in the case an <i>empty</i> {@link DocIdSet} is returned.
    */
-  public abstract DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException;
 }

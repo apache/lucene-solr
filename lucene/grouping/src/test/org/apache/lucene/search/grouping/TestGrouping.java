@@ -19,7 +19,7 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
@@ -602,7 +602,7 @@ public class TestGrouping extends LuceneTestCase {
 
     public ShardState(IndexSearcher s) {
       final IndexReaderContext ctx = s.getTopReaderContext();
-      final List<AtomicReaderContext> leaves = ctx.leaves();
+      final List<LeafReaderContext> leaves = ctx.leaves();
       subSearchers = new ShardSearcher[leaves.size()];
       for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
         subSearchers[searcherIDX] = new ShardSearcher(leaves.get(searcherIDX), ctx);
@@ -1294,9 +1294,9 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private static class ShardSearcher extends IndexSearcher {
-    private final List<AtomicReaderContext> ctx;
+    private final List<LeafReaderContext> ctx;
 
-    public ShardSearcher(AtomicReaderContext ctx, IndexReaderContext parent) {
+    public ShardSearcher(LeafReaderContext ctx, IndexReaderContext parent) {
       super(parent);
       this.ctx = Collections.singletonList(ctx);
     }

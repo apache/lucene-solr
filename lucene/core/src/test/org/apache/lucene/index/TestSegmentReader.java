@@ -172,7 +172,7 @@ public class TestSegmentReader extends LuceneTestCase {
     checkNorms(reader);
   }
 
-  public static void checkNorms(AtomicReader reader) throws IOException {
+  public static void checkNorms(LeafReader reader) throws IOException {
     // test omit norms
     for (int i=0; i<DocHelper.fields.length; i++) {
       IndexableField f = DocHelper.fields[i];

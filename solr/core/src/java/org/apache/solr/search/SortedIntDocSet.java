@@ -17,8 +17,8 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -664,8 +664,8 @@ public class SortedIntDocSet extends DocSetBase {
       int lastEndIdx = 0;
 
       @Override
-      public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) {
-        AtomicReader reader = context.reader();
+      public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
+        LeafReader reader = context.reader();
         // all Solr DocSets that are used as filters only include live docs
         final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
 

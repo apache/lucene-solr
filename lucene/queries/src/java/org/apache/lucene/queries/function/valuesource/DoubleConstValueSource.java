@@ -17,7 +17,7 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 
@@ -44,7 +44,7 @@ public class DoubleConstValueSource extends ConstNumberSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     return new DoubleDocValues(this) {
       @Override
       public float floatVal(int doc) {

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldDoc;
@@ -50,7 +50,7 @@ import org.apache.lucene.util.FixedBitSet;
  *  {@link Collector}. */
 public class FacetsCollector extends SimpleCollector {
 
-  private AtomicReaderContext context;
+  private LeafReaderContext context;
   private Scorer scorer;
   private int totalHits;
   private float[] scores;
@@ -75,13 +75,13 @@ public class FacetsCollector extends SimpleCollector {
   }
 
   /**
-   * Holds the documents that were matched in the {@link AtomicReaderContext}.
+   * Holds the documents that were matched in the {@link org.apache.lucene.index.LeafReaderContext}.
    * If scores were required, then {@code scores} is not null.
    */
   public final static class MatchingDocs {
     
     /** Context for this segment. */
-    public final AtomicReaderContext context;
+    public final LeafReaderContext context;
 
     /** Which documents were seen. */
     public final DocIdSet bits;
@@ -93,7 +93,7 @@ public class FacetsCollector extends SimpleCollector {
     public final int totalHits;
 
     /** Sole constructor. */
-    public MatchingDocs(AtomicReaderContext context, DocIdSet bits, int totalHits, float[] scores) {
+    public MatchingDocs(LeafReaderContext context, DocIdSet bits, int totalHits, float[] scores) {
       this.context = context;
       this.bits = bits;
       this.scores = scores;
@@ -181,7 +181,7 @@ public class FacetsCollector extends SimpleCollector {
   }
     
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     if (docs != null) {
       matchingDocs.add(new MatchingDocs(this.context, docs.getDocIdSet(), totalHits, scores));
     }

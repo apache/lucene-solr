@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import com.carrotsearch.hppc.IntArrayList;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.request.SolrRequestInfo;
@@ -26,7 +25,7 @@ import org.apache.lucene.index.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.lucene.util.OpenBitSet;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +135,7 @@ public class ExportQParserPlugin extends QParserPlugin {
       this.sets = sets;
     }
     
-    public void doSetNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
       this.set = new FixedBitSet(context.reader().maxDoc());
       this.sets[context.ord] = set;
 

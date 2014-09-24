@@ -17,11 +17,10 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -90,12 +89,12 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return new AllScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((AllScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
     }
   }
@@ -109,7 +108,7 @@ public class FunctionQuery extends Query {
     final FunctionValues vals;
     final Bits acceptDocs;
 
-    public AllScorer(AtomicReaderContext context, Bits acceptDocs, FunctionWeight w, float qWeight) throws IOException {
+    public AllScorer(LeafReaderContext context, Bits acceptDocs, FunctionWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;
       this.qWeight = qWeight;

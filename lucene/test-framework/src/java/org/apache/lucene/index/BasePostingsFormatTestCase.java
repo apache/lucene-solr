@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -1419,7 +1418,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     doc.add(newStringField("", "something", Field.Store.NO));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     Fields fields = ar.fields();
     int fieldCount = fields.size();
     // -1 is allowed, if the codec doesn't implement fields.size():
@@ -1444,7 +1443,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     doc.add(newStringField("", "", Field.Store.NO));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     Fields fields = ar.fields();
     int fieldCount = fields.size();
     // -1 is allowed, if the codec doesn't implement fields.size():
@@ -1476,7 +1475,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iw.deleteDocuments(new Term("ghostField", "something")); // delete the only term for the field
     iw.forceMerge(1);
     DirectoryReader ir = iw.getReader();
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     Fields fields = ar.fields();
     // Ghost busting terms dict impls will have
     // fields.size() == 0; all others must be == 1:

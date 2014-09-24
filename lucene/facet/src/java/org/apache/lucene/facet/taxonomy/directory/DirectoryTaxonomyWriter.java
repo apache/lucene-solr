@@ -26,8 +26,8 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
@@ -405,7 +405,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final BytesRef catTerm = new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
       TermsEnum termsEnum = null; // reuse
       DocsEnum docs = null; // reuse
-      for (AtomicReaderContext ctx : reader.leaves()) {
+      for (LeafReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
           termsEnum = terms.iterator(termsEnum);
@@ -698,7 +698,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     try {
       TermsEnum termsEnum = null;
       DocsEnum docsEnum = null;
-      for (AtomicReaderContext ctx : reader.leaves()) {
+      for (LeafReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) { // cannot really happen, but be on the safe side
           termsEnum = terms.iterator(termsEnum);
@@ -794,8 +794,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       int base = 0;
       TermsEnum te = null;
       DocsEnum docs = null;
-      for (final AtomicReaderContext ctx : r.leaves()) {
-        final AtomicReader ar = ctx.reader();
+      for (final LeafReaderContext ctx : r.leaves()) {
+        final LeafReader ar = ctx.reader();
         final Terms terms = ar.terms(Consts.FULL);
         te = terms.iterator(te);
         while (te.next() != null) {

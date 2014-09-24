@@ -19,11 +19,10 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -142,7 +141,7 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     Set<Object> set = Collections.newSetFromMap(new IdentityHashMap<Object,Boolean>());
     try {
       DirectoryReader ir = searcher.get().getRawReader();
-      for (AtomicReaderContext context : ir.leaves()) {
+      for (LeafReaderContext context : ir.leaves()) {
         set.add(context.reader().getCoreCacheKey());
       }
     } finally {

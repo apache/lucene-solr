@@ -6,8 +6,8 @@ import java.util.List;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiReader;
@@ -50,11 +50,11 @@ public abstract class TaxonomyMergeUtils {
     int ordinalMap[] = map.getMap();
     DirectoryReader reader = DirectoryReader.open(srcIndexDir);
     try {
-      List<AtomicReaderContext> leaves = reader.leaves();
+      List<LeafReaderContext> leaves = reader.leaves();
       int numReaders = leaves.size();
-      AtomicReader wrappedLeaves[] = new AtomicReader[numReaders];
+      LeafReader wrappedLeaves[] = new LeafReader[numReaders];
       for (int i = 0; i < numReaders; i++) {
-        wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordinalMap, srcConfig);
+        wrappedLeaves[i] = new OrdinalMappingLeafReader(leaves.get(i).reader(), ordinalMap, srcConfig);
       }
       destIndexWriter.addIndexes(new MultiReader(wrappedLeaves));
       

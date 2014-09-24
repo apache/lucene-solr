@@ -37,7 +37,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   private final boolean applyAllDeletes;
   
   /** called only from static open() methods */
-  StandardDirectoryReader(Directory directory, AtomicReader[] readers, IndexWriter writer,
+  StandardDirectoryReader(Directory directory, LeafReader[] readers, IndexWriter writer,
     SegmentInfos sis, boolean applyAllDeletes) {
     super(directory, readers);
     this.writer = writer;
@@ -128,7 +128,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)} */
-  private static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends AtomicReader> oldReaders) throws IOException {
+  private static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends LeafReader> oldReaders) throws IOException {
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -234,7 +234,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     if (writer != null) {
       buffer.append(":nrt");
     }
-    for (final AtomicReader r : getSequentialSubReaders()) {
+    for (final LeafReader r : getSequentialSubReaders()) {
       buffer.append(' ');
       buffer.append(r);
     }
@@ -351,7 +351,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   @Override
   protected void doClose() throws IOException {
     Throwable firstExc = null;
-    for (final AtomicReader r : getSequentialSubReaders()) {
+    for (final LeafReader r : getSequentialSubReaders()) {
       // try to close each reader, even if an exception is thrown
       try {
         r.decRef();

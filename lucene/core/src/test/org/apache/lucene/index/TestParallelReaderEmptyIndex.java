@@ -29,7 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Some tests for {@link ParallelAtomicReader}s with empty indexes
+ * Some tests for {@link ParallelLeafReader}s with empty indexes
  */
 public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
@@ -48,7 +48,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(new MockAnalyzer(random())));
     
-    ParallelAtomicReader apr = new ParallelAtomicReader(
+    ParallelLeafReader apr = new ParallelLeafReader(
         SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1)),
         SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2)));
     
@@ -57,7 +57,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     iwOut.forceMerge(1);
     
     // 2nd try with a readerless parallel reader
-    iwOut.addIndexes(new ParallelAtomicReader());
+    iwOut.addIndexes(new ParallelLeafReader());
     iwOut.forceMerge(1);
 
     ParallelCompositeReader cpr = new ParallelCompositeReader(
@@ -135,7 +135,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(new MockAnalyzer(random())));
     final DirectoryReader reader1, reader2;
-    ParallelAtomicReader pr = new ParallelAtomicReader(
+    ParallelLeafReader pr = new ParallelLeafReader(
         SlowCompositeReaderWrapper.wrap(reader1 = DirectoryReader.open(rd1)),
         SlowCompositeReaderWrapper.wrap(reader2 = DirectoryReader.open(rd2)));
 

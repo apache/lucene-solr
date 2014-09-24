@@ -60,7 +60,7 @@ public final class MultiFields extends Fields {
    *  It's better to get the sub-readers and iterate through them
    *  yourself. */
   public static Fields getFields(IndexReader reader) throws IOException {
-    final List<AtomicReaderContext> leaves = reader.leaves();
+    final List<LeafReaderContext> leaves = reader.leaves();
     switch (leaves.size()) {
       case 0:
         // no fields
@@ -71,8 +71,8 @@ public final class MultiFields extends Fields {
       default:
         final List<Fields> fields = new ArrayList<>();
         final List<ReaderSlice> slices = new ArrayList<>();
-        for (final AtomicReaderContext ctx : leaves) {
-          final AtomicReader r = ctx.reader();
+        for (final LeafReaderContext ctx : leaves) {
+          final LeafReader r = ctx.reader();
           final Fields f = r.fields();
           if (f != null) {
             fields.add(f);
@@ -101,7 +101,7 @@ public final class MultiFields extends Fields {
    *  yourself. */
   public static Bits getLiveDocs(IndexReader reader) {
     if (reader.hasDeletions()) {
-      final List<AtomicReaderContext> leaves = reader.leaves();
+      final List<LeafReaderContext> leaves = reader.leaves();
       final int size = leaves.size();
       assert size > 0 : "A reader with deletions must have at least one leave";
       if (size == 1) {
@@ -111,7 +111,7 @@ public final class MultiFields extends Fields {
       final int[] starts = new int[size + 1];
       for (int i = 0; i < size; i++) {
         // record all liveDocs, even if they are null
-        final AtomicReaderContext ctx = leaves.get(i);
+        final LeafReaderContext ctx = leaves.get(i);
         liveDocs[i] = ctx.reader().getLiveDocs();
         starts[i] = ctx.docBase;
       }
@@ -254,7 +254,7 @@ public final class MultiFields extends Fields {
    */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
     final FieldInfos.Builder builder = new FieldInfos.Builder();
-    for(final AtomicReaderContext ctx : reader.leaves()) {
+    for(final LeafReaderContext ctx : reader.leaves()) {
       builder.add(ctx.reader().getFieldInfos());
     }
     return builder.finish();

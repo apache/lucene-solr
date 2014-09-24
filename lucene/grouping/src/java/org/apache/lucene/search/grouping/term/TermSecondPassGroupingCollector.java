@@ -20,7 +20,7 @@ package org.apache.lucene.search.grouping.term;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Sort;
@@ -53,7 +53,7 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
   }
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
+  protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     super.doSetNextReader(readerContext);
     index = DocValues.getSorted(readerContext.reader(), groupField);
 

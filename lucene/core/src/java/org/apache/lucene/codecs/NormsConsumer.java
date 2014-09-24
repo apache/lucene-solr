@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
@@ -75,7 +75,7 @@ public abstract class NormsConsumer implements Closeable {
     for (FieldInfo field : mergeState.fieldInfos) {
       if (field.hasNorms()) {
         List<NumericDocValues> toMerge = new ArrayList<>();
-        for (AtomicReader reader : mergeState.readers) {
+        for (LeafReader reader : mergeState.readers) {
           NumericDocValues norms = reader.getNormValues(field.name);
           if (norms == null) {
             norms = DocValues.emptyNumeric();
@@ -104,7 +104,7 @@ public abstract class NormsConsumer implements Closeable {
                           int readerUpto = -1;
                           int docIDUpto;
                           long nextValue;
-                          AtomicReader currentReader;
+                          LeafReader currentReader;
                           NumericDocValues currentValues;
                           Bits currentLiveDocs;
                           boolean nextIsSet;

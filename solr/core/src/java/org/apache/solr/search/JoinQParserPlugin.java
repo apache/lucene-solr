@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -232,7 +232,7 @@ class JoinQuery extends Query {
 
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       if (filter == null) {
         boolean debug = rb != null && rb.isDebug();
         long start = debug ? System.currentTimeMillis() : 0;
@@ -304,8 +304,8 @@ class JoinQuery extends Query {
         fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
       }
 
-      Fields fromFields = fromSearcher.getAtomicReader().fields();
-      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getAtomicReader().fields();
+      Fields fromFields = fromSearcher.getLeafReader().fields();
+      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getLeafReader().fields();
       if (fromFields == null) return DocSet.EMPTY;
       Terms terms = fromFields.terms(fromField);
       Terms toTerms = toFields.terms(toField);
@@ -327,8 +327,8 @@ class JoinQuery extends Query {
         }
       }
 
-      Bits fromLiveDocs = fromSearcher.getAtomicReader().getLiveDocs();
-      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getAtomicReader().getLiveDocs();
+      Bits fromLiveDocs = fromSearcher.getLeafReader().getLiveDocs();
+      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getLeafReader().getLiveDocs();
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
       fromDeState.fieldName = fromField;
@@ -500,7 +500,7 @@ class JoinQuery extends Query {
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context, context.reader().getLiveDocs());
       boolean exists = scorer.advance(doc) == doc;
 

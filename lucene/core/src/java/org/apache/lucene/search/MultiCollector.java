@@ -20,9 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * A {@link Collector} which allows running a search with several
@@ -95,7 +93,7 @@ public class MultiCollector implements Collector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     final LeafCollector[] leafCollectors = new LeafCollector[collectors.length];
     for (int i = 0; i < collectors.length; ++i) {
       leafCollectors[i] = collectors[i].getLeafCollector(context);

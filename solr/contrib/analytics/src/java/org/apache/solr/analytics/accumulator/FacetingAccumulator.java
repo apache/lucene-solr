@@ -31,7 +31,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.accumulator.facet.FacetValueAccumulator;
@@ -70,7 +70,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
   public static final String MISSING_VALUE = "(MISSING)";
   protected boolean basicsAndFieldFacetsComputed;
   protected int leafNum;
-  protected AtomicReaderContext leaf;
+  protected LeafReaderContext leaf;
   protected final AnalyticsRequest analyticsRequest;
   protected final Map<String,Map<String,Expression[]>> fieldFacetExpressions;
   protected final Map<String,Map<String,Expression[]>> rangeFacetExpressions;
@@ -155,7 +155,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
    * @throws IOException if there is an error setting the next reader
    */
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     super.doSetNextReader(context);
     for( Map<String,StatsCollector[]> valueList : fieldFacetCollectors.values() ){
       for (StatsCollector[] statsCollectorList : valueList.values()) {
@@ -174,7 +174,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
    * @param context The context to read documents from.
    * @throws IOException if there is an error setting the next reader
    */
-  public void setRangeStatsCollectorReaders(AtomicReaderContext context) throws IOException {
+  public void setRangeStatsCollectorReaders(LeafReaderContext context) throws IOException {
     super.getLeafCollector(context);
     for( Map<String,StatsCollector[]> rangeList : rangeFacetCollectors.values() ){
       for (StatsCollector[] statsCollectorList : rangeList.values()) {
@@ -191,7 +191,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
    * @param context The context to read documents from.
    * @throws IOException if there is an error setting the next reader
    */
-  public void setQueryStatsCollectorReaders(AtomicReaderContext context) throws IOException {
+  public void setQueryStatsCollectorReaders(LeafReaderContext context) throws IOException {
     super.getLeafCollector(context);
     for( Map<String,StatsCollector[]> queryList : queryFacetCollectors.values() ){
       for (StatsCollector[] statsCollectorList : queryList.values()) {

@@ -24,7 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.expression.Expression;
 import org.apache.solr.analytics.expression.ExpressionFactory;
 import org.apache.solr.analytics.request.AnalyticsRequest;
@@ -56,7 +56,7 @@ public class BasicAccumulator extends ValueAccumulator {
   protected final String[] expressionNames;
   protected final String[] expressionStrings;
   protected final Set<String> hiddenExpressions;
-  protected AtomicReaderContext context = null;
+  protected LeafReaderContext context = null;
   
   public BasicAccumulator(SolrIndexSearcher searcher, DocSet docs, AnalyticsRequest request) throws IOException {
     this.searcher = searcher;
@@ -80,7 +80,7 @@ public class BasicAccumulator extends ValueAccumulator {
   }
   
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     this.context = context;
     for (StatsCollector counter : statsCollectors) {
       counter.setNextReader(context);

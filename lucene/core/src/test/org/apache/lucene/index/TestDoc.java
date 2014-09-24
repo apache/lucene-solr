@@ -220,7 +220,7 @@ public class TestDoc extends LuceneTestCase {
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
       final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null);
 
-      SegmentMerger merger = new SegmentMerger(Arrays.<AtomicReader>asList(r1, r2),
+      SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(r1, r2),
           si, InfoStream.getDefault(), trackingDir,
           MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context, true);
 

@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
@@ -114,12 +114,12 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return new MatchAllScorer(context.reader(), acceptDocs, this, queryWeight);
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc) {
+    public Explanation explain(LeafReaderContext context, int doc) {
       // explain query weight
       Explanation queryExpl = new ComplexExplanation
         (true, queryWeight, "MatchAllDocsQuery, product of:");

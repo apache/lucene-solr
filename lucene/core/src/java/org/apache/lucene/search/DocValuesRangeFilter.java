@@ -22,8 +22,7 @@ import org.apache.lucene.document.DoubleField; // for javadocs
 import org.apache.lucene.document.FloatField; // for javadocs
 import org.apache.lucene.document.IntField; // for javadocs
 import org.apache.lucene.document.LongField; // for javadocs
-import org.apache.lucene.index.AtomicReader; // for javadocs
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -33,7 +32,7 @@ import org.apache.lucene.util.NumericUtils;
 
 /**
  * A range filter built on top of numeric doc values field 
- * (from {@link AtomicReader#getNumericDocValues(String)}).
+ * (from {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}).
  * 
  * <p>{@code DocValuesRangeFilter} builds a single cache for the field the first time it is used.
  * Each subsequent {@code DocValuesRangeFilter} on the same field then reuses this cache,
@@ -50,7 +49,7 @@ import org.apache.lucene.util.NumericUtils;
  * LongField} or {@link DoubleField}. But
  * it has the problem that it only works with exact one value/document (see below).
  *
- * <p>As with all {@link AtomicReader#getNumericDocValues} based functionality, 
+ * <p>As with all {@link org.apache.lucene.index.LeafReader#getNumericDocValues} based functionality, 
  * {@code DocValuesRangeFilter} is only valid for 
  * fields which exact one term for each document (except for {@link #newStringRange}
  * where 0 terms are also allowed). Due to historical reasons, for numeric ranges
@@ -81,17 +80,17 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   
   /** This method is implemented for each data type */
   @Override
-  public abstract DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException;
 
   /**
-   * Creates a string range filter using {@link AtomicReader#getSortedDocValues(String)}. This works with all
+   * Creates a string range filter using {@link org.apache.lucene.index.LeafReader#getSortedDocValues(String)}. This works with all
    * fields containing zero or one term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
   public static DocValuesRangeFilter<String> newStringRange(String field, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeFilter<String>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
         final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(new BytesRef(lowerVal));
         final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(new BytesRef(upperVal));
@@ -140,7 +139,7 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a BytesRef range filter using {@link AtomicReader#getSortedDocValues(String)}. This works with all
+   * Creates a BytesRef range filter using {@link org.apache.lucene.index.LeafReader#getSortedDocValues(String)}. This works with all
    * fields containing zero or one term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -148,7 +147,7 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   public static DocValuesRangeFilter<BytesRef> newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeFilter<BytesRef>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
         final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(lowerVal);
         final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(upperVal);
@@ -197,14 +196,14 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   }
 
   /**
-   * Creates a numeric range filter using {@link AtomicReader#getSortedDocValues(String)}. This works with all
+   * Creates a numeric range filter using {@link org.apache.lucene.index.LeafReader#getSortedDocValues(String)}. This works with all
    * int fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
   public static DocValuesRangeFilter<Integer> newIntRange(String field, Integer lowerVal, Integer upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeFilter<Integer>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final int inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           int i = lowerVal.intValue();
@@ -239,14 +238,14 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link AtomicReader#getNumericDocValues(String)}. This works with all
+   * Creates a numeric range filter using {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}. This works with all
    * long fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
   public static DocValuesRangeFilter<Long> newLongRange(String field, Long lowerVal, Long upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeFilter<Long>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final long inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           long i = lowerVal.longValue();
@@ -281,14 +280,14 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link AtomicReader#getNumericDocValues(String)}. This works with all
+   * Creates a numeric range filter using {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}. This works with all
    * float fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
   public static DocValuesRangeFilter<Float> newFloatRange(String field, Float lowerVal, Float upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeFilter<Float>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
         // using NumericUtils to easier find the next bigger/lower value
         final float inclusiveLowerPoint, inclusiveUpperPoint;
@@ -327,14 +326,14 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link AtomicReader#getNumericDocValues(String)}. This works with all
+   * Creates a numeric range filter using {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}. This works with all
    * double fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
   public static DocValuesRangeFilter<Double> newDoubleRange(String field, Double lowerVal, Double upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeFilter<Double>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
         // using NumericUtils to easier find the next bigger/lower value
         final double inclusiveLowerPoint, inclusiveUpperPoint;

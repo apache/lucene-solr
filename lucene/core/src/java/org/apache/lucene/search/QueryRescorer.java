@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 
 /** A {@link Rescorer} that uses a provided Query to assign
  *  scores to the first-pass hits.
@@ -58,7 +58,7 @@ public abstract class QueryRescorer extends Rescorer {
                   }
                 });
 
-    List<AtomicReaderContext> leaves = searcher.getIndexReader().leaves();
+    List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
     Weight weight = searcher.createNormalizedWeight(query);
 
@@ -72,7 +72,7 @@ public abstract class QueryRescorer extends Rescorer {
     while (hitUpto < hits.length) {
       ScoreDoc hit = hits[hitUpto];
       int docID = hit.doc;
-      AtomicReaderContext readerContext = null;
+      LeafReaderContext readerContext = null;
       while (docID >= endDoc) {
         readerUpto++;
         readerContext = leaves.get(readerUpto);

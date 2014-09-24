@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import org.apache.lucene.util.Bits;
 
 
-/** An {@link AtomicReader} which reads multiple, parallel indexes.  Each index
+/** An {@link LeafReader} which reads multiple, parallel indexes.  Each index
  * added must have the same number of documents, but typically each contains
  * different fields. Deletions are taken from the first reader.
  * Each document contains the union of the fields of all documents
@@ -47,41 +47,41 @@ import org.apache.lucene.util.Bits;
  * same order to the other indexes. <em>Failure to do so will result in
  * undefined behavior</em>.
  */
-public class ParallelAtomicReader extends AtomicReader {
+public class ParallelLeafReader extends LeafReader {
   private final FieldInfos fieldInfos;
   private final ParallelFields fields = new ParallelFields();
-  private final AtomicReader[] parallelReaders, storedFieldsReaders;
-  private final Set<AtomicReader> completeReaderSet =
-    Collections.newSetFromMap(new IdentityHashMap<AtomicReader,Boolean>());
+  private final LeafReader[] parallelReaders, storedFieldsReaders;
+  private final Set<LeafReader> completeReaderSet =
+    Collections.newSetFromMap(new IdentityHashMap<LeafReader,Boolean>());
   private final boolean closeSubReaders;
   private final int maxDoc, numDocs;
   private final boolean hasDeletions;
-  private final SortedMap<String,AtomicReader> fieldToReader = new TreeMap<>();
-  private final SortedMap<String,AtomicReader> tvFieldToReader = new TreeMap<>();
+  private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();
+  private final SortedMap<String,LeafReader> tvFieldToReader = new TreeMap<>();
   
   /** Create a ParallelAtomicReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
-  public ParallelAtomicReader(AtomicReader... readers) throws IOException {
+  public ParallelLeafReader(LeafReader... readers) throws IOException {
     this(true, readers);
   }
 
   /** Create a ParallelAtomicReader based on the provided
    *  readers. */
-  public ParallelAtomicReader(boolean closeSubReaders, AtomicReader... readers) throws IOException {
+  public ParallelLeafReader(boolean closeSubReaders, LeafReader... readers) throws IOException {
     this(closeSubReaders, readers, readers);
   }
 
   /** Expert: create a ParallelAtomicReader based on the provided
    *  readers and storedFieldReaders; when a document is
    *  loaded, only storedFieldsReaders will be used. */
-  public ParallelAtomicReader(boolean closeSubReaders, AtomicReader[] readers, AtomicReader[] storedFieldsReaders) throws IOException {
+  public ParallelLeafReader(boolean closeSubReaders, LeafReader[] readers, LeafReader[] storedFieldsReaders) throws IOException {
     this.closeSubReaders = closeSubReaders;
     if (readers.length == 0 && storedFieldsReaders.length > 0)
       throw new IllegalArgumentException("There must be at least one main reader if storedFieldsReaders are used.");
     this.parallelReaders = readers.clone();
     this.storedFieldsReaders = storedFieldsReaders.clone();
     if (parallelReaders.length > 0) {
-      final AtomicReader first = parallelReaders[0];
+      final LeafReader first = parallelReaders[0];
       this.maxDoc = first.maxDoc();
       this.numDocs = first.numDocs();
       this.hasDeletions = first.hasDeletions();
@@ -93,7 +93,7 @@ public class ParallelAtomicReader extends AtomicReader {
     Collections.addAll(completeReaderSet, this.storedFieldsReaders);
     
     // check compatibility:
-    for(AtomicReader reader : completeReaderSet) {
+    for(LeafReader reader : completeReaderSet) {
       if (reader.maxDoc() != maxDoc) {
         throw new IllegalArgumentException("All readers must have same maxDoc: "+maxDoc+"!="+reader.maxDoc());
       }
@@ -102,7 +102,7 @@ public class ParallelAtomicReader extends AtomicReader {
     // TODO: make this read-only in a cleaner way?
     FieldInfos.Builder builder = new FieldInfos.Builder();
     // build FieldInfos and fieldToReader map:
-    for (final AtomicReader reader : this.parallelReaders) {
+    for (final LeafReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
@@ -118,7 +118,7 @@ public class ParallelAtomicReader extends AtomicReader {
     fieldInfos = builder.finish();
     
     // build Fields instance
-    for (final AtomicReader reader : this.parallelReaders) {
+    for (final LeafReader reader : this.parallelReaders) {
       final Fields readerFields = reader.fields();
       if (readerFields != null) {
         for (String field : readerFields) {
@@ -131,7 +131,7 @@ public class ParallelAtomicReader extends AtomicReader {
     }
 
     // do this finally so any Exceptions occurred before don't affect refcounts:
-    for (AtomicReader reader : completeReaderSet) {
+    for (LeafReader reader : completeReaderSet) {
       if (!closeSubReaders) {
         reader.incRef();
       }
@@ -142,7 +142,7 @@ public class ParallelAtomicReader extends AtomicReader {
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder("ParallelAtomicReader(");
-    for (final Iterator<AtomicReader> iter = completeReaderSet.iterator(); iter.hasNext();) {
+    for (final Iterator<LeafReader> iter = completeReaderSet.iterator(); iter.hasNext();) {
       buffer.append(iter.next());
       if (iter.hasNext()) buffer.append(", ");
     }
@@ -226,7 +226,7 @@ public class ParallelAtomicReader extends AtomicReader {
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
-    for (final AtomicReader reader: storedFieldsReaders) {
+    for (final LeafReader reader: storedFieldsReaders) {
       reader.document(docID, visitor);
     }
   }
@@ -235,7 +235,7 @@ public class ParallelAtomicReader extends AtomicReader {
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
     ParallelFields fields = null;
-    for (Map.Entry<String,AtomicReader> ent : tvFieldToReader.entrySet()) {
+    for (Map.Entry<String,LeafReader> ent : tvFieldToReader.entrySet()) {
       String fieldName = ent.getKey();
       Terms vector = ent.getValue().getTermVector(docID, fieldName);
       if (vector != null) {
@@ -252,7 +252,7 @@ public class ParallelAtomicReader extends AtomicReader {
   @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
-    for (AtomicReader reader : completeReaderSet) {
+    for (LeafReader reader : completeReaderSet) {
       try {
         if (closeSubReaders) {
           reader.close();
@@ -270,49 +270,49 @@ public class ParallelAtomicReader extends AtomicReader {
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
+    LeafReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getNumericDocValues(field);
   }
   
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
+    LeafReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getBinaryDocValues(field);
   }
   
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
+    LeafReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getSortedDocValues(field);
   }
   
   @Override
   public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
     ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
+    LeafReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getSortedNumericDocValues(field);
   }
 
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
+    LeafReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getSortedSetDocValues(field);
   }
 
   @Override
   public Bits getDocsWithField(String field) throws IOException {
     ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
+    LeafReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getDocsWithField(field);
   }
 
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
+    LeafReader reader = fieldToReader.get(field);
     NumericDocValues values = reader == null ? null : reader.getNormValues(field);
     return values;
   }
@@ -320,7 +320,7 @@ public class ParallelAtomicReader extends AtomicReader {
   @Override
   public void checkIntegrity() throws IOException {
     ensureOpen();
-    for (AtomicReader reader : completeReaderSet) {
+    for (LeafReader reader : completeReaderSet) {
       reader.checkIntegrity();
     }
   }

@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -238,7 +238,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         assertEquals("score for doc " + (doc + base) + " was not correct", 1.0f, scorer.score(), SCORE_COMP_THRESH);
       }
       @Override
-      protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+      protected void doSetNextReader(LeafReaderContext context) throws IOException {
         base = context.docBase;
       }
       @Override

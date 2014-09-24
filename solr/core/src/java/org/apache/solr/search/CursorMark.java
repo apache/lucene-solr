@@ -17,14 +17,9 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
@@ -37,17 +32,11 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.PostFilter;
-import org.apache.solr.search.ExtendedQueryBase;
-import org.apache.solr.search.DelegatingCollector;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 /**
  * An object that encapsulates the basic information about the current Mark Point of a 

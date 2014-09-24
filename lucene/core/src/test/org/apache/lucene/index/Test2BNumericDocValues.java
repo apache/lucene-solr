@@ -70,8 +70,8 @@ public class Test2BNumericDocValues extends LuceneTestCase {
     
     DirectoryReader r = DirectoryReader.open(dir);
     long expectedValue = 0;
-    for (AtomicReaderContext context : r.leaves()) {
-      AtomicReader reader = context.reader();
+    for (LeafReaderContext context : r.leaves()) {
+      LeafReader reader = context.reader();
       NumericDocValues dv = reader.getNumericDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
         assertEquals(expectedValue, dv.get(i));

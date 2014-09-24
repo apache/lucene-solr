@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
@@ -44,7 +44,7 @@ class DrillSidewaysScorer extends BulkScorer {
   // DrillDown DocsEnums:
   private final Scorer baseScorer;
 
-  private final AtomicReaderContext context;
+  private final LeafReaderContext context;
 
   final boolean scoreSubDocsAtOnce;
 
@@ -54,7 +54,7 @@ class DrillSidewaysScorer extends BulkScorer {
   private int collectDocID = -1;
   private float collectScore;
 
-  DrillSidewaysScorer(AtomicReaderContext context, Scorer baseScorer, Collector drillDownCollector,
+  DrillSidewaysScorer(LeafReaderContext context, Scorer baseScorer, Collector drillDownCollector,
                       DocsAndCost[] dims, boolean scoreSubDocsAtOnce) {
     this.dims = dims;
     this.context = context;

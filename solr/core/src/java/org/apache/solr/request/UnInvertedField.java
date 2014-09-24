@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
@@ -31,7 +31,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.uninverting.DocTermOrds;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.UnicodeUtil;
@@ -137,7 +136,7 @@ public class UnInvertedField extends DocTermOrds {
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
         deState.fieldName = field;
-        deState.liveDocs = searcher.getAtomicReader().getLiveDocs();
+        deState.liveDocs = searcher.getLeafReader().getLiveDocs();
         deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
         deState.docsEnum = docsEnum;
         deState.minSetSizeCached = maxTermDocFreq;
@@ -187,7 +186,7 @@ public class UnInvertedField extends DocTermOrds {
     final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
     try {
-      AtomicReader r = searcher.getAtomicReader();
+      LeafReader r = searcher.getLeafReader();
       uninvert(r, r.getLiveDocs(), prefix == null ? null : new BytesRef(prefix));
     } catch (IllegalStateException ise) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ise.getMessage());
@@ -240,7 +239,7 @@ public class UnInvertedField extends DocTermOrds {
       int startTerm = 0;
       int endTerm = numTermsInField;  // one past the end
 
-      TermsEnum te = getOrdTermsEnum(searcher.getAtomicReader());
+      TermsEnum te = getOrdTermsEnum(searcher.getLeafReader());
       if (te != null && prefix != null && prefix.length() > 0) {
         final BytesRefBuilder prefixBr = new BytesRefBuilder();
         prefixBr.copyChars(prefix);
@@ -508,7 +507,7 @@ public class UnInvertedField extends DocTermOrds {
     final int[] index = this.index;
     final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
-    TermsEnum te = getOrdTermsEnum(searcher.getAtomicReader());
+    TermsEnum te = getOrdTermsEnum(searcher.getLeafReader());
 
     boolean doNegative = false;
     if (finfo.length == 0) {

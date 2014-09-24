@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -196,7 +196,7 @@ public class TestParser extends LuceneTestCase {
   }
 
   public void testDuplicateFilterQueryXML() throws ParserException, IOException {
-    List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     Assume.assumeTrue(leaves.size() == 1);
     Query q = parse("DuplicateFilterQuery.xml");
     int h = searcher.search(q, null, 1000).totalHits;

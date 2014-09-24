@@ -19,8 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
@@ -78,7 +77,7 @@ import org.apache.lucene.util.BytesRefBuilder;
  *       priority queue.  The {@link FieldValueHitQueue}
  *       calls this method when a new hit is competitive.
  *
- *  <li> {@link #setNextReader(AtomicReaderContext)} Invoked
+ *  <li> {@link #setNextReader(org.apache.lucene.index.LeafReaderContext)} Invoked
  *       when the search is switching to the next segment.
  *       You may need to update internal state of the
  *       comparator, for example retrieving new values from
@@ -170,7 +169,7 @@ public abstract class FieldComparator<T> {
   public abstract void copy(int slot, int doc) throws IOException;
 
   /**
-   * Set a new {@link AtomicReaderContext}. All subsequent docIDs are relative to
+   * Set a new {@link org.apache.lucene.index.LeafReaderContext}. All subsequent docIDs are relative to
    * the current reader (you must add docBase if you need to
    * map it to a top-level docID).
    * 
@@ -180,7 +179,7 @@ public abstract class FieldComparator<T> {
    *   comparator across segments
    * @throws IOException if there is a low-level IO error
    */
-  public abstract FieldComparator<T> setNextReader(AtomicReaderContext context) throws IOException;
+  public abstract FieldComparator<T> setNextReader(LeafReaderContext context) throws IOException;
 
   /** Sets the Scorer to use in case a document's score is
    *  needed.
@@ -235,7 +234,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator<T> setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<T> setNextReader(LeafReaderContext context) throws IOException {
       currentReaderValues = getNumericDocValues(context, field);
       if (missingValue != null) {
         docsWithField = DocValues.getDocsWithField(context.reader(), field);
@@ -250,13 +249,13 @@ public abstract class FieldComparator<T> {
     }
     
     /** Retrieves the NumericDocValues for the field in this segment */
-    protected NumericDocValues getNumericDocValues(AtomicReaderContext context, String field) throws IOException {
+    protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
       return DocValues.getNumeric(context.reader(), field);
     }
   }
 
   /** Parses field's values as double (using {@link
-   *  AtomicReader#getNumericDocValues} and sorts by ascending value */
+   *  org.apache.lucene.index.LeafReader#getNumericDocValues} and sorts by ascending value */
   public static class DoubleComparator extends NumericComparator<Double> {
     private final double[] values;
     private double bottom;
@@ -324,7 +323,7 @@ public abstract class FieldComparator<T> {
   }
 
   /** Parses field's values as float (using {@link
-   *  AtomicReader#getNumericDocValues(String)} and sorts by ascending value */
+   *  org.apache.lucene.index.LeafReader#getNumericDocValues(String)} and sorts by ascending value */
   public static class FloatComparator extends NumericComparator<Float> {
     private final float[] values;
     private float bottom;
@@ -393,7 +392,7 @@ public abstract class FieldComparator<T> {
   }
 
   /** Parses field's values as int (using {@link
-   *  AtomicReader#getNumericDocValues(String)} and sorts by ascending value */
+   *  org.apache.lucene.index.LeafReader#getNumericDocValues(String)} and sorts by ascending value */
   public static class IntComparator extends NumericComparator<Integer> {
     private final int[] values;
     private int bottom;                           // Value of bottom of queue
@@ -461,7 +460,7 @@ public abstract class FieldComparator<T> {
   }
 
   /** Parses field's values as long (using {@link
-   *  AtomicReader#getNumericDocValues(String)} and sorts by ascending value */
+   *  org.apache.lucene.index.LeafReader#getNumericDocValues(String)} and sorts by ascending value */
   public static class LongComparator extends NumericComparator<Long> {
     private final long[] values;
     private long bottom;
@@ -565,7 +564,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator<Float> setNextReader(AtomicReaderContext context) {
+    public FieldComparator<Float> setNextReader(LeafReaderContext context) {
       return this;
     }
     
@@ -641,7 +640,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator<Integer> setNextReader(AtomicReaderContext context) {
+    public FieldComparator<Integer> setNextReader(LeafReaderContext context) {
       // TODO: can we "map" our docIDs to the current
       // reader? saves having to then subtract on every
       // compare call
@@ -675,7 +674,7 @@ public abstract class FieldComparator<T> {
    *  ordinals.  This is functionally equivalent to {@link
    *  org.apache.lucene.search.FieldComparator.TermValComparator}, but it first resolves the string
    *  to their relative ordinal positions (using the index
-   *  returned by {@link AtomicReader#getSortedDocValues(String)}), and
+   *  returned by {@link org.apache.lucene.index.LeafReader#getSortedDocValues(String)}), and
    *  does most comparisons using the ordinals.  For medium
    *  to large results, this comparator will be much faster
    *  than {@link org.apache.lucene.search.FieldComparator.TermValComparator}.  For very small
@@ -819,12 +818,12 @@ public abstract class FieldComparator<T> {
     }
     
     /** Retrieves the SortedDocValues for the field in this segment */
-    protected SortedDocValues getSortedDocValues(AtomicReaderContext context, String field) throws IOException {
+    protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
       return DocValues.getSorted(context.reader(), field);
     }
     
     @Override
-    public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<BytesRef> setNextReader(LeafReaderContext context) throws IOException {
       termsIndex = getSortedDocValues(context, field);
       currentReaderGen++;
 
@@ -983,12 +982,12 @@ public abstract class FieldComparator<T> {
     }
 
     /** Retrieves the BinaryDocValues for the field in this segment */
-    protected BinaryDocValues getBinaryDocValues(AtomicReaderContext context, String field) throws IOException {
+    protected BinaryDocValues getBinaryDocValues(LeafReaderContext context, String field) throws IOException {
       return DocValues.getBinary(context.reader(), field);
     }
 
     /** Retrieves the set of documents that have a value in this segment */
-    protected Bits getDocsWithField(AtomicReaderContext context, String field) throws IOException {
+    protected Bits getDocsWithField(LeafReaderContext context, String field) throws IOException {
       return DocValues.getDocsWithField(context.reader(), field);
     }
 
@@ -1002,7 +1001,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<BytesRef> setNextReader(LeafReaderContext context) throws IOException {
       docTerms = getBinaryDocValues(context, field);
       docsWithField = getDocsWithField(context, field);
       if (docsWithField instanceof Bits.MatchAllBits) {

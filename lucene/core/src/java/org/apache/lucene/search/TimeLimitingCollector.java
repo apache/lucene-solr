@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -132,7 +132,7 @@ public class TimeLimitingCollector implements Collector {
   }
   
   @Override
-  public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     this.docBase = context.docBase;
     if (Long.MIN_VALUE == t0) {
       setBaseline();

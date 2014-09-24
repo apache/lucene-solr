@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -83,7 +83,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
      * results.
      */
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
       final SortedDocValues fcsi = DocValues.getSorted(context.reader(), query.field);
       // Cannot use FixedBitSet because we require long index (ord):
       final LongBitSet termSet = new LongBitSet(fcsi.getValueCount());

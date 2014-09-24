@@ -16,14 +16,12 @@ package org.apache.lucene.queries.function.valuesource;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -61,7 +59,7 @@ public abstract class MultiFunction extends ValueSource {
     return sb.toString();
   }
 
-  public static FunctionValues[] valsArr(List<ValueSource> sources, Map fcontext, AtomicReaderContext readerContext) throws IOException {
+  public static FunctionValues[] valsArr(List<ValueSource> sources, Map fcontext, LeafReaderContext readerContext) throws IOException {
     final FunctionValues[] valsArr = new FunctionValues[sources.size()];
     int i=0;
     for (ValueSource source : sources) {

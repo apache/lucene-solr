@@ -19,8 +19,8 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -47,7 +47,7 @@ final class DeleteByQueryWrapper extends Query {
     this.schema = schema;
   }
   
-  AtomicReader wrap(AtomicReader reader) {
+  LeafReader wrap(LeafReader reader) {
     return new UninvertingReader(reader, schema.getUninversionMap(reader));
   }
   
@@ -65,12 +65,12 @@ final class DeleteByQueryWrapper extends Query {
   
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    final AtomicReader wrapped = wrap((AtomicReader) searcher.getIndexReader());
+    final LeafReader wrapped = wrap((LeafReader) searcher.getIndexReader());
     final IndexSearcher privateContext = new IndexSearcher(wrapped);
     final Weight inner = in.createWeight(privateContext);
     return new Weight() {
       @Override
-      public Explanation explain(AtomicReaderContext context, int doc) throws IOException { throw new UnsupportedOperationException(); }
+      public Explanation explain(LeafReaderContext context, int doc) throws IOException { throw new UnsupportedOperationException(); }
 
       @Override
       public Query getQuery() { return DeleteByQueryWrapper.this; }
@@ -82,7 +82,7 @@ final class DeleteByQueryWrapper extends Query {
       public void normalize(float norm, float topLevelBoost) { inner.normalize(norm, topLevelBoost); }
 
       @Override
-      public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         return inner.scorer(privateContext.getIndexReader().leaves().get(0), acceptDocs);
       }
     };

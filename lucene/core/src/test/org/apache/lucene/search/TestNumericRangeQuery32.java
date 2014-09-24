@@ -23,7 +23,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -198,7 +198,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   
   @Test
   public void testInverseRange() throws Exception {
-    AtomicReaderContext context = SlowCompositeReaderWrapper.wrap(reader).getContext();
+    LeafReaderContext context = SlowCompositeReaderWrapper.wrap(reader).getContext();
     NumericRangeFilter<Integer> f = NumericRangeFilter.newIntRange("field8", 8, 1000, -1000, true, true);
     assertNull("A inverse range should return the null instance", f.getDocIdSet(context, context.reader().getLiveDocs()));
     f = NumericRangeFilter.newIntRange("field8", 8, Integer.MAX_VALUE, null, false, false);

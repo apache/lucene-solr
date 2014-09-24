@@ -44,27 +44,27 @@ import org.apache.lucene.util.Bits;
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
 */
-public abstract class AtomicReader extends IndexReader {
+public abstract class LeafReader extends IndexReader {
 
-  private final AtomicReaderContext readerContext = new AtomicReaderContext(this);
+  private final LeafReaderContext readerContext = new LeafReaderContext(this);
 
   /** Sole constructor. (For invocation by subclass
    *  constructors, typically implicit.) */
-  protected AtomicReader() {
+  protected LeafReader() {
     super();
   }
 
   @Override
-  public final AtomicReaderContext getContext() {
+  public final LeafReaderContext getContext() {
     ensureOpen();
     return readerContext;
   }
 
   /**
-   * Called when the shared core for this {@link AtomicReader}
+   * Called when the shared core for this {@link LeafReader}
    * is closed.
    * <p>
-   * If this {@link AtomicReader} impl has the ability to share
+   * If this {@link LeafReader} impl has the ability to share
    * resources across instances that might only vary through
    * deleted documents and doc values updates, then this listener
    * will only be called when the shared core is closed.
@@ -112,9 +112,9 @@ public abstract class AtomicReader extends IndexReader {
   }
 
   /** Add a {@link CoreClosedListener} as a {@link ReaderClosedListener}. This
-   * method is typically useful for {@link AtomicReader} implementations that
+   * method is typically useful for {@link LeafReader} implementations that
    * don't have the concept of a core that is shared across several
-   * {@link AtomicReader} instances in which case the {@link CoreClosedListener}
+   * {@link LeafReader} instances in which case the {@link CoreClosedListener}
    * is called when closing the reader. */
   protected static void addCoreClosedListenerAsReaderClosedListener(IndexReader reader, CoreClosedListener listener) {
     reader.addReaderClosedListener(new CoreClosedListenerWrapper(listener));

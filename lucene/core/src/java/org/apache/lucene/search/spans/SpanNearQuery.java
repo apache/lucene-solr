@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -120,7 +120,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     if (clauses.size() == 0)                      // optimize 0-clause case
       return new SpanOrQuery(getClauses()).getSpans(context, acceptDocs, termContexts);
 

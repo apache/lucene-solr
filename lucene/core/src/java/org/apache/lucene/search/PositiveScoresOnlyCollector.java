@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * A {@link Collector} implementation which wraps another
@@ -33,7 +33,7 @@ public class PositiveScoresOnlyCollector extends FilterCollector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(AtomicReaderContext context)
+  public LeafCollector getLeafCollector(LeafReaderContext context)
       throws IOException {
     return new FilterLeafCollector(super.getLeafCollector(context)) {
 

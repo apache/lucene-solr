@@ -20,7 +20,7 @@ package org.apache.lucene.facet.range;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
@@ -102,7 +102,7 @@ public final class LongRange extends Range {
       }
 
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
 
         // TODO: this is just like ValueSourceScorer,
         // ValueSourceFilter (spatial),

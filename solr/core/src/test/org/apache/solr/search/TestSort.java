@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -235,7 +235,7 @@ public class TestSort extends SolrTestCaseJ4 {
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {
           @Override
-          public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
+          public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
             return BitsFilteredDocIdSet.wrap(randSet(context.reader().maxDoc()), acceptDocs);
           }
         };
@@ -276,7 +276,7 @@ public class TestSort extends SolrTestCaseJ4 {
         Collector myCollector = new FilterCollector(topCollector) {
 
           @Override
-          public LeafCollector getLeafCollector(AtomicReaderContext context)
+          public LeafCollector getLeafCollector(LeafReaderContext context)
               throws IOException {
             final int docBase = context.docBase;
             return new FilterLeafCollector(super.getLeafCollector(context)) {

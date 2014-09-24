@@ -19,7 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
@@ -190,7 +190,7 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   @Override
-  public SimScorer simScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+  public SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
     if (stats instanceof MultiSimilarity.MultiStats) {
       // a multi term query (e.g. phrase). return the summation, 
       // scoring almost as if it were boolean query

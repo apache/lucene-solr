@@ -31,8 +31,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestParallelTermEnum extends LuceneTestCase {
-  private AtomicReader ir1;
-  private AtomicReader ir2;
+  private LeafReader ir1;
+  private LeafReader ir2;
   private Directory rd1;
   private Directory rd2;
   
@@ -89,7 +89,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
   }
 
   public void test1() throws IOException {
-    ParallelAtomicReader pr = new ParallelAtomicReader(ir1, ir2);
+    ParallelLeafReader pr = new ParallelLeafReader(ir1, ir2);
 
     Bits liveDocs = pr.getLiveDocs();
 

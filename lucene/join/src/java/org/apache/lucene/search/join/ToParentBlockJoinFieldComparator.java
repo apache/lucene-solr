@@ -17,7 +17,7 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
@@ -65,7 +65,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
   }
 
   @Override
-  public FieldComparator<Object> setNextReader(AtomicReaderContext context) throws IOException {
+  public FieldComparator<Object> setNextReader(LeafReaderContext context) throws IOException {
     DocIdSet innerDocuments = childFilter.getDocIdSet(context, null);
     if (isEmpty(innerDocuments)) {
       this.childDocuments = null;

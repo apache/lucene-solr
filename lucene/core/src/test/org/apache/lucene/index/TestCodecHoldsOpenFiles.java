@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -53,7 +52,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
       }
     }
 
-    for(AtomicReaderContext cxt : r.leaves()) {
+    for(LeafReaderContext cxt : r.leaves()) {
       TestUtil.checkReader(cxt.reader());
     }
 

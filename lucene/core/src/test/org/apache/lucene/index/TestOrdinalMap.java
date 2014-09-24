@@ -83,7 +83,7 @@ public class TestOrdinalMap extends LuceneTestCase {
     }
     iw.commit();
     DirectoryReader r = iw.getReader();
-    AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
     SortedDocValues sdv = ar.getSortedDocValues("sdv");
     if (sdv instanceof MultiSortedDocValues) {
       OrdinalMap map = ((MultiSortedDocValues) sdv).mapping;

@@ -63,7 +63,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   public void testFieldNames() throws Exception {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
-    ParallelAtomicReader pr = new ParallelAtomicReader(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
+    ParallelLeafReader pr = new ParallelLeafReader(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
                                                        SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
     FieldInfos fieldInfos = pr.getFieldInfos();
     assertEquals(4, fieldInfos.size());
@@ -79,9 +79,9 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   public void testRefCounts1() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
-    AtomicReader ir1, ir2;
+    LeafReader ir1, ir2;
     // close subreaders, ParallelReader will not change refCounts, but close on its own close
-    ParallelAtomicReader pr = new ParallelAtomicReader(ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
+    ParallelLeafReader pr = new ParallelLeafReader(ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
                                                        ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
                                                        
     // check RefCounts
@@ -97,10 +97,10 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   public void testRefCounts2() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
-    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
-    AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
+    LeafReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    LeafReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
     // don't close subreaders, so ParallelReader will increment refcounts
-    ParallelAtomicReader pr = new ParallelAtomicReader(false, ir1, ir2);
+    ParallelLeafReader pr = new ParallelLeafReader(false, ir1, ir2);
     // check RefCounts
     assertEquals(2, ir1.getRefCount());
     assertEquals(2, ir2.getRefCount());
@@ -117,12 +117,12 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   
   public void testCloseInnerReader() throws Exception {
     Directory dir1 = getDir1(random());
-    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    LeafReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
     
     // with overlapping
-    ParallelAtomicReader pr = new ParallelAtomicReader(true,
-     new AtomicReader[] {ir1},
-     new AtomicReader[] {ir1});
+    ParallelLeafReader pr = new ParallelLeafReader(true,
+     new LeafReader[] {ir1},
+     new LeafReader[] {ir1});
 
     ir1.close();
     
@@ -151,20 +151,20 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     w2.addDocument(d3);
     w2.close();
     
-    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
-    AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
+    LeafReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    LeafReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
 
     try {
-      new ParallelAtomicReader(ir1, ir2);
+      new ParallelLeafReader(ir1, ir2);
       fail("didn't get exptected exception: indexes don't have same number of documents");
     } catch (IllegalArgumentException e) {
       // expected exception
     }
 
     try {
-      new ParallelAtomicReader(random().nextBoolean(),
-                               new AtomicReader[] {ir1, ir2},
-                               new AtomicReader[] {ir1, ir2});
+      new ParallelLeafReader(random().nextBoolean(),
+                               new LeafReader[] {ir1, ir2},
+                               new LeafReader[] {ir1, ir2});
       fail("didn't get expected exception: indexes don't have same number of documents");
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -181,13 +181,13 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   public void testIgnoreStoredFields() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
-    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
-    AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
+    LeafReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    LeafReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
     
     // with overlapping
-    ParallelAtomicReader pr = new ParallelAtomicReader(false,
-        new AtomicReader[] {ir1, ir2},
-        new AtomicReader[] {ir1});
+    ParallelLeafReader pr = new ParallelLeafReader(false,
+        new LeafReader[] {ir1, ir2},
+        new LeafReader[] {ir1});
     assertEquals("v1", pr.document(0).get("f1"));
     assertEquals("v1", pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -200,9 +200,9 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     pr.close();
     
     // no stored fields at all
-    pr = new ParallelAtomicReader(false,
-        new AtomicReader[] {ir2},
-        new AtomicReader[0]);
+    pr = new ParallelLeafReader(false,
+        new LeafReader[] {ir2},
+        new LeafReader[0]);
     assertNull(pr.document(0).get("f1"));
     assertNull(pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -215,9 +215,9 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     pr.close();
     
     // without overlapping
-    pr = new ParallelAtomicReader(true,
-        new AtomicReader[] {ir2},
-        new AtomicReader[] {ir1});
+    pr = new ParallelLeafReader(true,
+        new LeafReader[] {ir2},
+        new LeafReader[] {ir1});
     assertEquals("v1", pr.document(0).get("f1"));
     assertEquals("v1", pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -231,9 +231,9 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     
     // no main readers
     try {
-      new ParallelAtomicReader(true,
-        new AtomicReader[0],
-        new AtomicReader[] {ir1});
+      new ParallelLeafReader(true,
+        new LeafReader[0],
+        new LeafReader[] {ir1});
       fail("didn't get expected exception: need a non-empty main-reader array");
     } catch (IllegalArgumentException iae) {
       // pass
@@ -284,7 +284,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   private IndexSearcher parallel(Random random) throws IOException {
     dir1 = getDir1(random);
     dir2 = getDir2(random);
-    ParallelAtomicReader pr = new ParallelAtomicReader(
+    ParallelLeafReader pr = new ParallelLeafReader(
         SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
         SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
     TestUtil.checkReader(pr);

@@ -20,10 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -87,7 +87,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     }
 
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
       assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
       final FixedBitSet set = new FixedBitSet(context.reader().maxDoc());
       int docBase = context.docBase;

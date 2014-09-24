@@ -2,7 +2,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -36,7 +36,7 @@ public class FilterCollector implements Collector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     return in.getLeafCollector(context);
   }
 

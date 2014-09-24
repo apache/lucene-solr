@@ -50,11 +50,11 @@ final class SegmentMerger {
   private final FieldInfos.Builder fieldInfosBuilder;
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
-  SegmentMerger(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
+  SegmentMerger(List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
                 MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context, boolean validate) throws IOException {
     // validate incoming readers
     if (validate) {
-      for (AtomicReader reader : readers) {
+      for (LeafReader reader : readers) {
         reader.checkIntegrity();
       }
     }
@@ -182,7 +182,7 @@ final class SegmentMerger {
   }
   
   public void mergeFieldInfos() throws IOException {
-    for (AtomicReader reader : mergeState.readers) {
+    for (LeafReader reader : mergeState.readers) {
       FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fi : readerFieldInfos) {
         fieldInfosBuilder.add(fi);
@@ -250,7 +250,7 @@ final class SegmentMerger {
     int i = 0;
     while(i < mergeState.readers.size()) {
 
-      final AtomicReader reader = mergeState.readers.get(i);
+      final LeafReader reader = mergeState.readers.get(i);
 
       mergeState.docBase[i] = docBase;
       final MergeState.DocMap docMap = MergeState.DocMap.build(reader);

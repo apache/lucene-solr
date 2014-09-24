@@ -78,7 +78,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r3 = w.getReader();
     w.close();
-    AtomicReader sr = getOnlySegmentReader(r3);
+    LeafReader sr = getOnlySegmentReader(r3);
     assertEquals(2, sr.numDocs());
     NumericDocValues docValues = sr.getNumericDocValues("dv");
     assertNotNull(docValues);
@@ -203,7 +203,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       writer.addDocument(doc);
     }
     DirectoryReader r = writer.getReader();
-    AtomicReader slow = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader slow = SlowCompositeReaderWrapper.wrap(r);
     FieldInfos fi = slow.getFieldInfos();
     FieldInfo dvInfo = fi.fieldInfo("dv");
     assertTrue(dvInfo.hasDocValues());
@@ -784,7 +784,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     DirectoryReader r = writer.getReader();
     writer.close();
 
-    AtomicReader subR = r.leaves().get(0).reader();
+    LeafReader subR = r.leaves().get(0).reader();
     assertEquals(2, subR.numDocs());
 
     Bits bits = DocValues.getDocsWithField(subR, "dv");

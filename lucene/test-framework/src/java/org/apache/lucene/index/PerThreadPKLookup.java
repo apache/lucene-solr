@@ -43,12 +43,12 @@ public class PerThreadPKLookup {
 
   public PerThreadPKLookup(IndexReader r, String idFieldName) throws IOException {
 
-    List<AtomicReaderContext> leaves = new ArrayList<>(r.leaves());
+    List<LeafReaderContext> leaves = new ArrayList<>(r.leaves());
 
     // Larger segments are more likely to have the id, so we sort largest to smallest by numDocs:
-    Collections.sort(leaves, new Comparator<AtomicReaderContext>() {
+    Collections.sort(leaves, new Comparator<LeafReaderContext>() {
         @Override
-        public int compare(AtomicReaderContext c1, AtomicReaderContext c2) {
+        public int compare(LeafReaderContext c1, LeafReaderContext c2) {
           return c2.reader().numDocs() - c1.reader().numDocs();
         }
       });

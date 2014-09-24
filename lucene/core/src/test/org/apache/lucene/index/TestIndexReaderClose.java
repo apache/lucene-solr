@@ -43,8 +43,8 @@ public class TestIndexReaderClose extends LuceneTestCase {
       writer.close();
       DirectoryReader open = DirectoryReader.open(dir);
       final boolean throwOnClose = !rarely();
-      AtomicReader wrap = SlowCompositeReaderWrapper.wrap(open);
-      FilterAtomicReader reader = new FilterAtomicReader(wrap) {
+      LeafReader wrap = SlowCompositeReaderWrapper.wrap(open);
+      FilterLeafReader reader = new FilterLeafReader(wrap) {
         @Override
         protected void doClose() throws IOException {
           super.doClose();
@@ -107,37 +107,37 @@ public class TestIndexReaderClose extends LuceneTestCase {
     w.close();
 
     final IndexReader reader = DirectoryReader.open(w.w.getDirectory());
-    final AtomicReader atomicReader = SlowCompositeReaderWrapper.wrap(reader);
+    final LeafReader leafReader = SlowCompositeReaderWrapper.wrap(reader);
     
     final int numListeners = TestUtil.nextInt(random(), 1, 10);
-    final List<AtomicReader.CoreClosedListener> listeners = new ArrayList<>();
+    final List<LeafReader.CoreClosedListener> listeners = new ArrayList<>();
     AtomicInteger counter = new AtomicInteger(numListeners);
     
     for (int i = 0; i < numListeners; ++i) {
       CountCoreListener listener = new CountCoreListener(counter);
       listeners.add(listener);
-      atomicReader.addCoreClosedListener(listener);
+      leafReader.addCoreClosedListener(listener);
     }
     for (int i = 0; i < 100; ++i) {
-      atomicReader.addCoreClosedListener(listeners.get(random().nextInt(listeners.size())));
+      leafReader.addCoreClosedListener(listeners.get(random().nextInt(listeners.size())));
     }
     final int removed = random().nextInt(numListeners);
     Collections.shuffle(listeners);
     for (int i = 0; i < removed; ++i) {
-      atomicReader.removeCoreClosedListener(listeners.get(i));
+      leafReader.removeCoreClosedListener(listeners.get(i));
     }
     assertEquals(numListeners, counter.get());
     // make sure listeners are registered on the wrapped reader and that closing any of them has the same effect
     if (random().nextBoolean()) {
       reader.close();
     } else {
-      atomicReader.close();
+      leafReader.close();
     }
     assertEquals(removed, counter.get());
     w.w.getDirectory().close();
   }
 
-  private static final class CountCoreListener implements AtomicReader.CoreClosedListener {
+  private static final class CountCoreListener implements LeafReader.CoreClosedListener {
 
     private final AtomicInteger count;
 

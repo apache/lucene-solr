@@ -25,7 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiReader;
@@ -37,10 +37,10 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
-  protected AtomicReader readerA;
-  protected AtomicReader readerB;
-  protected AtomicReader readerX;
-  protected AtomicReader readerAclone;
+  protected LeafReader readerA;
+  protected LeafReader readerB;
+  protected LeafReader readerX;
+  protected LeafReader readerAclone;
   protected Directory dirA, dirB;
   private static final int NUM_DOCS = 1000;
 

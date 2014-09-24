@@ -176,8 +176,8 @@ public final class TermsFilter extends Filter {
   
   
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    final AtomicReader reader = context.reader();
+  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    final LeafReader reader = context.reader();
     FixedBitSet result = null;  // lazy init if needed - no need to create a big bitset ahead of time
     final Fields fields = reader.fields();
     final BytesRef spare = new BytesRef(this.termsBytes);

@@ -21,7 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.Query;
@@ -83,18 +83,18 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   }
 
   protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
-    AtomicReader atomicReader = null;
+    LeafReader leafReader = null;
     try {
       populateSampleIndex(analyzer);
-      atomicReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(atomicReader, textFieldName, classFieldName, analyzer, query);
+      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+      classifier.train(leafReader, textFieldName, classFieldName, analyzer, query);
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
       assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
       assertTrue("got a not positive score " + classificationResult.getScore(), classificationResult.getScore() > 0);
     } finally {
-      if (atomicReader != null)
-        atomicReader.close();
+      if (leafReader != null)
+        leafReader.close();
     }
   }
   protected void checkOnlineClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName) throws Exception {
@@ -102,11 +102,11 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   }
 
   protected void checkOnlineClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
-    AtomicReader atomicReader = null;
+    LeafReader leafReader = null;
     try {
       populateSampleIndex(analyzer);
-      atomicReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(atomicReader, textFieldName, classFieldName, analyzer, query);
+      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+      classifier.train(leafReader, textFieldName, classFieldName, analyzer, query);
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
       assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
@@ -117,8 +117,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
       assertEquals(Double.valueOf(classificationResult.getScore()), Double.valueOf(secondClassificationResult.getScore()));
 
     } finally {
-      if (atomicReader != null)
-        atomicReader.close();
+      if (leafReader != null)
+        leafReader.close();
     }
   }
 
@@ -199,18 +199,18 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   }
 
   protected void checkPerformance(Classifier<T> classifier, Analyzer analyzer, String classFieldName) throws Exception {
-    AtomicReader atomicReader = null;
+    LeafReader leafReader = null;
     long trainStart = System.currentTimeMillis();
     try {
       populatePerformanceIndex(analyzer);
-      atomicReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-      classifier.train(atomicReader, textFieldName, classFieldName, analyzer);
+      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+      classifier.train(leafReader, textFieldName, classFieldName, analyzer);
       long trainEnd = System.currentTimeMillis();
       long trainTime = trainEnd - trainStart;
       assertTrue("training took more than 2 mins : " + trainTime / 1000 + "s", trainTime < 120000);
     } finally {
-      if (atomicReader != null)
-        atomicReader.close();
+      if (leafReader != null)
+        leafReader.close();
     }
   }
 

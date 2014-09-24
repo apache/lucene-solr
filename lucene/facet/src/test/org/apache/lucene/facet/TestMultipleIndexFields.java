@@ -30,8 +30,8 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -180,8 +180,8 @@ public class TestMultipleIndexFields extends FacetTestCase {
   }
 
   private void assertOrdinalsExist(String field, IndexReader ir) throws IOException {
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
       if (r.getBinaryDocValues(field) != null) {
         return; // not all segments must have this DocValues
       }

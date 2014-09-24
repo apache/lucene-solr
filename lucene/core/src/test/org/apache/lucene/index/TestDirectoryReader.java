@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -770,7 +769,7 @@ public void testFilesOpenClose() throws IOException {
     writer.commit();
   
     DirectoryReader r = DirectoryReader.open(dir);
-    AtomicReader r1 = getOnlySegmentReader(r);
+    LeafReader r1 = getOnlySegmentReader(r);
     assertEquals(26, r1.terms("field").size());
     assertEquals(10, r1.terms("number").size());
     writer.addDocument(doc);
@@ -779,7 +778,7 @@ public void testFilesOpenClose() throws IOException {
     assertNotNull(r2);
     r.close();
   
-    for(AtomicReaderContext s : r2.leaves()) {
+    for(LeafReaderContext s : r2.leaves()) {
       assertEquals(26, s.reader().terms("field").size());
       assertEquals(10, s.reader().terms("number").size());
     }

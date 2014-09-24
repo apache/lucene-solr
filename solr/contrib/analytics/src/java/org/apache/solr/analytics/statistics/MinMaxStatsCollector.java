@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.FunctionValues.ValueFiller;
 import org.apache.lucene.queries.function.ValueSource;
@@ -46,7 +46,7 @@ public class MinMaxStatsCollector implements StatsCollector{
     this.statsList = statsList;
   }
   
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  public void setNextReader(LeafReaderContext context) throws IOException {
     function = source.getValues(null, context);
     valueFiller = function.getValueFiller();
     value = valueFiller.getValue();

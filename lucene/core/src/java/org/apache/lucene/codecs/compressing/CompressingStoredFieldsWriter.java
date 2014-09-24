@@ -25,7 +25,7 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.ChunkIterator;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -337,7 +337,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     
     MatchingReaders matching = new MatchingReaders(mergeState);
     
-    for (AtomicReader reader : mergeState.readers) {
+    for (LeafReader reader : mergeState.readers) {
       final SegmentReader matchingSegmentReader = matching.matchingSegmentReaders[idx++];
       CompressingStoredFieldsReader matchingFieldsReader = null;
       if (matchingSegmentReader != null) {

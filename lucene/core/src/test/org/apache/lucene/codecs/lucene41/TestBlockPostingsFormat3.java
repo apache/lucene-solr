@@ -32,8 +32,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -148,8 +148,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   
   private void verify(Directory dir) throws Exception {
     DirectoryReader ir = DirectoryReader.open(dir);
-    for (AtomicReaderContext leaf : ir.leaves()) {
-      AtomicReader leafReader = leaf.reader();
+    for (LeafReaderContext leaf : ir.leaves()) {
+      LeafReader leafReader = leaf.reader();
       assertTerms(leafReader.terms("field1docs"), leafReader.terms("field2freqs"), true);
       assertTerms(leafReader.terms("field3positions"), leafReader.terms("field4offsets"), true);
       assertTerms(leafReader.terms("field4offsets"), leafReader.terms("field5payloadsFixed"), true);

@@ -20,7 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
@@ -82,7 +82,7 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    for (AtomicReader reader : mergeState.readers) {
+    for (LeafReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
       for (int i = 0; i < maxDoc; i++) {

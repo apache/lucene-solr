@@ -17,7 +17,7 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
@@ -106,7 +106,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   }
 
   @Override
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
     groupFieldTermIndex = DocValues.getSorted(context.reader(), groupField);
     countFieldTermIndex = DocValues.getSorted(context.reader(), countField);
     ordSet.clear();

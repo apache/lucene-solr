@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -53,10 +53,10 @@ public class FieldFacetStats {
   private final Map<Integer, Integer> missingStats;
   List<HashMap<String, Integer>> facetStatsTerms;
 
-  final AtomicReader topLevelReader;
-  AtomicReaderContext leave;
+  final LeafReader topLevelReader;
+  LeafReaderContext leave;
   final ValueSource valueSource;
-  AtomicReaderContext context;
+  LeafReaderContext context;
   FunctionValues values;
 
   SortedDocValues topLevelSortedValues = null;
@@ -66,7 +66,7 @@ public class FieldFacetStats {
     this.facet_sf = facet_sf;
     this.name = facet_sf.getName();
 
-    topLevelReader = searcher.getAtomicReader();
+    topLevelReader = searcher.getLeafReader();
     valueSource = facet_sf.getType().getValueSource(facet_sf, null);
 
     facetStatsValues = new HashMap<>();
@@ -151,7 +151,7 @@ public class FieldFacetStats {
     return true;
   }
 
-  public void setNextReader(AtomicReaderContext ctx) throws IOException {
+  public void setNextReader(LeafReaderContext ctx) throws IOException {
     this.context = ctx;
     values = valueSource.getValues(Collections.emptyMap(), ctx);
     for (StatsValues stats : facetStatsValues.values()) {

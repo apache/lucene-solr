@@ -21,7 +21,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
@@ -68,7 +68,7 @@ public class DistanceToShapeValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues shapeValues = shapeValueSource.getValues(context, readerContext);
 
     return new DoubleDocValues(this) {

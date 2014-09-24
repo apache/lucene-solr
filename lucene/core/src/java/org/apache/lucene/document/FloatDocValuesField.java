@@ -17,14 +17,12 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReader; // javadocs
-
 /**
  * Syntactic sugar for encoding floats as NumericDocValues
  * via {@link Float#floatToRawIntBits(float)}.
  * <p>
  * Per-document floating point values can be retrieved via
- * {@link AtomicReader#getNumericDocValues(String)}.
+ * {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
  * <p>
  * <b>NOTE</b>: In most all cases this will be rather inefficient,
  * requiring four bytes per document. Consider encoding floating

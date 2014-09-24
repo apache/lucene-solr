@@ -18,7 +18,7 @@
 package org.apache.solr.search;
 
 import com.carrotsearch.hppc.IntIntOpenHashMap;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.BytesRef;
@@ -194,7 +194,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return mainWeight.getValueForNormalization();
     }
 
-    public Scorer scorer(AtomicReaderContext context, Bits bits) throws IOException {
+    public Scorer scorer(LeafReaderContext context, Bits bits) throws IOException {
       return mainWeight.scorer(context, bits);
     }
 
@@ -206,7 +206,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       mainWeight.normalize(norm, topLevelBoost);
     }
 
-    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Explanation mainExplain = mainWeight.explain(context, doc);
       return new QueryRescorer(reRankQuery) {
         @Override
@@ -267,7 +267,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       mainCollector.setScorer(scorer);
     }
 
-    public void doSetNextReader(AtomicReaderContext context) throws IOException{
+    public void doSetNextReader(LeafReaderContext context) throws IOException{
       mainCollector.getLeafCollector(context);
     }
 

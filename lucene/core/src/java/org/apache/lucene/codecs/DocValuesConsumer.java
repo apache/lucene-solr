@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FilteredTermsEnum;
@@ -137,7 +137,7 @@ public abstract class DocValuesConsumer implements Closeable {
         if (type == DocValuesType.NUMERIC) {
           List<NumericDocValues> toMerge = new ArrayList<>();
           List<Bits> docsWithField = new ArrayList<>();
-          for (AtomicReader reader : mergeState.readers) {
+          for (LeafReader reader : mergeState.readers) {
             NumericDocValues values = reader.getNumericDocValues(field.name);
             Bits bits = reader.getDocsWithField(field.name);
             if (values == null) {
@@ -151,7 +151,7 @@ public abstract class DocValuesConsumer implements Closeable {
         } else if (type == DocValuesType.BINARY) {
           List<BinaryDocValues> toMerge = new ArrayList<>();
           List<Bits> docsWithField = new ArrayList<>();
-          for (AtomicReader reader : mergeState.readers) {
+          for (LeafReader reader : mergeState.readers) {
             BinaryDocValues values = reader.getBinaryDocValues(field.name);
             Bits bits = reader.getDocsWithField(field.name);
             if (values == null) {
@@ -164,7 +164,7 @@ public abstract class DocValuesConsumer implements Closeable {
           mergeBinaryField(field, mergeState, toMerge, docsWithField);
         } else if (type == DocValuesType.SORTED) {
           List<SortedDocValues> toMerge = new ArrayList<>();
-          for (AtomicReader reader : mergeState.readers) {
+          for (LeafReader reader : mergeState.readers) {
             SortedDocValues values = reader.getSortedDocValues(field.name);
             if (values == null) {
               values = DocValues.emptySorted();
@@ -174,7 +174,7 @@ public abstract class DocValuesConsumer implements Closeable {
           mergeSortedField(field, mergeState, toMerge);
         } else if (type == DocValuesType.SORTED_SET) {
           List<SortedSetDocValues> toMerge = new ArrayList<>();
-          for (AtomicReader reader : mergeState.readers) {
+          for (LeafReader reader : mergeState.readers) {
             SortedSetDocValues values = reader.getSortedSetDocValues(field.name);
             if (values == null) {
               values = DocValues.emptySortedSet();
@@ -184,7 +184,7 @@ public abstract class DocValuesConsumer implements Closeable {
           mergeSortedSetField(field, mergeState, toMerge);
         } else if (type == DocValuesType.SORTED_NUMERIC) {
           List<SortedNumericDocValues> toMerge = new ArrayList<>();
-          for (AtomicReader reader : mergeState.readers) {
+          for (LeafReader reader : mergeState.readers) {
             SortedNumericDocValues values = reader.getSortedNumericDocValues(field.name);
             if (values == null) {
               values = DocValues.emptySortedNumeric(reader.maxDoc());
@@ -216,7 +216,7 @@ public abstract class DocValuesConsumer implements Closeable {
                           int docIDUpto;
                           long nextValue;
                           boolean nextHasValue;
-                          AtomicReader currentReader;
+                          LeafReader currentReader;
                           NumericDocValues currentValues;
                           Bits currentLiveDocs;
                           Bits currentDocsWithField;
@@ -297,7 +297,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          int docIDUpto;
                          BytesRef nextValue;
                          BytesRef nextPointer; // points to null if missing, or nextValue
-                         AtomicReader currentReader;
+                         LeafReader currentReader;
                          BinaryDocValues currentValues;
                          Bits currentLiveDocs;
                          Bits currentDocsWithField;
@@ -368,7 +368,7 @@ public abstract class DocValuesConsumer implements Closeable {
    * iterables that filter deleted documents.
    */
   public void mergeSortedNumericField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedNumericDocValues> toMerge) throws IOException {
-    final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
+    final LeafReader readers[] = mergeState.readers.toArray(new LeafReader[toMerge.size()]);
     final SortedNumericDocValues dvs[] = toMerge.toArray(new SortedNumericDocValues[toMerge.size()]);
     
     // step 3: add field
@@ -381,7 +381,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               int nextValue;
-              AtomicReader currentReader;
+              LeafReader currentReader;
               Bits currentLiveDocs;
               boolean nextIsSet;
 
@@ -444,7 +444,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               long nextValue;
-              AtomicReader currentReader;
+              LeafReader currentReader;
               Bits currentLiveDocs;
               boolean nextIsSet;
               int valueUpto;
@@ -519,14 +519,14 @@ public abstract class DocValuesConsumer implements Closeable {
    * an Iterable that merges ordinals and values and filters deleted documents .
    */
   public void mergeSortedField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {
-    final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
+    final LeafReader readers[] = mergeState.readers.toArray(new LeafReader[toMerge.size()]);
     final SortedDocValues dvs[] = toMerge.toArray(new SortedDocValues[toMerge.size()]);
     
     // step 1: iterate thru each sub and mark terms still in use
     TermsEnum liveTerms[] = new TermsEnum[dvs.length];
     long[] weights = new long[liveTerms.length];
     for (int sub = 0; sub < liveTerms.length; sub++) {
-      AtomicReader reader = readers[sub];
+      LeafReader reader = readers[sub];
       SortedDocValues dv = dvs[sub];
       Bits liveDocs = reader.getLiveDocs();
       if (liveDocs == null) {
@@ -591,7 +591,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               int nextValue;
-              AtomicReader currentReader;
+              LeafReader currentReader;
               Bits currentLiveDocs;
               LongValues currentMap;
               boolean nextIsSet;
@@ -658,14 +658,14 @@ public abstract class DocValuesConsumer implements Closeable {
    * an Iterable that merges ordinals and values and filters deleted documents .
    */
   public void mergeSortedSetField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedSetDocValues> toMerge) throws IOException {
-    final AtomicReader readers[] = mergeState.readers.toArray(new AtomicReader[toMerge.size()]);
+    final LeafReader readers[] = mergeState.readers.toArray(new LeafReader[toMerge.size()]);
     final SortedSetDocValues dvs[] = toMerge.toArray(new SortedSetDocValues[toMerge.size()]);
     
     // step 1: iterate thru each sub and mark terms still in use
     TermsEnum liveTerms[] = new TermsEnum[dvs.length];
     long[] weights = new long[liveTerms.length];
     for (int sub = 0; sub < liveTerms.length; sub++) {
-      AtomicReader reader = readers[sub];
+      LeafReader reader = readers[sub];
       SortedSetDocValues dv = dvs[sub];
       Bits liveDocs = reader.getLiveDocs();
       if (liveDocs == null) {
@@ -731,7 +731,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               int nextValue;
-              AtomicReader currentReader;
+              LeafReader currentReader;
               Bits currentLiveDocs;
               boolean nextIsSet;
 
@@ -798,7 +798,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               long nextValue;
-              AtomicReader currentReader;
+              LeafReader currentReader;
               Bits currentLiveDocs;
               LongValues currentMap;
               boolean nextIsSet;

@@ -17,21 +17,16 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.update.SolrIndexConfigTest;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.SolrTestCaseJ4;
@@ -213,7 +208,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     assertNotNull("Null leaves", reader.leaves());
     assertTrue("no leaves", 0 < reader.leaves().size());
 
-    for (AtomicReaderContext atomic : reader.leaves()) {
+    for (LeafReaderContext atomic : reader.leaves()) {
       assertTrue("not a segment reader: " + atomic.reader().toString(), 
                  atomic.reader() instanceof SegmentReader);
       

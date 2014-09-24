@@ -33,8 +33,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -82,7 +82,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+    final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
     final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field");
     SortedSetDocValues iter = dto.iterator(ar);
     
@@ -173,7 +173,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       System.out.println("TEST: reader=" + r);
     }
 
-    for(AtomicReaderContext ctx : r.leaves()) {
+    for(LeafReaderContext ctx : r.leaves()) {
       if (VERBOSE) {
         System.out.println("\nTEST: sub=" + ctx.reader());
       }
@@ -185,7 +185,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: top reader");
     }
-    AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader slowR = SlowCompositeReaderWrapper.wrap(r);
     verify(slowR, idToOrds, termsArray, null);
 
     FieldCache.DEFAULT.purgeByCacheKey(slowR.getCoreCacheKey());
@@ -270,7 +270,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       System.out.println("TEST: reader=" + r);
     }
     
-    AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader slowR = SlowCompositeReaderWrapper.wrap(r);
     for(String prefix : prefixesArray) {
 
       final BytesRef prefixRef = prefix == null ? null : new BytesRef(prefix);
@@ -292,7 +292,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         idToOrdsPrefix[id] = newOrdsArray;
       }
 
-      for(AtomicReaderContext ctx : r.leaves()) {
+      for(LeafReaderContext ctx : r.leaves()) {
         if (VERBOSE) {
           System.out.println("\nTEST: sub=" + ctx.reader());
         }
@@ -313,7 +313,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     dir.close();
   }
 
-  private void verify(AtomicReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
+  private void verify(LeafReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
 
     final DocTermOrds dto = new DocTermOrds(r, r.getLiveDocs(),
                                             "field",
@@ -442,7 +442,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT32_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
@@ -483,7 +483,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT64_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
@@ -532,7 +532,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    AtomicReader ar = getOnlySegmentReader(ireader);
+    LeafReader ar = getOnlySegmentReader(ireader);
     SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field", null);
     assertEquals(3, dv.getValueCount());
     
@@ -617,7 +617,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", null);
     assertNotNull(DocValues.unwrapSingleton(v)); // actually a single-valued field

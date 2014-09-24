@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -836,7 +835,7 @@ public class TestCodecs extends LuceneTestCase {
     
     Term term = new Term("f", new BytesRef("doc"));
     DirectoryReader reader = DirectoryReader.open(dir);
-    for (AtomicReaderContext ctx : reader.leaves()) {
+    for (LeafReaderContext ctx : reader.leaves()) {
       DocsEnum de = ctx.reader().termDocsEnum(term);
       while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         assertEquals("wrong freq for doc " + de.docID(), 1, de.freq());

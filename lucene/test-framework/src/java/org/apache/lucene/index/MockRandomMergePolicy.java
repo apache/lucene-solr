@@ -138,7 +138,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   
   static class MockRandomOneMerge extends OneMerge {
     final Random r;
-    ArrayList<AtomicReader> readers;
+    ArrayList<LeafReader> readers;
 
     MockRandomOneMerge(List<SegmentCommitInfo> segments, long seed) {
       super(segments);
@@ -146,13 +146,13 @@ public class MockRandomMergePolicy extends MergePolicy {
     }
 
     @Override
-    public List<AtomicReader> getMergeReaders() throws IOException {
+    public List<LeafReader> getMergeReaders() throws IOException {
       if (readers == null) {
-        readers = new ArrayList<AtomicReader>(super.getMergeReaders());
+        readers = new ArrayList<LeafReader>(super.getMergeReaders());
         for (int i = 0; i < readers.size(); i++) {
           // wrap it (e.g. prevent bulk merge etc)
           if (r.nextInt(4) == 0) {
-            readers.set(i, new FilterAtomicReader(readers.get(i)));
+            readers.set(i, new FilterLeafReader(readers.get(i)));
           }
         }
       }

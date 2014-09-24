@@ -23,7 +23,7 @@ import java.util.Iterator;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.index.AssertingAtomicReader;
+import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -83,7 +83,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     @Override
     public Terms terms(String field) throws IOException {
       Terms terms = in.terms(field);
-      return terms == null ? null : new AssertingAtomicReader.AssertingTerms(terms);
+      return terms == null ? null : new AssertingLeafReader.AssertingTerms(terms);
     }
 
     @Override

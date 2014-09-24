@@ -19,7 +19,7 @@ package org.apache.lucene.index.sorter;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
@@ -143,7 +143,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
       }
 
       @Override
-      public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
+      public FieldComparator<Integer> setNextReader(LeafReaderContext context) throws IOException {
         final DocIdSet parents = parentsFilter.getDocIdSet(context, null);
         if (parents == null) {
           throw new IllegalStateException("AtomicReader " + context.reader() + " contains no parents!");

@@ -20,7 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -92,7 +92,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   }
   
   @Override
-  public Spans getSpans(AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     throw new UnsupportedOperationException("Query should have been rewritten");
   }
 

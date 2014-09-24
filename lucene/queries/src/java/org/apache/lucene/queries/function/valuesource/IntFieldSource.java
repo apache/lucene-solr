@@ -20,20 +20,17 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
 /**
- * Obtains int field values from {@link AtomicReader#getNumericDocValues} and makes those
+ * Obtains int field values from {@link org.apache.lucene.index.LeafReader#getNumericDocValues} and makes those
  * values available as other numeric types, casting as needed.
  */
 public class IntFieldSource extends FieldCacheSource {
@@ -49,7 +46,7 @@ public class IntFieldSource extends FieldCacheSource {
 
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
     final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
     

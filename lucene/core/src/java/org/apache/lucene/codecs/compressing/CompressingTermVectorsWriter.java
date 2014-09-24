@@ -28,7 +28,7 @@ import java.util.TreeSet;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -732,7 +732,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
     MatchingReaders matching = new MatchingReaders(mergeState);
     
-    for (AtomicReader reader : mergeState.readers) {
+    for (LeafReader reader : mergeState.readers) {
       final SegmentReader matchingSegmentReader = matching.matchingSegmentReaders[idx++];
       CompressingTermVectorsReader matchingVectorsReader = null;
       if (matchingSegmentReader != null) {

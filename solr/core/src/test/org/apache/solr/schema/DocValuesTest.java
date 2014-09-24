@@ -17,7 +17,7 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -48,7 +48,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
       final RefCounted<SolrIndexSearcher> searcherRef = core.openNewSearcher(true, true);
       final SolrIndexSearcher searcher = searcherRef.get();
       try {
-        final AtomicReader reader = searcher.getAtomicReader();
+        final LeafReader reader = searcher.getLeafReader();
         assertEquals(1, reader.numDocs());
         final FieldInfos infos = reader.getFieldInfos();
         assertEquals(DocValuesType.NUMERIC, infos.fieldInfo("floatdv").getDocValuesType());
@@ -68,16 +68,16 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         final SchemaField doubleDv = schema.getField("doubledv");
         final SchemaField longDv = schema.getField("longdv");
 
-        FunctionValues values = floatDv.getType().getValueSource(floatDv, null).getValues(null, searcher.getAtomicReader().leaves().get(0));
+        FunctionValues values = floatDv.getType().getValueSource(floatDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(1f, values.floatVal(0), 0f);
         assertEquals(1f, values.objectVal(0));
-        values = intDv.getType().getValueSource(intDv, null).getValues(null, searcher.getAtomicReader().leaves().get(0));
+        values = intDv.getType().getValueSource(intDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(2, values.intVal(0));
         assertEquals(2, values.objectVal(0));
-        values = doubleDv.getType().getValueSource(doubleDv, null).getValues(null, searcher.getAtomicReader().leaves().get(0));
+        values = doubleDv.getType().getValueSource(doubleDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(3d, values.doubleVal(0), 0d);
         assertEquals(3d, values.objectVal(0));
-        values = longDv.getType().getValueSource(longDv, null).getValues(null, searcher.getAtomicReader().leaves().get(0));
+        values = longDv.getType().getValueSource(longDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(4L, values.longVal(0));
         assertEquals(4L, values.objectVal(0));
       } finally {

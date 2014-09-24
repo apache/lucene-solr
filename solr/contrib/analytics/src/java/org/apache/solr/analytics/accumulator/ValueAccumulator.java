@@ -19,8 +19,6 @@ package org.apache.solr.analytics.accumulator;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.solr.common.util.NamedList;
 

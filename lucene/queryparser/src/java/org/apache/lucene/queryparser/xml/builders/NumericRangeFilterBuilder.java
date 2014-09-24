@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.xml.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
@@ -155,7 +155,7 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
   static class NoMatchFilter extends Filter {
 
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
       return null;
     }
 

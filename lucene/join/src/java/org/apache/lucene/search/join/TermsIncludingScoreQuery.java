@@ -21,14 +21,13 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -132,7 +131,7 @@ class TermsIncludingScoreQuery extends Query {
       private TermsEnum segmentTermsEnum;
 
       @Override
-      public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         SVInnerScorer scorer = (SVInnerScorer) bulkScorer(context, false, null);
         if (scorer != null) {
           return scorer.explain(doc);
@@ -163,7 +162,7 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms == null) {
           return null;
@@ -181,7 +180,7 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
         if (scoreDocsInOrder) {
           return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);

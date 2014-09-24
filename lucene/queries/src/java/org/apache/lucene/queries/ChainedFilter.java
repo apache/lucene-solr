@@ -19,8 +19,8 @@ package org.apache.lucene.queries;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -98,7 +98,7 @@ public class ChainedFilter extends Filter {
    * {@link Filter#getDocIdSet}.
    */
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     int[] index = new int[1]; // use array as reference to modifiable int;
     index[0] = 0;             // an object attribute would not be thread safe.
     if (logic != -1) {
@@ -110,7 +110,7 @@ public class ChainedFilter extends Filter {
     return BitsFilteredDocIdSet.wrap(getDocIdSet(context, DEFAULT, index), acceptDocs);
   }
 
-  private DocIdSetIterator getDISI(Filter filter, AtomicReaderContext context)
+  private DocIdSetIterator getDISI(Filter filter, LeafReaderContext context)
       throws IOException {
     // we dont pass acceptDocs, we will filter at the end using an additional filter
     DocIdSet docIdSet = filter.getDocIdSet(context, null);
@@ -126,9 +126,9 @@ public class ChainedFilter extends Filter {
     }
   }
 
-  private FixedBitSet initialResult(AtomicReaderContext context, int logic, int[] index)
+  private FixedBitSet initialResult(LeafReaderContext context, int logic, int[] index)
       throws IOException {
-    AtomicReader reader = context.reader();
+    LeafReader reader = context.reader();
     FixedBitSet result = new FixedBitSet(reader.maxDoc());
     if (logic == AND) {
       result.or(getDISI(chain[index[0]], context));
@@ -148,7 +148,7 @@ public class ChainedFilter extends Filter {
    * @param logic Logical operation
    * @return DocIdSet
    */
-  private DocIdSet getDocIdSet(AtomicReaderContext context, int logic, int[] index)
+  private DocIdSet getDocIdSet(LeafReaderContext context, int logic, int[] index)
       throws IOException {
     FixedBitSet result = initialResult(context, logic, index);
     for (; index[0] < chain.length; index[0]++) {
@@ -165,7 +165,7 @@ public class ChainedFilter extends Filter {
    * @param logic Logical operation
    * @return DocIdSet
    */
-  private DocIdSet getDocIdSet(AtomicReaderContext context, int[] logic, int[] index)
+  private DocIdSet getDocIdSet(LeafReaderContext context, int[] logic, int[] index)
       throws IOException {
     if (logic.length != chain.length) {
       throw new IllegalArgumentException("Invalid number of elements in logic array");

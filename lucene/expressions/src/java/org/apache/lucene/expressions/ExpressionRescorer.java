@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
@@ -112,9 +112,9 @@ class ExpressionRescorer extends SortRescorer {
   public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException {
     Explanation result = super.explain(searcher, firstPassExplanation, docID);
 
-    List<AtomicReaderContext> leaves = searcher.getIndexReader().leaves();
+    List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     int subReader = ReaderUtil.subIndex(docID, leaves);
-    AtomicReaderContext readerContext = leaves.get(subReader);
+    LeafReaderContext readerContext = leaves.get(subReader);
     int docIDInSegment = docID - readerContext.docBase;
     Map<String,Object> context = new HashMap<>();
 

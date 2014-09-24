@@ -19,7 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
@@ -54,7 +54,7 @@ public abstract class PerFieldSimilarityWrapper extends Similarity {
   }
 
   @Override
-  public final SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+  public final SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
     PerFieldSimWeight perFieldWeight = (PerFieldSimWeight) weight;
     return perFieldWeight.delegate.simScorer(perFieldWeight.delegateWeight, context);
   }

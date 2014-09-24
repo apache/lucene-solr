@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -57,7 +57,7 @@ public class FilterFieldSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
     return new FunctionValues() {
 

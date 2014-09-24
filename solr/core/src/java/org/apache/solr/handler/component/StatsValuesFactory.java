@@ -20,7 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
@@ -264,7 +264,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
-   public void setNextReader(AtomicReaderContext ctx) throws IOException {
+   public void setNextReader(LeafReaderContext ctx) throws IOException {
     if (valueSource == null) {
       // first time we've collected local values, get the right ValueSource
       valueSource = (null == ft) 

@@ -30,7 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -247,7 +247,7 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
       final int maxDoc = context.reader().maxDoc();
       final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
       assertNotNull(idSource);

@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Terms;
@@ -33,7 +33,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
@@ -90,12 +89,12 @@ public class SolrIndexSplitter {
 
   public void split() throws IOException {
 
-    List<AtomicReaderContext> leaves = searcher.getRawReader().leaves();
+    List<LeafReaderContext> leaves = searcher.getRawReader().leaves();
     List<FixedBitSet[]> segmentDocSets = new ArrayList<>(leaves.size());
 
     log.info("SolrIndexSplitter: partitions=" + numPieces + " segments="+leaves.size());
 
-    for (AtomicReaderContext readerContext : leaves) {
+    for (LeafReaderContext readerContext : leaves) {
       assert readerContext.ordInParent == segmentDocSets.size();  // make sure we're going in order
       FixedBitSet[] docSets = split(readerContext);
       segmentDocSets.add( docSets );
@@ -152,8 +151,8 @@ public class SolrIndexSplitter {
 
 
 
-  FixedBitSet[] split(AtomicReaderContext readerContext) throws IOException {
-    AtomicReader reader = readerContext.reader();
+  FixedBitSet[] split(LeafReaderContext readerContext) throws IOException {
+    LeafReader reader = readerContext.reader();
     FixedBitSet[] docSets = new FixedBitSet[numPieces];
     for (int i=0; i<docSets.length; i++) {
       docSets[i] = new FixedBitSet(reader.maxDoc());
@@ -233,11 +232,11 @@ public class SolrIndexSplitter {
 
 
   // change livedocs on the reader to delete those docs we don't want
-  static class LiveDocsReader extends FilterAtomicReader {
+  static class LiveDocsReader extends FilterLeafReader {
     final FixedBitSet liveDocs;
     final int numDocs;
 
-    public LiveDocsReader(AtomicReaderContext context, FixedBitSet liveDocs) throws IOException {
+    public LiveDocsReader(LeafReaderContext context, FixedBitSet liveDocs) throws IOException {
       super(context.reader());
       this.liveDocs = liveDocs;
       this.numDocs = liveDocs.cardinality();

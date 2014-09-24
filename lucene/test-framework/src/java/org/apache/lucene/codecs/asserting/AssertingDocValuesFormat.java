@@ -23,7 +23,7 @@ import java.util.Iterator;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.index.AssertingAtomicReader;
+import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -33,8 +33,8 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.AssertingAtomicReader.AssertingRandomAccessOrds;
-import org.apache.lucene.index.AssertingAtomicReader.AssertingSortedSetDocValues;
+import org.apache.lucene.index.AssertingLeafReader.AssertingRandomAccessOrds;
+import org.apache.lucene.index.AssertingLeafReader.AssertingSortedSetDocValues;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -228,7 +228,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC;
       NumericDocValues values = in.getNumeric(field);
       assert values != null;
-      return new AssertingAtomicReader.AssertingNumericDocValues(values, maxDoc);
+      return new AssertingLeafReader.AssertingNumericDocValues(values, maxDoc);
     }
 
     @Override
@@ -236,7 +236,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == FieldInfo.DocValuesType.BINARY;
       BinaryDocValues values = in.getBinary(field);
       assert values != null;
-      return new AssertingAtomicReader.AssertingBinaryDocValues(values, maxDoc);
+      return new AssertingLeafReader.AssertingBinaryDocValues(values, maxDoc);
     }
 
     @Override
@@ -244,7 +244,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED;
       SortedDocValues values = in.getSorted(field);
       assert values != null;
-      return new AssertingAtomicReader.AssertingSortedDocValues(values, maxDoc);
+      return new AssertingLeafReader.AssertingSortedDocValues(values, maxDoc);
     }
     
     @Override
@@ -252,7 +252,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_NUMERIC;
       SortedNumericDocValues values = in.getSortedNumeric(field);
       assert values != null;
-      return new AssertingAtomicReader.AssertingSortedNumericDocValues(values, maxDoc);
+      return new AssertingLeafReader.AssertingSortedNumericDocValues(values, maxDoc);
     }
     
     @Override
@@ -273,7 +273,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       Bits bits = in.getDocsWithField(field);
       assert bits != null;
       assert bits.length() == maxDoc;
-      return new AssertingAtomicReader.AssertingBits(bits);
+      return new AssertingLeafReader.AssertingBits(bits);
     }
 
     @Override

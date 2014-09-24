@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
@@ -124,7 +124,7 @@ public class ToChildBlockJoinQuery extends Query {
     // NOTE: acceptDocs applies (and is checked) only in the
     // child document space
     @Override
-    public Scorer scorer(AtomicReaderContext readerContext, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
 
       final Scorer parentScorer = parentWeight.scorer(readerContext, null);
 
@@ -152,7 +152,7 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext reader, int doc) throws IOException {
+    public Explanation explain(LeafReaderContext reader, int doc) throws IOException {
       // TODO
       throw new UnsupportedOperationException(getClass().getName() +
                                               " cannot explain match on parent document");

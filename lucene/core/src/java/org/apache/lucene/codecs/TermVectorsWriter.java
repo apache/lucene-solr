@@ -21,7 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -178,7 +178,7 @@ public abstract class TermVectorsWriter implements Closeable {
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
     for (int i = 0; i < mergeState.readers.size(); i++) {
-      final AtomicReader reader = mergeState.readers.get(i);
+      final LeafReader reader = mergeState.readers.get(i);
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
 

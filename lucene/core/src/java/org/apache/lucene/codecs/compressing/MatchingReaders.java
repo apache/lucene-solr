@@ -17,7 +17,7 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
@@ -50,7 +50,7 @@ class MatchingReaders {
     // FieldInfos, then we can do a bulk copy of the
     // stored fields:
     for (int i = 0; i < numReaders; i++) {
-      AtomicReader reader = mergeState.readers.get(i);
+      LeafReader reader = mergeState.readers.get(i);
       // TODO: we may be able to broaden this to
       // non-SegmentReaders, since FieldInfos is now
       // required?  But... this'd also require exposing

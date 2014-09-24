@@ -23,8 +23,8 @@ import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.cursors.IntObjectCursor;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
@@ -39,7 +39,6 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrDocumentList;
@@ -188,7 +187,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     SolrIndexSearcher searcher = req.getSearcher();
-    AtomicReader reader = searcher.getAtomicReader();
+    LeafReader reader = searcher.getLeafReader();
     SortedDocValues values = DocValues.getSorted(reader, field);
     FixedBitSet groupBits = new FixedBitSet(values.getValueCount());
     DocList docList = rb.getResults().docList;
@@ -320,7 +319,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       this.docValues = docValues;
     }
 
-    public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
       final IntObjectMap<LeafCollector> leafCollectors = new IntObjectOpenHashMap<>();
       for (IntObjectCursor<Collector> entry : groups) {

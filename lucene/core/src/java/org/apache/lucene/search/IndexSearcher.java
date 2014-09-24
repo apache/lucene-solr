@@ -33,7 +33,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -81,7 +81,7 @@ public class IndexSearcher {
   // NOTE: these members might change in incompatible ways
   // in the next release
   protected final IndexReaderContext readerContext;
-  protected final List<AtomicReaderContext> leafContexts;
+  protected final List<LeafReaderContext> leafContexts;
   /** used with executor - each slice holds a set of leafs executed within one thread */
   protected final LeafSlice[] leafSlices;
 
@@ -164,9 +164,9 @@ public class IndexSearcher {
   /**
    * Expert: Creates an array of leaf slices each holding a subset of the given leaves.
    * Each {@link LeafSlice} is executed in a single thread. By default there
-   * will be one {@link LeafSlice} per leaf ({@link AtomicReaderContext}).
+   * will be one {@link LeafSlice} per leaf ({@link org.apache.lucene.index.LeafReaderContext}).
    */
-  protected LeafSlice[] slices(List<AtomicReaderContext> leaves) {
+  protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
     LeafSlice[] slices = new LeafSlice[leaves.size()];
     for (int i = 0; i < slices.length; i++) {
       slices[i] = new LeafSlice(leaves.get(i));
@@ -472,7 +472,7 @@ public class IndexSearcher {
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
-  protected TopDocs search(List<AtomicReaderContext> leaves, Weight weight, ScoreDoc after, int nDocs) throws IOException {
+  protected TopDocs search(List<LeafReaderContext> leaves, Weight weight, ScoreDoc after, int nDocs) throws IOException {
     // single thread
     int limit = reader.maxDoc();
     if (limit == 0) {
@@ -558,7 +558,7 @@ public class IndexSearcher {
    * whether or not the fields in the returned {@link FieldDoc} instances should
    * be set by specifying fillFields.
    */
-  protected TopFieldDocs search(List<AtomicReaderContext> leaves, Weight weight, FieldDoc after, int nDocs,
+  protected TopFieldDocs search(List<LeafReaderContext> leaves, Weight weight, FieldDoc after, int nDocs,
                                 Sort sort, boolean fillFields, boolean doDocScores, boolean doMaxScore) throws IOException {
     // single thread
     int limit = reader.maxDoc();
@@ -593,13 +593,13 @@ public class IndexSearcher {
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
-  protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector)
+  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
 
     // TODO: should we make this
     // threaded...?  the Collector could be sync'd?
     // always use single thread:
-    for (AtomicReaderContext ctx : leaves) { // search each subreader
+    for (LeafReaderContext ctx : leaves) { // search each subreader
       final LeafCollector leafCollector;
       try {
         leafCollector = collector.getLeafCollector(ctx);
@@ -659,7 +659,7 @@ public class IndexSearcher {
    */
   protected Explanation explain(Weight weight, int doc) throws IOException {
     int n = ReaderUtil.subIndex(doc, leafContexts);
-    final AtomicReaderContext ctx = leafContexts.get(n);
+    final LeafReaderContext ctx = leafContexts.get(n);
     int deBasedDoc = doc - ctx.docBase;
     
     return weight.explain(ctx, deBasedDoc);
@@ -778,7 +778,7 @@ public class IndexSearcher {
           weight, after, nDocs, sort, true, doDocScores || sort.needsScores(), doMaxScore);
       lock.lock();
       try {
-        final AtomicReaderContext ctx = slice.leaves[0];
+        final LeafReaderContext ctx = slice.leaves[0];
         final int base = ctx.docBase;
         final LeafCollector collector = hq.getLeafCollector(ctx);
         collector.setScorer(fakeScorer);
@@ -858,9 +858,9 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public static class LeafSlice {
-    final AtomicReaderContext[] leaves;
+    final LeafReaderContext[] leaves;
     
-    public LeafSlice(AtomicReaderContext... leaves) {
+    public LeafSlice(LeafReaderContext... leaves) {
       this.leaves = leaves;
     }
   }

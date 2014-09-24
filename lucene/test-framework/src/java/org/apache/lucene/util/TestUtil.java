@@ -60,8 +60,9 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.CheckIndex.Status.FieldNormStatus;
@@ -72,7 +73,6 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -238,12 +238,12 @@ public final class TestUtil {
   /** This runs the CheckIndex tool on the Reader.  If any
    *  issues are hit, a RuntimeException is thrown */
   public static void checkReader(IndexReader reader) throws IOException {
-    for (AtomicReaderContext context : reader.leaves()) {
+    for (LeafReaderContext context : reader.leaves()) {
       checkReader(context.reader(), true);
     }
   }
   
-  public static void checkReader(AtomicReader reader, boolean crossCheckTermVectors) throws IOException {
+  public static void checkReader(LeafReader reader, boolean crossCheckTermVectors) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
 
@@ -258,7 +258,7 @@ public final class TestUtil {
       System.out.println(bos.toString(IOUtils.UTF_8));
     }
     
-    AtomicReader unwrapped = FilterAtomicReader.unwrap(reader);
+    LeafReader unwrapped = FilterLeafReader.unwrap(reader);
     if (unwrapped instanceof SegmentReader) {
       SegmentReader sr = (SegmentReader) unwrapped;
       long bytesUsed = sr.ramBytesUsed(); 

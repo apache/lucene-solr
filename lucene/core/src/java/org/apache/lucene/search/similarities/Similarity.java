@@ -19,8 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader; // javadoc
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
@@ -51,7 +50,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * <a name="indextime"/>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
- * be later accessible via {@link AtomicReader#getNormValues(String)}.  Lucene makes no assumption
+ * be later accessible via {@link org.apache.lucene.index.LeafReader#getNormValues(String)}.  Lucene makes no assumption
  * about what is in this norm, but it is most useful for encoding length normalization 
  * information.
  * <p>
@@ -67,7 +66,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * <p>
  * Additional scoring factors can be stored in named
  * <code>NumericDocValuesField</code>s and accessed
- * at query-time with {@link AtomicReader#getNumericDocValues(String)}.
+ * at query-time with {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -88,7 +87,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  *       is called for each query leaf node, {@link Similarity#queryNorm(float)} is called for the top-level
  *       query, and finally {@link Similarity.SimWeight#normalize(float, float)} passes down the normalization value
  *       and any top-level boosts (e.g. from enclosing {@link BooleanQuery}s).
- *   <li>For each segment in the index, the Query creates a {@link #simScorer(SimWeight, AtomicReaderContext)}
+ *   <li>For each segment in the index, the Query creates a {@link #simScorer(SimWeight, org.apache.lucene.index.LeafReaderContext)}
  *       The score() method is called for each matching document.
  * </ol>
  * <p>
@@ -172,7 +171,7 @@ public abstract class Similarity {
    * @return SloppySimScorer for scoring documents across <code>context</code>
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
+  public abstract SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException;
   
   /**
    * API for scoring "sloppy" queries such as {@link TermQuery},

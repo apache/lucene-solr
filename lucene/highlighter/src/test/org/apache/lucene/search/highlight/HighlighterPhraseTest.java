@@ -30,7 +30,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -129,7 +129,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         }
 
         @Override
-        protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
           this.baseDoc = context.docBase;
         }
 

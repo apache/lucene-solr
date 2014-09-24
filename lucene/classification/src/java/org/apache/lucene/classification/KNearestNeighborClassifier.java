@@ -17,7 +17,7 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -166,29 +166,29 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
-    train(atomicReader, textFieldName, classFieldName, analyzer, null);
+  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
+    train(leafReader, textFieldName, classFieldName, analyzer, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
-    train(atomicReader, new String[]{textFieldName}, classFieldName, analyzer, query);
+  public void train(LeafReader leafReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query) throws IOException {
+    train(leafReader, new String[]{textFieldName}, classFieldName, analyzer, query);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void train(AtomicReader atomicReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
+  public void train(LeafReader leafReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query) throws IOException {
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
-    mlt = new MoreLikeThis(atomicReader);
+    mlt = new MoreLikeThis(leafReader);
     mlt.setAnalyzer(analyzer);
     mlt.setFieldNames(textFieldNames);
-    indexSearcher = new IndexSearcher(atomicReader);
+    indexSearcher = new IndexSearcher(leafReader);
     if (minDocsFreq > 0) {
       mlt.setMinDocFreq(minDocsFreq);
     }

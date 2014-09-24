@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * Base {@link Collector} implementation that is used to collect all contexts.
@@ -29,13 +29,13 @@ import org.apache.lucene.index.AtomicReaderContext;
 public abstract class SimpleCollector implements Collector, LeafCollector {
 
   @Override
-  public final LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+  public final LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     doSetNextReader(context);
     return this;
   }
 
   /** This method is called before collecting <code>context</code>. */
-  protected void doSetNextReader(AtomicReaderContext context) throws IOException {}
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {}
 
   @Override
   public void setScorer(Scorer scorer) throws IOException {

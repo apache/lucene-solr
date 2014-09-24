@@ -62,49 +62,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AlcoholicMergePolicy;
-import org.apache.lucene.index.AssertingAtomicReader;
-import org.apache.lucene.index.AssertingDirectoryReader;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.CompositeReader;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldFilterAtomicReader;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.*;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LiveIndexWriterConfig;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.MockRandomMergePolicy;
-import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.ParallelAtomicReader;
-import org.apache.lucene.index.ParallelCompositeReader;
-import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.SimpleMergedSegmentWarmer;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -746,10 +707,10 @@ public abstract class LuceneTestCase extends Assert {
    * do tests on that segment's reader. This is an utility method to help them.
    */
   public static SegmentReader getOnlySegmentReader(DirectoryReader reader) {
-    List<AtomicReaderContext> subReaders = reader.leaves();
+    List<LeafReaderContext> subReaders = reader.leaves();
     if (subReaders.size() != 1)
       throw new IllegalArgumentException(reader + " has " + subReaders.size() + " segments instead of exactly one");
-    final AtomicReader r = subReaders.get(0).reader();
+    final LeafReader r = subReaders.get(0).reader();
     assertTrue(r instanceof SegmentReader);
     return (SegmentReader) r;
   }
@@ -1464,7 +1425,7 @@ public abstract class LuceneTestCase extends Assert {
     Random random = random();
     if (rarely()) {
       // TODO: remove this, and fix those tests to wrap before putting slow around:
-      final boolean wasOriginallyAtomic = r instanceof AtomicReader;
+      final boolean wasOriginallyAtomic = r instanceof LeafReader;
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
         switch(random.nextInt(5)) {
           case 0:
@@ -1472,8 +1433,8 @@ public abstract class LuceneTestCase extends Assert {
             break;
           case 1:
             // will create no FC insanity in atomic case, as ParallelAtomicReader has own cache key:
-            r = (r instanceof AtomicReader) ?
-              new ParallelAtomicReader((AtomicReader) r) :
+            r = (r instanceof LeafReader) ?
+              new ParallelLeafReader((LeafReader) r) :
               new ParallelCompositeReader((CompositeReader) r);
             break;
           case 2:
@@ -1483,7 +1444,7 @@ public abstract class LuceneTestCase extends Assert {
             r = new FCInvisibleMultiReader(r);
             break;
           case 3:
-            final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+            final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
             final List<String> allFields = new ArrayList<>();
             for (FieldInfo fi : ar.getFieldInfos()) {
               allFields.add(fi.name);
@@ -1492,17 +1453,17 @@ public abstract class LuceneTestCase extends Assert {
             final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
             final Set<String> fields = new HashSet<>(allFields.subList(0, end));
             // will create no FC insanity as ParallelAtomicReader has own cache key:
-            r = new ParallelAtomicReader(
-              new FieldFilterAtomicReader(ar, fields, false),
-              new FieldFilterAtomicReader(ar, fields, true)
+            r = new ParallelLeafReader(
+              new FieldFilterLeafReader(ar, fields, false),
+              new FieldFilterLeafReader(ar, fields, true)
             );
             break;
           case 4:
             // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
             // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
             // along our reader:
-            if (r instanceof AtomicReader) {
-              r = new AssertingAtomicReader((AtomicReader)r);
+            if (r instanceof LeafReader) {
+              r = new AssertingLeafReader((LeafReader)r);
             } else if (r instanceof DirectoryReader) {
               r = new AssertingDirectoryReader((DirectoryReader)r);
             }
@@ -1602,7 +1563,7 @@ public abstract class LuceneTestCase extends Assert {
       }
       // TODO: this whole check is a coverage hack, we should move it to tests for various filterreaders.
       // ultimately whatever you do will be checkIndex'd at the end anyway. 
-      if (random.nextInt(500) == 0 && r instanceof AtomicReader) {
+      if (random.nextInt(500) == 0 && r instanceof LeafReader) {
         // TODO: not useful to check DirectoryReader (redundant with checkindex)
         // but maybe sometimes run this on the other crazy readers maybeWrapReader creates?
         try {

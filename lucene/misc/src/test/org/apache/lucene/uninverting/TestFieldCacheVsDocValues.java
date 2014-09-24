@@ -32,8 +32,8 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
@@ -190,7 +190,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     }
     w.close();
 
-    AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
@@ -263,7 +263,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w, true);
     w.close();
 
-    AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
@@ -319,8 +319,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
       SortedDocValues expected = FieldCache.DEFAULT.getTermsIndex(r, "indexed");
       SortedDocValues actual = r.getSortedDocValues("dv");
       assertEquals(r.maxDoc(), expected, actual);
@@ -377,8 +377,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     
     // compare per-segment
     DirectoryReader ir = writer.getReader();
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
       SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(r, "indexed", null);
       SortedSetDocValues actual = r.getSortedSetDocValues("dv");
       assertEquals(r.maxDoc(), expected, actual);
@@ -389,7 +389,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     
     // now compare again after the merge
     ir = writer.getReader();
-    AtomicReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlySegmentReader(ir);
     SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(ar, "indexed", null);
     SortedSetDocValues actual = ar.getSortedSetDocValues("dv");
     assertEquals(ir.maxDoc(), expected, actual);
@@ -446,8 +446,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader r = context.reader();
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
       Bits expected = FieldCache.DEFAULT.getDocsWithField(r, "indexed");
       Bits actual = FieldCache.DEFAULT.getDocsWithField(r, "dv");
       assertEquals(expected, actual);

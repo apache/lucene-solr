@@ -24,7 +24,7 @@ import com.spatial4j.core.shape.Shape;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -143,7 +143,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
     }
 
     @Override
-    public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) throws IOException {
       return new DocIdSet() {
         @Override
         public DocIdSetIterator iterator() throws IOException {
@@ -213,7 +213,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
     }
 
     @Override
-    public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
       final BinaryDocValues docValues = readerContext.reader().getBinaryDocValues(fieldName);
 
       return new FunctionValues() {

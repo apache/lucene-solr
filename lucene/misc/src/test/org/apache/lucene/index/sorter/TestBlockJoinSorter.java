@@ -26,7 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
@@ -53,7 +53,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     }
 
     @Override
-    protected DocIdSet cacheImpl(DocIdSetIterator iterator, AtomicReader reader)
+    protected DocIdSet cacheImpl(DocIdSetIterator iterator, LeafReader reader)
         throws IOException {
       final FixedBitSet cached = new FixedBitSet(reader.maxDoc());
       cached.or(iterator);
@@ -88,7 +88,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     final DirectoryReader indexReader = writer.getReader();
     writer.close();
 
-    final AtomicReader reader = getOnlySegmentReader(indexReader);
+    final LeafReader reader = getOnlySegmentReader(indexReader);
     final Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
     final FixedBitSet parentBits = (FixedBitSet) parentsFilter.getDocIdSet(reader.getContext(), null);
     final NumericDocValues parentValues = reader.getNumericDocValues("parent_val");

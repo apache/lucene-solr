@@ -27,7 +27,7 @@ import java.util.List;
  */
 public final class CompositeReaderContext extends IndexReaderContext {
   private final List<IndexReaderContext> children;
-  private final List<AtomicReaderContext> leaves;
+  private final List<LeafReaderContext> leaves;
   private final CompositeReader reader;
   
   static CompositeReaderContext create(CompositeReader reader) {
@@ -46,13 +46,13 @@ public final class CompositeReaderContext extends IndexReaderContext {
   /**
    * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
    */
-  CompositeReaderContext(CompositeReader reader, List<IndexReaderContext> children, List<AtomicReaderContext> leaves) {
+  CompositeReaderContext(CompositeReader reader, List<IndexReaderContext> children, List<LeafReaderContext> leaves) {
     this(null, reader, 0, 0, children, leaves);
   }
   
   private CompositeReaderContext(CompositeReaderContext parent, CompositeReader reader,
       int ordInParent, int docbaseInParent, List<IndexReaderContext> children,
-      List<AtomicReaderContext> leaves) {
+      List<LeafReaderContext> leaves) {
     super(parent, ordInParent, docbaseInParent);
     this.children = Collections.unmodifiableList(children);
     this.leaves = leaves == null ? null : Collections.unmodifiableList(leaves);
@@ -60,7 +60,7 @@ public final class CompositeReaderContext extends IndexReaderContext {
   }
 
   @Override
-  public List<AtomicReaderContext> leaves() throws UnsupportedOperationException {
+  public List<LeafReaderContext> leaves() throws UnsupportedOperationException {
     if (!isTopLevel)
       throw new UnsupportedOperationException("This is not a top-level context.");
     assert leaves != null;
@@ -80,7 +80,7 @@ public final class CompositeReaderContext extends IndexReaderContext {
   
   private static final class Builder {
     private final CompositeReader reader;
-    private final List<AtomicReaderContext> leaves = new ArrayList<>();
+    private final List<LeafReaderContext> leaves = new ArrayList<>();
     private int leafDocBase = 0;
     
     public Builder(CompositeReader reader) {
@@ -92,9 +92,9 @@ public final class CompositeReaderContext extends IndexReaderContext {
     }
     
     private IndexReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
-      if (reader instanceof AtomicReader) {
-        final AtomicReader ar = (AtomicReader) reader;
-        final AtomicReaderContext atomic = new AtomicReaderContext(parent, ar, ord, docBase, leaves.size(), leafDocBase);
+      if (reader instanceof LeafReader) {
+        final LeafReader ar = (LeafReader) reader;
+        final LeafReaderContext atomic = new LeafReaderContext(parent, ar, ord, docBase, leaves.size(), leafDocBase);
         leaves.add(atomic);
         leafDocBase += reader.maxDoc();
         return atomic;

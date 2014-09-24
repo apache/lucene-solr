@@ -19,7 +19,7 @@ package org.apache.lucene.queries;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader; // for javadocs
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.search.Explanation;
@@ -38,12 +38,12 @@ import org.apache.lucene.search.Explanation;
  */
 public class CustomScoreProvider {
 
-  protected final AtomicReaderContext context;
+  protected final LeafReaderContext context;
 
   /**
    * Creates a new instance of the provider class for the given {@link IndexReader}.
    */
-  public CustomScoreProvider(AtomicReaderContext context) {
+  public CustomScoreProvider(LeafReaderContext context) {
     this.context = context;
   }
 

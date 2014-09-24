@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -96,7 +96,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   // ...this is done to be more consistent with things like SpanFirstQuery
   
   @Override
-  public Spans getSpans(AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     return maskedQuery.getSpans(context, acceptDocs, termContexts);
   }
 

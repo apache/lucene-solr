@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
@@ -34,7 +34,7 @@ class ExpressionComparator extends FieldComparator<Double> {
   
   private ValueSource source;
   private FunctionValues scores;
-  private AtomicReaderContext readerContext;
+  private LeafReaderContext readerContext;
   
   public ExpressionComparator(ValueSource source, int numHits) {
     values = new double[numHits];
@@ -83,7 +83,7 @@ class ExpressionComparator extends FieldComparator<Double> {
   }
   
   @Override
-  public FieldComparator<Double> setNextReader(AtomicReaderContext context) throws IOException {
+  public FieldComparator<Double> setNextReader(LeafReaderContext context) throws IOException {
     this.readerContext = context;
     return this;
   }
