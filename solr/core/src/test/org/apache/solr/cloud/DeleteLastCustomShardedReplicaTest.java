@@ -45,7 +45,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
-@Ignore
+@Ignore("SOLR-6347")
 public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTestBase {
   private CloudSolrServer client;
 
