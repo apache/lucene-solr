@@ -376,6 +376,7 @@ public class Overseer implements Closeable {
     }
 
     private void checkIfIamStillLeader() {
+      if (zkController != null && zkController.getCoreContainer().isShutDown()) return;//shutting down no need to go further
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
       String path = "/overseer_elect/leader";
       byte[] data = null;
