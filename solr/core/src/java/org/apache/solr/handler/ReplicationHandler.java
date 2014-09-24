@@ -53,9 +53,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.RateLimiter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -64,8 +65,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrDeletionPolicy;
@@ -1066,7 +1067,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getGeneration());
           }
           if(oldCommitPoint != null){
-            core.getDeletionPolicy().releaseCommitPoint(oldCommitPoint.getGeneration());
+            core.getDeletionPolicy().releaseCommitPointAndExtendReserve(oldCommitPoint.getGeneration());
           }
           ***/
         }
@@ -1094,6 +1095,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     };
   }
 
+  /**This class is used to read and send files in the lucene index
+   *
+   */
   private class DirectoryFileStream {
     protected SolrParams params;
 
@@ -1102,40 +1106,83 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     protected Long indexGen;
     protected IndexDeletionPolicyWrapper delPolicy;
 
+    protected String fileName;
+    protected String cfileName;
+    protected String sOffset;
+    protected String sLen;
+    protected String compress;
+    protected boolean useChecksum;
+
+    protected long offset = -1;
+    protected int len = -1;
+
+    protected Checksum checksum;
+
+    private RateLimiter rateLimiter;
+
+    byte[] buf;
+
     public DirectoryFileStream(SolrParams solrParams) {
       params = solrParams;
       delPolicy = core.getDeletionPolicy();
+
+      fileName = params.get(FILE);
+      cfileName = params.get(CONF_FILE_SHORT);
+      sOffset = params.get(OFFSET);
+      sLen = params.get(LEN);
+      compress = params.get(COMPRESSION);
+      useChecksum = params.getBool(CHECKSUM, false);
+      indexGen = params.getLong(GENERATION, null);
+      if (useChecksum) {
+        checksum = new Adler32();
+      }
+      //No throttle if MAX_WRITE_PER_SECOND is not specified
+      double maxWriteMBPerSec = params.getDouble(MAX_WRITE_PER_SECOND, Double.MAX_VALUE);
+      rateLimiter = new RateLimiter.SimpleRateLimiter(maxWriteMBPerSec);
     }
 
-    public void write(OutputStream out) throws IOException {
-      String fileName = params.get(FILE);
-      String cfileName = params.get(CONF_FILE_SHORT);
-      String sOffset = params.get(OFFSET);
-      String sLen = params.get(LEN);
-      String compress = params.get(COMPRESSION);
-      String sChecksum = params.get(CHECKSUM);
-      String sGen = params.get(GENERATION);
-      if (sGen != null) indexGen = Long.parseLong(sGen);
+    protected void initWrite() throws IOException {
+      if (sOffset != null) offset = Long.parseLong(sOffset);
+      if (sLen != null) len = Integer.parseInt(sLen);
+      if (fileName == null && cfileName == null) {
+        // no filename do nothing
+        writeNothingAndFlush();
+      }
+      buf = new byte[(len == -1 || len > PACKET_SZ) ? PACKET_SZ : len];
+
+      //reserve commit point till write is complete
+      if(indexGen != null) {
+        delPolicy.saveCommitPoint(indexGen);
+      }
+    }
+
+    protected void createOutputStream(OutputStream out) {
       if (Boolean.parseBoolean(compress)) {
         fos = new FastOutputStream(new DeflaterOutputStream(out));
       } else {
         fos = new FastOutputStream(out);
       }
+    }
 
-      int packetsWritten = 0;
+    protected void releaseCommitPointAndExtendReserve() {
+      if(indexGen != null) {
+        //release the commit point as the write is complete
+        delPolicy.releaseCommitPoint(indexGen);
+
+        //Reserve the commit point for another 10s for the next file to be to fetched.
+        //We need to keep extending the commit reservation between requests so that the replica can fetch
+        //all the files correctly.
+        delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
+      }
+
+    }
+    public void write(OutputStream out) throws IOException {
+      createOutputStream(out);
+
       IndexInput in = null;
       try {
-        long offset = -1;
-        int len = -1;
-        // check if checksum is requested
-        boolean useChecksum = Boolean.parseBoolean(sChecksum);
-        if (sOffset != null) offset = Long.parseLong(sOffset);
-        if (sLen != null) len = Integer.parseInt(sLen);
-        if (fileName == null && cfileName == null) {
-          // no filename do nothing
-          writeNothing();
-        }
-        
+        initWrite();
+
         RefCounted<SolrIndexSearcher> sref = core.getSearcher();
         Directory dir;
         try {
@@ -1147,17 +1194,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         in = dir.openInput(fileName, IOContext.READONCE);
         // if offset is mentioned move the pointer to that point
         if (offset != -1) in.seek(offset);
-        byte[] buf = new byte[(len == -1 || len > PACKET_SZ) ? PACKET_SZ : len];
-        Checksum checksum = null;
-        if (useChecksum) checksum = new Adler32();
         
         long filelen = dir.fileLength(fileName);
+        long maxBytesBeforePause = 0;
+
         while (true) {
           offset = offset == -1 ? 0 : offset;
           int read = (int) Math.min(buf.length, filelen - offset);
           in.readBytes(buf, 0, read);
-          
-          fos.writeInt((int) read);
+          fos.writeInt(read);
           if (useChecksum) {
             checksum.reset();
             checksum.update(buf, 0, read);
@@ -1165,13 +1210,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
           fos.write(buf, 0, read);
           fos.flush();
-          if (indexGen != null && (packetsWritten % 5 == 0)) {
-            // after every 5 packets reserve the commitpoint for some time
-            delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
+
+          //Pause if necessary
+          maxBytesBeforePause += read;
+          if (maxBytesBeforePause >= rateLimiter.getMinPauseCheckBytes()) {
+            rateLimiter.pause(maxBytesBeforePause);
+            maxBytesBeforePause = 0;
           }
-          packetsWritten++;
           if (read != buf.length) {
-            writeNothing();
+            writeNothingAndFlush();
             fos.close();
             break;
           }
@@ -1184,6 +1231,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (in != null) {
           in.close();
         }
+        releaseCommitPointAndExtendReserve();
       }
     }
 
@@ -1191,12 +1239,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     /**
      * Used to write a marker for EOF
      */
-    protected void writeNothing() throws IOException {
+    protected void writeNothingAndFlush() throws IOException {
       fos.writeInt(0);
       fos.flush();
     }
   }
 
+  /**This is used to write files in the conf directory.
+   */
   private class LocalFsFileStream extends DirectoryFileStream {
 
     public LocalFsFileStream(SolrParams solrParams) {
@@ -1205,39 +1255,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     @Override
     public void write(OutputStream out) throws IOException {
-      String fileName = params.get(FILE);
-      String cfileName = params.get(CONF_FILE_SHORT);
-      String sOffset = params.get(OFFSET);
-      String sLen = params.get(LEN);
-      String compress = params.get(COMPRESSION);
-      String sChecksum = params.get(CHECKSUM);
-      String sGen = params.get(GENERATION);
-      if (sGen != null) indexGen = Long.parseLong(sGen);
-      if (Boolean.parseBoolean(compress)) {
-        fos = new FastOutputStream(new DeflaterOutputStream(out));
-      } else {
-        fos = new FastOutputStream(out);
-      }
+      createOutputStream(out);
       FileInputStream inputStream = null;
-      int packetsWritten = 0;
       try {
-        long offset = -1;
-        int len = -1;
-        //check if checksum is requested
-        boolean useChecksum = Boolean.parseBoolean(sChecksum);
-        if (sOffset != null)
-          offset = Long.parseLong(sOffset);
-        if (sLen != null)
-          len = Integer.parseInt(sLen);
-        if (fileName == null && cfileName == null) {
-          //no filename do nothing
-          writeNothing();
-        }
-
-        File file = null;
+        initWrite();
   
         //if if is a conf file read from config diectory
-        file = new File(core.getResourceLoader().getConfigDir(), cfileName);
+        File file = new File(core.getResourceLoader().getConfigDir(), cfileName);
 
         if (file.exists() && file.canRead()) {
           inputStream = new FileInputStream(file);
@@ -1245,17 +1269,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           //if offset is mentioned move the pointer to that point
           if (offset != -1)
             channel.position(offset);
-          byte[] buf = new byte[(len == -1 || len > PACKET_SZ) ? PACKET_SZ : len];
-          Checksum checksum = null;
-          if (useChecksum)
-            checksum = new Adler32();
           ByteBuffer bb = ByteBuffer.wrap(buf);
 
           while (true) {
             bb.clear();
             long bytesRead = channel.read(bb);
             if (bytesRead <= 0) {
-              writeNothing();
+              writeNothingAndFlush();
               fos.close();
               break;
             }
@@ -1267,19 +1287,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
             fos.write(buf, 0, (int) bytesRead);
             fos.flush();
-            if (indexGen != null && (packetsWritten % 5 == 0)) {
-              //after every 5 packets reserve the commitpoint for some time
-              delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
-            }
-            packetsWritten++;
           }
         } else {
-          writeNothing();
+          writeNothingAndFlush();
         }
       } catch (IOException e) {
         LOG.warn("Exception while writing response for params: " + params, e);
       } finally {
         IOUtils.closeQuietly(inputStream);
+        releaseCommitPointAndExtendReserve();
       }
     }
   } 
@@ -1327,6 +1343,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String NAME = "name";
 
   public static final String SIZE = "size";
+
+  public static final String MAX_WRITE_PER_SECOND = "maxWriteMBPerSec";
 
   public static final String CONF_FILE_SHORT = "cf";
 
