@@ -135,6 +135,9 @@ New Features
   of arbitrary functions, ie: stats.field={!func}product(price,popularity)
   (hossman)
 
+* SOLR-6485: ReplicationHandler should have an option to throttle the speed of
+  replication (Varun Thacker, NOble Paul)
+
 Bug Fixes
 ----------------------
 

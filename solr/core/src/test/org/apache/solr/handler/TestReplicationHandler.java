@@ -28,12 +28,16 @@ import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
@@ -485,13 +489,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
   {
     String masterUrl = buildUrl(pJettyPort) + "/replication?command=" + pCommand;
-    try {
-      URL u = new URL(masterUrl);
-      InputStream stream = u.openStream();
-      stream.close();
-    } catch (IOException e) {
-      //e.printStackTrace();
-    }    
+    URL u = new URL(masterUrl);
+    InputStream stream = u.openStream();
+    stream.close();
   }
   
   @Test
@@ -639,14 +639,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     // todo: make SolrJ easier to pass arbitrary params to
     // TODO: precommit WILL screw with the rest of this test
-    String masterUrl = buildUrl(masterJetty.getLocalPort()) + "/update?prepareCommit=true";
-    URL url = new URL(masterUrl);
-//    InputStream stream = url.openStream();
-//    try {
-//      stream.close();
-//    } catch (IOException e) {
-//      //e.printStackTrace();
-//    }
 
     masterClient.commit();
 
@@ -655,15 +647,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // snappull
-    masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/replication?command=fetchindex&masterUrl=";
+    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/replication?command=fetchindex&masterUrl=";
     masterUrl += buildUrl(masterJetty.getLocalPort()) + "/replication";
-    url = new URL(masterUrl);
+    URL url = new URL(masterUrl);
     InputStream stream = url.openStream();
-    try {
-      stream.close();
-    } catch (IOException e) {
-      //e.printStackTrace();
-    }
+    stream.close();
     
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
@@ -1005,7 +993,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     pullFromTo(slaveJetty, masterJetty);
   }
   
-  private void pullFromTo(JettySolrRunner from, JettySolrRunner to) throws MalformedURLException, IOException {
+  private void pullFromTo(JettySolrRunner from, JettySolrRunner to) throws IOException {
     String masterUrl;
     URL url;
     InputStream stream;
@@ -1014,11 +1002,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         + buildUrl(from.getLocalPort()) + "/replication";
     url = new URL(masterUrl);
     stream = url.openStream();
-    try {
-      stream.close();
-    } catch (IOException e) {
-      // e.printStackTrace();
-    }
+    stream.close();
   }
 
   @Test
@@ -1294,6 +1278,110 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     checkForSingleIndex(masterJetty);
     checkForSingleIndex(slaveJetty);
+  }
+
+  @Test
+  public void testRateLimitedReplication() throws Exception {
+
+    //clean index
+    masterClient.deleteByQuery("*:*");
+    slaveClient.deleteByQuery("*:*");
+    masterClient.commit();
+    slaveClient.commit();
+
+    masterJetty.stop();
+    slaveJetty.stop();
+
+    //Start master with the new solrconfig
+    master.copyConfigFile(CONF_DIR + "solrconfig-master-throttled.xml", "solrconfig.xml");
+    useFactory(null);
+    masterJetty = createJetty(master);
+    masterClient.shutdown();
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    //index docs
+    final int totalDocs = TestUtil.nextInt(random(), 50, 100);
+    for (int i = 0; i < totalDocs; i++)
+      index(masterClient, "id", i, "name", TestUtil.randomSimpleString(random(), 1000 , 5000));
+
+    masterClient.commit();
+
+    //Check Index Size
+    String dataDir = master.getDataDir();
+    masterClient.shutdown();
+    masterJetty.stop();
+
+    Directory dir = FSDirectory.open(Paths.get(dataDir, "index"));
+    String[] files = dir.listAll();
+    long totalBytes = 0;
+    for(String file : files) {
+      totalBytes += dir.fileLength(file);
+    }
+
+    float approximateTimeInSeconds = Math.round( totalBytes/1024/1024/0.1 ); // maxWriteMBPerSec=0.1 in solrconfig
+
+    //Start again and replicate the data
+    useFactory(null);
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    //start slave
+    slave.setTestPort(masterJetty.getLocalPort());
+    slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
+    slaveJetty = createJetty(slave);
+    slaveClient.shutdown();
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+
+    long startTime = System.nanoTime();
+
+    pullFromMasterToSlave();
+
+    //Add a few more docs in the master. Just to make sure that we are replicating the correct index point
+    //These extra docs should not get replicated
+    new Thread(new AddExtraDocs(masterClient, totalDocs)).start();
+
+    //Wait and make sure that it actually replicated correctly.
+    NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(totalDocs, slaveQueryResult.getNumFound());
+
+    long timeTaken = System.nanoTime() - startTime;
+
+    long timeTakenInSeconds = TimeUnit.SECONDS.convert(timeTaken, TimeUnit.NANOSECONDS);
+
+    //Let's make sure it took more than approximateTimeInSeconds to make sure that it was throttled
+    boolean isElapsed = false;
+    if(timeTakenInSeconds - approximateTimeInSeconds > 0) {
+      isElapsed = true;
+    }
+    assertTrue(isElapsed);
+  }
+
+  private class AddExtraDocs implements Runnable {
+
+    SolrServer masterClient;
+    int startId;
+    public AddExtraDocs(SolrServer masterClient, int startId) {
+      this.masterClient = masterClient;
+      this.startId = startId;
+    }
+
+    @Override
+    public void run() {
+      final int totalDocs = TestUtil.nextInt(random(), 1, 10);
+      for (int i = 0; i < totalDocs; i++) {
+        try {
+          index(masterClient, "id", i + startId, "name", TestUtil.randomSimpleString(random(), 1000 , 5000));
+        } catch (Exception e) {
+          //Do nothing. Wasn't able to add doc.
+        }
+      }
+      try {
+        masterClient.commit();
+      } catch (Exception e) {
+        //Do nothing. No extra doc got committed.
+      }
+    }
   }
   
   /**
