@@ -119,7 +119,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     loader.reload(classloader);
   }
   
-  private static Codec defaultCodec = Codec.forName("Lucene410");
+  private static Codec defaultCodec = Codec.forName("Lucene50");
   
   /** expert: returns the default codec used for newly created
    *  {@link IndexWriterConfig}s.

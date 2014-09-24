@@ -169,21 +169,21 @@ public class CheckIndex {
 
       /** Current deletions generation. */
       public long deletionsGen;
-    
-      /** Number of deleted documents. */
-      public int numDeleted;
 
       /** True if we were able to open an AtomicReader on this
        *  segment. */
       public boolean openReaderPassed;
 
-      /** Number of fields in this segment. */
-      int numFields;
-
       /** Map that includes certain
        *  debugging details that IndexWriter records into
        *  each segment it creates */
       public Map<String,String> diagnostics;
+      
+      /** Status for testing of livedocs */
+      public LiveDocStatus liveDocStatus;
+      
+      /** Status for testing of field infos */
+      public FieldInfoStatus fieldInfoStatus;
 
       /** Status for testing of field norms (null if field norms could not be tested). */
       public FieldNormStatus fieldNormStatus;
@@ -199,6 +199,34 @@ public class CheckIndex {
       
       /** Status for testing of DocValues (null if DocValues could not be tested). */
       public DocValuesStatus docValuesStatus;
+    }
+    
+    /**
+     * Status from testing livedocs
+     */
+    public static final class LiveDocStatus {
+      private LiveDocStatus() {
+      }
+      
+      /** Number of deleted documents. */
+      public int numDeleted;
+      
+      /** Exception thrown during term index test (null on success) */
+      public Throwable error = null;
+    }
+    
+    /**
+     * Status from testing field infos.
+     */
+    public static final class FieldInfoStatus {
+      private FieldInfoStatus() {
+      }
+
+      /** Number of fields successfully tested */
+      public long totFields = 0L;
+
+      /** Exception thrown during term index test (null on success) */
+      public Throwable error = null;
     }
 
     /**
@@ -574,63 +602,34 @@ public class CheckIndex {
         reader.checkIntegrity();
         msg(infoStream, "OK");
 
-        if (infoStream != null)
-          infoStream.print("    test: check live docs.....");
+        if (reader.maxDoc() != info.info.getDocCount()) {
+          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
+        }
+        
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
+        
         if (reader.hasDeletions()) {
           if (reader.numDocs() != info.info.getDocCount() - info.getDelCount()) {
             throw new RuntimeException("delete count mismatch: info=" + (info.info.getDocCount() - info.getDelCount()) + " vs reader=" + reader.numDocs());
           }
-          if ((info.info.getDocCount()-reader.numDocs()) > reader.maxDoc()) {
-            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.getDocCount()-reader.numDocs()));
+          if ((info.info.getDocCount() - reader.numDocs()) > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.info.getDocCount() - reader.numDocs()));
           }
-          if (info.info.getDocCount() - numDocs != info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - numDocs));
+          if (info.info.getDocCount() - reader.numDocs() != info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - reader.numDocs()));
           }
-          Bits liveDocs = reader.getLiveDocs();
-          if (liveDocs == null) {
-            throw new RuntimeException("segment should have deletions, but liveDocs is null");
-          } else {
-            int numLive = 0;
-            for (int j = 0; j < liveDocs.length(); j++) {
-              if (liveDocs.get(j)) {
-                numLive++;
-              }
-            }
-            if (numLive != numDocs) {
-              throw new RuntimeException("liveDocs count mismatch: info=" + numDocs + ", vs bits=" + numLive);
-            }
-          }
-          
-          segInfoStat.numDeleted = info.info.getDocCount() - numDocs;
-          msg(infoStream, "OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
           if (info.getDelCount() != 0) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - numDocs));
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - reader.numDocs()));
           }
-          Bits liveDocs = reader.getLiveDocs();
-          if (liveDocs != null) {
-            // its ok for it to be non-null here, as long as none are set right?
-            for (int j = 0; j < liveDocs.length(); j++) {
-              if (!liveDocs.get(j)) {
-                throw new RuntimeException("liveDocs mismatch: info says no deletions but doc " + j + " is deleted.");
-              }
-            }
-          }
-          msg(infoStream, "OK");
         }
-        if (reader.maxDoc() != info.info.getDocCount()) {
-          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
-        }
+        
+        // Test Livedocs
+        segInfoStat.liveDocStatus = testLiveDocs(reader, infoStream, failFast);
 
-        // Test getFieldInfos()
-        if (infoStream != null) {
-          infoStream.print("    test: fields..............");
-        }         
-        FieldInfos fieldInfos = reader.getFieldInfos();
-        msg(infoStream, "OK [" + fieldInfos.size() + " fields]");
-        segInfoStat.numFields = fieldInfos.size();
+        // Test Fieldinfos
+        segInfoStat.fieldInfoStatus = testFieldInfos(reader, infoStream, failFast);
         
         // Test Field Norms
         segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
@@ -648,7 +647,11 @@ public class CheckIndex {
 
         // Rethrow the first exception we encountered
         //  This will cause stats for failed segments to be incremented properly
-        if (segInfoStat.fieldNormStatus.error != null) {
+        if (segInfoStat.liveDocStatus.error != null) {
+          throw new RuntimeException("Live docs test failed");
+        } else if (segInfoStat.fieldInfoStatus.error != null) {
+          throw new RuntimeException("Field Info test failed");
+        } else if (segInfoStat.fieldNormStatus.error != null) {
           throw new RuntimeException("Field Norm test failed");
         } else if (segInfoStat.termIndexStatus.error != null) {
           throw new RuntimeException("Term Index test failed");
@@ -706,6 +709,94 @@ public class CheckIndex {
     }
 
     return result;
+  }
+  
+  /**
+   * Test live docs.
+   * @lucene.experimental
+   */
+  public static Status.LiveDocStatus testLiveDocs(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    final Status.LiveDocStatus status = new Status.LiveDocStatus();
+    
+    try {
+      if (infoStream != null)
+        infoStream.print("    test: check live docs.....");
+      final int numDocs = reader.numDocs();
+      if (reader.hasDeletions()) {
+        Bits liveDocs = reader.getLiveDocs();
+        if (liveDocs == null) {
+          throw new RuntimeException("segment should have deletions, but liveDocs is null");
+        } else {
+          int numLive = 0;
+          for (int j = 0; j < liveDocs.length(); j++) {
+            if (liveDocs.get(j)) {
+              numLive++;
+            }
+          }
+          if (numLive != numDocs) {
+            throw new RuntimeException("liveDocs count mismatch: info=" + numDocs + ", vs bits=" + numLive);
+          }
+        }
+        
+        status.numDeleted = reader.numDeletedDocs();
+        msg(infoStream, "OK [" + (status.numDeleted) + " deleted docs]");
+      } else {
+        Bits liveDocs = reader.getLiveDocs();
+        if (liveDocs != null) {
+          // its ok for it to be non-null here, as long as none are set right?
+          for (int j = 0; j < liveDocs.length(); j++) {
+            if (!liveDocs.get(j)) {
+              throw new RuntimeException("liveDocs mismatch: info says no deletions but doc " + j + " is deleted.");
+            }
+          }
+        }
+        msg(infoStream, "OK");
+      }
+      
+    } catch (Throwable e) {
+      if (failFast) {
+        IOUtils.reThrow(e);
+      }
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+    
+    return status;
+  }
+  
+  /**
+   * Test field infos.
+   * @lucene.experimental
+   */
+  public static Status.FieldInfoStatus testFieldInfos(LeafReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    final Status.FieldInfoStatus status = new Status.FieldInfoStatus();
+    
+    try {
+      // Test Field Infos
+      if (infoStream != null) {
+        infoStream.print("    test: field infos.........");
+      }
+      FieldInfos fieldInfos = reader.getFieldInfos();
+      for (FieldInfo f : fieldInfos) {
+        f.checkConsistency();
+      }
+      msg(infoStream, "OK [" + fieldInfos.size() + " fields]");
+      status.totFields = fieldInfos.size();
+    } catch (Throwable e) {
+      if (failFast) {
+        IOUtils.reThrow(e);
+      }
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+    
+    return status;
   }
 
   /**

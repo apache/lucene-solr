@@ -149,24 +149,45 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  private boolean checkConsistency() {
-    if (!indexed) {
-      assert !storeTermVector;
-      assert !storePayloads;
-      assert !omitNorms;
-      assert normType == null;
-      assert indexOptions == null;
-    } else {
-      assert indexOptions != null;
+  /** 
+   * Performs internal consistency checks.
+   * Always returns true (or throws IllegalStateException) 
+   */
+  public boolean checkConsistency() {
+    if (indexed) {
+      if (indexOptions == null) {
+        throw new IllegalStateException("indexed field '" + name + "' must have index options");
+      }
       if (omitNorms) {
-        assert normType == null;
+        if (normType != null) {
+          throw new IllegalStateException("indexed field '" + name + "' cannot both omit norms and have norms");
+        }
       }
       // Cannot store payloads unless positions are indexed:
-      assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
+      if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0 && storePayloads) {
+        throw new IllegalStateException("indexed field '" + name + "' cannot have payloads without positions");
+      }
+    } else {
+      if (storeTermVector) {
+        throw new IllegalStateException("non-indexed field '" + name + "' cannot store term vectors");
+      }
+      if (storePayloads) {
+        throw new IllegalStateException("non-indexed field '" + name + "' cannot store payloads");
+      }
+      if (omitNorms) {
+        throw new IllegalStateException("non-indexed field '" + name + "' cannot omit norms");
+      }
+      if (normType != null) {
+        throw new IllegalStateException("non-indexed field '" + name + "' cannot have norms");
+      }
+      if (indexOptions != null) {
+        throw new IllegalStateException("non-indexed field '" + name + "' cannot have index options");
+
+      }
     }
     
-    if (dvGen != -1) {
-      assert docValueType != null;
+    if (dvGen != -1 && docValueType == null) {
+      throw new IllegalStateException("field '" + name + "' cannot have a docvalues update generation without having docvalues");
     }
 
     return true;
