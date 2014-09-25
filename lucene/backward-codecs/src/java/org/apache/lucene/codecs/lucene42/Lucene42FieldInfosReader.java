@@ -29,6 +29,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -49,8 +50,8 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
   }
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene42FieldInfosFormat.EXTENSION);
+  public FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext iocontext) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, "", Lucene42FieldInfosFormat.EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     
     boolean success = false;

@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -45,11 +46,11 @@ public final class Lucene42FieldInfosWriter extends FieldInfosWriter {
   }
   
   @Override
-  public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
+  public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     if (!segmentSuffix.isEmpty()) {
       throw new UnsupportedOperationException("4.2 does not support fieldinfo updates");
     }
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene42FieldInfosFormat.EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, "", Lucene42FieldInfosFormat.EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     boolean success = false;
     try {

@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -59,11 +60,11 @@ class CrankyFieldInfosFormat extends FieldInfosFormat {
     }
 
     @Override
-    public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
+    public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from FieldInfosWriter.write()");
       }
-      delegate.write(directory, segmentName, segmentSuffix, infos, context);
+      delegate.write(directory, segmentInfo, segmentSuffix, infos, context);
     }
   }
 }

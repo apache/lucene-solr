@@ -83,15 +83,6 @@ public final class SegmentInfo {
   }
 
   /**
-   * Construct a new complete SegmentInfo instance from
-   * input, with a newly generated random id.
-   */
-  public SegmentInfo(Directory dir, Version version, String name, int docCount,
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
-    this(dir, version, name, docCount, isCompoundFile, codec, diagnostics, null);
-  }
-
-  /**
    * Construct a new complete SegmentInfo instance from input.
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
