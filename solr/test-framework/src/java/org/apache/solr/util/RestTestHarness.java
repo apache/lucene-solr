@@ -130,7 +130,7 @@ public class RestTestHarness extends BaseTestHarness {
    *
    * @param request The URL path and optional query params
    * @param content The content to include with the POST request
-   * @return The response to the PUT request
+   * @return The response to the POST request
    */
   public String post(String request, String content) throws IOException {
     HttpPost httpPost = new HttpPost(getBaseURL() + request);

@@ -138,6 +138,8 @@ New Features
 * SOLR-6485: ReplicationHandler should have an option to throttle the speed of
   replication (Varun Thacker, NOble Paul)
 
+* SOLR-6543: Give HttpSolrServer the ability to send PUT requests (Gregory Chanan)
+
 Bug Fixes
 ----------------------
 

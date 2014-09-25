@@ -33,7 +33,8 @@ public abstract class SolrRequest implements Serializable
 {
   public enum METHOD {
     GET,
-    POST
+    POST,
+    PUT
   };
 
   private METHOD method = METHOD.GET;
