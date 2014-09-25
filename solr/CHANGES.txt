@@ -140,6 +140,9 @@ New Features
 
 * SOLR-6543: Give HttpSolrServer the ability to send PUT requests (Gregory Chanan)
 
+* SOLR-5986: Don't allow runaway queries from harming Solr cluster health or search 
+  performance (Anshum Gupta, Steve Rowe, Robert Muir)
+
 Bug Fixes
 ----------------------
 

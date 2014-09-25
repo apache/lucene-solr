@@ -66,6 +66,10 @@ New Features
 
 * LUCENE-5949: Add Accountable.getChildResources(). (Robert Muir)
 
+* SOLR-5986: Added ExitableDirectoryReader that extends FilterDirectoryReader and enables
+  exiting requests that take too long to enumerate over terms. (Anshum Gupta, Steve Rowe,
+  Robert Muir)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
