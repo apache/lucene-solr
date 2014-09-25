@@ -116,6 +116,13 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       lastMethod = "post";
       recordRequest(req, resp);
     }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+      lastMethod = "put";
+      recordRequest(req, resp);
+    }
     
     private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
       setHeaders(req);
@@ -232,6 +239,23 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
     assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
 
+    //PUT
+    DebugServlet.clear();
+    try {
+      server.query(q, METHOD.PUT);
+    } catch (Throwable t) {}
+    assertEquals("put", DebugServlet.lastMethod);
+    assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
+    assertEquals(server.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
+    assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
+    assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
+
     //XML/GET
     server.setParser(new XMLResponseParser());
     DebugServlet.clear();
@@ -256,6 +280,23 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       server.query(q, METHOD.POST);
     } catch (Throwable t) {}
     assertEquals("post", DebugServlet.lastMethod);
+    assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+    assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
+    assertEquals(server.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+    assertEquals(1, DebugServlet.parameters.get("a").length);
+    assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
+    assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
+    assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
+
+    server.setParser(new XMLResponseParser());
+    DebugServlet.clear();
+    try {
+      server.query(q, METHOD.PUT);
+    } catch (Throwable t) {}
+    assertEquals("put", DebugServlet.lastMethod);
     assertEquals("Solr[" + org.apache.solr.client.solrj.impl.HttpSolrServer.class.getName() + "] 1.0", DebugServlet.headers.get("User-Agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
