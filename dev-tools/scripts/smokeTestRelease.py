@@ -1372,9 +1372,8 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
 
   print('    find all past Lucene releases...')
   allReleases = getAllLuceneReleases()
-  if False:
-    for tup in allReleases:
-      print('  %s' % '.'.join(str(x) for x in tup))
+  #for tup in allReleases:
+  #  print('  %s' % '.'.join(str(x) for x in tup))
 
   testedIndices = set()
 
@@ -1394,24 +1393,23 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
       # Should not happen since we redirected stderr to stdout:
       raise RuntimeError('stderr non-empty')
 
-    reIndexName = re.compile('TEST: index[= ](.*?)$', re.MULTILINE)
-
-    for s in reIndexName.findall(stdout):
+    reIndexName = re.compile(r'TEST: index[\s*=\s*](.*?)(-cfs|-nocfs)$', re.MULTILINE)
+    for name, cfsPart in reIndexName.findall(stdout):
       # Fragile: decode the inconsistent naming schemes we've used in TestBWC's indices:
-      name = os.path.splitext(s)[0]
-      # print('parse name %s' % name)
-      if name == '410':
-        tup = 4, 10, 0
-      elif name == '40a':
+      #print('parse name %s' % name)
+      tup = tuple(name.split('.'))
+      if len(tup) == 3:
+        # ok
+        tup = tuple(int(x) for x in tup)
+      elif tup == ('4', '0', '0', '1'):
+        # CONFUSING: this is the 4.0.0-alpha index??
         tup = 4, 0, 0, 0
-      elif name == '40b':
+      elif tup == ('4', '0', '0', '2'):
+        # CONFUSING: this is the 4.0.0-beta index??
         tup = 4, 0, 0, 1
-      elif len(name) == 2:
-        tup = int(name[0]), int(name[1]), 0
-      elif len(name) == 3:
-        tup = int(name[0]), int(name[1]), int(name[2])
       else:
-        raise RuntimeError('do not know how to parse index name %s' % name)
+        raise RuntimeError('could not parse version %s' % name)
+          
       testedIndices.add(tup)
 
   l = list(testedIndices)
