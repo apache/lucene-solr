@@ -29,7 +29,7 @@ import org.junit.Test;
  */
 public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   
-  static int NUM_DOCS_PER_TYPE = 400;
+  static int NUM_DOCS_PER_TYPE = 2000;
   static final String assertionString = "//result[@numFound='"+ (NUM_DOCS_PER_TYPE - 1) + "']";
 
   @BeforeClass
