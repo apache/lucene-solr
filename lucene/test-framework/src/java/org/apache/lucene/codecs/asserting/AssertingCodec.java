@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.asserting;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -49,7 +50,7 @@ public class AssertingCodec extends FilterCodec {
   private final TermVectorsFormat vectors = new AssertingTermVectorsFormat();
   private final StoredFieldsFormat storedFields = new AssertingStoredFieldsFormat();
   private final NormsFormat norms = new AssertingNormsFormat();
-  
+  private final LiveDocsFormat liveDocs = new AssertingLiveDocsFormat();
   private final PostingsFormat defaultFormat = new AssertingPostingsFormat();
   private final DocValuesFormat defaultDVFormat = new AssertingDocValuesFormat();
 
@@ -80,6 +81,11 @@ public class AssertingCodec extends FilterCodec {
   @Override
   public NormsFormat normsFormat() {
     return norms;
+  }
+
+  @Override
+  public LiveDocsFormat liveDocsFormat() {
+    return liveDocs;
   }
 
   @Override
