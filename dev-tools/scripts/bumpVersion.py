@@ -13,80 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import sys
+sys.path.append(os.path.dirname(__file__))
+import scriptutil
+
 import argparse
 import io
-import os
 import re
 import subprocess
-import sys
-
-class Version(object):
-  def __init__(self, major, minor, bugfix):
-    self.major = major
-    self.minor = minor
-    self.bugfix = bugfix
-    self.previous_dot_matcher = self.make_previous_matcher()
-    self.dot = '%d.%d.%d' % (self.major, self.minor, self.bugfix) 
-    self.constant = 'LUCENE_%d_%d_%d' % (self.major, self.minor, self.bugfix)
-
-  @classmethod
-  def parse(cls, value):
-    match = re.search(r'(\d+)\.(\d+).(\d+)', value) 
-    if match is None:
-      raise argparse.ArgumentTypeError('Version argument must be of format x.y.z')
-    return Version(*[int(v) for v in match.groups()])
-
-  def __str__(self):
-    return self.dot
-
-  def make_previous_matcher(self, prefix='', suffix='', sep='\\.'):
-    if self.is_bugfix_release():
-      pattern = '%s%s%s%s%d' % (self.major, sep, self.minor, sep, self.bugfix - 1)
-    elif self.is_minor_release():
-      pattern = '%s%s%d%s\\d+' % (self.major, sep, self.minor - 1, sep)
-    else:
-      pattern = '%d%s\\d+%s\\d+' % (self.major - 1, sep, sep)
-
-    return re.compile(prefix + '(' + pattern + ')' + suffix)
-
-  def is_bugfix_release(self):
-    return self.bugfix != 0
-
-  def is_minor_release(self):
-    return self.bugfix == 0 and self.minor != 0
-
-  def is_major_release(self):
-    return self.bugfix == 0 and self.minor == 0
-
-def run(cmd):
-  try:
-    subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-  except subprocess.CalledProcessError as e:
-    print(e.output.decode('utf-8'))
-    raise e
-
-def update_file(filename, line_re, edit):
-  infile = open(filename, 'r')
-  buffer = [] 
-  
-  changed = False
-  for line in infile:
-    if not changed:
-      match = line_re.search(line)
-      if match:
-        changed = edit(buffer, match, line)
-        if changed is None:
-          return False
-        continue
-    buffer.append(line)
-  if not changed:
-    raise Exception('Could not find %s in %s' % (line_re, filename))
-  with open(filename, 'w') as f:
-    f.write(''.join(buffer))
-  return True
 
 def update_changes(filename, new_version):
-  print('  adding new section to %s...' % filename, end='')
+  print('  adding new section to %s...' % filename, end='', flush=True)
   matcher = re.compile(r'\d+\.\d+\.\d+\s+===')
   def edit(buffer, match, line):
     if new_version.dot in line:
@@ -98,12 +36,12 @@ def update_changes(filename, new_version):
     buffer.append(line)
     return match is not None
      
-  changed = update_file(filename, matcher, edit)
+  changed = scriptutil.update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
 def add_constant(new_version, deprecate):
   filename = 'lucene/core/src/java/org/apache/lucene/util/Version.java'
-  print('  adding constant %s...' % new_version.constant, end='')
+  print('  adding constant %s...' % new_version.constant, end='', flush=True)
   constant_prefix = 'public static final Version LUCENE_'
   matcher = re.compile(constant_prefix)
   prev_matcher = new_version.make_previous_matcher(prefix=constant_prefix, sep='_')
@@ -152,12 +90,12 @@ def add_constant(new_version, deprecate):
       buffer.append(line)
       return False
   
-  changed = update_file(filename, matcher, Edit())
+  changed = scriptutil.update_file(filename, matcher, Edit())
   print('done' if changed else 'uptodate')
 
 version_prop_re = re.compile('version\.base=(.*)')
 def update_build_version(new_version):
-  print('  changing version.base...', end='')
+  print('  changing version.base...', end='', flush=True)
   filename = 'lucene/version.properties'
   def edit(buffer, match, line):
     if new_version.dot in line:
@@ -165,11 +103,11 @@ def update_build_version(new_version):
     buffer.append('version.base=' + new_version.dot + '\n')
     return True 
 
-  changed = update_file(filename, version_prop_re, edit)
+  changed = scriptutil.update_file(filename, version_prop_re, edit)
   print('done' if changed else 'uptodate')
 
 def update_latest_constant(new_version):
-  print('  changing Version.LATEST to %s...' % new_version.constant, end='')
+  print('  changing Version.LATEST to %s...' % new_version.constant, end='', flush=True)
   filename = 'lucene/core/src/java/org/apache/lucene/util/Version.java'
   matcher = re.compile('public static final Version LATEST')
   def edit(buffer, match, line):
@@ -178,7 +116,7 @@ def update_latest_constant(new_version):
     buffer.append(line.rpartition('=')[0] + ('= %s;\n' % new_version.constant))
     return True
 
-  changed = update_file(filename, matcher, edit)
+  changed = scriptutil.update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
   
 def update_example_solrconfigs(new_version):
@@ -191,7 +129,7 @@ def update_example_solrconfigs(new_version):
         update_solrconfig(os.path.join(root, f), matcher, new_version) 
 
 def update_solrconfig(filename, matcher, new_version):
-  print('    %s...' % filename, end='')
+  print('    %s...' % filename, end='', flush=True)
   def edit(buffer, match, line):
     if new_version.dot in line:
       return None
@@ -201,98 +139,11 @@ def update_solrconfig(filename, matcher, new_version):
     buffer.append(line.replace(match.group(1), new_version.dot))
     return True
 
-  changed = update_file(filename, matcher, edit)
-  print('done' if changed else 'uptodate')
-
-def codec_exists(version):
-  codecs_dir = 'lucene/core/src/java/org/apache/lucene/codecs'
-  codec_file = '%(dir)s/lucene%(x)s%(y)s/Lucene%(x)s%(y)sCodec.java'
-  return os.path.exists(codec_file % {'x': version.major, 'y': version.minor, 'dir': codecs_dir})
-
-def create_backcompat_indexes(version, on_trunk):
-  majorminor = '%d%d' % (version.major, version.minor)
-  codec = 'Lucene%s' % majorminor
-  backcompat_dir = 'lucene/backward-codecs' if on_trunk else 'lucene/core'
-
-  create_index(codec, backcompat_dir, 'cfs', majorminor)
-  create_index(codec, backcompat_dir, 'nocfs', majorminor)
-
-def create_index(codec, codecs_dir, type, majorminor):
-  filename = 'index.%s.%s.zip' % (majorminor, type)
-  print('  creating %s...' % filename, end='')
-  index_dir = 'src/test/org/apache/lucene/index'
-  if os.path.exists(os.path.join(codecs_dir, index_dir, filename)):
-    print('uptodate')
-    return
-
-  test = {'cfs': 'testCreateCFS', 'nocfs': 'testCreateNonCFS'}[type]
-  ant_args = ' '.join([
-    '-Dtests.codec=%s' % codec,
-    '-Dtests.useSecurityManager=false',
-    '-Dtestcase=CreateBackwardsCompatibilityIndex',
-    '-Dtestmethod=%s' % test
-  ])
-  base_dir = os.getcwd()
-  bc_index_dir = '/tmp/idx/index.%s' % type
-  bc_index_file = os.path.join(bc_index_dir, filename)
-  
-  success = False
-  if not os.path.exists(bc_index_file):
-    os.chdir(codecs_dir)
-    run('ant test %s' % ant_args)
-    os.chdir('/tmp/idx/index.%s' % type)
-    run('zip %s *' % filename)
-  run('cp %s %s' % (bc_index_file, os.path.join(base_dir, codecs_dir, index_dir)))
-  os.chdir(base_dir)
-  run('svn add %s' % os.path.join(codecs_dir, index_dir, filename))
-  success = True
-
-  os.chdir(base_dir)
-  run('rm -rf %s' % bc_index_dir)
-  if success:
-    print('done')
-
-def update_backcompat_tests(version, on_trunk):
-  majorminor = '%d%d' % (version.major, version.minor)
-  print('  adding new indexes to backcompat tests...', end='')
-  basedir = 'lucene/backward-codecs' if on_trunk else 'lucene/core'
-  filename = '%s/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java' % basedir
-  matcher = re.compile(r'final static String\[\] oldNames = {|};')
-  cfs_name = '%s.cfs' % majorminor
-  nocfs_name = '%s.nocfs' % majorminor
-
-  class Edit(object):
-    start = None
-    def __call__(self, buffer, match, line):
-      if self.start:
-        # first check if the indexes we are adding already exist      
-        last_ndx = len(buffer) - 1 
-        i = last_ndx
-        while i >= self.start:
-          if cfs_name in buffer[i]:
-            return None
-          i -= 1
-
-        last = buffer[last_ndx]
-        spaces = ' ' * (len(last) - len(last.lstrip()))
-        quote_ndx = last.find('"')
-        quote_ndx = last.find('"', quote_ndx + 1)
-        buffer[last_ndx] = last[:quote_ndx + 1] + "," + last[quote_ndx + 1:]
-        buffer.append(spaces + ('"%s",\n' % cfs_name))
-        buffer.append(spaces + ('"%s"\n' % nocfs_name))
-        buffer.append(line)
-        return True
-
-      if 'oldNames' in line:
-        self.start = len(buffer) # location of first index name
-      buffer.append(line)
-      return False
-        
-  changed = update_file(filename, matcher, Edit())
+  changed = scriptutil.update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
 def check_lucene_version_tests():
-  print('  checking lucene version tests...', end='')
+  print('  checking lucene version tests...', end='', flush=True)
   base_dir = os.getcwd()
   os.chdir('lucene/core') 
   run('ant test -Dtestcase=TestVersion')
@@ -300,47 +151,12 @@ def check_lucene_version_tests():
   print('ok')
 
 def check_solr_version_tests():
-  print('  checking solr version tests...', end='')
+  print('  checking solr version tests...', end='', flush=True)
   base_dir = os.getcwd()
   os.chdir('solr/core') 
   run('ant test -Dtestcase=TestLuceneMatchVersion')
   os.chdir(base_dir)
   print('ok')
-
-def check_backcompat_tests(on_trunk):
-  print('  checking backcompat tests...', end='')
-  base_dir = os.getcwd()
-  basedir = 'lucene/backward-codecs' if on_trunk else 'lucene/core'
-  os.chdir(basedir) 
-  run('ant test -Dtestcase=TestBackwardsCompatibility')
-  os.chdir(base_dir)
-  print('ok')
-
-# branch types are "release", "stable" and "trunk"
-def find_branch_type():
-  output = subprocess.check_output('svn info', shell=True)
-  for line in output.split(b'\n'):
-    if line.startswith(b'URL:'):
-      url = line.split(b'/')[-1]
-      break
-  else:
-    raise Exception('svn info missing repo URL')
-
-  if url == b'trunk':
-    return 'trunk'
-  if url.startswith(b'branch_'):
-    return 'stable'
-  if url.startswith(b'lucene_solr_'):
-    return 'release'
-  raise Exception('Cannot run bumpVersion.py on feature branch')
-
-def find_previous_version():
-  return version_prop_re.search(open('lucene/version.properties').read()).group(1)
-
-def merge_change(changeid, repo):
-  print('\nMerging downstream change %d...' % changeid, end='')
-  run('svn merge -c %d --record-only %s' % (changeid, repo))
-  print('done')
 
 def read_config():
   parser = argparse.ArgumentParser(description='Add a new version')
@@ -349,17 +165,10 @@ def read_config():
   parser.add_argument('-r', '--downstream-repo', help='Path to downstream checkout for given changeid')
   c = parser.parse_args()
 
-  c.branch_type = find_branch_type()
+  c.branch_type = scriptutil.find_branch_type()
   c.matching_branch = c.version.is_bugfix_release() and c.branch_type == 'release' or \
                       c.version.is_minor_release() and c.branch_type == 'stable' or \
                       c.branch_type == 'major'
-
-  if c.matching_branch:
-    c.previous_version = Version.parse(find_previous_version())
-  elif c.version.is_minor_release():
-    c.previous_version = Version(c.version.major, c.version.minor - 1, 0)
-  elif c.version.is_bugfix_release():
-    c.previous_version = Version(c.version.major, c.version.minor, c.version.bugfix - 1)
 
   if bool(c.changeid) != bool(c.downstream_repo):
     parser.error('--changeid and --upstream-repo must be used together')
@@ -389,25 +198,14 @@ def main():
     update_latest_constant(c.version)
     update_example_solrconfigs(c.version)
 
-  run_backcompat_tests = False
-  on_trunk = c.branch_type == 'trunk'
-  if not c.version.is_bugfix_release() and codec_exists(c.previous_version):
-    print('\nCreating backwards compatibility tests')
-    create_backcompat_indexes(c.previous_version, on_trunk)
-    update_backcompat_tests(c.previous_version, on_trunk)
-    run_backcompat_tests = True
-
   if c.version.is_major_release():
     print('\nTODO: ')
-    print('  - Update major version bounds in Version.java')
     print('  - Move backcompat oldIndexes to unsupportedIndexes in TestBackwardsCompatibility')
     print('  - Update IndexFormatTooOldException throw cases')
   else:
     print('\nTesting changes')
     check_lucene_version_tests()
     check_solr_version_tests()
-    if run_backcompat_tests: 
-      check_backcompat_tests(on_trunk)
 
   print()
 

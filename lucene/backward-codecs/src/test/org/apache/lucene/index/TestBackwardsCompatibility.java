@@ -19,8 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -67,6 +70,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
@@ -80,17 +84,54 @@ import org.junit.BeforeClass;
 */
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
-  /*
+  // To generate backcompat indexes with the current default codec, run the following ant command:
+  //  ant test -Dtestcase=TestBackwardsCompatibility -Dbwc.indexdir=/path/to/store/indexes
+  //           -Dtests.codec=default -Dtests.useSecurityManager=false
+  // Also add testmethod with one of the index creation methods below, for example:
+  //    -Dtestmethod=testCreateCFS
+  //
+  // Zip up the generated indexes:
+  //
+  //    cd /path/to/store/indexes/index.cfs   ; zip index.<VERSION>-cfs.zip *
+  //    cd /path/to/store/indexes/index.nocfs ; zip index.<VERSION>-nocfs.zip *
+  //
+  // Then move those 2 zip files to your trunk checkout and add them
+  // to the oldNames array.
+
+  public void testCreateCFS() throws IOException {
+    createIndex("index.cfs", true, false);
+  }
+
+  public void testCreateNoCFS() throws IOException {
+    createIndex("index.nocfs", false, false);
+  }
+
+  // These are only needed for the special upgrade test to verify
+  // that also single-segment indexes are correctly upgraded by IndexUpgrader.
+  // You don't need them to be build for non-4.0 (the test is happy with just one
+  // "old" segment format, version is unimportant:
+
+  public void testCreateSingleSegmentCFS() throws IOException {
+    createIndex("index.singlesegment-cfs", true, true);
+  }
+
+  public void testCreateSingleSegmentNoCFS() throws IOException {
+    createIndex("index.singlesegment-nocfs", false, true);
+  }
+
+  private Path getIndexDir() {
+    String path = System.getProperty("tests.bwcdir");
+    assumeTrue("backcompat creation tests must be run with -Dtests,bwcdir=/path/to/write/indexes", path != null);
+    return Paths.get(path);
+  }
+  
   public void testCreateMoreTermsIndex() throws Exception {
-    // we use a real directory name that is not cleaned up,
-    // because this method is only used to create backwards
-    // indexes:
-    File indexDir = new File("moreterms");
-    _TestUtil.rmDir(indexDir);
+    
+    Path indexDir = getIndexDir().resolve("moreterms");
+    Files.deleteIfExists(indexDir);
     Directory dir = newFSDirectory(indexDir);
 
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
-    mp.setUseCompoundFile(false);
     mp.setNoCFSRatio(1.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     MockAnalyzer analyzer = new MockAnalyzer(random());
@@ -98,8 +139,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     // TODO: remove randomness
     IndexWriterConfig conf = new IndexWriterConfig(analyzer)
-      .setMergePolicy(mp);
-    conf.setCodec(Codec.forName("Lucene40"));
+      .setMergePolicy(mp).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
     LineFileDocs docs = new LineFileDocs(null, true);
     for(int i=0;i<50;i++) {
@@ -112,7 +152,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // a test option to not remove temp dir...):
     Thread.sleep(100000);
   }
-  */
   
   private void updateNumeric(IndexWriter writer, String id, String f, String cf, long value) throws IOException {
     writer.updateNumericDocValue(new Term("id", id), f, value);
@@ -124,13 +163,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.updateBinaryDocValue(new Term("id", id), cf, TestDocValuesUpdatesOnOldSegments.toBytes(value*2));
   }
 
-/*  // Creates an index with DocValues updates
+  // Creates an index with DocValues updates
   public void testCreateIndexWithDocValuesUpdates() throws Exception {
-    // we use a real directory name that is not cleaned up,
-    // because this method is only used to create backwards
-    // indexes:
-    File indexDir = new File("/tmp/idx/dvupdates");
-    TestUtil.rm(indexDir);
+    Path indexDir = getIndexDir().resolve("dvupdates");
+    Files.deleteIfExists(indexDir);
     Directory dir = newFSDirectory(indexDir);
     
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
@@ -139,7 +175,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // create an index w/ few doc-values fields, some with updates and some without
     for (int i = 0; i < 30; i++) {
       Document doc = new Document();
-      doc.add(new StringField("id", "" + i, Store.NO));
+      doc.add(new StringField("id", "" + i, Field.Store.NO));
       doc.add(new NumericDocValuesField("ndv1", i));
       doc.add(new NumericDocValuesField("ndv1_c", i*2));
       doc.add(new NumericDocValuesField("ndv2", i*3));
@@ -170,106 +206,106 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     
     writer.close();
     dir.close();
-  }*/
+  }
 
   final static String[] oldNames = {
-      "40a.cfs",
-      "40a.nocfs",
-      "40b.cfs",
-      "40b.nocfs",
-      "40.cfs",
-      "40.nocfs",
-      "41.cfs",
-      "41.nocfs",
-      "42.cfs",
-      "42.nocfs",
-      "421.cfs",
-      "421.nocfs",
-      "43.cfs",
-      "43.nocfs",
-      "431.cfs",
-      "431.nocfs",
-      "44.cfs",
-      "44.nocfs",
-      "45.cfs",
-      "45.nocfs",
-      "451.cfs",
-      "451.nocfs",
-      "46.cfs",
-      "46.nocfs",
-      "461.cfs",
-      "461.nocfs",
-      "47.cfs",
-      "47.nocfs",
-      "471.cfs",
-      "471.nocfs",
-      "472.cfs",
-      "472.nocfs",
-      "48.cfs",
-      "48.nocfs",
-      "481.cfs",
-      "481.nocfs",
-      "49.cfs",
-      "49.nocfs",
-      "491.cfs",
-      "491.nocfs",
-      "410.cfs",
-      "410.nocfs"
+      "4.0.0-cfs",
+      "4.0.0-nocfs",
+      "4.0.0.1-cfs",
+      "4.0.0.1-nocfs",
+      "4.0.0.2-cfs",
+      "4.0.0.2-nocfs",
+      "4.1.0-cfs",
+      "4.1.0-nocfs",
+      "4.2.0-cfs",
+      "4.2.0-nocfs",
+      "4.2.1-cfs",
+      "4.2.1-nocfs",
+      "4.3.0-cfs",
+      "4.3.0-nocfs",
+      "4.3.1-cfs",
+      "4.3.1-nocfs",
+      "4.4.0-cfs",
+      "4.4.0-nocfs",
+      "4.5.0-cfs",
+      "4.5.0-nocfs",
+      "4.5.1-cfs",
+      "4.5.1-nocfs",
+      "4.6.0-cfs",
+      "4.6.0-nocfs",
+      "4.6.1-cfs",
+      "4.6.1-nocfs",
+      "4.7.0-cfs",
+      "4.7.0-nocfs",
+      "4.7.1-cfs",
+      "4.7.1-nocfs",
+      "4.7.2-cfs",
+      "4.7.2-nocfs",
+      "4.8.0-cfs",
+      "4.8.0-nocfs",
+      "4.8.1-cfs",
+      "4.8.1-nocfs",
+      "4.9.0-cfs",
+      "4.9.0-nocfs",
+      "4.9.1-cfs",
+      "4.9.1-nocfs",
+      "4.10.0-cfs",
+      "4.10.0-nocfs"
   };
   
   final String[] unsupportedNames = {
-      "19.cfs",
-      "19.nocfs",
-      "20.cfs",
-      "20.nocfs",
-      "21.cfs",
-      "21.nocfs",
-      "22.cfs",
-      "22.nocfs",
-      "23.cfs",
-      "23.nocfs",
-      "24.cfs",
-      "24.nocfs",
-      "241.cfs",
-      "241.nocfs",
-      "29.cfs",
-      "29.nocfs",
-      "291.cfs",
-      "291.nocfs",
-      "292.cfs",
-      "292.nocfs",
-      "293.cfs",
-      "293.nocfs",
-      "294.cfs",
-      "294.nocfs",
-      "30.cfs",
-      "30.nocfs",
-      "301.cfs",
-      "301.nocfs",
-      "302.cfs",
-      "302.nocfs",
-      "303.cfs",
-      "303.nocfs",
-      "31.cfs",
-      "31.nocfs",
-      "32.cfs",
-      "32.nocfs",
-      "33.cfs",
-      "33.nocfs",
-      "34.cfs",
-      "34.nocfs",
-      "35.cfs",
-      "35.nocfs",
-      "36.cfs",
-      "36.nocfs",
-      "361.cfs",
-      "361.nocfs",
-      "362.cfs",
-      "362.nocfs"
+      "1.9.0-cfs",
+      "1.9.0-nocfs",
+      "2.0.0-cfs",
+      "2.0.0-nocfs",
+      "2.1.0-cfs",
+      "2.1.0-nocfs",
+      "2.2.0-cfs",
+      "2.2.0-nocfs",
+      "2.3.0-cfs",
+      "2.3.0-nocfs",
+      "2.4.0-cfs",
+      "2.4.0-nocfs",
+      "2.4.1-cfs",
+      "2.4.1-nocfs",
+      "2.9.0-cfs",
+      "2.9.0-nocfs",
+      "2.9.1-cfs",
+      "2.9.1-nocfs",
+      "2.9.2-cfs",
+      "2.9.2-nocfs",
+      "2.9.3-cfs",
+      "2.9.3-nocfs",
+      "2.9.4-cfs",
+      "2.9.4-nocfs",
+      "3.0.0-cfs",
+      "3.0.0-nocfs",
+      "3.0.1-cfs",
+      "3.0.1-nocfs",
+      "3.0.2-cfs",
+      "3.0.2-nocfs",
+      "3.0.3-cfs",
+      "3.0.3-nocfs",
+      "3.1.0-cfs",
+      "3.1.0-nocfs",
+      "3.2.0-cfs",
+      "3.2.0-nocfs",
+      "3.3.0-cfs",
+      "3.3.0-nocfs",
+      "3.4.0-cfs",
+      "3.4.0-nocfs",
+      "3.5.0-cfs",
+      "3.5.0-nocfs",
+      "3.6.0-cfs",
+      "3.6.0-nocfs",
+      "3.6.1-cfs",
+      "3.6.1-nocfs",
+      "3.6.2-cfs",
+      "3.6.2-nocfs"
   };
   
-  final static String[] oldSingleSegmentNames = {"40a.optimized.cfs",
-                                                 "40a.optimized.nocfs",
+  final static String[] oldSingleSegmentNames = {"4.0.0-optimized-cfs",
+                                                 "4.0.0-optimized-nocfs",
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -297,7 +333,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     oldIndexDirs = new HashMap<>();
     for (String name : names) {
       Path dir = createTempDir(name);
-      TestUtil.unzip(TestBackwardsCompatibility.class.getResourceAsStream("index." + name + ".zip"), dir);
+      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("index." + name + ".zip");
+      assertNotNull("Index name " + name + " not found", resource);
+      TestUtil.unzip(resource, dir);
       oldIndexDirs.put(name, newFSDirectory(dir));
     }
   }
@@ -317,28 +355,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Arrays.sort(files);
     String prevFile = "";
     for (String file : files) {
-      if (prevFile.endsWith(".cfs")) {
-        String prefix = prevFile.replace(".cfs", "");
-        assertEquals("Missing .nocfs for backcompat index " + prefix, prefix + ".nocfs", file);
+      if (prevFile.endsWith("-cfs")) {
+        String prefix = prevFile.replace("-cfs", "");
+        assertEquals("Missing -nocfs for backcompat index " + prefix, prefix + "-nocfs", file);
       }
     }
-  }
-
-  private String cfsFilename(Version v) {
-    String bugfix = "";
-    if (v.bugfix != 0) {
-      bugfix = Integer.toString(v.bugfix);
-    }
-    String prerelease = "";
-    if (v.minor == 0 && v.bugfix == 0) {
-      if (v.prerelease == 0) {
-        prerelease = "a";
-      } else if (v.prerelease == 1) {
-        prerelease = "b";
-      }
-    }
-
-    return Integer.toString(v.major) + v.minor + bugfix + prerelease + ".cfs";
   }
 
   public void testAllVersionsTested() throws Exception {
@@ -353,7 +374,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         Matcher constant = constantPattern.matcher(field.getName());
         if (constant.matches() == false) continue;
 
-        expectedVersions.add(cfsFilename(v));
+        expectedVersions.add(v.toString() + "-cfs");
       }
     }
 
@@ -362,7 +383,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // find what versions we are testing
     List<String> testedVersions = new ArrayList<>();
     for (String testedVersion : oldNames) {
-      if (testedVersion.endsWith(".cfs") == false) continue;
+      if (testedVersion.endsWith("-cfs") == false) continue;
       testedVersions.add(testedVersion);
     }
     Collections.sort(testedVersions);
@@ -396,13 +417,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       ++j;
     }
 
-    if (missingFiles.isEmpty() && extraFiles.isEmpty()) {
+    // we could be missing up to 1 file, which may be due to a release that is in progress
+    if (missingFiles.size() <= 1 && extraFiles.isEmpty()) {
       // success
       return;
     }
 
     StringBuffer msg = new StringBuffer();
-    if (missingFiles.isEmpty() == false) {
+    if (missingFiles.size() > 1) {
       msg.append("Missing backcompat test files:\n");
       for (String missingFile : missingFiles) {
         msg.append("  " + missingFile + "\n");
@@ -539,13 +561,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void testIndexOldIndex() throws IOException {
+  public void testIndexOldIndex() throws Exception {
     for (String name : oldNames) {
       if (VERBOSE) {
         System.out.println("TEST: oldName=" + name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
-      changeIndexWithAdds(random(), dir, name);
+      Version v = Version.parse(name.substring(0, name.indexOf('-')));
+      changeIndexWithAdds(random(), dir, v);
       dir.close();
     }
   }
@@ -714,7 +737,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     return v0 - v1;
   }
 
-  public void changeIndexWithAdds(Random random, Directory dir, String origOldName) throws IOException {
+  public void changeIndexWithAdds(Random random, Directory dir, Version nameVersion) throws IOException {
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
                                                  .setOpenMode(OpenMode.APPEND)
@@ -725,12 +748,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
 
     // make sure writer sees right total -- writer seems not to know about deletes in .del?
-    final int expected;
-    if (compare(origOldName, "24") < 0) {
-      expected = 44;
-    } else {
-      expected = 45;
-    }
+    final int expected = 45;
     assertEquals("wrong doc count", expected, writer.numDocs());
     writer.close();
 
@@ -784,22 +802,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader.close();
   }
 
-  public Path createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
-    // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
-    Path indexDir = Paths.get("/tmp/idx").resolve(dirName);
-    IOUtils.rm(indexDir);
+  public void createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
+    Path indexDir = getIndexDir().resolve(dirName);
+    Files.deleteIfExists(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
-    String codecName = System.getProperty("tests.codec");
-    if (codecName == null || codecName.trim().isEmpty() || codecName.equals("random")) {
-      fail("Must provide 'tests.codec' property to create BWC index");
-    }
-    Codec codec = Codec.forName(codecName);
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
-      .setMaxBufferedDocs(10).setMergePolicy(mp).setCodec(codec);
+      .setMaxBufferedDocs(10).setMergePolicy(mp);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
@@ -817,13 +829,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
       // TODO: remove randomness
       conf = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(10).setMergePolicy(mp).setCodec(codec);
+        .setMaxBufferedDocs(10).setMergePolicy(mp);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
       writer.close();
 
       conf = new IndexWriterConfig(new MockAnalyzer(random()))
-          .setMaxBufferedDocs(10).setMergePolicy(NoMergePolicy.INSTANCE).setCodec(codec);
+          .setMaxBufferedDocs(10).setMergePolicy(NoMergePolicy.INSTANCE);
       writer = new IndexWriter(dir, conf);
       Term searchTerm = new Term("id", "7");
       writer.deleteDocuments(searchTerm);
@@ -831,8 +843,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     
     dir.close();
-    
-    return indexDir;
   }
 
   private void addDoc(IndexWriter writer, int id) throws IOException
@@ -1199,7 +1209,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String moreTermsIndex = "moreterms.40.zip";
+  public static final String moreTermsIndex = "moreterms.4.0.0.zip";
 
   public void testMoreTerms() throws Exception {
     Path oldIndexDir = createTempDir("moreterms");
@@ -1211,7 +1221,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String dvUpdatesIndex = "dvupdates.48.zip";
+  public static final String dvUpdatesIndex = "dvupdates.4.8.0.zip";
 
   private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);
