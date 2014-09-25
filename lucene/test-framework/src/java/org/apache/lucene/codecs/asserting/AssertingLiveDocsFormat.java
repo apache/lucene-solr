@@ -39,6 +39,10 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
     assert size >= 0;
     MutableBits raw = in.newLiveDocs(size);
     assert raw != null;
+    assert raw.length() == size;
+    for (int i = 0; i < raw.length(); i++) {
+      assert raw.get(i);
+    }
     return new AssertingMutableBits(raw);
   }
 
@@ -48,6 +52,10 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
     Bits rawExisting = ((AssertingBits)existing).in;
     MutableBits raw = in.newLiveDocs(rawExisting);
     assert raw != null;
+    assert raw.length() == rawExisting.length();
+    for (int i = 0; i < raw.length(); i++) {
+      assert rawExisting.get(i) == raw.get(i);
+    }
     return new AssertingMutableBits(raw);
   }
 
