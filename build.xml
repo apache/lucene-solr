@@ -516,7 +516,7 @@ File | Project Structure | Platform Settings | SDKs):
   <target name="-print-java-info">
     <echo level="info" taskname="java-info">java version &quot;${java.version}&quot;
 ${java.runtime.name} (${java.runtime.version}, ${java.vendor})
-${java.vm.name} (build ${java.vm.version}, ${java.vm.vendor})
+${java.vm.name} (${java.vm.version}, ${java.vm.vendor})
 Test args: [${args}]</echo>
   </target>
   
