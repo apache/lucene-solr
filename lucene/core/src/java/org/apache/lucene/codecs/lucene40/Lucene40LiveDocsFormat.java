@@ -102,8 +102,12 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getNextDelGen());
     final BitVector liveDocs = (BitVector) bits;
-    assert liveDocs.count() == info.info.getDocCount() - info.getDelCount() - newDelCount;
-    assert liveDocs.length() == info.info.getDocCount();
+    if (liveDocs.length() != info.info.getDocCount()) {
+      throw new CorruptIndexException("liveDocs.length()=" + liveDocs.length() + "info.docCount=" + info.info.getDocCount(), filename);
+    }
+    if (liveDocs.count() != info.info.getDocCount() - info.getDelCount() - newDelCount) {
+      throw new CorruptIndexException("liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount() + " newDelCount=" + newDelCount, filename);
+    }
     liveDocs.write(dir, filename, context);
   }
 
