@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -233,23 +234,25 @@ public final class SegmentInfo {
   private Set<String> setFiles;
 
   /** Sets the files written for this segment. */
-  public void setFiles(Set<String> files) {
-    checkFileNames(files);
-    setFiles = files;
+  public void setFiles(Collection<String> files) {
+    setFiles = new HashSet<>();
+    addFiles(files);
   }
 
   /** Add these files to the set of files written for this
    *  segment. */
   public void addFiles(Collection<String> files) {
     checkFileNames(files);
-    setFiles.addAll(files);
+    for (String f : files) {
+      setFiles.add(namedForThisSegment(f));
+    }
   }
 
   /** Add this file to the set of files written for this
    *  segment. */
   public void addFile(String file) {
     checkFileNames(Collections.singleton(file));
-    setFiles.add(file);
+    setFiles.add(namedForThisSegment(file));
   }
   
   private void checkFileNames(Collection<String> files) {
@@ -261,5 +264,12 @@ public final class SegmentInfo {
       }
     }
   }
-    
+  
+  /** 
+   * strips any segment name from the file, naming it with this segment
+   * this is because "segment names" can change, e.g. by addIndexes(Dir)
+   */
+  String namedForThisSegment(String file) {
+    return name + IndexFileNames.stripSegmentName(file);
+  }
 }

@@ -72,7 +72,6 @@ import org.apache.lucene.store.DataOutput; // javadocs
 @Deprecated
 public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoReader reader = new Lucene40SegmentInfoReader();
-  private final SegmentInfoWriter writer = new Lucene40SegmentInfoWriter();
 
   /** Sole constructor. */
   public Lucene40SegmentInfoFormat() {
@@ -83,11 +82,9 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
     return reader;
   }
 
-  // we must unfortunately support write, to allow addIndexes to write a new .si with rewritten filenames:
-  // see LUCENE-5377
   @Override
   public SegmentInfoWriter getSegmentInfoWriter() {
-    return writer;
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   /** File extension used to store {@link SegmentInfo}. */

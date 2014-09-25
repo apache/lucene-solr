@@ -68,7 +68,6 @@ import org.apache.lucene.store.DataOutput; // javadocs
  */
 public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoReader reader = new Lucene46SegmentInfoReader();
-  private final SegmentInfoWriter writer = new Lucene46SegmentInfoWriter();
 
   /** Sole constructor. */
   public Lucene46SegmentInfoFormat() {
@@ -81,7 +80,7 @@ public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
 
   @Override
   public SegmentInfoWriter getSegmentInfoWriter() {
-    return writer;
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   /** File extension used to store {@link SegmentInfo}. */
