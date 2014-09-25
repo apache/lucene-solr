@@ -33,7 +33,7 @@ import static org.apache.solr.common.SolrException.ErrorCode;
 */
 public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(CloudExitableDirectoryReaderTest.class);
-  private static final int NUM_DOCS_PER_TYPE = 400;
+  private static final int NUM_DOCS_PER_TYPE = 2000;
 
   public CloudExitableDirectoryReaderTest() {
     configString = "solrconfig-tlog.xml";
