@@ -285,7 +285,7 @@ public class QueryComponent extends SearchComponent
     }
 
     // -1 as flag if not set.
-    long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
+    long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
     if (null != rb.getCursorMark() && 0 < timeAllowed) {
       // fundementally incompatible
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " +
