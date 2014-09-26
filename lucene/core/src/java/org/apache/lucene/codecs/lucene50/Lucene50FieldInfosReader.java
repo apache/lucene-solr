@@ -54,13 +54,10 @@ final class Lucene50FieldInfosReader extends FieldInfosReader {
       Throwable priorE = null;
       FieldInfo infos[] = null;
       try {
-        CodecUtil.checkHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
+        CodecUtil.checkSegmentHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
                                      Lucene50FieldInfosFormat.FORMAT_START, 
-                                     Lucene50FieldInfosFormat.FORMAT_CURRENT);
-        String id = input.readString();
-        if (!id.equals(segmentInfo.getId())) {
-          throw new CorruptIndexException("file mismatch, expected segment id=" + segmentInfo.getId() + ", got=" + id, input);
-        }
+                                     Lucene50FieldInfosFormat.FORMAT_CURRENT,
+                                     segmentInfo.getId());
         
         final int size = input.readVInt(); //read in the size
         infos = new FieldInfo[size];

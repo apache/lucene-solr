@@ -80,8 +80,7 @@ public final class CodecUtil {
    * @throws IOException If there is an I/O error writing to the underlying medium.
    * @throws IllegalArgumentException If the codec name is not simple ASCII, or is more than 127 characters in length
    */
-  public static void writeHeader(DataOutput out, String codec, int version)
-    throws IOException {
+  public static void writeHeader(DataOutput out, String codec, int version) throws IOException {
     BytesRef bytes = new BytesRef(codec);
     if (bytes.length != codec.length() || bytes.length >= 128) {
       throw new IllegalArgumentException("codec must be simple ASCII, less than 128 characters in length [got " + codec + "]");
@@ -89,6 +88,38 @@ public final class CodecUtil {
     out.writeInt(CODEC_MAGIC);
     out.writeString(codec);
     out.writeInt(version);
+  }
+  
+  /**
+   * Writes a codec header for a per-segment, which records both a string to
+   * identify the file, a version number, and the unique ID of the segment. 
+   * This header can be parsed and validated with 
+   * {@link #checkSegmentHeader(DataInput, String, int, int, String) checkSegmentHeader()}.
+   * <p>
+   * CodecSegmentHeader --&gt; CodecHeader,SegmentID
+   * <ul>
+   *    <li>CodecHeader --&gt; {@link #writeHeader}
+   *    <li>SegmentID   --&gt; {@link DataOutput#writeString String}.
+   *        Unique identifier for the segment.
+   * </ul>
+   * <p>
+   * Note that the length of a segment header depends only upon the
+   * name of the codec, so this length can be computed at any time
+   * with {@link #headerLength(String)}.
+   * 
+   * @param out Output stream
+   * @param codec String to identify this file. It should be simple ASCII, 
+   *              less than 128 characters in length.
+   * @param segmentID Unique identifier for the segment
+   * @param version Version number
+   * @throws IOException If there is an I/O error writing to the underlying medium.
+   * @throws IllegalArgumentException If the codec name is not simple ASCII, or is more than 127 characters in length
+   */
+  // nocommit: fix javadocs, add segmentLength()
+  public static void writeSegmentHeader(DataOutput out, String codec, int version, String segmentID) throws IOException {
+    writeHeader(out, codec, version);
+    // nocommit: improve encoding of this ID
+    out.writeString(segmentID);
   }
 
   /**
@@ -129,9 +160,7 @@ public final class CodecUtil {
    * @throws IOException If there is an I/O error reading from the underlying medium.
    * @see #writeHeader(DataOutput, String, int)
    */
-  public static int checkHeader(DataInput in, String codec, int minVersion, int maxVersion)
-    throws IOException {
-
+  public static int checkHeader(DataInput in, String codec, int minVersion, int maxVersion) throws IOException {
     // Safety to guard against reading a bogus string:
     final int actualHeader = in.readInt();
     if (actualHeader != CODEC_MAGIC) {
@@ -159,6 +188,46 @@ public final class CodecUtil {
     }
 
     return actualVersion;
+  }
+  
+  /**
+   * Reads and validates a header previously written with 
+   * {@link #writeSegmentHeader(DataOutput, String, int, String)}.
+   * <p>
+   * When reading a file, supply the expected <code>codec</code>,
+   * expected version range (<code>minVersion to maxVersion</code>),
+   * and segment ID.
+   * 
+   * @param in Input stream, positioned at the point where the
+   *        header was previously written. Typically this is located
+   *        at the beginning of the file.
+   * @param codec The expected codec name.
+   * @param minVersion The minimum supported expected version number.
+   * @param maxVersion The maximum supported expected version number.
+   * @param segmentID The expected segment this file belongs to.
+   * @return The actual version found, when a valid header is found 
+   *         that matches <code>codec</code>, with an actual version 
+   *         where <code>minVersion <= actual <= maxVersion</code>, 
+   *         and matching <code>segmentID</code>
+   *         Otherwise an exception is thrown.
+   * @throws CorruptIndexException If the first four bytes are not
+   *         {@link #CODEC_MAGIC}, or if the actual codec found is
+   *         not <code>codec</code>, or if the <code>segmentID</code>
+   *         does not match.
+   * @throws IndexFormatTooOldException If the actual version is less 
+   *         than <code>minVersion</code>.
+   * @throws IndexFormatTooNewException If the actual version is greater 
+   *         than <code>maxVersion</code>.
+   * @throws IOException If there is an I/O error reading from the underlying medium.
+   * @see #writeSegmentHeader(DataOutput, String, int, String)
+   */
+  public static int checkSegmentHeader(DataInput in, String codec, int minVersion, int maxVersion, String segmentID) throws IOException {
+    int version = checkHeader(in, codec, minVersion, maxVersion);
+    String id = in.readString();
+    if (!id.equals(segmentID)) {
+      throw new CorruptIndexException("file mismatch, expected segment id=" + segmentID + ", got=" + id, in);
+    }
+    return version;
   }
   
   /**
