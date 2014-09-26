@@ -48,6 +48,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -193,7 +194,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   // this reader supports reopen
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) {
     assert reader != null;
-    return UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMap(reader));
+    return ExitableDirectoryReader.wrap
+        (UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMap(reader)), 
+         SolrQueryTimeoutImpl.getInstance());
   }
 
   /**

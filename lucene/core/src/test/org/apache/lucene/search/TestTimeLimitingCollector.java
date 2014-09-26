@@ -33,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -143,7 +144,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       
       myHc = new MyHitCollector();
       long oneHour = 3600000;
-      Collector tlCollector = createTimedCollector(myHc, oneHour, false);
+      long duration = TestUtil.nextLong(random(), oneHour, Long.MAX_VALUE); 
+      Collector tlCollector = createTimedCollector(myHc, duration, false);
       search(tlCollector);
       totalTLCResults = myHc.hitCount();
     } catch (Exception e) {
