@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene50;
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoWriter;
@@ -28,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
@@ -48,10 +50,8 @@ public class Lucene50SegmentInfoWriter extends SegmentInfoWriter {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
     si.addFile(fileName);
 
-    final IndexOutput output = dir.createOutput(fileName, ioContext);
-
     boolean success = false;
-    try {
+    try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
       CodecUtil.writeHeader(output, Lucene50SegmentInfoFormat.CODEC_NAME, Lucene50SegmentInfoFormat.VERSION_CURRENT);
       Version version = si.getVersion();
       if (version.major < 5) {
@@ -63,18 +63,24 @@ public class Lucene50SegmentInfoWriter extends SegmentInfoWriter {
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
-      output.writeStringSet(si.files());
+      Set<String> files = si.files();
+      for (String file : files) {
+        if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
+          throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
+        }
+      }
+      output.writeStringSet(files);
       byte[] id = si.getId();
+      if (id.length != StringHelper.ID_LENGTH) {
+        throw new IllegalArgumentException("invalid id, got=" + StringHelper.idToString(id));
+      }
       output.writeBytes(id, 0, id.length);
       CodecUtil.writeFooter(output);
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(output);
         // TODO: are we doing this outside of the tracking wrapper? why must SIWriter cleanup like this?
         IOUtils.deleteFilesIgnoringExceptions(si.dir, fileName);
-      } else {
-        output.close();
       }
     }
   }

@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -40,9 +41,10 @@ import org.apache.lucene.util.MutableBits;
  * deletions.</p>
  * <p>Although per-segment, this file is maintained exterior to compound segment
  * files.</p>
- * <p>Deletions (.liv) --&gt; SegmentHeader,Bits</p>
+ * <p>Deletions (.liv) --&gt; SegmentHeader,Generation,Bits</p>
  * <ul>
  *   <li>SegmentHeader --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ *   <li>Generation --&gt; {@link DataOutput#writeLong Int64}
  *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup></li>
  * </ul>
  */
@@ -73,12 +75,17 @@ public class Lucene50LiveDocsFormat extends LiveDocsFormat {
 
   @Override
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
-    String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, info.getDelGen());
+    long gen = info.getDelGen();
+    String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, gen);
     final int length = info.info.getDocCount();
     try (ChecksumIndexInput input = dir.openChecksumInput(name, context)) {
       Throwable priorE = null;
       try {
         CodecUtil.checkSegmentHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, info.info.getId());
+        long filegen = input.readLong();
+        if (gen != filegen) {
+          throw new CorruptIndexException("file mismatch, expected generation=" + gen + ", got=" + filegen, input);
+        }
         long data[] = new long[FixedBitSet.bits2words(length)];
         for (int i = 0; i < data.length; i++) {
           data[i] = input.readLong();
@@ -95,10 +102,12 @@ public class Lucene50LiveDocsFormat extends LiveDocsFormat {
 
   @Override
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
-    String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, info.getNextDelGen());
+    long gen = info.getNextDelGen();
+    String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, gen);
     long data[] = ((FixedBitSet) bits).getBits();
     try (IndexOutput output = dir.createOutput(name, context)) {
       CodecUtil.writeSegmentHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId());
+      output.writeLong(gen);
       for (int i = 0; i < data.length; i++) {
         output.writeLong(data[i]);
       }
