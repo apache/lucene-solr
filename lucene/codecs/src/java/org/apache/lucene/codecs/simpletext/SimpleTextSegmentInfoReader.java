@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -109,7 +110,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
       
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_ID);
-      final String id = readString(SI_ID.length, scratch);
+      final byte[] id = Arrays.copyOfRange(scratch.bytes(), SI_ID.length, scratch.length());
 
       SimpleTextUtil.checkFooter(input);
 

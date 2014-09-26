@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -59,7 +60,7 @@ public final class SegmentInfo {
   private boolean isCompoundFile;
 
   /** Id that uniquely identifies this segment. */
-  private final String id;
+  private final byte[] id;
 
   private Codec codec;
 
@@ -89,7 +90,7 @@ public final class SegmentInfo {
    */
   public SegmentInfo(Directory dir, Version version, String name, int docCount,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
-                     String id) {
+                     byte[] id) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
@@ -99,6 +100,9 @@ public final class SegmentInfo {
     this.codec = codec;
     this.diagnostics = diagnostics;
     this.id = id;
+    if (id != null && id.length != StringHelper.ID_LENGTH) {
+      throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
+    }
   }
 
   /**
@@ -218,8 +222,8 @@ public final class SegmentInfo {
   }
 
   /** Return the id that uniquely identifies this segment. */
-  public String getId() {
-    return id;
+  public byte[] getId() {
+    return id == null ? null : id.clone();
   }
 
   private Set<String> setFiles;

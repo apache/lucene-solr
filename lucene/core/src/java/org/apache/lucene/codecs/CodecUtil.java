@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFormatTooNewException;
@@ -31,6 +32,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Utility class for reading and writing versioned headers.
@@ -94,12 +96,12 @@ public final class CodecUtil {
    * Writes a codec header for a per-segment, which records both a string to
    * identify the file, a version number, and the unique ID of the segment. 
    * This header can be parsed and validated with 
-   * {@link #checkSegmentHeader(DataInput, String, int, int, String) checkSegmentHeader()}.
+   * {@link #checkSegmentHeader(DataInput, String, int, int, byte[]) checkSegmentHeader()}.
    * <p>
    * CodecSegmentHeader --&gt; CodecHeader,SegmentID
    * <ul>
    *    <li>CodecHeader --&gt; {@link #writeHeader}
-   *    <li>SegmentID   --&gt; {@link DataOutput#writeString String}.
+   *    <li>SegmentID   --&gt; {@link DataOutput#writeByte byte}<sup>16</sup>.
    *        Unique identifier for the segment.
    * </ul>
    * <p>
@@ -113,13 +115,15 @@ public final class CodecUtil {
    * @param segmentID Unique identifier for the segment
    * @param version Version number
    * @throws IOException If there is an I/O error writing to the underlying medium.
-   * @throws IllegalArgumentException If the codec name is not simple ASCII, or is more than 127 characters in length
+   * @throws IllegalArgumentException If the codec name is not simple ASCII, or 
+   *         is more than 127 characters in length, or if segmentID is invalid.
    */
-  // nocommit: fix javadocs, add segmentLength()
-  public static void writeSegmentHeader(DataOutput out, String codec, int version, String segmentID) throws IOException {
+  public static void writeSegmentHeader(DataOutput out, String codec, int version, byte[] segmentID) throws IOException {
+    if (segmentID.length != StringHelper.ID_LENGTH) {
+      throw new IllegalArgumentException("Invalid id: " + StringHelper.idToString(segmentID));
+    }
     writeHeader(out, codec, version);
-    // nocommit: improve encoding of this ID
-    out.writeString(segmentID);
+    out.writeBytes(segmentID, 0, segmentID.length);
   }
 
   /**
@@ -131,6 +135,17 @@ public final class CodecUtil {
    */
   public static int headerLength(String codec) {
     return 9+codec.length();
+  }
+  
+  /**
+   * Computes the length of a segment header.
+   * 
+   * @param codec Codec name.
+   * @return length of the entire segment header.
+   * @see #writeSegmentHeader(DataOutput, String, int, byte[])
+   */
+  public static int segmentHeaderLength(String codec) {
+    return headerLength(codec) + StringHelper.ID_LENGTH;
   }
 
   /**
@@ -192,7 +207,7 @@ public final class CodecUtil {
   
   /**
    * Reads and validates a header previously written with 
-   * {@link #writeSegmentHeader(DataOutput, String, int, String)}.
+   * {@link #writeSegmentHeader(DataOutput, String, int, byte[])}.
    * <p>
    * When reading a file, supply the expected <code>codec</code>,
    * expected version range (<code>minVersion to maxVersion</code>),
@@ -219,13 +234,15 @@ public final class CodecUtil {
    * @throws IndexFormatTooNewException If the actual version is greater 
    *         than <code>maxVersion</code>.
    * @throws IOException If there is an I/O error reading from the underlying medium.
-   * @see #writeSegmentHeader(DataOutput, String, int, String)
+   * @see #writeSegmentHeader(DataOutput, String, int, byte[])
    */
-  public static int checkSegmentHeader(DataInput in, String codec, int minVersion, int maxVersion, String segmentID) throws IOException {
+  public static int checkSegmentHeader(DataInput in, String codec, int minVersion, int maxVersion, byte[] segmentID) throws IOException {
     int version = checkHeader(in, codec, minVersion, maxVersion);
-    String id = in.readString();
-    if (!id.equals(segmentID)) {
-      throw new CorruptIndexException("file mismatch, expected segment id=" + segmentID + ", got=" + id, in);
+    byte id[] = new byte[StringHelper.ID_LENGTH];
+    in.readBytes(id, 0, id.length);
+    if (!Arrays.equals(id, segmentID)) {
+      throw new CorruptIndexException("file mismatch, expected segment id=" + StringHelper.idToString(segmentID) 
+                                                                 + ", got=" + StringHelper.idToString(id), in);
     }
     return version;
   }

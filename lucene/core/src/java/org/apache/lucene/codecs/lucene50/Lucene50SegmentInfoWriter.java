@@ -64,7 +64,8 @@ public class Lucene50SegmentInfoWriter extends SegmentInfoWriter {
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
       output.writeStringSet(si.files());
-      output.writeString(si.getId());
+      byte[] id = si.getId();
+      output.writeBytes(id, 0, id.length);
       CodecUtil.writeFooter(output);
       success = true;
     } finally {
