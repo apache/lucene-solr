@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -148,7 +147,10 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       final String formatName = format.getName();
       
       String previousValue = field.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-      assert field.getDocValuesGen() != -1 || previousValue == null: "formatName=" + formatName + " prevValue=" + previousValue;
+      if (field.getDocValuesGen() == -1 && previousValue != null) {
+        throw new IllegalStateException("found existing value for " + PER_FIELD_FORMAT_KEY + 
+                                        ", field=" + field.name + ", old=" + previousValue + ", new=" + formatName);
+      }
       
       Integer suffix = null;
       
@@ -190,7 +192,10 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       }
       
       previousValue = field.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(suffix));
-      assert field.getDocValuesGen() != -1 || previousValue == null : "suffix=" + Integer.toString(suffix) + " prevValue=" + previousValue;
+      if (field.getDocValuesGen() == -1 && previousValue != null) {
+        throw new IllegalStateException("found existing value for " + PER_FIELD_SUFFIX_KEY + 
+                                        ", field=" + field.name + ", old=" + previousValue + ", new=" + suffix);
+      }
 
       // TODO: we should only provide the "slice" of FIS
       // that this DVF actually sees ...
@@ -234,7 +239,9 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
             if (formatName != null) {
               // null formatName means the field is in fieldInfos, but has no docvalues!
               final String suffix = fi.getAttribute(PER_FIELD_SUFFIX_KEY);
-              assert suffix != null;
+              if (suffix == null) {
+                throw new IllegalStateException("missing attribute: " + PER_FIELD_SUFFIX_KEY + " for field: " + fieldName);
+              }
               DocValuesFormat format = DocValuesFormat.forName(formatName);
               String segmentSuffix = getFullSegmentSuffix(readState.segmentSuffix, getSuffix(formatName, suffix));
               if (!formats.containsKey(segmentSuffix)) {
