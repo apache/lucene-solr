@@ -131,67 +131,115 @@ public abstract class DocValuesConsumer implements Closeable {
    *  Implementations can override this method 
    *  for more sophisticated merging (bulk-byte copying, etc). */
   public void merge(MergeState mergeState) throws IOException {
-    for (FieldInfo field : mergeState.fieldInfos) {
-      DocValuesType type = field.getDocValuesType();
+    for(DocValuesProducer docValuesProducer : mergeState.docValuesProducers) {
+      if (docValuesProducer != null) {
+        docValuesProducer.checkIntegrity();
+      }
+    }
+
+    for (FieldInfo mergeFieldInfo : mergeState.mergeFieldInfos) {
+      DocValuesType type = mergeFieldInfo.getDocValuesType();
       if (type != null) {
         if (type == DocValuesType.NUMERIC) {
           List<NumericDocValues> toMerge = new ArrayList<>();
           List<Bits> docsWithField = new ArrayList<>();
-          for (LeafReader reader : mergeState.readers) {
-            NumericDocValues values = reader.getNumericDocValues(field.name);
-            Bits bits = reader.getDocsWithField(field.name);
+          for (int i=0;i<mergeState.docValuesProducers.length;i++) {
+            NumericDocValues values = null;
+            Bits bits = null;
+            DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
+            if (docValuesProducer != null) {
+              FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
+              if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.NUMERIC) {
+                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
+                values = docValuesProducer.getNumeric(fieldInfo);
+                bits = docValuesProducer.getDocsWithField(fieldInfo);
+              }
+            }
             if (values == null) {
               values = DocValues.emptyNumeric();
-              bits = new Bits.MatchNoBits(reader.maxDoc());
+              bits = new Bits.MatchNoBits(mergeState.maxDocs[i]);
             }
             toMerge.add(values);
             docsWithField.add(bits);
           }
-          mergeNumericField(field, mergeState, toMerge, docsWithField);
+          mergeNumericField(mergeFieldInfo, mergeState, toMerge, docsWithField);
         } else if (type == DocValuesType.BINARY) {
           List<BinaryDocValues> toMerge = new ArrayList<>();
           List<Bits> docsWithField = new ArrayList<>();
-          for (LeafReader reader : mergeState.readers) {
-            BinaryDocValues values = reader.getBinaryDocValues(field.name);
-            Bits bits = reader.getDocsWithField(field.name);
+          for (int i=0;i<mergeState.docValuesProducers.length;i++) {
+            BinaryDocValues values = null;
+            Bits bits = null;
+            DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
+            if (docValuesProducer != null) {
+              FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
+              if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
+                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
+                values = docValuesProducer.getBinary(fieldInfo);
+                bits = docValuesProducer.getDocsWithField(fieldInfo);
+              }
+            }
             if (values == null) {
               values = DocValues.emptyBinary();
-              bits = new Bits.MatchNoBits(reader.maxDoc());
+              bits = new Bits.MatchNoBits(mergeState.maxDocs[i]);
             }
             toMerge.add(values);
             docsWithField.add(bits);
           }
-          mergeBinaryField(field, mergeState, toMerge, docsWithField);
+          mergeBinaryField(mergeFieldInfo, mergeState, toMerge, docsWithField);
         } else if (type == DocValuesType.SORTED) {
           List<SortedDocValues> toMerge = new ArrayList<>();
-          for (LeafReader reader : mergeState.readers) {
-            SortedDocValues values = reader.getSortedDocValues(field.name);
+          for (int i=0;i<mergeState.docValuesProducers.length;i++) {
+            SortedDocValues values = null;
+            DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
+            if (docValuesProducer != null) {
+              FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
+              if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.SORTED) {
+                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
+                values = docValuesProducer.getSorted(fieldInfo);
+              }
+            }
             if (values == null) {
               values = DocValues.emptySorted();
             }
             toMerge.add(values);
           }
-          mergeSortedField(field, mergeState, toMerge);
+          mergeSortedField(mergeFieldInfo, mergeState, toMerge);
         } else if (type == DocValuesType.SORTED_SET) {
           List<SortedSetDocValues> toMerge = new ArrayList<>();
-          for (LeafReader reader : mergeState.readers) {
-            SortedSetDocValues values = reader.getSortedSetDocValues(field.name);
+          for (int i=0;i<mergeState.docValuesProducers.length;i++) {
+            SortedSetDocValues values = null;
+            DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
+            if (docValuesProducer != null) {
+              FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
+              if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.SORTED_SET) {
+                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
+                values = docValuesProducer.getSortedSet(fieldInfo);
+              }
+            }
             if (values == null) {
               values = DocValues.emptySortedSet();
             }
             toMerge.add(values);
           }
-          mergeSortedSetField(field, mergeState, toMerge);
+          mergeSortedSetField(mergeFieldInfo, mergeState, toMerge);
         } else if (type == DocValuesType.SORTED_NUMERIC) {
           List<SortedNumericDocValues> toMerge = new ArrayList<>();
-          for (LeafReader reader : mergeState.readers) {
-            SortedNumericDocValues values = reader.getSortedNumericDocValues(field.name);
+          for (int i=0;i<mergeState.docValuesProducers.length;i++) {
+            SortedNumericDocValues values = null;
+            DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
+            if (docValuesProducer != null) {
+              FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
+              if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.SORTED_NUMERIC) {
+                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
+                values = docValuesProducer.getSortedNumeric(fieldInfo);
+              }
+            }
             if (values == null) {
-              values = DocValues.emptySortedNumeric(reader.maxDoc());
+              values = DocValues.emptySortedNumeric(mergeState.maxDocs[i]);
             }
             toMerge.add(values);
           }
-          mergeSortedNumericField(field, mergeState, toMerge);
+          mergeSortedNumericField(mergeFieldInfo, mergeState, toMerge);
         } else {
           throw new AssertionError("type=" + type);
         }
@@ -216,7 +264,7 @@ public abstract class DocValuesConsumer implements Closeable {
                           int docIDUpto;
                           long nextValue;
                           boolean nextHasValue;
-                          LeafReader currentReader;
+                          int currentMaxDoc;
                           NumericDocValues currentValues;
                           Bits currentLiveDocs;
                           Bits currentDocsWithField;
@@ -248,13 +296,13 @@ public abstract class DocValuesConsumer implements Closeable {
                                 return false;
                               }
 
-                              if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                              if (docIDUpto == currentMaxDoc) {
                                 readerUpto++;
                                 if (readerUpto < toMerge.size()) {
-                                  currentReader = mergeState.readers.get(readerUpto);
                                   currentValues = toMerge.get(readerUpto);
-                                  currentLiveDocs = currentReader.getLiveDocs();
                                   currentDocsWithField = docsWithField.get(readerUpto);
+                                  currentLiveDocs = mergeState.liveDocs[readerUpto];
+                                  currentMaxDoc = mergeState.maxDocs[readerUpto];
                                 }
                                 docIDUpto = 0;
                                 continue;
@@ -297,7 +345,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          int docIDUpto;
                          BytesRef nextValue;
                          BytesRef nextPointer; // points to null if missing, or nextValue
-                         LeafReader currentReader;
+                         int currentMaxDoc;
                          BinaryDocValues currentValues;
                          Bits currentLiveDocs;
                          Bits currentDocsWithField;
@@ -329,13 +377,13 @@ public abstract class DocValuesConsumer implements Closeable {
                                return false;
                              }
 
-                             if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                             if (docIDUpto == currentMaxDoc) {
                                readerUpto++;
                                if (readerUpto < toMerge.size()) {
-                                 currentReader = mergeState.readers.get(readerUpto);
                                  currentValues = toMerge.get(readerUpto);
                                  currentDocsWithField = docsWithField.get(readerUpto);
-                                 currentLiveDocs = currentReader.getLiveDocs();
+                                 currentLiveDocs = mergeState.liveDocs[readerUpto];
+                                 currentMaxDoc = mergeState.maxDocs[readerUpto];
                                }
                                docIDUpto = 0;
                                continue;
@@ -368,8 +416,8 @@ public abstract class DocValuesConsumer implements Closeable {
    * iterables that filter deleted documents.
    */
   public void mergeSortedNumericField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedNumericDocValues> toMerge) throws IOException {
-    final LeafReader readers[] = mergeState.readers.toArray(new LeafReader[toMerge.size()]);
-    final SortedNumericDocValues dvs[] = toMerge.toArray(new SortedNumericDocValues[toMerge.size()]);
+    final int numReaders = toMerge.size();
+    final SortedNumericDocValues dvs[] = toMerge.toArray(new SortedNumericDocValues[numReaders]);
     
     // step 3: add field
     addSortedNumericField(fieldInfo,
@@ -381,7 +429,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               int nextValue;
-              LeafReader currentReader;
+              int currentMaxDoc;
               Bits currentLiveDocs;
               boolean nextIsSet;
 
@@ -407,15 +455,15 @@ public abstract class DocValuesConsumer implements Closeable {
 
               private boolean setNext() {
                 while (true) {
-                  if (readerUpto == readers.length) {
+                  if (readerUpto == numReaders) {
                     return false;
                   }
 
-                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                  if (docIDUpto == currentMaxDoc) {
                     readerUpto++;
-                    if (readerUpto < readers.length) {
-                      currentReader = readers[readerUpto];
-                      currentLiveDocs = currentReader.getLiveDocs();
+                    if (readerUpto < numReaders) {
+                      currentLiveDocs = mergeState.liveDocs[readerUpto];
+                      currentMaxDoc = mergeState.maxDocs[readerUpto];
                     }
                     docIDUpto = 0;
                     continue;
@@ -444,7 +492,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               long nextValue;
-              LeafReader currentReader;
+              int currentMaxDoc;
               Bits currentLiveDocs;
               boolean nextIsSet;
               int valueUpto;
@@ -472,7 +520,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
               private boolean setNext() {
                 while (true) {
-                  if (readerUpto == readers.length) {
+                  if (readerUpto == numReaders) {
                     return false;
                   }
                   
@@ -483,18 +531,18 @@ public abstract class DocValuesConsumer implements Closeable {
                     return true;
                   }
 
-                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                  if (docIDUpto == currentMaxDoc) {
                     readerUpto++;
-                    if (readerUpto < readers.length) {
-                      currentReader = readers[readerUpto];
-                      currentLiveDocs = currentReader.getLiveDocs();
+                    if (readerUpto < numReaders) {
+                      currentLiveDocs = mergeState.liveDocs[readerUpto];
+                      currentMaxDoc = mergeState.maxDocs[readerUpto];
                     }
                     docIDUpto = 0;
                     continue;
                   }
                   
                   if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
-                    assert docIDUpto < currentReader.maxDoc();
+                    assert docIDUpto < currentMaxDoc;
                     SortedNumericDocValues dv = dvs[readerUpto];
                     dv.setDocument(docIDUpto);
                     valueUpto = 0;
@@ -519,22 +567,22 @@ public abstract class DocValuesConsumer implements Closeable {
    * an Iterable that merges ordinals and values and filters deleted documents .
    */
   public void mergeSortedField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {
-    final LeafReader readers[] = mergeState.readers.toArray(new LeafReader[toMerge.size()]);
-    final SortedDocValues dvs[] = toMerge.toArray(new SortedDocValues[toMerge.size()]);
+    final int numReaders = toMerge.size();
+    final SortedDocValues dvs[] = toMerge.toArray(new SortedDocValues[numReaders]);
     
     // step 1: iterate thru each sub and mark terms still in use
     TermsEnum liveTerms[] = new TermsEnum[dvs.length];
     long[] weights = new long[liveTerms.length];
-    for (int sub = 0; sub < liveTerms.length; sub++) {
-      LeafReader reader = readers[sub];
+    for (int sub=0;sub<numReaders;sub++) {
       SortedDocValues dv = dvs[sub];
-      Bits liveDocs = reader.getLiveDocs();
+      Bits liveDocs = mergeState.liveDocs[sub];
+      int maxDoc = mergeState.maxDocs[sub];
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
         weights[sub] = dv.getValueCount();
       } else {
         LongBitSet bitset = new LongBitSet(dv.getValueCount());
-        for (int i = 0; i < reader.maxDoc(); i++) {
+        for (int i = 0; i < maxDoc; i++) {
           if (liveDocs.get(i)) {
             int ord = dv.getOrd(i);
             if (ord >= 0) {
@@ -591,7 +639,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               int nextValue;
-              LeafReader currentReader;
+              int currentMaxDoc;
               Bits currentLiveDocs;
               LongValues currentMap;
               boolean nextIsSet;
@@ -619,16 +667,16 @@ public abstract class DocValuesConsumer implements Closeable {
 
               private boolean setNext() {
                 while (true) {
-                  if (readerUpto == readers.length) {
+                  if (readerUpto == numReaders) {
                     return false;
                   }
 
-                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                  if (docIDUpto == currentMaxDoc) {
                     readerUpto++;
-                    if (readerUpto < readers.length) {
-                      currentReader = readers[readerUpto];
-                      currentLiveDocs = currentReader.getLiveDocs();
+                    if (readerUpto < numReaders) {
                       currentMap = map.getGlobalOrds(readerUpto);
+                      currentLiveDocs = mergeState.liveDocs[readerUpto];
+                      currentMaxDoc = mergeState.maxDocs[readerUpto];
                     }
                     docIDUpto = 0;
                     continue;
@@ -658,22 +706,22 @@ public abstract class DocValuesConsumer implements Closeable {
    * an Iterable that merges ordinals and values and filters deleted documents .
    */
   public void mergeSortedSetField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedSetDocValues> toMerge) throws IOException {
-    final LeafReader readers[] = mergeState.readers.toArray(new LeafReader[toMerge.size()]);
     final SortedSetDocValues dvs[] = toMerge.toArray(new SortedSetDocValues[toMerge.size()]);
-    
+    final int numReaders = mergeState.maxDocs.length;
+
     // step 1: iterate thru each sub and mark terms still in use
     TermsEnum liveTerms[] = new TermsEnum[dvs.length];
     long[] weights = new long[liveTerms.length];
     for (int sub = 0; sub < liveTerms.length; sub++) {
-      LeafReader reader = readers[sub];
       SortedSetDocValues dv = dvs[sub];
-      Bits liveDocs = reader.getLiveDocs();
+      Bits liveDocs = mergeState.liveDocs[sub];
+      int maxDoc = mergeState.maxDocs[sub];
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
         weights[sub] = dv.getValueCount();
       } else {
         LongBitSet bitset = new LongBitSet(dv.getValueCount());
-        for (int i = 0; i < reader.maxDoc(); i++) {
+        for (int i = 0; i < maxDoc; i++) {
           if (liveDocs.get(i)) {
             dv.setDocument(i);
             long ord;
@@ -731,7 +779,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               int nextValue;
-              LeafReader currentReader;
+              int currentMaxDoc;
               Bits currentLiveDocs;
               boolean nextIsSet;
 
@@ -758,15 +806,15 @@ public abstract class DocValuesConsumer implements Closeable {
 
               private boolean setNext() {
                 while (true) {
-                  if (readerUpto == readers.length) {
+                  if (readerUpto == numReaders) {
                     return false;
                   }
 
-                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                  if (docIDUpto == currentMaxDoc) {
                     readerUpto++;
-                    if (readerUpto < readers.length) {
-                      currentReader = readers[readerUpto];
-                      currentLiveDocs = currentReader.getLiveDocs();
+                    if (readerUpto < numReaders) {
+                      currentLiveDocs = mergeState.liveDocs[readerUpto];
+                      currentMaxDoc = mergeState.maxDocs[readerUpto];
                     }
                     docIDUpto = 0;
                     continue;
@@ -798,7 +846,7 @@ public abstract class DocValuesConsumer implements Closeable {
               int readerUpto = -1;
               int docIDUpto;
               long nextValue;
-              LeafReader currentReader;
+              int currentMaxDoc;
               Bits currentLiveDocs;
               LongValues currentMap;
               boolean nextIsSet;
@@ -829,7 +877,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
               private boolean setNext() {
                 while (true) {
-                  if (readerUpto == readers.length) {
+                  if (readerUpto == numReaders) {
                     return false;
                   }
                   
@@ -840,19 +888,19 @@ public abstract class DocValuesConsumer implements Closeable {
                     return true;
                   }
 
-                  if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                  if (docIDUpto == currentMaxDoc) {
                     readerUpto++;
-                    if (readerUpto < readers.length) {
-                      currentReader = readers[readerUpto];
-                      currentLiveDocs = currentReader.getLiveDocs();
+                    if (readerUpto < numReaders) {
                       currentMap = map.getGlobalOrds(readerUpto);
+                      currentLiveDocs = mergeState.liveDocs[readerUpto];
+                      currentMaxDoc = mergeState.maxDocs[readerUpto];
                     }
                     docIDUpto = 0;
                     continue;
                   }
                   
                   if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
-                    assert docIDUpto < currentReader.maxDoc();
+                    assert docIDUpto < currentMaxDoc;
                     SortedSetDocValues dv = dvs[readerUpto];
                     dv.setDocument(docIDUpto);
                     ordUpto = ordLength = 0;

@@ -148,8 +148,9 @@ public final class SegmentInfo {
 
   // NOTE: leave package private
   void setDocCount(int docCount) {
-    if (this.docCount != -1) {
-      throw new IllegalStateException("docCount was already set");
+    // nocommit what to do... this only happens when docCount == 0 ... see IW comment "          // would result in a 0 document segment: nothing to merge!"
+    if (this.docCount != -1 && this.docCount != docCount) {
+      throw new IllegalStateException("docCount was already set: this.docCount=" + this.docCount + " vs docCount=" + docCount);
     }
     this.docCount = docCount;
   }

@@ -28,11 +28,12 @@ import java.util.TreeSet;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReader;
@@ -727,23 +728,22 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   @Override
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    int idx = 0;
+    int numReaders = mergeState.maxDocs.length;
 
     MatchingReaders matching = new MatchingReaders(mergeState);
     
-    for (LeafReader reader : mergeState.readers) {
-      final SegmentReader matchingSegmentReader = matching.matchingSegmentReaders[idx++];
+    for (int readerIndex=0;readerIndex<numReaders;readerIndex++) {
       CompressingTermVectorsReader matchingVectorsReader = null;
-      if (matchingSegmentReader != null) {
-        final TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReader();
+      final TermVectorsReader vectorsReader = mergeState.termVectorsReaders[readerIndex];
+      if (matching.matchingReaders[readerIndex]) {
         // we can only bulk-copy if the matching reader is also a CompressingTermVectorsReader
         if (vectorsReader != null && vectorsReader instanceof CompressingTermVectorsReader) {
           matchingVectorsReader = (CompressingTermVectorsReader) vectorsReader;
         }
       }
 
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
+      final int maxDoc = mergeState.maxDocs[readerIndex];
+      final Bits liveDocs = mergeState.liveDocs[readerIndex];
 
       if (matchingVectorsReader == null
           || matchingVectorsReader.getVersion() != VERSION_CURRENT
@@ -752,7 +752,12 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
           || matchingVectorsReader.getPackedIntsVersion() != PackedInts.VERSION_CURRENT) {
         // naive merge...
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
-          final Fields vectors = reader.getTermVectors(i);
+          Fields vectors;
+          if (vectorsReader == null) {
+            vectors = null;
+          } else {
+            vectors = vectorsReader.get(i);
+          }
           addAllDocVectors(vectors, mergeState);
           ++docCount;
           mergeState.checkAbort.work(300);
@@ -774,8 +779,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
               && (i == 0 || index.getStartPointer(i - 1) < startPointer)) { // start of a chunk
             final int docBase = vectorsStream.readVInt();
             final int chunkDocs = vectorsStream.readVInt();
-            assert docBase + chunkDocs <= matchingSegmentReader.maxDoc();
-            if (docBase + chunkDocs < matchingSegmentReader.maxDoc()
+            assert docBase + chunkDocs <= maxDoc;
+            if (docBase + chunkDocs < maxDoc
                 && nextDeletedDoc(docBase, liveDocs, docBase + chunkDocs) == docBase + chunkDocs) {
               final long chunkEnd = index.getStartPointer(docBase + chunkDocs);
               final long chunkLength = chunkEnd - vectorsStream.getFilePointer();
@@ -789,14 +794,24 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
               i = nextLiveDoc(docBase + chunkDocs, liveDocs, maxDoc);
             } else {
               for (; i < docBase + chunkDocs; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
-                final Fields vectors = reader.getTermVectors(i);
+                Fields vectors;
+                if (vectorsReader == null) {
+                  vectors = null;
+                } else {
+                  vectors = vectorsReader.get(i);
+                }
                 addAllDocVectors(vectors, mergeState);
                 ++docCount;
                 mergeState.checkAbort.work(300);
               }
             }
           } else {
-            final Fields vectors = reader.getTermVectors(i);
+            Fields vectors;
+            if (vectorsReader == null) {
+              vectors = null;
+            } else {
+              vectors = vectorsReader.get(i);
+            }
             addAllDocVectors(vectors, mergeState);
             ++docCount;
             mergeState.checkAbort.work(300);
@@ -808,7 +823,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
         CodecUtil.checkFooter(vectorsStream);
       }
     }
-    finish(mergeState.fieldInfos, docCount);
+    finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
   }
 

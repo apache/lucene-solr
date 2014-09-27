@@ -2504,7 +2504,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
                                                MergeState.CheckAbort.NONE, globalFieldNumberMap, 
-                                               context, config.getCheckIntegrityAtMerge());
+                                               context);
       
       if (!merger.shouldMerge()) {
         return;
@@ -2562,7 +2562,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       success = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.fieldInfos, context);
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.mergeFieldInfos, context);
         success = true;
       } finally {
         if (!success) {
@@ -3901,7 +3901,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
           merge.info.info, infoStream, dirWrapper,
           checkAbort, globalFieldNumberMap, 
-          context, config.getCheckIntegrityAtMerge());
+                                                     context);
 
       merge.checkAborted(directory);
 
@@ -3933,11 +3933,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           infoStream.message("IW", "merge away fully deleted segments");
         } else {
           infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
-                           (mergeState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
-                           (mergeState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
-                           (mergeState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
-                           (mergeState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
-                           (mergeState.fieldInfos.hasProx() ? "freqs" : "no freqs"));
+                           (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
+                           (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
+                           (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
+                           (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
+                           (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs"));
         }
       }
 
@@ -4019,7 +4019,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       boolean success2 = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, mergeState.fieldInfos, context);
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, mergeState.mergeFieldInfos, context);
         success2 = true;
       } finally {
         if (!success2) {

@@ -24,11 +24,13 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.ChunkIterator;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReader;
@@ -331,32 +333,33 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   @Override
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    int idx = 0;
+    int numReaders = mergeState.maxDocs.length;
     
     MatchingReaders matching = new MatchingReaders(mergeState);
     
-    for (LeafReader reader : mergeState.readers) {
-      final SegmentReader matchingSegmentReader = matching.matchingSegmentReaders[idx++];
+    for (int readerIndex=0;readerIndex<numReaders;readerIndex++) {
       CompressingStoredFieldsReader matchingFieldsReader = null;
-      if (matchingSegmentReader != null) {
-        final StoredFieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
+      if (matching.matchingReaders[readerIndex]) {
+        final StoredFieldsReader fieldsReader = mergeState.storedFieldsReaders[readerIndex];
         // we can only bulk-copy if the matching reader is also a CompressingStoredFieldsReader
         if (fieldsReader != null && fieldsReader instanceof CompressingStoredFieldsReader) {
           matchingFieldsReader = (CompressingStoredFieldsReader) fieldsReader;
         }
       }
 
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
+      final int maxDoc = mergeState.maxDocs[readerIndex];
+      final Bits liveDocs = mergeState.liveDocs[readerIndex];
 
       if (matchingFieldsReader == null
           || matchingFieldsReader.getVersion() != VERSION_CURRENT // means reader version is not the same as the writer version
           || matchingFieldsReader.getCompressionMode() != compressionMode
           || matchingFieldsReader.getChunkSize() != chunkSize) { // the way data is decompressed depends on the chunk size
         // naive merge...
+        StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[readerIndex];
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
-          StoredDocument doc = reader.document(i);
-          addDocument(doc, mergeState.fieldInfos);
+          DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+          storedFieldsReader.visitDocument(i, visitor);
+          addDocument(visitor.getDocument(), mergeState.mergeFieldInfos);
           ++docCount;
           mergeState.checkAbort.work(300);
         }
@@ -398,7 +401,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         }
       }
     }
-    finish(mergeState.fieldInfos, docCount);
+    finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
   }
 

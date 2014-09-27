@@ -223,7 +223,7 @@ public class TestDoc extends LuceneTestCase {
 
       SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(r1, r2),
           si, InfoStream.getDefault(), trackingDir,
-          MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context, true);
+          MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context);
 
       MergeState mergeState = merger.merge();
       r1.close();

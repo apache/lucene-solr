@@ -24,9 +24,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
@@ -72,17 +73,30 @@ public abstract class NormsConsumer implements Closeable {
    *  Implementations can override this method 
    *  for more sophisticated merging (bulk-byte copying, etc). */
   public void merge(MergeState mergeState) throws IOException {
-    for (FieldInfo field : mergeState.fieldInfos) {
-      if (field.hasNorms()) {
+    for(NormsProducer normsProducer : mergeState.normsProducers) {
+      if (normsProducer != null) {
+        normsProducer.checkIntegrity();
+      }
+    }
+    for (FieldInfo mergeFieldInfo : mergeState.mergeFieldInfos) {
+      if (mergeFieldInfo.hasNorms()) {
         List<NumericDocValues> toMerge = new ArrayList<>();
-        for (LeafReader reader : mergeState.readers) {
-          NumericDocValues norms = reader.getNormValues(field.name);
+        for (int i=0;i<mergeState.normsProducers.length;i++) {
+          NormsProducer normsProducer = mergeState.normsProducers[i];
+          NumericDocValues norms = null;
+          if (normsProducer != null) {
+            FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
+            if (fieldInfo != null && fieldInfo.hasNorms()) {
+              // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
+              norms = normsProducer.getNorms(fieldInfo);
+            }
+          }
           if (norms == null) {
             norms = DocValues.emptyNumeric();
           }
           toMerge.add(norms);
         }
-        mergeNormsField(field, mergeState, toMerge);
+        mergeNormsField(mergeFieldInfo, mergeState, toMerge);
       }
     }
   }
@@ -104,7 +118,7 @@ public abstract class NormsConsumer implements Closeable {
                           int readerUpto = -1;
                           int docIDUpto;
                           long nextValue;
-                          LeafReader currentReader;
+                          int maxDoc;
                           NumericDocValues currentValues;
                           Bits currentLiveDocs;
                           boolean nextIsSet;
@@ -135,12 +149,12 @@ public abstract class NormsConsumer implements Closeable {
                                 return false;
                               }
 
-                              if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                              if (currentValues == null || docIDUpto == maxDoc) {
                                 readerUpto++;
                                 if (readerUpto < toMerge.size()) {
-                                  currentReader = mergeState.readers.get(readerUpto);
                                   currentValues = toMerge.get(readerUpto);
-                                  currentLiveDocs = currentReader.getLiveDocs();
+                                  currentLiveDocs = mergeState.liveDocs[readerUpto];
+                                  maxDoc = mergeState.maxDocs[readerUpto];
                                 }
                                 docIDUpto = 0;
                                 continue;

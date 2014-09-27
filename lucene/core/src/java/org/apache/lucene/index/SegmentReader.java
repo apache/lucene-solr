@@ -566,7 +566,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
   @Override
   public void checkIntegrity() throws IOException {
     ensureOpen();
-    
+
     // stored fields
     getFieldsReader().checkIntegrity();
     
