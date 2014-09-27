@@ -30,6 +30,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
@@ -69,7 +70,8 @@ public class Lucene50SegmentInfoReader extends SegmentInfoReader {
         final Map<String,String> diagnostics = input.readStringStringMap();
         final Set<String> files = input.readStringSet();
         
-        String id = input.readString();
+        byte[] id = new byte[StringHelper.ID_LENGTH];
+        input.readBytes(id, 0, id.length);
         
         si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, id);
         si.setFiles(files);

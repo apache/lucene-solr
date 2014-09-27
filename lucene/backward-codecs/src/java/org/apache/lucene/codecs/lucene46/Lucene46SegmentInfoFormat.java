@@ -31,7 +31,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Id, Footer
+ *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Footer
  * </ul>
  * </p>
  * Data types:
@@ -44,7 +44,6 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *   <li>Diagnostics --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- *   <li>Id --&gt; {@link DataOutput#writeString String}</li>
  * </ul>
  * </p>
  * Field Descriptions:
@@ -68,7 +67,6 @@ import org.apache.lucene.store.DataOutput; // javadocs
  */
 public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoReader reader = new Lucene46SegmentInfoReader();
-  private final SegmentInfoWriter writer = new Lucene46SegmentInfoWriter();
 
   /** Sole constructor. */
   public Lucene46SegmentInfoFormat() {
@@ -81,7 +79,7 @@ public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
 
   @Override
   public SegmentInfoWriter getSegmentInfoWriter() {
-    return writer;
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   /** File extension used to store {@link SegmentInfo}. */
@@ -89,6 +87,5 @@ public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
   static final String CODEC_NAME = "Lucene46SegmentInfo";
   static final int VERSION_START = 0;
   static final int VERSION_CHECKSUM = 1;
-  static final int VERSION_ID = 2;
-  static final int VERSION_CURRENT = VERSION_ID;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
 }

@@ -96,7 +96,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     */
 
     // TODO: fix this test better
-    String ext = Codec.getDefault().getName().equals("SimpleText") ? ".liv" : ".del";
+    String ext = ".liv";
     
     // Create a bogus separate del file for a
     // segment that already has a separate del file: 

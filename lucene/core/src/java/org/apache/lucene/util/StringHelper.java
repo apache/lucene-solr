@@ -232,21 +232,21 @@ public abstract class StringHelper {
 
   // Holds 128 bit unsigned value:
   private static BigInteger nextId;
-  private static final BigInteger idMask;
+  private static final BigInteger mask128;
   private static final Object idLock = new Object();
-  private static final String idPad = "00000000000000000000000000000000";
 
   static {
-    byte[] maskBytes = new byte[16];
-    Arrays.fill(maskBytes, (byte) 0xff);
-    idMask = new BigInteger(maskBytes);
+    // 128 bit unsigned mask
+    byte[] maskBytes128 = new byte[16];
+    Arrays.fill(maskBytes128, (byte) 0xff);
+    mask128 = new BigInteger(1, maskBytes128);
+    
     String prop = System.getProperty("tests.seed");
 
     // State for xorshift128:
     long x0;
     long x1;
 
-    long seed;
     if (prop != null) {
       // So if there is a test failure that somehow relied on this id,
       // we remain reproducible based on the test seed:
@@ -280,17 +280,25 @@ public abstract class StringHelper {
       s1 ^= s1 << 23; // a
       x1 = s1 ^ s0 ^ (s1 >>> 17) ^ (s0 >>> 26); // b, c
     }
+    
+    // 64-bit unsigned mask
+    byte[] maskBytes64 = new byte[8];
+    Arrays.fill(maskBytes64, (byte) 0xff);
+    BigInteger mask64 = new BigInteger(1, maskBytes64);
 
     // First make unsigned versions of x0, x1:
-    BigInteger unsignedX0 = new BigInteger(1, BigInteger.valueOf(x0).toByteArray());
-    BigInteger unsignedX1 = new BigInteger(1, BigInteger.valueOf(x1).toByteArray());
+    BigInteger unsignedX0 = BigInteger.valueOf(x0).and(mask64);
+    BigInteger unsignedX1 = BigInteger.valueOf(x1).and(mask64);
 
     // Concatentate bits of x0 and x1, as unsigned 128 bit integer:
     nextId = unsignedX0.shiftLeft(64).or(unsignedX1);
   }
+  
+  /** length in bytes of an ID */
+  public static final int ID_LENGTH = 16;
 
   /** Generates a non-cryptographic globally unique id. */
-  public static String randomId() {
+  public static byte[] randomId() {
 
     // NOTE: we don't use Java's UUID.randomUUID() implementation here because:
     //
@@ -306,15 +314,42 @@ public abstract class StringHelper {
     //     what impact that has on the period, whereas the simple ++ (mod 2^128)
     //     we use here is guaranteed to have the full period.
 
-    String id;
+    byte bits[];
     synchronized(idLock) {
-      id = nextId.toString(16);
-      nextId = nextId.add(BigInteger.ONE).and(idMask);
+      bits = nextId.toByteArray();
+      nextId = nextId.add(BigInteger.ONE).and(mask128);
     }
-
-    assert id.length() <= 32: "id=" + id;
-    id = idPad.substring(id.length()) + id;
-
-    return id;
+    
+    // toByteArray() always returns a sign bit, so it may require an extra byte (always zero)
+    if (bits.length > ID_LENGTH) {
+      assert bits.length == ID_LENGTH + 1;
+      assert bits[0] == 0;
+      return Arrays.copyOfRange(bits, 1, bits.length);
+    } else {
+      byte[] result = new byte[ID_LENGTH];
+      System.arraycopy(bits, 0, result, result.length - bits.length, bits.length);
+      return result;
+    }
+  }
+  
+  /** 
+   * Helper method to render an ID as a string, for debugging
+   * <p>
+   * Returns the string {@code (null)} if the id is null.
+   * Otherwise, returns a string representation for debugging.
+   * Never throws an exception. The returned string may
+   * indicate if the id is definitely invalid.
+   */
+  public static String idToString(byte id[]) {
+    if (id == null) {
+      return "(null)";
+    } else {
+      StringBuilder sb = new StringBuilder();
+      sb.append(new BigInteger(1, id).toString(Character.MAX_RADIX));
+      if (id.length != ID_LENGTH) {
+        sb.append(" (INVALID FORMAT)");
+      }
+      return sb.toString();
+    }
   }
 }

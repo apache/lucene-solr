@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput;
 
 /**
@@ -35,7 +36,7 @@ import org.apache.lucene.store.DataOutput;
  * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup>,Footer</p>
  * <p>Data types:
  * <ul>
- *   <li>Header --&gt; {@link CodecUtil#checkHeader CodecHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#checkSegmentHeader SegmentHeader}</li>
  *   <li>FieldsCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>FieldName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FieldBits, DocValuesBits --&gt; {@link DataOutput#writeByte Byte}</li>

@@ -23,6 +23,8 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -55,4 +57,11 @@ public class Lucene42RWCodec extends Lucene42Codec {
   public FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }  
+  
+  private static final SegmentInfoFormat segmentInfos = new Lucene40RWSegmentInfoFormat();
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return segmentInfos;
+  }
 }

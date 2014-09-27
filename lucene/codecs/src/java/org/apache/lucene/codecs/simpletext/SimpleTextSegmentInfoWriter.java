@@ -107,7 +107,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
       }
 
       SimpleTextUtil.write(output, SI_ID);
-      SimpleTextUtil.write(output, si.getId(), scratch);
+      SimpleTextUtil.write(output, new BytesRef(si.getId()));
       SimpleTextUtil.writeNewline(output);
       
       SimpleTextUtil.writeChecksum(output, scratch);
