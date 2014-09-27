@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Set;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -42,6 +43,7 @@ public abstract class SolrRequest implements Serializable
 
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
+  private Set<String> queryParams;
   
   //---------------------------------------------------------
   //---------------------------------------------------------
@@ -93,7 +95,18 @@ public abstract class SolrRequest implements Serializable
   public void setStreamingResponseCallback(StreamingResponseCallback callback) {
     this.callback = callback;
   }
-  
+
+  /**
+   * Parameter keys that are sent via the query string
+   */
+  public Set<String> getQueryParams() {
+    return this.queryParams;
+  }
+
+  public void setQueryParams(Set<String> queryParams) {
+    this.queryParams = queryParams;
+  }
+
   public abstract SolrParams getParams();
   public abstract Collection<ContentStream> getContentStreams() throws IOException;
   public abstract SolrResponse process( SolrServer server ) throws SolrServerException, IOException;

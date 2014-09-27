@@ -48,7 +48,11 @@ import org.apache.lucene.util.MutableBits;
  *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup></li>
  * </ul>
  */
-public class Lucene50LiveDocsFormat extends LiveDocsFormat {
+public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
+  
+  /** Sole constructor. */
+  public Lucene50LiveDocsFormat() {
+  }
   
   /** extension of live docs */
   private static final String EXTENSION = "liv";
@@ -90,7 +94,12 @@ public class Lucene50LiveDocsFormat extends LiveDocsFormat {
         for (int i = 0; i < data.length; i++) {
           data[i] = input.readLong();
         }
-        return new FixedBitSet(data, length);
+        FixedBitSet fbs = new FixedBitSet(data, length);
+        if (fbs.length() - fbs.cardinality() != info.getDelCount()) {
+          throw new CorruptIndexException("bits.deleted=" + (fbs.length() - fbs.cardinality()) + 
+                                          " info.delcount=" + info.getDelCount(), input);
+        }
+        return fbs;
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -104,7 +113,12 @@ public class Lucene50LiveDocsFormat extends LiveDocsFormat {
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
     long gen = info.getNextDelGen();
     String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, gen);
-    long data[] = ((FixedBitSet) bits).getBits();
+    FixedBitSet fbs = (FixedBitSet) bits;
+    if (fbs.length() - fbs.cardinality() != info.getDelCount() + newDelCount) {
+      throw new CorruptIndexException("bits.deleted=" + (fbs.length() - fbs.cardinality()) + 
+                                      " info.delcount=" + info.getDelCount() + " newdelcount=" + newDelCount, name);
+    }
+    long data[] = fbs.getBits();
     try (IndexOutput output = dir.createOutput(name, context)) {
       CodecUtil.writeSegmentHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId());
       output.writeLong(gen);

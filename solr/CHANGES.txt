@@ -143,6 +143,8 @@ New Features
 * SOLR-5986: Don't allow runaway queries from harming Solr cluster health or search 
   performance (Anshum Gupta, Steve Rowe, Robert Muir)
 
+* SOLR-6565: SolrRequest support for query params (Gregory Chanan)
+
 Bug Fixes
 ----------------------
 

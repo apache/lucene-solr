@@ -23,7 +23,10 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -37,6 +40,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -46,6 +50,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SSLTestConfig;
@@ -78,12 +83,14 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       headers = null;
       parameters = null;
       errorCode = null;
+      queryString = null;
     }
     
     public static Integer errorCode = null;
     public static String lastMethod = null;
     public static HashMap<String,String> headers = null;
     public static Map<String,String[]> parameters = null;
+    public static String queryString = null;
     
     public static void setErrorCode(Integer code) {
       errorCode = code;
@@ -110,6 +117,10 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       parameters = req.getParameterMap();
     }
 
+    private void setQueryString(HttpServletRequest req) {
+      queryString = req.getQueryString();
+    }
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
@@ -127,6 +138,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
       setHeaders(req);
       setParameters(req);
+      setQueryString(req);
       if (null != errorCode) {
         try { 
           resp.sendError(errorCode); 
@@ -553,5 +565,80 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     }
     throw new RuntimeException("Could not find unused TCP port.");
   }
-  
+
+  private Set<String> setOf(String... keys) {
+    Set<String> set = new TreeSet<String>();
+    if (keys != null) {
+      for (String k : keys) {
+        set.add(k);
+      }
+    }
+    return set;
+  }
+
+  private void setReqParamsOf(UpdateRequest req, String... keys) {
+    if (keys != null) {
+      for (String k : keys) {
+        req.setParam(k, k+"Value");
+      }
+    }
+  }
+
+  private void verifyServletState(HttpSolrServer server, SolrRequest request) {
+    // check query String
+    Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
+    while (paramNames.hasNext()) {
+      String name = paramNames.next();
+      String [] values = request.getParams().getParams(name);
+      if (values != null) {
+        for (String value : values) {
+          boolean shouldBeInQueryString = server.getQueryParams().contains(name)
+            || (request.getQueryParams() != null && request.getQueryParams().contains(name));
+          assertEquals(shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
+          // in either case, it should be in the parameters
+          assertNotNull(DebugServlet.parameters.get(name));
+          assertEquals(1, DebugServlet.parameters.get(name).length);
+          assertEquals(value, DebugServlet.parameters.get(name)[0]);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testQueryString() throws Exception {
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+                                               "/debug/foo");
+
+    // test without request query params
+    DebugServlet.clear();
+    server.setQueryParams(setOf("serverOnly"));
+    UpdateRequest req = new UpdateRequest();
+    setReqParamsOf(req, "serverOnly", "notServer");
+    try {
+      server.request(req);
+    } catch (Throwable t) {}
+    verifyServletState(server, req);
+
+    // test without server query params
+    DebugServlet.clear();
+    server.setQueryParams(setOf());
+    req = new UpdateRequest();
+    req.setQueryParams(setOf("requestOnly"));
+    setReqParamsOf(req, "requestOnly", "notRequest");
+    try {
+      server.request(req);
+    } catch (Throwable t) {}
+    verifyServletState(server, req);
+
+    // test with both request and server query params
+    DebugServlet.clear();
+    req = new UpdateRequest();
+    server.setQueryParams(setOf("serverOnly", "both"));
+    req.setQueryParams(setOf("requestOnly", "both"));
+    setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
+     try {
+      server.request(req);
+    } catch (Throwable t) {}
+    verifyServletState(server, req);
+  }
 }
