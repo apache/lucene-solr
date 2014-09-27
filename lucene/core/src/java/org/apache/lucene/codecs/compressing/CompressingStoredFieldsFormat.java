@@ -64,7 +64,7 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * <p>
    * <code>formatName</code> is the name of the format. This name will be used
    * in the file formats to perform
-   * {@link CodecUtil#checkHeader(org.apache.lucene.store.DataInput, String, int, int) codec header checks}.
+   * {@link CodecUtil#checkSegmentHeader(org.apache.lucene.store.DataInput, String, int, int, byte[]) codec header checks}.
    * <p>
    * <code>segmentSuffix</code> is the segment suffix. This suffix is added to 
    * the result file name only if it's not the empty string.

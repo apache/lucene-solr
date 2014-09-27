@@ -68,8 +68,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final String CODEC_SFX_DAT = "Data";
 
   static final int VERSION_START = 0;
-  static final int VERSION_CHECKSUM = 1;
-  static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  static final int VERSION_CURRENT = VERSION_START;
 
   static final int BLOCK_SIZE = 64;
 
@@ -231,10 +230,10 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
       final String codecNameDat = formatName + CODEC_SFX_DAT;
-      CodecUtil.writeHeader(indexStream, codecNameIdx, VERSION_CURRENT);
-      CodecUtil.writeHeader(vectorsStream, codecNameDat, VERSION_CURRENT);
-      assert CodecUtil.headerLength(codecNameDat) == vectorsStream.getFilePointer();
-      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
+      CodecUtil.writeSegmentHeader(indexStream, codecNameIdx, VERSION_CURRENT, si.getId());
+      CodecUtil.writeSegmentHeader(vectorsStream, codecNameDat, VERSION_CURRENT, si.getId());
+      assert CodecUtil.segmentHeaderLength(codecNameDat) == vectorsStream.getFilePointer();
+      assert CodecUtil.segmentHeaderLength(codecNameIdx) == indexStream.getFilePointer();
 
       indexWriter = new CompressingStoredFieldsIndexWriter(indexStream);
       indexStream = null;
