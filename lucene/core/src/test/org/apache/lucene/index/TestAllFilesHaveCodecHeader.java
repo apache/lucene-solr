@@ -107,8 +107,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
         }
         String previous = namesToExtensions.put(codecName, extension);
         if (previous != null && !previous.equals(extension)) {
-          //TODO: not yet 
-          // fail("extensions " + previous + " and " + extension + " share same codecName " + codecName);
+          fail("extensions " + previous + " and " + extension + " share same codecName " + codecName);
         }
         success = true;
       } finally {

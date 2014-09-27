@@ -147,7 +147,7 @@ its numbering.</p>
    This contains the set of field names used in the index.
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat Stored Field values}. 
+{@link org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat Stored Field values}. 
 This contains, for each document, a list of attribute-value pairs, where the attributes 
 are field names. These are used to store auxiliary information about the document, such as 
 its title, url, or an identifier to access a database. The set of stored fields are what is 
@@ -178,7 +178,7 @@ For each field in each document, a value is stored
 that is multiplied into the score for hits on that field.
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vectors}. 
+{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vectors}. 
 For each field in each document, the term vector (sometimes
 called document vector) may be stored. A term vector consists of term text and
 term frequency. To add Term Vectors to your index see the 
@@ -254,12 +254,12 @@ systems that frequently run out of file handles.</td>
 <td>Stores information about the fields</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat Field Index}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat Field Index}</td>
 <td>.fdx</td>
 <td>Contains pointers to field data</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat Field Data}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat Field Data}</td>
 <td>.fdt</td>
 <td>The stored fields for documents</td>
 </tr>
@@ -299,17 +299,17 @@ systems that frequently run out of file handles.</td>
 <td>Encodes additional scoring factors or other per-document information.</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vector Index}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vector Index}</td>
 <td>.tvx</td>
 <td>Stores offset into the document data file</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vector Documents}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vector Documents}</td>
 <td>.tvd</td>
 <td>Contains information about each document that has term vectors</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat Term Vector Fields}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vector Fields}</td>
 <td>.tvf</td>
 <td>The field level info about term vectors</td>
 </tr>

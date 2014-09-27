@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,7 +27,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Lucene 4.1 stored fields format.
+ * Lucene 5.0 stored fields format.
  *
  * <p><b>Principle</b></p>
  * <p>This {@link StoredFieldsFormat} compresses blocks of 16KB of documents in
@@ -114,11 +114,11 @@ import org.apache.lucene.util.packed.PackedInts;
  * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.</p>
  * @lucene.experimental
  */
-public final class Lucene41StoredFieldsFormat extends CompressingStoredFieldsFormat {
+public final class Lucene50StoredFieldsFormat extends CompressingStoredFieldsFormat {
 
   /** Sole constructor. */
-  public Lucene41StoredFieldsFormat() {
-    super("Lucene41StoredFields", CompressionMode.FAST, 1 << 14);
+  public Lucene50StoredFieldsFormat() {
+    super("Lucene50StoredFields", CompressionMode.FAST, 1 << 14);
   }
 
 }
