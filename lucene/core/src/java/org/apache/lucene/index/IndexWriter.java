@@ -2591,67 +2591,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
-  private SegmentCommitInfo copySegmentAsIs(SegmentCommitInfo info, String segName, IOContext context)
-      throws IOException {
-    
-    // note: we don't really need this fis (its copied), but we load it up
-    // so we don't pass a null value to the si writer
-    FieldInfos fis = SegmentReader.readFieldInfos(info);
+  private SegmentCommitInfo copySegmentAsIs(SegmentCommitInfo info, String segName, IOContext context) throws IOException {
     
     //System.out.println("copy seg=" + info.info.name + " version=" + info.info.getVersion());
     // Same SI as before but we change directory and name
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
                                           info.info.getUseCompoundFile(), info.info.getCodec(), 
-                                          info.info.getDiagnostics(), StringHelper.randomId());
-    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo,
-        info.getDelCount(), info.getDelGen(), info.getFieldInfosGen(),
-        info.getDocValuesGen());
-
-    Set<String> segFiles = new HashSet<>();
-
-    // Build up new segment's file names.  Must do this
-    // before writing SegmentInfo:
-    for (String file: info.files()) {
-      final String newFileName;
-      newFileName = segName + IndexFileNames.stripSegmentName(file);
-      segFiles.add(newFileName);
-    }
-    newInfo.setFiles(segFiles);
-
-    // We must rewrite the SI file because it references segment name in its list of files, etc
-    TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
+                                          info.info.getDiagnostics(), info.info.getId());
+    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getDelGen(), 
+                                                               info.getFieldInfosGen(), info.getDocValuesGen());
+    
+    newInfo.setFiles(info.files());
 
     boolean success = false;
 
     try {
-
-      newInfo.getCodec().segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, newInfo, fis, context);
-
-      final Collection<String> siFiles = trackingDir.getCreatedFiles();
-
       // Copy the segment's files
       for (String file: info.files()) {
+        final String newFileName = newInfo.namedForThisSegment(file);
 
-        final String newFileName = segName + IndexFileNames.stripSegmentName(file);
-
-        if (siFiles.contains(newFileName)) {
-          // We already rewrote this above
-          continue;
-        }
-
-        assert !slowFileExists(directory, newFileName): "file \"" + newFileName + "\" already exists; siFiles=" + siFiles;
+        assert !slowFileExists(directory, newFileName): "file \"" + newFileName + "\" already exists; newInfo.files=" + newInfo.files();
 
         info.info.dir.copy(directory, file, newFileName, context);
       }
       success = true;
     } finally {
       if (!success) {
-        for(String file : newInfo.files()) {
-          try {
-            directory.deleteFile(file);
-          } catch (Throwable t) {
-          }
-        }
+        IOUtils.deleteFilesIgnoringExceptions(directory, newInfo.files().toArray(new String[0]));
       }
     }
     

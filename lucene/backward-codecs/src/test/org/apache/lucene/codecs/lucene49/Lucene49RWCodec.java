@@ -19,6 +19,8 @@ package org.apache.lucene.codecs.lucene49;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene46.Lucene46RWSegmentInfoFormat;
 
 /**
  * Read-write version of {@link Lucene49Codec} for testing.
@@ -38,5 +40,12 @@ public class Lucene49RWCodec extends Lucene49Codec {
   @Override
   public NormsFormat normsFormat() {
     return norms;
+  }
+  
+  private static final SegmentInfoFormat segmentInfos = new Lucene46RWSegmentInfoFormat();
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return segmentInfos;
   }
 }

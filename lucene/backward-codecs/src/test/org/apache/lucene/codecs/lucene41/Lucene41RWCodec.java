@@ -6,12 +6,14 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosWriter;
 import org.apache.lucene.codecs.lucene40.Lucene40RWDocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWNormsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWTermVectorsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -72,5 +74,12 @@ public class Lucene41RWCodec extends Lucene41Codec {
   @Override
   public TermVectorsFormat termVectorsFormat() {
     return vectors;
+  }
+  
+  private static final SegmentInfoFormat segmentInfos = new Lucene40RWSegmentInfoFormat();
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return segmentInfos;
   }
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.lucene40;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,24 +17,13 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import org.apache.lucene.codecs.SegmentInfoWriter;
 
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
+/** read-write version of 4.0 segmentinfos for testing */
+public class Lucene40RWSegmentInfoFormat extends Lucene40SegmentInfoFormat {
 
-/**
- * Codec API for writing {@link FieldInfos}.
- * @lucene.experimental
- */
-public abstract class FieldInfosWriter {
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected FieldInfosWriter() {
+  @Override
+  public SegmentInfoWriter getSegmentInfoWriter() {
+    return new Lucene40SegmentInfoWriter();
   }
-
-  /** Writes the provided {@link FieldInfos} to the
-   *  directory. */
-  public abstract void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException;
 }

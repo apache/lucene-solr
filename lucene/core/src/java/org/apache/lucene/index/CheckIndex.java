@@ -48,6 +48,7 @@ import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 
@@ -515,7 +516,7 @@ public class CheckIndex {
     }
 
     msg(infoStream, "Segments file=" + segmentsFileName + " numSegments=" + numSegments
-        + " " + versionString + " id=" + sis.getId() + " format=" + sFormat + userDataString);
+        + " " + versionString + " id=" + StringHelper.idToString(sis.getId()) + " format=" + sFormat + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
@@ -566,7 +567,7 @@ public class CheckIndex {
 
       try {
         msg(infoStream, "    version=" + (version == null ? "3.0" : version));
-        msg(infoStream, "    id=" + info.info.getId());
+        msg(infoStream, "    id=" + StringHelper.idToString(info.info.getId()));
         final Codec codec = info.info.getCodec();
         msg(infoStream, "    codec=" + codec);
         segInfoStat.codec = codec;

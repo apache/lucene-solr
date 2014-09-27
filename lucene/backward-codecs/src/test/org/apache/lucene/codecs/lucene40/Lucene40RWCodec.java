@@ -7,9 +7,9 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.util.LuceneTestCase;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -73,5 +73,12 @@ public final class Lucene40RWCodec extends Lucene40Codec {
   @Override
   public PostingsFormat getPostingsFormatForField(String field) {
     return postings;
+  }
+  
+  private static final SegmentInfoFormat segmentInfos = new Lucene40RWSegmentInfoFormat();
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return segmentInfos;
   }
 }

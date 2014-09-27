@@ -217,7 +217,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
       final String segmentSuffix = info.getFieldInfosGen() == -1 ? "" : Long.toString(info.getFieldInfosGen(), Character.MAX_RADIX);
       Codec codec = info.info.getCodec();
       FieldInfosFormat fisFormat = codec.fieldInfosFormat();
-      return fisFormat.getFieldInfosReader().read(dir, info.info.name, segmentSuffix, IOContext.READONCE);
+      return fisFormat.getFieldInfosReader().read(dir, info.info, segmentSuffix, IOContext.READONCE);
     } finally {
       if (closeDir) {
         dir.close();

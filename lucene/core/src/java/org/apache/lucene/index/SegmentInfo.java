@@ -18,8 +18,10 @@ package org.apache.lucene.index;
  */
 
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -58,7 +60,7 @@ public final class SegmentInfo {
   private boolean isCompoundFile;
 
   /** Id that uniquely identifies this segment. */
-  private final String id;
+  private final byte[] id;
 
   private Codec codec;
 
@@ -82,22 +84,13 @@ public final class SegmentInfo {
   }
 
   /**
-   * Construct a new complete SegmentInfo instance from
-   * input, with a newly generated random id.
-   */
-  public SegmentInfo(Directory dir, Version version, String name, int docCount,
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics) {
-    this(dir, version, name, docCount, isCompoundFile, codec, diagnostics, null);
-  }
-
-  /**
    * Construct a new complete SegmentInfo instance from input.
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
    */
   public SegmentInfo(Directory dir, Version version, String name, int docCount,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
-                     String id) {
+                     byte[] id) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
@@ -107,6 +100,9 @@ public final class SegmentInfo {
     this.codec = codec;
     this.diagnostics = diagnostics;
     this.id = id;
+    if (id != null && id.length != StringHelper.ID_LENGTH) {
+      throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
+    }
   }
 
   /**
@@ -226,30 +222,32 @@ public final class SegmentInfo {
   }
 
   /** Return the id that uniquely identifies this segment. */
-  public String getId() {
-    return id;
+  public byte[] getId() {
+    return id == null ? null : id.clone();
   }
 
   private Set<String> setFiles;
 
   /** Sets the files written for this segment. */
-  public void setFiles(Set<String> files) {
-    checkFileNames(files);
-    setFiles = files;
+  public void setFiles(Collection<String> files) {
+    setFiles = new HashSet<>();
+    addFiles(files);
   }
 
   /** Add these files to the set of files written for this
    *  segment. */
   public void addFiles(Collection<String> files) {
     checkFileNames(files);
-    setFiles.addAll(files);
+    for (String f : files) {
+      setFiles.add(namedForThisSegment(f));
+    }
   }
 
   /** Add this file to the set of files written for this
    *  segment. */
   public void addFile(String file) {
     checkFileNames(Collections.singleton(file));
-    setFiles.add(file);
+    setFiles.add(namedForThisSegment(file));
   }
   
   private void checkFileNames(Collection<String> files) {
@@ -261,5 +259,12 @@ public final class SegmentInfo {
       }
     }
   }
-    
+  
+  /** 
+   * strips any segment name from the file, naming it with this segment
+   * this is because "segment names" can change, e.g. by addIndexes(Dir)
+   */
+  String namedForThisSegment(String file) {
+    return name + IndexFileNames.stripSegmentName(file);
+  }
 }

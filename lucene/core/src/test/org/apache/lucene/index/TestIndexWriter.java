@@ -2689,11 +2689,13 @@ public class TestIndexWriter extends LuceneTestCase {
     
     SegmentInfos sis = new SegmentInfos();
     sis.read(d);
-    String id1 = sis.getId();
+    byte[] id1 = sis.getId();
     assertNotNull(id1);
+    assertEquals(StringHelper.ID_LENGTH, id1.length);
     
-    String id2 = sis.info(0).info.getId();
+    byte[] id2 = sis.info(0).info.getId();
     assertNotNull(id2);
+    assertEquals(StringHelper.ID_LENGTH, id2.length);
 
     // Make sure CheckIndex includes id output:
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
@@ -2706,14 +2708,14 @@ public class TestIndexWriter extends LuceneTestCase {
     assertTrue(s, indexStatus != null && indexStatus.clean);
 
     // Commit id is always stored:
-    assertTrue("missing id=" + id1 + " in:\n" + s, s.contains("id=" + id1));
+    assertTrue("missing id=" + StringHelper.idToString(id1) + " in:\n" + s, s.contains("id=" + StringHelper.idToString(id1)));
 
-    assertTrue("missing id=" + id2 + " in:\n" + s, s.contains("id=" + id2));
+    assertTrue("missing id=" + StringHelper.idToString(id1) + " in:\n" + s, s.contains("id=" + StringHelper.idToString(id1)));
     d.close();
 
     Set<String> ids = new HashSet<>();
     for(int i=0;i<100000;i++) {
-      String id = StringHelper.randomId();
+      String id = StringHelper.idToString(StringHelper.randomId());
       assertFalse("id=" + id + " i=" + i, ids.contains(id));
       ids.add(id);
     }

@@ -43,6 +43,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 
@@ -218,7 +219,7 @@ public class TestDoc extends LuceneTestCase {
 
       final Codec codec = Codec.getDefault();
       TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
-      final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null);
+      final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null, StringHelper.randomId());
 
       SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(r1, r2),
           si, InfoStream.getDefault(), trackingDir,
@@ -226,21 +227,18 @@ public class TestDoc extends LuceneTestCase {
 
       MergeState mergeState = merger.merge();
       r1.close();
-      r2.close();
-      final SegmentInfo info = new SegmentInfo(si1.info.dir, Version.LATEST, merged,
-                                               si1.info.getDocCount() + si2.info.getDocCount(),
-                                               false, codec, null);
-      info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
+      r2.close();;
+      si.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, info, newIOContext(random()));
-        info.setUseCompoundFile(true);
+        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, si, newIOContext(random()));
+        si.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) {
           si1.info.dir.deleteFile(fileToDelete);
         }
       }
 
-      return new SegmentCommitInfo(info, 0, -1L, -1L, -1L);
+      return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);
    }
 
 

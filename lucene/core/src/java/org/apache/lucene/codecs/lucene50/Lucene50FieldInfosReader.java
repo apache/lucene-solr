@@ -29,6 +29,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -47,15 +48,16 @@ final class Lucene50FieldInfosReader extends FieldInfosReader {
   }
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, Lucene50FieldInfosFormat.EXTENSION);
+  public FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene50FieldInfosFormat.EXTENSION);
     try (ChecksumIndexInput input = directory.openChecksumInput(fileName, context)) {
       Throwable priorE = null;
       FieldInfo infos[] = null;
       try {
-        CodecUtil.checkHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
+        CodecUtil.checkSegmentHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
                                      Lucene50FieldInfosFormat.FORMAT_START, 
-                                     Lucene50FieldInfosFormat.FORMAT_CURRENT);
+                                     Lucene50FieldInfosFormat.FORMAT_CURRENT,
+                                     segmentInfo.getId());
         
         final int size = input.readVInt(); //read in the size
         infos = new FieldInfo[size];

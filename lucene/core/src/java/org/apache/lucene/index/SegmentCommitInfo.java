@@ -109,7 +109,14 @@ public class SegmentCommitInfo {
   @Deprecated
   public void setGenUpdatesFiles(Map<Long,Set<String>> genUpdatesFiles) {
     this.genUpdatesFiles.clear();
-    this.genUpdatesFiles.putAll(genUpdatesFiles);
+    for (Map.Entry<Long,Set<String>> kv : genUpdatesFiles.entrySet()) {
+      // rename the set
+      Set<String> set = new HashSet<>();
+      for (String file : kv.getValue()) {
+        set.add(info.namedForThisSegment(file));
+      }
+      this.genUpdatesFiles.put(kv.getKey(), set);
+    }
   }
   
   /** Returns the per-field DocValues updates files. */
@@ -120,7 +127,14 @@ public class SegmentCommitInfo {
   /** Sets the DocValues updates file names, per field number. Does not deep clone the map. */
   public void setDocValuesUpdatesFiles(Map<Integer,Set<String>> dvUpdatesFiles) {
     this.dvUpdatesFiles.clear();
-    this.dvUpdatesFiles.putAll(dvUpdatesFiles);
+    for (Map.Entry<Integer,Set<String>> kv : dvUpdatesFiles.entrySet()) {
+      // rename the set
+      Set<String> set = new HashSet<>();
+      for (String file : kv.getValue()) {
+        set.add(info.namedForThisSegment(file));
+      }
+      this.dvUpdatesFiles.put(kv.getKey(), set);
+    }
   }
   
   /** Returns the FieldInfos file names. */
@@ -131,7 +145,9 @@ public class SegmentCommitInfo {
   /** Sets the FieldInfos file names. */
   public void setFieldInfosFiles(Set<String> fieldInfosFiles) {
     this.fieldInfosFiles.clear();
-    this.fieldInfosFiles.addAll(fieldInfosFiles);
+    for (String file : fieldInfosFiles) {
+      this.fieldInfosFiles.add(info.namedForThisSegment(file));
+    }
   }
 
   /** Called when we succeed in writing deletes */
