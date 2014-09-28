@@ -751,6 +751,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
           || matchingVectorsReader.getChunkSize() != chunkSize
           || matchingVectorsReader.getPackedIntsVersion() != PackedInts.VERSION_CURRENT) {
         // naive merge...
+        if (vectorsReader != null) {
+          vectorsReader.checkIntegrity();
+        }
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
           Fields vectors;
           if (vectorsReader == null) {

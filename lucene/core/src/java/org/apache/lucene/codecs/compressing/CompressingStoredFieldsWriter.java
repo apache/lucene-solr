@@ -356,6 +356,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           || matchingFieldsReader.getChunkSize() != chunkSize) { // the way data is decompressed depends on the chunk size
         // naive merge...
         StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[readerIndex];
+        if (storedFieldsReader != null) {
+          storedFieldsReader.checkIntegrity();
+        }
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
           DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
           storedFieldsReader.visitDocument(i, visitor);
