@@ -22,8 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;

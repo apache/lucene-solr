@@ -50,4 +50,12 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable, Accoun
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
+  
+  /** 
+   * Returns an instance optimized for merging.
+   * <p>
+   * The default implementation returns {@code this} */
+  public StoredFieldsReader getMergeInstance() throws IOException {
+    return this;
+  }
 }

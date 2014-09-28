@@ -56,4 +56,12 @@ public abstract class TermVectorsReader implements Cloneable, Closeable, Account
    *  read term vectors. */
   @Override
   public abstract TermVectorsReader clone();
+  
+  /** 
+   * Returns an instance optimized for merging.
+   * <p>
+   * The default implementation returns {@code this} */
+  public TermVectorsReader getMergeInstance() throws IOException {
+    return this;
+  }
 }

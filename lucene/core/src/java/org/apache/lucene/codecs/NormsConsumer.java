@@ -26,8 +26,6 @@ import java.util.NoSuchElementException;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
@@ -87,7 +85,6 @@ public abstract class NormsConsumer implements Closeable {
           if (normsProducer != null) {
             FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
             if (fieldInfo != null && fieldInfo.hasNorms()) {
-              // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
               norms = normsProducer.getNorms(fieldInfo);
             }
           }

@@ -116,10 +116,25 @@ public class MergeState {
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         normsProducer = segmentReader.getNormsReader();
+        if (normsProducer != null) {
+          normsProducer = normsProducer.getMergeInstance();
+        }
         docValuesProducer = segmentReader.getDocValuesReader();
+        if (docValuesProducer != null) {
+          docValuesProducer = docValuesProducer.getMergeInstance();
+        }
         storedFieldsReader = segmentReader.getFieldsReader();
+        if (storedFieldsReader != null) {
+          storedFieldsReader = storedFieldsReader.getMergeInstance();
+        }
         termVectorsReader = segmentReader.getTermVectorsReader();
+        if (termVectorsReader != null) {
+          termVectorsReader = termVectorsReader.getMergeInstance();
+        }
         fieldsProducer = segmentReader.fields();
+        if (fieldsProducer != null) {
+          fieldsProducer = fieldsProducer.getMergeInstance();
+        }
       } else {
         // A "foreign" reader
         normsProducer = readerToNormsProducer(reader);

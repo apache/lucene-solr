@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FilteredTermsEnum;
@@ -150,7 +149,6 @@ public abstract class DocValuesConsumer implements Closeable {
             if (docValuesProducer != null) {
               FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
               if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.NUMERIC) {
-                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
                 values = docValuesProducer.getNumeric(fieldInfo);
                 bits = docValuesProducer.getDocsWithField(fieldInfo);
               }
@@ -173,7 +171,6 @@ public abstract class DocValuesConsumer implements Closeable {
             if (docValuesProducer != null) {
               FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
               if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
-                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
                 values = docValuesProducer.getBinary(fieldInfo);
                 bits = docValuesProducer.getDocsWithField(fieldInfo);
               }
@@ -194,7 +191,6 @@ public abstract class DocValuesConsumer implements Closeable {
             if (docValuesProducer != null) {
               FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
               if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.SORTED) {
-                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
                 values = docValuesProducer.getSorted(fieldInfo);
               }
             }
@@ -212,7 +208,6 @@ public abstract class DocValuesConsumer implements Closeable {
             if (docValuesProducer != null) {
               FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
               if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.SORTED_SET) {
-                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
                 values = docValuesProducer.getSortedSet(fieldInfo);
               }
             }
@@ -230,7 +225,6 @@ public abstract class DocValuesConsumer implements Closeable {
             if (docValuesProducer != null) {
               FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
               if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.SORTED_NUMERIC) {
-                // TODO: use dedicated merge API, so impl can do merge-specific checksumming, and won't cache values in RAM
                 values = docValuesProducer.getSortedNumeric(fieldInfo);
               }
             }
