@@ -39,7 +39,11 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** writer for {@link Lucene45DocValuesFormat} */
+/** 
+ * writer for 4.5 docvalues format
+ * @deprecated only for old 4.x segments
+ */
+@Deprecated
 class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;

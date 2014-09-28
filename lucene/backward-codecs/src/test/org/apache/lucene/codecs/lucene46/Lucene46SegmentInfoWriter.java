@@ -31,12 +31,11 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
- * Lucene 4.0 implementation of {@link SegmentInfoWriter}.
- * 
- * @see Lucene46SegmentInfoFormat
- * @lucene.experimental
+ * Writer for 4.0 segmentinfo format for testing
+ * @deprecated for test purposes only
  */
-public class Lucene46SegmentInfoWriter extends SegmentInfoWriter {
+@Deprecated
+final class Lucene46SegmentInfoWriter extends SegmentInfoWriter {
 
   /** Sole constructor. */
   public Lucene46SegmentInfoWriter() {

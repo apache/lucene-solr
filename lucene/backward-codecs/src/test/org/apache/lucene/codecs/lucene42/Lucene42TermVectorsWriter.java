@@ -58,8 +58,10 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * writer for Lucene 4.2 term vectors for testing
+ * Writer for 4.2 term vectors format for testing
+ * @deprecated for test purposes only
  */
+@Deprecated
 final class Lucene42TermVectorsWriter extends TermVectorsWriter {
 
   // hard limit on the maximum number of documents per chunk

@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene41;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
@@ -36,14 +35,8 @@ import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 4.1 index format, with configurable per-field postings formats.
- * <p>
- * If you want to reuse functionality of this codec in another codec, extend
- * {@link FilterCodec}.
- *
- * @see org.apache.lucene.codecs.lucene41 package documentation for file format details.
- * @deprecated Only for reading old 4.0 segments
- * @lucene.experimental
+ * Implements the Lucene 4.1 index format
+ * @deprecated Only for reading old 4.1 segments
  */
 @Deprecated
 public class Lucene41Codec extends Codec {
@@ -65,7 +58,6 @@ public class Lucene41Codec extends Codec {
     super("Lucene41");
   }
   
-  // TODO: slightly evil
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return fieldsFormat;

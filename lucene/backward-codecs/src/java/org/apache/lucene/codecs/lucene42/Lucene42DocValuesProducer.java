@@ -66,9 +66,11 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Reader for {@link Lucene42DocValuesFormat}
+ * Reader for 4.2 docvalues
+ * @deprecated only for reading old 4.x segments
  */
-class Lucene42DocValuesProducer extends DocValuesProducer {
+@Deprecated
+final class Lucene42DocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<String,NumericEntry> numerics;
   private final Map<String,BinaryEntry> binaries;

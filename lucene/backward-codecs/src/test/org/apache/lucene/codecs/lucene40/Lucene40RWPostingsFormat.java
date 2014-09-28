@@ -23,14 +23,19 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Read-write version of {@link Lucene40PostingsFormat} for testing.
+ * Read-write version of 4.0 postings format for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene40RWPostingsFormat extends Lucene40PostingsFormat {
+@Deprecated
+public final class Lucene40RWPostingsFormat extends Lucene40PostingsFormat {
   
+  /** minimum items (terms or sub-blocks) per block for 4.0 BlockTree */
+  final static int MIN_BLOCK_SIZE = 25;
+  /** maximum items (terms or sub-blocks) per block for 4.0 BlockTree */
+  final static int MAX_BLOCK_SIZE = 48;
+
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase docs = new Lucene40PostingsWriter(state);
@@ -41,7 +46,7 @@ public class Lucene40RWPostingsFormat extends Lucene40PostingsFormat {
     // Or... you must make a new Codec for this?
     boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, minBlockSize, maxBlockSize);
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
       success = true;
       return ret;
     } finally {

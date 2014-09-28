@@ -48,7 +48,6 @@ import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Reads the 4.0 format of norms/docvalues
- * @lucene.experimental
  * @deprecated Only for reading old 4.0 and 4.1 segments
  */
 @Deprecated

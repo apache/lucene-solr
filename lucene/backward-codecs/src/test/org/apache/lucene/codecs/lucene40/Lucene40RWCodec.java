@@ -28,8 +28,11 @@ import org.apache.lucene.codecs.TermVectorsFormat;
  * limitations under the License.
  */
 
-/** Read-write version of Lucene40Codec for testing */
-@SuppressWarnings("deprecation")
+/**
+ * Read-write version of 4.0 codec for testing
+ * @deprecated for test purposes only
+ */
+@Deprecated
 public final class Lucene40RWCodec extends Lucene40Codec {
   
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {

@@ -33,13 +33,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Lucene 4.0 FieldInfos writer.
- * 
- * @see Lucene40FieldInfosFormat
- * @lucene.experimental
+ * Writer for 4.0 fieldinfos format
+ * @deprecated for test purposes only
  */
 @Deprecated
-public class Lucene40FieldInfosWriter extends FieldInfosWriter {
+public final class Lucene40FieldInfosWriter extends FieldInfosWriter {
 
   /** Sole constructor. */
   public Lucene40FieldInfosWriter() {

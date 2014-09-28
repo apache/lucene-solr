@@ -30,6 +30,7 @@ import org.apache.lucene.store.IOContext;
 
 /**
  * Lucene 4.1 stored fields format.
+ * @deprecated only for reading old 4.x segments
  */
 @Deprecated
 public class Lucene41StoredFieldsFormat extends StoredFieldsFormat {

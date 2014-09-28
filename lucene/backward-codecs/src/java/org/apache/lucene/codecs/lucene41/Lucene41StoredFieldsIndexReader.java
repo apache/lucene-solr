@@ -34,7 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Random-access reader for {@code Lucene41CompressingStoredFieldsIndexWriter}.
+ * Reader for 4.x stored fields/term vectors index
  * @deprecated only for reading old segments
  */
 @Deprecated

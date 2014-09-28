@@ -27,14 +27,13 @@ import org.apache.lucene.util.Accountable;
 
 /**
  * Reads 4.0/4.1 norms.
- * Implemented the same as docvalues, but with a different filename.
  * @deprecated Only for reading old 4.0 and 4.1 segments
  */
 @Deprecated
-class Lucene40NormsReader extends NormsProducer {
+final class Lucene40NormsReader extends NormsProducer {
   private final Lucene40DocValuesReader impl;
   
-  public Lucene40NormsReader(SegmentReadState state, String filename) throws IOException {
+  Lucene40NormsReader(SegmentReadState state, String filename) throws IOException {
     impl = new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
   }
   

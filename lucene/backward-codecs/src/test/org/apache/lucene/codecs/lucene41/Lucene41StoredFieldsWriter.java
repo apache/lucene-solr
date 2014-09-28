@@ -53,8 +53,10 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * writer for Lucene 4.1 stored fields for testing
+ * Writer for 4.1 stored fields format for testing
+ * @deprecated for test purposes only
  */
+@Deprecated
 final class Lucene41StoredFieldsWriter extends StoredFieldsWriter {
 
   // hard limit on the maximum number of documents per chunk

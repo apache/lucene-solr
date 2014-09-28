@@ -67,7 +67,11 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.DirectReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
-/** reader for {@link Lucene49DocValuesFormat} */
+/** 
+ * reader for 4.9 docvalues format
+ * @deprecated only for 4.x segments 
+ */
+@Deprecated
 class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<String,NumericEntry> numerics;
   private final Map<String,BinaryEntry> binaries;

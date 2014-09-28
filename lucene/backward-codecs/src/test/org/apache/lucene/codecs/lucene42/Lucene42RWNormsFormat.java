@@ -21,12 +21,13 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Read-write version of {@link Lucene42NormsFormat}
+ * Read-write version of 4.2 norms format for testing
+ * @deprecated for test purposes only
  */
-public class Lucene42RWNormsFormat extends Lucene42NormsFormat {
+@Deprecated
+public final class Lucene42RWNormsFormat extends Lucene42NormsFormat {
 
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {

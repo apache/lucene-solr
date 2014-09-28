@@ -232,8 +232,6 @@ public class SolrIndexConfig {
       iwc.setMergedSegmentWarmer(warmer);
     }
 
-    iwc.setCheckIntegrityAtMerge(checkIntegrityAtMerge);
-
     return iwc;
   }
 

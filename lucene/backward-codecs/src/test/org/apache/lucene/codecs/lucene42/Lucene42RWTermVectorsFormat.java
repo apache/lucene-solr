@@ -24,8 +24,12 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-/** read-write version of lucene 4.2 term vectors for testing */
-public class Lucene42RWTermVectorsFormat extends Lucene42TermVectorsFormat {
+/**
+ * Read-Write version of 4.2 term vectors format for testing
+ * @deprecated for test purposes only
+ */
+@Deprecated
+public final class Lucene42RWTermVectorsFormat extends Lucene42TermVectorsFormat {
 
   @Override
   public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {

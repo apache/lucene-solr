@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.MissingOrdRemapper;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosReader.LegacyDocValuesType;
-import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -37,7 +36,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
-class Lucene40DocValuesWriter extends DocValuesConsumer {
+/**
+ * Writer for 4.0 docvalues format
+ * @deprecated for test purposes only
+ */
+@Deprecated
+final class Lucene40DocValuesWriter extends DocValuesConsumer {
   private final Directory dir;
   private final SegmentWriteState state;
   private final String legacyKey;

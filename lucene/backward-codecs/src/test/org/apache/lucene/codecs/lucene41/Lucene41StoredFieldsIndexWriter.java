@@ -27,8 +27,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * writer for lucene 4.x stored fields/vectors index for testing
+ * Writer for 4.1 stored fields/term vectors index for testing
+ * @deprecated for test purposes only
  */
+@Deprecated
 public final class Lucene41StoredFieldsIndexWriter implements Closeable {
   
   static final int BLOCK_SIZE = 1024; // number of chunks to serialize at once

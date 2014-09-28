@@ -21,13 +21,13 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Read-write version of {@link Lucene42DocValuesFormat} for testing.
+ * Read-Write version of 4.2 docvalues format for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene42RWDocValuesFormat extends Lucene42DocValuesFormat {
+@Deprecated
+public final class Lucene42RWDocValuesFormat extends Lucene42DocValuesFormat {
   
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {

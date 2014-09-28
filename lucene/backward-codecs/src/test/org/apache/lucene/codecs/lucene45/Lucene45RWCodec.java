@@ -37,7 +37,7 @@ import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
  * Read-write version of {@link Lucene45Codec} for testing.
  */
 @SuppressWarnings("deprecation")
-public class Lucene45RWCodec extends Lucene45Codec {
+public final class Lucene45RWCodec extends Lucene45Codec {
   
   private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
     @Override

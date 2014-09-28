@@ -24,14 +24,11 @@ import org.apache.lucene.codecs.MultiLevelSkipListReader;
 import org.apache.lucene.store.IndexInput;
 
 /**
- * Implements the skip list reader for the 4.0 posting list format
- * that stores positions and payloads.
- * 
- * @see Lucene40PostingsFormat
+ * Lucene 4.0 skiplist reader
  * @deprecated Only for reading old 4.0 segments
  */
 @Deprecated
-public class Lucene40SkipListReader extends MultiLevelSkipListReader {
+final class Lucene40SkipListReader extends MultiLevelSkipListReader {
   private boolean currentFieldStoresPayloads;
   private boolean currentFieldStoresOffsets;
   private long freqPointer[];

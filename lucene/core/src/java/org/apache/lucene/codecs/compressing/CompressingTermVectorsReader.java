@@ -105,21 +105,30 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     boolean success = false;
     fieldInfos = fn;
     numDocs = si.getDocCount();
-    ChecksumIndexInput indexStream = null;
-    try {
-      // Load the index into memory
-      final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION);
-      indexStream = d.openChecksumInput(indexStreamFN, context);
-      final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      version = CodecUtil.checkSegmentHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId());
-      assert CodecUtil.segmentHeaderLength(codecNameIdx) == indexStream.getFilePointer();
-      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-      
-      indexStream.readVLong(); // the end of the data file
-      CodecUtil.checkFooter(indexStream);
-      indexStream.close();
-      indexStream = null;
+    int version = -1;
+    CompressingStoredFieldsIndexReader indexReader = null;
+    
+    // Load the index into memory
+    final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION);
+    try (ChecksumIndexInput input = d.openChecksumInput(indexName, context)) {
+      Throwable priorE = null;
+      try {
+        final String codecNameIdx = formatName + CODEC_SFX_IDX;
+        version = CodecUtil.checkSegmentHeader(input, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId());
+        assert CodecUtil.segmentHeaderLength(codecNameIdx) == input.getFilePointer();
+        indexReader = new CompressingStoredFieldsIndexReader(input, si);
+        input.readVLong(); // the end of the data file
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(input, priorE);
+      }
+    }
+    
+    this.version = version;
+    this.indexReader = indexReader;
 
+    try {
       // Open the data file and read metadata
       final String vectorsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION);
       vectorsStream = d.openInput(vectorsStreamFN, context);
@@ -146,7 +155,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(this, indexStream);
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }

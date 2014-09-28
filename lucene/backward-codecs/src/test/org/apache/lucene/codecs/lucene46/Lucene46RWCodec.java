@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.lucene46;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWStoredFieldsFormat;
@@ -29,10 +28,11 @@ import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
 import org.apache.lucene.codecs.lucene45.Lucene45RWDocValuesFormat;
 
 /**
- * Read-write version of {@link Lucene46Codec} for testing.
+ * Read-write version of 4.6 codec for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene46RWCodec extends Lucene46Codec {
+@Deprecated
+public final class Lucene46RWCodec extends Lucene46Codec {
   
   private static final DocValuesFormat docValues = new Lucene45RWDocValuesFormat();
   

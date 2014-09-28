@@ -34,15 +34,12 @@ import org.apache.lucene.util.IOUtils;
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsReader.*;
 
 
-/** 
- * Class responsible for writing stored document fields.
- * <p/>
- * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
- * 
- * @see Lucene40StoredFieldsFormat
- * @lucene.experimental 
+/**
+ * Writer for 4.0 stored fields format for testing
+ * @deprecated for test purposes only
  */
-public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
+@Deprecated
+final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
 
   private final Directory directory;
   private final String segment;

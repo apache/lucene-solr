@@ -107,22 +107,34 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     boolean success = false;
     fieldInfos = fn;
     numDocs = si.getDocCount();
-    ChecksumIndexInput indexStream = null;
+    
+    int version = -1;
+    long maxPointer = -1;
+    CompressingStoredFieldsIndexReader indexReader = null;
+    
+    // Load the index into memory
+    final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);    
+    try (ChecksumIndexInput indexStream = d.openChecksumInput(indexName, context)) {
+      Throwable priorE = null;
+      try {
+        final String codecNameIdx = formatName + CODEC_SFX_IDX;
+        version = CodecUtil.checkSegmentHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId());
+        assert CodecUtil.segmentHeaderLength(codecNameIdx) == indexStream.getFilePointer();
+        indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
+        maxPointer = indexStream.readVLong();
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(indexStream, priorE);
+      }
+    }
+    
+    this.version = version;
+    this.maxPointer = maxPointer;
+    this.indexReader = indexReader;
+
+    final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
     try {
-      final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);
-      final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
-      // Load the index into memory
-      indexStream = d.openChecksumInput(indexStreamFN, context);
-      final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      version = CodecUtil.checkSegmentHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId());
-      assert CodecUtil.segmentHeaderLength(codecNameIdx) == indexStream.getFilePointer();
-      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-
-      maxPointer = indexStream.readVLong();
-      CodecUtil.checkFooter(indexStream);
-      indexStream.close();
-      indexStream = null;
-
       // Open the data file and read metadata
       fieldsStream = d.openInput(fieldsStreamFN, context);
       if (maxPointer + CodecUtil.footerLength() != fieldsStream.length()) {
@@ -149,7 +161,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(this, indexStream);
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }

@@ -37,12 +37,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Concrete class that writes the 4.0 frq/prx postings format.
- * 
- * @see Lucene40PostingsFormat
- * @lucene.experimental 
+ * Writer for 4.0 postings format
+ * @deprecated for test purposes only
  */
-public final class Lucene40PostingsWriter extends PushPostingsWriterBase {
+@Deprecated
+final class Lucene40PostingsWriter extends PushPostingsWriterBase {
 
   final IndexOutput freqOut;
   final IndexOutput proxOut;

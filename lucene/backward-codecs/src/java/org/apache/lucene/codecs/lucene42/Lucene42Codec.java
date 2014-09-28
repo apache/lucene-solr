@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
@@ -38,19 +37,9 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Implements the Lucene 4.2 index format, with configurable per-field postings
- * and docvalues formats.
- * <p>
- * If you want to reuse functionality of this codec in another codec, extend
- * {@link FilterCodec}.
- *
- * @see org.apache.lucene.codecs.lucene42 package documentation for file format details.
- * @lucene.experimental
+ * Implements the Lucene 4.2 index format
  * @deprecated Only for reading old 4.2 segments
  */
-// NOTE: if we make largish changes in a minor release, easier to just make Lucene43Codec or whatever
-// if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
-// (it writes a minor version, etc).
 @Deprecated
 public class Lucene42Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();

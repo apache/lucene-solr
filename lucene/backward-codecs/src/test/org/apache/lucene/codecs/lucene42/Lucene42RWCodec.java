@@ -28,13 +28,13 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWStoredFieldsFormat;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Read-write version of {@link Lucene42Codec} for testing.
+ * Read-Write version of 4.2 codec for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene42RWCodec extends Lucene42Codec {
+@Deprecated
+public final class Lucene42RWCodec extends Lucene42Codec {
 
   private static final DocValuesFormat dv = new Lucene42RWDocValuesFormat();
   private static final NormsFormat norms = new Lucene42RWNormsFormat();

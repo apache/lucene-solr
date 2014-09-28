@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -46,14 +45,19 @@ public class MergeState {
   /** {@link FieldInfos} of the newly merged segment. */
   public FieldInfos mergeFieldInfos;
 
+  /** Stored field producers being merged */
   public final StoredFieldsReader[] storedFieldsReaders;
 
+  /** Term vector producers being merged */
   public final TermVectorsReader[] termVectorsReaders;
 
+  /** Norms producers being merged */
   public final NormsProducer[] normsProducers;
 
+  /** DocValues producers being merged */
   public final DocValuesProducer[] docValuesProducers;
 
+  /** FieldInfos being merged */
   public final FieldInfos[] fieldInfos;
 
   /** Live docs for each reader */

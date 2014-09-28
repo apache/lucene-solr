@@ -34,10 +34,11 @@ import org.apache.lucene.codecs.lucene40.Lucene40RWTermVectorsFormat;
  */
 
 /**
- * Read-write version of {@link Lucene41Codec} for testing.
+ * Read-write version of 4.1 codec for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene41RWCodec extends Lucene41Codec {
+@Deprecated
+public final class Lucene41RWCodec extends Lucene41Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene41RWStoredFieldsFormat();
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {
     @Override

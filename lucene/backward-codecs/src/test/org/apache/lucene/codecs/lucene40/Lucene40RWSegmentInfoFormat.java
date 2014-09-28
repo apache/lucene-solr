@@ -19,8 +19,12 @@ package org.apache.lucene.codecs.lucene40;
 
 import org.apache.lucene.codecs.SegmentInfoWriter;
 
-/** read-write version of 4.0 segmentinfos for testing */
-public class Lucene40RWSegmentInfoFormat extends Lucene40SegmentInfoFormat {
+/**
+ * Read-write version of 4.0 segmentinfo format for testing
+ * @deprecated for test purposes only
+ */
+@Deprecated
+public final class Lucene40RWSegmentInfoFormat extends Lucene40SegmentInfoFormat {
 
   @Override
   public SegmentInfoWriter getSegmentInfoWriter() {

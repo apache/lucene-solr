@@ -27,10 +27,11 @@ import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46RWSegmentInfoFormat;
 
 /**
- * Read-write version of {@link Lucene49Codec} for testing.
+ * Read-Write version of 4.9 codec for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene49RWCodec extends Lucene49Codec {
+@Deprecated
+public final class Lucene49RWCodec extends Lucene49Codec {
   
   private static final DocValuesFormat docValues = new Lucene49RWDocValuesFormat();
   

@@ -55,7 +55,7 @@ import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link TermVectorsReader} for {@code Lucene42TermVectorsFormat}.
+ * 4.2 term vectors reader
  * @deprecated only for reading old segments
  */
 @Deprecated

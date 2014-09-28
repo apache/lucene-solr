@@ -48,12 +48,10 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * Lucene 4.0 Term Vectors reader.
- * <p>
- * It reads .tvd, .tvf, and .tvx files.
- * 
- * @see Lucene40TermVectorsFormat
+ * @deprecated only for reading 4.0 and 4.1 segments
  */
-public class Lucene40TermVectorsReader extends TermVectorsReader implements Closeable {
+@Deprecated
+final class Lucene40TermVectorsReader extends TermVectorsReader implements Closeable {
 
   static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
 

@@ -18,9 +18,6 @@ package org.apache.lucene.codecs.compressing;
  */
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
 
@@ -35,7 +32,7 @@ class MatchingReaders {
    * vectors may be bulk merged. */
   final boolean[] matchingReaders;
 
-  /** How many {@link #matchingSegmentReaders} are set. */
+  /** How many {@link #matchingReaders} are set. */
   final int count;
   
   MatchingReaders(MergeState mergeState) {

@@ -31,19 +31,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.MutableBits;
 
-/** Optimized implementation of a vector of bits.  This is more-or-less like
- *  java.util.BitSet, but also includes the following:
- *  <ul>
- *  <li>a count() method, which efficiently computes the number of one bits;</li>
- *  <li>optimized read from and write to disk;</li>
- *  <li>inlinable get() method;</li>
- *  <li>store and load, as bit set or d-gaps, depending on sparseness;</li> 
- *  </ul>
- *
- *  @lucene.internal
+/** 
+ * Bitset for support of 4.x live documents
+ * @deprecated only for old 4.x segments
  */
-// pkg-private: if this thing is generally useful then it can go back in .util,
-// but the serialization must be here underneath the codec.
+@Deprecated
 final class BitVector implements Cloneable, MutableBits {
 
   private byte[] bits;
@@ -52,7 +44,7 @@ final class BitVector implements Cloneable, MutableBits {
   private int version;
 
   /** Constructs a vector capable of holding <code>n</code> bits. */
-  public BitVector(int n) {
+  BitVector(int n) {
     size = n;
     bits = new byte[getNumBytes(size)];
     count = 0;
@@ -90,27 +82,6 @@ final class BitVector implements Cloneable, MutableBits {
     count = -1;
   }
 
-  /** Sets the value of <code>bit</code> to true, and
-   *  returns true if bit was already set */
-  public final boolean getAndSet(int bit) {
-    if (bit >= size) {
-      throw new ArrayIndexOutOfBoundsException("bit=" + bit + " size=" + size);
-    }
-    final int pos = bit >> 3;
-    final int v = bits[pos];
-    final int flag = 1 << (bit & 7);
-    if ((flag & v) != 0)
-      return true;
-    else {
-      bits[pos] = (byte) (v | flag);
-      if (count != -1) {
-        count++;
-        assert count <= size;
-      }
-      return false;
-    }
-  }
-
   /** Sets the value of <code>bit</code> to zero. */
   @Override
   public final void clear(int bit) {
@@ -119,25 +90,6 @@ final class BitVector implements Cloneable, MutableBits {
     }
     bits[bit >> 3] &= ~(1 << (bit & 7));
     count = -1;
-  }
-
-  public final boolean getAndClear(int bit) {
-    if (bit >= size) {
-      throw new ArrayIndexOutOfBoundsException(bit);
-    }
-    final int pos = bit >> 3;
-    final int v = bits[pos];
-    final int flag = 1 << (bit & 7);
-    if ((flag & v) == 0) {
-      return false;
-    } else {
-      bits[pos] &= ~flag;
-      if (count != -1) {
-        count--;
-        assert count >= 0;
-      }
-      return true;
-    }
   }
 
   /** Returns <code>true</code> if <code>bit</code> is one and
@@ -150,7 +102,7 @@ final class BitVector implements Cloneable, MutableBits {
 
   /** Returns the number of bits in this vector.  This is also one greater than
     the number of the largest valid bit number. */
-  public final int size() {
+  final int size() {
     return size;
   }
 
@@ -162,7 +114,7 @@ final class BitVector implements Cloneable, MutableBits {
   /** Returns the total number of one bits in this vector.  This is efficiently
     computed and cached, so that, if the vector is not changed, no
     recomputation is done for repeated calls. */
-  public final int count() {
+  final int count() {
     // if the vector has been modified
     if (count == -1) {
       int c = 0;
@@ -177,7 +129,7 @@ final class BitVector implements Cloneable, MutableBits {
   }
 
   /** For testing */
-  public final int getRecomputedCount() {
+  final int getRecomputedCount() {
     int c = 0;
     int end = bits.length;
     for (int i = 0; i < end; i++) {
@@ -191,29 +143,29 @@ final class BitVector implements Cloneable, MutableBits {
   private static String CODEC = "BitVector";
 
   // Version before version tracking was added:
-  public final static int VERSION_PRE = -1;
+  final static int VERSION_PRE = -1;
 
   // First version:
-  public final static int VERSION_START = 0;
+  final static int VERSION_START = 0;
 
   // Changed DGaps to encode gaps between cleared bits, not
   // set:
-  public final static int VERSION_DGAPS_CLEARED = 1;
+  final static int VERSION_DGAPS_CLEARED = 1;
   
   // added checksum
-  public final static int VERSION_CHECKSUM = 2;
+  final static int VERSION_CHECKSUM = 2;
 
   // Increment version to change it:
-  public final static int VERSION_CURRENT = VERSION_CHECKSUM;
+  final static int VERSION_CURRENT = VERSION_CHECKSUM;
 
-  public int getVersion() {
+  int getVersion() {
     return version;
   }
 
   /** Writes this vector to the file <code>name</code> in Directory
     <code>d</code>, in a format that can be read by the constructor {@link
     #BitVector(Directory, String, IOContext)}.  */
-  public final void write(Directory d, String name, IOContext context) throws IOException {
+  final void write(Directory d, String name, IOContext context) throws IOException {
     assert !(d instanceof CompoundFileDirectory);
     try (IndexOutput output = d.createOutput(name, context)) {
       output.writeInt(-2);
@@ -230,7 +182,7 @@ final class BitVector implements Cloneable, MutableBits {
   }
 
   /** Invert all bits */
-  public void invertAll() {
+  void invertAll() {
     if (count != -1) {
       count = size - count;
     }
@@ -254,13 +206,6 @@ final class BitVector implements Cloneable, MutableBits {
     }
   }
 
-  /** Set all bits */
-  public void setAll() {
-    Arrays.fill(bits, (byte) 0xff);
-    clearUnusedBits();
-    count = size;
-  }
-     
   /** Write as a bit set */
   private void writeBits(IndexOutput output) throws IOException {
     output.writeInt(size());        // write size
@@ -325,7 +270,7 @@ final class BitVector implements Cloneable, MutableBits {
   /** Constructs a bit vector from the file <code>name</code> in Directory
     <code>d</code>, as written by the {@link #write} method.
     */
-  public BitVector(Directory d, String name, IOContext context) throws IOException {
+  BitVector(Directory d, String name, IOContext context) throws IOException {
     try (ChecksumIndexInput input = d.openChecksumInput(name, context)) {
       final int firstInt = input.readInt();
 
