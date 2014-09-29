@@ -429,6 +429,16 @@ public class TestPostingsOffsets extends LuceneTestCase {
       //expected
     }
   }
+  
+  public void testIllegalOffsetsAcrossFieldInstances() throws Exception {
+    try {
+      checkTokens(new Token[] { makeToken("use", 1, 150, 160) }, 
+                  new Token[] { makeToken("use", 1, 50, 60) });
+      fail();
+    } catch (IllegalArgumentException expected) {
+      //expected
+    }
+  }
    
   public void testBackwardsOffsets() throws Exception {
     try {
@@ -510,6 +520,33 @@ public class TestPostingsOffsets extends LuceneTestCase {
     dir.close();
   }
   // TODO: more tests with other possibilities
+  
+  private void checkTokens(Token[] field1, Token[] field2) throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
+    boolean success = false;
+    try {
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+      // store some term vectors for the checkindex cross-check
+      ft.setStoreTermVectors(true);
+      ft.setStoreTermVectorPositions(true);
+      ft.setStoreTermVectorOffsets(true);
+     
+      Document doc = new Document();
+      doc.add(new Field("body", new CannedTokenStream(field1), ft));
+      doc.add(new Field("body", new CannedTokenStream(field2), ft));
+      riw.addDocument(doc);
+      riw.close();
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(dir);
+      } else {
+        IOUtils.closeWhileHandlingException(riw, dir);
+      }
+    }
+  }
   
   private void checkTokens(Token[] tokens) throws IOException {
     Directory dir = newDirectory();

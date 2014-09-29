@@ -39,6 +39,9 @@ public final class FieldInvertState {
   int maxTermFrequency;
   int uniqueTermCount;
   float boost;
+  // we must track these across field instances (multi-valued case)
+  int lastStartOffset = 0;
+  int lastPosition = 0;
   AttributeSource attributeSource;
 
   OffsetAttribute offsetAttribute;
@@ -74,6 +77,8 @@ public final class FieldInvertState {
     maxTermFrequency = 0;
     uniqueTermCount = 0;
     boost = 1.0f;
+    lastStartOffset = 0;
+    lastPosition = 0;
   }
   
   // TODO: better name?

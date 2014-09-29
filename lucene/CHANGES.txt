@@ -5,6 +5,12 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.10.2 ======================
 
+Bug fixes
+
+* LUCENE-5977: Fix tokenstream safety checks in IndexWriter to properly
+  work across multi-valued fields. Previously some cases across multi-valued
+  fields would happily create a corrupt index. (Dawid Weiss, Robert Muir)
+
 ======================= Lucene 4.10.1 ======================
 
 Bug fixes
