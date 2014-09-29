@@ -145,6 +145,10 @@ Bug Fixes
 * LUCENE-5948: RateLimiter now fully inits itself on init.  (Varun
   Thacker via Mike McCandless)
 
+* LUCENE-5977: Fix tokenstream safety checks in IndexWriter to properly
+  work across multi-valued fields. Previously some cases across multi-valued
+  fields would happily create a corrupt index. (Dawid Weiss, Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
