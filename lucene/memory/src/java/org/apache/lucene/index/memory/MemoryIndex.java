@@ -17,15 +17,6 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -36,8 +27,8 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
@@ -55,20 +46,29 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.RAMDirectory; // for javadocs
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
-import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 
 /**
@@ -153,18 +153,12 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
  * </pre>
  * 
  * 
- * <h4>No thread safety guarantees</h4>
- * 
- * An instance can be queried multiple times with the same or different queries,
- * but an instance is not thread-safe. If desired use idioms such as:
- * <pre class="prettyprint">
- * MemoryIndex index = ...
- * synchronized (index) {
- *    // read and/or write index (i.e. add fields and/or query)
- * } 
- * </pre>
- * 
- * 
+ * <h4>Thread safety guarantees</h4>
+ *
+ * MemoryIndex is not normally thread-safe for adds or queries.  However, queries
+ * are thread-safe after {@code freeze()} has been called.
+ *
+ *
  * <h4>Performance Notes</h4>
  * 
  * Internally there's a new data structure geared towards efficient indexing 
@@ -212,6 +206,8 @@ public class MemoryIndex {
   private HashMap<String,FieldInfo> fieldInfos = new HashMap<>();
 
   private Counter bytesUsed;
+
+  private boolean frozen = false;
   
   /**
    * Sorts term entries into ascending order; also works for
@@ -417,6 +413,8 @@ public class MemoryIndex {
    */
   public void addField(String fieldName, TokenStream stream, float boost, int positionIncrementGap, int offsetGap) {
     try {
+      if (frozen)
+        throw new IllegalArgumentException("Cannot call addField() when MemoryIndex is frozen");
       if (fieldName == null)
         throw new IllegalArgumentException("fieldName must not be null");
       if (stream == null)
@@ -512,6 +510,20 @@ public class MemoryIndex {
     IndexSearcher searcher = new IndexSearcher(reader); // ensures no auto-close !!
     reader.setSearcher(searcher); // to later get hold of searcher.getSimilarity()
     return searcher;
+  }
+
+  /**
+   * Prepares the MemoryIndex for querying in a non-lazy way.
+   *
+   * After calling this you can query the MemoryIndex from multiple threads, but you
+   * cannot subsequently add new data.
+   */
+  public void freeze() {
+    this.frozen = true;
+    sortFields();
+    for (Map.Entry<String,Info> info : sortedFields) {
+      info.getValue().sortTerms();
+    }
   }
   
   /**
@@ -684,10 +696,10 @@ public class MemoryIndex {
     private final long sumTotalTermFreq;
 
     /** the last position encountered in this field for multi field support*/
-    private int lastPosition;
+    private final int lastPosition;
 
     /** the last offset encountered in this field for multi field support*/
-    private int lastOffset;
+    private final int lastOffset;
 
     public Info(BytesRefHash terms, SliceByteStartArray sliceArray, int numTokens, int numOverlapTokens, float boost, int lastPosition, int lastOffset, long sumTotalTermFreq) {
       this.terms = terms;
@@ -1229,6 +1241,7 @@ public class MemoryIndex {
     this.sortedFields = null;
     byteBlockPool.reset(false, false); // no need to 0-fill the buffers
     intBlockPool.reset(true, false); // here must must 0-fill since we use slices
+    this.frozen = false;
   }
   
   private static final class SliceByteStartArray extends DirectBytesStartArray {

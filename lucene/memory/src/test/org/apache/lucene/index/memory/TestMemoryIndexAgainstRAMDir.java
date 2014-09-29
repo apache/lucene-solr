@@ -81,7 +81,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
  * Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
  * returning the same results for queries on some randomish indexes.
  */
-public class MemoryIndexTest extends BaseTokenStreamTestCase {
+public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<>();
   
   public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
@@ -431,7 +431,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
-      for (IndexableField field : nextDoc.getFields()) {
+      for (Field field : nextDoc.getFields()) {
         if (field.fieldType().indexed()) {
           doc.add(field);
           if (random().nextInt(3) == 0) {
@@ -442,7 +442,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       
       writer.addDocument(doc);
       writer.close();
-      for (IndexableField field : doc.getFields()) {
+      for (IndexableField field : doc.indexableFields()) {
           memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
       }
       DirectoryReader competitor = DirectoryReader.open(dir);
