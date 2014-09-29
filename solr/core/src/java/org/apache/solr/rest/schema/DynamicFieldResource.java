@@ -157,12 +157,13 @@ public class DynamicFieldResource extends BaseFieldResource implements GETable, 
                 if (copyFieldNames != null) {
                   map.remove(IndexSchema.COPY_FIELDS);
                 }
+                IndexSchema newSchema = null;
                 boolean success = false;
                 while ( ! success) {
                   try {
                     SchemaField newDynamicField = oldSchema.newDynamicField(fieldNamePattern, fieldType, map);
                     synchronized (oldSchema.getSchemaUpdateLock()) {
-                      IndexSchema newSchema = oldSchema.addDynamicField(newDynamicField, copyFieldNames);
+                      newSchema = oldSchema.addDynamicField(newDynamicField, copyFieldNames);
                       if (null != newSchema) {
                         getSolrCore().setLatestSchema(newSchema);
                         success = true;
@@ -175,6 +176,8 @@ public class DynamicFieldResource extends BaseFieldResource implements GETable, 
                     oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
                   }
                 }
+                // if in cloud mode, wait for schema updates to propagate to all replicas
+                waitForSchemaUpdateToPropagate(newSchema);
               }
             }
           }

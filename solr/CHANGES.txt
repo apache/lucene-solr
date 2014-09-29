@@ -255,6 +255,11 @@ Other Changes
 
 * SOLR-6453: Stop throwing an error message from Overseer when node exits (Ramkumar Aiyengar, Noble Paul)
 
+* SOLR-6249: Schema API changes return success before all cores are updated; client application
+  can provide the optional updateTimeoutSecs parameter to cause the server handling the
+  managed schema update to block until all replicas of the same collection have processed the
+  update or until the specified timeout is reached (Timothy Potter)
+
 ==================  4.10.1 ==================
 
 Bug Fixes

@@ -22,22 +22,36 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
@@ -49,7 +63,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -58,8 +71,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
 public final class ManagedIndexSchema extends IndexSchema {
@@ -192,6 +211,169 @@ public final class ManagedIndexSchema extends IndexSchema {
     return success; 
   }
 
+  /**
+   * Block up to a specified maximum time until we see agreement on the schema
+   * version in ZooKeeper across all replicas for a collection.
+   */
+  public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName,
+                                                     int schemaZkVersion, ZkController zkController, int maxWaitSecs)
+  {
+    long startMs = System.currentTimeMillis();
+
+    // get a list of active replica cores to query for the schema zk version (skipping this core of course)
+    List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
+    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
+      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion));
+    if (concurrentTasks.isEmpty())
+      return; // nothing to wait for ...
+
+
+    log.info("Waiting up to "+maxWaitSecs+" secs for "+concurrentTasks.size()+
+        " replicas to apply schema update version "+schemaZkVersion+" for collection "+collection);
+
+    // use an executor service to invoke schema zk version requests in parallel with a max wait time
+    int poolSize = Math.min(concurrentTasks.size(), 10);
+    ExecutorService parallelExecutor =
+        Executors.newFixedThreadPool(poolSize, new DefaultSolrThreadFactory("managedSchemaExecutor"));
+    try {
+      List<Future<Integer>> results =
+          parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+
+      // determine whether all replicas have the update
+      List<String> failedList = null; // lazily init'd
+      for (int f=0; f < results.size(); f++) {
+        int vers = -1;
+        Future<Integer> next = results.get(f);
+        if (next.isDone() && !next.isCancelled()) {
+          // looks to have finished, but need to check the version value too
+          try {
+            vers = next.get();
+          } catch (ExecutionException e) {
+            // shouldn't happen since we checked isCancelled
+          }
+        }
+
+        if (vers == -1) {
+          String coreUrl = concurrentTasks.get(f).coreUrl;
+          log.warn("Core "+coreUrl+" version mismatch! Expected "+schemaZkVersion+" but got "+vers);
+          if (failedList == null) failedList = new ArrayList<>();
+          failedList.add(coreUrl);
+        }
+      }
+
+      // if any tasks haven't completed within the specified timeout, it's an error
+      if (failedList != null)
+        throw new SolrException(ErrorCode.SERVER_ERROR, failedList.size()+" out of "+(concurrentTasks.size() + 1)+
+            " replicas failed to update their schema to version "+schemaZkVersion+" within "+
+            maxWaitSecs+" seconds! Failed cores: "+failedList);
+
+    } catch (InterruptedException ie) {
+      log.warn("Core "+localCoreNodeName+" was interrupted waiting for schema version "+schemaZkVersion+
+          " to propagate to "+concurrentTasks.size()+" replicas for collection "+collection);
+
+      Thread.currentThread().interrupt();
+    } finally {
+      if (!parallelExecutor.isShutdown())
+        parallelExecutor.shutdownNow();
+    }
+
+    long diffMs = (System.currentTimeMillis() - startMs);
+    log.info("Took "+Math.round(diffMs/1000d)+" secs for "+concurrentTasks.size()+
+        " replicas to apply schema update version "+schemaZkVersion+" for collection "+collection);
+  }
+
+  protected static List<String> getActiveReplicaCoreUrls(ZkController zkController, String collection, String localCoreNodeName) {
+    List<String> activeReplicaCoreUrls = new ArrayList<>();
+    ZkStateReader zkStateReader = zkController.getZkStateReader();
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    Collection<Slice> activeSlices = clusterState.getActiveSlices(collection);
+    if (activeSlices != null && activeSlices.size() > 0) {
+      for (Slice next : activeSlices) {
+        Map<String, Replica> replicasMap = next.getReplicasMap();
+        if (replicasMap != null) {
+          for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
+            Replica replica = entry.getValue();
+            if (!localCoreNodeName.equals(replica.getName()) &&
+                ZkStateReader.ACTIVE.equals(replica.getStr(ZkStateReader.STATE_PROP)) &&
+                liveNodes.contains(replica.getNodeName())) {
+              ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);
+              activeReplicaCoreUrls.add(replicaCoreProps.getCoreUrl());
+            }
+          }
+        }
+      }
+    }
+    return activeReplicaCoreUrls;
+  }
+
+  private static class GetZkSchemaVersionCallable extends SolrRequest implements Callable<Integer> {
+
+    private String coreUrl;
+    private int expectedZkVersion;
+
+    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion) {
+      super(METHOD.GET, "/schema/zkversion");
+
+      this.coreUrl = coreUrl;
+      this.expectedZkVersion = expectedZkVersion;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams wparams = new ModifiableSolrParams();
+      wparams.set("refreshIfBelowVersion", expectedZkVersion);
+      return wparams;
+    }
+
+    @Override
+    public Integer call() throws Exception {
+      HttpSolrServer solr = new HttpSolrServer(coreUrl);
+      int remoteVersion = -1;
+      try {
+        // eventually, this loop will get killed by the ExecutorService's timeout
+        while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
+          try {
+            HttpSolrServer.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
+            NamedList<Object> zkversionResp = mrr.future.get();
+            if (zkversionResp != null)
+              remoteVersion = (Integer)zkversionResp.get("zkversion");
+
+            if (remoteVersion < expectedZkVersion) {
+              // rather than waiting and re-polling, let's be proactive and tell the replica
+              // to refresh its schema from ZooKeeper, if that fails, then the
+              //Thread.sleep(1000); // slight delay before requesting version again
+              log.error("Replica "+coreUrl+" returned schema version "+
+                  remoteVersion+" and has not applied schema version "+expectedZkVersion);
+            }
+
+          } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+              break; // stop looping
+            } else {
+              log.warn("Failed to get /schema/zkversion from " + coreUrl + " due to: " + e);
+            }
+          }
+        }
+      } finally {
+        solr.shutdown();
+      }
+
+      return remoteVersion;
+    }
+
+    @Override
+    public Collection<ContentStream> getContentStreams() throws IOException {
+      return null;
+    }
+
+    @Override
+    public SolrResponse process(SolrServer server) throws SolrServerException, IOException {
+      return null;
+    }
+  }
+
+
   public class FieldExistsException extends SolrException {
     public FieldExistsException(ErrorCode code, String msg) {
       super(code, msg);
@@ -203,7 +385,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       super(code, msg);
     }
   }
-
+  
   @Override
   public ManagedIndexSchema addField(SchemaField newField) {
     return addFields(Arrays.asList(newField));
@@ -482,6 +664,10 @@ public final class ManagedIndexSchema extends IndexSchema {
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     return sf;
+  }
+  
+  public int getSchemaZkVersion() {
+    return schemaZkVersion;
   }
 
   @Override

@@ -63,7 +63,7 @@ public class ZkIndexSchemaReader {
           }
           log.info("A schema change: {}, has occurred - updating schema from ZooKeeper ...", event);
           try {
-            updateSchema(this);
+            updateSchema(this, -1);
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED || e.code() == KeeperException.Code.CONNECTIONLOSS) {
               log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
@@ -89,19 +89,26 @@ public class ZkIndexSchemaReader {
     }
   }
 
-  private void updateSchema(Watcher watcher) throws KeeperException, InterruptedException {
+  public ManagedIndexSchema refreshSchemaFromZk(int expectedZkVersion) throws KeeperException, InterruptedException {
+    updateSchema(null, expectedZkVersion);
+    return managedIndexSchemaFactory.getSchema();
+  }
+
+  private void updateSchema(Watcher watcher, int expectedZkVersion) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
     synchronized (getSchemaUpdateLock()) {
       final ManagedIndexSchema oldSchema = managedIndexSchemaFactory.getSchema();
-      byte[] data = zkClient.getData(managedSchemaPath, watcher, stat, true);
-      if (stat.getVersion() != oldSchema.schemaZkVersion) {
-        log.info("Retrieved schema from ZooKeeper");
-        long start = System.nanoTime();
-        InputSource inputSource = new InputSource(new ByteArrayInputStream(data));
-        ManagedIndexSchema newSchema = oldSchema.reloadFields(inputSource, stat.getVersion());
-        managedIndexSchemaFactory.setSchema(newSchema);
-        long stop = System.nanoTime();
-        log.info("Finished refreshing schema in " + TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS) + " ms");
+      if (expectedZkVersion == -1 || oldSchema.schemaZkVersion < expectedZkVersion) {
+        byte[] data = zkClient.getData(managedSchemaPath, watcher, stat, true);
+        if (stat.getVersion() != oldSchema.schemaZkVersion) {
+          log.info("Retrieved schema version "+stat.getVersion()+" from ZooKeeper");
+          long start = System.nanoTime();
+          InputSource inputSource = new InputSource(new ByteArrayInputStream(data));
+          ManagedIndexSchema newSchema = oldSchema.reloadFields(inputSource, stat.getVersion());
+          managedIndexSchemaFactory.setSchema(newSchema);
+          long stop = System.nanoTime();
+          log.info("Finished refreshing schema in " + TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS) + " ms");
+        }
       }
     }
   }

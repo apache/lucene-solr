@@ -159,6 +159,7 @@ public class DynamicFieldCollectionResource extends BaseFieldResource implements
               newDynamicFields.add(oldSchema.newDynamicField(fieldNamePattern, fieldType, map));
               newDynamicFieldArguments.add(new NewFieldArguments(fieldNamePattern, fieldType, map));
             }
+            IndexSchema newSchema = null;
             boolean firstAttempt = true;
             boolean success = false;
             while ( ! success) {
@@ -177,7 +178,7 @@ public class DynamicFieldCollectionResource extends BaseFieldResource implements
                 }
                 firstAttempt = false;
                 synchronized (oldSchema.getSchemaUpdateLock()) {
-                  IndexSchema newSchema = oldSchema.addDynamicFields(newDynamicFields, copyFields);
+                  newSchema = oldSchema.addDynamicFields(newDynamicFields, copyFields);
                   if (null != newSchema) {
                     getSolrCore().setLatestSchema(newSchema);
                     success = true;
@@ -190,6 +191,9 @@ public class DynamicFieldCollectionResource extends BaseFieldResource implements
                 oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
               }
             }
+
+            waitForSchemaUpdateToPropagate(newSchema);
+
           }
         }
       }
