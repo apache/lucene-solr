@@ -112,7 +112,7 @@ public class DefaultSimilarity extends TFIDFSimilarity {
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-   return state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms)));
+    return state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms)));
   }
 
   /** Implemented as <code>sqrt(freq)</code>. */
