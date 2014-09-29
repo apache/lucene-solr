@@ -70,6 +70,9 @@ New Features
   exiting requests that take too long to enumerate over terms. (Anshum Gupta, Steve Rowe,
   Robert Muir)
 
+* LUCENE-5911: Add MemoryIndex.freeze() to allow thread-safe searching over a 
+  MemoryIndex. (Alan Woodward)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

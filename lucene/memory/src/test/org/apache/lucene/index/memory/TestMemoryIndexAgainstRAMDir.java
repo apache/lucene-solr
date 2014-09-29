@@ -81,7 +81,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
  * Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
  * returning the same results for queries on some randomish indexes.
  */
-public class MemoryIndexTest extends BaseTokenStreamTestCase {
+public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<>();
   
   public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
