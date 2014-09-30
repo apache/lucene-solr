@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -2719,6 +2720,20 @@ public class TestIndexWriter extends LuceneTestCase {
       assertFalse("id=" + id + " i=" + i, ids.contains(id));
       ids.add(id);
     }
+  }
+  
+  public void testEmptyNorm() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new TextField("foo", new CannedTokenStream()));
+    w.addDocument(doc);
+    w.commit();
+    w.close();
+    DirectoryReader r = DirectoryReader.open(d);
+    assertEquals(0, getOnlySegmentReader(r).getNormValues("foo").get(0));
+    r.close();
+    d.close();
   }
 }
 
