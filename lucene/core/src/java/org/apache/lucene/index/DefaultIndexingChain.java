@@ -550,7 +550,9 @@ final class DefaultIndexingChain extends DocConsumer {
           fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
           norms = new NormValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
         }
-        norms.addValue(docState.docID, similarity.computeNorm(invertState));
+        if (invertState.length != 0) {
+          norms.addValue(docState.docID, similarity.computeNorm(invertState));
+        }
       }
 
       termsHashPerField.finish();
