@@ -49,8 +49,8 @@ import org.apache.lucene.util.AttributeSource;
  * prevents this.
  *
  * <p>The recommended rewrite method is {@link
- * #CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}: it doesn't spend CPU
- * computing unhelpful scores, and it tries to pick the most
+ * #CONSTANT_SCORE_FILTER_REWRITE}: it doesn't spend CPU
+ * computing unhelpful scores, and is the most
  * performant rewrite method given the query. If you
  * need scoring (like {@link FuzzyQuery}, use
  * {@link TopTermsScoringBooleanQueryRewrite} which uses
@@ -58,12 +58,12 @@ import org.apache.lucene.util.AttributeSource;
  * and not hit this limitation.
  *
  * Note that org.apache.lucene.queryparser.classic.QueryParser produces
- * MultiTermQueries using {@link
- * #CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} by default.
+ * MultiTermQueries using {@link #CONSTANT_SCORE_FILTER_REWRITE}
+ * by default.
  */
 public abstract class MultiTermQuery extends Query {
   protected final String field;
-  protected RewriteMethod rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
+  protected RewriteMethod rewriteMethod = CONSTANT_SCORE_FILTER_REWRITE;
 
   /** Abstract class that defines how the query is rewritten. */
   public static abstract class RewriteMethod {
@@ -104,7 +104,7 @@ public abstract class MultiTermQuery extends Query {
    *  query.  Note that typically such scores are
    *  meaningless to the user, and require non-trivial CPU
    *  to compute, so it's almost always better to use {@link
-   *  #CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} instead.
+   *  #CONSTANT_SCORE_FILTER_REWRITE} instead.
    *
    *  <p><b>NOTE</b>: This rewrite method will hit {@link
    *  BooleanQuery.TooManyClauses} if the number of terms
@@ -208,40 +208,6 @@ public abstract class MultiTermQuery extends Query {
       topLevel.add(q, BooleanClause.Occur.SHOULD);
     }
   }
-    
-  /** A rewrite method that tries to pick the best
-   *  constant-score rewrite method based on term and
-   *  document counts from the query.  If both the number of
-   *  terms and documents is small enough, then {@link
-   *  #CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE} is used.
-   *  Otherwise, {@link #CONSTANT_SCORE_FILTER_REWRITE} is
-   *  used.
-   */
-  public static class ConstantScoreAutoRewrite extends org.apache.lucene.search.ConstantScoreAutoRewrite {}
-
-  /** Read-only default instance of {@link
-   *  ConstantScoreAutoRewrite}, with {@link
-   *  ConstantScoreAutoRewrite#setTermCountCutoff} set to
-   *  {@link
-   *  ConstantScoreAutoRewrite#DEFAULT_TERM_COUNT_CUTOFF}
-   *  and {@link
-   *  ConstantScoreAutoRewrite#setDocCountPercent} set to
-   *  {@link
-   *  ConstantScoreAutoRewrite#DEFAULT_DOC_COUNT_PERCENT}.
-   *  Note that you cannot alter the configuration of this
-   *  instance; you'll need to create a private instance
-   *  instead. */
-  public final static RewriteMethod CONSTANT_SCORE_AUTO_REWRITE_DEFAULT = new ConstantScoreAutoRewrite() {
-    @Override
-    public void setTermCountCutoff(int count) {
-      throw new UnsupportedOperationException("Please create a private instance");
-    }
-
-    @Override
-    public void setDocCountPercent(double percent) {
-      throw new UnsupportedOperationException("Please create a private instance");
-    }
-  };
 
   /**
    * Constructs a query matching terms that cannot be represented with a single

@@ -138,12 +138,6 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     // use a large PQ here to only test duplicate terms and dont mix up when all scores are equal
     checkDuplicateTerms(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(1024));
     checkDuplicateTerms(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(1024));
-    
-    // Test auto rewrite (but only boolean mode), so we set the limits to large values to always get a BQ
-    final MultiTermQuery.ConstantScoreAutoRewrite rewrite = new MultiTermQuery.ConstantScoreAutoRewrite();
-    rewrite.setTermCountCutoff(Integer.MAX_VALUE);
-    rewrite.setDocCountPercent(100.);
-    checkDuplicateTerms(rewrite);
   }
   
   private void checkBooleanQueryBoosts(BooleanQuery bq) {
@@ -235,7 +229,6 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     checkMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
     
     checkNoMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
-    checkNoMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
     checkNoMaxClauseLimitation(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(1024));
     checkNoMaxClauseLimitation(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(1024));
   }

@@ -98,9 +98,6 @@ public class TestAutomatonQuery extends LuceneTestCase {
     
     query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
     assertEquals(expected, automatonQueryNrHits(query));
-    
-    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
-    assertEquals(expected, automatonQueryNrHits(query));
   }
   
   /**

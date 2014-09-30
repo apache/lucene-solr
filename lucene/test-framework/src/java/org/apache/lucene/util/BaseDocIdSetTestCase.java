@@ -57,7 +57,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
   /** Test length=0. */
   public void testNoBit() throws IOException {
     final BitSet bs = new BitSet(1);
-    final T copy = copyOf(bs, 0);
+    final T copy = copyOf(bs, TestUtil.nextInt(random(), 1, 10000));
     assertEquals(0, bs, copy);
   }
 
@@ -67,7 +67,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     if (random().nextBoolean()) {
       bs.set(0);
     }
-    final T copy = copyOf(bs, 1);
+    final T copy = copyOf(bs, TestUtil.nextInt(random(), 1, 10000));
     assertEquals(1, bs, copy);
   }
 
@@ -80,7 +80,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     if (random().nextBoolean()) {
       bs.set(1);
     }
-    final T copy = copyOf(bs, 2);
+    final T copy = copyOf(bs, TestUtil.nextInt(random(), 1, 10000));
     assertEquals(2, bs, copy);
   }
 

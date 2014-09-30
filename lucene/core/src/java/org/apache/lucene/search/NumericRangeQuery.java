@@ -72,7 +72,7 @@ import org.apache.lucene.index.Term; // for javadocs
  * details.
  *
  * <p>This query defaults to {@linkplain
- * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}.
+ * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}.
  * With precision steps of &le;4, this query can be run with
  * one of the BooleanQuery rewrite methods without changing
  * BooleanQuery's default max clause count.

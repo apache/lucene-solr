@@ -746,7 +746,7 @@ public abstract class FieldType extends FieldProperties {
     if (!field.indexed() && field.hasDocValues()) {
       return field.multiValued() ? new DocTermOrdsRewriteMethod() : new DocValuesRewriteMethod();
     } else {
-      return MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
+      return MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE;
     }
   }
 

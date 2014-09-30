@@ -87,12 +87,6 @@ public class TestWildcard
       assertTrue(q instanceof ConstantScoreQuery);
       assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       
-      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
-      wq.setBoost(0.3F);
-      q = searcher.rewrite(wq);
-      assertTrue(q instanceof ConstantScoreQuery);
-      assertEquals(q.getBoost(), wq.getBoost(), 0.1);
-      
       wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
       wq.setBoost(0.4F);
       q = searcher.rewrite(wq);

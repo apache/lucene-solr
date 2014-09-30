@@ -45,7 +45,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
    *  query.  Note that typically such scores are
    *  meaningless to the user, and require non-trivial CPU
    *  to compute, so it's almost always better to use {@link
-   *  MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} instead.
+   *  MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} instead.
    *
    *  <p><b>NOTE</b>: This rewrite method will hit {@link
    *  BooleanQuery.TooManyClauses} if the number of terms
