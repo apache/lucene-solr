@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene49;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,7 +24,7 @@ import org.apache.lucene.util.TestUtil;
 /**
  * Tests Lucene49NormsFormat
  */
-public class TestLucene49NormsFormat extends BaseNormsFormatTestCase {
+public class TestLucene50NormsFormat extends BaseNormsFormatTestCase {
   private final Codec codec = TestUtil.getDefaultCodec();
   
   @Override

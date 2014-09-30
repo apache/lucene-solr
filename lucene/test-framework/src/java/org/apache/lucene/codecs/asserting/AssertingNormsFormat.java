@@ -124,6 +124,11 @@ public class AssertingNormsFormat extends NormsFormat {
     }
     
     @Override
+    public NormsProducer getMergeInstance() throws IOException {
+      return new AssertingNormsProducer(in.getMergeInstance(), maxDoc);
+    }
+    
+    @Override
     public String toString() {
       return getClass().getSimpleName() + "(" + in.toString() + ")";
     }

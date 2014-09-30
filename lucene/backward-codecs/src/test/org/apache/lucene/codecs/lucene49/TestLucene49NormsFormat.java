@@ -18,16 +18,16 @@ package org.apache.lucene.codecs.lucene49;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
+import org.apache.lucene.index.BaseNormsFormatTestCase;
 
 /**
- * Tests Lucene49DocValuesFormat
+ * Tests Lucene49NormsFormat
  */
-public class TestLucene49DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
+public class TestLucene49NormsFormat extends BaseNormsFormatTestCase {
   private final Codec codec = new Lucene49RWCodec();
   
   @Override
   protected Codec getCodec() {
     return codec;
-  }
+  } 
 }

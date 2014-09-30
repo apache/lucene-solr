@@ -17,17 +17,19 @@ package org.apache.lucene.codecs.lucene49;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
+import java.io.IOException;
+
+import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Tests Lucene49DocValuesFormat
+ * Read-Write version of 4.9 norms format for testing
+ * @deprecated for test purposes only
  */
-public class TestLucene49DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = new Lucene49RWCodec();
-  
+@Deprecated
+public class Lucene49RWNormsFormat extends Lucene49NormsFormat {
   @Override
-  protected Codec getCodec() {
-    return codec;
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    return new Lucene49NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
 }

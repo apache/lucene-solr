@@ -42,15 +42,19 @@ import org.apache.lucene.util.packed.PackedInts;
 
 import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_START;
 import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_CURRENT;
-import static org.apache.lucene.codecs.lucene49.Lucene49NormsConsumer.CONST_COMPRESSED;
-import static org.apache.lucene.codecs.lucene49.Lucene49NormsConsumer.DELTA_COMPRESSED;
-import static org.apache.lucene.codecs.lucene49.Lucene49NormsConsumer.TABLE_COMPRESSED;
-import static org.apache.lucene.codecs.lucene49.Lucene49NormsConsumer.UNCOMPRESSED;
 
 /**
- * Reader for {@link Lucene49NormsFormat}
+ * Reader for 4.9 norms
+ * @deprecated only for reading 4.9/4.10 indexes
  */
-class Lucene49NormsProducer extends NormsProducer {
+@Deprecated
+final class Lucene49NormsProducer extends NormsProducer {
+  static final byte DELTA_COMPRESSED = 0;
+  static final byte TABLE_COMPRESSED = 1;
+  static final byte CONST_COMPRESSED = 2;
+  static final byte UNCOMPRESSED = 3;
+  static final int BLOCK_SIZE = 16384;
+  
   // metadata maps (just file pointers and minimal stuff)
   private final Map<String,NormsEntry> norms = new HashMap<>();
   private final IndexInput data;
@@ -62,9 +66,25 @@ class Lucene49NormsProducer extends NormsProducer {
   private final int maxDoc;
   private final AtomicLong ramBytesUsed;
   private final AtomicInteger activeCount = new AtomicInteger();
+  
+  private final boolean merging;
+  
+  // clone for merge: when merging we don't do any instances.put()s
+  Lucene49NormsProducer(Lucene49NormsProducer original) {
+    assert Thread.holdsLock(original);
+    norms.putAll(original.norms);
+    data = original.data.clone();
+    instances.putAll(original.instances);
+    instancesInfo.putAll(original.instancesInfo);
+    maxDoc = original.maxDoc;
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
+    activeCount.set(original.activeCount.get());
+    merging = true;
+  }
     
   Lucene49NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
+    merging = false;
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     int version = -1;
@@ -136,8 +156,10 @@ class Lucene49NormsProducer extends NormsProducer {
     NumericDocValues instance = instances.get(field.name);
     if (instance == null) {
       instance = loadNorms(field);
-      instances.put(field.name, instance);
-      activeCount.incrementAndGet();
+      if (!merging) {
+        instances.put(field.name, instance);
+        activeCount.incrementAndGet();
+      }
     }
     return instance;
   }
@@ -161,8 +183,10 @@ class Lucene49NormsProducer extends NormsProducer {
     NormsEntry entry = norms.get(field.name);
     switch(entry.format) {
       case CONST_COMPRESSED:
-        instancesInfo.put(field.name, Accountables.namedAccountable("constant", 8));
-        ramBytesUsed.addAndGet(8);
+        if (!merging) {
+          instancesInfo.put(field.name, Accountables.namedAccountable("constant", 8));
+          ramBytesUsed.addAndGet(8);
+        }
         final long v = entry.offset;
         return new NumericDocValues() {
           @Override
@@ -174,8 +198,10 @@ class Lucene49NormsProducer extends NormsProducer {
         data.seek(entry.offset);
         final byte bytes[] = new byte[maxDoc];
         data.readBytes(bytes, 0, bytes.length);
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
-        instancesInfo.put(field.name, Accountables.namedAccountable("byte array", maxDoc));
+        if (!merging) {
+          ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
+          instancesInfo.put(field.name, Accountables.namedAccountable("byte array", maxDoc));
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -187,8 +213,10 @@ class Lucene49NormsProducer extends NormsProducer {
         int packedIntsVersion = data.readVInt();
         int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, packedIntsVersion, blockSize, maxDoc, false);
-        ramBytesUsed.addAndGet(reader.ramBytesUsed());
-        instancesInfo.put(field.name, Accountables.namedAccountable("delta compressed", reader));
+        if (!merging) {
+          ramBytesUsed.addAndGet(reader.ramBytesUsed());
+          instancesInfo.put(field.name, Accountables.namedAccountable("delta compressed", reader));
+        }
         return reader;
       case TABLE_COMPRESSED:
         data.seek(entry.offset);
@@ -204,8 +232,10 @@ class Lucene49NormsProducer extends NormsProducer {
         final int formatID = data.readVInt();
         final int bitsPerValue = data.readVInt();
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), packedVersion, maxDoc, bitsPerValue);
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
-        instancesInfo.put(field.name, Accountables.namedAccountable("table compressed", ordsReader));
+        if (!merging) {
+          ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
+          instancesInfo.put(field.name, Accountables.namedAccountable("table compressed", ordsReader));
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -222,6 +252,11 @@ class Lucene49NormsProducer extends NormsProducer {
     data.close();
   }
   
+  @Override
+  public synchronized NormsProducer getMergeInstance() throws IOException {
+    return new Lucene49NormsProducer(this);
+  }
+
   static class NormsEntry {
     byte format;
     long offset;

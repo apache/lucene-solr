@@ -225,6 +225,24 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
     private final Map<String,DocValuesProducer> fields = new TreeMap<>();
     private final Map<String,DocValuesProducer> formats = new HashMap<>();
+    
+    // clone for merge
+    FieldsReader(FieldsReader other) throws IOException {
+      Map<DocValuesProducer,DocValuesProducer> oldToNew = new IdentityHashMap<>();
+      // First clone all formats
+      for(Map.Entry<String,DocValuesProducer> ent : other.formats.entrySet()) {
+        DocValuesProducer values = ent.getValue().getMergeInstance();
+        formats.put(ent.getKey(), values);
+        oldToNew.put(ent.getValue(), values);
+      }
+
+      // Then rebuild fields:
+      for(Map.Entry<String,DocValuesProducer> ent : other.fields.entrySet()) {
+        DocValuesProducer producer = oldToNew.get(ent.getValue());
+        assert producer != null;
+        fields.put(ent.getKey(), producer);
+      }
+    }
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -256,24 +274,6 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
         if (!success) {
           IOUtils.closeWhileHandlingException(formats.values());
         }
-      }
-    }
-
-    private FieldsReader(FieldsReader other) {
-
-      Map<DocValuesProducer,DocValuesProducer> oldToNew = new IdentityHashMap<>();
-      // First clone all formats
-      for(Map.Entry<String,DocValuesProducer> ent : other.formats.entrySet()) {
-        DocValuesProducer values = ent.getValue();
-        formats.put(ent.getKey(), values);
-        oldToNew.put(ent.getValue(), values);
-      }
-
-      // Then rebuild fields:
-      for(Map.Entry<String,DocValuesProducer> ent : other.fields.entrySet()) {
-        DocValuesProducer producer = oldToNew.get(ent.getValue());
-        assert producer != null;
-        fields.put(ent.getKey(), producer);
       }
     }
 
@@ -319,11 +319,6 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     }
 
     @Override
-    public DocValuesProducer clone() {
-      return new FieldsReader(this);
-    }
-
-    @Override
     public long ramBytesUsed() {
       long size = 0;
       for (Map.Entry<String,DocValuesProducer> entry : formats.entrySet()) {
@@ -345,6 +340,11 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       }
     }
     
+    @Override
+    public DocValuesProducer getMergeInstance() throws IOException {
+      return new FieldsReader(this);
+    }
+
     @Override
     public String toString() {
       return "PerFieldDocValues(formats=" + formats.size() + ")";

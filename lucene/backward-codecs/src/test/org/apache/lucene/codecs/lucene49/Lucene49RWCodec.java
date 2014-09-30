@@ -40,7 +40,7 @@ public final class Lucene49RWCodec extends Lucene49Codec {
     return docValues;
   }
   
-  private static final NormsFormat norms = new Lucene49NormsFormat();
+  private static final NormsFormat norms = new Lucene49RWNormsFormat();
 
   @Override
   public NormsFormat normsFormat() {

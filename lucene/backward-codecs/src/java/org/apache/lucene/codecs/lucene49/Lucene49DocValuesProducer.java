@@ -89,12 +89,34 @@ class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<String,MonotonicBlockPackedReader> addressInstances = new HashMap<>();
   private final Map<String,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<>();
   
+  private final boolean merging;
+  
+  // clone for merge: when merging we don't do any instances.put()s
+  Lucene49DocValuesProducer(Lucene49DocValuesProducer original) throws IOException {
+    assert Thread.holdsLock(original);
+    numerics = original.numerics;
+    binaries = original.binaries;
+    sortedSets = original.sortedSets;
+    sortedNumerics = original.sortedNumerics;
+    ords = original.ords;
+    ordIndexes = original.ordIndexes;
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed());
+    data = original.data.clone();
+    numFields = original.numFields;
+    maxDoc = original.maxDoc;
+    version = original.version;
+    addressInstances.putAll(original.addressInstances);
+    ordIndexInstances.putAll(original.ordIndexInstances);
+    merging = true;
+  }
+  
   /** expert: instantiates a new reader */
   Lucene49DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     this.maxDoc = state.segmentInfo.getDocCount();
+    merging = false;
     boolean success = false;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
@@ -447,8 +469,10 @@ class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
     if (addrInstance == null) {
       data.seek(bytes.addressesOffset);
       addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count+1, false);
-      addressInstances.put(field.name, addrInstance);
-      ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        addressInstances.put(field.name, addrInstance);
+        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     addresses = addrInstance;
     return addresses;
@@ -493,8 +517,10 @@ class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
         size = 1L + bytes.count / interval;
       }
       addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
-      addressInstances.put(field.name, addrInstance);
-      ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        addressInstances.put(field.name, addrInstance);
+        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     addresses = addrInstance;
     return addresses;
@@ -560,8 +586,10 @@ class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
     if (ordIndexInstance == null) {
       data.seek(entry.offset);
       ordIndexInstance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count+1, false);
-      ordIndexInstances.put(field.name, ordIndexInstance);
-      ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        ordIndexInstances.put(field.name, ordIndexInstance);
+        ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     ordIndex = ordIndexInstance;
     return ordIndex;
@@ -733,6 +761,11 @@ class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
     data.close();
   }
   
+  @Override
+  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+    return new Lucene49DocValuesProducer(this);
+  }
+
   /** metadata entry for a numeric docvalues field */
   static class NumericEntry {
     private NumericEntry() {}

@@ -301,6 +301,11 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     }
     
     @Override
+    public DocValuesProducer getMergeInstance() throws IOException {
+      return new AssertingDocValuesProducer(in.getMergeInstance(), maxDoc);
+    }
+
+    @Override
     public String toString() {
       return getClass().getSimpleName() + "(" + in.toString() + ")";
     }

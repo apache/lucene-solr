@@ -93,6 +93,8 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   private final AtomicLong ramBytesUsed;
   private final int version;
   
+  private final boolean merging;
+  
   static final byte NUMBER = 0;
   static final byte BYTES = 1;
   static final byte FST = 2;
@@ -110,9 +112,35 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   
   static final int VERSION_START = 3;
   static final int VERSION_CURRENT = VERSION_START;
+  
+  // clone for merge: when merging we don't do any instances.put()s
+  MemoryDocValuesProducer(MemoryDocValuesProducer original) throws IOException {
+    assert Thread.holdsLock(original);
+    numerics.putAll(original.numerics);
+    binaries.putAll(original.binaries);
+    fsts.putAll(original.fsts);
+    sortedSets.putAll(original.sortedSets);
+    sortedNumerics.putAll(original.sortedNumerics);
+    data = original.data.clone();
+    
+    numericInstances.putAll(original.numericInstances);
+    pagedBytesInstances.putAll(original.pagedBytesInstances);
+    fstInstances.putAll(original.fstInstances);
+    docsWithFieldInstances.putAll(original.docsWithFieldInstances);
+    addresses.putAll(original.addresses);
+    
+    numericInfo.putAll(original.numericInfo);
+    
+    numEntries = original.numEntries;
+    maxDoc = original.maxDoc;
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
+    version = original.version;
+    merging = true;
+  }
     
   MemoryDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
+    merging = false;
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
@@ -257,7 +285,9 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     NumericDocValues instance = numericInstances.get(field.name);
     if (instance == null) {
       instance = loadNumeric(field);
-      numericInstances.put(field.name, instance);
+      if (!merging) {
+        numericInstances.put(field.name, instance);
+      }
     }
     return instance;
   }
@@ -284,6 +314,11 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   }
   
   @Override
+  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+    return new MemoryDocValuesProducer(this);
+  }
+
+  @Override
   public String toString() {
     return getClass().getSimpleName() + "(entries=" + numEntries + ")";
   }
@@ -304,8 +339,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         final int formatID = data.readVInt();
         final int bitsPerValue = data.readVInt();
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, (int)entry.count, bitsPerValue);
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
-        numericInfo.put(field.name, Accountables.namedAccountable("table compressed", ordsReader));
+        if (!merging) {
+          ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
+          numericInfo.put(field.name, Accountables.namedAccountable("table compressed", ordsReader));
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -317,8 +354,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         final int formatIDDelta = data.readVInt();
         final int bitsPerValueDelta = data.readVInt();
         final PackedInts.Reader deltaReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatIDDelta), entry.packedIntsVersion, (int)entry.count, bitsPerValueDelta);
-        ramBytesUsed.addAndGet(deltaReader.ramBytesUsed());
-        numericInfo.put(field.name, Accountables.namedAccountable("delta compressed", deltaReader));
+        if (!merging) {
+          ramBytesUsed.addAndGet(deltaReader.ramBytesUsed());
+          numericInfo.put(field.name, Accountables.namedAccountable("delta compressed", deltaReader));
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -328,8 +367,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       case BLOCK_COMPRESSED:
         final int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, entry.count, false);
-        ramBytesUsed.addAndGet(reader.ramBytesUsed());
-        numericInfo.put(field.name, Accountables.namedAccountable("block compressed", reader));
+        if (!merging) {
+          ramBytesUsed.addAndGet(reader.ramBytesUsed());
+          numericInfo.put(field.name, Accountables.namedAccountable("block compressed", reader));
+        }
         return reader;
       case GCD_COMPRESSED:
         final long min = data.readLong();
@@ -337,8 +378,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         final int formatIDGCD = data.readVInt();
         final int bitsPerValueGCD = data.readVInt();
         final PackedInts.Reader quotientReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatIDGCD), entry.packedIntsVersion, (int)entry.count, bitsPerValueGCD);
-        ramBytesUsed.addAndGet(quotientReader.ramBytesUsed());
-        numericInfo.put(field.name, Accountables.namedAccountable("gcd compressed", quotientReader));
+        if (!merging) {
+          ramBytesUsed.addAndGet(quotientReader.ramBytesUsed());
+          numericInfo.put(field.name, Accountables.namedAccountable("gcd compressed", quotientReader));
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -359,7 +402,9 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       instance = pagedBytesInstances.get(field.name);
       if (instance == null) {
         instance = loadBinary(field);
-        pagedBytesInstances.put(field.name, instance);
+        if (!merging) {
+          pagedBytesInstances.put(field.name, instance);
+        }
       }
     }
     final PagedBytes.Reader bytesReader = instance.reader;
@@ -399,11 +444,15 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     PagedBytes bytes = new PagedBytes(16);
     bytes.copy(data, entry.numBytes);
     bytesAndAddresses.reader = bytes.freeze(true);
-    ramBytesUsed.addAndGet(bytesAndAddresses.reader.ramBytesUsed());
+    if (!merging) {
+      ramBytesUsed.addAndGet(bytesAndAddresses.reader.ramBytesUsed());
+    }
     if (entry.minLength != entry.maxLength) {
       data.seek(data.getFilePointer() + entry.missingBytes);
       bytesAndAddresses.addresses = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
-      ramBytesUsed.addAndGet(bytesAndAddresses.addresses.ramBytesUsed());
+      if (!merging) {
+        ramBytesUsed.addAndGet(bytesAndAddresses.addresses.ramBytesUsed());
+      }
     }
     return bytesAndAddresses;
   }
@@ -420,8 +469,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<>(data, PositiveIntOutputs.getSingleton());
-        ramBytesUsed.addAndGet(instance.ramBytesUsed());
-        fstInstances.put(field.name, instance);
+        if (!merging) {
+          ramBytesUsed.addAndGet(instance.ramBytesUsed());
+          fstInstances.put(field.name, instance);
+        }
       }
     }
     final NumericDocValues docToOrd = getNumeric(field);
@@ -498,7 +549,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         if (res == null) {
           data.seek(entry.addressOffset);
           res = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.valueCount, false);
-          addresses.put(field.name, res);
+          if (!merging) {
+            addresses.put(field.name, res);
+            ramBytesUsed.addAndGet(res.ramBytesUsed());
+          }
         }
         addr = res;
       }
@@ -567,8 +621,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<>(data, PositiveIntOutputs.getSingleton());
-        ramBytesUsed.addAndGet(instance.ramBytesUsed());
-        fstInstances.put(field.name, instance);
+        if (!merging) {
+          ramBytesUsed.addAndGet(instance.ramBytesUsed());
+          fstInstances.put(field.name, instance);
+        }
       }
     }
     final BinaryDocValues docToOrds = getBinary(field);
@@ -659,7 +715,10 @@ class MemoryDocValuesProducer extends DocValuesProducer {
             bits[i] = data.readLong();
           }
           instance = new FixedBitSet(bits, maxDoc);
-          docsWithFieldInstances.put(field.name, instance);
+          if (!merging) {
+            docsWithFieldInstances.put(field.name, instance);
+            ramBytesUsed.addAndGet(instance.ramBytesUsed());
+          }
         }
       }
       return instance;

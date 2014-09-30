@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -31,7 +32,12 @@ import org.apache.lucene.util.Accountable;
  */
 @Deprecated
 final class Lucene40NormsReader extends NormsProducer {
-  private final Lucene40DocValuesReader impl;
+  private final DocValuesProducer impl;
+  
+  // clone for merge
+  Lucene40NormsReader(DocValuesProducer impl) throws IOException {
+    this.impl = impl.getMergeInstance();
+  }
   
   Lucene40NormsReader(SegmentReadState state, String filename) throws IOException {
     impl = new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
@@ -62,6 +68,11 @@ final class Lucene40NormsReader extends NormsProducer {
     impl.checkIntegrity();
   }
   
+  @Override
+  public NormsProducer getMergeInstance() throws IOException {
+    return new Lucene40NormsReader(impl);
+  }
+
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(" + impl + ")";

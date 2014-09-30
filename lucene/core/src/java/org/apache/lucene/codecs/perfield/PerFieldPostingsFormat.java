@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -215,6 +216,24 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     private final Map<String,FieldsProducer> fields = new TreeMap<>();
     private final Map<String,FieldsProducer> formats = new HashMap<>();
+    
+    // clone for merge
+    FieldsReader(FieldsReader other) throws IOException {
+      Map<FieldsProducer,FieldsProducer> oldToNew = new IdentityHashMap<>();
+      // First clone all formats
+      for(Map.Entry<String,FieldsProducer> ent : other.formats.entrySet()) {
+        FieldsProducer values = ent.getValue().getMergeInstance();
+        formats.put(ent.getKey(), values);
+        oldToNew.put(ent.getValue(), values);
+      }
+
+      // Then rebuild fields:
+      for(Map.Entry<String,FieldsProducer> ent : other.fields.entrySet()) {
+        FieldsProducer producer = oldToNew.get(ent.getValue());
+        assert producer != null;
+        fields.put(ent.getKey(), producer);
+      }
+    }
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -291,6 +310,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       for (FieldsProducer producer : formats.values()) {
         producer.checkIntegrity();
       }
+    }
+
+    @Override
+    public FieldsProducer getMergeInstance() throws IOException {
+      return new FieldsReader(this);
     }
 
     @Override

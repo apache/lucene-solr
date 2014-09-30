@@ -17,6 +17,13 @@ package org.apache.lucene.codecs.lucene49;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene49.Lucene49NormsProducer.BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene49.Lucene49NormsProducer.CONST_COMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49NormsProducer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49NormsProducer.TABLE_COMPRESSED;
+import static org.apache.lucene.codecs.lucene49.Lucene49NormsProducer.UNCOMPRESSED;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,18 +39,12 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_CURRENT;
-
 /**
- * Writer for {@link Lucene49NormsFormat}
+ * Writer for 4.9 norms
+ * @deprecated for test purposes only
  */
-class Lucene49NormsConsumer extends NormsConsumer { 
-  static final byte DELTA_COMPRESSED = 0;
-  static final byte TABLE_COMPRESSED = 1;
-  static final byte CONST_COMPRESSED = 2;
-  static final byte UNCOMPRESSED = 3;
-  static final int BLOCK_SIZE = 16384;
-
+@Deprecated
+final class Lucene49NormsConsumer extends NormsConsumer { 
   IndexOutput data, meta;
   final int maxDoc;
   
