@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -67,6 +68,9 @@ public class TestReaderClosed extends LuceneTestCase {
       searcher.search(query, 5);
     } catch (AlreadyClosedException ace) {
       // expected
+    } catch (RejectedExecutionException ree) {
+      // expected if the searcher has been created with threads since LuceneTestCase
+      // closes the thread-pool in a reader close listener
     }
   }
 
