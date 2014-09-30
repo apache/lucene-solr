@@ -35,6 +35,7 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -56,7 +57,7 @@ public class SimpleSortedSetFacetsExample {
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        new WhitespaceAnalyzer()));
+        new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     doc.add(new SortedSetDocValuesFacetField("Author", "Bob"));
     doc.add(new SortedSetDocValuesFacetField("Publish Year", "2010"));

@@ -41,6 +41,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -53,8 +54,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.SloppyMath;
-
-
 
 /** Shows simple usage of dynamic range faceting, using the
  *  expressions module to calculate distance. */
@@ -88,7 +87,7 @@ public class DistanceFacetsExample implements Closeable {
   /** Build the example index. */
   public void index() throws IOException {
     IndexWriter writer = new IndexWriter(indexDir, new IndexWriterConfig(
-        new WhitespaceAnalyzer()));
+        new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
 
     // TODO: we could index in radians instead ... saves all the conversions in getBoundingBoxFilter
 
@@ -246,7 +245,6 @@ public class DistanceFacetsExample implements Closeable {
   }
 
   /** Runs the search and drill-down examples and prints the results. */
-  @SuppressWarnings("unchecked")
   public static void main(String[] args) throws Exception {
     DistanceFacetsExample example = new DistanceFacetsExample();
     example.index();
@@ -255,7 +253,6 @@ public class DistanceFacetsExample implements Closeable {
     System.out.println("-----------------------");
     System.out.println(example.search());
 
-    System.out.println("\n");
     System.out.println("Distance facet drill-down example (field/< 2 km):");
     System.out.println("---------------------------------------------");
     TopDocs hits = example.drillDown(example.TWO_KM);
