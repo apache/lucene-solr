@@ -35,6 +35,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -47,7 +48,7 @@ public class MultiCategoryListsFacetsExample {
   private final Directory taxoDir = new RAMDirectory();
   private final FacetsConfig config = new FacetsConfig();
 
-  /** Creates a new instance and populates the catetory list params mapping. */
+  /** Creates a new instance and populates the category list params mapping. */
   public MultiCategoryListsFacetsExample() {
     config.setIndexFieldName("Author", "author");
     config.setIndexFieldName("Publish Date", "pubdate");
@@ -57,7 +58,7 @@ public class MultiCategoryListsFacetsExample {
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        new WhitespaceAnalyzer()));
+        new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
 
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
