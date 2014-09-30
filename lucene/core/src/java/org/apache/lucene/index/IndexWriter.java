@@ -3906,14 +3906,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       merge.checkAborted(directory);
 
       // This is where all the work happens:
-      MergeState mergeState;
       boolean success3 = false;
       try {
-        if (!merger.shouldMerge()) {
-          // would result in a 0 document segment: nothing to merge!
-          mergeState = new MergeState(new ArrayList<LeafReader>(), merge.info.info, infoStream, checkAbort);
-        } else {
-          mergeState = merger.merge();
+        if (merger.shouldMerge()) {
+          merger.merge();
         }
         success3 = true;
       } finally {
@@ -3923,23 +3919,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
+      MergeState mergeState = merger.mergeState;
       assert mergeState.segmentInfo == merge.info.info;
       merge.info.info.setFiles(new HashSet<>(dirWrapper.getCreatedFiles()));
 
       // Record which codec was used to write the segment
 
       if (infoStream.isEnabled("IW")) {
-        if (merge.info.info.getDocCount() == 0) {
-          infoStream.message("IW", "merge away fully deleted segments");
-        } else {
+        if (merger.shouldMerge()) {
           infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
                            (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
                            (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
                            (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
                            (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
                            (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs"));
+        } else {
+          infoStream.message("IW", "skip merging fully deleted segments");
         }
       }
+
+      if (merger.shouldMerge() == false) {
+        // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove all the 0-doc segments that we "merged":
+        assert merge.info.info.getDocCount() == 0;
+        commitMerge(merge, mergeState);
+        return 0;
+      }
+
+      assert merge.info.info.getDocCount() > 0;
 
       // Very important to do this before opening the reader
       // because codec must know if prox was written for
@@ -4038,7 +4044,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
-      if (poolReaders && mergedSegmentWarmer != null && merge.info.info.getDocCount() != 0) {
+      if (poolReaders && mergedSegmentWarmer != null) {
         final ReadersAndUpdates rld = readerPool.get(merge.info, true);
         final SegmentReader sr = rld.getReader(IOContext.READ);
         try {
@@ -4051,8 +4057,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
 
-      // Force READ context because we merge deletes onto
-      // this reader:
       if (!commitMerge(merge, mergeState)) {
         // commitMerge will return false if this merge was
         // aborted

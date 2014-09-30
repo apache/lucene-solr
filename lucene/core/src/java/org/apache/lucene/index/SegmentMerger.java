@@ -46,7 +46,7 @@ final class SegmentMerger {
   
   private final IOContext context;
   
-  private final MergeState mergeState;
+  final MergeState mergeState;
   private final FieldInfos.Builder fieldInfosBuilder;
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
