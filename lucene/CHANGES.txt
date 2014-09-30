@@ -119,6 +119,9 @@ API Changes
                extend from IOException.
   (Ryan Ernst, Robert Muir)
 
+* LUCENE-5938: Removed MultiTermQuery.ConstantScoreAutoRewrite as
+  MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is usually better. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -160,6 +163,10 @@ Optimizations
 
 * LUCENE-5963: Reduce memory allocations in
   AnalyzingSuggester. (Markus Heiden via Mike McCandless)
+
+* LUCENE-5938: MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is now faster on
+  queries that match few documents by using a sparse bit set implementation.
+  (Adrien Grand)
 
 Build
 

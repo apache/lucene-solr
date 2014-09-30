@@ -17,21 +17,26 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * Constructs a filter for docs matching any of the terms added to this class.
@@ -178,11 +183,11 @@ public final class TermsFilter extends Filter {
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     final LeafReader reader = context.reader();
-    FixedBitSet result = null;  // lazy init if needed - no need to create a big bitset ahead of time
+    DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc());
     final Fields fields = reader.fields();
     final BytesRef spare = new BytesRef(this.termsBytes);
     if (fields == null) {
-      return result;
+      return builder.build();
     }
     Terms terms = null;
     TermsEnum termsEnum = null;
@@ -195,21 +200,12 @@ public final class TermsFilter extends Filter {
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare)) {
             docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
-            if (result == null) {
-              if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-                result = new FixedBitSet(reader.maxDoc());
-                // lazy init but don't do it in the hot loop since we could read many docs
-                result.set(docs.docID());
-              }
-            }
-            while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              result.set(docs.docID());
-            }
+            builder.or(docs);
           }
         }
       }
     }
-    return result;
+    return builder.build();
   }
 
   @Override

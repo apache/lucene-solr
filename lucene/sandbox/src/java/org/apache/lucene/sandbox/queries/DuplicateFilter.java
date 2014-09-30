@@ -16,15 +16,21 @@ package org.apache.lucene.sandbox.queries;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.*;
+import java.io.IOException;
+
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
+import org.apache.lucene.util.SparseFixedBitSet;
 
 /**
  * Filter to remove duplicate values from search results.
@@ -87,8 +93,8 @@ public class DuplicateFilter extends Filter {
     }
   }
 
-  private FixedBitSet correctBits(LeafReader reader, Bits acceptDocs) throws IOException {
-    FixedBitSet bits = new FixedBitSet(reader.maxDoc()); //assume all are INvalid
+  private SparseFixedBitSet correctBits(LeafReader reader, Bits acceptDocs) throws IOException {
+    SparseFixedBitSet bits = new SparseFixedBitSet(reader.maxDoc()); //assume all are INvalid
     Terms terms = reader.fields().terms(fieldName);
 
     if (terms == null) {

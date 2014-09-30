@@ -571,7 +571,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("[ a TO z}", null, "[a TO z}");
     assertQueryEquals("{ a TO z]", null, "{a TO z]"); 
 
-     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]")).getRewriteMethod());
+     assertEquals(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE, ((TermRangeQuery)getQuery("[ a TO z]")).getRewriteMethod());
 
     CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
     
@@ -987,7 +987,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertTrue(getQuery("/[A-Z][123]/^0.5",qp) instanceof RegexpQuery);
     assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE, ((RegexpQuery)getQuery("/[A-Z][123]/^0.5",qp)).getRewriteMethod());
     assertEquals(q, getQuery("/[A-Z][123]/^0.5",qp));
-    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     
     Query escaped = new RegexpQuery(new Term("field", "[a-z]\\/[123]"));
     assertEquals(escaped, getQuery("/[a-z]\\/[123]/",qp));

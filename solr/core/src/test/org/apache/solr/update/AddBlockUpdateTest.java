@@ -5,6 +5,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.join.FixedBitSetCachingWrapperFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -29,6 +30,7 @@ import org.xml.sax.SAXException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
 
 
 
@@ -566,8 +568,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   protected ToParentBlockJoinQuery join(final String childTerm) {
     return new ToParentBlockJoinQuery(
-        new TermQuery(new Term(child, childTerm)), new TermRangeFilter(parent,
-            null, null, false, false), ScoreMode.None);
+        new TermQuery(new Term(child, childTerm)), new FixedBitSetCachingWrapperFilter(new TermRangeFilter(parent,
+            null, null, false, false)), ScoreMode.None);
   }
   
   private Collection<? extends Callable<Void>> callables(List<Document> blocks) {
