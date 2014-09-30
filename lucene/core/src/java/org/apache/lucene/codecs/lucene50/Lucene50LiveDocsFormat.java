@@ -85,7 +85,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     try (ChecksumIndexInput input = dir.openChecksumInput(name, context)) {
       Throwable priorE = null;
       try {
-        CodecUtil.checkSegmentHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, info.info.getId());
+        CodecUtil.checkSegmentHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, info.info.getId(), "");
         long filegen = input.readLong();
         if (gen != filegen) {
           throw new CorruptIndexException("file mismatch, expected generation=" + gen + ", got=" + filegen, input);
@@ -120,7 +120,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     }
     long data[] = fbs.getBits();
     try (IndexOutput output = dir.createOutput(name, context)) {
-      CodecUtil.writeSegmentHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId());
+      CodecUtil.writeSegmentHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId(), "");
       output.writeLong(gen);
       for (int i = 0; i < data.length; i++) {
         output.writeLong(data[i]);

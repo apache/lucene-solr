@@ -57,7 +57,7 @@ final class Lucene50FieldInfosReader extends FieldInfosReader {
         CodecUtil.checkSegmentHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
                                      Lucene50FieldInfosFormat.FORMAT_START, 
                                      Lucene50FieldInfosFormat.FORMAT_CURRENT,
-                                     segmentInfo.getId());
+                                     segmentInfo.getId(), segmentSuffix);
         
         final int size = input.readVInt(); //read in the size
         infos = new FieldInfo[size];
