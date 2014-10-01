@@ -752,12 +752,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader.close();
   }
 
-  private int compare(String name, String v) {
-    int v0 = Integer.parseInt(name.substring(0, 2));
-    int v1 = Integer.parseInt(v);
-    return v0 - v1;
-  }
-
   public void changeIndexWithAdds(Random random, Directory dir, Version nameVersion) throws IOException {
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
@@ -1189,7 +1183,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         // only use Log- or TieredMergePolicy, to make document addition predictable and not suddenly merge:
         MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
         IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
-          .setMergePolicy(mp).setCommitOnClose(false);
+          .setMergePolicy(mp);
         IndexWriter w = new IndexWriter(ramDir, iwc);
         // add few more docs:
         for(int j = 0; j < RANDOM_MULTIPLIER * random().nextInt(30); j++) {
@@ -1206,7 +1200,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // version) to single segment index
       MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
       IndexWriterConfig iwc = new IndexWriterConfig(null)
-        .setMergePolicy(mp).setCommitOnClose(false);
+        .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);
       w.addIndexes(ramDir);
       try {
