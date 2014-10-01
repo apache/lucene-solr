@@ -139,6 +139,9 @@ API Changes
 * LUCENE-5938: Removed MultiTermQuery.ConstantScoreAutoRewrite as
   MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is usually better. (Adrien Grand)
 
+* LUCENE-5924: Rename CheckIndex -fix option to -exorcise. This option does not
+  actually fix the index, it just drops data.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
