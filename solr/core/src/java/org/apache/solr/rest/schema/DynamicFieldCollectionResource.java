@@ -178,7 +178,7 @@ public class DynamicFieldCollectionResource extends BaseFieldResource implements
                 }
                 firstAttempt = false;
                 synchronized (oldSchema.getSchemaUpdateLock()) {
-                  newSchema = oldSchema.addDynamicFields(newDynamicFields, copyFields);
+                  newSchema = oldSchema.addDynamicFields(newDynamicFields, copyFields, true);
                   if (null != newSchema) {
                     getSolrCore().setLatestSchema(newSchema);
                     success = true;

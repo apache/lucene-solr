@@ -145,6 +145,8 @@ New Features
 
 * SOLR-6565: SolrRequest support for query params (Gregory Chanan)
 
+* SOLR-6476: Create a bulk mode for schema API (Noble Paul, Steve Rowe)
+
 Bug Fixes
 ----------------------
 

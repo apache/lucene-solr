@@ -173,7 +173,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
             while (!success) {
               try {
                 synchronized (oldSchema.getSchemaUpdateLock()) {
-                  newSchema = oldSchema.addCopyFields(fieldsToCopy);
+                  newSchema = oldSchema.addCopyFields(fieldsToCopy,true);
                   if (null != newSchema) {
                     getSolrCore().setLatestSchema(newSchema);
                     success = true;
