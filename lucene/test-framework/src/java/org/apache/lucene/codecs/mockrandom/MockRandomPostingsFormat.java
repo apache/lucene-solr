@@ -351,10 +351,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("MockRandomCodec: variable-gap terms index");
           }
-          indexReader = new VariableGapTermsIndexReader(state.directory,
-                                                        state.fieldInfos,
-                                                        state.segmentInfo.name,
-                                                        state.segmentSuffix, state.context);
+          indexReader = new VariableGapTermsIndexReader(state);
 
         }
 
@@ -367,13 +364,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       success = false;
       try {
-        fields = new BlockTermsReader(indexReader,
-                                      state.directory,
-                                      state.fieldInfos,
-                                      state.segmentInfo,
-                                      postingsReader,
-                                      state.context,
-                                      state.segmentSuffix);
+        fields = new BlockTermsReader(indexReader, postingsReader, state);
         success = true;
       } finally {
         if (!success) {

@@ -24,9 +24,8 @@ import java.util.HashMap;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -46,27 +45,23 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   final HashMap<String,FieldIndexData> fields = new HashMap<>();
   
-  // start of the field info data
-  private long dirOffset;
-  
-  private final int version;
-
-  final String segment;
-  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, String segmentSuffix, IOContext context)
-    throws IOException {
-    final IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
-    this.segment = segment;
+  public VariableGapTermsIndexReader(SegmentReadState state) throws IOException {
+    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+                                                     state.segmentSuffix, 
+                                                     VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
+    final IndexInput in = state.directory.openInput(fileName, new IOContext(state.context, true));
     boolean success = false;
 
     try {
       
-      version = readHeader(in);
+      CodecUtil.checkSegmentHeader(in, VariableGapTermsIndexWriter.CODEC_NAME,
+                                       VariableGapTermsIndexWriter.VERSION_START,
+                                       VariableGapTermsIndexWriter.VERSION_CURRENT,
+                                       state.segmentInfo.getId(), state.segmentSuffix);
       
-      if (version >= VariableGapTermsIndexWriter.VERSION_CHECKSUM) {
-        CodecUtil.checksumEntireFile(in);
-      }
+      CodecUtil.checksumEntireFile(in);
 
-      seekDir(in, dirOffset);
+      seekDir(in);
 
       // Read directory
       final int numFields = in.readVInt();
@@ -77,7 +72,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long indexStart = in.readVLong();
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         FieldIndexData previous = fields.put(fieldInfo.name, new FieldIndexData(in, fieldInfo, indexStart));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
@@ -91,15 +86,6 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         IOUtils.closeWhileHandlingException(in);
       }
     }
-  }
-  
-  private int readHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, VariableGapTermsIndexWriter.CODEC_NAME,
-      VariableGapTermsIndexWriter.VERSION_START, VariableGapTermsIndexWriter.VERSION_CURRENT);
-    if (version < VariableGapTermsIndexWriter.VERSION_APPEND_ONLY) {
-      dirOffset = input.readLong();
-    }
-    return version;
   }
 
   private static class IndexEnum extends FieldIndexEnum {
@@ -206,14 +192,9 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   @Override
   public void close() throws IOException {}
 
-  private void seekDir(IndexInput input, long dirOffset) throws IOException {
-    if (version >= VariableGapTermsIndexWriter.VERSION_CHECKSUM) {
-      input.seek(input.length() - CodecUtil.footerLength() - 8);
-      dirOffset = input.readLong();
-    } else if (version >= VariableGapTermsIndexWriter.VERSION_APPEND_ONLY) {
-      input.seek(input.length() - 8);
-      dirOffset = input.readLong();
-    }
+  private void seekDir(IndexInput input) throws IOException {
+    input.seek(input.length() - CodecUtil.footerLength() - 8);
+    long dirOffset = input.readLong();
     input.seek(dirOffset);
   }
 

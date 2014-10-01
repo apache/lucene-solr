@@ -59,7 +59,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 public class BlockTermsWriter extends FieldsConsumer implements Closeable {
 
-  final static String CODEC_NAME = "BLOCK_TERMS_DICT";
+  final static String CODEC_NAME = "BlockTermsWriter";
 
   // Initial format
   public static final int VERSION_START = 4;
@@ -281,9 +281,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       // EOF marker:
       out.writeVInt(0);
 
-      this.sumTotalTermFreq = sumTotalTermFreq;
-      this.sumDocFreq = sumDocFreq;
-      this.docCount = docCount;
       fieldIndexWriter.finish(out.getFilePointer());
       if (numTerms > 0) {
         fields.add(new FieldMetaData(fieldInfo,

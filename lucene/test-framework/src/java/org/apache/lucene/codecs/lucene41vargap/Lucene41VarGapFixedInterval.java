@@ -100,10 +100,7 @@ public final class Lucene41VarGapFixedInterval extends PostingsFormat {
 
     boolean success = false;
     try {
-      indexReader = new VariableGapTermsIndexReader(state.directory,
-                                                 state.fieldInfos,
-                                                 state.segmentInfo.name,
-                                                 state.segmentSuffix, state.context);
+      indexReader = new VariableGapTermsIndexReader(state);
       success = true;
     } finally {
       if (!success) {
@@ -113,13 +110,7 @@ public final class Lucene41VarGapFixedInterval extends PostingsFormat {
 
     success = false;
     try {
-      FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.directory,
-                                                state.fieldInfos,
-                                                state.segmentInfo,
-                                                postings,
-                                                state.context,
-                                                state.segmentSuffix);
+      FieldsProducer ret = new BlockTermsReader(indexReader, postings, state);
       success = true;
       return ret;
     } finally {

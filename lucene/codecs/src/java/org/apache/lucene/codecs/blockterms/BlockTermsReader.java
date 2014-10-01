@@ -33,15 +33,12 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -108,24 +105,19 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
   
-  // private String segment;
-  
-  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, IOContext context,
-                          String segmentSuffix)
-    throws IOException {
+  public BlockTermsReader(TermsIndexReaderBase indexReader, PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
     
     this.postingsReader = postingsReader;
-
-    // this.segment = segment;
-    in = dir.openInput(IndexFileNames.segmentFileName(info.name, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION),
-                       context);
+    
+    String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockTermsWriter.TERMS_EXTENSION);
+    in = state.directory.openInput(filename, state.context);
 
     boolean success = false;
     try {
       CodecUtil.checkSegmentHeader(in, BlockTermsWriter.CODEC_NAME, 
                                        BlockTermsWriter.VERSION_START,
                                        BlockTermsWriter.VERSION_CURRENT,
-                                       info.getId(), segmentSuffix);
+                                       state.segmentInfo.getId(), state.segmentSuffix);
 
       // Have PostingsReader init itself
       postingsReader.init(in);
@@ -148,13 +140,13 @@ public class BlockTermsReader extends FieldsProducer {
         final long numTerms = in.readVLong();
         assert numTerms >= 0;
         final long termsStartPointer = in.readVLong();
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
         final int longsSize = in.readVInt();
-        if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
-          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount(), in);
+        if (docCount < 0 || docCount > state.segmentInfo.getDocCount()) { // #docs with field must be <= #docs
+          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + state.segmentInfo.getDocCount(), in);
         }
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
           throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, in);
