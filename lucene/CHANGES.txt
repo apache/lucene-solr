@@ -155,6 +155,11 @@ Bug Fixes
   work across multi-valued fields. Previously some cases across multi-valued
   fields would happily create a corrupt index. (Dawid Weiss, Robert Muir)
 
+* LUCENE-5981: CheckIndex obtains write.lock, since with some parameters it
+  may modify the index, and to prevent false corruption reports, as it does
+  not have the regular "spinlock" of DirectoryReader.open. It now implements
+  Closeable and you must close it to release the lock.  (Mike McCandless, Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -35,10 +36,13 @@ import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -62,10 +66,12 @@ import org.apache.lucene.util.Version;
  * @lucene.experimental Please make a complete backup of your
  * index before using this to exorcise corrupted documents from your index!
  */
-public class CheckIndex {
+public class CheckIndex implements Closeable {
 
   private PrintStream infoStream;
   private Directory dir;
+  private Lock writeLock;
+  private volatile boolean closed;
 
   /**
    * Returned from {@link #checkIndex()} detailing the health and status of the index.
@@ -342,9 +348,36 @@ public class CheckIndex {
   }
 
   /** Create a new CheckIndex on the directory. */
-  public CheckIndex(Directory dir) {
+  public CheckIndex(Directory dir) throws IOException {
+    this(dir, dir.makeLock(IndexWriter.WRITE_LOCK_NAME));
+  }
+  
+  /** 
+   * Expert: create a directory with the specified lock.
+   * This should really not be used except for unit tests!!!!
+   * It exists only to support special tests (such as TestIndexWriterExceptions*),
+   * that would otherwise be more complicated to debug if they had to close the writer
+   * for each check.
+   */
+  public CheckIndex(Directory dir, Lock writeLock) throws IOException {
     this.dir = dir;
-    infoStream = null;
+    this.writeLock = writeLock;
+    this.infoStream = null;
+    if (!writeLock.obtain(IndexWriterConfig.WRITE_LOCK_TIMEOUT)) { // obtain write lock
+      throw new LockObtainFailedException("Index locked for write: " + writeLock);
+    }
+  }
+  
+  private void ensureOpen() {
+    if (closed) {
+      throw new AlreadyClosedException("this instance is closed");
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    closed = true;
+    IOUtils.close(writeLock);
   }
 
   private boolean crossCheckTermVectors;
@@ -415,12 +448,9 @@ public class CheckIndex {
    *
    *  <p>As this method checks every byte in the specified
    *  segments, on a large index it can take quite a long
-   *  time to run.
-   *
-   *  <p><b>WARNING</b>: make sure
-   *  you only call this when the index is not opened by any
-   *  writer. */
+   *  time to run. */
   public Status checkIndex(List<String> onlySegments) throws IOException {
+    ensureOpen();
     NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
     SegmentInfos sis = new SegmentInfos();
     Status result = new Status();
@@ -2008,10 +2038,9 @@ public class CheckIndex {
    *  new segments file into the index, effectively removing
    *  all documents in broken segments from the index.
    *  BE CAREFUL.
-   *
-   * <p><b>WARNING</b>: Make sure you only call this when the
-   *  index is not opened  by any writer. */
+   */
   public void exorciseIndex(Status result) throws IOException {
+    ensureOpen();
     if (result.partial)
       throw new IllegalArgumentException("can only exorcise an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
@@ -2063,6 +2092,12 @@ public class CheckIndex {
                        corruption, else 0.
    */
   public static void main(String[] args) throws IOException, InterruptedException {
+    int exitCode = doMain(args);
+    System.exit(exitCode);
+  }
+  
+  // actual main: returns exit code instead of terminating JVM (for easy testing)
+  private static int doMain(String args[]) throws IOException, InterruptedException {
 
     boolean doExorcise = false;
     boolean doCrossCheckTermVectors = false;
@@ -2082,21 +2117,21 @@ public class CheckIndex {
       } else if (arg.equals("-segment")) {
         if (i == args.length-1) {
           System.out.println("ERROR: missing name for -segment option");
-          System.exit(1);
+          return 1;
         }
         i++;
         onlySegments.add(args[i]);
       } else if ("-dir-impl".equals(arg)) {
         if (i == args.length - 1) {
           System.out.println("ERROR: missing value for -dir-impl option");
-          System.exit(1);
+          return 1;
         }
         i++;
         dirImpl = args[i];
       } else {
         if (indexPath != null) {
           System.out.println("ERROR: unexpected extra argument '" + args[i] + "'");
-          System.exit(1);
+          return 1;
         }
         indexPath = args[i];
       }
@@ -2130,7 +2165,7 @@ public class CheckIndex {
                          "\n" +
                          "This tool exits with exit code 1 if the index cannot be opened or has any\n" +
                          "corruption, else 0.\n");
-      System.exit(1);
+      return 1;
     }
 
     if (!assertsOn())
@@ -2140,56 +2175,57 @@ public class CheckIndex {
       onlySegments = null;
     else if (doExorcise) {
       System.out.println("ERROR: cannot specify both -exorcise and -segment");
-      System.exit(1);
+      return 1;
     }
 
     System.out.println("\nOpening index @ " + indexPath + "\n");
-    Directory dir = null;
+    Directory directory = null;
     Path path = Paths.get(indexPath);
     try {
       if (dirImpl == null) {
-        dir = FSDirectory.open(path);
+        directory = FSDirectory.open(path);
       } else {
-        dir = CommandLineUtil.newFSDirectory(dirImpl, path);
+        directory = CommandLineUtil.newFSDirectory(dirImpl, path);
       }
     } catch (Throwable t) {
       System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
       t.printStackTrace(System.out);
-      System.exit(1);
+      return 1;
     }
 
-    CheckIndex checker = new CheckIndex(dir);
-    checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
-    checker.setInfoStream(System.out, verbose);
-
-    Status result = checker.checkIndex(onlySegments);
-    if (result.missingSegments) {
-      System.exit(1);
-    }
-
-    if (!result.clean) {
-      if (!doExorcise) {
-        System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -exorcise were specified\n");
-      } else {
-        System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
-        System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. YOU WILL LOSE DATA. THIS IS YOUR LAST CHANCE TO CTRL+C!");
-        for(int s=0;s<5;s++) {
-          Thread.sleep(1000);
-          System.out.println("  " + (5-s) + "...");
+    try (Directory dir = directory;
+         CheckIndex checker = new CheckIndex(dir)) {
+      checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
+      checker.setInfoStream(System.out, verbose);
+      
+      Status result = checker.checkIndex(onlySegments);
+      if (result.missingSegments) {
+        return 1;
+      }
+      
+      if (!result.clean) {
+        if (!doExorcise) {
+          System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -exorcise were specified\n");
+        } else {
+          System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
+          System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. YOU WILL LOSE DATA. THIS IS YOUR LAST CHANCE TO CTRL+C!");
+          for(int s=0;s<5;s++) {
+            Thread.sleep(1000);
+            System.out.println("  " + (5-s) + "...");
+          }
+          System.out.println("Writing...");
+          checker.exorciseIndex(result);
+          System.out.println("OK");
+          System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
         }
-        System.out.println("Writing...");
-        checker.exorciseIndex(result);
-        System.out.println("OK");
-        System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
+      }
+      System.out.println("");
+      
+      if (result.clean == true) {
+        return 0;
+      } else {
+        return 1;
       }
     }
-    System.out.println("");
-
-    final int exitCode;
-    if (result.clean == true)
-      exitCode = 0;
-    else
-      exitCode = 1;
-    System.exit(exitCode);
   }
 }

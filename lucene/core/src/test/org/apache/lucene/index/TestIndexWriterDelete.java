@@ -1194,6 +1194,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     assertTrue(indexStatus.clean);
+    checker.close();
     String s = bos.toString(IOUtils.UTF_8);
 
     // Segment should have deletions:
@@ -1204,9 +1205,11 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.close();
 
     bos = new ByteArrayOutputStream(1024);
+    checker = new CheckIndex(dir);
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     indexStatus = checker.checkIndex(null);
     assertTrue(indexStatus.clean);
+    checker.close();
     s = bos.toString(IOUtils.UTF_8);
     assertFalse(s.contains("has deletions"));
     dir.close();
