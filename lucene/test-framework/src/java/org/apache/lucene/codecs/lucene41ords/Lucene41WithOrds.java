@@ -100,11 +100,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
 
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.directory,
-                                                 state.fieldInfos,
-                                                 state.segmentInfo.name,
-                                                 BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                 state.segmentSuffix, state.context);
+      indexReader = new FixedGapTermsIndexReader(state);
       success = true;
     } finally {
       if (!success) {

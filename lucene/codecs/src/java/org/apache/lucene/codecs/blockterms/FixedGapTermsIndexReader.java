@@ -17,13 +17,11 @@ package org.apache.lucene.codecs.blockterms;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
@@ -34,7 +32,6 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Comparator;
 import java.util.List;
 import java.io.IOException;
 
@@ -58,8 +55,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   private final int packedIntsVersion;
   private final int blocksize;
 
-  private final Comparator<BytesRef> termComp;
-
   private final static int PAGED_BYTES_BITS = 15;
 
   // all fields share this single logical byte[]
@@ -67,28 +62,24 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
   final HashMap<String,FieldIndexData> fields = new HashMap<>();
   
-  // start of the field info data
-  private long dirOffset;
-  
-  private int version;
-  
-  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, Comparator<BytesRef> termComp, String segmentSuffix, IOContext context)
-    throws IOException {
+  public FixedGapTermsIndexReader(SegmentReadState state) throws IOException {
     final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
-
-    this.termComp = termComp;
     
-    final IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
+    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+                                                     state.segmentSuffix, 
+                                                     FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
+    final IndexInput in = state.directory.openInput(fileName, state.context);
     
     boolean success = false;
 
     try {
       
-      readHeader(in);
+      CodecUtil.checkSegmentHeader(in, FixedGapTermsIndexWriter.CODEC_NAME,
+                                       FixedGapTermsIndexWriter.VERSION_CURRENT, 
+                                       FixedGapTermsIndexWriter.VERSION_CURRENT,
+                                       state.segmentInfo.getId(), state.segmentSuffix);
       
-      if (version >= FixedGapTermsIndexWriter.VERSION_CHECKSUM) {
-        CodecUtil.checksumEntireFile(in);
-      }
+      CodecUtil.checksumEntireFile(in);
       
       indexInterval = in.readVInt();
       if (indexInterval < 1) {
@@ -97,7 +88,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       packedIntsVersion = in.readVInt();
       blocksize = in.readVInt();
       
-      seekDir(in, dirOffset);
+      seekDir(in);
 
       // Read directory
       final int numFields = in.readVInt();     
@@ -118,7 +109,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         if (packedIndexStart < indexStart) {
           throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms, in);
         }
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         FieldIndexData previous = fields.put(fieldInfo.name, new FieldIndexData(in, termBytes, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
@@ -133,11 +124,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       }
       termBytesReader = termBytes.freeze(true);
     }
-  }
-
-  private void readHeader(IndexInput input) throws IOException {
-    version = CodecUtil.checkHeader(input, FixedGapTermsIndexWriter.CODEC_NAME,
-      FixedGapTermsIndexWriter.VERSION_CURRENT, FixedGapTermsIndexWriter.VERSION_CURRENT);
   }
 
   private class IndexEnum extends FieldIndexEnum {
@@ -166,7 +152,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         final int length = (int) (fieldIndex.termOffsets.get(1+mid) - offset);
         termBytesReader.fillSlice(term, fieldIndex.termBytesStart + offset, length);
 
-        int delta = termComp.compare(target, term);
+        int delta = target.compareTo(term);
         if (delta < 0) {
           hi = mid - 1;
         } else if (delta > 0) {
@@ -301,13 +287,9 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   @Override
   public void close() throws IOException {}
 
-  private void seekDir(IndexInput input, long dirOffset) throws IOException {
-    if (version >= FixedGapTermsIndexWriter.VERSION_CHECKSUM) {
-      input.seek(input.length() - CodecUtil.footerLength() - 8);
-    } else {
-      input.seek(input.length() - 8);
-    }
-    dirOffset = input.readLong();
+  private void seekDir(IndexInput input) throws IOException {
+    input.seek(input.length() - CodecUtil.footerLength() - 8);
+    long dirOffset = input.readLong();
     input.seek(dirOffset);
   }
 

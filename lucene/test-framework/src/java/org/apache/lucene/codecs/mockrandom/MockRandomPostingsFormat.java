@@ -340,11 +340,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("MockRandomCodec: fixed-gap terms index");
           }
-          indexReader = new FixedGapTermsIndexReader(state.directory,
-                                                     state.fieldInfos,
-                                                     state.segmentInfo.name,
-                                                     BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                     state.segmentSuffix, state.context);
+          indexReader = new FixedGapTermsIndexReader(state);
         } else {
           final int n2 = random.nextInt(3);
           if (n2 == 1) {
