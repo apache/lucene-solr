@@ -86,7 +86,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   static final byte SORTED_NUMERIC = 5;
   static final byte SORTED_NUMERIC_SINGLETON = 6;
 
-  static final int VERSION_START = 2;
+  static final int VERSION_START = 3;
   static final int VERSION_CURRENT = VERSION_START;
   
   // clone for merge: when merging we don't do any instances.put()s
@@ -122,9 +122,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     boolean success = false;
     try {
-      version = CodecUtil.checkHeader(in, metaCodec, 
-                                      VERSION_START,
-                                      VERSION_CURRENT);
+      version = CodecUtil.checkSegmentHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, 
+                                                 state.segmentInfo.getId(), state.segmentSuffix);
       numEntries = readFields(in, state.fieldInfos);
 
       CodecUtil.checkFooter(in);
@@ -141,9 +140,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
     this.data = state.directory.openInput(dataName, state.context);
     success = false;
     try {
-      final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 VERSION_START,
-                                                 VERSION_CURRENT);
+      final int version2 = CodecUtil.checkSegmentHeader(data, dataCodec, VERSION_START, VERSION_CURRENT,
+                                                              state.segmentInfo.getId(), state.segmentSuffix);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch: meta=" + version + ", data=" + version2, data);
       }

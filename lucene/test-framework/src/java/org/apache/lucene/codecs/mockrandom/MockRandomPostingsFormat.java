@@ -383,12 +383,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new OrdsBlockTreeTermsReader(state.directory,
-                                              state.fieldInfos,
-                                              state.segmentInfo,
-                                              postingsReader,
-                                              state.context,
-                                              state.segmentSuffix);
+        fields = new OrdsBlockTreeTermsReader(postingsReader, state);
         success = true;
       } finally {
         if (!success) {

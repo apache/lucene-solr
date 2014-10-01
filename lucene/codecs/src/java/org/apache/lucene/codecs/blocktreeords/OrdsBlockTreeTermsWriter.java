@@ -42,7 +42,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.fst.Builder;
@@ -115,17 +114,17 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tio";
-  final static String TERMS_CODEC_NAME = "BLOCK_TREE_ORDS_TERMS_DICT";
+  final static String TERMS_CODEC_NAME = "OrdsBlockTreeTerms";
 
   /** Initial terms format. */
-  public static final int VERSION_START = 0;
+  public static final int VERSION_START = 1;
 
   /** Current terms format. */
   public static final int VERSION_CURRENT = VERSION_START;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tipo";
-  final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_ORDS_TERMS_INDEX";
+  final static String TERMS_INDEX_CODEC_NAME = "OrdsBlockTreeIndex";
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
@@ -204,11 +203,11 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       fieldInfos = state.fieldInfos;
       this.minItemsInBlock = minItemsInBlock;
       this.maxItemsInBlock = maxItemsInBlock;
-      CodecUtil.writeHeader(out, TERMS_CODEC_NAME, VERSION_CURRENT);   
+      CodecUtil.writeSegmentHeader(out, TERMS_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
 
       final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
       indexOut = state.directory.createOutput(termsIndexFileName, state.context);
-      CodecUtil.writeHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT); 
+      CodecUtil.writeSegmentHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
 
       this.postingsWriter = postingsWriter;
       // segment = state.segmentInfo.name;
