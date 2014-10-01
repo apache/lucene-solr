@@ -120,6 +120,11 @@ New Features
 
 * SOLR-6565: SolrRequest support for query params (Gregory Chanan)
 
+* SOLR-6512: Add a collections API call to add/delete arbitrary properties 
+  to a specific replica. Optionally adding sliceUnique=true will remove
+  this property from all other replicas within a particular slice. 
+  (Erick Erickson)
+
 Bug Fixes
 ----------------------
 

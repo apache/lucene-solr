@@ -20,10 +20,12 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ONLY_IF_DOWN;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
@@ -31,6 +33,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CR
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,6 +54,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -145,6 +149,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   public static final String COLL_CONF = "collection.configName";
 
   public static final String COLL_PROP_PREFIX = "property.";
+
+  public static final String ONLY_IF_DOWN = "onlyIfDown";
+
+  public static final String SLICE_UNIQUE = "sliceUnique";
 
   public int maxParallelThreads = 10;
 
@@ -619,6 +627,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           case CLUSTERSTATUS:
             getClusterStatus(zkStateReader.getClusterState(), message, results);
             break;
+          case ADDREPLICAPROP:
+            processReplicaAddPropertyCommand(message);
+            break;
+          case DELETEREPLICAPROP:
+            processReplicaDeletePropertyCommand(message);
+            break;
           default:
             throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
                 + operation);
@@ -642,6 +656,44 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       results.add("exception", nl);
     }
     return new OverseerSolrResponse(results);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void processReplicaAddPropertyCommand(ZkNodeProps message) throws KeeperException, InterruptedException {
+    if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) ||
+        StringUtils.isBlank(message.getStr(SHARD_ID_PROP)) ||
+        StringUtils.isBlank(message.getStr(REPLICA_PROP)) ||
+        StringUtils.isBlank(message.getStr(PROPERTY_PROP)) ||
+        StringUtils.isBlank(message.getStr(PROPERTY_VALUE_PROP))) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "The '%s', '%s', '%s', '%s', and '%s' parameters are required for all replica properties add/delete' operations",
+              COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP));
+    }
+    SolrZkClient zkClient = zkStateReader.getZkClient();
+    DistributedQueue inQueue = Overseer.getInQueue(zkClient);
+    Map<String, Object> propMap = new HashMap<>();
+    propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
+    propMap.putAll(message.getProperties());
+    ZkNodeProps m = new ZkNodeProps(propMap);
+    inQueue.offer(ZkStateReader.toJSON(m));
+  }
+
+  private void processReplicaDeletePropertyCommand(ZkNodeProps message) throws KeeperException, InterruptedException {
+    if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) ||
+        StringUtils.isBlank(message.getStr(SHARD_ID_PROP)) ||
+        StringUtils.isBlank(message.getStr(REPLICA_PROP)) ||
+        StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "The '%s', '%s', '%s', and '%s' parameters are required for all replica properties add/delete' operations",
+              COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP));
+    }
+    SolrZkClient zkClient = zkStateReader.getZkClient();
+    DistributedQueue inQueue = Overseer.getInQueue(zkClient);
+    Map<String, Object> propMap = new HashMap<>();
+    propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
+    propMap.putAll(message.getProperties());
+    ZkNodeProps m = new ZkNodeProps(propMap);
+    inQueue.offer(ZkStateReader.toJSON(m));
   }
 
   @SuppressWarnings("unchecked")
@@ -841,6 +893,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
    * @param liveNodes List of currently live node names.
    * @param collectionProps Map of collection status information pulled directly from ZooKeeper.
    */
+
+  @SuppressWarnings("unchecked")
   protected void crossCheckReplicaStateWithLiveNodes(List<String> liveNodes, NamedList<Object> collectionProps) {
     Iterator<Map.Entry<String,Object>> colls = collectionProps.iterator();
     while (colls.hasNext()) {
