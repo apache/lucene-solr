@@ -147,6 +147,11 @@ New Features
 
 * SOLR-6476: Create a bulk mode for schema API (Noble Paul, Steve Rowe)
 
+* SOLR-6512: Add a collections API call to add/delete arbitrary properties 
+  to a specific replica. Optionally adding sliceUnique=true will remove
+  this property from all other replicas within a particular slice. 
+  (Erick Erickson)
+
 Bug Fixes
 ----------------------
 
