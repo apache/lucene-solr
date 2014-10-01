@@ -77,12 +77,7 @@ public class BlockTermsReader extends FieldsProducer {
 
   // Reads the terms index
   private TermsIndexReaderBase indexReader;
-
-  // keeps the dirStart offset
-  private long dirOffset;
   
-  private final int version; 
-
   // Used as key for the terms cache
   private static class FieldAndTerm extends DoubleBarrelLRUCache.CloneableKey {
     String field;
@@ -127,21 +122,22 @@ public class BlockTermsReader extends FieldsProducer {
 
     boolean success = false;
     try {
-      version = readHeader(in);
+      CodecUtil.checkSegmentHeader(in, BlockTermsWriter.CODEC_NAME, 
+                                       BlockTermsWriter.VERSION_START,
+                                       BlockTermsWriter.VERSION_CURRENT,
+                                       info.getId(), segmentSuffix);
 
       // Have PostingsReader init itself
       postingsReader.init(in);
       
-      if (version >= BlockTermsWriter.VERSION_CHECKSUM) {      
-        // NOTE: data file is too costly to verify checksum against all the bytes on open,
-        // but for now we at least verify proper structure of the checksum footer: which looks
-        // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-        // such as file truncation.
-        CodecUtil.retrieveChecksum(in);
-      }
+      // NOTE: data file is too costly to verify checksum against all the bytes on open,
+      // but for now we at least verify proper structure of the checksum footer: which looks
+      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+      // such as file truncation.
+      CodecUtil.retrieveChecksum(in);
 
       // Read per-field details
-      seekDir(in, dirOffset);
+      seekDir(in);
 
       final int numFields = in.readVInt();
       if (numFields < 0) {
@@ -156,7 +152,7 @@ public class BlockTermsReader extends FieldsProducer {
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
-        final int longsSize = version >= BlockTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
+        final int longsSize = in.readVInt();
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
           throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount(), in);
         }
@@ -180,25 +176,10 @@ public class BlockTermsReader extends FieldsProducer {
 
     this.indexReader = indexReader;
   }
-
-  private int readHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, BlockTermsWriter.CODEC_NAME,
-                          BlockTermsWriter.VERSION_START,
-                          BlockTermsWriter.VERSION_CURRENT);
-    if (version < BlockTermsWriter.VERSION_APPEND_ONLY) {
-      dirOffset = input.readLong();
-    }
-    return version;
-  }
   
-  private void seekDir(IndexInput input, long dirOffset) throws IOException {
-    if (version >= BlockTermsWriter.VERSION_CHECKSUM) {
-      input.seek(input.length() - CodecUtil.footerLength() - 8);
-      dirOffset = input.readLong();
-    } else if (version >= BlockTermsWriter.VERSION_APPEND_ONLY) {
-      input.seek(input.length() - 8);
-      dirOffset = input.readLong();
-    }
+  private void seekDir(IndexInput input) throws IOException {
+    input.seek(input.length() - CodecUtil.footerLength() - 8);
+    long dirOffset = input.readLong();
     input.seek(dirOffset);
   }
   
@@ -906,9 +887,8 @@ public class BlockTermsReader extends FieldsProducer {
   @Override
   public void checkIntegrity() throws IOException {   
     // verify terms
-    if (version >= BlockTermsWriter.VERSION_CHECKSUM) {
-      CodecUtil.checksumEntireFile(in);
-    }
+    CodecUtil.checksumEntireFile(in);
+
     // verify postings
     postingsReader.checkIntegrity();
   }

@@ -62,11 +62,8 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
   final static String CODEC_NAME = "BLOCK_TERMS_DICT";
 
   // Initial format
-  public static final int VERSION_START = 0;
-  public static final int VERSION_APPEND_ONLY = 1;
-  public static final int VERSION_META_ARRAY = 2;
-  public static final int VERSION_CHECKSUM = 3;
-  public static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  public static final int VERSION_START = 4;
+  public static final int VERSION_CURRENT = VERSION_START;
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tib";
@@ -113,7 +110,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     boolean success = false;
     try {
       fieldInfos = state.fieldInfos;
-      writeHeader(out);
+      CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       currentField = null;
       this.postingsWriter = postingsWriter;
       // segment = state.segmentName;
@@ -127,10 +124,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
         IOUtils.closeWhileHandlingException(out);
       }
     }
-  }
-  
-  private void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);     
   }
 
   @Override
@@ -184,9 +177,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
           }
           out.writeVLong(field.sumDocFreq);
           out.writeVInt(field.docCount);
-          if (VERSION_CURRENT >= VERSION_META_ARRAY) {
-            out.writeVInt(field.longsSize);
-          }
+          out.writeVInt(field.longsSize);
         }
         writeTrailer(dirStart);
         CodecUtil.writeFooter(out);
