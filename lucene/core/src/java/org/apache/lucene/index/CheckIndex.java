@@ -61,7 +61,7 @@ import org.apache.lucene.util.Version;
  * index it can take quite a long time to run.
  *
  * @lucene.experimental Please make a complete backup of your
- * index before using this to fix your index!
+ * index before using this to exorcise corrupted documents from your index!
  */
 public class CheckIndex {
 
@@ -112,7 +112,7 @@ public class CheckIndex {
 
     /** 
      * SegmentInfos instance containing only segments that
-     * had no problems (this is used with the {@link CheckIndex#fixIndex} 
+     * had no problems (this is used with the {@link CheckIndex#exorciseIndex} 
      * method to repair the index. 
      */
     SegmentInfos newSegments;
@@ -678,7 +678,7 @@ public class CheckIndex {
         }
         msg(infoStream, "FAILED");
         String comment;
-        comment = "fixIndex() would remove reference to this segment";
+        comment = "exorciseIndex() would remove reference to this segment";
         msg(infoStream, "    WARNING: " + comment + "; full exception:");
         if (infoStream != null)
           t.printStackTrace(infoStream);
@@ -2012,9 +2012,9 @@ public class CheckIndex {
    *
    * <p><b>WARNING</b>: Make sure you only call this when the
    *  index is not opened  by any writer. */
-  public void fixIndex(Status result) throws IOException {
+  public void exorciseIndex(Status result) throws IOException {
     if (result.partial)
-      throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
+      throw new IllegalArgumentException("can only exorcise an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
     result.newSegments.commit(result.dir);
   }
@@ -2031,31 +2031,31 @@ public class CheckIndex {
     return assertsOn;
   }
 
-  /** Command-line interface to check and fix an index.
+  /** Command-line interface to check and exorcise corrupt segments from an index.
 
     <p>
     Run it like this:
     <pre>
-    java -ea:org.apache.lucene... org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-verbose] [-segment X] [-segment Y]
+    java -ea:org.apache.lucene... org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-verbose] [-segment X] [-segment Y]
     </pre>
     <ul>
-    <li><code>-fix</code>: actually write a new segments_N file, removing any problematic segments
+    <li><code>-exorcise</code>: actually write a new segments_N file, removing any problematic segments. *LOSES DATA*
 
     <li><code>-segment X</code>: only check the specified
     segment(s).  This can be specified multiple times,
     to check more than one segment, eg <code>-segment _2
-    -segment _a</code>.  You can't use this with the -fix
+    -segment _a</code>.  You can't use this with the -exorcise
     option.
     </ul>
 
-    <p><b>WARNING</b>: <code>-fix</code> should only be used on an emergency basis as it will cause
+    <p><b>WARNING</b>: <code>-exorcise</code> should only be used on an emergency basis as it will cause
                        documents (perhaps many) to be permanently removed from the index.  Always make
                        a backup copy of your index before running this!  Do not run this tool on an index
                        that is actively being written to.  You have been warned!
 
-    <p>                Run without -fix, this tool will open the index, report version information
-                       and report any exceptions it hits and what action it would take if -fix were
-                       specified.  With -fix, this tool will remove any segments that have issues and
+    <p>                Run without -exorcise, this tool will open the index, report version information
+                       and report any exceptions it hits and what action it would take if -exorcise were
+                       specified.  With -exorcise, this tool will remove any segments that have issues and
                        write a new segments_N file.  This means all documents contained in the affected
                        segments will be removed.
 
@@ -2065,7 +2065,7 @@ public class CheckIndex {
    */
   public static void main(String[] args) throws IOException, InterruptedException {
 
-    boolean doFix = false;
+    boolean doExorcise = false;
     boolean doCrossCheckTermVectors = false;
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<>();
@@ -2074,8 +2074,8 @@ public class CheckIndex {
     int i = 0;
     while(i < args.length) {
       String arg = args[i];
-      if ("-fix".equals(arg)) {
-        doFix = true;
+      if ("-exorcise".equals(arg)) {
+        doExorcise = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
         doCrossCheckTermVectors = true;
       } else if (arg.equals("-verbose")) {
@@ -2106,26 +2106,26 @@ public class CheckIndex {
 
     if (indexPath == null) {
       System.out.println("\nERROR: index path not specified");
-      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
+      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
-                         "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -exorcise: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -crossCheckTermVectors: verifies that term vectors match postings; THIS IS VERY SLOW!\n" +
-                         "  -codec X: when fixing, codec to write the new segments_N file with\n" +
+                         "  -codec X: when exorcising, codec to write the new segments_N file with\n" +
                          "  -verbose: print additional details\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
-                         "              You can't use this with the -fix option\n" +
+                         "              You can't use this with the -exorcise option\n" +
                          "  -dir-impl X: use a specific " + FSDirectory.class.getSimpleName() + " implementation. " +
                          "If no package is specified the " + FSDirectory.class.getPackage().getName() + " package will be used.\n" +
                          "\n" +
-                         "**WARNING**: -fix should only be used on an emergency basis as it will cause\n" +
+                         "**WARNING**: -exorcise *LOSES DATA*. This should only be used on an emergency basis as it will cause\n" +
                          "documents (perhaps many) to be permanently removed from the index.  Always make\n" +
                          "a backup copy of your index before running this!  Do not run this tool on an index\n" +
                          "that is actively being written to.  You have been warned!\n" +
                          "\n" +
-                         "Run without -fix, this tool will open the index, report version information\n" +
-                         "and report any exceptions it hits and what action it would take if -fix were\n" +
-                         "specified.  With -fix, this tool will remove any segments that have issues and\n" + 
+                         "Run without -exorcise, this tool will open the index, report version information\n" +
+                         "and report any exceptions it hits and what action it would take if -exorcise were\n" +
+                         "specified.  With -exorcise, this tool will remove any segments that have issues and\n" + 
                          "write a new segments_N file.  This means all documents contained in the affected\n" +
                          "segments will be removed.\n" +
                          "\n" +
@@ -2139,8 +2139,8 @@ public class CheckIndex {
 
     if (onlySegments.size() == 0)
       onlySegments = null;
-    else if (doFix) {
-      System.out.println("ERROR: cannot specify both -fix and -segment");
+    else if (doExorcise) {
+      System.out.println("ERROR: cannot specify both -exorcise and -segment");
       System.exit(1);
     }
 
@@ -2169,17 +2169,17 @@ public class CheckIndex {
     }
 
     if (!result.clean) {
-      if (!doFix) {
-        System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -fix were specified\n");
+      if (!doExorcise) {
+        System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -exorcise were specified\n");
       } else {
         System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
-        System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. THIS IS YOUR LAST CHANCE TO CTRL+C!");
+        System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. YOU WILL LOSE DATA. THIS IS YOUR LAST CHANCE TO CTRL+C!");
         for(int s=0;s<5;s++) {
           Thread.sleep(1000);
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");
-        checker.fixIndex(result);
+        checker.exorciseIndex(result);
         System.out.println("OK");
         System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
       }
