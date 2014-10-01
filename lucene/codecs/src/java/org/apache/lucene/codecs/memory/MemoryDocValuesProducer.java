@@ -110,7 +110,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   static final byte BLOCK_COMPRESSED = 2;
   static final byte GCD_COMPRESSED = 3;
   
-  static final int VERSION_START = 3;
+  static final int VERSION_START = 4;
   static final int VERSION_CURRENT = VERSION_START;
   
   // clone for merge: when merging we don't do any instances.put()s
@@ -146,9 +146,8 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     boolean success = false;
     try {
-      version = CodecUtil.checkHeader(in, metaCodec, 
-                                      VERSION_START,
-                                      VERSION_CURRENT);
+      version = CodecUtil.checkSegmentHeader(in, metaCodec, VERSION_START, VERSION_CURRENT,
+                                                 state.segmentInfo.getId(), state.segmentSuffix);
       numEntries = readFields(in, state.fieldInfos);
       CodecUtil.checkFooter(in);
       ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
@@ -165,9 +164,8 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     this.data = state.directory.openInput(dataName, state.context);
     success = false;
     try {
-      final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 VERSION_START,
-                                                 VERSION_CURRENT);
+      final int version2 = CodecUtil.checkSegmentHeader(data, dataCodec, VERSION_START, VERSION_CURRENT,
+                                                              state.segmentInfo.getId(), state.segmentSuffix);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch: meta=" + version + ", data=" + version2, data);
       }

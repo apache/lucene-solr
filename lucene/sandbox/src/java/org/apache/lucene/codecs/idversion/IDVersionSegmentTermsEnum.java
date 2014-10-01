@@ -283,7 +283,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
       targetUpto = 0;
 
       IDVersionSegmentTermsEnumFrame lastFrame = stack[0];
-      assert validIndexPrefix <= term.length(): "validIndexPrefix=" + validIndexPrefix + " term.length=" + term.length() + " seg=" + fr.parent.segment;
+      assert validIndexPrefix <= term.length(): "validIndexPrefix=" + validIndexPrefix + " term.length=" + term.length() + " seg=" + fr.parent;
 
       final int targetLimit = Math.min(target.length, validIndexPrefix);
 
@@ -1063,6 +1063,6 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
   @Override
   public String toString() {
-    return "IDVersionSegmentTermsEnum(seg=" + fr.parent.segment + ")";
+    return "IDVersionSegmentTermsEnum(seg=" + fr.parent + ")";
   }
 }

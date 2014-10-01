@@ -39,7 +39,6 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
@@ -123,10 +122,9 @@ import org.apache.lucene.util.fst.Util;
 
 public class FSTTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tmp";
-  static final String TERMS_CODEC_NAME = "FST_TERMS_DICT";
-  public static final int TERMS_VERSION_START = 0;
-  public static final int TERMS_VERSION_CHECKSUM = 1;
-  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_CHECKSUM;
+  static final String TERMS_CODEC_NAME = "FSTTerms";
+  public static final int TERMS_VERSION_START = 2;
+  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
   
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
@@ -144,7 +142,9 @@ public class FSTTermsWriter extends FieldsConsumer {
 
     boolean success = false;
     try {
-      writeHeader(out);
+      CodecUtil.writeSegmentHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT,
+                                        state.segmentInfo.getId(), state.segmentSuffix);   
+
       this.postingsWriter.init(out); 
       success = true;
     } finally {
@@ -152,10 +152,6 @@ public class FSTTermsWriter extends FieldsConsumer {
         IOUtils.closeWhileHandlingException(out);
       }
     }
-  }
-
-  private void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT);   
   }
 
   private void writeTrailer(IndexOutput out, long dirStart) throws IOException {

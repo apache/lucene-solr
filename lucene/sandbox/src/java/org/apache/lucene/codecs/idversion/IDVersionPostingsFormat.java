@@ -99,15 +99,10 @@ public class IDVersionPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new IDVersionPostingsReader();
+    PostingsReaderBase postingsReader = new IDVersionPostingsReader(state);
     boolean success = false;
      try {
-       FieldsProducer ret = new VersionBlockTreeTermsReader(state.directory,
-                                                            state.fieldInfos,
-                                                            state.segmentInfo,
-                                                            postingsReader,
-                                                            state.context,
-                                                            state.segmentSuffix);
+       FieldsProducer ret = new VersionBlockTreeTermsReader(postingsReader, state);
        success = true;
        return ret;
      } finally {

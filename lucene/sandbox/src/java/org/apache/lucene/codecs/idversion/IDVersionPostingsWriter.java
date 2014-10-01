@@ -26,7 +26,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 
 final class IDVersionPostingsWriter extends PushPostingsWriterBase {
@@ -34,7 +33,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   final static String TERMS_CODEC = "IDVersionPostingsWriterTerms";
 
   // Increment version to change it
-  final static int VERSION_START = 0;
+  final static int VERSION_START = 1;
   final static int VERSION_CURRENT = VERSION_START;
 
   final static IDVersionTermState emptyState = new IDVersionTermState();
@@ -57,7 +56,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void init(IndexOutput termsOut) throws IOException {
-    CodecUtil.writeHeader(termsOut, TERMS_CODEC, VERSION_CURRENT);
+    CodecUtil.writeSegmentHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
   }
 
   @Override
