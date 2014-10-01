@@ -85,6 +85,7 @@ import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NoLockFactory;
 import org.junit.Assert;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -213,20 +214,24 @@ public final class TestUtil {
    *  look for any other corruption.  */
   public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors, boolean failFast) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    CheckIndex checker = new CheckIndex(dir);
-    checker.setCrossCheckTermVectors(crossCheckTermVectors);
-    checker.setFailFast(failFast);
-    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
-    CheckIndex.Status indexStatus = checker.checkIndex(null);
-    if (indexStatus == null || indexStatus.clean == false) {
-      System.out.println("CheckIndex failed");
-      System.out.println(bos.toString(IOUtils.UTF_8));
-      throw new RuntimeException("CheckIndex failed");
-    } else {
-      if (LuceneTestCase.INFOSTREAM) {
+    // TODO: actually use the dir's lock factory, unless test uses a special method?
+    // some tests e.g. exception tests become much more complicated if they have to close the writer
+    try (CheckIndex checker = new CheckIndex(dir, NoLockFactory.getNoLockFactory().makeLock("bogus"))) {
+      checker.setCrossCheckTermVectors(crossCheckTermVectors);
+      checker.setFailFast(failFast);
+      checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
+      CheckIndex.Status indexStatus = checker.checkIndex(null);
+      
+      if (indexStatus == null || indexStatus.clean == false) {
+        System.out.println("CheckIndex failed");
         System.out.println(bos.toString(IOUtils.UTF_8));
+        throw new RuntimeException("CheckIndex failed");
+      } else {
+        if (LuceneTestCase.INFOSTREAM) {
+          System.out.println(bos.toString(IOUtils.UTF_8));
+        }
+        return indexStatus;
       }
-      return indexStatus;
     }
   }
   

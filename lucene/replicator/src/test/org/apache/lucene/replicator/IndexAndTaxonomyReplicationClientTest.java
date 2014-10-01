@@ -412,16 +412,18 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
             // verify taxonomy index is fully consistent (since we only add one
             // category to all documents, there's nothing much more to validate.
             ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-            CheckIndex checker = new CheckIndex(handlerTaxoDir.getDelegate());
-            checker.setFailFast(true);
-            checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
             CheckIndex.Status indexStatus = null;
-            try {
-              indexStatus = checker.checkIndex(null);
-            } catch (IOException ioe) {
-              // ok: we fallback below
-            } catch (RuntimeException re) {
-              // ok: we fallback below
+
+            try (CheckIndex checker = new CheckIndex(handlerTaxoDir.getDelegate())) {
+              checker.setFailFast(true);
+              checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
+              try {
+                indexStatus = checker.checkIndex(null);
+              } catch (IOException ioe) {
+                // ok: we fallback below
+              } catch (RuntimeException re) {
+                // ok: we fallback below
+              }
             }
 
             if (indexStatus == null || indexStatus.clean == false) {

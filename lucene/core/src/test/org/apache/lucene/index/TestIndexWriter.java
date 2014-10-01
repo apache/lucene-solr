@@ -2705,6 +2705,7 @@ public class TestIndexWriter extends LuceneTestCase {
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     String s = bos.toString(IOUtils.UTF_8);
+    checker.close();
     // Make sure CheckIndex didn't fail
     assertTrue(s, indexStatus != null && indexStatus.clean);
 

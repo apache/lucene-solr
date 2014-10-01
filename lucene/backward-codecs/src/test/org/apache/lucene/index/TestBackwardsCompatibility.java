@@ -498,6 +498,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       CheckIndex.Status indexStatus = checker.checkIndex();
       assertFalse(indexStatus.clean);
       assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      checker.close();
 
       dir.close();
       IOUtils.rm(oldIndexDir);
