@@ -72,7 +72,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * NumFilteredFields, Filter<sup>NumFilteredFields</sup>, Footer</li>
  * <li>Filter --&gt; FieldNumber, FuzzySet</li>
  * <li>FuzzySet --&gt;See {@link FuzzySet#serialize(DataOutput)}</li>
- * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  * <li>DelegatePostingsFormatName --&gt; {@link DataOutput#writeString(String)
  * String} The name of a ServiceProvider registered {@link PostingsFormat}</li>
  * <li>NumFilteredFields --&gt; {@link DataOutput#writeInt Uint32}</li>

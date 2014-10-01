@@ -75,7 +75,7 @@ import org.apache.lucene.util.fst.Util;
  * <ul>
  *  <li>TermIndex(.tix) --&gt; Header, TermFST<sup>NumFields</sup>, Footer</li>
  *  <li>TermFST --&gt; {@link FST FST&lt;long&gt;}</li>
- *  <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *  <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  *
@@ -113,7 +113,7 @@ import org.apache.lucene.util.fst.Util;
  *  <li>StatsBlock --&gt; &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) ? &gt; <sup>NumTerms</sup>
  *  <li>MetaLongsBlock --&gt; &lt; LongDelta<sup>LongsSize</sup>, BytesSize &gt; <sup>NumTerms</sup>
  *  <li>MetaBytesBlock --&gt; Byte <sup>MetaBytesBlockLength</sup>
- *  <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader CodecHeader}</li>
  *  <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *  <li>NumFields, FieldNumber, DocCount, DocFreq, LongsSize, 
  *        FieldNumber, DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>

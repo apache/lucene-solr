@@ -90,7 +90,7 @@ import org.apache.lucene.util.fst.Util;
  *  <li>TermFST --&gt; {@link FST FST&lt;TermData&gt;}</li>
  *  <li>TermData --&gt; Flag, BytesSize?, LongDelta<sup>LongsSize</sup>?, Byte<sup>BytesSize</sup>?, 
  *                      &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) &gt; ? </li>
- *  <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *  <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *  <li>DocFreq, LongsSize, BytesSize, NumFields,
  *        FieldNumber, DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
