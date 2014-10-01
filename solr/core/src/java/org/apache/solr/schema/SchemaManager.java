@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.EMPTY_MAP;
@@ -156,15 +157,13 @@ public class SchemaManager {
       String collection = cd.getCollectionName();
       if (collection != null) {
         ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) managedIndexSchema.getResourceLoader();
-        long timeLeftSecs1 = timeout -  ((System.nanoTime() - startTime) /1000000);
-        int secsLeft = (int) (timeLeftSecs1 > 0 ? timeLeftSecs1 : -1);
-        if(secsLeft<=0) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Not enough time left to update replicas. However the schema is updated already");
-        long timeLeftSecs = timeout -  ((System.nanoTime() - startTime) /1000000);
+        long timeLeftSecs = timeout -   TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+        if(timeLeftSecs<=0) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Not enough time left to update replicas. However the schema is updated already");
         ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection,
             cd.getCloudDescriptor().getCoreNodeName(),
             (managedIndexSchema).getSchemaZkVersion(),
             zkLoader.getZkController(),
-            (int) (timeLeftSecs > 0 ? timeLeftSecs : -1));
+            (int) timeLeftSecs);
       }
 
     }
