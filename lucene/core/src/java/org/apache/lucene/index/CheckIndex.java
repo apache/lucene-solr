@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -456,8 +457,15 @@ public class CheckIndex implements Closeable {
     SegmentInfos sis = new SegmentInfos();
     Status result = new Status();
     result.dir = dir;
+    String[] files = dir.listAll();
+    String lastSegmentsFile = SegmentInfos.getLastCommitSegmentsFileName(files);
+    if (lastSegmentsFile == null) {
+      throw new IndexNotFoundException("no segments* file found in " + dir + ": files: " + Arrays.toString(files));
+    }
     try {
-      sis.read(dir);
+      // Do not use SegmentInfos.read(Directory) since the spooky
+      // retrying it does is not necessary here (we hold the write lock):
+      sis.read(dir, lastSegmentsFile);
     } catch (Throwable t) {
       if (failFast) {
         IOUtils.reThrow(t);

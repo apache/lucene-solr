@@ -794,7 +794,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // segments) pending:
         changed();
       } else {
-        segmentInfos.read(directory);
+        String[] files = directory.listAll();
+        String lastSegmentsFile = SegmentInfos.getLastCommitSegmentsFileName(files);
+        if (lastSegmentsFile == null) {
+          throw new IndexNotFoundException("no segments* file found in " + directory + ": files: " + Arrays.toString(files));
+        }
+
+        // Do not use SegmentInfos.read(Directory) since the spooky
+        // retrying it does is not necessary here (we hold the write lock):
+        segmentInfos.read(directory, lastSegmentsFile);
 
         IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
