@@ -55,7 +55,8 @@ final class CompoundFileWriter implements Closeable{
   static final String DATA_CODEC = "CompoundFileWriterData";
   static final int VERSION_START = 0;
   static final int VERSION_CHECKSUM = 1;
-  static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  static final int VERSION_SEGMENTHEADER = 2;
+  static final int VERSION_CURRENT = VERSION_SEGMENTHEADER;
 
   // versioning for the .cfe file
   static final String ENTRY_CODEC = "CompoundFileWriterEntries";
@@ -70,6 +71,7 @@ final class CompoundFileWriter implements Closeable{
   private final AtomicBoolean outputTaken = new AtomicBoolean(false);
   final String entryTableName;
   final String dataFileName;
+  final byte[] segmentID;
 
   /**
    * Create the compound stream in the specified file. The file name is the
@@ -78,11 +80,17 @@ final class CompoundFileWriter implements Closeable{
    * @throws NullPointerException
    *           if <code>dir</code> or <code>name</code> is null
    */
-  CompoundFileWriter(Directory dir, String name) {
-    if (dir == null)
+  CompoundFileWriter(byte segmentID[], Directory dir, String name) {
+    if (dir == null) {
       throw new NullPointerException("directory cannot be null");
-    if (name == null)
+    }
+    if (name == null) {
       throw new NullPointerException("name cannot be null");
+    }
+    if (segmentID == null) {
+      throw new NullPointerException("segmentID cannot be null");
+    }
+    this.segmentID = segmentID;
     directory = dir;
     entryTableName = IndexFileNames.segmentFileName(
         IndexFileNames.stripExtension(name), "",
@@ -96,7 +104,7 @@ final class CompoundFileWriter implements Closeable{
       boolean success = false;
       try {
         dataOut = directory.createOutput(dataFileName, context);
-        CodecUtil.writeHeader(dataOut, DATA_CODEC, VERSION_CURRENT);
+        CodecUtil.writeSegmentHeader(dataOut, DATA_CODEC, VERSION_CURRENT, segmentID, "");
         success = true;
       } finally {
         if (!success) {
@@ -207,7 +215,7 @@ final class CompoundFileWriter implements Closeable{
 
   protected void writeEntryTable(Collection<FileEntry> entries,
       IndexOutput entryOut) throws IOException {
-    CodecUtil.writeHeader(entryOut, ENTRY_CODEC, VERSION_CURRENT);
+    CodecUtil.writeSegmentHeader(entryOut, ENTRY_CODEC, VERSION_CURRENT, segmentID, "");
     entryOut.writeVInt(entries.size());
     for (FileEntry fe : entries) {
       entryOut.writeString(IndexFileNames.stripSegmentName(fe.file));

@@ -35,6 +35,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
@@ -134,7 +135,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     }
     out.close();
 
-    Directory cfsDir = new CompoundFileDirectory(dir, "big.cfs", context, true);
+    Directory cfsDir = new CompoundFileDirectory(StringHelper.randomId(), dir, "big.cfs", context, true);
     dir.copy(cfsDir, "big.bin", "big.bin", context);
     cfsDir.close();
     dir.close();

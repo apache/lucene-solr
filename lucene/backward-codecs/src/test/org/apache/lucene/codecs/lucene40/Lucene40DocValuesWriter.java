@@ -51,7 +51,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
   Lucene40DocValuesWriter(SegmentWriteState state, String filename, String legacyKey) throws IOException {
     this.state = state;
     this.legacyKey = legacyKey;
-    this.dir = new CompoundFileDirectory(state.directory, filename, state.context, true);
+    this.dir = new CompoundFileDirectory(state.segmentInfo.getId(), state.directory, filename, state.context, true);
   }
   
   @Override

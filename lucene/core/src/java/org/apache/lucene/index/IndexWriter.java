@@ -4459,7 +4459,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
     // Now merge all added files
     Collection<String> files = info.files();
-    CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
+    CompoundFileDirectory cfsDir = new CompoundFileDirectory(info.getId(), directory, fileName, context, true);
     boolean success = false;
     try {
       for (String file : files) {

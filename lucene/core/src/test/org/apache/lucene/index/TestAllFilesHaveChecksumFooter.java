@@ -28,7 +28,6 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -65,33 +64,33 @@ public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
       }
     }
     riw.close();
-    checkHeaders(dir);
+    checkFooters(dir);
     dir.close();
   }
   
-  private void checkHeaders(Directory dir) throws IOException {
-    for (String file : dir.listAll()) {
-      if (file.equals(IndexWriter.WRITE_LOCK_NAME)) {
-        continue; // write.lock has no footer, thats ok
-      }
-      if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
-        CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
-        checkHeaders(cfsDir); // recurse into cfs
-        cfsDir.close();
-      }
-      IndexInput in = null;
-      boolean success = false;
-      try {
-        in = dir.openInput(file, newIOContext(random()));
-        CodecUtil.checksumEntireFile(in);
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(in);
-        } else {
-          IOUtils.closeWhileHandlingException(in);
+  private void checkFooters(Directory dir) throws IOException {
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    checkFooter(dir, sis.getSegmentsFileName());
+    
+    for (SegmentCommitInfo si : sis) {
+      for (String file : si.files()) {
+        checkFooter(dir, file);
+        if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
+          // recurse into CFS
+          try (CompoundFileDirectory cfsDir = new CompoundFileDirectory(si.info.getId(), dir, file, newIOContext(random()), false)) {
+            for (String cfsFile : cfsDir.listAll()) {
+              checkFooter(cfsDir, cfsFile);
+            }
+          }
         }
       }
+    }
+  }
+  
+  private void checkFooter(Directory dir, String file) throws IOException {
+    try (IndexInput in = dir.openInput(file, newIOContext(random()))) {
+      CodecUtil.checksumEntireFile(in);
     }
   }
 }

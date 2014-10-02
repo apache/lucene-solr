@@ -85,7 +85,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   Lucene40DocValuesReader(SegmentReadState state, String filename, String legacyKey) throws IOException {
     this.state = state;
     this.legacyKey = legacyKey;
-    this.dir = new CompoundFileDirectory(state.directory, filename, state.context, false);
+    this.dir = new CompoundFileDirectory(state.segmentInfo.getId(), state.directory, filename, state.context, false);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOf(getClass()));
     merging = false;
   }

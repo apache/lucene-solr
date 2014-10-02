@@ -202,7 +202,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
     final boolean closeDir;
     if (info.getFieldInfosGen() == -1 && info.info.getUseCompoundFile()) {
       // no fieldInfos gen and segment uses a compound file
-      dir = new CompoundFileDirectory(info.info.dir,
+      dir = new CompoundFileDirectory(info.info.getId(), info.info.dir,
           IndexFileNames.segmentFileName(info.info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
           IOContext.READONCE,
           false);
