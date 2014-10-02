@@ -22,12 +22,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FieldValueFilter;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
-import org.apache.lucene.queries.ChainedFilter;
+import org.apache.lucene.queries.BooleanFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
@@ -48,6 +49,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -332,8 +334,9 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
        p1 == null ? null : p1.getAmount() + "", 
        p2 == null ? null : p2.getAmount() + "",
        minInclusive, maxInclusive);
-    final Filter docsInRange = new ChainedFilter
-      (new Filter [] { docsWithValues, vsRangeFilter }, ChainedFilter.AND);
+    final BooleanFilter docsInRange = new BooleanFilter();
+    docsInRange.add(docsWithValues, Occur.MUST);
+    docsInRange.add(vsRangeFilter, Occur.MUST);
 
     return new SolrConstantScoreQuery(docsInRange);
     
