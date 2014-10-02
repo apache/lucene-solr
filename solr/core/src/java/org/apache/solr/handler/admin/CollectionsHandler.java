@@ -264,6 +264,10 @@ public class CollectionsHandler extends RequestHandlerBase {
         SLICE_UNIQUE, PROPERTY_VALUE_PROP);
 
     String property = (String) map.get(PROPERTY_PROP);
+    if (property.startsWith(OverseerCollectionProcessor.COLL_PROP_PREFIX) == false) {
+      property = OverseerCollectionProcessor.COLL_PROP_PREFIX + property;
+    }
+
     boolean uniquePerSlice = Boolean.parseBoolean((String) map.get(SLICE_UNIQUE));
 
     // Check if we're trying to set a property with parameters that allow us to set the property on multiple replicas

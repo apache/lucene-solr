@@ -40,6 +40,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.SLICE_UNIQUE;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -336,10 +337,10 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       client.request(request);
 
       // The above should have set exactly one preferredleader...
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r2, "preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredLeader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r2, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -349,10 +350,10 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "property", "preferredLeader",
           "property.value", "true");
       // The preferred leader property for shard1 should have switched to the other replica.
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredLeader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -363,10 +364,10 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "property.value", "true");
 
       // Now we should have a preferred leader in both shards...
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredLeader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -377,9 +378,9 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "property.value", "true");
 
       // Now we should have three preferred leaders.
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader", "true");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toString(),
@@ -390,11 +391,11 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
 
       // Now we should have two preferred leaders.
       // But first we have to wait for the overseer to finish the action
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
 
       // Try adding an arbitrary property to one that has the leader property
       doPropertyAction(client,
@@ -405,13 +406,13 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "property", "testprop",
           "property.value", "true");
 
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "testprop", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -421,14 +422,14 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "property", "prop",
           "property.value", "silly");
 
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "testprop", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
@@ -439,14 +440,14 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "property.value", "nonsense",
           SLICE_UNIQUE, "true");
 
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "testprop", "nonsense");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "nonsense");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
 
 
       doPropertyAction(client,
@@ -454,34 +455,34 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "collection", COLLECTION_NAME,
           "shard", c1_s1,
           "replica", c1_s1_r1,
-          "property", "testprop",
+          "property", "property.testprop",
           "property.value", "true",
           SLICE_UNIQUE, "false");
 
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "testprop", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
           "collection", COLLECTION_NAME,
           "shard", c1_s1,
           "replica", c1_s1_r1,
-          "property", "testprop");
+          "property", "property.testprop");
 
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "testprop");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.testprop");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
 
       try {
         doPropertyAction(client,
@@ -498,14 +499,93 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
             se.getMessage().contains("with the sliceUnique parameter set to something other than 'true'"));
       }
 
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "testprop");
-      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.testprop");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+      Map<String, String> origProps = getProps(client, COLLECTION_NAME, c1_s1_r1,
+          "state", "core", "node_name", "base_url");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "state",
+          "property.value", "state_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "core",
+          "property.value", "core_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "node_name",
+          "property.value", "node_name_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "base_url",
+          "property.value", "base_url_bad");
+
+      // The above should be on new proeprties.
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.state", "state_bad");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.core", "core_bad");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.node_name", "node_name_bad");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.base_url", "base_url_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "state");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "core");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "node_name");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "base_url");
+
+      // They better not have been changed!
+      for (Map.Entry<String, String> ent : origProps.entrySet()) {
+        verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, ent.getKey(), ent.getValue());
+      }
+
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.state");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.core");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.node_name");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.base_url");
 
     } finally {
       client.shutdown();
@@ -568,10 +648,24 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
 
     fail("Property '" + property + "' with value " + replica.getStr(property) +
         " not set correctly for collection/replica pair: " + collectionName + "/" + replicaName + " property map is " +
-    replica.getProperties().toString() + ".");
+        replica.getProperties().toString() + ".");
 
   }
 
+  // Expects the map will have keys, but blank values.
+  private Map<String, String> getProps(CloudSolrServer client, String collectionName, String replicaName, String... props) throws KeeperException, InterruptedException {
+    client.getZkStateReader().updateClusterState(true);
+    ClusterState clusterState = client.getZkStateReader().getClusterState();
+    Replica replica = clusterState.getReplica(collectionName, replicaName);
+    if (replica == null) {
+      fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
+    }
+    Map<String, String> propMap = new HashMap<>();
+    for (String prop : props) {
+      propMap.put(prop, replica.getStr(prop));
+    }
+    return propMap;
+  }
   private void missingParamsError(CloudSolrServer client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
