@@ -17,6 +17,7 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 
@@ -43,6 +44,7 @@ public class DelayingSearchComponent extends SearchComponent{
 
   @Override
   public String getDescription() {
-    return null;
+    return "SearchComponent used to add delay to each request";
   }
+
 }
