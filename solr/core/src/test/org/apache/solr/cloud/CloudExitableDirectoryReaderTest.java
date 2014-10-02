@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 */
 
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,12 +32,13 @@ import static org.apache.solr.common.SolrException.ErrorCode;
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
 */
+@Slow
 public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(CloudExitableDirectoryReaderTest.class);
-  private static final int NUM_DOCS_PER_TYPE = 2000;
+  private static final int NUM_DOCS_PER_TYPE = 20;
 
   public CloudExitableDirectoryReaderTest() {
-    configString = "solrconfig-tlog.xml";
+    configString = "solrconfig-tlog-with-delayingcomponent.xml";
     schemaString = "schema.xml";
   }
 
@@ -74,13 +76,19 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
   public void doTimeoutTests() throws Exception {
     assertFail(params("q", "name:a*", "timeAllowed", "1"));
 
-    long oneSecond = 1000L; // query rewriting for NUM_DOCS_PER_TYPE terms should take less time than this
-    Long timeAllowed = TestUtil.nextLong(random(), oneSecond, Long.MAX_VALUE);
+    /*
+    query rewriting for NUM_DOCS_PER_TYPE terms should take less 
+    time than this. Keeping it at 5 because the delaying search component delays all requests 
+    by at 1 second.
+     */
+    long fiveSeconds = 5000L;
+    
+    Long timeAllowed = TestUtil.nextLong(random(), fiveSeconds, Long.MAX_VALUE);
     assertSuccess(params("q", "name:a*", "timeAllowed",timeAllowed.toString()));
 
     assertFail(params("q", "name:a*", "timeAllowed", "1"));
 
-    timeAllowed = TestUtil.nextLong(random(), oneSecond, Long.MAX_VALUE);
+    timeAllowed = TestUtil.nextLong(random(), fiveSeconds, Long.MAX_VALUE);
     assertSuccess(params("q", "name:b*", "timeAllowed",timeAllowed.toString()));
 
     timeAllowed = TestUtil.nextLong(random(), Long.MIN_VALUE, -1L);  // negative timeAllowed should disable timeouts
