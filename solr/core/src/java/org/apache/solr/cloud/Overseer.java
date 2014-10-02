@@ -123,7 +123,7 @@ public class Overseer implements Closeable {
 
   static enum LeaderStatus {DONT_KNOW, NO, YES}
 
-  public static final Set<String> sliceUniqueBooleanProperties = ImmutableSet.of("preferredleader");
+  public static final Set<String> sliceUniqueBooleanProperties = ImmutableSet.of("property.preferredleader");
 
   private long lastUpdatedTime = 0;
 
@@ -532,6 +532,9 @@ public class Overseer implements Closeable {
       String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
       String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
       String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
+      if (property.startsWith(OverseerCollectionProcessor.COLL_PROP_PREFIX) == false) {
+        property = OverseerCollectionProcessor.COLL_PROP_PREFIX + property;
+      }
       String propVal = message.getStr(ZkStateReader.PROPERTY_VALUE_PROP);
       String sliceUnique = message.getStr(OverseerCollectionProcessor.SLICE_UNIQUE);
 
@@ -590,6 +593,9 @@ public class Overseer implements Closeable {
       String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
       String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
       String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
+      if (property.startsWith(OverseerCollectionProcessor.COLL_PROP_PREFIX) == false) {
+        property = OverseerCollectionProcessor.COLL_PROP_PREFIX + property;
+      }
 
       Replica replica = clusterState.getReplica(collectionName, replicaName);
 
