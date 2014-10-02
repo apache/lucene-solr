@@ -200,6 +200,9 @@ Bug Fixes
 
 * SOLR-6511: Fencepost error in LeaderInitiatedRecoveryThread (Timothy Potter)
 
+* SOLR-6530: Commits under network partitions can put any node in down state.
+  (Ramkumar Aiyengar, Alan Woodward, Mark Miller, shalin)
+
 
 Other Changes
 ----------------------
