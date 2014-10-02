@@ -12,3 +12,7 @@ The Collector API has been refactored to use a different Collector instance
 per segment. It is possible to migrate existing collectors painlessly by
 extending SimpleCollector instead of Collector: SimpleCollector is a
 specialization of Collector that returns itself as a per-segment Collector.
+
+## Removed ChainedFilter (LUCENE-5984)
+
+Users are advised to switch to BooleanFilter instead.
