@@ -28,6 +28,8 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 
 /**
  * Lucene 5.0 compound file format
@@ -64,17 +66,47 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
   @Override
   public Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     String fileName = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-    return new CompoundFileDirectory(si.getId(), dir, fileName, context, false);
+    return new Lucene50CompoundReader(si.getId(), dir, fileName, context);
   }
 
   @Override
   public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-    try (CompoundFileDirectory cfs = new CompoundFileDirectory(si.getId(), dir, fileName, context, true)) {
+    String dataFile = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    String entriesFile = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+    
+    try (IndexOutput data =    dir.createOutput(dataFile, context);
+         IndexOutput entries = dir.createOutput(entriesFile, context)) {
+      CodecUtil.writeSegmentHeader(data,    DATA_CODEC, VERSION_CURRENT, si.getId(), "");
+      CodecUtil.writeSegmentHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
+      
+      // write number of files
+      entries.writeVInt(files.size());
       for (String file : files) {
-        dir.copy(cfs, file, file, context);
-        checkAbort.work(dir.fileLength(file));
+        
+        // write bytes for file
+        long startOffset = data.getFilePointer();
+        try (IndexInput in = dir.openInput(file, IOContext.READONCE)) {
+          data.copyBytes(in, in.length());
+        }
+        long endOffset = data.getFilePointer();
+        
+        long length = endOffset - startOffset;
+        
+        // write entry for file
+        entries.writeString(IndexFileNames.stripSegmentName(file));
+        entries.writeLong(startOffset);
+        entries.writeLong(length);
+        
+        checkAbort.work(length);
       }
+      
+      CodecUtil.writeFooter(data);
+      CodecUtil.writeFooter(entries);
     }
   }
+  
+  static final String DATA_CODEC = "Lucene50CompoundData";
+  static final String ENTRY_CODEC = "Lucene50CompoundEntries";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
 }
