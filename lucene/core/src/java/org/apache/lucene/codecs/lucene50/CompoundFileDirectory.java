@@ -32,9 +32,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.StringHelper;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -116,24 +114,13 @@ final class CompoundFileDirectory extends BaseDirectory {
       handle = directory.openInput(fileName, context);
       try {
         this.entries = readEntries(directory, fileName);
-        if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
-          if (version >= CompoundFileWriter.VERSION_SEGMENTHEADER) {
-            // nocommit: remove this null "hack", its because old rw test codecs cant properly impersonate
-            if (segmentID == null) {
-              CodecUtil.checkHeader(handle, CompoundFileWriter.DATA_CODEC, version, version);
-              handle.skipBytes(StringHelper.ID_LENGTH);
-            } else {
-              CodecUtil.checkSegmentHeader(handle, CompoundFileWriter.DATA_CODEC, version, version, segmentID, "");
-            }
-          } else {
-            CodecUtil.checkHeader(handle, CompoundFileWriter.DATA_CODEC, version, version);
-          }
-          // NOTE: data file is too costly to verify checksum against all the bytes on open,
-          // but for now we at least verify proper structure of the checksum footer: which looks
-          // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-          // such as file truncation.
-          CodecUtil.retrieveChecksum(handle);
-        }
+        CodecUtil.checkSegmentHeader(handle, CompoundFileWriter.DATA_CODEC, version, version, segmentID, "");
+
+        // NOTE: data file is too costly to verify checksum against all the bytes on open,
+        // but for now we at least verify proper structure of the checksum footer: which looks
+        // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+        // such as file truncation.
+        CodecUtil.retrieveChecksum(handle);
         success = true;
       } finally {
         if (!success) {
@@ -153,51 +140,31 @@ final class CompoundFileDirectory extends BaseDirectory {
 
   /** Helper method that reads CFS entries from an input stream */
   private final Map<String, FileEntry> readEntries(Directory dir, String name) throws IOException {
-    ChecksumIndexInput entriesStream = null;
     Map<String,FileEntry> mapping = null;
-    boolean success = false;
-    try {
-      final String entriesFileName = IndexFileNames.segmentFileName(
-                                            IndexFileNames.stripExtension(name), "",
-                                             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-      entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE);
-      version = CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_CURRENT);
-      if (version >= CompoundFileWriter.VERSION_SEGMENTHEADER) {
-        byte id[] = new byte[StringHelper.ID_LENGTH];
-        entriesStream.readBytes(id, 0, id.length);
-        // nocommit: remove this null "hack", its because old rw test codecs cant properly impersonate
-        if (segmentID != null && !Arrays.equals(id, segmentID)) {
-          throw new CorruptIndexException("file mismatch, expected segment id=" + StringHelper.idToString(segmentID) 
-                                                                     + ", got=" + StringHelper.idToString(id), entriesStream);
+    final String entriesFileName = IndexFileNames.segmentFileName(IndexFileNames.stripExtension(name), "",
+                                                                  IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+    try (ChecksumIndexInput entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE)) {
+      Throwable priorE = null;
+      try {
+        version = CodecUtil.checkSegmentHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, 
+                                                              CompoundFileWriter.VERSION_START, 
+                                                              CompoundFileWriter.VERSION_CURRENT, segmentID, "");
+        final int numEntries = entriesStream.readVInt();
+        mapping = new HashMap<>(numEntries);
+        for (int i = 0; i < numEntries; i++) {
+          final FileEntry fileEntry = new FileEntry();
+          final String id = entriesStream.readString();
+          FileEntry previous = mapping.put(id, fileEntry);
+          if (previous != null) {
+            throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS ", entriesStream);
+          }
+          fileEntry.offset = entriesStream.readLong();
+          fileEntry.length = entriesStream.readLong();
         }
-        byte suffixLength = entriesStream.readByte();
-        if (suffixLength != 0) {
-          throw new CorruptIndexException("unexpected segment suffix, expected zero-length, got=" + (suffixLength & 0xFF), entriesStream);
-        }
-      }
-      final int numEntries = entriesStream.readVInt();
-      mapping = new HashMap<>(numEntries);
-      for (int i = 0; i < numEntries; i++) {
-        final FileEntry fileEntry = new FileEntry();
-        final String id = entriesStream.readString();
-        FileEntry previous = mapping.put(id, fileEntry);
-        if (previous != null) {
-          throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS ", entriesStream);
-        }
-        fileEntry.offset = entriesStream.readLong();
-        fileEntry.length = entriesStream.readLong();
-      }
-      if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
-        CodecUtil.checkFooter(entriesStream);
-      } else {
-        CodecUtil.checkEOF(entriesStream);
-      }
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(entriesStream);
-      } else {
-        IOUtils.closeWhileHandlingException(entriesStream);
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(entriesStream, priorE);
       }
     }
     return mapping;
