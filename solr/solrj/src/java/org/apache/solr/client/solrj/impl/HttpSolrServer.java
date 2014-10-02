@@ -548,6 +548,7 @@ public class HttpSolrServer extends SolrServer {
         throw new RemoteSolrException(httpStatus, e.getMessage(), e);
       }
       if (httpStatus != HttpStatus.SC_OK) {
+        NamedList<String> metadata = null;
         String reason = null;
         try {
           NamedList err = (NamedList) rsp.get("error");
@@ -556,6 +557,7 @@ public class HttpSolrServer extends SolrServer {
             if(reason == null) {
               reason = (String) err.get("trace");
             }
+            metadata = (NamedList<String>)err.get("metadata");
           }
         } catch (Exception ex) {}
         if (reason == null) {
@@ -565,7 +567,9 @@ public class HttpSolrServer extends SolrServer {
           msg.append("request: " + method.getURI());
           reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
         }
-        throw new RemoteSolrException(httpStatus, reason, null);
+        RemoteSolrException rss = new RemoteSolrException(httpStatus, reason, null);
+        if (metadata != null) rss.setMetadata(metadata);
+        throw rss;
       }
       success = true;
       return rsp;
