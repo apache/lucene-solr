@@ -50,13 +50,15 @@ public class LeaderInitiatedRecoveryThread extends Thread {
   protected String shardId;
   protected ZkCoreNodeProps nodeProps;
   protected int maxTries;
+  protected String leaderCoreNodeName;
   
   public LeaderInitiatedRecoveryThread(ZkController zkController, 
                                        CoreContainer cc, 
                                        String collection, 
                                        String shardId, 
                                        ZkCoreNodeProps nodeProps,
-                                       int maxTries)
+                                       int maxTries,
+                                       String leaderCoreNodeName)
   {
     super("LeaderInitiatedRecoveryThread-"+nodeProps.getCoreName());
     this.zkController = zkController;
@@ -65,6 +67,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
     this.shardId = shardId;    
     this.nodeProps = nodeProps;
     this.maxTries = maxTries;
+    this.leaderCoreNodeName = leaderCoreNodeName;
     
     setDaemon(true);
   }
@@ -103,7 +106,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
     recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
     recoverRequestCmd.setCoreName(coreNeedingRecovery);
     
-    while (continueTrying && ++tries < maxTries) {
+    while (continueTrying && ++tries <= maxTries) {
       if (tries > 1) {
         log.warn("Asking core={} coreNodeName={} on " + recoveryUrl +
             " to recover; unsuccessful after "+tries+" of "+maxTries+" attempts so far ...", coreNeedingRecovery, replicaCoreNodeName);
@@ -150,7 +153,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         
         if (coreContainer.isShutDown()) {
           log.warn("Stop trying to send recovery command to downed replica core={} coreNodeName={} on "
-              + replicaNodeName + " because my core container is close.", coreNeedingRecovery, replicaCoreNodeName);
+              + replicaNodeName + " because my core container is closed.", coreNeedingRecovery, replicaCoreNodeName);
           continueTrying = false;
           break;
         }
@@ -168,6 +171,24 @@ public class LeaderInitiatedRecoveryThread extends Thread {
               " is no longer live. No need to keep trying to tell it to recover!");
           continueTrying = false;
           break;
+        }
+
+        // stop trying if I'm no longer the leader
+        if (leaderCoreNodeName != null && collection != null) {
+          String leaderCoreNodeNameFromZk = null;
+          try {
+            leaderCoreNodeNameFromZk = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 1000).getName();
+          } catch (Exception exc) {
+            log.error("Failed to determine if " + leaderCoreNodeName + " is still the leader for " + collection +
+                " " + shardId + " before starting leader-initiated recovery thread for " + replicaUrl + " due to: " + exc);
+          }
+          if (!leaderCoreNodeName.equals(leaderCoreNodeNameFromZk)) {
+            log.warn("Stop trying to send recovery command to downed replica core=" + coreNeedingRecovery +
+                ",coreNodeName=" + replicaCoreNodeName + " on " + replicaNodeName + " because " +
+                leaderCoreNodeName + " is no longer the leader! New leader is " + leaderCoreNodeNameFromZk);
+            continueTrying = false;
+            break;
+          }
         }
 
         // additional safeguard against the replica trying to be in the active state
