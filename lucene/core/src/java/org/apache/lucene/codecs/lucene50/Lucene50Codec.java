@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene50;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -46,6 +47,7 @@ public class Lucene50Codec extends Codec {
   private final FieldInfosFormat fieldInfosFormat = new Lucene50FieldInfosFormat();
   private final SegmentInfoFormat segmentInfosFormat = new Lucene50SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
+  private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -94,6 +96,11 @@ public class Lucene50Codec extends Codec {
   @Override
   public final LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
+  }
+
+  @Override
+  public final CompoundFormat compoundFormat() {
+    return compoundFormat;
   }
 
   /** Returns the postings format that should be used for writing 

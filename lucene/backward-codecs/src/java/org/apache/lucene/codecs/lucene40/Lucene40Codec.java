@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -39,6 +40,7 @@ public class Lucene40Codec extends Codec {
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
+  private final CompoundFormat compoundFormat = new Lucene40CompoundFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -77,6 +79,11 @@ public class Lucene40Codec extends Codec {
     return infosFormat;
   }
   
+  @Override
+  public CompoundFormat compoundFormat() {
+    return compoundFormat;
+  }
+
   private final DocValuesFormat defaultDVFormat = new Lucene40DocValuesFormat();
 
   @Override

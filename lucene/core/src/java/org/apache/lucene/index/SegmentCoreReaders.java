@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
@@ -60,7 +59,7 @@ final class SegmentCoreReaders implements Accountable {
 
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
-  final CompoundFileDirectory cfsReader;
+  final Directory cfsReader;
 
   // TODO: make a single thread local w/ a
   // Thingy class holding fieldsReader, termVectorsReader,
@@ -99,7 +98,7 @@ final class SegmentCoreReaders implements Accountable {
     
     try {
       if (si.info.getUseCompoundFile()) {
-        cfsDir = cfsReader = new CompoundFileDirectory(si.info.getId(), dir, IndexFileNames.segmentFileName(si.info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
+        cfsDir = cfsReader = codec.compoundFormat().getCompoundReader(dir, si.info, context);
       } else {
         cfsReader = null;
         cfsDir = dir;

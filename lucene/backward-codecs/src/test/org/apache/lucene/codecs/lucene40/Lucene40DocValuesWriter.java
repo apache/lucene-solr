@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosReader.LegacyDocValue
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -51,7 +50,7 @@ final class Lucene40DocValuesWriter extends DocValuesConsumer {
   Lucene40DocValuesWriter(SegmentWriteState state, String filename, String legacyKey) throws IOException {
     this.state = state;
     this.legacyKey = legacyKey;
-    this.dir = new CompoundFileDirectory(state.segmentInfo.getId(), state.directory, filename, state.context, true);
+    this.dir = new Lucene40CompoundReader(state.directory, filename, state.context, true);
   }
   
   @Override

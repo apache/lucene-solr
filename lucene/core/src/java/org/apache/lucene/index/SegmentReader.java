@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
@@ -202,10 +201,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
     final boolean closeDir;
     if (info.getFieldInfosGen() == -1 && info.info.getUseCompoundFile()) {
       // no fieldInfos gen and segment uses a compound file
-      dir = new CompoundFileDirectory(info.info.getId(), info.info.dir,
-          IndexFileNames.segmentFileName(info.info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION),
-          IOContext.READONCE,
-          false);
+      dir = info.info.getCodec().compoundFormat().getCompoundReader(info.info.dir, info.info, IOContext.READONCE);
       closeDir = true;
     } else {
       // gen'd FIS are read outside CFS, or the segment doesn't use a compound file

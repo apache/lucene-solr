@@ -23,7 +23,6 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -166,7 +165,7 @@ final class BitVector implements Cloneable, MutableBits {
     <code>d</code>, in a format that can be read by the constructor {@link
     #BitVector(Directory, String, IOContext)}.  */
   final void write(Directory d, String name, IOContext context) throws IOException {
-    assert !(d instanceof CompoundFileDirectory);
+    assert !(d instanceof Lucene40CompoundReader);
     try (IndexOutput output = d.createOutput(name, context)) {
       output.writeInt(-2);
       CodecUtil.writeHeader(output, CODEC, VERSION_CURRENT);

@@ -50,7 +50,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
@@ -4453,40 +4452,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   static final Collection<String> createCompoundFile(InfoStream infoStream, Directory directory, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
           throws IOException {
 
-    final String fileName = IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    // nocommit: use trackingdirectorywrapper instead to know which files to delete when things fail:
+    String cfsFileName = IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    String cfeFileName = IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "create compound file " + fileName);
+      infoStream.message("IW", "create compound file");
     }
     // Now merge all added files
     Collection<String> files = info.files();
-    CompoundFileDirectory cfsDir = new CompoundFileDirectory(info.getId(), directory, fileName, context, true);
+    
     boolean success = false;
     try {
-      for (String file : files) {
-        directory.copy(cfsDir, file, file, context);
-        checkAbort.work(directory.fileLength(file));
-      }
+      info.getCodec().compoundFormat().write(directory, info, files, checkAbort, context);
       success = true;
     } finally {
-      if (success) {
-        IOUtils.close(cfsDir);
-      } else {
-        IOUtils.closeWhileHandlingException(cfsDir);
-        try {
-          directory.deleteFile(fileName);
-        } catch (Throwable t) {
-        }
-        try {
-          directory.deleteFile(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-        } catch (Throwable t) {
-        }
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(directory, cfsFileName, cfeFileName);
       }
     }
 
     // Replace all previous files with the CFS/CFE files:
     Set<String> siFiles = new HashSet<>();
-    siFiles.add(fileName);
-    siFiles.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+    siFiles.add(cfsFileName);
+    siFiles.add(cfeFileName);
     info.setFiles(siFiles);
 
     return files;

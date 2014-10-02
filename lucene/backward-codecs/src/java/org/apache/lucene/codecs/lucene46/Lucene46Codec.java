@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene46;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
@@ -29,6 +30,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40CompoundFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
@@ -48,6 +50,7 @@ public class Lucene46Codec extends Codec {
   private final FieldInfosFormat fieldInfosFormat = new Lucene46FieldInfosFormat();
   private final SegmentInfoFormat segmentInfosFormat = new Lucene46SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
+  private final CompoundFormat compoundFormat = new Lucene40CompoundFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -96,6 +99,11 @@ public class Lucene46Codec extends Codec {
   @Override
   public final LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
+  }
+  
+  @Override
+  public CompoundFormat compoundFormat() {
+    return compoundFormat;
   }
 
   /** Returns the postings format that should be used for writing 

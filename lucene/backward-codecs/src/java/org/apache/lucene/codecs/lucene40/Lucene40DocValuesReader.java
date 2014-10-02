@@ -34,7 +34,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -85,7 +84,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   Lucene40DocValuesReader(SegmentReadState state, String filename, String legacyKey) throws IOException {
     this.state = state;
     this.legacyKey = legacyKey;
-    this.dir = new CompoundFileDirectory(state.segmentInfo.getId(), state.directory, filename, state.context, false);
+    this.dir = new Lucene40CompoundReader(state.directory, filename, state.context, false);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOf(getClass()));
     merging = false;
   }

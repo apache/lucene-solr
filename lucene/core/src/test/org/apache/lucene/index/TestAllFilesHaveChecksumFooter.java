@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -76,12 +75,11 @@ public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
     for (SegmentCommitInfo si : sis) {
       for (String file : si.files()) {
         checkFooter(dir, file);
-        if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
-          // recurse into CFS
-          try (CompoundFileDirectory cfsDir = new CompoundFileDirectory(si.info.getId(), dir, file, newIOContext(random()), false)) {
-            for (String cfsFile : cfsDir.listAll()) {
-              checkFooter(cfsDir, cfsFile);
-            }
+      }
+      if (si.info.getUseCompoundFile()) {
+        try (Directory cfsDir = si.info.getCodec().compoundFormat().getCompoundReader(dir, si.info, newIOContext(random()))) {
+          for (String cfsFile : cfsDir.listAll()) {
+            checkFooter(cfsDir, cfsFile);
           }
         }
       }

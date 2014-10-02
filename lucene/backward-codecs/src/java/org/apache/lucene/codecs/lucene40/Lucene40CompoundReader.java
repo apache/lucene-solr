@@ -1,4 +1,4 @@
-package org.apache.lucene.store;
+package org.apache.lucene.codecs.lucene40;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,16 +17,19 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec; // javadocs
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.DataOutput; // javadocs
+import org.apache.lucene.store.BaseDirectory;
+import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.StringHelper;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,47 +38,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
- * Class for accessing a compound stream.
- * This class implements a directory, but is limited to only read operations.
- * Directory methods that would normally modify data throw an exception.
- * <p>
- * All files belonging to a segment have the same name with varying extensions.
- * The extensions correspond to the different file formats used by the {@link Codec}. 
- * When using the Compound File format these files are collapsed into a 
- * single <tt>.cfs</tt> file (except for the {@link LiveDocsFormat}, with a 
- * corresponding <tt>.cfe</tt> file indexing its sub-files.
- * <p>
- * Files:
- * <ul>
- *    <li><tt>.cfs</tt>: An optional "virtual" file consisting of all the other 
- *    index files for systems that frequently run out of file handles.
- *    <li><tt>.cfe</tt>: The "virtual" compound file's entry table holding all 
- *    entries in the corresponding .cfs file.
- * </ul>
- * <p>Description:</p>
- * <ul>
- *   <li>Compound (.cfs) --&gt; Header, FileData <sup>FileCount</sup>, Footer</li>
- *   <li>Compound Entry Table (.cfe) --&gt; Header, FileCount, &lt;FileName,
- *       DataOffset, DataLength&gt; <sup>FileCount</sup></li>
- *   <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
- *   <li>FileCount --&gt; {@link DataOutput#writeVInt VInt}</li>
- *   <li>DataOffset,DataLength,Checksum --&gt; {@link DataOutput#writeLong UInt64}</li>
- *   <li>FileName --&gt; {@link DataOutput#writeString String}</li>
- *   <li>FileData --&gt; raw file data</li>
- *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- * </ul>
- * <p>Notes:</p>
- * <ul>
- *   <li>FileCount indicates how many files are contained in this compound file. 
- *       The entry table that follows has that many entries. 
- *   <li>Each directory entry contains a long pointer to the start of this file's data
- *       section, the files length, and a String with that file's name.
- * </ul>
- * 
- * @lucene.experimental
+ * Lucene 4.x compound file format
+ * @deprecated only for reading 4.x segments
  */
-public final class CompoundFileDirectory extends BaseDirectory {
+@Deprecated
+final class Lucene40CompoundReader extends BaseDirectory {
   
+  // TODO: would be great to move this read-write stuff out of here into test.
+
   /** Offset/Length for a slice inside of a compound file */
   public static final class FileEntry {
     long offset;
@@ -88,17 +58,15 @@ public final class CompoundFileDirectory extends BaseDirectory {
   private final Map<String,FileEntry> entries;
   private final boolean openForWrite;
   private static final Map<String,FileEntry> SENTINEL = Collections.emptyMap();
-  private final CompoundFileWriter writer;
+  private final Lucene40CompoundWriter writer;
   private final IndexInput handle;
   private int version;
-  private final byte[] segmentID;
   
   /**
    * Create a new CompoundFileDirectory.
    */
-  public CompoundFileDirectory(byte[] segmentID, Directory directory, String fileName, IOContext context, boolean openForWrite) throws IOException {
+  public Lucene40CompoundReader(Directory directory, String fileName, IOContext context, boolean openForWrite) throws IOException {
     this.directory = directory;
-    this.segmentID = segmentID;
     this.fileName = fileName;
     this.readBufferSize = BufferedIndexInput.bufferSize(context);
     this.isOpen = false;
@@ -108,18 +76,8 @@ public final class CompoundFileDirectory extends BaseDirectory {
       handle = directory.openInput(fileName, context);
       try {
         this.entries = readEntries(directory, fileName);
-        if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
-          if (version >= CompoundFileWriter.VERSION_SEGMENTHEADER) {
-            // nocommit: remove this null "hack", its because old rw test codecs cant properly impersonate
-            if (segmentID == null) {
-              CodecUtil.checkHeader(handle, CompoundFileWriter.DATA_CODEC, version, version);
-              handle.skipBytes(StringHelper.ID_LENGTH);
-            } else {
-              CodecUtil.checkSegmentHeader(handle, CompoundFileWriter.DATA_CODEC, version, version, segmentID, "");
-            }
-          } else {
-            CodecUtil.checkHeader(handle, CompoundFileWriter.DATA_CODEC, version, version);
-          }
+        if (version >= Lucene40CompoundWriter.VERSION_CHECKSUM) {
+          CodecUtil.checkHeader(handle, Lucene40CompoundWriter.DATA_CODEC, version, version);
           // NOTE: data file is too costly to verify checksum against all the bytes on open,
           // but for now we at least verify proper structure of the checksum footer: which looks
           // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
@@ -135,10 +93,10 @@ public final class CompoundFileDirectory extends BaseDirectory {
       this.isOpen = true;
       writer = null;
     } else {
-      assert !(directory instanceof CompoundFileDirectory) : "compound file inside of compound file: " + fileName;
+      assert !(directory instanceof Lucene40CompoundReader) : "compound file inside of compound file: " + fileName;
       this.entries = SENTINEL;
       this.isOpen = true;
-      writer = new CompoundFileWriter(segmentID, directory, fileName);
+      writer = new Lucene40CompoundWriter(directory, fileName);
       handle = null;
     }
   }
@@ -153,20 +111,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
                                             IndexFileNames.stripExtension(name), "",
                                              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
       entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE);
-      version = CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_CURRENT);
-      if (version >= CompoundFileWriter.VERSION_SEGMENTHEADER) {
-        byte id[] = new byte[StringHelper.ID_LENGTH];
-        entriesStream.readBytes(id, 0, id.length);
-        // nocommit: remove this null "hack", its because old rw test codecs cant properly impersonate
-        if (segmentID != null && !Arrays.equals(id, segmentID)) {
-          throw new CorruptIndexException("file mismatch, expected segment id=" + StringHelper.idToString(segmentID) 
-                                                                     + ", got=" + StringHelper.idToString(id), entriesStream);
-        }
-        byte suffixLength = entriesStream.readByte();
-        if (suffixLength != 0) {
-          throw new CorruptIndexException("unexpected segment suffix, expected zero-length, got=" + (suffixLength & 0xFF), entriesStream);
-        }
-      }
+      version = CodecUtil.checkHeader(entriesStream, Lucene40CompoundWriter.ENTRY_CODEC, Lucene40CompoundWriter.VERSION_START, Lucene40CompoundWriter.VERSION_CURRENT);
       final int numEntries = entriesStream.readVInt();
       mapping = new HashMap<>(numEntries);
       for (int i = 0; i < numEntries; i++) {
@@ -179,7 +124,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
         fileEntry.offset = entriesStream.readLong();
         fileEntry.length = entriesStream.readLong();
       }
-      if (version >= CompoundFileWriter.VERSION_CHECKSUM) {
+      if (version >= Lucene40CompoundWriter.VERSION_CHECKSUM) {
         CodecUtil.checkFooter(entriesStream);
       } else {
         CodecUtil.checkEOF(entriesStream);

@@ -587,6 +587,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
   // LUCENE-3382 test that delegate compound files correctly.
   public void testCompoundFileAppendTwice() throws IOException {
+    // nocommit: what is this testing? does it belong here?
+    /*
     Directory newDir = getDirectory(createTempDir("testCompoundFileAppendTwice"));
     byte id[] = StringHelper.randomId();
     CompoundFileDirectory csw = new CompoundFileDirectory(id, newDir, "d.cfs", newIOContext(random()), true);
@@ -604,6 +606,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     assertEquals("d.xyz", cfr.listAll()[0]);
     cfr.close();
     newDir.close();
+    */
   }
 
   /** Creates a file of the specified size with sequential data. The first
