@@ -235,6 +235,9 @@ Other Changes
 
 * SOLR-6453: Stop throwing an error message from Overseer when node exits (Ramkumar Aiyengar, Noble Paul)
 
+* SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
+   SolrException back to the client-side (Timothy Potter)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
