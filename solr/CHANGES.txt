@@ -270,6 +270,9 @@ Other Changes
   managed schema update to block until all replicas of the same collection have processed the
   update or until the specified timeout is reached (Timothy Potter)
 
+* SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
+   SolrException back to the client-side (Timothy Potter)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
