@@ -314,6 +314,88 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     dir.close();
   }
   
+  /** 
+   * This test creates a compound file based on a large number of files of
+   * various length. The file content is generated randomly. The sizes range
+   * from 0 to 1Mb. Some of the sizes are selected to test the buffering
+   * logic in the file reading code. For this the chunk variable is set to
+   * the length of the buffer used internally by the compound file logic.
+   */
+  public void testRandomFiles() throws IOException {
+    Directory dir = newDirectory();
+    // Setup the test segment
+    String segment = "_123";
+    int chunk = 1024; // internal buffer size used by the stream
+    createRandomFile(dir, segment + ".zero", 0);
+    createRandomFile(dir, segment + ".one", 1);
+    createRandomFile(dir, segment + ".ten", 10);
+    createRandomFile(dir, segment + ".hundred", 100);
+    createRandomFile(dir, segment + ".big1", chunk);
+    createRandomFile(dir, segment + ".big2", chunk - 1);
+    createRandomFile(dir, segment + ".big3", chunk + 1);
+    createRandomFile(dir, segment + ".big4", 3 * chunk);
+    createRandomFile(dir, segment + ".big5", 3 * chunk - 1);
+    createRandomFile(dir, segment + ".big6", 3 * chunk + 1);
+    createRandomFile(dir, segment + ".big7", 1000 * chunk);
+    
+    String files[] = dir.listAll();
+    
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Arrays.asList(files), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    
+    for (int i = 0; i < files.length; i++) {
+      IndexInput check = dir.openInput(files[i], newIOContext(random()));
+      IndexInput test = cfs.openInput(files[i], newIOContext(random()));
+      assertSameStreams(files[i], check, test);
+      assertSameSeekBehavior(files[i], check, test);
+      test.close();
+      check.close();
+    }
+    cfs.close();
+    dir.close();
+  }
+  
+  // Make sure we don't somehow use more than 1 descriptor
+  // when reading a CFS with many subs:
+  public void testManySubFiles() throws IOException {
+    final MockDirectoryWrapper dir = newMockFSDirectory(createTempDir("CFSManySubFiles"));
+    
+    final int FILE_COUNT = atLeast(500);
+    
+    for (int fileIdx = 0; fileIdx < FILE_COUNT; fileIdx++) {
+      IndexOutput out = dir.createOutput("_123." + fileIdx, newIOContext(random()));
+      out.writeByte((byte) fileIdx);
+      out.close();
+    }
+    
+    assertEquals(0, dir.getFileHandleCount());
+    
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Arrays.asList(dir.listAll()), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    
+    final IndexInput[] ins = new IndexInput[FILE_COUNT];
+    for (int fileIdx = 0; fileIdx < FILE_COUNT; fileIdx++) {
+      ins[fileIdx] = cfs.openInput("file." + fileIdx, newIOContext(random()));
+    }
+    
+    assertEquals(1, dir.getFileHandleCount());
+
+    for (int fileIdx = 0; fileIdx < FILE_COUNT; fileIdx++) {
+      assertEquals((byte) fileIdx, ins[fileIdx].readByte());
+    }
+    
+    assertEquals(1, dir.getFileHandleCount());
+    
+    for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
+      ins[fileIdx].close();
+    }
+    cfs.close();
+    
+    dir.close();
+  }
+  
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
     return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), null, StringHelper.randomId());
