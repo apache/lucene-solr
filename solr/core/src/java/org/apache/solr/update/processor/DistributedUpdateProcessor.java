@@ -808,6 +808,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (phase != DistribPhase.FROMLEADER)
         continue; // don't have non-leaders try to recovery other nodes
 
+      // commits are special -- they can run on any node irrespective of whether it is a leader or not
+      // we don't want to run recovery on a node which missed a commit command
+      if (error.req.uReq.getParams().get(COMMIT_END_POINT) != null)
+        continue;
+
       final String replicaUrl = error.req.node.getUrl();
 
       // if the remote replica failed the request because of leader change (SOLR-6511), then fail the request
@@ -839,7 +844,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               " " + shardId + " before putting " + replicaUrl + " into leader-initiated recovery due to: " + exc);
         }
 
-        if (cloudDesc.getCoreNodeName().equals(leaderCoreNodeName)) {
+        List<ZkCoreNodeProps> myReplicas = zkController.getZkStateReader().getReplicaProps(collection,
+            cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
+        boolean foundErrorNodeInReplicaList = false;
+        for (ZkCoreNodeProps replicaProp : myReplicas) {
+          if (((Replica) replicaProp.getNodeProps()).getName().equals(((Replica)stdNode.getNodeProps().getNodeProps()).getName()))  {
+            foundErrorNodeInReplicaList = true;
+            break;
+          }
+        }
+
+        if (cloudDesc.getCoreNodeName().equals(leaderCoreNodeName) && foundErrorNodeInReplicaList) {
           try {
             // if false, then the node is probably not "live" anymore
             sendRecoveryCommand =
@@ -866,10 +881,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // will go ahead and try to send the recovery command once after this error
           }
         } else {
-          // not the leader anymore maybe?
+          // not the leader anymore maybe or the error'd node is not my replica?
           sendRecoveryCommand = false;
-          log.warn("Core "+cloudDesc.getCoreNodeName()+" is no longer the leader for "+collection+" "+
-              shardId+", no request recovery command will be sent!");
+          if (!foundErrorNodeInReplicaList) {
+            log.warn("Core "+cloudDesc.getCoreNodeName()+" belonging to "+collection+" "+
+                shardId+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
+                "No request recovery command will be sent!");
+          } else  {
+            log.warn("Core "+cloudDesc.getCoreNodeName()+" is no longer the leader for "+collection+" "+
+                shardId+", no request recovery command will be sent!");
+          }
         }
       } // else not a StdNode, recovery command still gets sent once
             
