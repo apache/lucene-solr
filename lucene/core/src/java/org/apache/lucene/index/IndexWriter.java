@@ -3958,6 +3958,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (useCompoundFile) {
         success = false;
 
+        String cfsFiles[] = merge.info.info.getCodec().compoundFormat().files(merge.info.info);
         Collection<String> filesToRemove = merge.info.files();
 
         try {
@@ -3982,8 +3983,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             }
 
             synchronized(this) {
-              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+              for (String cfsFile : cfsFiles) {
+                deleter.deleteFile(cfsFile);
+              }
               deleter.deleteNewFiles(merge.info.files());
             }
           }
@@ -4004,8 +4006,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "abort merge after building CFS");
             }
-            deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-            deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+            for (String cfsFile : cfsFiles) {
+              deleter.deleteFile(cfsFile);
+            }
             return 0;
           }
         }
@@ -4452,10 +4455,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   static final Collection<String> createCompoundFile(InfoStream infoStream, Directory directory, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
           throws IOException {
 
-    // nocommit: use trackingdirectorywrapper instead to know which files to delete when things fail:
-    String cfsFileName = IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-    String cfeFileName = IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-
+    // TODO: use trackingdirectorywrapper instead of files() to know which files to delete when things fail:
+    String cfsFiles[] = info.getCodec().compoundFormat().files(info);
+    
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "create compound file");
     }
@@ -4468,14 +4470,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.deleteFilesIgnoringExceptions(directory, cfsFileName, cfeFileName);
+        IOUtils.deleteFilesIgnoringExceptions(directory, cfsFiles);
       }
     }
 
     // Replace all previous files with the CFS/CFE files:
     Set<String> siFiles = new HashSet<>();
-    siFiles.add(cfsFileName);
-    siFiles.add(cfeFileName);
+    for (String cfsFile : cfsFiles) {
+      siFiles.add(cfsFile);
+    };
     info.setFiles(siFiles);
 
     return files;

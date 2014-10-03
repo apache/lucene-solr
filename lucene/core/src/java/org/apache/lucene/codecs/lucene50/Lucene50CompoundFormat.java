@@ -103,7 +103,14 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
       CodecUtil.writeFooter(entries);
     }
   }
-  
+
+  @Override
+  public String[] files(SegmentInfo si) {
+    return new String[] {
+      IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION),
+      IndexFileNames.segmentFileName(si.name, "", ENTRIES_EXTENSION)
+    };
+  }
 
   /** Extension of compound file */
   static final String DATA_EXTENSION = "cfs";

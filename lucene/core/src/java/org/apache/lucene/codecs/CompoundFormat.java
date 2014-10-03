@@ -49,4 +49,8 @@ public abstract class CompoundFormat {
    */
   // TODO: get checkAbort out of here, and everywhere, and have iw do it at a higher level
   public abstract void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException;
+  
+  // TODO: get this out of here, and use trackingdirwrapper. but this is really scary in IW right now...
+  // NOTE: generally si.useCompoundFile is not even yet 'set' when this is called.
+  public abstract String[] files(SegmentInfo si);
 }
