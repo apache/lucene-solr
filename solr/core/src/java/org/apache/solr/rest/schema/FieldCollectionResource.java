@@ -199,7 +199,7 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                 }
                 firstAttempt = false;
                 synchronized (oldSchema.getSchemaUpdateLock()) {
-                  newSchema = oldSchema.addFields(newFields, copyFields);
+                  newSchema = oldSchema.addFields(newFields, copyFields, true);
                   if (null != newSchema) {
                     getSolrCore().setLatestSchema(newSchema);
                     success = true;

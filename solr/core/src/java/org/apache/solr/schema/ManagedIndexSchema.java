@@ -80,6 +80,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
 public final class ManagedIndexSchema extends IndexSchema {
 
@@ -386,23 +389,11 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
   
-  @Override
-  public ManagedIndexSchema addField(SchemaField newField) {
-    return addFields(Arrays.asList(newField));
-  }
 
   @Override
-  public ManagedIndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
-    return addFields(Arrays.asList(newField), Collections.singletonMap(newField.getName(), copyFieldNames));
-  }
-
-  @Override
-  public ManagedIndexSchema addFields(Collection<SchemaField> newFields) {
-    return addFields(newFields, Collections.<String, Collection<String>>emptyMap());
-  }
-
-  @Override
-  public ManagedIndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames) {
+  public ManagedIndexSchema addFields(Collection<SchemaField> newFields,
+                                      Map<String, Collection<String>> copyFieldNames,
+                                      boolean persist) {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
@@ -439,12 +430,15 @@ public final class ManagedIndexSchema extends IndexSchema {
         aware.inform(newSchema);
       }
       newSchema.refreshAnalyzers();
-      success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-      if (success) {
-        log.debug("Added field(s): {}", newFields);
-      } else {
-        log.error("Failed to add field(s): {}", newFields);
-        newSchema = null;
+
+      if(persist) {
+        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+        if (success) {
+          log.debug("Added field(s): {}", newFields);
+        } else {
+          log.error("Failed to add field(s): {}", newFields);
+          newSchema = null;
+        }
       }
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -454,25 +448,10 @@ public final class ManagedIndexSchema extends IndexSchema {
     return newSchema;
   }
 
-  @Override
-  public IndexSchema addDynamicField(SchemaField newDynamicField) {
-    return addDynamicFields(Arrays.asList(newDynamicField));
-  }
-
-  @Override
-  public IndexSchema addDynamicField(SchemaField newDynamicField, Collection<String> copyFieldNames) {
-    return addDynamicFields(Arrays.asList(newDynamicField),
-        Collections.singletonMap(newDynamicField.getName(), copyFieldNames));
-  }
-
-  @Override
-  public ManagedIndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields) {
-    return addDynamicFields(newDynamicFields, Collections.<String,Collection<String>>emptyMap());
-  }
 
   @Override
   public ManagedIndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields, 
-                                             Map<String,Collection<String>> copyFieldNames) {
+                                             Map<String,Collection<String>> copyFieldNames, boolean persist) {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
@@ -489,7 +468,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
         dFields.add(new DynamicField(newDynamicField));
         newSchema.dynamicFields = dynamicFieldListToSortedArray(dFields);
-        
+
         Collection<String> copyFields = copyFieldNames.get(newDynamicField.getName());
         if (copyFields != null) {
           for (String copyField : copyFields) {
@@ -503,11 +482,13 @@ public final class ManagedIndexSchema extends IndexSchema {
         aware.inform(newSchema);
       }
       newSchema.refreshAnalyzers();
-      success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-      if (success) {
-        log.debug("Added dynamic field(s): {}", newDynamicFields);
-      } else {
-        log.error("Failed to add dynamic field(s): {}", newDynamicFields);
+      if(persist) {
+        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+        if (success) {
+          log.debug("Added dynamic field(s): {}", newDynamicFields);
+        } else {
+          log.error("Failed to add dynamic field(s): {}", newDynamicFields);
+        }
       }
     } else {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -518,7 +499,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  public ManagedIndexSchema addCopyFields(Map<String, Collection<String>> copyFields) {
+  public ManagedIndexSchema addCopyFields(Map<String, Collection<String>> copyFields, boolean persist) {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
@@ -536,21 +517,19 @@ public final class ManagedIndexSchema extends IndexSchema {
         aware.inform(newSchema);
       }
       newSchema.refreshAnalyzers();
-      success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-      if (success) {
-        log.debug("Added copy fields for {} sources", copyFields.size());
-      } else {
-        log.error("Failed to add copy fields for {} sources", copyFields.size());
+      if(persist) {
+        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+        if (success) {
+          log.debug("Added copy fields for {} sources", copyFields.size());
+        } else {
+          log.error("Failed to add copy fields for {} sources", copyFields.size());
+        }
       }
     }
     return newSchema;
   }
-  
-  public ManagedIndexSchema addFieldType(FieldType fieldType) {
-    return addFieldTypes(Collections.singletonList(fieldType));
-  }  
 
-  public ManagedIndexSchema addFieldTypes(List<FieldType> fieldTypeList) {
+  public ManagedIndexSchema addFieldTypes(List<FieldType> fieldTypeList, boolean persist) {
     if (!isMutable) {
       String msg = "This ManagedIndexSchema is not mutable.";
       log.error(msg);
@@ -611,24 +590,26 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     newSchema.refreshAnalyzers();
-    
-    boolean success = newSchema.persistManagedSchema(false);
-    if (success) {
-      if (log.isDebugEnabled()) {
-        StringBuilder fieldTypeNames = new StringBuilder();
-        for (int i=0; i < fieldTypeList.size(); i++) {
-          if (i > 0) fieldTypeNames.append(", ");
-          fieldTypeNames.append(fieldTypeList.get(i).typeName);
+
+    if (persist) {
+      boolean success = newSchema.persistManagedSchema(false);
+      if (success) {
+        if (log.isDebugEnabled()) {
+          StringBuilder fieldTypeNames = new StringBuilder();
+          for (int i=0; i < fieldTypeList.size(); i++) {
+            if (i > 0) fieldTypeNames.append(", ");
+            fieldTypeNames.append(fieldTypeList.get(i).typeName);
+          }
+          log.debug("Added field types: {}", fieldTypeNames.toString());
         }
-        log.debug("Added field types: {}", fieldTypeNames.toString());
+      } else {
+        // this is unlikely to happen as most errors are handled as exceptions in the persist code
+        log.error("Failed to add field types: {}", fieldTypeList);
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Failed to persist updated schema due to underlying storage issue; check log for more details!");
       }
-    } else {
-      // this is unlikely to happen as most errors are handled as exceptions in the persist code
-      log.error("Failed to add field types: {}", fieldTypeList);
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-          "Failed to persist updated schema due to underlying storage issue; check log for more details!");
     }
-    
+
     return newSchema;
   }  
   
@@ -834,7 +815,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    *                                   are copied; otherwise, they are not.
    * @return A shallow copy of this schema
    */
-  private ManagedIndexSchema shallowCopy(boolean includeFieldDataStructures) {
+   ManagedIndexSchema shallowCopy(boolean includeFieldDataStructures) {
     ManagedIndexSchema newSchema = null;
     try {
       newSchema = new ManagedIndexSchema

@@ -70,7 +70,7 @@ abstract class BaseFieldTypeResource extends BaseSolrResource {
     while (!success) {
       try {
         synchronized (oldSchema.getSchemaUpdateLock()) {
-          newSchema = oldSchema.addFieldTypes(newFieldTypes);
+          newSchema = oldSchema.addFieldTypes(newFieldTypes, true);
           getSolrCore().setLatestSchema(newSchema);
           success = true;
         }
