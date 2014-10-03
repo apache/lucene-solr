@@ -75,6 +75,10 @@ final class Lucene40CompoundWriter implements Closeable{
   private final AtomicBoolean outputTaken = new AtomicBoolean(false);
   final String entryTableName;
   final String dataFileName;
+  
+  // preserve the IOContext we were originally passed
+  // previously this was not also passed to the .CFE
+  private final IOContext context;
 
   /**
    * Create the compound stream in the specified file. The file name is the
@@ -83,7 +87,7 @@ final class Lucene40CompoundWriter implements Closeable{
    * @throws NullPointerException
    *           if <code>dir</code> or <code>name</code> is null
    */
-  Lucene40CompoundWriter(Directory dir, String name) {
+  Lucene40CompoundWriter(Directory dir, String name, IOContext context) {
     if (dir == null)
       throw new NullPointerException("directory cannot be null");
     if (name == null)
@@ -93,14 +97,14 @@ final class Lucene40CompoundWriter implements Closeable{
         IndexFileNames.stripExtension(name), "",
         Lucene40CompoundFormat.COMPOUND_FILE_ENTRIES_EXTENSION);
     dataFileName = name;
-    
+    this.context = context;
   }
   
   private synchronized IndexOutput getOutput(IOContext context) throws IOException {
     if (dataOut == null) {
       boolean success = false;
       try {
-        dataOut = directory.createOutput(dataFileName, context);
+        dataOut = directory.createOutput(dataFileName, this.context);
         CodecUtil.writeHeader(dataOut, DATA_CODEC, VERSION_CURRENT);
         success = true;
       } finally {
@@ -143,10 +147,7 @@ final class Lucene40CompoundWriter implements Closeable{
         throw new IllegalStateException("CFS has pending open files");
       }
       closed = true;
-      // open the compound stream; we can safely use IOContext.DEFAULT
-      // here because this will only open the output if no file was
-      // added to the CFS
-      getOutput(IOContext.DEFAULT);
+      getOutput(this.context);
       assert dataOut != null;
       CodecUtil.writeFooter(dataOut);
       success = true;
@@ -159,7 +160,7 @@ final class Lucene40CompoundWriter implements Closeable{
     }
     success = false;
     try {
-      entryTableOut = directory.createOutput(entryTableName, IOContext.DEFAULT);
+      entryTableOut = directory.createOutput(entryTableName, this.context);
       writeEntryTable(entries.values(), entryTableOut);
       success = true;
     } finally {
@@ -240,10 +241,10 @@ final class Lucene40CompoundWriter implements Closeable{
       final DirectCFSIndexOutput out;
 
       if ((outputLocked = outputTaken.compareAndSet(false, true))) {
-        out = new DirectCFSIndexOutput(getOutput(context), entry, false);
+        out = new DirectCFSIndexOutput(getOutput(this.context), entry, false);
       } else {
         entry.dir = this.directory;
-        out = new DirectCFSIndexOutput(directory.createOutput(name, context), entry,
+        out = new DirectCFSIndexOutput(directory.createOutput(name, this.context), entry,
             true);
       }
       success = true;
@@ -269,7 +270,7 @@ final class Lucene40CompoundWriter implements Closeable{
       try {
         while (!pendingEntries.isEmpty()) {
           FileEntry entry = pendingEntries.poll();
-          copyFileEntry(getOutput(new IOContext(new FlushInfo(0, entry.length))), entry);
+          copyFileEntry(getOutput(this.context), entry);
           entries.put(entry.file, entry);
         }
       } finally {

@@ -96,7 +96,7 @@ final class Lucene40CompoundReader extends BaseDirectory {
       assert !(directory instanceof Lucene40CompoundReader) : "compound file inside of compound file: " + fileName;
       this.entries = SENTINEL;
       this.isOpen = true;
-      writer = new Lucene40CompoundWriter(directory, fileName);
+      writer = new Lucene40CompoundWriter(directory, fileName, context);
       handle = null;
     }
   }
