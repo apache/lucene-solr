@@ -1020,7 +1020,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertTrue("codec used in " + name + " (" + codec.getName() + ") is not a default codec (does not begin with Lucene)",
                  codec.getName().startsWith("Lucene"));
     }
-      r.close();
+    r.close();
   }
   
   public void testAllIndexesUseDefaultCodec() throws Exception {
