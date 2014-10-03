@@ -92,17 +92,66 @@ public class TestLucene40CompoundFormat extends BaseCompoundFormatTestCase {
     csw.close();
     newDir.close();
   }
-
-  /** Creates a file of the specified size with sequential data. The first
-   *  byte is written as the start byte provided. All subsequent bytes are
-   *  computed as start + offset where offset is the number of the byte.
-   */
-  private void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
-    IndexOutput os = dir.createOutput(name, newIOContext(random()));
-    for (int i=0; i < size; i++) {
-      os.writeByte(start);
-      start ++;
+  
+  public void testAppend() throws IOException {
+    Directory dir = newDirectory();
+    Directory newDir = newDirectory();
+    Directory csw = new Lucene40CompoundReader(newDir, "d.cfs", newIOContext(random()), true);
+    int size = 5 + random().nextInt(128);
+    for (int j = 0; j < 2; j++) {
+      IndexOutput os = csw.createOutput("seg_" + j + "_foo.txt", newIOContext(random()));
+      for (int i = 0; i < size; i++) {
+        os.writeInt(i*j);
+      }
+      os.close();
+      String[] listAll = newDir.listAll();
+      assertEquals(1, listAll.length);
+      assertEquals("d.cfs", listAll[0]);
     }
-    os.close();
+    createSequenceFile(dir, "d1", (byte) 0, 15);
+    dir.copy(csw, "d1", "d1", newIOContext(random()));
+    String[] listAll = newDir.listAll();
+    assertEquals(1, listAll.length);
+    assertEquals("d.cfs", listAll[0]);
+    csw.close();
+    
+    Directory csr = new Lucene40CompoundReader(newDir, "d.cfs", newIOContext(random()), false);
+    for (int j = 0; j < 2; j++) {
+      IndexInput openInput = csr.openInput("seg_" + j + "_foo.txt", newIOContext(random()));
+      assertEquals(size * 4, openInput.length());
+      for (int i = 0; i < size; i++) {
+        assertEquals(i*j, openInput.readInt());
+      }
+      
+      openInput.close();
+    }
+    IndexInput expected = dir.openInput("d1", newIOContext(random()));
+    IndexInput actual = csr.openInput("d1", newIOContext(random()));
+    assertSameStreams("d1", expected, actual);
+    assertSameSeekBehavior("d1", expected, actual);
+    expected.close();
+    actual.close();
+    csr.close();
+    newDir.close();
+    dir.close();
+  }
+  
+  public void testAppendTwice() throws IOException {
+    Directory newDir = newDirectory();
+    Directory csw = new Lucene40CompoundReader(newDir, "d.cfs", newIOContext(random()), true);
+    createSequenceFile(newDir, "d1", (byte) 0, 15);
+    IndexOutput out = csw.createOutput("d.xyz", newIOContext(random()));
+    out.writeInt(0);
+    out.close();
+    assertEquals(1, csw.listAll().length);
+    assertEquals("d.xyz", csw.listAll()[0]);
+    
+    csw.close();
+    
+    Directory cfr = new Lucene40CompoundReader(newDir, "d.cfs", newIOContext(random()), false);
+    assertEquals(1, cfr.listAll().length);
+    assertEquals("d.xyz", cfr.listAll()[0]);
+    cfr.close();
+    newDir.close();
   }
 }

@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.Codec;
@@ -46,29 +46,67 @@ import org.apache.lucene.util.Version;
  * if there is some bug in a given CompoundFormat that this
  * test fails to catch then this test needs to be improved! */
 public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTestCase {
-  private Directory dir;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    Path file = createTempDir("testIndex");
-    dir = newFSDirectory(file);
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    dir.close();
-    super.tearDown();
-  }
-  
+    
   // test that empty CFS is empty
   public void testEmpty() throws IOException {
     Directory dir = newDirectory();
     
-    final SegmentInfo si = newSegmentInfo(dir, "_123");
+    SegmentInfo si = newSegmentInfo(dir, "_123");
     si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     assertEquals(0, cfs.listAll().length);
+    cfs.close();
+    dir.close();
+  }
+  
+  /** 
+   * This test creates compound file based on a single file.
+   * Files of different sizes are tested: 0, 1, 10, 100 bytes.
+   */
+  public void testSingleFile() throws IOException {
+    int data[] = new int[] { 0, 1, 10, 100 };
+    for (int i=0; i<data.length; i++) {
+      String testfile = "_" + i + ".test";
+      Directory dir = newDirectory();
+      createSequenceFile(dir, testfile, (byte) 0, data[i]);
+      
+      SegmentInfo si = newSegmentInfo(dir, "_" + i);
+      si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+      Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+      
+      IndexInput expected = dir.openInput(testfile, newIOContext(random()));
+      IndexInput actual = cfs.openInput(testfile, newIOContext(random()));
+      assertSameStreams(testfile, expected, actual);
+      assertSameSeekBehavior(testfile, expected, actual);
+      expected.close();
+      actual.close();
+      cfs.close();
+      dir.close();
+    }
+  }
+  
+  /** 
+   * This test creates compound file based on two files.
+   */
+  public void testTwoFiles() throws IOException {
+    String files[] = { "_123.d1", "_123.d2" };
+    Directory dir = newDirectory();
+    createSequenceFile(dir, files[0], (byte) 0, 15);
+    createSequenceFile(dir, files[1], (byte) 0, 114);
+    
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Arrays.asList(files), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+
+    for (String file : files) {
+      IndexInput expected = dir.openInput(file, newIOContext(random()));
+      IndexInput actual = cfs.openInput(file, newIOContext(random()));
+      assertSameStreams(file, expected, actual);
+      assertSameSeekBehavior(file, expected, actual);
+      expected.close();
+      actual.close();
+    }
+
     cfs.close();
     dir.close();
   }
@@ -82,7 +120,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.writeInt(3);
     out.close();
     
-    final SegmentInfo si = newSegmentInfo(dir, "_123");
+    SegmentInfo si = newSegmentInfo(dir, "_123");
     si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
     assertEquals(1, cfs.listAll().length);
@@ -107,7 +145,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     out.writeInt(3);
     out.close();
     
-    final SegmentInfo si = newSegmentInfo(dir, "_123");
+    SegmentInfo si = newSegmentInfo(dir, "_123");
     si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, myContext);
     dir.close();
   }
@@ -126,7 +164,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     }
     out.close();
     
-    final SegmentInfo si = newSegmentInfo(dir, "_123");
+    SegmentInfo si = newSegmentInfo(dir, "_123");
     si.getCodec().compoundFormat().write(dir, si, Collections.singleton(testfile), MergeState.CheckAbort.NONE, context);
 
     dir.close();
@@ -171,13 +209,118 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     dir.close();
   }
   
+  // test that cfs reader is read-only
+  public void testCreateOutputDisabled() throws IOException {
+    Directory dir = newDirectory();
+    
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    try {
+      cfs.createOutput("bogus", IOContext.DEFAULT);
+      fail("didn't get expected exception");
+    } catch (UnsupportedOperationException expected) {
+      // expected UOE
+    }
+    cfs.close();
+    dir.close();
+  }
+  
+  // test that cfs reader is read-only
+  public void testDeleteFileDisabled() throws IOException {
+    final String testfile = "_123.test";
+
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createOutput(testfile, IOContext.DEFAULT);
+    out.writeInt(3);
+    out.close();
+ 
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    try {
+      cfs.deleteFile(testfile);
+      fail("didn't get expected exception");
+    } catch (UnsupportedOperationException expected) {
+      // expected UOE
+    }
+    cfs.close();
+    dir.close();
+  }
+  
+  // test that cfs reader is read-only
+  public void testRenameFileDisabled() throws IOException {
+    final String testfile = "_123.test";
+
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createOutput(testfile, IOContext.DEFAULT);
+    out.writeInt(3);
+    out.close();
+ 
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    try {
+      cfs.renameFile(testfile, "bogus");
+      fail("didn't get expected exception");
+    } catch (UnsupportedOperationException expected) {
+      // expected UOE
+    }
+    cfs.close();
+    dir.close();
+  }
+  
+  // test that cfs reader is read-only
+  public void testSyncDisabled() throws IOException {
+    final String testfile = "_123.test";
+
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createOutput(testfile, IOContext.DEFAULT);
+    out.writeInt(3);
+    out.close();
+ 
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    try {
+      cfs.sync(Collections.singleton(testfile));
+      fail("didn't get expected exception");
+    } catch (UnsupportedOperationException expected) {
+      // expected UOE
+    }
+    cfs.close();
+    dir.close();
+  }
+  
+  // test that cfs reader is read-only
+  public void testMakeLockDisabled() throws IOException {
+    final String testfile = "_123.test";
+
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createOutput(testfile, IOContext.DEFAULT);
+    out.writeInt(3);
+    out.close();
+ 
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
+    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
+    try {
+      cfs.makeLock("foobar");
+      fail("didn't get expected exception");
+    } catch (UnsupportedOperationException expected) {
+      // expected UOE
+    }
+    cfs.close();
+    dir.close();
+  }
+  
   /** Returns a new fake segment */
-  static SegmentInfo newSegmentInfo(Directory dir, String name) {
+  protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
     return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), null, StringHelper.randomId());
   }
   
   /** Creates a file of the specified size with random data. */
-  static void createRandomFile(Directory dir, String name, int size) throws IOException {
+  protected static void createRandomFile(Directory dir, String name, int size) throws IOException {
     IndexOutput os = dir.createOutput(name, newIOContext(random()));
     for (int i=0; i<size; i++) {
       byte b = (byte) (Math.random() * 256);
@@ -190,7 +333,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
    *  byte is written as the start byte provided. All subsequent bytes are
    *  computed as start + offset where offset is the number of the byte.
    */
-  static void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
+  protected static void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
     IndexOutput os = dir.createOutput(name, newIOContext(random()));
     for (int i=0; i < size; i++) {
       os.writeByte(start);
@@ -199,7 +342,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     os.close();
   }
   
-  static void assertSameStreams(String msg, IndexInput expected, IndexInput test) throws IOException {
+  protected static void assertSameStreams(String msg, IndexInput expected, IndexInput test) throws IOException {
     assertNotNull(msg + " null expected", expected);
     assertNotNull(msg + " null test", test);
     assertEquals(msg + " length", expected.length(), test.length());
@@ -218,7 +361,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     }
   }
   
-  static void assertSameStreams(String msg, IndexInput expected, IndexInput actual, long seekTo) throws IOException {
+  protected static void assertSameStreams(String msg, IndexInput expected, IndexInput actual, long seekTo) throws IOException {
     if (seekTo >= 0 && seekTo < expected.length()) {
       expected.seek(seekTo);
       actual.seek(seekTo);
@@ -226,7 +369,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     }
   }
   
-  static void assertSameSeekBehavior(String msg, IndexInput expected, IndexInput actual) throws IOException {
+  protected static void assertSameSeekBehavior(String msg, IndexInput expected, IndexInput actual) throws IOException {
     // seek to 0
     long point = 0;
     assertSameStreams(msg + ", seek(0)", expected, actual, point);
@@ -252,7 +395,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     assertSameStreams(msg + ", seek(end+1)", expected, actual, point);
   }
   
-  static void assertEqualArrays(String msg, byte[] expected, byte[] test, int start, int len) {
+  protected static void assertEqualArrays(String msg, byte[] expected, byte[] test, int start, int len) {
     assertNotNull(msg + " null expected", expected);
     assertNotNull(msg + " null test", test);
     

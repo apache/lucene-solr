@@ -223,6 +223,9 @@ final class Lucene40CompoundReader extends BaseDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
+    if (!openForWrite) {
+      throw new UnsupportedOperationException();
+    }
     return writer.createOutput(name, context);
   }
   
