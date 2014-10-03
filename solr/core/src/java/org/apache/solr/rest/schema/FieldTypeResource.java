@@ -164,28 +164,7 @@ public class FieldTypeResource extends BaseFieldTypeResource implements GETable,
   protected void addOrUpdateFieldType(Map<String,Object> fieldTypeJson) {
     ManagedIndexSchema oldSchema = (ManagedIndexSchema) getSchema();
     FieldType newFieldType = buildFieldTypeFromJson(oldSchema, typeName, fieldTypeJson);
-    addNewFieldType(newFieldType, oldSchema);
-  }
-  
-  /**
-   * Adds a new FieldType definitions to the managed schema for the given core.
-   */
-  protected void addNewFieldType(FieldType newFieldType, ManagedIndexSchema oldSchema) {
-    boolean success = false;
-    while (!success) {
-      try {
-        Object updateLock = oldSchema.getSchemaUpdateLock();
-        synchronized (updateLock) {
-          IndexSchema newSchema = oldSchema.addFieldTypes(Collections.singletonList(newFieldType));
-          getSolrCore().setLatestSchema(newSchema);
-
-          success = true;
-        }
-      } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
-        log.info("Schema changed while processing request, retrying");
-        oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
-      }
-    }    
+    addNewFieldTypes(Collections.singletonList(newFieldType), oldSchema);
   }
 
   /**

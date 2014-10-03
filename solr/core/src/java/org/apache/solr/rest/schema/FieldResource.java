@@ -16,8 +16,11 @@ package org.apache.solr.rest.schema;
  * limitations under the License.
  */
 
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.GETable;
 import org.apache.solr.rest.PUTable;
 import org.apache.solr.schema.IndexSchema;
@@ -162,12 +165,14 @@ public class FieldResource extends BaseFieldResource implements GETable, PUTable
                 if (copyFieldNames != null) {
                   map.remove(IndexSchema.COPY_FIELDS);
                 }
+
+                IndexSchema newSchema = null;
                 boolean success = false;
                 while (!success) {
                   try {
                     SchemaField newField = oldSchema.newField(fieldName, fieldType, map);
                     synchronized (oldSchema.getSchemaUpdateLock()) {
-                      IndexSchema newSchema = oldSchema.addField(newField, copyFieldNames);
+                      newSchema = oldSchema.addField(newField, copyFieldNames);
                       if (null != newSchema) {
                         getSolrCore().setLatestSchema(newSchema);
                         success = true;
@@ -180,6 +185,7 @@ public class FieldResource extends BaseFieldResource implements GETable, PUTable
                     oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
                   }
                 }
+                waitForSchemaUpdateToPropagate(newSchema);
               }
             }
           }

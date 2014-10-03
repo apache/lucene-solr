@@ -17,10 +17,12 @@ package org.apache.solr.rest.schema;
  */
 
 
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.rest.GETable;
 import org.apache.solr.rest.POSTable;
 import org.apache.solr.schema.IndexSchema;
@@ -177,6 +179,7 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
               newFields.add(oldSchema.newField(fieldName, fieldType, map));
               newFieldArguments.add(new NewFieldArguments(fieldName, fieldType, map));
             }
+            IndexSchema newSchema = null;
             boolean firstAttempt = true;
             boolean success = false;
             while (!success) {
@@ -196,7 +199,7 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                 }
                 firstAttempt = false;
                 synchronized (oldSchema.getSchemaUpdateLock()) {
-                  IndexSchema newSchema = oldSchema.addFields(newFields, copyFields);
+                  newSchema = oldSchema.addFields(newFields, copyFields);
                   if (null != newSchema) {
                     getSolrCore().setLatestSchema(newSchema);
                     success = true;
@@ -209,6 +212,7 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                 oldSchema = getSolrCore().getLatestSchema();
               }
             }
+            waitForSchemaUpdateToPropagate(newSchema);
           }
         }
       }
