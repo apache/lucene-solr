@@ -65,6 +65,9 @@ public class FilterLeafReader extends LeafReader {
      * @param in the underlying Fields instance.
      */
     public FilterFields(Fields in) {
+      if (in == null) {
+        throw new NullPointerException("incoming Fields cannot be null");
+      }
       this.in = in;
     }
 
@@ -98,6 +101,9 @@ public class FilterLeafReader extends LeafReader {
      * @param in the underlying Terms instance.
      */
     public FilterTerms(Terms in) {
+      if (in == null) {
+        throw new NullPointerException("incoming Terms cannot be null");
+      }
       this.in = in;
     }
 
@@ -156,7 +162,12 @@ public class FilterLeafReader extends LeafReader {
      * Creates a new FilterTermsEnum
      * @param in the underlying TermsEnum instance.
      */
-    public FilterTermsEnum(TermsEnum in) { this.in = in; }
+    public FilterTermsEnum(TermsEnum in) {
+      if (in == null) {
+        throw new NullPointerException("incoming TermsEnum cannot be null");
+      }
+      this.in = in;
+    }
 
     @Override
     public AttributeSource attributes() {
@@ -219,6 +230,9 @@ public class FilterLeafReader extends LeafReader {
      * @param in the underlying DocsEnum instance.
      */
     public FilterDocsEnum(DocsEnum in) {
+      if (in == null) {
+        throw new NullPointerException("incoming DocsEnum cannot be null");
+      }
       this.in = in;
     }
 
@@ -263,6 +277,9 @@ public class FilterLeafReader extends LeafReader {
      * @param in the underlying DocsAndPositionsEnum instance.
      */
     public FilterDocsAndPositionsEnum(DocsAndPositionsEnum in) {
+      if (in == null) {
+        throw new NullPointerException("incoming DocsAndPositionsEnum cannot be null");
+      }
       this.in = in;
     }
 
@@ -327,6 +344,9 @@ public class FilterLeafReader extends LeafReader {
    */
   public FilterLeafReader(LeafReader in) {
     super();
+    if (in == null) {
+      throw new NullPointerException("incoming LeafReader cannot be null");
+    }
     this.in = in;
     in.registerParentReader(this);
   }
