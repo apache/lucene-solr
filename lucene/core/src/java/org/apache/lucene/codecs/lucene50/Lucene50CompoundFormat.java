@@ -65,14 +65,13 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
 
   @Override
   public Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-    return new Lucene50CompoundReader(si.getId(), dir, fileName, context);
+    return new Lucene50CompoundReader(dir, si, context);
   }
 
   @Override
   public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
-    String dataFile = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-    String entriesFile = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+    String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
+    String entriesFile = IndexFileNames.segmentFileName(si.name, "", ENTRIES_EXTENSION);
     
     try (IndexOutput data =    dir.createOutput(dataFile, context);
          IndexOutput entries = dir.createOutput(entriesFile, context)) {
@@ -105,6 +104,11 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
     }
   }
   
+
+  /** Extension of compound file */
+  static final String DATA_EXTENSION = "cfs";
+  /** Extension of compound file entries */
+  static final String ENTRIES_EXTENSION = "cfe";
   static final String DATA_CODEC = "Lucene50CompoundData";
   static final String ENTRY_CODEC = "Lucene50CompoundEntries";
   static final int VERSION_START = 0;

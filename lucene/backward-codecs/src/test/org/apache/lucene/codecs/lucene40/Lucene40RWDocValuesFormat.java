@@ -34,7 +34,7 @@ public final class Lucene40RWDocValuesFormat extends Lucene40DocValuesFormat {
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
           "dv", 
-          IndexFileNames.COMPOUND_FILE_EXTENSION);
+          Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
     return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY);
   }
 }

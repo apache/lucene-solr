@@ -36,13 +36,13 @@ public final class Lucene40CompoundFormat extends CompoundFormat {
 
   @Override
   public Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(si.name, "", COMPOUND_FILE_EXTENSION);
     return new Lucene40CompoundReader(dir, fileName, context, false);
   }
 
   @Override
   public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(si.name, "", COMPOUND_FILE_EXTENSION);
     try (Directory cfs = new Lucene40CompoundReader(dir, fileName, context, true)) {
       for (String file : files) {
         dir.copy(cfs, file, file, context);
@@ -50,4 +50,9 @@ public final class Lucene40CompoundFormat extends CompoundFormat {
       }
     }
   }
+  
+  /** Extension of compound file */
+  static final String COMPOUND_FILE_EXTENSION = "cfs";
+  /** Extension of compound file entries */
+  static final String COMPOUND_FILE_ENTRIES_EXTENSION = "cfe";
 }

@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene50;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
@@ -51,7 +52,7 @@ final class Lucene50CompoundReader extends BaseDirectory {
   }
   
   private final Directory directory;
-  private final String fileName;
+  private final String segmentName;
   private final Map<String,FileEntry> entries;
   private final IndexInput handle;
   private int version;
@@ -59,14 +60,16 @@ final class Lucene50CompoundReader extends BaseDirectory {
   /**
    * Create a new CompoundFileDirectory.
    */
-  public Lucene50CompoundReader(byte[] segmentID, Directory directory, String fileName, IOContext context) throws IOException {
+  public Lucene50CompoundReader(Directory directory, SegmentInfo si, IOContext context) throws IOException {
     this.directory = directory;
-    this.fileName = fileName;
-    this.entries = readEntries(segmentID, directory, fileName);
+    this.segmentName = si.name;
+    String dataFileName = IndexFileNames.segmentFileName(segmentName, "", Lucene50CompoundFormat.DATA_EXTENSION);
+    String entriesFileName = IndexFileNames.segmentFileName(segmentName, "", Lucene50CompoundFormat.ENTRIES_EXTENSION);
+    this.entries = readEntries(si.getId(), directory, entriesFileName);
     boolean success = false;
-    handle = directory.openInput(fileName, context);
+    handle = directory.openInput(dataFileName, context);
     try {
-      CodecUtil.checkSegmentHeader(handle, Lucene50CompoundFormat.DATA_CODEC, version, version, segmentID, "");
+      CodecUtil.checkSegmentHeader(handle, Lucene50CompoundFormat.DATA_CODEC, version, version, si.getId(), "");
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
@@ -83,10 +86,8 @@ final class Lucene50CompoundReader extends BaseDirectory {
   }
 
   /** Helper method that reads CFS entries from an input stream */
-  private final Map<String, FileEntry> readEntries(byte[] segmentID, Directory dir, String name) throws IOException {
+  private final Map<String, FileEntry> readEntries(byte[] segmentID, Directory dir, String entriesFileName) throws IOException {
     Map<String,FileEntry> mapping = null;
-    final String entriesFileName = IndexFileNames.segmentFileName(IndexFileNames.stripExtension(name), "",
-                                                                  IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
     try (ChecksumIndexInput entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE)) {
       Throwable priorE = null;
       try {
@@ -138,9 +139,8 @@ final class Lucene50CompoundReader extends BaseDirectory {
     String[] res = entries.keySet().toArray(new String[entries.size()]);
     
     // Add the segment name
-    String seg = IndexFileNames.parseSegmentName(fileName);
     for (int i = 0; i < res.length; i++) {
-      res[i] = seg + res[i];
+      res[i] = segmentName + res[i];
     }
     return res;
   }
@@ -188,6 +188,6 @@ final class Lucene50CompoundReader extends BaseDirectory {
 
   @Override
   public String toString() {
-    return "CompoundFileDirectory(file=\"" + fileName + "\" in dir=" + directory + ")";
+    return "CompoundFileDirectory(segment=\"" + segmentName + "\" in dir=" + directory + ")";
   }
 }

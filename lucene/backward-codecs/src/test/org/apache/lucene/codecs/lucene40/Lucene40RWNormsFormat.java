@@ -35,7 +35,7 @@ public final class Lucene40RWNormsFormat extends Lucene40NormsFormat {
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
         "nrm", 
-        IndexFileNames.COMPOUND_FILE_EXTENSION);
+        Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
     final Lucene40DocValuesWriter impl = new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
     return new NormsConsumer() {
       @Override

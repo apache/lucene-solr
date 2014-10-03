@@ -45,7 +45,7 @@ public class Lucene40NormsFormat extends NormsFormat {
   public NormsProducer normsProducer(SegmentReadState state) throws IOException {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
                                                      "nrm", 
-                                                     IndexFileNames.COMPOUND_FILE_EXTENSION);
+                                                     Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
     return new Lucene40NormsReader(state, filename);
   }
 }

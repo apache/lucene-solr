@@ -109,7 +109,7 @@ final class Lucene40CompoundReader extends BaseDirectory {
     try {
       final String entriesFileName = IndexFileNames.segmentFileName(
                                             IndexFileNames.stripExtension(name), "",
-                                             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+                                             Lucene40CompoundFormat.COMPOUND_FILE_ENTRIES_EXTENSION);
       entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE);
       version = CodecUtil.checkHeader(entriesStream, Lucene40CompoundWriter.ENTRY_CODEC, Lucene40CompoundWriter.VERSION_START, Lucene40CompoundWriter.VERSION_CURRENT);
       final int numEntries = entriesStream.readVInt();

@@ -91,7 +91,7 @@ final class Lucene40CompoundWriter implements Closeable{
     directory = dir;
     entryTableName = IndexFileNames.segmentFileName(
         IndexFileNames.stripExtension(name), "",
-        IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+        Lucene40CompoundFormat.COMPOUND_FILE_ENTRIES_EXTENSION);
     dataFileName = name;
     
   }
