@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.KeeperException;
@@ -32,7 +33,7 @@ import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
 
 /** Keeps a ManagedIndexSchema up-to-date when changes are made to the serialized managed schema in ZooKeeper */
-public class ZkIndexSchemaReader {
+public class ZkIndexSchemaReader implements OnReconnect {
   private static final Logger log = LoggerFactory.getLogger(ZkIndexSchemaReader.class);
   private final ManagedIndexSchemaFactory managedIndexSchemaFactory;
   private SolrZkClient zkClient;
@@ -44,6 +45,7 @@ public class ZkIndexSchemaReader {
     this.zkClient = zkLoader.getZkController().getZkClient();
     managedSchemaPath = zkLoader.getCollectionZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
     createSchemaWatcher();
+    zkLoader.getZkController().addOnReconnectListener(this);
   }
 
   public Object getSchemaUpdateLock() { 
@@ -51,7 +53,7 @@ public class ZkIndexSchemaReader {
   }
 
   public void createSchemaWatcher() {
-    log.info("Creating ZooKeeper watch for the managed schema at " + managedSchemaPath + " ...");
+    log.info("Creating ZooKeeper watch for the managed schema at " + managedSchemaPath);
 
     try {
       zkClient.exists(managedSchemaPath, new Watcher() {
@@ -108,8 +110,26 @@ public class ZkIndexSchemaReader {
           managedIndexSchemaFactory.setSchema(newSchema);
           long stop = System.nanoTime();
           log.info("Finished refreshing schema in " + TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS) + " ms");
+        } else {
+          log.info("Current schema version "+oldSchema.schemaZkVersion+" is already the latest");
         }
       }
+    }
+  }
+
+  /**
+   * Called after a ZooKeeper session expiration occurs; need to re-create the watcher and update the current
+   * schema from ZooKeeper.
+   */
+  @Override
+  public void command() {
+    try {
+      // setup a new watcher to get notified when the managed schema changes
+      createSchemaWatcher();
+      // force update now as the schema may have changed while our zk session was expired
+      updateSchema(null, -1);
+    } catch (Exception exc) {
+      log.error("Failed to update managed-schema watcher after session expiration due to: "+exc, exc);
     }
   }
 }

@@ -17,6 +17,7 @@ package org.apache.solr.schema;
  */
 
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ClusterState;
@@ -357,19 +358,72 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     // go into ZK to get the version of the managed schema after the update
     SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
     Stat stat = new Stat();
-    zkClient.getData("/configs/conf1/managed-schema", null, stat, false);
-    final int schemaZkVersion = stat.getVersion();
+    String znodePath = "/configs/conf1/managed-schema";
+    byte[] managedSchemaBytes = zkClient.getData(znodePath, null, stat, false);
+    int schemaZkVersion = stat.getVersion();
 
     // now loop over all replicas and verify each has the same schema version
+    Replica randomReplicaNotLeader = null;
     for (Slice slice : clusterState.getActiveSlices(testCollectionName)) {
       for (Replica replica : slice.getReplicas()) {
-        final String replicaUrl = (new ZkCoreNodeProps(replica)).getCoreUrl();
-        RestTestHarness testHarness = new RestTestHarness(new RESTfulServerProvider() {
-          public String getBaseURL() {
-            return replicaUrl.endsWith("/") ? replicaUrl.substring(0, replicaUrl.length()-1) : replicaUrl;
-          }
-        });
-        testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion="+schemaZkVersion);
+        validateZkVersion(replica, schemaZkVersion, 0, false);
+
+        // save a random replica to test zk watcher behavior
+        if (randomReplicaNotLeader == null && !replica.getName().equals(shard1Leader.getName()))
+          randomReplicaNotLeader = replica;
+      }
+    }
+    assertNotNull(randomReplicaNotLeader);
+
+    // now update the data and then verify the znode watcher fires correctly
+    // before an after a zk session expiration (see SOLR-6249)
+    zkClient.setData(znodePath, managedSchemaBytes, schemaZkVersion, false);
+    stat = new Stat();
+    managedSchemaBytes = zkClient.getData(znodePath, null, stat, false);
+    int updatedSchemaZkVersion = stat.getVersion();
+    assertTrue(updatedSchemaZkVersion > schemaZkVersion);
+    validateZkVersion(randomReplicaNotLeader, updatedSchemaZkVersion, 2, true);
+
+    // ok - looks like the watcher fired correctly on the replica
+    // now, expire that replica's zk session and then verify the watcher fires again (after reconnect)
+    JettySolrRunner randomReplicaJetty =
+        getJettyOnPort(getReplicaPort(randomReplicaNotLeader));
+    assertNotNull(randomReplicaJetty);
+    chaosMonkey.expireSession(randomReplicaJetty);
+
+    // update the data again to cause watchers to fire
+    zkClient.setData(znodePath, managedSchemaBytes, updatedSchemaZkVersion, false);
+    stat = new Stat();
+    managedSchemaBytes = zkClient.getData(znodePath, null, stat, false);
+    updatedSchemaZkVersion = stat.getVersion();
+    // give up to 10 secs for the replica to recover after zk session loss and see the update
+    validateZkVersion(randomReplicaNotLeader, updatedSchemaZkVersion, 10, true);
+  }
+
+  /**
+   * Sends a GET request to get the zk schema version from a specific replica.
+   */
+  protected void validateZkVersion(Replica replica, int schemaZkVersion, int waitSecs, boolean retry) throws Exception {
+    final String replicaUrl = (new ZkCoreNodeProps(replica)).getCoreUrl();
+    RestTestHarness testHarness = new RestTestHarness(new RESTfulServerProvider() {
+      public String getBaseURL() {
+        return replicaUrl.endsWith("/") ? replicaUrl.substring(0, replicaUrl.length()-1) : replicaUrl;
+      }
+    });
+
+    long waitMs = waitSecs * 1000L;
+    if (waitMs > 0) Thread.sleep(waitMs); // wait a moment for the zk watcher to fire
+
+    try {
+      testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion=" + schemaZkVersion);
+    } catch (Exception exc) {
+      if (retry) {
+        // brief wait before retrying
+        Thread.sleep(waitMs > 0 ? waitMs : 2000L);
+
+        testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion=" + schemaZkVersion);
+      } else {
+        throw exc;
       }
     }
   }

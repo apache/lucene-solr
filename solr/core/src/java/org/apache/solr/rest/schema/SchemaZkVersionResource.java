@@ -60,7 +60,8 @@ public class SchemaZkVersionResource extends BaseSolrResource implements GETable
         ManagedIndexSchema managed = (ManagedIndexSchema)schema;
         zkVersion = managed.getSchemaZkVersion();
         if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
-          log.info("\n\n\n REFRESHING SCHEMA (refreshIfBelowVersion="+refreshIfBelowVersion+") before returning version! \n\n\n");
+          log.info("REFRESHING SCHEMA (refreshIfBelowVersion="+refreshIfBelowVersion+
+              ", currentVersion="+zkVersion+") before returning version!");
           ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader)getSolrCore().getResourceLoader();
           ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
           managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
