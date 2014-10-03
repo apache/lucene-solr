@@ -424,7 +424,7 @@ public class FieldType implements IndexableFieldType  {
   }
 
   /**
-   * Set's the field's DocValuesType
+   * Sets the field's DocValuesType
    * @param type DocValues type, or null if no DocValues should be stored.
    * @throws IllegalStateException if this FieldType is frozen against
    *         future modifications.
