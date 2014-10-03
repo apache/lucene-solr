@@ -173,7 +173,7 @@ term occurs in each document. Note that this will not exist if all fields in
 all documents omit position data.
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene49.Lucene49NormsFormat Normalization factors}. 
+{@link org.apache.lucene.codecs.lucene50.Lucene50NormsFormat Normalization factors}. 
 For each field in each document, a value is stored
 that is multiplied into the score for hits on that field.
 </li>
@@ -243,7 +243,7 @@ file.</td>
 <td>Stores metadata about a segment</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.store.CompoundFileDirectory Compound File}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.LUcene50CompoundFormat Compound File}</td>
 <td>.cfs, .cfe</td>
 <td>An optional "virtual" file consisting of all the other index files for
 systems that frequently run out of file handles.</td>
@@ -289,7 +289,7 @@ systems that frequently run out of file handles.</td>
 <td>Stores additional per-position metadata information such as character offsets and user payloads</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene49.Lucene49NormsFormat Norms}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50NormsFormat Norms}</td>
 <td>.nvd, .nvm</td>
 <td>Encodes length and boost factors for docs and fields</td>
 </tr>
