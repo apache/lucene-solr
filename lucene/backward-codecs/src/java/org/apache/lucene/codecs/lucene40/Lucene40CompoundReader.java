@@ -234,10 +234,13 @@ final class Lucene40CompoundReader extends BaseDirectory {
     throw new UnsupportedOperationException();
   }
   
-  /** Not implemented
-   * @throws UnsupportedOperationException always: not supported by CFS */
   @Override
   public Lock makeLock(String name) {
+    throw new UnsupportedOperationException();
+  }
+  
+  @Override
+  public void clearLock(String name) throws IOException {
     throw new UnsupportedOperationException();
   }
 

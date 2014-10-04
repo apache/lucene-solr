@@ -60,6 +60,8 @@ final class Lucene50CompoundReader extends BaseDirectory {
   /**
    * Create a new CompoundFileDirectory.
    */
+  // TODO: we should just pre-strip "entries" and append segment name up-front like simpletext?
+  // this need not be a "general purpose" directory anymore (it only writes index files)
   public Lucene50CompoundReader(Directory directory, SegmentInfo si, IOContext context) throws IOException {
     this.directory = directory;
     this.segmentName = si.name;
@@ -179,10 +181,13 @@ final class Lucene50CompoundReader extends BaseDirectory {
     throw new UnsupportedOperationException();
   }
   
-  /** Not implemented
-   * @throws UnsupportedOperationException always: not supported by CFS */
   @Override
   public Lock makeLock(String name) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void clearLock(String name) throws IOException {
     throw new UnsupportedOperationException();
   }
 

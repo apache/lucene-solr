@@ -27,7 +27,6 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 
 /**
  * plain text index format.
@@ -44,8 +43,7 @@ public final class SimpleTextCodec extends Codec {
   private final NormsFormat normsFormat = new SimpleTextNormsFormat();
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
   private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
-  // nocommit
-  private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+  private final CompoundFormat compoundFormat = new SimpleTextCompoundFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
