@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_IF_DOWN;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
@@ -153,7 +154,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
         "action", DELETEREPLICA.toLower(),
         "shard", shard,
         "replica", replica.getName(),
-        ZkStateReader.ONLY_IF_DOWN, "true");
+        ONLY_IF_DOWN, "true");
     SolrParams params = new MapSolrParams(m);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
@@ -95,6 +96,7 @@ public class TestCheckIndex extends LuceneTestCase {
     onlySegments.add("_0");
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);
+    checker.close();
     dir.close();
   }
   
@@ -114,5 +116,23 @@ public class TestCheckIndex extends LuceneTestCase {
     iw.addDocument(doc);
     iw.close();
     dir.close(); // checkindex
+  }
+  
+  public void testObtainsLock() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    iw.addDocument(new Document());
+    iw.commit();
+    
+    // keep IW open...
+    try {
+      new CheckIndex(dir);
+      fail("should not have obtained write lock");
+    } catch (LockObtainFailedException expected) {
+      // ok
+    }
+    
+    iw.close();
+    dir.close();
   }
 }

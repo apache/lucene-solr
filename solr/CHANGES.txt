@@ -145,6 +145,13 @@ New Features
 
 * SOLR-6565: SolrRequest support for query params (Gregory Chanan)
 
+* SOLR-6476: Create a bulk mode for schema API (Noble Paul, Steve Rowe)
+
+* SOLR-6512: Add a collections API call to add/delete arbitrary properties 
+  to a specific replica. Optionally adding sliceUnique=true will remove
+  this property from all other replicas within a particular slice. 
+  (Erick Erickson)
+
 Bug Fixes
 ----------------------
 
@@ -154,9 +161,6 @@ Bug Fixes
 * SOLR-6424: The hdfs block cache BLOCKCACHE_WRITE_ENABLED is not defaulting to false like it
   should. (Mark Miller)
 
-* SOLR-6425: If you using the new global hdfs block cache option, you can end up reading corrupt
-  files on file name reuse. (Mark Miller, Gregory Chanan)
-
 * SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
 
 * SOLR-5966: Admin UI Menu is fixed and doesn't respect smaller viewports.
@@ -165,17 +169,8 @@ Bug Fixes
 * SOLR-4406: Fix RawResponseWriter to respect 'base' writer
   (Steve Davids, hossman)
 
-* SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
-  (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
-
 * SOLR-6297: Fix WordBreakSolrSpellChecker to not lose suggestions in shard/cloud
   environments (James Dyer)
-
-* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml
-  when there are loading problems (Pradeep via hossman)
-
-* SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
-  when starting Solr in cloud mode. (Timothy Potter)
 
 * SOLR-6467: bin/solr script should direct stdout/stderr when starting in the background
   to the solr-PORT-console.log in the logs directory instead of bin. (Timothy Potter)
@@ -187,16 +182,11 @@ Bug Fixes
 * SOLR-6457: LBHttpSolrServer: ArrayIndexOutOfBoundsException risk if counter overflows
   (longkey via Noble Paul)
 
-* SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
-
 * SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and
   indexed=false (Xu Zhang via Tomás Fernández Löbbe)
 
 * SOLR-6499: Log warning about multiple update request handlers
   (Noble Paul, Andreas Hubold, hossman)
-
-* SOLR-6501: Binary Response Writer does not return wildcard fields.
-  (Mike Hugo, Constantin Mitocaru, sarowe, shalin)
 
 * SOLR-6507: Fixed several bugs involving stats.field used with local params (hossman)
 
@@ -210,6 +200,11 @@ Bug Fixes
 
 * SOLR-6511: Fencepost error in LeaderInitiatedRecoveryThread (Timothy Potter)
 
+* SOLR-6530: Commits under network partitions can put any node in down state.
+  (Ramkumar Aiyengar, Alan Woodward, Mark Miller, shalin)
+
+* SOLR-6587: Misleading exception when creating collections in SolrCloud with bad configuration.
+  (Tomás Fernández Löbbe)
 
 Other Changes
 ----------------------
@@ -271,6 +266,45 @@ Other Changes
   (Noble Paul, Timothy Potter)
 
 * SOLR-6453: Stop throwing an error message from Overseer when node exits (Ramkumar Aiyengar, Noble Paul)
+
+* SOLR-6249: Schema API changes return success before all cores are updated; client application
+  can provide the optional updateTimeoutSecs parameter to cause the server handling the
+  managed schema update to block until all replicas of the same collection have processed the
+  update or until the specified timeout is reached (Timothy Potter)
+
+* SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
+   SolrException back to the client-side (Timothy Potter)
+
+==================  4.10.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-6425: If using the new global hdfs block cache option, you can end up
+  reading corrupt files on file name reuse. (Mark Miller, Gregory Chanan)
+
+* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
+  when there are loading problems (Pradeep via hossman)
+
+* SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
+  (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
+
+* SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
+
+* SOLR-6447: bin/solr script needs to pass -DnumShards=1 for boostrapping collection1
+  when starting Solr in cloud mode. (Timothy Potter)
+
+* SOLR-6501: Binary Response Writer does not return wildcard fields.
+  (Mike Hugo, Constantin Mitocaru, sarowe, shalin)
+
+Other Changes
+---------------------
+
+* SOLR-6503: Removed support for parsing netcdf files in Solr Cell because
+  of license issues. If you need support for this format, download the parser
+  JAR yourself (version 4.2) and add it to contrib/extraction/lib folder:
+  http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
+  (Uwe Schindler)
 
 ==================  4.10.0 =================
 

@@ -19,20 +19,30 @@ package org.apache.solr.cloud;
 
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SLICE_UNIQUE;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
@@ -57,7 +67,7 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     CloudSolrServer client = createCloudClient(null);
     try {
-      createCollection(null, COLLECTION_NAME, 2, 1, 1, client, null, "conf1");
+      createCollection(null, COLLECTION_NAME, 2, 2, 2, client, null, "conf1");
       createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
     } finally {
       //remove collections
@@ -76,6 +86,7 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
     clusterStatusRolesTest();
+    replicaPropTest();
   }
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {
@@ -279,6 +290,394 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       assertTrue(overseer.contains(replica.getNodeName()));
     } finally {
       client.shutdown();
+    }
+  }
+
+  private void replicaPropTest() throws Exception {
+    CloudSolrServer client = createCloudClient(null);
+    try {
+      client.connect();
+      Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
+      List<String> sliceList = new ArrayList<>(slices.keySet());
+      String c1_s1 = sliceList.get(0);
+      List<String> replicasList = new ArrayList<>(slices.get(c1_s1).getReplicasMap().keySet());
+      String c1_s1_r1 = replicasList.get(0);
+      String c1_s1_r2 = replicasList.get(1);
+
+      String c1_s2 = sliceList.get(1);
+      replicasList = new ArrayList<>(slices.get(c1_s2).getReplicasMap().keySet());
+      String c1_s2_r1 = replicasList.get(0);
+      String c1_s2_r2 = replicasList.get(1);
+
+
+      slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME1).getSlicesMap();
+      sliceList = new ArrayList<>(slices.keySet());
+      String c2_s1 = sliceList.get(0);
+      replicasList = new ArrayList<>(slices.get(c2_s1).getReplicasMap().keySet());
+      String c2_s1_r1 = replicasList.get(0);
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString());
+
+      // Insure we get error returns when omitting required parameters
+
+      missingParamsError(client, params);
+      params.set("collection", COLLECTION_NAME);
+      missingParamsError(client, params);
+      params.set("shard", c1_s1);
+      missingParamsError(client, params);
+      params.set("replica", c1_s1_r1);
+      missingParamsError(client, params);
+      params.set("property", "preferredLeader");
+      missingParamsError(client, params);
+      params.set("property.value", "true");
+
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      client.request(request);
+
+      // The above should have set exactly one preferredleader...
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r2, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r2,
+          "property", "preferredLeader",
+          "property.value", "true");
+      // The preferred leader property for shard1 should have switched to the other replica.
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "property.preferredLeader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s2,
+          "replica", c1_s2_r1,
+          "property", "preferredLeader",
+          "property.value", "true");
+
+      // Now we should have a preferred leader in both shards...
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+          "collection", COLLECTION_NAME1,
+          "shard", c2_s1,
+          "replica", c2_s1_r1,
+          "property", "preferredLeader",
+          "property.value", "true");
+
+      // Now we should have three preferred leaders.
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader", "true");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toString(),
+          "collection", COLLECTION_NAME1,
+          "shard", c2_s1,
+          "replica", c2_s1_r1,
+          "property", "preferredLeader");
+
+      // Now we should have two preferred leaders.
+      // But first we have to wait for the overseer to finish the action
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+      // Try adding an arbitrary property to one that has the leader property
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "testprop",
+          "property.value", "true");
+
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r2,
+          "property", "prop",
+          "property.value", "silly");
+
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "testprop",
+          "property.value", "nonsense",
+          SLICE_UNIQUE, "true");
+
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "nonsense");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "property.testprop",
+          "property.value", "true",
+          SLICE_UNIQUE, "false");
+
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "property.testprop");
+
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.testprop");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+      try {
+        doPropertyAction(client,
+            "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+            "collection", COLLECTION_NAME,
+            "shard", c1_s1,
+            "replica", c1_s1_r1,
+            "property", "preferredLeader",
+            "property.value", "true",
+            SLICE_UNIQUE, "false");
+        fail("Should have thrown an exception, setting sliceUnique=false is not allowed for 'preferredLeader'.");
+      } catch (SolrException se) {
+        assertTrue("Should have received a specific error message",
+            se.getMessage().contains("with the sliceUnique parameter set to something other than 'true'"));
+      }
+
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.testprop");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+
+      Map<String, String> origProps = getProps(client, COLLECTION_NAME, c1_s1_r1,
+          "state", "core", "node_name", "base_url");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "state",
+          "property.value", "state_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "core",
+          "property.value", "core_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "node_name",
+          "property.value", "node_name_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "base_url",
+          "property.value", "base_url_bad");
+
+      // The above should be on new proeprties.
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.state", "state_bad");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.core", "core_bad");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.node_name", "node_name_bad");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.base_url", "base_url_bad");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "state");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "core");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "node_name");
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
+          "collection", COLLECTION_NAME,
+          "shard", c1_s1,
+          "replica", c1_s1_r1,
+          "property", "base_url");
+
+      // They better not have been changed!
+      for (Map.Entry<String, String> ent : origProps.entrySet()) {
+        verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, ent.getKey(), ent.getValue());
+      }
+
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.state");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.core");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.node_name");
+      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.base_url");
+
+    } finally {
+      client.shutdown();
+    }
+  }
+
+  private void doPropertyAction(CloudSolrServer client, String... paramsIn) throws IOException, SolrServerException {
+    assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    for (int idx = 0; idx < paramsIn.length; idx += 2) {
+      params.set(paramsIn[idx], paramsIn[idx + 1]);
+    }
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    client.request(request);
+
+  }
+
+  private void verifyPropertyNotPresent(CloudSolrServer client, String collectionName, String replicaName,
+                                        String property)
+      throws KeeperException, InterruptedException {
+    ClusterState clusterState = null;
+    Replica replica = null;
+    for (int idx = 0; idx < 300; ++idx) {
+      client.getZkStateReader().updateClusterState(true);
+      clusterState = client.getZkStateReader().getClusterState();
+      replica = clusterState.getReplica(collectionName, replicaName);
+      if (replica == null) {
+        fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
+      }
+      if (StringUtils.isBlank(replica.getStr(property))) return;
+      Thread.sleep(100);
+    }
+    fail("Property " + property + " not set correctly for collection/replica pair: " +
+        collectionName + "/" + replicaName + ". Replica props: " + replica.getProperties().toString() +
+        ". Cluster state is " + clusterState.toString());
+
+  }
+
+  // The params are triplets,
+  // collection
+  // shard
+  // replica
+  private void verifyPropertyVal(CloudSolrServer client, String collectionName,
+                                 String replicaName, String property, String val)
+      throws InterruptedException, KeeperException {
+    Replica replica = null;
+    ClusterState clusterState = null;
+
+    for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
+      client.getZkStateReader().updateClusterState(true);
+      clusterState = client.getZkStateReader().getClusterState();
+      replica = clusterState.getReplica(collectionName, replicaName);
+      if (replica == null) {
+        fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
+      }
+      if (StringUtils.equals(val, replica.getStr(property))) return;
+      Thread.sleep(100);
+    }
+
+    fail("Property '" + property + "' with value " + replica.getStr(property) +
+        " not set correctly for collection/replica pair: " + collectionName + "/" + replicaName + " property map is " +
+        replica.getProperties().toString() + ".");
+
+  }
+
+  // Expects the map will have keys, but blank values.
+  private Map<String, String> getProps(CloudSolrServer client, String collectionName, String replicaName, String... props) throws KeeperException, InterruptedException {
+    client.getZkStateReader().updateClusterState(true);
+    ClusterState clusterState = client.getZkStateReader().getClusterState();
+    Replica replica = clusterState.getReplica(collectionName, replicaName);
+    if (replica == null) {
+      fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
+    }
+    Map<String, String> propMap = new HashMap<>();
+    for (String prop : props) {
+      propMap.put(prop, replica.getStr(prop));
+    }
+    return propMap;
+  }
+  private void missingParamsError(CloudSolrServer client, ModifiableSolrParams origParams)
+      throws IOException, SolrServerException {
+
+    SolrRequest request;
+    try {
+      request = new QueryRequest(origParams);
+      request.setPath("/admin/collections");
+      client.request(request);
+      fail("Should have thrown a SolrException due to lack of a required parameter.");
+    } catch (SolrException se) {
+      assertTrue("Should have gotten a specific message back mentioning 'missing required parameter'. Got: " + se.getMessage(),
+          se.getMessage().toLowerCase(Locale.ROOT).contains("missing required parameter:"));
     }
   }
 }

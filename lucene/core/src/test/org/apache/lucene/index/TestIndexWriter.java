@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -2783,6 +2784,7 @@ public class TestIndexWriter extends LuceneTestCase {
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     String s = bos.toString(IOUtils.UTF_8);
+    checker.close();
     // Make sure CheckIndex didn't fail
     assertTrue(s, indexStatus != null && indexStatus.clean);
 
@@ -2798,6 +2800,20 @@ public class TestIndexWriter extends LuceneTestCase {
       assertFalse("id=" + id + " i=" + i, ids.contains(id));
       ids.add(id);
     }
+  }
+  
+  public void testEmptyNorm() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new TextField("foo", new CannedTokenStream()));
+    w.addDocument(doc);
+    w.commit();
+    w.close();
+    DirectoryReader r = DirectoryReader.open(d);
+    assertEquals(0, getOnlySegmentReader(r).getNormValues("foo").get(0));
+    r.close();
+    d.close();
   }
 }
 

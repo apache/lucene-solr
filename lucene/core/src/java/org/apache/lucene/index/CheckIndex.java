@@ -17,12 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,10 +37,13 @@ import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -60,12 +65,14 @@ import org.apache.lucene.util.Version;
  * index it can take quite a long time to run.
  *
  * @lucene.experimental Please make a complete backup of your
- * index before using this to fix your index!
+ * index before using this to exorcise corrupted documents from your index!
  */
-public class CheckIndex {
+public class CheckIndex implements Closeable {
 
   private PrintStream infoStream;
   private Directory dir;
+  private Lock writeLock;
+  private volatile boolean closed;
 
   /**
    * Returned from {@link #checkIndex()} detailing the health and status of the index.
@@ -111,7 +118,7 @@ public class CheckIndex {
 
     /** 
      * SegmentInfos instance containing only segments that
-     * had no problems (this is used with the {@link CheckIndex#fixIndex} 
+     * had no problems (this is used with the {@link CheckIndex#exorciseIndex} 
      * method to repair the index. 
      */
     SegmentInfos newSegments;
@@ -342,9 +349,36 @@ public class CheckIndex {
   }
 
   /** Create a new CheckIndex on the directory. */
-  public CheckIndex(Directory dir) {
+  public CheckIndex(Directory dir) throws IOException {
+    this(dir, dir.makeLock(IndexWriter.WRITE_LOCK_NAME));
+  }
+  
+  /** 
+   * Expert: create a directory with the specified lock.
+   * This should really not be used except for unit tests!!!!
+   * It exists only to support special tests (such as TestIndexWriterExceptions*),
+   * that would otherwise be more complicated to debug if they had to close the writer
+   * for each check.
+   */
+  public CheckIndex(Directory dir, Lock writeLock) throws IOException {
     this.dir = dir;
-    infoStream = null;
+    this.writeLock = writeLock;
+    this.infoStream = null;
+    if (!writeLock.obtain(IndexWriterConfig.WRITE_LOCK_TIMEOUT)) { // obtain write lock
+      throw new LockObtainFailedException("Index locked for write: " + writeLock);
+    }
+  }
+  
+  private void ensureOpen() {
+    if (closed) {
+      throw new AlreadyClosedException("this instance is closed");
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    closed = true;
+    IOUtils.close(writeLock);
   }
 
   private boolean crossCheckTermVectors;
@@ -415,18 +449,22 @@ public class CheckIndex {
    *
    *  <p>As this method checks every byte in the specified
    *  segments, on a large index it can take quite a long
-   *  time to run.
-   *
-   *  <p><b>WARNING</b>: make sure
-   *  you only call this when the index is not opened by any
-   *  writer. */
+   *  time to run. */
   public Status checkIndex(List<String> onlySegments) throws IOException {
+    ensureOpen();
     NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
     SegmentInfos sis = new SegmentInfos();
     Status result = new Status();
     result.dir = dir;
+    String[] files = dir.listAll();
+    String lastSegmentsFile = SegmentInfos.getLastCommitSegmentsFileName(files);
+    if (lastSegmentsFile == null) {
+      throw new IndexNotFoundException("no segments* file found in " + dir + ": files: " + Arrays.toString(files));
+    }
     try {
-      sis.read(dir);
+      // Do not use SegmentInfos.read(Directory) since the spooky
+      // retrying it does is not necessary here (we hold the write lock):
+      sis.read(dir, lastSegmentsFile);
     } catch (Throwable t) {
       if (failFast) {
         IOUtils.reThrow(t);
@@ -677,7 +715,7 @@ public class CheckIndex {
         }
         msg(infoStream, "FAILED");
         String comment;
-        comment = "fixIndex() would remove reference to this segment";
+        comment = "exorciseIndex() would remove reference to this segment";
         msg(infoStream, "    WARNING: " + comment + "; full exception:");
         if (infoStream != null)
           t.printStackTrace(infoStream);
@@ -2008,12 +2046,11 @@ public class CheckIndex {
    *  new segments file into the index, effectively removing
    *  all documents in broken segments from the index.
    *  BE CAREFUL.
-   *
-   * <p><b>WARNING</b>: Make sure you only call this when the
-   *  index is not opened  by any writer. */
-  public void fixIndex(Status result) throws IOException {
+   */
+  public void exorciseIndex(Status result) throws IOException {
+    ensureOpen();
     if (result.partial)
-      throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
+      throw new IllegalArgumentException("can only exorcise an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
     result.newSegments.commit(result.dir);
   }
@@ -2030,31 +2067,31 @@ public class CheckIndex {
     return assertsOn;
   }
 
-  /** Command-line interface to check and fix an index.
+  /** Command-line interface to check and exorcise corrupt segments from an index.
 
     <p>
     Run it like this:
     <pre>
-    java -ea:org.apache.lucene... org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-verbose] [-segment X] [-segment Y]
+    java -ea:org.apache.lucene... org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-verbose] [-segment X] [-segment Y]
     </pre>
     <ul>
-    <li><code>-fix</code>: actually write a new segments_N file, removing any problematic segments
+    <li><code>-exorcise</code>: actually write a new segments_N file, removing any problematic segments. *LOSES DATA*
 
     <li><code>-segment X</code>: only check the specified
     segment(s).  This can be specified multiple times,
     to check more than one segment, eg <code>-segment _2
-    -segment _a</code>.  You can't use this with the -fix
+    -segment _a</code>.  You can't use this with the -exorcise
     option.
     </ul>
 
-    <p><b>WARNING</b>: <code>-fix</code> should only be used on an emergency basis as it will cause
+    <p><b>WARNING</b>: <code>-exorcise</code> should only be used on an emergency basis as it will cause
                        documents (perhaps many) to be permanently removed from the index.  Always make
                        a backup copy of your index before running this!  Do not run this tool on an index
                        that is actively being written to.  You have been warned!
 
-    <p>                Run without -fix, this tool will open the index, report version information
-                       and report any exceptions it hits and what action it would take if -fix were
-                       specified.  With -fix, this tool will remove any segments that have issues and
+    <p>                Run without -exorcise, this tool will open the index, report version information
+                       and report any exceptions it hits and what action it would take if -exorcise were
+                       specified.  With -exorcise, this tool will remove any segments that have issues and
                        write a new segments_N file.  This means all documents contained in the affected
                        segments will be removed.
 
@@ -2063,8 +2100,14 @@ public class CheckIndex {
                        corruption, else 0.
    */
   public static void main(String[] args) throws IOException, InterruptedException {
+    int exitCode = doMain(args);
+    System.exit(exitCode);
+  }
+  
+  // actual main: returns exit code instead of terminating JVM (for easy testing)
+  private static int doMain(String args[]) throws IOException, InterruptedException {
 
-    boolean doFix = false;
+    boolean doExorcise = false;
     boolean doCrossCheckTermVectors = false;
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<>();
@@ -2073,8 +2116,8 @@ public class CheckIndex {
     int i = 0;
     while(i < args.length) {
       String arg = args[i];
-      if ("-fix".equals(arg)) {
-        doFix = true;
+      if ("-exorcise".equals(arg)) {
+        doExorcise = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
         doCrossCheckTermVectors = true;
       } else if (arg.equals("-verbose")) {
@@ -2082,21 +2125,21 @@ public class CheckIndex {
       } else if (arg.equals("-segment")) {
         if (i == args.length-1) {
           System.out.println("ERROR: missing name for -segment option");
-          System.exit(1);
+          return 1;
         }
         i++;
         onlySegments.add(args[i]);
       } else if ("-dir-impl".equals(arg)) {
         if (i == args.length - 1) {
           System.out.println("ERROR: missing value for -dir-impl option");
-          System.exit(1);
+          return 1;
         }
         i++;
         dirImpl = args[i];
       } else {
         if (indexPath != null) {
           System.out.println("ERROR: unexpected extra argument '" + args[i] + "'");
-          System.exit(1);
+          return 1;
         }
         indexPath = args[i];
       }
@@ -2105,32 +2148,32 @@ public class CheckIndex {
 
     if (indexPath == null) {
       System.out.println("\nERROR: index path not specified");
-      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
+      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
-                         "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -exorcise: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -crossCheckTermVectors: verifies that term vectors match postings; THIS IS VERY SLOW!\n" +
-                         "  -codec X: when fixing, codec to write the new segments_N file with\n" +
+                         "  -codec X: when exorcising, codec to write the new segments_N file with\n" +
                          "  -verbose: print additional details\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
-                         "              You can't use this with the -fix option\n" +
+                         "              You can't use this with the -exorcise option\n" +
                          "  -dir-impl X: use a specific " + FSDirectory.class.getSimpleName() + " implementation. " +
                          "If no package is specified the " + FSDirectory.class.getPackage().getName() + " package will be used.\n" +
                          "\n" +
-                         "**WARNING**: -fix should only be used on an emergency basis as it will cause\n" +
+                         "**WARNING**: -exorcise *LOSES DATA*. This should only be used on an emergency basis as it will cause\n" +
                          "documents (perhaps many) to be permanently removed from the index.  Always make\n" +
                          "a backup copy of your index before running this!  Do not run this tool on an index\n" +
                          "that is actively being written to.  You have been warned!\n" +
                          "\n" +
-                         "Run without -fix, this tool will open the index, report version information\n" +
-                         "and report any exceptions it hits and what action it would take if -fix were\n" +
-                         "specified.  With -fix, this tool will remove any segments that have issues and\n" + 
+                         "Run without -exorcise, this tool will open the index, report version information\n" +
+                         "and report any exceptions it hits and what action it would take if -exorcise were\n" +
+                         "specified.  With -exorcise, this tool will remove any segments that have issues and\n" + 
                          "write a new segments_N file.  This means all documents contained in the affected\n" +
                          "segments will be removed.\n" +
                          "\n" +
                          "This tool exits with exit code 1 if the index cannot be opened or has any\n" +
                          "corruption, else 0.\n");
-      System.exit(1);
+      return 1;
     }
 
     if (!assertsOn())
@@ -2138,58 +2181,59 @@ public class CheckIndex {
 
     if (onlySegments.size() == 0)
       onlySegments = null;
-    else if (doFix) {
-      System.out.println("ERROR: cannot specify both -fix and -segment");
-      System.exit(1);
+    else if (doExorcise) {
+      System.out.println("ERROR: cannot specify both -exorcise and -segment");
+      return 1;
     }
 
     System.out.println("\nOpening index @ " + indexPath + "\n");
-    Directory dir = null;
+    Directory directory = null;
     Path path = Paths.get(indexPath);
     try {
       if (dirImpl == null) {
-        dir = FSDirectory.open(path);
+        directory = FSDirectory.open(path);
       } else {
-        dir = CommandLineUtil.newFSDirectory(dirImpl, path);
+        directory = CommandLineUtil.newFSDirectory(dirImpl, path);
       }
     } catch (Throwable t) {
       System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
       t.printStackTrace(System.out);
-      System.exit(1);
+      return 1;
     }
 
-    CheckIndex checker = new CheckIndex(dir);
-    checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
-    checker.setInfoStream(System.out, verbose);
-
-    Status result = checker.checkIndex(onlySegments);
-    if (result.missingSegments) {
-      System.exit(1);
-    }
-
-    if (!result.clean) {
-      if (!doFix) {
-        System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -fix were specified\n");
-      } else {
-        System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
-        System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. THIS IS YOUR LAST CHANCE TO CTRL+C!");
-        for(int s=0;s<5;s++) {
-          Thread.sleep(1000);
-          System.out.println("  " + (5-s) + "...");
+    try (Directory dir = directory;
+         CheckIndex checker = new CheckIndex(dir)) {
+      checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
+      checker.setInfoStream(System.out, verbose);
+      
+      Status result = checker.checkIndex(onlySegments);
+      if (result.missingSegments) {
+        return 1;
+      }
+      
+      if (!result.clean) {
+        if (!doExorcise) {
+          System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -exorcise were specified\n");
+        } else {
+          System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
+          System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. YOU WILL LOSE DATA. THIS IS YOUR LAST CHANCE TO CTRL+C!");
+          for(int s=0;s<5;s++) {
+            Thread.sleep(1000);
+            System.out.println("  " + (5-s) + "...");
+          }
+          System.out.println("Writing...");
+          checker.exorciseIndex(result);
+          System.out.println("OK");
+          System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
         }
-        System.out.println("Writing...");
-        checker.fixIndex(result);
-        System.out.println("OK");
-        System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
+      }
+      System.out.println("");
+      
+      if (result.clean == true) {
+        return 0;
+      } else {
+        return 1;
       }
     }
-    System.out.println("");
-
-    final int exitCode;
-    if (result.clean == true)
-      exitCode = 0;
-    else
-      exitCode = 1;
-    System.exit(exitCode);
   }
 }

@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -38,6 +39,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   private final String collectionZkPath;
   private ZkController zkController;
+  private ZkIndexSchemaReader zkIndexSchemaReader;
 
   public ZkSolrResourceLoader(String instanceDir, String collection,
       ZkController zooKeeperController) {
@@ -129,4 +131,10 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   public ZkController getZkController() {
     return zkController;
   }
+
+  public void setZkIndexSchemaReader(ZkIndexSchemaReader zkIndexSchemaReader) {
+    this.zkIndexSchemaReader = zkIndexSchemaReader;
+  }
+
+  public ZkIndexSchemaReader getZkIndexSchemaReader() { return zkIndexSchemaReader; }
 }

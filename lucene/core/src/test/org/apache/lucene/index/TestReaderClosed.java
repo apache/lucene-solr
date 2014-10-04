@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -65,6 +68,9 @@ public class TestReaderClosed extends LuceneTestCase {
       searcher.search(query, 5);
     } catch (AlreadyClosedException ace) {
       // expected
+    } catch (RejectedExecutionException ree) {
+      // expected if the searcher has been created with threads since LuceneTestCase
+      // closes the thread-pool in a reader close listener
     }
   }
 
@@ -81,7 +87,14 @@ public class TestReaderClosed extends LuceneTestCase {
     reader.close(); // close original child reader
     try {
       searcher.search(query, 5);
-    } catch (AlreadyClosedException ace) {
+    } catch (Exception e) {
+      AlreadyClosedException ace = null;
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        if (t instanceof AlreadyClosedException) {
+          ace = (AlreadyClosedException) t;
+        }
+      }
+      assertNotNull("Query failed, but not due to an AlreadyClosedException", ace);
       assertEquals(
         "this IndexReader cannot be used anymore as one of its child readers was closed",
         ace.getMessage()

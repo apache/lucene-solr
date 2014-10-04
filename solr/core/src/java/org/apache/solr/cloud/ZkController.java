@@ -189,6 +189,9 @@ public final class ZkController {
   // and interact with zookeeper via the Solr admin UI on a node outside the cluster,
   // and so one that will not be killed or stopped when testing. See developer cloud-scripts.
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
+
+  // keeps track of a list of objects that need to know a new ZooKeeper session was created after expiration occurred
+  private List<OnReconnect> reconnectListeners = new ArrayList<OnReconnect>();
   
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
         String localHostContext, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames, final CurrentCoreDescriptorProvider registerOnReconnect) 
@@ -239,8 +242,9 @@ public final class ZkController {
           
           @Override
           public void command() {
+            log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
+
             try {
-              
               // this is troublesome - we dont want to kill anything the old
               // leader accepted
               // though I guess sync will likely get those updates back? But
@@ -294,7 +298,19 @@ public final class ZkController {
                   }
                 }
               }
-              
+
+              // notify any other objects that need to know when the session was re-connected
+              synchronized (reconnectListeners) {
+                for (OnReconnect listener : reconnectListeners) {
+                  try {
+                    listener.command();
+                  } catch (Exception exc) {
+                    // not much we can do here other than warn in the log
+                    log.warn("Error when notifying OnReconnect listener "+listener+" after session re-connected.", exc);
+                  }
+                }
+              }
+
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
@@ -2012,5 +2028,17 @@ public final class ZkController {
           }
         }
       }
+  }
+
+  /**
+   * Add a listener to be notified once there is a new session created after a ZooKeeper session expiration occurs;
+   * in most cases, listeners will be components that have watchers that need to be re-created.
+   */
+  public void addOnReconnectListener(OnReconnect listener) {
+    if (listener != null) {
+      synchronized (reconnectListeners) {
+        reconnectListeners.add(listener);
+      }
+    }
   }
 }

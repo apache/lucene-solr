@@ -70,6 +70,9 @@ New Features
   exiting requests that take too long to enumerate over terms. (Anshum Gupta, Steve Rowe,
   Robert Muir)
 
+* LUCENE-5911: Add MemoryIndex.freeze() to allow thread-safe searching over a 
+  MemoryIndex. (Alan Woodward)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
@@ -133,41 +136,29 @@ API Changes
 * LUCENE-5569: *AtomicReader/AtomicReaderContext have been renamed to *LeafReader/LeafReaderContext.
   (Ryan Ernst)
 
+* LUCENE-5938: Removed MultiTermQuery.ConstantScoreAutoRewrite as
+  MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is usually better. (Adrien Grand)
+
+* LUCENE-5924: Rename CheckIndex -fix option to -exorcise. This option does not
+  actually fix the index, it just drops data.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
   folder via security manager, and make test temp dirs absolute.
   (Ryan Ernst, Dawid Weiss)
 
-* LUCENE-5904: Fixed a corruption case that can happen when 1)
-  IndexWriter is uncleanly shut-down (OS crash, power loss, etc.), 2)
-  on startup, when a new IndexWriter is created, a virus checker is
-  holding some of the previously written but unused files open and
-  preventing deletion, 3) IndexWriter writes these files again during
-  the course of indexing, then the files can later be deleted, causing
-  corruption.  This case was detected by adding evilness to
-  MockDirectoryWrapper to have it simulate a virus checker holding a
-  file open and preventing deletion (Robert Muir, Mike McCandless)
-
-* LUCENE-5916: Static scope test components should be consistent between
-  tests (and test iterations). Fix for FaultyIndexInput in particular.
-  (Dawid Weiss)
-
-* LUCENE-5934: Fix backwards compatibility for 4.0 indexes.
-  (Ian Lea, Uwe Schindler, Robert Muir, Ryan Ernst)
-
-* LUCENE-5958: Don't let exceptions during checkpoint corrupt the index.
-  Refactor existing OOM handling too, so you don't need to handle OOM special
-  for every IndexWriter method: instead such disasters will cause IW to close itself
-  defensively. (Robert Muir, Mike McCandless)
-
-* LUCENE-5952: Improve error messages when version cannot be parsed;
-  don't check for too old or too new major version (it's too low level
-  to enforce here); use simple string tokenizer.  (Ryan Ernst, Uwe Schindler,
-  Robert Muir, Mike McCandless)
-
 * LUCENE-5948: RateLimiter now fully inits itself on init.  (Varun
   Thacker via Mike McCandless)
+
+* LUCENE-5977: Fix tokenstream safety checks in IndexWriter to properly
+  work across multi-valued fields. Previously some cases across multi-valued
+  fields would happily create a corrupt index. (Dawid Weiss, Robert Muir)
+
+* LUCENE-5981: CheckIndex obtains write.lock, since with some parameters it
+  may modify the index, and to prevent false corruption reports, as it does
+  not have the regular "spinlock" of DirectoryReader.open. It now implements
+  Closeable and you must close it to release the lock.  (Mike McCandless, Robert Muir)
 
 Documentation
 
@@ -175,13 +166,6 @@ Documentation
   analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
 Tests
-
-* LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
-  (Ryan Ernst)
-
-* LUCENE-5939: Regenerate old backcompat indexes to ensure they were built with
-  the exact release
-  (Ryan Ernst, Uwe Schindler)
 
 * LUCENE-5957: Add option for tests to not randomize codec
   (Ryan Ernst)
@@ -205,6 +189,10 @@ Optimizations
 * LUCENE-5963: Reduce memory allocations in
   AnalyzingSuggester. (Markus Heiden via Mike McCandless)
 
+* LUCENE-5938: MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is now faster on
+  queries that match few documents by using a sparse bit set implementation.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
@@ -224,6 +212,50 @@ Other
   (Adrien Grand, Robert Muir)
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
+
+======================= Lucene 4.10.1 ======================
+
+Bug fixes
+
+* LUCENE-5934: Fix backwards compatibility for 4.0 indexes.
+  (Ian Lea, Uwe Schindler, Robert Muir, Ryan Ernst)
+
+* LUCENE-5939: Regenerate old backcompat indexes to ensure they were built with
+  the exact release
+  (Ryan Ernst, Uwe Schindler)
+
+* LUCENE-5952: Improve error messages when version cannot be parsed;
+  don't check for too old or too new major version (it's too low level
+  to enforce here); use simple string tokenizer.  (Ryan Ernst, Uwe Schindler,
+  Robert Muir, Mike McCandless)
+
+* LUCENE-5958: Don't let exceptions during checkpoint corrupt the index. 
+  Refactor existing OOM handling too, so you don't need to handle OOM special
+  for every IndexWriter method: instead such disasters will cause IW to close itself
+  defensively. (Robert Muir, Mike McCandless)
+
+* LUCENE-5904: Fixed a corruption case that can happen when 1)
+  IndexWriter is uncleanly shut-down (OS crash, power loss, etc.), 2)
+  on startup, when a new IndexWriter is created, a virus checker is
+  holding some of the previously written but unused files open and
+  preventing deletion, 3) IndexWriter writes these files again during
+  the course of indexing, then the files can later be deleted, causing
+  corruption.  This case was detected by adding evilness to
+  MockDirectoryWrapper to have it simulate a virus checker holding a
+  file open and preventing deletion (Robert Muir, Mike McCandless)
+
+* LUCENE-5916: Static scope test components should be consistent between
+  tests (and test iterations). Fix for FaultyIndexInput in particular.
+  (Dawid Weiss)
+
+* LUCENE-5975: Fix reading of 3.0-3.3 indexes, where bugs in these old
+  index formats would result in CorruptIndexException "did not read all
+  bytes from file" when reading the deleted docs file. (Patrick Mi, Robert MUir)
+
+Tests
+
+* LUCENE-5936: Add backcompat checks to verify what is tested matches known versions
+  (Ryan Ernst)
 
 ======================= Lucene 4.10.0 ======================
 

@@ -29,6 +29,7 @@ import org.apache.solr.rest.schema.FieldTypeResource;
 import org.apache.solr.rest.schema.SchemaNameResource;
 import org.apache.solr.rest.schema.SchemaSimilarityResource;
 import org.apache.solr.rest.schema.SchemaVersionResource;
+import org.apache.solr.rest.schema.SchemaZkVersionResource;
 import org.apache.solr.rest.schema.SolrQueryParserDefaultOperatorResource;
 import org.apache.solr.rest.schema.SolrQueryParserResource;
 import org.apache.solr.rest.schema.UniqueKeyFieldResource;
@@ -78,6 +79,8 @@ public class SolrSchemaRestApi extends Application {
   
   public static final String UNIQUE_KEY_FIELD = IndexSchema.UNIQUE_KEY.toLowerCase(Locale.ROOT);
   public static final String UNIQUE_KEY_FIELD_PATH = "/" + UNIQUE_KEY_FIELD;
+  
+  public static final String ZK_VERSION_PATH = "/zkversion";  
 
   /**
    * Returns reserved endpoints under /schema
@@ -95,6 +98,7 @@ public class SolrSchemaRestApi extends Application {
     reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + SOLR_QUERY_PARSER_PATH);
     reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + DEFAULT_OPERATOR_PATH);
     reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + UNIQUE_KEY_FIELD_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + ZK_VERSION_PATH);
     return Collections.unmodifiableSet(reservedEndpoints);
   }
 
@@ -156,6 +160,8 @@ public class SolrSchemaRestApi extends Application {
     router.attach(SOLR_QUERY_PARSER_PATH, SolrQueryParserResource.class);
     router.attach(DEFAULT_OPERATOR_PATH, SolrQueryParserDefaultOperatorResource.class);
 
+    router.attach(ZK_VERSION_PATH, SchemaZkVersionResource.class);
+    
     router.attachDefault(RestManager.ManagedEndpoint.class);
     
     // attach all the dynamically registered schema resources

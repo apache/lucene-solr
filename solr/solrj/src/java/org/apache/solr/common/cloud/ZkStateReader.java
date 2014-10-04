@@ -69,6 +69,8 @@ public class ZkStateReader implements Closeable {
   public static final String SHARD_PARENT_PROP = "shard_parent";
   public static final String NUM_SHARDS_PROP = "numShards";
   public static final String LEADER_PROP = "leader";
+  public static final String PROPERTY_PROP = "property";
+  public static final String PROPERTY_VALUE_PROP = "property.value";
   
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
@@ -102,8 +104,7 @@ public class ZkStateReader implements Closeable {
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
-  public static final String ONLY_IF_DOWN = "onlyIfDown";
-  
+
   private final Set<String> watchedCollections = new HashSet<String>();
 
   /**These are collections which are actively watched by this  instance .

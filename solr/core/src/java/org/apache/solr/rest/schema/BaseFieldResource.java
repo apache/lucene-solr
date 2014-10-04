@@ -16,10 +16,13 @@ package org.apache.solr.rest.schema;
  * limitations under the License.
  */
 
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.resource.ResourceException;
 
@@ -98,6 +101,29 @@ abstract class BaseFieldResource extends BaseSolrResource {
       properties.add(IndexSchema.UNIQUE_KEY, true);
     }
     return properties;
+  }
+
+  /**
+   * When running in cloud mode, waits for a schema update to be
+   * applied by all active replicas of the current collection.
+   */
+  protected void waitForSchemaUpdateToPropagate(IndexSchema newSchema) {
+    // If using ZooKeeper and the client application has requested an update timeout, then block until all
+    // active replicas for this collection process the updated schema
+    if (getUpdateTimeoutSecs() > 0 && newSchema != null &&
+        newSchema.getResourceLoader() instanceof ZkSolrResourceLoader)
+    {
+      CoreDescriptor cd = getSolrCore().getCoreDescriptor();
+      String collection = cd.getCollectionName();
+      if (collection != null) {
+        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) newSchema.getResourceLoader();
+        ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection,
+            cd.getCloudDescriptor().getCoreNodeName(),
+            ((ManagedIndexSchema) newSchema).getSchemaZkVersion(),
+            zkLoader.getZkController(),
+            getUpdateTimeoutSecs());
+      }
+    }
   }
 
   // protected access on this class triggers a bug in javadoc generation caught by

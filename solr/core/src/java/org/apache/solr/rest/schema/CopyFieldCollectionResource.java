@@ -168,11 +168,12 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
               log.error(message.toString().trim());
               throw new SolrException(ErrorCode.BAD_REQUEST, message.toString().trim());
             }
+            IndexSchema newSchema = null;
             boolean success = false;
             while (!success) {
               try {
                 synchronized (oldSchema.getSchemaUpdateLock()) {
-                  IndexSchema newSchema = oldSchema.addCopyFields(fieldsToCopy);
+                  newSchema = oldSchema.addCopyFields(fieldsToCopy,true);
                   if (null != newSchema) {
                     getSolrCore().setLatestSchema(newSchema);
                     success = true;
@@ -185,6 +186,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
                   oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
               }
             }
+            waitForSchemaUpdateToPropagate(newSchema);
           }
         }
       }

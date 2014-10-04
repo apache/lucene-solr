@@ -32,9 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/dynamicfields/(pattern)
@@ -142,12 +147,12 @@ public class DynamicFieldResource extends BaseFieldResource implements GETable, 
               } else {
                 ManagedIndexSchema oldSchema = (ManagedIndexSchema)getSchema();
                 Object copies = map.get(IndexSchema.COPY_FIELDS);
-                List<String> copyFieldNames = null;
+                Collection<String> copyFieldNames = null;
                 if (copies != null) {
                   if (copies instanceof List) {
                     copyFieldNames = (List<String>)copies;
                   } else if (copies instanceof String) {
-                    copyFieldNames = Collections.singletonList(copies.toString());
+                    copyFieldNames = singletonList(copies.toString());
                   } else {
                     String message = "Invalid '" + IndexSchema.COPY_FIELDS + "' type.";
                     log.error(message);
@@ -157,12 +162,13 @@ public class DynamicFieldResource extends BaseFieldResource implements GETable, 
                 if (copyFieldNames != null) {
                   map.remove(IndexSchema.COPY_FIELDS);
                 }
+                IndexSchema newSchema = null;
                 boolean success = false;
                 while ( ! success) {
                   try {
                     SchemaField newDynamicField = oldSchema.newDynamicField(fieldNamePattern, fieldType, map);
                     synchronized (oldSchema.getSchemaUpdateLock()) {
-                      IndexSchema newSchema = oldSchema.addDynamicField(newDynamicField, copyFieldNames);
+                      newSchema = oldSchema.addDynamicFields(singletonList(newDynamicField), singletonMap(newDynamicField.getName(), copyFieldNames), true);
                       if (null != newSchema) {
                         getSolrCore().setLatestSchema(newSchema);
                         success = true;
@@ -175,6 +181,8 @@ public class DynamicFieldResource extends BaseFieldResource implements GETable, 
                     oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
                   }
                 }
+                // if in cloud mode, wait for schema updates to propagate to all replicas
+                waitForSchemaUpdateToPropagate(newSchema);
               }
             }
           }

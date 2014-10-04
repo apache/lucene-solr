@@ -17,8 +17,15 @@ package org.apache.solr.schema;
  */
 
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
@@ -26,6 +33,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.zookeeper.data.Stat;
 
 import org.junit.BeforeClass;
 
@@ -96,51 +105,65 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     }
   }
 
-  private static void addFieldPut(RestTestHarness publisher, String fieldName) throws Exception {
+  private static void addFieldPut(RestTestHarness publisher, String fieldName, int updateTimeoutSecs) throws Exception {
     final String content = "{\"type\":\"text\",\"stored\":\"false\"}";
     String request = "/schema/fields/" + fieldName + "?wt=xml";
+    if (updateTimeoutSecs > 0)
+      request += "&updateTimeoutSecs="+updateTimeoutSecs;
     String response = publisher.put(request, content);
     verifySuccess(request, response);
   }
 
-  private static void addFieldPost(RestTestHarness publisher, String fieldName) throws Exception {
+  private static void addFieldPost(RestTestHarness publisher, String fieldName, int updateTimeoutSecs) throws Exception {
     final String content = "[{\"name\":\""+fieldName+"\",\"type\":\"text\",\"stored\":\"false\"}]";
     String request = "/schema/fields/?wt=xml";
+    if (updateTimeoutSecs > 0)
+      request += "&updateTimeoutSecs="+updateTimeoutSecs;
     String response = publisher.post(request, content);
     verifySuccess(request, response);
   }
 
-  private static void addDynamicFieldPut(RestTestHarness publisher, String dynamicFieldPattern) throws Exception {
+  private static void addDynamicFieldPut(RestTestHarness publisher, String dynamicFieldPattern, int updateTimeoutSecs) throws Exception {
     final String content = "{\"type\":\"text\",\"stored\":\"false\"}";
     String request = "/schema/dynamicfields/" + dynamicFieldPattern + "?wt=xml";
+    if (updateTimeoutSecs > 0)
+      request += "&updateTimeoutSecs="+updateTimeoutSecs;
     String response = publisher.put(request, content);
     verifySuccess(request, response);
   }
 
-  private static void addDynamicFieldPost(RestTestHarness publisher, String dynamicFieldPattern) throws Exception {
+  private static void addDynamicFieldPost(RestTestHarness publisher, String dynamicFieldPattern, int updateTimeoutSecs) throws Exception {
     final String content = "[{\"name\":\""+dynamicFieldPattern+"\",\"type\":\"text\",\"stored\":\"false\"}]";
     String request = "/schema/dynamicfields/?wt=xml";
+    if (updateTimeoutSecs > 0)
+      request += "&updateTimeoutSecs="+updateTimeoutSecs;
     String response = publisher.post(request, content);
     verifySuccess(request, response);
   }
 
-  private static void copyField(RestTestHarness publisher, String source, String dest) throws Exception {
+  private static void copyField(RestTestHarness publisher, String source, String dest, int updateTimeoutSecs) throws Exception {
     final String content = "[{\"source\":\""+source+"\",\"dest\":[\""+dest+"\"]}]";
     String request = "/schema/copyfields/?wt=xml";
+    if (updateTimeoutSecs > 0)
+      request += "&updateTimeoutSecs="+updateTimeoutSecs;
     String response = publisher.post(request, content);
     verifySuccess(request, response);
   }
 
-  private static void addFieldTypePut(RestTestHarness publisher, String typeName) throws Exception {
+  private static void addFieldTypePut(RestTestHarness publisher, String typeName, int updateTimeoutSecs) throws Exception {
     final String content = "{\"class\":\"solr.TrieIntField\"}";
     String request = "/schema/fieldtypes/" + typeName + "?wt=xml";
+    if (updateTimeoutSecs > 0)
+      request += "&updateTimeoutSecs="+updateTimeoutSecs;
     String response = publisher.put(request, content);
     verifySuccess(request, response);
   }
 
-  private static void addFieldTypePost(RestTestHarness publisher, String typeName) throws Exception {
+  private static void addFieldTypePost(RestTestHarness publisher, String typeName, int updateTimeoutSecs) throws Exception {
     final String content = "[{\"name\":\""+typeName+"\",\"class\":\"solr.TrieIntField\"}]";
     String request = "/schema/fieldtypes/?wt=xml";
+    if (updateTimeoutSecs > 0)
+      request += "&updateTimeoutSecs="+updateTimeoutSecs;
     String response = publisher.post(request, content);
     verifySuccess(request, response);
   }
@@ -220,6 +243,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
 
   @Override
   public void doTest() throws Exception {
+    verifyWaitForSchemaUpdateToPropagate();
     setupHarnesses();
     concurrentOperationsTest();
     schemaLockTest();
@@ -244,23 +268,23 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     PUT_AddField {
       @Override public void execute(RestTestHarness publisher, int fieldNum, Info info) throws Exception {
         String fieldname = PUT_FIELDNAME + info.numAddFieldPuts++;
-        addFieldPut(publisher, fieldname);
+        addFieldPut(publisher, fieldname, 15);
       }
     },
     POST_AddField {
       @Override public void execute(RestTestHarness publisher, int fieldNum, Info info) throws Exception {
         String fieldname = POST_FIELDNAME + info.numAddFieldPosts++;
-        addFieldPost(publisher, fieldname);
+        addFieldPost(publisher, fieldname, 15);
       }
     },
     PUT_AddDynamicField {
       @Override public void execute(RestTestHarness publisher, int fieldNum, Info info) throws Exception {
-        addDynamicFieldPut(publisher, PUT_DYNAMIC_FIELDNAME + info.numAddDynamicFieldPuts++ + "_*");
+        addDynamicFieldPut(publisher, PUT_DYNAMIC_FIELDNAME + info.numAddDynamicFieldPuts++ + "_*", 15);
       }
     },
     POST_AddDynamicField {
       @Override public void execute(RestTestHarness publisher, int fieldNum, Info info) throws Exception {
-        addDynamicFieldPost(publisher, POST_DYNAMIC_FIELDNAME + info.numAddDynamicFieldPosts++ + "_*");
+        addDynamicFieldPost(publisher, POST_DYNAMIC_FIELDNAME + info.numAddDynamicFieldPosts++ + "_*", 15);
       }
     },
     POST_AddCopyField {
@@ -273,7 +297,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
           sourceField = "name";
         } else if (sourceType == 1) { // newly created
           sourceField = "copySource" + fieldNum;
-          addFieldPut(publisher, sourceField);
+          addFieldPut(publisher, sourceField, 15);
         } else { // dynamic
           sourceField = "*_dynamicSource" + fieldNum + "_t";
           // * only supported if both src and dst use it
@@ -286,23 +310,23 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
             destField = "title";
           } else { // newly created
             destField = "copyDest" + fieldNum;
-            addFieldPut(publisher, destField);
+            addFieldPut(publisher, destField, 15);
           }
         }
-        copyField(publisher, sourceField, destField);
+        copyField(publisher, sourceField, destField, 15);
         info.copyFields.add(new CopyFieldInfo(sourceField, destField));
       }
     },
     PUT_AddFieldType {
       @Override public void execute(RestTestHarness publisher, int fieldNum, Info info) throws Exception {
         String typeName = PUT_FIELDTYPE + info.numAddFieldTypePuts++;
-        addFieldTypePut(publisher, typeName);
+        addFieldTypePut(publisher, typeName, 15);
       }
     },
     POST_AddFieldType {
       @Override public void execute(RestTestHarness publisher, int fieldNum, Info info) throws Exception {
         String typeName = POST_FIELDTYPE + info.numAddFieldTypePosts++;
-        addFieldTypePost(publisher, typeName);
+        addFieldTypePost(publisher, typeName, 15);
       }
     };
 
@@ -312,6 +336,95 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     private static final Operation[] VALUES = values();
     public static Operation randomOperation()  {
       return VALUES[r.nextInt(VALUES.length)];
+    }
+  }
+
+  private void verifyWaitForSchemaUpdateToPropagate() throws Exception {
+    String testCollectionName = "collection1";
+
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    Replica shard1Leader = clusterState.getLeader(testCollectionName, "shard1");
+    final String coreUrl = (new ZkCoreNodeProps(shard1Leader)).getCoreUrl();
+    assertNotNull(coreUrl);
+
+    RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
+      public String getBaseURL() {
+        return coreUrl.endsWith("/") ? coreUrl.substring(0, coreUrl.length()-1) : coreUrl;
+      }
+    });
+
+    addFieldTypePut(harness, "fooInt", 15);
+
+    // go into ZK to get the version of the managed schema after the update
+    SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
+    Stat stat = new Stat();
+    String znodePath = "/configs/conf1/managed-schema";
+    byte[] managedSchemaBytes = zkClient.getData(znodePath, null, stat, false);
+    int schemaZkVersion = stat.getVersion();
+
+    // now loop over all replicas and verify each has the same schema version
+    Replica randomReplicaNotLeader = null;
+    for (Slice slice : clusterState.getActiveSlices(testCollectionName)) {
+      for (Replica replica : slice.getReplicas()) {
+        validateZkVersion(replica, schemaZkVersion, 0, false);
+
+        // save a random replica to test zk watcher behavior
+        if (randomReplicaNotLeader == null && !replica.getName().equals(shard1Leader.getName()))
+          randomReplicaNotLeader = replica;
+      }
+    }
+    assertNotNull(randomReplicaNotLeader);
+
+    // now update the data and then verify the znode watcher fires correctly
+    // before an after a zk session expiration (see SOLR-6249)
+    zkClient.setData(znodePath, managedSchemaBytes, schemaZkVersion, false);
+    stat = new Stat();
+    managedSchemaBytes = zkClient.getData(znodePath, null, stat, false);
+    int updatedSchemaZkVersion = stat.getVersion();
+    assertTrue(updatedSchemaZkVersion > schemaZkVersion);
+    validateZkVersion(randomReplicaNotLeader, updatedSchemaZkVersion, 2, true);
+
+    // ok - looks like the watcher fired correctly on the replica
+    // now, expire that replica's zk session and then verify the watcher fires again (after reconnect)
+    JettySolrRunner randomReplicaJetty =
+        getJettyOnPort(getReplicaPort(randomReplicaNotLeader));
+    assertNotNull(randomReplicaJetty);
+    chaosMonkey.expireSession(randomReplicaJetty);
+
+    // update the data again to cause watchers to fire
+    zkClient.setData(znodePath, managedSchemaBytes, updatedSchemaZkVersion, false);
+    stat = new Stat();
+    managedSchemaBytes = zkClient.getData(znodePath, null, stat, false);
+    updatedSchemaZkVersion = stat.getVersion();
+    // give up to 10 secs for the replica to recover after zk session loss and see the update
+    validateZkVersion(randomReplicaNotLeader, updatedSchemaZkVersion, 10, true);
+  }
+
+  /**
+   * Sends a GET request to get the zk schema version from a specific replica.
+   */
+  protected void validateZkVersion(Replica replica, int schemaZkVersion, int waitSecs, boolean retry) throws Exception {
+    final String replicaUrl = (new ZkCoreNodeProps(replica)).getCoreUrl();
+    RestTestHarness testHarness = new RestTestHarness(new RESTfulServerProvider() {
+      public String getBaseURL() {
+        return replicaUrl.endsWith("/") ? replicaUrl.substring(0, replicaUrl.length()-1) : replicaUrl;
+      }
+    });
+
+    long waitMs = waitSecs * 1000L;
+    if (waitMs > 0) Thread.sleep(waitMs); // wait a moment for the zk watcher to fire
+
+    try {
+      testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion=" + schemaZkVersion);
+    } catch (Exception exc) {
+      if (retry) {
+        // brief wait before retrying
+        Thread.sleep(waitMs > 0 ? waitMs : 2000L);
+
+        testHarness.validateQuery("/schema/zkversion?wt=xml", "//zkversion=" + schemaZkVersion);
+      } else {
+        throw exc;
+      }
     }
   }
 
@@ -405,7 +518,9 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     }
     public void run() {
       try {
-        addFieldPut(harness, fieldName);
+        // don't have the client side wait for all replicas to see the update or that defeats the purpose
+        // of testing the locking support on the server-side
+        addFieldPut(harness, fieldName, -1);
       } catch (Exception e) {
         // log.error("###ACTUAL FAILURE!");
         throw new RuntimeException(e);
@@ -420,7 +535,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     }
     public void run() {
       try {
-        addFieldPost(harness, fieldName);
+        addFieldPost(harness, fieldName, -1);
       } catch (Exception e) {
         // log.error("###ACTUAL FAILURE!");
         throw new RuntimeException(e);
@@ -435,7 +550,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     }
     public void run() {
       try {
-        addFieldTypePut(harness, fieldName);
+        addFieldTypePut(harness, fieldName, -1);
       } catch (Exception e) {
         // log.error("###ACTUAL FAILURE!");
         throw new RuntimeException(e);
@@ -450,7 +565,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     }
     public void run() {
       try {
-        addFieldTypePost(harness, fieldName);
+        addFieldTypePost(harness, fieldName, -1);
       } catch (Exception e) {
         // log.error("###ACTUAL FAILURE!");
         throw new RuntimeException(e);
@@ -465,7 +580,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     }
     public void run() {
       try {
-        addFieldPut(harness, fieldName);
+        addFieldPut(harness, fieldName, -1);
       } catch (Exception e) {
         // log.error("###ACTUAL FAILURE!");
         throw new RuntimeException(e);
@@ -480,7 +595,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     }
     public void run() {
       try {
-        addFieldPost(harness, fieldName);
+        addFieldPost(harness, fieldName, -1);
       } catch (Exception e) {
         // log.error("###ACTUAL FAILURE!");
         throw new RuntimeException(e);

@@ -36,6 +36,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -119,7 +121,9 @@ public class Overseer implements Closeable {
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
 
-  static enum LeaderStatus { DONT_KNOW, NO, YES };
+  static enum LeaderStatus {DONT_KNOW, NO, YES}
+
+  public static final Set<String> sliceUniqueBooleanProperties = ImmutableSet.of("property.preferredleader");
 
   private long lastUpdatedTime = 0;
 
@@ -438,6 +442,12 @@ public class Overseer implements Closeable {
           case CLUSTERPROP:
             handleProp(message);
             break;
+          case ADDREPLICAPROP:
+            clusterState = addReplicaProp(clusterState, message);
+            break;
+          case DELETEREPLICAPROP:
+            clusterState = deleteReplicaProp(clusterState, message);
+            break;
           default:
             throw new RuntimeException("unknown operation:" + operation
                 + " contents:" + message.getProperties());
@@ -502,6 +512,108 @@ public class Overseer implements Closeable {
       }
 
       return clusterState;
+    }
+
+    private ClusterState addReplicaProp(ClusterState clusterState, ZkNodeProps message) {
+
+      if (checkKeyExistence(message, ZkStateReader.COLLECTION_PROP) == false ||
+          checkKeyExistence(message, ZkStateReader.SHARD_ID_PROP) == false ||
+          checkKeyExistence(message, ZkStateReader.REPLICA_PROP) == false ||
+          checkKeyExistence(message, ZkStateReader.PROPERTY_PROP) == false ||
+          checkKeyExistence(message, ZkStateReader.PROPERTY_VALUE_PROP) == false) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Overseer SETREPLICAPROPERTY requires " +
+                ZkStateReader.COLLECTION_PROP + " and " + ZkStateReader.SHARD_ID_PROP + " and " +
+                ZkStateReader.REPLICA_PROP + " and " + ZkStateReader.PROPERTY_PROP + " and " +
+                ZkStateReader.PROPERTY_VALUE_PROP + " no action taken.");
+      }
+
+      String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+      String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
+      String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
+      String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
+      if (property.startsWith(OverseerCollectionProcessor.COLL_PROP_PREFIX) == false) {
+        property = OverseerCollectionProcessor.COLL_PROP_PREFIX + property;
+      }
+      String propVal = message.getStr(ZkStateReader.PROPERTY_VALUE_PROP);
+      String sliceUnique = message.getStr(OverseerCollectionProcessor.SLICE_UNIQUE);
+
+      boolean isUnique = false;
+
+      if (sliceUniqueBooleanProperties.contains(property)) {
+        if (StringUtils.isNotBlank(sliceUnique) && Boolean.parseBoolean(sliceUnique) == false) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Overseer SETREPLICAPROPERTY for " +
+              property + " cannot have " + OverseerCollectionProcessor.SLICE_UNIQUE + " set to anything other than" +
+              "'true'. No action taken");
+        }
+        isUnique = true;
+      } else {
+        isUnique = Boolean.parseBoolean(sliceUnique);
+      }
+
+      Replica replica = clusterState.getReplica(collectionName, replicaName);
+
+      if (replica == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection/slice/replica " +
+            collectionName + "/" + sliceName + "/" + replicaName + " no action taken.");
+      }
+      log.info("Setting property " + property + " with value: " + propVal +
+          " for collection: " + collectionName + ". Full message: " + message);
+      if (StringUtils.equalsIgnoreCase(replica.getStr(property), propVal)) return clusterState; // already the value we're going to set
+
+      // OK, there's no way we won't change the cluster state now
+      Map<String,Replica> replicas = clusterState.getSlice(collectionName, sliceName).getReplicasCopy();
+      if (isUnique == false) {
+        replicas.get(replicaName).getProperties().put(property, propVal);
+      } else { // Set prop for this replica, but remove it for all others.
+        for (Replica rep : replicas.values()) {
+          if (rep.getName().equalsIgnoreCase(replicaName)) {
+            rep.getProperties().put(property, propVal);
+          } else {
+            rep.getProperties().remove(property);
+          }
+        }
+      }
+      Slice newSlice = new Slice(sliceName, replicas, clusterState.getSlice(collectionName, sliceName).shallowCopy());
+      return updateSlice(clusterState, collectionName, newSlice);
+    }
+
+    private ClusterState deleteReplicaProp(ClusterState clusterState, ZkNodeProps message) {
+
+      if (checkKeyExistence(message, ZkStateReader.COLLECTION_PROP) == false ||
+          checkKeyExistence(message, ZkStateReader.SHARD_ID_PROP) == false ||
+          checkKeyExistence(message, ZkStateReader.REPLICA_PROP) == false ||
+          checkKeyExistence(message, ZkStateReader.PROPERTY_PROP) == false) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Overseer DELETEREPLICAPROPERTY requires " +
+                ZkStateReader.COLLECTION_PROP + " and " + ZkStateReader.SHARD_ID_PROP + " and " +
+                ZkStateReader.REPLICA_PROP + " and " + ZkStateReader.PROPERTY_PROP + " no action taken.");
+      }
+      String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+      String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
+      String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
+      String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
+      if (property.startsWith(OverseerCollectionProcessor.COLL_PROP_PREFIX) == false) {
+        property = OverseerCollectionProcessor.COLL_PROP_PREFIX + property;
+      }
+
+      Replica replica = clusterState.getReplica(collectionName, replicaName);
+
+      if (replica == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection/slice/replica " +
+            collectionName + "/" + sliceName + "/" + replicaName + " no action taken.");
+      }
+
+      log.info("Deleting property " + property + " for collection: " + collectionName +
+          " slice " + sliceName + " replica " + replicaName + ". Full message: " + message);
+      String curProp = replica.getStr(property);
+      if (curProp == null) return clusterState; // not there anyway, nothing to do.
+
+      Map<String, Replica> replicas = clusterState.getSlice(collectionName, sliceName).getReplicasCopy();
+      replica = replicas.get(replicaName);
+      replica.getProperties().remove(property);
+      Slice newSlice = new Slice(sliceName, replicas, clusterState.getSlice(collectionName, sliceName).shallowCopy());
+      return updateSlice(clusterState, collectionName, newSlice);
     }
 
     private ClusterState setShardLeader(ClusterState clusterState, ZkNodeProps message) {
@@ -1054,7 +1166,6 @@ public class Overseer implements Closeable {
           slices.put(slice.getName(), slice);
           newCollection = coll.copyWithSlices(slices);
         }
-
 
         // System.out.println("###!!!### NEW CLUSTERSTATE: " + JSONUtil.toJSON(newCollections));
 

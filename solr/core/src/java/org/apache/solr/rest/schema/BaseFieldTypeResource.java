@@ -17,10 +17,13 @@ package org.apache.solr.rest.schema;
  * limitations under the License.
  */
 
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.restlet.resource.ResourceException;
 
 import java.util.List;
@@ -57,4 +60,40 @@ abstract class BaseFieldTypeResource extends BaseSolrResource {
 
   /** Return a list of names of DynamicFields that have the given FieldType */
   protected abstract List<String> getDynamicFieldsWithFieldType(FieldType fieldType);
+
+  /**
+   * Adds one or more new FieldType definitions to the managed schema for the given core.
+   */
+  protected void addNewFieldTypes(List<FieldType> newFieldTypes, ManagedIndexSchema oldSchema) {
+    IndexSchema newSchema = null;
+    boolean success = false;
+    while (!success) {
+      try {
+        synchronized (oldSchema.getSchemaUpdateLock()) {
+          newSchema = oldSchema.addFieldTypes(newFieldTypes, true);
+          getSolrCore().setLatestSchema(newSchema);
+          success = true;
+        }
+      } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+        oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
+      }
+    }
+
+    // If using ZooKeeper and the client application has requested an update timeout, then block until all
+    // active replicas for this collection process the updated schema
+    if (getUpdateTimeoutSecs() > 0 && newSchema != null &&
+        newSchema.getResourceLoader() instanceof ZkSolrResourceLoader)
+    {
+      CoreDescriptor cd = getSolrCore().getCoreDescriptor();
+      String collection = cd.getCollectionName();
+      if (collection != null) {
+        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) newSchema.getResourceLoader();
+        ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection,
+            cd.getCloudDescriptor().getCoreNodeName(),
+            ((ManagedIndexSchema) newSchema).getSchemaZkVersion(),
+            zkLoader.getZkController(),
+            getUpdateTimeoutSecs());
+      }
+    }
+  }
 }

@@ -38,6 +38,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -58,7 +59,7 @@ public class SimpleFacetsExample {
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        new WhitespaceAnalyzer()));
+        new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
 
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
@@ -228,24 +229,21 @@ public class SimpleFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
-    SimpleFacetsExample example1 = new SimpleFacetsExample();
-    List<FacetResult> results1 = example1.runFacetOnly();
+    SimpleFacetsExample example = new SimpleFacetsExample();
+    List<FacetResult> results1 = example.runFacetOnly();
     System.out.println("Author: " + results1.get(0));
     System.out.println("Publish Date: " + results1.get(1));
     
     System.out.println("Facet counting example (combined facets and search):");
     System.out.println("-----------------------");
-    SimpleFacetsExample example = new SimpleFacetsExample();
     List<FacetResult> results = example.runSearch();
     System.out.println("Author: " + results.get(0));
     System.out.println("Publish Date: " + results.get(1));
     
-    System.out.println("\n");
     System.out.println("Facet drill-down example (Publish Date/2010):");
     System.out.println("---------------------------------------------");
     System.out.println("Author: " + example.runDrillDown());
 
-    System.out.println("\n");
     System.out.println("Facet drill-sideways example (Publish Date/2010):");
     System.out.println("---------------------------------------------");
     for(FacetResult result : example.runDrillSideways()) {

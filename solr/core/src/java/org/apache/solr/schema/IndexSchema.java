@@ -74,6 +74,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+
 /**
  * <code>IndexSchema</code> contains information about the valid fields in an index
  * and the types of those fields.
@@ -1473,23 +1476,26 @@ public class IndexSchema {
   }
 
   /**
-   * Copies this schema, adds the given field to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
+   * Copies this schema, adds the given field to the copy
+   * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param newField the SchemaField to add 
+   * @param persist to persist the schema or not or not
    * @return a new IndexSchema based on this schema with newField added
    * @see #newField(String, String, Map)
    */
+  public IndexSchema addField(SchemaField newField, boolean persist) {
+    return addFields(Collections.singletonList(newField),Collections.EMPTY_MAP,persist );
+  }
+
   public IndexSchema addField(SchemaField newField) {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    return addField(newField, true);
   }
 
   /**
-   * Copies this schema, adds the given field to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
+   * Copies this schema, adds the given field to the copy
+   *  Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param newField the SchemaField to add
@@ -1498,14 +1504,12 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    return addFields(singletonList(newField), singletonMap(newField.getName(), copyFieldNames), true);
   }
 
   /**
-   * Copies this schema, adds the given fields to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
+   * Copies this schema, adds the given fields to the copy.
+   * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param newFields the SchemaFields to add
@@ -1513,99 +1517,57 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addFields(Collection<SchemaField> newFields) {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    return addFields(newFields, Collections.<String, Collection<String>>emptyMap(), true);
   }
 
   /**
-   * Copies this schema, adds the given fields to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
+   * Copies this schema, adds the given fields to the copy
+   * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param newFields the SchemaFields to add
    * @param copyFieldNames 0 or more names of targets to copy this field to.  The target fields must already exist.
+   * @param persist Persist the schema or not
    * @return a new IndexSchema based on this schema with newFields added
    * @see #newField(String, String, Map)
    */
-  public IndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames) {
+  public IndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames, boolean persist) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
-  /**
-   * Copies this schema, adds the given dynamic field to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
-   *
-   * @param newDynamicField the SchemaField to add 
-   * @return a new IndexSchema based on this schema with newField added
-   * @see #newDynamicField(String, String, Map)
-   */
-  public IndexSchema addDynamicField(SchemaField newDynamicField) {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-  }
 
   /**
-   * Copies this schema, adds the given dynamic field to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
-   *
-   * @param newDynamicField the SchemaField to add
-   * @param copyFieldNames 0 or more names of targets to copy this field to.  The targets must already exist.
-   * @return a new IndexSchema based on this schema with newDynamicField added
-   * @see #newDynamicField(String, String, Map)
-   */
-  public IndexSchema addDynamicField(SchemaField newDynamicField, Collection<String> copyFieldNames) {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-  }
-
-  /**
-   * Copies this schema, adds the given dynamic fields to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
-   *
-   * @param newDynamicFields the SchemaFields to add
-   * @return a new IndexSchema based on this schema with newDynamicFields added
-   * @see #newDynamicField(String, String, Map)
-   */
-  public IndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields) {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-  }
-
-  /**
-   * Copies this schema, adds the given dynamic fields to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
+   * Copies this schema, adds the given dynamic fields to the copy,
+   * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param newDynamicFields the SchemaFields to add
    * @param copyFieldNames 0 or more names of targets to copy this field to.  The target fields must already exist.
+   * @param persist to persist the schema or not or not
    * @return a new IndexSchema based on this schema with newDynamicFields added
    * @see #newDynamicField(String, String, Map)
    */
   public IndexSchema addDynamicFields
-      (Collection<SchemaField> newDynamicFields, Map<String, Collection<String>> copyFieldNames) {
+      (Collection<SchemaField> newDynamicFields,
+       Map<String, Collection<String>> copyFieldNames,
+       boolean persist) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
   /**
-   * Copies this schema and adds the new copy fields to the copy, then
-   * persists the new schema.  Requires synchronizing on the object returned by
+   * Copies this schema and adds the new copy fields to the copy
+   * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
+   * @param persist to persist the schema or not or not
    * @return The new Schema with the copy fields added
    */
-  public IndexSchema addCopyFields(Map<String, Collection<String>> copyFields){
+  public IndexSchema addCopyFields(Map<String, Collection<String>> copyFields, boolean persist){
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
@@ -1660,30 +1622,16 @@ public class IndexSchema {
   }
 
   /**
-   * Copies this schema, adds the given field type to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
-   *
-   * @param fieldType the FieldType to add
-   * @return a new IndexSchema based on this schema with the new FieldType added
-   * @see #newFieldType(String, String, Map)
-   */
-  public IndexSchema addFieldType(FieldType fieldType) {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-  }
-
-  /**
-   * Copies this schema, adds the given field type to the copy, then persists the
-   * new schema.  Requires synchronizing on the object returned by
+   * Copies this schema, adds the given field type to the copy,
+   * Requires synchronizing on the object returned by
    * {@link #getSchemaUpdateLock()}.
    *
    * @param fieldTypeList a list of FieldTypes to add
+   * @param persist to persist the schema or not or not
    * @return a new IndexSchema based on this schema with the new types added
    * @see #newFieldType(String, String, Map)
    */
-  public IndexSchema addFieldTypes(List<FieldType> fieldTypeList) {
+  public IndexSchema addFieldTypes(List<FieldType> fieldTypeList, boolean persist) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
@@ -1692,13 +1640,13 @@ public class IndexSchema {
   /**
    * Returns a FieldType if the given typeName does not already
    * exist in this schema. The resulting FieldType can be used in a call
-   * to {@link #addFieldType(FieldType)}.
+   * to {@link #addFieldTypes(java.util.List, boolean)}.
    *
    * @param typeName the name of the type to add
    * @param className the name of the FieldType class
    * @param options the options to use when creating the FieldType
    * @return The created FieldType
-   * @see #addFieldType(FieldType)
+   * @see #addFieldTypes(java.util.List, boolean)
    */
   public FieldType newFieldType(String typeName, String className, Map<String,?> options) {
     String msg = "This IndexSchema is not mutable.";

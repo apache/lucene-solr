@@ -161,9 +161,11 @@ def checkClassSummaries(fullPath):
 
   foundMethodDetail = False
   lastMethodAnchor = None
+  lineCount = 0
   
   for line in f.readlines():
     m = reMethodDetail.search(line)
+    lineCount += 1
     if m is not None:
       foundMethodDetail = True
       continue
@@ -212,6 +214,8 @@ def checkClassSummaries(fullPath):
     if inThing:
       if lineLower.find('</tr>') != -1:
         if not hasDesc:
+          if lastItem is None:
+            raise RuntimeError('failed to locate javadoc item in %s, line %d? last line: %s' % (fullPath, lineCount, line.rstrip()))
           missing.append((lastCaption, unEscapeURL(lastItem)))
         inThing = False
         continue

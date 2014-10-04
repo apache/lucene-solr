@@ -18,7 +18,6 @@ package org.apache.solr.rest;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -48,6 +47,7 @@ import java.net.URLDecoder;
  */
 public abstract class BaseSolrResource extends ServerResource {
   protected static final String SHOW_DEFAULTS = "showDefaults";
+  public static final String UPDATE_TIMEOUT_SECS = "updateTimeoutSecs";
 
   private SolrCore solrCore;
   private IndexSchema schema;
@@ -55,12 +55,14 @@ public abstract class BaseSolrResource extends ServerResource {
   private SolrQueryResponse solrResponse;
   private QueryResponseWriter responseWriter;
   private String contentType;
+  private int updateTimeoutSecs = -1;
 
   public SolrCore getSolrCore() { return solrCore; }
   public IndexSchema getSchema() { return schema; }
   public SolrQueryRequest getSolrRequest() { return solrRequest; }
   public SolrQueryResponse getSolrResponse() { return solrResponse; }
   public String getContentType() { return contentType; }
+  protected int getUpdateTimeoutSecs() { return updateTimeoutSecs; }
 
   protected BaseSolrResource() {
     super();
@@ -122,6 +124,14 @@ public abstract class BaseSolrResource extends ServerResource {
               solrRequest.getContext().put("webapp", firstPathElement); // Context path
             }
             SolrCore.preDecorateResponse(solrRequest, solrResponse);
+
+            // client application can set a timeout for update requests
+            Object updateTimeoutSecsParam = getSolrRequest().getParams().get(UPDATE_TIMEOUT_SECS);
+            if (updateTimeoutSecsParam != null)
+              updateTimeoutSecs = (updateTimeoutSecsParam instanceof Number)
+                  ? ((Number) updateTimeoutSecsParam).intValue()
+                  : Integer.parseInt(updateTimeoutSecsParam.toString());
+
           }
         }
       } catch (Throwable t) {

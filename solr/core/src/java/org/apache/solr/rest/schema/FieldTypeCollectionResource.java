@@ -19,7 +19,6 @@ package org.apache.solr.rest.schema;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.rest.GETable;
 import org.apache.solr.rest.POSTable;
 import org.apache.solr.schema.FieldType;
@@ -194,24 +193,5 @@ public class FieldTypeCollectionResource extends BaseFieldTypeResource implement
     }
     // now deploy the added types (all or nothing)
     addNewFieldTypes(newFieldTypes, oldSchema);
-  }
-
-  /**
-   * Adds one or more new FieldType definitions to the managed schema for the given core.
-   */
-  protected void addNewFieldTypes(List<FieldType> newFieldTypes, ManagedIndexSchema oldSchema) {
-    boolean success = false;
-    while (!success) {
-      try {
-        synchronized (oldSchema.getSchemaUpdateLock()) {
-          IndexSchema newSchema = oldSchema.addFieldTypes(newFieldTypes);
-          getSolrCore().setLatestSchema(newSchema);
-          success = true;
-        }
-      } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
-        log.debug("Schema changed while processing request, retrying");
-        oldSchema = (ManagedIndexSchema)getSolrCore().getLatestSchema();
-      }
-    }
   }
 }
