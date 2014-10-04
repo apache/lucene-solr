@@ -34,7 +34,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 @Monster("takes ~ 30 minutes")
 public class Test2BNumericDocValues extends LuceneTestCase {
   
-  // indexes Integer.MAX_VALUE docs with an increasing dv field
+  // indexes IndexWriter.MAX_DOCS docs with an increasing dv field
   public void testNumerics() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BNumerics"));
     if (dir instanceof MockDirectoryWrapper) {
@@ -53,7 +53,7 @@ public class Test2BNumericDocValues extends LuceneTestCase {
     NumericDocValuesField dvField = new NumericDocValuesField("dv", 0);
     doc.add(dvField);
     
-    for (int i = 0; i < Integer.MAX_VALUE; i++) {
+    for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       dvField.setLongValue(i);
       w.addDocument(doc);
       if (i % 100000 == 0) {

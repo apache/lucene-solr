@@ -56,7 +56,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     SortedDocValuesField dvField = new SortedDocValuesField("dv", data);
     doc.add(dvField);
     
-    for (int i = 0; i < Integer.MAX_VALUE; i++) {
+    for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       bytes[0] = (byte)(i >> 8);
       bytes[1] = (byte) i;
       w.addDocument(doc);
@@ -111,7 +111,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     SortedDocValuesField dvField = new SortedDocValuesField("dv", data);
     doc.add(dvField);
     
-    for (int i = 0; i < Integer.MAX_VALUE; i++) {
+    for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       bytes[0] = (byte)(i >> 24);
       bytes[1] = (byte)(i >> 16);
       bytes[2] = (byte)(i >> 8);
