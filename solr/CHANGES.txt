@@ -410,6 +410,8 @@ New Features
 * SOLR-6233: Provide basic command line tools for checking Solr status and health.
   (Timothy Potter)
 
+* SOLR-6585: RequestHandlers can optionaly handle sub paths as well (Noble Paul)
+
 Bug Fixes
 ----------------------
 

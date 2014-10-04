@@ -256,20 +256,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         boolean usingAliases = false;
         List<String> collectionsList = null;
         // Check for the core admin collections url
-        if( path.equals( "/admin/collections" ) ) {
-          handler = cores.getCollectionsHandler();
+        handler = cores.getRequestHandler(path);
+        if( handler!= null ) {
           solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
           handleAdminRequest(req, response, handler, solrReq);
           return;
-        }
-        // Check for the core admin info url
-        if( path.startsWith( "/admin/info" ) ) {
-          handler = cores.getInfoHandler();
-          solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
-          handleAdminRequest(req, response, handler, solrReq);
-          return;
-        }
-        else {
+        } else {
           //otherwise, we should find a core from the path
           idx = path.indexOf( "/", 1 );
           if( idx > 1 ) {

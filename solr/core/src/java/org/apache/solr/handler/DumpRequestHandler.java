@@ -20,13 +20,18 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.InitParams;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 public class DumpRequestHandler extends RequestHandlerBase
 {
@@ -80,5 +85,21 @@ public class DumpRequestHandler extends RequestHandlerBase
   @Override
   public String getDescription() {
     return "Dump handler (debug)";
+  }
+
+  @Override
+  public SolrRequestHandler getSubHandler(String path) {
+    if(subpaths !=null && subpaths.contains(path)) return this;
+    return null;
+  }
+  private List<String> subpaths;
+
+  @Override
+  public void init(NamedList args) {
+    super.init(args);
+    if(args !=null) {
+      NamedList nl = (NamedList) args.get(PluginInfo.DEFAULTS);
+      if(nl!=null) subpaths = nl.getAll("subpath");
+    }
   }
 }

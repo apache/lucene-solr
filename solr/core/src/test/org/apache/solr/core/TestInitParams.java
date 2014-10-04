@@ -90,6 +90,13 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertEquals(Arrays.asList("C1","C") ,def.getAll("c"));
   }
 
+  public void testNestedRequestHandler() {
+    assertNotNull(h.getCore().getRequestHandler("/greedypath"));
+    assertNotNull(h.getCore().getRequestHandler("/greedypath/some/path"));
+    assertNotNull( h.getCore().getRequestHandler("/greedypath/some/other/path"));
+    assertNull(h.getCore().getRequestHandler("/greedypath/unknownpath"));
+  }
+
 
 
 
