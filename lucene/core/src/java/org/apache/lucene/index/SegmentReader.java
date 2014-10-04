@@ -91,13 +91,6 @@ public final class SegmentReader extends LeafReader implements Accountable {
   // TODO: why is this public?
   public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
     this.si = si;
-    // TODO if the segment uses CFS, we may open the CFS file twice: once for
-    // reading the FieldInfos (if they are not gen'd) and second time by
-    // SegmentCoreReaders. We can open the CFS here and pass to SCR, but then it
-    // results in less readable code (resource not closed where it was opened).
-    // Best if we could somehow read FieldInfos in SCR but not keep it there, but
-    // constructors don't allow returning two things...
-    fieldInfos = readFieldInfos(si);
     core = new SegmentCoreReaders(this, si.info.dir, si, context);
     segDocValues = new SegmentDocValues();
     
@@ -112,12 +105,9 @@ public final class SegmentReader extends LeafReader implements Accountable {
         liveDocs = null;
       }
       numDocs = si.info.getDocCount() - si.getDelCount();
-
-      if (fieldInfos.hasDocValues()) {
-        docValuesProducer = initDocValuesProducer(codec);
-      } else {
-        docValuesProducer = null;
-      }
+      
+      fieldInfos = initFieldInfos();
+      docValuesProducer = initDocValuesProducer();
 
       success = true;
     } finally {
@@ -152,24 +142,11 @@ public final class SegmentReader extends LeafReader implements Accountable {
     this.core = sr.core;
     core.incRef();
     this.segDocValues = sr.segDocValues;
-    
-//    System.out.println("[" + Thread.currentThread().getName() + "] SR.init: sharing reader: " + sr + " for gens=" + sr.genDVProducers.keySet());
-    
-    // increment refCount of DocValuesProducers that are used by this reader
+
     boolean success = false;
     try {
-      final Codec codec = si.info.getCodec();
-      if (si.getFieldInfosGen() == -1) {
-        fieldInfos = sr.fieldInfos;
-      } else {
-        fieldInfos = readFieldInfos(si);
-      }
-      
-      if (fieldInfos.hasDocValues()) {
-        docValuesProducer = initDocValuesProducer(codec);
-      } else {
-        docValuesProducer = null;
-      }
+      fieldInfos = initFieldInfos();
+      docValuesProducer = initDocValuesProducer();
       success = true;
     } finally {
       if (!success) {
@@ -178,46 +155,34 @@ public final class SegmentReader extends LeafReader implements Accountable {
     }
   }
 
-  // initialize the per-field DocValuesProducer
-  private DocValuesProducer initDocValuesProducer(Codec codec) throws IOException {
+  /**
+   * init most recent DocValues for the current commit
+   */
+  private DocValuesProducer initDocValuesProducer() throws IOException {
     final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
-    final DocValuesFormat dvFormat = codec.docValuesFormat();
+    final DocValuesFormat dvFormat = si.info.getCodec().docValuesFormat();
 
-    if (!si.hasFieldUpdates()) {
+    if (!fieldInfos.hasDocValues()) {
+      return null;
+    } else if (si.hasFieldUpdates()) {
+      return new SegmentDocValuesProducer(si, dir, fieldInfos, segDocValues, dvFormat);
+    } else {
       // simple case, no DocValues updates
       return segDocValues.getDocValuesProducer(-1L, si, IOContext.READ, dir, dvFormat, fieldInfos);
-    } else {
-      return new SegmentDocValuesProducer(si, dir, fieldInfos, segDocValues, dvFormat);
     }
   }
   
   /**
-   * Reads the most recent {@link FieldInfos} of the given segment info.
-   * 
-   * @lucene.internal
+   * init most recent FieldInfos for the current commit
    */
-  static FieldInfos readFieldInfos(SegmentCommitInfo info) throws IOException {
-    final Directory dir;
-    final boolean closeDir;
-    if (info.getFieldInfosGen() == -1 && info.info.getUseCompoundFile()) {
-      // no fieldInfos gen and segment uses a compound file
-      dir = info.info.getCodec().compoundFormat().getCompoundReader(info.info.dir, info.info, IOContext.READONCE);
-      closeDir = true;
+  private FieldInfos initFieldInfos() throws IOException {
+    if (!si.hasFieldUpdates()) {
+      return core.coreFieldInfos;
     } else {
-      // gen'd FIS are read outside CFS, or the segment doesn't use a compound file
-      dir = info.info.dir;
-      closeDir = false;
-    }
-    
-    try {
-      final String segmentSuffix = info.getFieldInfosGen() == -1 ? "" : Long.toString(info.getFieldInfosGen(), Character.MAX_RADIX);
-      Codec codec = info.info.getCodec();
-      FieldInfosFormat fisFormat = codec.fieldInfosFormat();
-      return fisFormat.getFieldInfosReader().read(dir, info.info, segmentSuffix, IOContext.READONCE);
-    } finally {
-      if (closeDir) {
-        dir.close();
-      }
+      // updates always outside of CFS
+      FieldInfosFormat fisFormat = si.info.getCodec().fieldInfosFormat();
+      final String segmentSuffix = Long.toString(si.getFieldInfosGen(), Character.MAX_RADIX);
+      return fisFormat.getFieldInfosReader().read(si.info.dir, si.info, segmentSuffix, IOContext.READONCE);
     }
   }
   

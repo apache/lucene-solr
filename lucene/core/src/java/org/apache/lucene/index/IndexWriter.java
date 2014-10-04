@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -856,6 +857,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
   }
+  
+  // reads latest field infos for the commit
+  // this is used on IW init and addIndexes(Dir) to create/update the global field map.
+  // TODO: fix tests abusing this method!
+  static FieldInfos readFieldInfos(SegmentCommitInfo si) throws IOException {
+    Codec codec = si.info.getCodec();
+    FieldInfosReader reader = codec.fieldInfosFormat().getFieldInfosReader();
+    
+    if (si.hasFieldUpdates()) {
+      // there are updates, we read latest (always outside of CFS)
+      final String segmentSuffix = Long.toString(si.getFieldInfosGen(), Character.MAX_RADIX);
+      return reader.read(si.info.dir, si.info, segmentSuffix, IOContext.READONCE);
+    } else if (si.info.getUseCompoundFile()) {
+      // cfs
+      try (Directory cfs = codec.compoundFormat().getCompoundReader(si.info.dir, si.info, IOContext.DEFAULT)) {
+        return reader.read(cfs, si.info, "", IOContext.READONCE);
+      }
+    } else {
+      // no cfs
+      return reader.read(si.info.dir, si.info, "", IOContext.READONCE);
+    }
+  }
 
   /**
    * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
@@ -865,7 +888,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     final FieldNumbers map = new FieldNumbers();
 
     for(SegmentCommitInfo info : segmentInfos) {
-      for(FieldInfo fi : SegmentReader.readFieldInfos(info)) {
+      FieldInfos fis = readFieldInfos(info);
+      for(FieldInfo fi : fis) {
         map.addOrGet(fi.name, fi.number, fi.getDocValuesType());
       }
     }
@@ -2379,7 +2403,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.sizeInBytes(), true, -1));
 
-            for(FieldInfo fi : SegmentReader.readFieldInfos(info)) {
+            FieldInfos fis = readFieldInfos(info);
+            for(FieldInfo fi : fis) {
               globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
