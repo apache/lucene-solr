@@ -60,5 +60,13 @@
     </lst>
   </requestHandler>
 
+  <requestHandler name="/greedypath" class="DumpRequestHandler">
+    <lst name="defaults">
+      <str name="subpath">/some/path</str>
+      <str name="subpath">/some/other/path</str>
+    </lst>
+  </requestHandler>
+
+
 
 </config>

@@ -60,5 +60,7 @@ public interface SolrRequestHandler extends SolrInfoMBean {
    * all interface obligations.
    */
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp);
+
+  public static final String TYPE = "requestHandler";
 }
 

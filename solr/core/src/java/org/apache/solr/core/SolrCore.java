@@ -38,6 +38,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
@@ -1217,7 +1218,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    * This function is thread safe.
    */
   public SolrRequestHandler getRequestHandler(String handlerName) {
-    return reqHandlers.get(handlerName);
+    return RequestHandlerBase.getRequestHandler(RequestHandlers.normalize(handlerName), reqHandlers.getRequestHandlers());
   }
 
   /**
