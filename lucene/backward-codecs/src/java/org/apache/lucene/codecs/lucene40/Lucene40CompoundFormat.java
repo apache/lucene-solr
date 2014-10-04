@@ -33,6 +33,10 @@ import org.apache.lucene.store.IOContext;
  */
 @Deprecated
 public final class Lucene40CompoundFormat extends CompoundFormat {
+  
+  /** Sole constructor. */
+  public Lucene40CompoundFormat() {
+  }
 
   @Override
   public Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {

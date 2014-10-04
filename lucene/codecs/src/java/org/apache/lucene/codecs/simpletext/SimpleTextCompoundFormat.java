@@ -49,6 +49,10 @@ import org.apache.lucene.util.StringHelper;
  * @lucene.experimental
  */
 public class SimpleTextCompoundFormat extends CompoundFormat {
+  
+  /** Sole constructor. */
+  public SimpleTextCompoundFormat() {
+  }
 
   @Override
   public Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {

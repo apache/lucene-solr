@@ -63,6 +63,10 @@ import org.apache.lucene.store.IndexOutput;
  */
 public final class Lucene50CompoundFormat extends CompoundFormat {
 
+  /** Sole constructor. */
+  public Lucene50CompoundFormat() {
+  }
+  
   @Override
   public Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     return new Lucene50CompoundReader(dir, si, context);
