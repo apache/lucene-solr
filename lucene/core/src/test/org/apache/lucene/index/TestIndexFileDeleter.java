@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -84,6 +83,13 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Term searchTerm = new Term("id", "7");
     writer.deleteDocuments(searchTerm);
     writer.close();
+    
+    // read in index to try to not depend on codec-specific filenames so much
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    SegmentInfo si0 = sis.info(0).info;
+    SegmentInfo si1 = sis.info(1).info;
+    SegmentInfo si3 = sis.info(3).info;
 
     // Now, artificially create an extra .del file & extra
     // .s0 file:
@@ -110,11 +116,13 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // non-existent segment:
     copyFile(dir, "_0_1" + ext, "_188_1" + ext);
 
+    String cfsFiles0[] = si0.getCodec().compoundFormat().files(si0);
+    
     // Create a bogus segment file:
-    copyFile(dir, "_0.cfs", "_188.cfs");
+    copyFile(dir, cfsFiles0[0], "_188.cfs");
 
     // Create a bogus fnm file when the CFS already exists:
-    copyFile(dir, "_0.cfs", "_0.fnm");
+    copyFile(dir, cfsFiles0[0], "_0.fnm");
     
     // Create some old segments file:
     copyFile(dir, "segments_2", "segments");
@@ -124,8 +132,14 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     
     // TODO: assert is bogus (relies upon codec-specific filenames)
     assertTrue(slowFileExists(dir, "_3.fdt") || slowFileExists(dir, "_3.fld"));
-    assertTrue(!slowFileExists(dir, "_3.cfs"));
-    copyFile(dir, "_1.cfs", "_3.cfs");
+    
+    String cfsFiles3[] = si3.getCodec().compoundFormat().files(si3);
+    for (String f : cfsFiles3) {
+      assertTrue(!slowFileExists(dir, f));
+    }
+    
+    String cfsFiles1[] = si1.getCodec().compoundFormat().files(si1);
+    copyFile(dir, cfsFiles1[0], "_3.cfs");
     
     String[] filesPre = dir.listAll();
 
