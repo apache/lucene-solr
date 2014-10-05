@@ -96,6 +96,11 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     }
     
     @Override
+    public TermVectorsReader getMergeInstance() throws IOException {
+      return new AssertingTermVectorsReader(in.getMergeInstance());
+    }
+
+    @Override
     public String toString() {
       return getClass().getSimpleName() + "(" + in.toString() + ")";
     }

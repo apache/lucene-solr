@@ -263,7 +263,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   }
 
   /** Since Lucene 5.0, every commit (segments_N) writes a unique id.  This will
-   *  return that id, or null if this commit was 5.0. */
+   *  return that id, or null if this commit was prior to 5.0. */
   public byte[] getId() {
     return id == null ? null : id.clone();
   }

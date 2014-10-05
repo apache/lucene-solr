@@ -76,6 +76,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
   private final AtomicLong ramBytesUsed;
   private final int version;
   
+  private final boolean merging;
+  
   static final byte NUMBER = 0;
   static final byte BYTES = 1;
   static final byte SORTED = 2;
@@ -84,20 +86,44 @@ class DirectDocValuesProducer extends DocValuesProducer {
   static final byte SORTED_NUMERIC = 5;
   static final byte SORTED_NUMERIC_SINGLETON = 6;
 
-  static final int VERSION_START = 2;
+  static final int VERSION_START = 3;
   static final int VERSION_CURRENT = VERSION_START;
+  
+  // clone for merge: when merging we don't do any instances.put()s
+  DirectDocValuesProducer(DirectDocValuesProducer original) throws IOException {
+    assert Thread.holdsLock(original);
+    numerics.putAll(original.numerics);
+    binaries.putAll(original.binaries);
+    sorteds.putAll(original.sorteds);
+    sortedSets.putAll(original.sortedSets);
+    sortedNumerics.putAll(original.sortedNumerics);
+    data = original.data.clone();
+    
+    numericInstances.putAll(original.numericInstances);
+    binaryInstances.putAll(original.binaryInstances);
+    sortedInstances.putAll(original.sortedInstances);
+    sortedSetInstances.putAll(original.sortedSetInstances);
+    sortedNumericInstances.putAll(original.sortedNumericInstances);
+    docsWithFieldInstances.putAll(original.docsWithFieldInstances);
+    
+    numEntries = original.numEntries;
+    maxDoc = original.maxDoc;
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
+    version = original.version;
+    merging = true;
+  }
     
   DirectDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
+    merging = false;
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     boolean success = false;
     try {
-      version = CodecUtil.checkHeader(in, metaCodec, 
-                                      VERSION_START,
-                                      VERSION_CURRENT);
+      version = CodecUtil.checkSegmentHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, 
+                                                 state.segmentInfo.getId(), state.segmentSuffix);
       numEntries = readFields(in, state.fieldInfos);
 
       CodecUtil.checkFooter(in);
@@ -114,9 +140,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
     this.data = state.directory.openInput(dataName, state.context);
     success = false;
     try {
-      final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 VERSION_START,
-                                                 VERSION_CURRENT);
+      final int version2 = CodecUtil.checkSegmentHeader(data, dataCodec, VERSION_START, VERSION_CURRENT,
+                                                              state.segmentInfo.getId(), state.segmentSuffix);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch: meta=" + version + ", data=" + version2, data);
       }
@@ -261,7 +286,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
     if (instance == null) {
       // Lazy load
       instance = loadNumeric(numerics.get(field.name));
-      numericInstances.put(field.name, instance);
+      if (!merging) {
+        numericInstances.put(field.name, instance);
+        ramBytesUsed.addAndGet(instance.ramBytesUsed());
+      }
     }
     return instance.numerics;
   }
@@ -275,7 +303,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
         final byte[] values = new byte[entry.count];
         data.readBytes(values, 0, entry.count);
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ramBytesUsed.addAndGet(ret.bytesUsed);
         ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -292,7 +319,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
           values[i] = data.readShort();
         }
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ramBytesUsed.addAndGet(ret.bytesUsed);
         ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -309,7 +335,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
           values[i] = data.readInt();
         }
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ramBytesUsed.addAndGet(ret.bytesUsed);
         ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -326,7 +351,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
           values[i] = data.readLong();
         }
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ramBytesUsed.addAndGet(ret.bytesUsed);
         ret.numerics = new NumericDocValues() {
           @Override
           public long get(int idx) {
@@ -347,7 +371,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
     if (instance == null) {
       // Lazy load
       instance = loadBinary(binaries.get(field.name));
-      binaryInstances.put(field.name, instance);
+      if (!merging) {
+        binaryInstances.put(field.name, instance);
+        ramBytesUsed.addAndGet(instance.ramBytesUsed());
+      }
     }
     final byte[] bytes = instance.bytes;
     final int[] address = instance.address;
@@ -377,8 +404,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     address[entry.count] = data.readInt();
 
-    ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes) + RamUsageEstimator.sizeOf(address));
-
     BinaryRawValues values = new BinaryRawValues();
     values.bytes = bytes;
     values.address = address;
@@ -394,7 +419,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         // Lazy load
         instance = loadSorted(field);
-        sortedInstances.put(field.name, instance);
+        if (!merging) {
+          sortedInstances.put(field.name, instance);
+          ramBytesUsed.addAndGet(instance.ramBytesUsed());
+        }
       }
     }
     return newSortedInstance(instance.docToOrd.numerics, getBinary(field), entry.values.count);
@@ -439,7 +467,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
     if (instance == null) {
       // Lazy load
       instance = loadSortedNumeric(entry);
-      sortedNumericInstances.put(field.name, instance);
+      if (!merging) {
+        sortedNumericInstances.put(field.name, instance);
+        ramBytesUsed.addAndGet(instance.ramBytesUsed());
+      }
     }
     
     if (entry.docToAddress == null) {
@@ -489,7 +520,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
     if (instance == null) {
       // Lazy load
       instance = loadSortedSet(entry);
-      sortedSetInstances.put(field.name, instance);
+      if (!merging) {
+        sortedSetInstances.put(field.name, instance);
+        ramBytesUsed.addAndGet(instance.ramBytesUsed());
+      }
     }
 
     if (instance.docToOrdAddress == null) {
@@ -573,7 +607,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
             bits[i] = data.readLong();
           }
           instance = new FixedBitSet(bits, maxDoc);
-          docsWithFieldInstances.put(field.name, instance);
+          if (!merging) {
+            docsWithFieldInstances.put(field.name, instance);
+            ramBytesUsed.addAndGet(instance.ramBytesUsed());
+          }
         }
       }
       return instance;
@@ -598,6 +635,11 @@ class DirectDocValuesProducer extends DocValuesProducer {
       default: 
         throw new AssertionError();
     }
+  }
+
+  @Override
+  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+    return new DirectDocValuesProducer(this);
   }
 
   @Override

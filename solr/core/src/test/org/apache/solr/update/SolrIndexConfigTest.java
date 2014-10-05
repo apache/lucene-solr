@@ -78,18 +78,6 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   }
 
-  @Test
-  public void testCheckIntegrityAtMerge() throws Exception {
-    SolrConfig solrConfig = new SolrConfig("solr" + File.separator
-        + "collection1", "solrconfig-indexconfig.xml", null);
-    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
-    assertNotNull(solrIndexConfig.checkIntegrityAtMerge);
-    assertTrue(solrIndexConfig.checkIntegrityAtMerge);
-    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
-    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(indexSchema);
-    assertTrue(iwc.getCheckIntegrityAtMerge());
-  }
-
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
     SolrConfig solrConfig = new SolrConfig("solr" + File.separator
         + "collection1", "solrconfig-warmer.xml", null);

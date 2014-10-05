@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene49;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
-import org.junit.BeforeClass;
 
 /**
  * Tests Lucene49DocValuesFormat

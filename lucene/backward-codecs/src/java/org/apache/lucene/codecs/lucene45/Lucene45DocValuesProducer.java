@@ -63,13 +63,16 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** reader for {@link Lucene45DocValuesFormat} */
+/** 
+ * reader for 4.5 docvalues format
+ * @deprecated only for reading old 4.x segments
+ */
+@Deprecated
 class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
@@ -94,6 +97,27 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<>();
   private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<>();
   
+  private final boolean merging;
+  
+  // clone for merge: when merging we don't do any instances.put()s
+  Lucene45DocValuesProducer(Lucene45DocValuesProducer original) throws IOException {
+    assert Thread.holdsLock(original);
+    numerics = original.numerics;
+    binaries = original.binaries;
+    sortedSets = original.sortedSets;
+    ords = original.ords;
+    ordIndexes = original.ordIndexes;
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
+    data = original.data.clone();
+    maxDoc = original.maxDoc;
+    version = original.version;
+    numFields = original.numFields;
+    lenientFieldInfoCheck = original.lenientFieldInfoCheck;
+    addressInstances.putAll(original.addressInstances);
+    ordIndexInstances.putAll(original.ordIndexInstances);
+    merging = true;
+  }
+  
   /** expert: instantiates a new reader */
   @SuppressWarnings("deprecation")
   protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
@@ -103,6 +127,7 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     this.maxDoc = state.segmentInfo.getDocCount();
+    merging = false;
     boolean success = false;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
@@ -439,8 +464,10 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
     if (addrInstance == null) {
       data.seek(bytes.addressesOffset);
       addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, false);
-      addressInstances.put(field.number, addrInstance);
-      ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        addressInstances.put(field.number, addrInstance);
+        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     addresses = addrInstance;
     return addresses;
@@ -486,8 +513,10 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
         size = 1L + bytes.count / interval;
       }
       addrInstance = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
-      addressInstances.put(field.number, addrInstance);
-      ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        addressInstances.put(field.number, addrInstance);
+        ramBytesUsed.addAndGet(addrInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     addresses = addrInstance;
     return addresses;
@@ -556,8 +585,10 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
     if (ordIndexInstance == null) {
       data.seek(entry.offset);
       ordIndexInstance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
-      ordIndexInstances.put(field.number, ordIndexInstance);
-      ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        ordIndexInstances.put(field.number, ordIndexInstance);
+        ramBytesUsed.addAndGet(ordIndexInstance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     ordIndex = ordIndexInstance;
     return ordIndex;
@@ -689,6 +720,11 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
       default:
         throw new AssertionError();
     }
+  }
+
+  @Override
+  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+    return new Lucene45DocValuesProducer(this);
   }
 
   @Override

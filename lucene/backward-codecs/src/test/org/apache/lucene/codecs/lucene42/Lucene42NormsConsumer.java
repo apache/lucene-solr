@@ -36,9 +36,11 @@ import org.apache.lucene.util.packed.PackedInts;
 import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.VERSION_CURRENT;
 
 /**
- * Writer for {@link Lucene42NormsFormat}
+ * Writer for 4.2 norms format for testing
+ * @deprecated for test purposes only
  */
-class Lucene42NormsConsumer extends NormsConsumer { 
+@Deprecated
+final class Lucene42NormsConsumer extends NormsConsumer { 
   static final byte NUMBER = 0;
 
   static final int BLOCK_SIZE = 4096;

@@ -73,6 +73,10 @@ New Features
 * LUCENE-5911: Add MemoryIndex.freeze() to allow thread-safe searching over a 
   MemoryIndex. (Alan Woodward)
 
+* LUCENE-5969: Lucene 5.0 has a new index format with mismatched file detection,
+  improved exception handling, and indirect norms encoding for sparse fields.
+  (Mike McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
@@ -142,6 +146,11 @@ API Changes
 * LUCENE-5924: Rename CheckIndex -fix option to -exorcise. This option does not
   actually fix the index, it just drops data.  (Robert Muir)
 
+* LUCENE-5969: Add Codec.compoundFormat, which handles the encoding of compound 
+  files. Add getMergeInstance() to codec producer APIs, which can be overridden
+  to return an instance optimized for merging instead of searching.
+  (Mike McCandless, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -192,6 +201,10 @@ Optimizations
 * LUCENE-5938: MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is now faster on
   queries that match few documents by using a sparse bit set implementation.
   (Adrien Grand)
+
+* LUCENE-5969: Refactor merging to be more efficient, checksum calculation is
+  per-segment/per-producer, and norms and doc values merging no longer cause 
+  RAM spikes for latent fields. (Mike McCandless, Robert Muir)
 
 Build
 

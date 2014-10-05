@@ -17,9 +17,7 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
 
@@ -32,54 +30,42 @@ class MatchingReaders {
   /** {@link SegmentReader}s that have identical field
    * name/number mapping, so their stored fields and term
    * vectors may be bulk merged. */
-  final SegmentReader[] matchingSegmentReaders;
+  final boolean[] matchingReaders;
 
-  /** How many {@link #matchingSegmentReaders} are set. */
+  /** How many {@link #matchingReaders} are set. */
   final int count;
   
   MatchingReaders(MergeState mergeState) {
     // If the i'th reader is a SegmentReader and has
     // identical fieldName -> number mapping, then this
     // array will be non-null at position i:
-    int numReaders = mergeState.readers.size();
+    int numReaders = mergeState.maxDocs.length;
     int matchedCount = 0;
-    matchingSegmentReaders = new SegmentReader[numReaders];
+    matchingReaders = new boolean[numReaders];
 
     // If this reader is a SegmentReader, and all of its
     // field name -> number mappings match the "merged"
     // FieldInfos, then we can do a bulk copy of the
     // stored fields:
+
+    nextReader:
     for (int i = 0; i < numReaders; i++) {
-      LeafReader reader = mergeState.readers.get(i);
-      // TODO: we may be able to broaden this to
-      // non-SegmentReaders, since FieldInfos is now
-      // required?  But... this'd also require exposing
-      // bulk-copy (TVs and stored fields) API in foreign
-      // readers..
-      if (reader instanceof SegmentReader) {
-        SegmentReader segmentReader = (SegmentReader) reader;
-        boolean same = true;
-        FieldInfos segmentFieldInfos = segmentReader.getFieldInfos();
-        for (FieldInfo fi : segmentFieldInfos) {
-          FieldInfo other = mergeState.fieldInfos.fieldInfo(fi.number);
-          if (other == null || !other.name.equals(fi.name)) {
-            same = false;
-            break;
-          }
-        }
-        if (same) {
-          matchingSegmentReaders[i] = segmentReader;
-          matchedCount++;
+      for (FieldInfo fi : mergeState.fieldInfos[i]) {
+        FieldInfo other = mergeState.mergeFieldInfos.fieldInfo(fi.number);
+        if (other == null || !other.name.equals(fi.name)) {
+          continue nextReader;
         }
       }
+      matchingReaders[i] = true;
+      matchedCount++;
     }
     
     this.count = matchedCount;
 
     if (mergeState.infoStream.isEnabled("SM")) {
-      mergeState.infoStream.message("SM", "merge store matchedCount=" + count + " vs " + mergeState.readers.size());
-      if (count != mergeState.readers.size()) {
-        mergeState.infoStream.message("SM", "" + (mergeState.readers.size() - count) + " non-bulk merges");
+      mergeState.infoStream.message("SM", "merge store matchedCount=" + count + " vs " + numReaders);
+      if (count != numReaders) {
+        mergeState.infoStream.message("SM", "" + (numReaders - count) + " non-bulk merges");
       }
     }
   }

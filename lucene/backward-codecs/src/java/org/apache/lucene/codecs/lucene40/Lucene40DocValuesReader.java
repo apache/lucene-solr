@@ -34,7 +34,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -48,7 +47,6 @@ import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Reads the 4.0 format of norms/docvalues
- * @lucene.experimental
  * @deprecated Only for reading old 4.0 and 4.1 segments
  */
 @Deprecated
@@ -66,12 +64,29 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   private final Map<String,Accountable> instanceInfo = new HashMap<>();
 
   private final AtomicLong ramBytesUsed;
+  
+  private final boolean merging;
+  
+  // clone for merge: when merging we don't do any instances.put()s
+  Lucene40DocValuesReader(Lucene40DocValuesReader original) throws IOException {
+    assert Thread.holdsLock(original);
+    dir = original.dir;
+    state = original.state;
+    legacyKey = original.legacyKey;
+    numericInstances.putAll(original.numericInstances);
+    binaryInstances.putAll(original.binaryInstances);
+    sortedInstances.putAll(original.sortedInstances);
+    instanceInfo.putAll(original.instanceInfo);
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
+    merging = true;
+  }
 
   Lucene40DocValuesReader(SegmentReadState state, String filename, String legacyKey) throws IOException {
     this.state = state;
     this.legacyKey = legacyKey;
-    this.dir = new CompoundFileDirectory(state.directory, filename, state.context, false);
+    this.dir = new Lucene40CompoundReader(state.directory, filename, state.context, false);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOf(getClass()));
+    merging = false;
   }
 
   @Override
@@ -116,7 +131,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
           IOUtils.closeWhileHandlingException(input);
         }
       }
-      numericInstances.put(field.name, instance);
+      if (!merging) {
+        numericInstances.put(field.name, instance);
+      }
     }
     return instance;
   }
@@ -133,8 +150,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
         values[i] = input.readLong();
       }
       long bytesUsed = RamUsageEstimator.sizeOf(values);
-      instanceInfo.put(field.name, Accountables.namedAccountable("long array", bytesUsed));
-      ramBytesUsed.addAndGet(bytesUsed);
+      if (!merging) {
+        instanceInfo.put(field.name, Accountables.namedAccountable("long array", bytesUsed));
+        ramBytesUsed.addAndGet(bytesUsed);
+      }
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -145,8 +164,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       final long minValue = input.readLong();
       final long defaultValue = input.readLong();
       final PackedInts.Reader reader = PackedInts.getReader(input);
-      instanceInfo.put(field.name, reader);
-      ramBytesUsed.addAndGet(reader.ramBytesUsed());
+      if (!merging) {
+        instanceInfo.put(field.name, reader);
+        ramBytesUsed.addAndGet(reader.ramBytesUsed());
+      }
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -175,8 +196,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     final byte values[] = new byte[maxDoc];
     input.readBytes(values, 0, values.length);
     long bytesUsed = RamUsageEstimator.sizeOf(values);
-    instanceInfo.put(field.name, Accountables.namedAccountable("byte array", bytesUsed));
-    ramBytesUsed.addAndGet(bytesUsed);
+    if (!merging) {
+      instanceInfo.put(field.name, Accountables.namedAccountable("byte array", bytesUsed));
+      ramBytesUsed.addAndGet(bytesUsed);
+    }
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -199,8 +222,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       values[i] = input.readShort();
     }
     long bytesUsed = RamUsageEstimator.sizeOf(values);
-    instanceInfo.put(field.name, Accountables.namedAccountable("short array", bytesUsed));
-    ramBytesUsed.addAndGet(bytesUsed);
+    if (!merging) {
+      instanceInfo.put(field.name, Accountables.namedAccountable("short array", bytesUsed));
+      ramBytesUsed.addAndGet(bytesUsed);
+    }
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -223,8 +248,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       values[i] = input.readInt();
     }
     long bytesUsed = RamUsageEstimator.sizeOf(values);
-    instanceInfo.put(field.name, Accountables.namedAccountable("int array", bytesUsed));
-    ramBytesUsed.addAndGet(bytesUsed);
+    if (!merging) {
+      instanceInfo.put(field.name, Accountables.namedAccountable("int array", bytesUsed));
+      ramBytesUsed.addAndGet(bytesUsed);
+    }
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -247,8 +274,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       values[i] = input.readLong();
     }
     long bytesUsed = RamUsageEstimator.sizeOf(values);
-    instanceInfo.put(field.name, Accountables.namedAccountable("long array", bytesUsed));
-    ramBytesUsed.addAndGet(bytesUsed);
+    if (!merging) {
+      instanceInfo.put(field.name, Accountables.namedAccountable("long array", bytesUsed));
+      ramBytesUsed.addAndGet(bytesUsed);
+    }
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -271,8 +300,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       values[i] = input.readInt();
     }
     long bytesUsed = RamUsageEstimator.sizeOf(values);
-    instanceInfo.put(field.name, Accountables.namedAccountable("float array", bytesUsed));
-    ramBytesUsed.addAndGet(bytesUsed);
+    if (!merging) {
+      instanceInfo.put(field.name, Accountables.namedAccountable("float array", bytesUsed));
+      ramBytesUsed.addAndGet(bytesUsed);
+    }
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -295,8 +326,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       values[i] = input.readLong();
     }
     long bytesUsed = RamUsageEstimator.sizeOf(values);
-    instanceInfo.put(field.name, Accountables.namedAccountable("double array", bytesUsed));
-    ramBytesUsed.addAndGet(bytesUsed);
+    if (!merging) {
+      instanceInfo.put(field.name, Accountables.namedAccountable("double array", bytesUsed));
+      ramBytesUsed.addAndGet(bytesUsed);
+    }
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
@@ -325,7 +358,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
         default:
           throw new AssertionError();
       }
-      binaryInstances.put(field.name, instance);
+      if (!merging) {
+        binaryInstances.put(field.name, instance);
+      }
     }
     return instance;
   }
@@ -344,8 +379,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       final PagedBytes.Reader bytesReader = bytes.freeze(true);
       CodecUtil.checkEOF(input);
       success = true;
-      ramBytesUsed.addAndGet(bytesReader.ramBytesUsed());
-      instanceInfo.put(field.name, bytesReader);
+      if (!merging) {
+        ramBytesUsed.addAndGet(bytesReader.ramBytesUsed());
+        instanceInfo.put(field.name, bytesReader);
+      }
       return new BinaryDocValues() {
 
         @Override
@@ -388,8 +425,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       CodecUtil.checkEOF(index);
       success = true;
       long bytesUsed = bytesReader.ramBytesUsed() + reader.ramBytesUsed();
-      ramBytesUsed.addAndGet(bytesUsed);
-      instanceInfo.put(field.name, Accountables.namedAccountable("variable straight", bytesUsed));
+      if (!merging) {
+        ramBytesUsed.addAndGet(bytesUsed);
+        instanceInfo.put(field.name, Accountables.namedAccountable("variable straight", bytesUsed));
+      }
       return new BinaryDocValues() {
         @Override
         public BytesRef get(int docID) {
@@ -434,8 +473,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       CodecUtil.checkEOF(data);
       CodecUtil.checkEOF(index);
       long bytesUsed = bytesReader.ramBytesUsed() + reader.ramBytesUsed();
-      ramBytesUsed.addAndGet(bytesUsed);
-      instanceInfo.put(field.name, Accountables.namedAccountable("fixed deref", bytesUsed));
+      if (!merging) {
+        ramBytesUsed.addAndGet(bytesUsed);
+        instanceInfo.put(field.name, Accountables.namedAccountable("fixed deref", bytesUsed));
+      }
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -479,8 +520,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       CodecUtil.checkEOF(data);
       CodecUtil.checkEOF(index);
       long bytesUsed = bytesReader.ramBytesUsed() + reader.ramBytesUsed();
-      ramBytesUsed.addAndGet(bytesUsed);
-      instanceInfo.put(field.name, Accountables.namedAccountable("variable deref", bytesUsed));
+      if (!merging) {
+        ramBytesUsed.addAndGet(bytesUsed);
+        instanceInfo.put(field.name, Accountables.namedAccountable("variable deref", bytesUsed));
+      }
       success = true;
       return new BinaryDocValues() {
         
@@ -543,7 +586,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
           IOUtils.closeWhileHandlingException(data, index);
         }
       }
-      sortedInstances.put(field.name, instance);
+      if (!merging) {
+        sortedInstances.put(field.name, instance);
+      }
     }
     return instance;
   }
@@ -564,8 +609,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     final PagedBytes.Reader bytesReader = bytes.freeze(true);
     final PackedInts.Reader reader = PackedInts.getReader(index);
     long bytesUsed = bytesReader.ramBytesUsed() + reader.ramBytesUsed();
-    ramBytesUsed.addAndGet(bytesUsed);
-    instanceInfo.put(field.name, Accountables.namedAccountable("fixed sorted", bytesUsed));
+    if (!merging) {
+      ramBytesUsed.addAndGet(bytesUsed);
+      instanceInfo.put(field.name, Accountables.namedAccountable("fixed sorted", bytesUsed));
+    }
 
     return correctBuggyOrds(new SortedDocValues() {
       @Override
@@ -604,8 +651,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
 
     final int valueCount = addressReader.size() - 1;
     long bytesUsed = bytesReader.ramBytesUsed() + addressReader.ramBytesUsed() + ordsReader.ramBytesUsed();
-    ramBytesUsed.addAndGet(bytesUsed);
-    instanceInfo.put(field.name, Accountables.namedAccountable("var sorted", bytesUsed));
+    if (!merging) {
+      ramBytesUsed.addAndGet(bytesUsed);
+      instanceInfo.put(field.name, Accountables.namedAccountable("var sorted", bytesUsed));
+    }
 
     return correctBuggyOrds(new SortedDocValues() {
       @Override
@@ -689,6 +738,11 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
 
   @Override
   public void checkIntegrity() throws IOException {
+  }
+
+  @Override
+  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+    return new Lucene40DocValuesReader(this);
   }
 
   @Override

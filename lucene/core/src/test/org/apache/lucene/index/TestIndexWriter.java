@@ -1327,6 +1327,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
   public void testDeleteUnusedFiles() throws Exception {
+    assumeFalse("test relies on exact filenames", Codec.getDefault() instanceof SimpleTextCodec);
     for(int iter=0;iter<2;iter++) {
       MockDirectoryWrapper dir = newMockDirectory(); // relies on windows semantics
       dir.setEnableVirusScanner(false); // but ensures files are actually deleted

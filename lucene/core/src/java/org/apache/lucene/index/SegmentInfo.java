@@ -149,7 +149,7 @@ public final class SegmentInfo {
   // NOTE: leave package private
   void setDocCount(int docCount) {
     if (this.docCount != -1) {
-      throw new IllegalStateException("docCount was already set");
+      throw new IllegalStateException("docCount was already set: this.docCount=" + this.docCount + " vs docCount=" + docCount);
     }
     this.docCount = docCount;
   }

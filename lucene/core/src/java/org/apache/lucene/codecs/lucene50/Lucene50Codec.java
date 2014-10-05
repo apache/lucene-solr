@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene50;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -27,9 +28,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat;
-import org.apache.lucene.codecs.lucene49.Lucene49NormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -44,11 +42,12 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * @lucene.experimental
  */
 public class Lucene50Codec extends Codec {
-  private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
-  private final TermVectorsFormat vectorsFormat = new Lucene42TermVectorsFormat();
+  private final StoredFieldsFormat fieldsFormat = new Lucene50StoredFieldsFormat();
+  private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene50FieldInfosFormat();
   private final SegmentInfoFormat segmentInfosFormat = new Lucene50SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
+  private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -99,6 +98,11 @@ public class Lucene50Codec extends Codec {
     return liveDocsFormat;
   }
 
+  @Override
+  public final CompoundFormat compoundFormat() {
+    return compoundFormat;
+  }
+
   /** Returns the postings format that should be used for writing 
    *  new segments of <code>field</code>.
    *  
@@ -125,7 +129,7 @@ public class Lucene50Codec extends Codec {
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
   private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene410");
 
-  private final NormsFormat normsFormat = new Lucene49NormsFormat();
+  private final NormsFormat normsFormat = new Lucene50NormsFormat();
 
   @Override
   public final NormsFormat normsFormat() {

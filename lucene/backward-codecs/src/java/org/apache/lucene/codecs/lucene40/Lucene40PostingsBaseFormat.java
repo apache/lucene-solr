@@ -26,17 +26,13 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /** 
- * Provides a {@link PostingsReaderBase} and {@link
- * PostingsWriterBase}.
- *
+ * PostingsReaderBase for 4.0 segments
  * @deprecated Only for reading old 4.0 segments */
-
-// TODO: should these also be named / looked up via SPI?
 @Deprecated
-public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
+final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
 
   /** Sole constructor. */
-  public Lucene40PostingsBaseFormat() {
+  Lucene40PostingsBaseFormat() {
     super("Lucene40");
   }
 

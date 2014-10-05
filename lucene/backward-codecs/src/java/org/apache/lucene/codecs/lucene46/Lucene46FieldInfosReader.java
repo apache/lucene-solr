@@ -38,9 +38,9 @@ import org.apache.lucene.store.IndexInput;
 /**
  * Lucene 4.6 FieldInfos reader.
  * 
- * @lucene.experimental
- * @see Lucene46FieldInfosFormat
+ * @deprecated only for old 4.x segments
  */
+@Deprecated
 final class Lucene46FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */

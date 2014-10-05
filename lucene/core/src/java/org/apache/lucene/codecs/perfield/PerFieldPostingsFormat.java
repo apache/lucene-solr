@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -156,16 +157,24 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           formatToGroups.put(format, group);
         } else {
           // we've already seen this format, so just grab its suffix
-          assert suffixes.containsKey(formatName);
+          if (!suffixes.containsKey(formatName)) {
+            throw new IllegalStateException("no suffix for format name: " + formatName + ", expected: " + group.suffix);
+          }
         }
 
         group.fields.add(field);
 
         String previousValue = fieldInfo.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-        assert previousValue == null;
+        if (previousValue != null) {
+          throw new IllegalStateException("found existing value for " + PER_FIELD_FORMAT_KEY + 
+                                          ", field=" + fieldInfo.name + ", old=" + previousValue + ", new=" + formatName);
+        }
 
         previousValue = fieldInfo.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(group.suffix));
-        assert previousValue == null;
+        if (previousValue != null) {
+          throw new IllegalStateException("found existing value for " + PER_FIELD_SUFFIX_KEY + 
+                                          ", field=" + fieldInfo.name + ", old=" + previousValue + ", new=" + group.suffix);
+        }
       }
 
       // Second pass: write postings
@@ -207,6 +216,24 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     private final Map<String,FieldsProducer> fields = new TreeMap<>();
     private final Map<String,FieldsProducer> formats = new HashMap<>();
+    
+    // clone for merge
+    FieldsReader(FieldsReader other) throws IOException {
+      Map<FieldsProducer,FieldsProducer> oldToNew = new IdentityHashMap<>();
+      // First clone all formats
+      for(Map.Entry<String,FieldsProducer> ent : other.formats.entrySet()) {
+        FieldsProducer values = ent.getValue().getMergeInstance();
+        formats.put(ent.getKey(), values);
+        oldToNew.put(ent.getValue(), values);
+      }
+
+      // Then rebuild fields:
+      for(Map.Entry<String,FieldsProducer> ent : other.fields.entrySet()) {
+        FieldsProducer producer = oldToNew.get(ent.getValue());
+        assert producer != null;
+        fields.put(ent.getKey(), producer);
+      }
+    }
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -221,7 +248,9 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
             if (formatName != null) {
               // null formatName means the field is in fieldInfos, but has no postings!
               final String suffix = fi.getAttribute(PER_FIELD_SUFFIX_KEY);
-              assert suffix != null;
+              if (suffix == null) {
+                throw new IllegalStateException("missing attribute: " + PER_FIELD_SUFFIX_KEY + " for field: " + fieldName);
+              }
               PostingsFormat format = PostingsFormat.forName(formatName);
               String segmentSuffix = getSuffix(formatName, suffix);
               if (!formats.containsKey(segmentSuffix)) {
@@ -281,6 +310,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       for (FieldsProducer producer : formats.values()) {
         producer.checkIntegrity();
       }
+    }
+
+    @Override
+    public FieldsProducer getMergeInstance() throws IOException {
+      return new FieldsReader(this);
     }
 
     @Override

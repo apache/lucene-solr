@@ -466,6 +466,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
   }
+  
+  /** returns current open file handle count */
+  public synchronized long getFileHandleCount() {
+    return openFileHandles.size();
+  }
 
   @Override
   public synchronized void deleteFile(String name) throws IOException {

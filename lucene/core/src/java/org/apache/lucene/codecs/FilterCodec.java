@@ -99,4 +99,8 @@ public abstract class FilterCodec extends Codec {
     return delegate.termVectorsFormat();
   }
 
+  @Override
+  public CompoundFormat compoundFormat() {
+    return delegate.compoundFormat();
+  }
 }

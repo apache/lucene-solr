@@ -27,8 +27,6 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.STRING;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_BIG_CHUNKS;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CHECKSUM;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_EXTENSION;
@@ -109,66 +107,61 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     boolean success = false;
     fieldInfos = fn;
     numDocs = si.getDocCount();
-    ChecksumIndexInput indexStream = null;
-    try {
-      final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);
-      final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
-      // Load the index into memory
-      indexStream = d.openChecksumInput(indexStreamFN, context);
-      final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      version = CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
-      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
-      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-
-      long maxPointer = -1;
-      
-      if (version >= VERSION_CHECKSUM) {
+    
+    int version = -1;
+    long maxPointer = -1;
+    CompressingStoredFieldsIndexReader indexReader = null;
+    
+    // Load the index into memory
+    final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);    
+    try (ChecksumIndexInput indexStream = d.openChecksumInput(indexName, context)) {
+      Throwable priorE = null;
+      try {
+        final String codecNameIdx = formatName + CODEC_SFX_IDX;
+        version = CodecUtil.checkSegmentHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+        assert CodecUtil.segmentHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
+        indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
         maxPointer = indexStream.readVLong();
-        CodecUtil.checkFooter(indexStream);
-      } else {
-        CodecUtil.checkEOF(indexStream);
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(indexStream, priorE);
       }
-      indexStream.close();
-      indexStream = null;
+    }
+    
+    this.version = version;
+    this.maxPointer = maxPointer;
+    this.indexReader = indexReader;
 
+    final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
+    try {
       // Open the data file and read metadata
       fieldsStream = d.openInput(fieldsStreamFN, context);
-      if (version >= VERSION_CHECKSUM) {
-        if (maxPointer + CodecUtil.footerLength() != fieldsStream.length()) {
-          throw new CorruptIndexException("Invalid fieldsStream maxPointer (file truncated?): maxPointer=" + maxPointer + ", length=" + fieldsStream.length(), fieldsStream);
-        }
-      } else {
-        maxPointer = fieldsStream.length();
+      if (maxPointer + CodecUtil.footerLength() != fieldsStream.length()) {
+        throw new CorruptIndexException("Invalid fieldsStream maxPointer (file truncated?): maxPointer=" + maxPointer + ", length=" + fieldsStream.length(), fieldsStream);
       }
-      this.maxPointer = maxPointer;
       final String codecNameDat = formatName + CODEC_SFX_DAT;
-      final int fieldsVersion = CodecUtil.checkHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
+      final int fieldsVersion = CodecUtil.checkSegmentHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
       if (version != fieldsVersion) {
         throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + fieldsVersion, fieldsStream);
       }
-      assert CodecUtil.headerLength(codecNameDat) == fieldsStream.getFilePointer();
+      assert CodecUtil.segmentHeaderLength(codecNameDat, segmentSuffix) == fieldsStream.getFilePointer();
 
-      if (version >= VERSION_BIG_CHUNKS) {
-        chunkSize = fieldsStream.readVInt();
-      } else {
-        chunkSize = -1;
-      }
+      chunkSize = fieldsStream.readVInt();
       packedIntsVersion = fieldsStream.readVInt();
       decompressor = compressionMode.newDecompressor();
       this.bytes = new BytesRef();
       
-      if (version >= VERSION_CHECKSUM) {
-        // NOTE: data file is too costly to verify checksum against all the bytes on open,
-        // but for now we at least verify proper structure of the checksum footer: which looks
-        // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-        // such as file truncation.
-        CodecUtil.retrieveChecksum(fieldsStream);
-      }
+      // NOTE: data file is too costly to verify checksum against all the bytes on open,
+      // but for now we at least verify proper structure of the checksum footer: which looks
+      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+      // such as file truncation.
+      CodecUtil.retrieveChecksum(fieldsStream);
 
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(this, indexStream);
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }
@@ -310,7 +303,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
 
     final DataInput documentInput;
-    if (version >= VERSION_BIG_CHUNKS && totalLength >= 2 * chunkSize) {
+    if (totalLength >= 2 * chunkSize) {
       assert chunkSize > 0;
       assert offset < chunkSize;
 
@@ -497,7 +490,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     void decompress() throws IOException {
       // decompress data
       final int chunkSize = chunkSize();
-      if (version >= VERSION_BIG_CHUNKS && chunkSize >= 2 * CompressingStoredFieldsReader.this.chunkSize) {
+      if (chunkSize >= 2 * CompressingStoredFieldsReader.this.chunkSize) {
         bytes.offset = bytes.length = 0;
         for (int decompressed = 0; decompressed < chunkSize; ) {
           final int toDecompress = Math.min(chunkSize - decompressed, CompressingStoredFieldsReader.this.chunkSize);
@@ -519,10 +512,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
      * Check integrity of the data. The iterator is not usable after this method has been called.
      */
     void checkIntegrity() throws IOException {
-      if (version >= VERSION_CHECKSUM) {
-        fieldsStream.seek(fieldsStream.length() - CodecUtil.footerLength());
-        CodecUtil.checkFooter(fieldsStream);
-      }
+      fieldsStream.seek(fieldsStream.length() - CodecUtil.footerLength());
+      CodecUtil.checkFooter(fieldsStream);
     }
 
   }
@@ -539,9 +530,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   @Override
   public void checkIntegrity() throws IOException {
-    if (version >= VERSION_CHECKSUM) {
-      CodecUtil.checksumEntireFile(fieldsStream);
-    }
+    CodecUtil.checksumEntireFile(fieldsStream);
   }
 
   @Override

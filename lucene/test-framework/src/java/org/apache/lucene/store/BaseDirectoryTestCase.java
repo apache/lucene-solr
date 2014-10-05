@@ -18,7 +18,6 @@ package org.apache.lucene.store;
  */
 
 import java.io.EOFException;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -584,39 +583,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close();
   }
 
-  // LUCENE-3382 test that delegate compound files correctly.
-  public void testCompoundFileAppendTwice() throws IOException {
-    Directory newDir = getDirectory(createTempDir("testCompoundFileAppendTwice"));
-    CompoundFileDirectory csw = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), true);
-    createSequenceFile(newDir, "d1", (byte) 0, 15);
-    IndexOutput out = csw.createOutput("d.xyz", newIOContext(random()));
-    out.writeInt(0);
-    out.close();
-    assertEquals(1, csw.listAll().length);
-    assertEquals("d.xyz", csw.listAll()[0]);
-   
-    csw.close();
-
-    CompoundFileDirectory cfr = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), false);
-    assertEquals(1, cfr.listAll().length);
-    assertEquals("d.xyz", cfr.listAll()[0]);
-    cfr.close();
-    newDir.close();
-  }
-
-  /** Creates a file of the specified size with sequential data. The first
-   *  byte is written as the start byte provided. All subsequent bytes are
-   *  computed as start + offset where offset is the number of the byte.
-   */
-  private void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
-    IndexOutput os = dir.createOutput(name, newIOContext(random()));
-    for (int i=0; i < size; i++) {
-      os.writeByte(start);
-      start ++;
-    }
-    os.close();
-  }
-
   public void testCopyBytes() throws Exception {
     testCopyBytes(getDirectory(createTempDir("testCopyBytes")));
   }
@@ -1039,6 +1005,30 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
     
     input.close();
+    dir.close();
+  }
+  
+  /** 
+   * This test that writes larger than the size of the buffer output
+   * will correctly increment the file pointer.
+   */
+  public void testLargeWrites() throws IOException {
+    Directory dir = getDirectory(createTempDir("largeWrites"));
+    IndexOutput os = dir.createOutput("testBufferStart.txt", newIOContext(random()));
+    
+    byte[] largeBuf = new byte[2048];
+    for (int i=0; i<largeBuf.length; i++) {
+      largeBuf[i] = (byte) (Math.random() * 256);
+    }
+    
+    long currentPos = os.getFilePointer();
+    os.writeBytes(largeBuf, largeBuf.length);
+    
+    try {
+      assertEquals(currentPos + largeBuf.length, os.getFilePointer());
+    } finally {
+      os.close();
+    }
     dir.close();
   }
 }

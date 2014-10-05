@@ -23,15 +23,18 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 
-/** Read-write version of {@link Lucene40DocValuesFormat} for testing */
-@SuppressWarnings("deprecation")
-public class Lucene40RWDocValuesFormat extends Lucene40DocValuesFormat {
+/**
+ * Read-write version of 4.0 docvalues format for testing
+ * @deprecated for test purposes only
+ */
+@Deprecated
+public final class Lucene40RWDocValuesFormat extends Lucene40DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
           "dv", 
-          IndexFileNames.COMPOUND_FILE_EXTENSION);
+          Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
     return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY);
   }
 }

@@ -34,14 +34,11 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
- * Lucene 4.0 implementation of {@link SegmentInfoReader}.
- * 
- * @see Lucene40SegmentInfoFormat
- * @lucene.experimental
+ * Lucene 4.0 SI reader
  * @deprecated Only for reading old 4.0-4.5 segments
  */
 @Deprecated
-public class Lucene40SegmentInfoReader extends SegmentInfoReader {
+final class Lucene40SegmentInfoReader extends SegmentInfoReader {
 
   /** Sole constructor. */
   public Lucene40SegmentInfoReader() {

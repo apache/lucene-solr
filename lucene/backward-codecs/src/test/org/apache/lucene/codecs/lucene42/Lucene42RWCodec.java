@@ -24,17 +24,21 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.codecs.lucene41.Lucene41RWStoredFieldsFormat;
 
 /**
- * Read-write version of {@link Lucene42Codec} for testing.
+ * Read-Write version of 4.2 codec for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene42RWCodec extends Lucene42Codec {
+@Deprecated
+public final class Lucene42RWCodec extends Lucene42Codec {
 
   private static final DocValuesFormat dv = new Lucene42RWDocValuesFormat();
   private static final NormsFormat norms = new Lucene42RWNormsFormat();
+  private static final StoredFieldsFormat storedFields = new Lucene41RWStoredFieldsFormat();
 
   private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
     @Override
@@ -63,5 +67,17 @@ public class Lucene42RWCodec extends Lucene42Codec {
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
     return segmentInfos;
+  }
+
+  @Override
+  public StoredFieldsFormat storedFieldsFormat() {
+    return storedFields;
+  }
+  
+  private final TermVectorsFormat vectorsFormat = new Lucene42RWTermVectorsFormat();
+
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return vectorsFormat;
   }
 }

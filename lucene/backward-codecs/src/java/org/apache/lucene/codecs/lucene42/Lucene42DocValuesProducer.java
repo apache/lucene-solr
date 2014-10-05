@@ -66,9 +66,11 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Reader for {@link Lucene42DocValuesFormat}
+ * Reader for 4.2 docvalues
+ * @deprecated only for reading old 4.x segments
  */
-class Lucene42DocValuesProducer extends DocValuesProducer {
+@Deprecated
+final class Lucene42DocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<String,NumericEntry> numerics;
   private final Map<String,BinaryEntry> binaries;
@@ -104,9 +106,34 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   static final int VERSION_GCD_COMPRESSION = 1;
   static final int VERSION_CHECKSUM = 2;
   static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  
+  private final boolean merging;
+
+  // clone for merge: when merging we don't do any instances.put()s
+  Lucene42DocValuesProducer(Lucene42DocValuesProducer original) throws IOException {
+    assert Thread.holdsLock(original);
+    numerics = original.numerics;
+    binaries = original.binaries;
+    fsts = original.fsts;
+    data = original.data.clone();
+    version = original.version;
+    numEntries = original.numEntries;
+    
+    numericInstances.putAll(original.numericInstances);
+    binaryInstances.putAll(original.binaryInstances);
+    fstInstances.putAll(original.fstInstances);
+    numericInfo.putAll(original.numericInfo);
+    binaryInfo.putAll(original.binaryInfo);
+    addressInfo.putAll(original.addressInfo);
+    
+    maxDoc = original.maxDoc;
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
+    merging = true;
+  }
     
   Lucene42DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
+    merging = false;
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
@@ -221,7 +248,9 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     NumericDocValues instance = numericInstances.get(field.name);
     if (instance == null) {
       instance = loadNumeric(field);
-      numericInstances.put(field.name, instance);
+      if (!merging) {
+        numericInstances.put(field.name, instance);
+      }
     }
     return instance;
   }
@@ -269,8 +298,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         final int formatID = data.readVInt();
         final int bitsPerValue = data.readVInt();
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
-        numericInfo.put(field.name, ordsReader);
+        if (!merging) {
+          ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
+          numericInfo.put(field.name, ordsReader);
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -280,14 +311,18 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       case DELTA_COMPRESSED:
         final int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
-        ramBytesUsed.addAndGet(reader.ramBytesUsed());
-        numericInfo.put(field.name, reader);
+        if (!merging) {
+          ramBytesUsed.addAndGet(reader.ramBytesUsed());
+          numericInfo.put(field.name, reader);
+        }
         return reader;
       case UNCOMPRESSED:
         final byte bytes[] = new byte[maxDoc];
         data.readBytes(bytes, 0, bytes.length);
-        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
-        numericInfo.put(field.name, Accountables.namedAccountable("byte array", maxDoc));
+        if (!merging) {
+          ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
+          numericInfo.put(field.name, Accountables.namedAccountable("byte array", maxDoc));
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -299,8 +334,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         final long mult = data.readLong();
         final int quotientBlockSize = data.readVInt();
         final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, quotientBlockSize, maxDoc, false);
-        ramBytesUsed.addAndGet(quotientReader.ramBytesUsed());
-        numericInfo.put(field.name, quotientReader);
+        if (!merging) {
+          ramBytesUsed.addAndGet(quotientReader.ramBytesUsed());
+          numericInfo.put(field.name, quotientReader);
+        }
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -317,7 +354,9 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     BinaryDocValues instance = binaryInstances.get(field.name);
     if (instance == null) {
       instance = loadBinary(field);
-      binaryInstances.put(field.name, instance);
+      if (!merging) {
+        binaryInstances.put(field.name, instance);
+      }
     }
     return instance;
   }
@@ -328,10 +367,14 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     PagedBytes bytes = new PagedBytes(16);
     bytes.copy(data, entry.numBytes);
     final PagedBytes.Reader bytesReader = bytes.freeze(true);
-    binaryInfo.put(field.name, bytesReader);
+    if (!merging) {
+      binaryInfo.put(field.name, bytesReader);
+    }
     if (entry.minLength == entry.maxLength) {
       final int fixedLength = entry.minLength;
-      ramBytesUsed.addAndGet(bytesReader.ramBytesUsed());
+      if (!merging) {
+        ramBytesUsed.addAndGet(bytesReader.ramBytesUsed());
+      }
       return new BinaryDocValues() {
         @Override
         public BytesRef get(int docID) {
@@ -342,8 +385,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       };
     } else {
       final MonotonicBlockPackedReader addresses = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
-      addressInfo.put(field.name, addresses);
-      ramBytesUsed.addAndGet(bytesReader.ramBytesUsed() + addresses.ramBytesUsed());
+      if (!merging) {
+        addressInfo.put(field.name, addresses);
+        ramBytesUsed.addAndGet(bytesReader.ramBytesUsed() + addresses.ramBytesUsed());
+      }
       return new BinaryDocValues() {
 
         @Override
@@ -367,8 +412,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<>(data, PositiveIntOutputs.getSingleton());
-        ramBytesUsed.addAndGet(instance.ramBytesUsed());
-        fstInstances.put(field.name, instance);
+        if (!merging) {
+          ramBytesUsed.addAndGet(instance.ramBytesUsed());
+          fstInstances.put(field.name, instance);
+        }
       }
     }
     final NumericDocValues docToOrd = getNumeric(field);
@@ -444,8 +491,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<>(data, PositiveIntOutputs.getSingleton());
-        ramBytesUsed.addAndGet(instance.ramBytesUsed());
-        fstInstances.put(field.name, instance);
+        if (!merging) {
+          ramBytesUsed.addAndGet(instance.ramBytesUsed());
+          fstInstances.put(field.name, instance);
+        }
       }
     }
     final BinaryDocValues docToOrds = getBinary(field);
@@ -534,6 +583,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   @Override
   public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
     throw new IllegalStateException("Lucene 4.2 does not support SortedNumeric: how did you pull this off?");
+  }
+
+  @Override
+  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+    return new Lucene42DocValuesProducer(this);
   }
 
   @Override

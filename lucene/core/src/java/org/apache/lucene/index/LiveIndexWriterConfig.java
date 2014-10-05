@@ -94,9 +94,6 @@ public class LiveIndexWriterConfig {
   /** True if segment flushes should use compound file format */
   protected volatile boolean useCompoundFile = IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM;
   
-  /** True if merging should check integrity of segments before merge */
-  protected volatile boolean checkIntegrityAtMerge = IndexWriterConfig.DEFAULT_CHECK_INTEGRITY_AT_MERGE;
-
   /** True if calls to {@link IndexWriter#close()} should first do a commit. */
   protected boolean commitOnClose = IndexWriterConfig.DEFAULT_COMMIT_ON_CLOSE;
 
@@ -464,26 +461,6 @@ public class LiveIndexWriterConfig {
   }
   
   /**
-   * Sets if {@link IndexWriter} should call {@link LeafReader#checkIntegrity()}
-   * on existing segments before merging them into a new one.
-   * <p>
-   * Use <code>true</code> to enable this safety check, which can help
-   * reduce the risk of propagating index corruption from older segments 
-   * into new ones, at the expense of slower merging.
-   * </p>
-   */
-  public LiveIndexWriterConfig setCheckIntegrityAtMerge(boolean checkIntegrityAtMerge) {
-    this.checkIntegrityAtMerge = checkIntegrityAtMerge;
-    return this;
-  }
-  
-  /** Returns true if {@link LeafReader#checkIntegrity()} is called before 
-   *  merging segments. */
-  public boolean getCheckIntegrityAtMerge() {
-    return checkIntegrityAtMerge;
-  }
-
-  /**
    * Returns <code>true</code> if {@link IndexWriter#close()} should first commit before closing.
    */
   public boolean getCommitOnClose() {
@@ -513,7 +490,6 @@ public class LiveIndexWriterConfig {
     sb.append("readerPooling=").append(getReaderPooling()).append("\n");
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
-    sb.append("checkIntegrityAtMerge=").append(getCheckIntegrityAtMerge()).append("\n");
     sb.append("commitOnClose=").append(getCommitOnClose()).append("\n");
     return sb.toString();
   }

@@ -46,4 +46,12 @@ public abstract class FieldsProducer extends Fields implements Closeable, Accoun
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
+  
+  /** 
+   * Returns an instance optimized for merging.
+   * <p>
+   * The default implementation returns {@code this} */
+  public FieldsProducer getMergeInstance() throws IOException {
+    return this;
+  }
 }

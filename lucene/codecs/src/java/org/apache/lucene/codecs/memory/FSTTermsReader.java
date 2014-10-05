@@ -72,7 +72,6 @@ public class FSTTermsReader extends FieldsProducer {
   final TreeMap<String, TermsReader> fields = new TreeMap<>();
   final PostingsReaderBase postingsReader;
   //static boolean TEST = false;
-  final int version;
 
   public FSTTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, FSTTermsWriter.TERMS_EXTENSION);
@@ -82,10 +81,11 @@ public class FSTTermsReader extends FieldsProducer {
 
     boolean success = false;
     try {
-      version = readHeader(in);
-      if (version >= FSTTermsWriter.TERMS_VERSION_CHECKSUM) {
-        CodecUtil.checksumEntireFile(in);
-      }
+      CodecUtil.checkSegmentHeader(in, FSTTermsWriter.TERMS_CODEC_NAME,
+                                       FSTTermsWriter.TERMS_VERSION_START,
+                                       FSTTermsWriter.TERMS_VERSION_CURRENT,
+                                       state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.checksumEntireFile(in);
       this.postingsReader.init(in);
       seekDir(in);
 
@@ -113,17 +113,8 @@ public class FSTTermsReader extends FieldsProducer {
     }
   }
 
-  private int readHeader(IndexInput in) throws IOException {
-    return CodecUtil.checkHeader(in, FSTTermsWriter.TERMS_CODEC_NAME,
-                                     FSTTermsWriter.TERMS_VERSION_START,
-                                     FSTTermsWriter.TERMS_VERSION_CURRENT);
-  }
   private void seekDir(IndexInput in) throws IOException {
-    if (version >= FSTTermsWriter.TERMS_VERSION_CHECKSUM) {
-      in.seek(in.length() - CodecUtil.footerLength() - 8);
-    } else {
-      in.seek(in.length() - 8);
-    }
+    in.seek(in.length() - CodecUtil.footerLength() - 8);
     in.seek(in.readLong());
   }
   private void checkFieldSummary(SegmentInfo info, IndexInput in, TermsReader field, TermsReader previous) throws IOException {

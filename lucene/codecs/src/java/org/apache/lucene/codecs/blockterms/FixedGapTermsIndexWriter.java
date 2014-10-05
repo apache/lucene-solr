@@ -49,12 +49,9 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tii";
 
-  final static String CODEC_NAME = "SIMPLE_STANDARD_TERMS_INDEX";
-  final static int VERSION_START = 0;
-  final static int VERSION_APPEND_ONLY = 1;
-  final static int VERSION_MONOTONIC_ADDRESSING = 2;
-  final static int VERSION_CHECKSUM = 3;
-  final static int VERSION_CURRENT = VERSION_CHECKSUM;
+  final static String CODEC_NAME = "FixedGapTermsIndex";
+  final static int VERSION_START = 4;
+  final static int VERSION_CURRENT = VERSION_START;
 
   final static int BLOCKSIZE = 4096;
   final private int termIndexInterval;
@@ -75,7 +72,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {
-      writeHeader(out);
+      CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       out.writeVInt(termIndexInterval);
       out.writeVInt(PackedInts.VERSION_CURRENT);
       out.writeVInt(BLOCKSIZE);
@@ -85,10 +82,6 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
         IOUtils.closeWhileHandlingException(out);
       }
     }
-  }
-  
-  private void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
   }
 
   @Override

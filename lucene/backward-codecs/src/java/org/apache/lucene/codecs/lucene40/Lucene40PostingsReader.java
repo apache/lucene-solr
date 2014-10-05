@@ -43,13 +43,10 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /** 
- * Concrete class that reads the 4.0 frq/prox
- * postings format. 
- *  
- *  @see Lucene40PostingsFormat
- *  @deprecated Only for reading old 4.0 segments */
+ * Reader for 4.0 postings format
+ * @deprecated Only for reading old 4.0 segments */
 @Deprecated
-public class Lucene40PostingsReader extends PostingsReaderBase {
+final class Lucene40PostingsReader extends PostingsReaderBase {
 
   final static String TERMS_CODEC = "Lucene40PostingsWriterTerms";
   final static String FRQ_CODEC = "Lucene40PostingsWriterFrq";

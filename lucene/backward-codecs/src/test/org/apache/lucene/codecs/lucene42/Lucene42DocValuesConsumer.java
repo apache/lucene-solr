@@ -34,7 +34,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.fst.Builder;
@@ -58,9 +57,11 @@ import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.TABLE_
 import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.UNCOMPRESSED;
 
 /**
- * Writer for {@link Lucene42DocValuesFormat}
+ * Writer for 4.2 docvalues format for testing
+ * @deprecated for test purposes only
  */
-class Lucene42DocValuesConsumer extends DocValuesConsumer {
+@Deprecated
+final class Lucene42DocValuesConsumer extends DocValuesConsumer {
   final IndexOutput data, meta;
   final int maxDoc;
   final float acceptableOverheadRatio;

@@ -129,7 +129,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     seg = writer.newestSegment();
     writer.close();
 
-    fieldInfos = SegmentReader.readFieldInfos(seg);
+    fieldInfos = IndexWriter.readFieldInfos(seg);
   }
   
   @Override

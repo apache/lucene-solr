@@ -26,6 +26,7 @@ import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMInputStream;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 
 /** tests for codecutil methods */
 public class TestCodecUtil extends LuceneTestCase {
@@ -193,5 +194,62 @@ public class TestCodecUtil extends LuceneTestCase {
       assertTrue(suppressed[0].getMessage().contains("checksum failed"));
     }
     input.close();
+  }
+  
+  public void testSegmentHeaderLength() throws Exception {
+    RAMFile file = new RAMFile();
+    IndexOutput output = new RAMOutputStream(file, true);
+    CodecUtil.writeSegmentHeader(output, "FooBar", 5, StringHelper.randomId(), "xyz");
+    output.writeString("this is the data");
+    output.close();
+    
+    IndexInput input = new RAMInputStream("file", file);
+    input.seek(CodecUtil.segmentHeaderLength("FooBar", "xyz"));
+    assertEquals("this is the data", input.readString());
+    input.close();
+  }
+  
+  public void testWriteTooLongSuffix() throws Exception {
+    StringBuilder tooLong = new StringBuilder();
+    for (int i = 0; i < 256; i++) {
+      tooLong.append('a');
+    }
+    RAMFile file = new RAMFile();
+    IndexOutput output = new RAMOutputStream(file, true);
+    try {
+      CodecUtil.writeSegmentHeader(output, "foobar", 5, StringHelper.randomId(), tooLong.toString());
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+  }
+  
+  public void testWriteVeryLongSuffix() throws Exception {
+    StringBuilder justLongEnough = new StringBuilder();
+    for (int i = 0; i < 255; i++) {
+      justLongEnough.append('a');
+    }
+    RAMFile file = new RAMFile();
+    IndexOutput output = new RAMOutputStream(file, true);
+    byte[] id = StringHelper.randomId();
+    CodecUtil.writeSegmentHeader(output, "foobar", 5, id, justLongEnough.toString());
+    output.close();
+    
+    IndexInput input = new RAMInputStream("file", file);
+    CodecUtil.checkSegmentHeader(input, "foobar", 5, 5, id, justLongEnough.toString());
+    assertEquals(input.getFilePointer(), input.length());
+    assertEquals(input.getFilePointer(), CodecUtil.segmentHeaderLength("foobar", justLongEnough.toString()));
+    input.close();
+  }
+  
+  public void testWriteNonAsciiSuffix() throws Exception {
+    RAMFile file = new RAMFile();
+    IndexOutput output = new RAMOutputStream(file, true);
+    try {
+      CodecUtil.writeSegmentHeader(output, "foobar", 5, StringHelper.randomId(), "\u1234");
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
   }
 }

@@ -36,24 +36,12 @@ import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.codecs.lucene40.Lucene40TermVectorsReader.*;
 
-
-// TODO: make a new 4.0 TV format that encodes better
-//   - use startOffset (not endOffset) as base for delta on
-//     next startOffset because today for syns or ngrams or
-//     WDF or shingles etc. we are encoding negative vints
-//     (= slow, 5 bytes per)
-//   - if doc has no term vectors, write 0 into the tvx
-//     file; saves a seek to tvd only to read a 0 vint (and
-//     saves a byte in tvd)
-
 /**
- * Lucene 4.0 Term Vectors writer.
- * <p>
- * It writes .tvd, .tvf, and .tvx files.
- * 
- * @see Lucene40TermVectorsFormat
+ * Writer for 4.0 term vectors format for testing
+ * @deprecated for test purposes only
  */
-public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
+@Deprecated
+final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   private final Directory directory;
   private final String segment;
   private IndexOutput tvx = null, tvd = null, tvf = null;

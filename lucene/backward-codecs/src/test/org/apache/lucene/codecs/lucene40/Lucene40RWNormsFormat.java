@@ -24,15 +24,18 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 
-/** Read-write version of {@link Lucene40NormsFormat} for testing */
-@SuppressWarnings("deprecation")
-public class Lucene40RWNormsFormat extends Lucene40NormsFormat {
+/**
+ * Read-write version of 4.0 norms format for testing
+ * @deprecated for test purposes only
+ */
+@Deprecated
+public final class Lucene40RWNormsFormat extends Lucene40NormsFormat {
 
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
         "nrm", 
-        IndexFileNames.COMPOUND_FILE_EXTENSION);
+        Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
     final Lucene40DocValuesWriter impl = new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
     return new NormsConsumer() {
       @Override

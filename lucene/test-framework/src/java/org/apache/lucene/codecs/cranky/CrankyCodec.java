@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.cranky;
 import java.util.Random;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -83,6 +84,11 @@ public class CrankyCodec extends FilterCodec {
   @Override
   public TermVectorsFormat termVectorsFormat() {
     return new CrankyTermVectorsFormat(delegate.termVectorsFormat(), random);
+  }
+
+  @Override
+  public CompoundFormat compoundFormat() {
+    return new CrankyCompoundFormat(delegate.compoundFormat(), random);
   }
 
   @Override

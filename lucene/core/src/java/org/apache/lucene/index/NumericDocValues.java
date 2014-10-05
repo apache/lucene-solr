@@ -23,7 +23,7 @@ package org.apache.lucene.index;
 public abstract class NumericDocValues {
   
   /** Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.) */
+   *  constructors, typically implicit.) */
   protected NumericDocValues() {}
 
   /**

@@ -24,9 +24,11 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Read-write version of {@link Lucene45DocValuesFormat} for testing.
+ * Read-write version of 4.5 docvalues format for testing
+ * @deprecated for test purposes only
  */
-public class Lucene45RWDocValuesFormat extends Lucene45DocValuesFormat {
+@Deprecated
+public final class Lucene45RWDocValuesFormat extends Lucene45DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {

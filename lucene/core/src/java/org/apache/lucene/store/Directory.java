@@ -100,12 +100,7 @@ public abstract class Directory implements Closeable {
    */
   public abstract void renameFile(String source, String dest) throws IOException;
   
-  /** Returns a stream reading an existing file, with the
-   * specified read buffer size.  The particular Directory
-   * implementation may ignore the buffer size.  Currently
-   * the only Directory implementations that respect this
-   * parameter are {@link FSDirectory} and {@link
-   * CompoundFileDirectory}.
+  /** Returns a stream reading an existing file.
    * <p>Throws {@link FileNotFoundException} or {@link NoSuchFileException}
    * if the file does not exist.
    */

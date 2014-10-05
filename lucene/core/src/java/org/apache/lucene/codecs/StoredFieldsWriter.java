@@ -19,13 +19,13 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.index.LeafReader;
 
 /**
  * Codec API for writing stored fields:
@@ -82,11 +82,13 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    for (LeafReader reader : mergeState.readers) {
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
-      for (int i = 0; i < maxDoc; i++) {
-        if (liveDocs != null && !liveDocs.get(i)) {
+    for (int i=0;i<mergeState.storedFieldsReaders.length;i++) {
+      StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[i];
+      storedFieldsReader.checkIntegrity();
+      int maxDoc = mergeState.maxDocs[i];
+      Bits liveDocs = mergeState.liveDocs[i];
+      for (int docID=0;docID<maxDoc;docID++) {
+        if (liveDocs != null && !liveDocs.get(docID)) {
           // skip deleted docs
           continue;
         }
@@ -96,13 +98,15 @@ public abstract class StoredFieldsWriter implements Closeable {
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        StoredDocument doc = reader.document(i);
-        addDocument(doc, mergeState.fieldInfos);
+        DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+        storedFieldsReader.visitDocument(docID, visitor);
+        StoredDocument doc = visitor.getDocument();
+        addDocument(doc, mergeState.mergeFieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
       }
     }
-    finish(mergeState.fieldInfos, docCount);
+    finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
   }
   
