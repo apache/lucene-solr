@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene49;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,7 +31,7 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Lucene 4.9 Score normalization format.
+ * Lucene 5.0 Score normalization format.
  * <p>
  * Encodes normalization values with these strategies:
  * <p>
@@ -47,6 +47,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>Delta-compressed: per-document integers written as deltas from the minimum value,
  *        compressed with bitpacking. For more information, see {@link BlockPackedWriter}.
  *        This is only used when norms of larger than one byte are present.
+ *    <li>Indirect: when norms are extremely sparse, missing values are omitted.
+ *        Access to an individual value is slower, but missing norm values are never accessed
+ *        by search code.
  * </ul>
  * <p>
  * Files:
@@ -78,6 +81,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *             a lookup table of unique values is written, followed by the ordinal for each document.
  *         <li>2 --&gt; constant. When there is a single value for the entire field.
  *         <li>3 --&gt; uncompressed: Values written as a simple byte[].
+ *         <li>4 --&gt; indirect. Only documents with a value are written with a sparse encoding.
  *      </ul>
  *   <li><a name="nvd" id="nvd"></a>
  *   <p>The Norms data or .nvd file.</p>
@@ -97,24 +101,24 @@ import org.apache.lucene.util.packed.PackedInts;
  * </ol>
  * @lucene.experimental
  */
-public class Lucene49NormsFormat extends NormsFormat {
+public class Lucene50NormsFormat extends NormsFormat {
 
   /** Sole Constructor */
-  public Lucene49NormsFormat() {}
+  public Lucene50NormsFormat() {}
   
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene49NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    return new Lucene50NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
 
   @Override
   public NormsProducer normsProducer(SegmentReadState state) throws IOException {
-    return new Lucene49NormsProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    return new Lucene50NormsProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   
-  private static final String DATA_CODEC = "Lucene49NormsData";
+  private static final String DATA_CODEC = "Lucene50NormsData";
   private static final String DATA_EXTENSION = "nvd";
-  private static final String METADATA_CODEC = "Lucene49NormsMetadata";
+  private static final String METADATA_CODEC = "Lucene50NormsMetadata";
   private static final String METADATA_EXTENSION = "nvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;

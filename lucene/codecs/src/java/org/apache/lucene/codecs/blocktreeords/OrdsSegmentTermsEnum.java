@@ -1030,7 +1030,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
 
   @Override
   public String toString() {
-    return "OrdsSegmentTermsEnum(seg=" + fr.parent.segment + ")";
+    return "OrdsSegmentTermsEnum(seg=" + fr.parent + ")";
   }
 
   /** Holds a single input (IntsRef) + output pair. */

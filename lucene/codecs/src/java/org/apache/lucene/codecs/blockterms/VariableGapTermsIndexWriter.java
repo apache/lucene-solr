@@ -52,11 +52,9 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tiv";
 
-  final static String CODEC_NAME = "VARIABLE_GAP_TERMS_INDEX";
-  final static int VERSION_START = 0;
-  final static int VERSION_APPEND_ONLY = 1;
-  final static int VERSION_CHECKSUM = 2;
-  final static int VERSION_CURRENT = VERSION_CHECKSUM;
+  final static String CODEC_NAME = "VariableGapTermsIndex";
+  final static int VERSION_START = 3;
+  final static int VERSION_CURRENT = VERSION_START;
 
   private final List<FSTFieldWriter> fields = new ArrayList<>();
   
@@ -184,17 +182,13 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     try {
       fieldInfos = state.fieldInfos;
       this.policy = policy;
-      writeHeader(out);
+      CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       success = true;
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(out);
       }
     }
-  }
-  
-  private void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
   }
 
   @Override

@@ -92,10 +92,33 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
   private final Map<String,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<>();
   private final Map<String,ReverseTermsIndex> reverseIndexInstances = new HashMap<>();
   
+  private final boolean merging;
+  
+  // clone for merge: when merging we don't do any instances.put()s
+  Lucene410DocValuesProducer(Lucene410DocValuesProducer original) throws IOException {
+    assert Thread.holdsLock(original);
+    numerics.putAll(original.numerics);
+    binaries.putAll(original.binaries);
+    sortedSets.putAll(original.sortedSets);
+    sortedNumerics.putAll(original.sortedNumerics);
+    ords.putAll(original.ords);
+    ordIndexes.putAll(original.ordIndexes);
+    numFields = original.numFields;
+    ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
+    data = original.data.clone();
+    maxDoc = original.maxDoc;
+    
+    addressInstances.putAll(original.addressInstances);
+    ordIndexInstances.putAll(original.ordIndexInstances);
+    reverseIndexInstances.putAll(original.reverseIndexInstances);
+    merging = true;
+  }
+  
   /** expert: instantiates a new reader */
   Lucene410DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     this.maxDoc = state.segmentInfo.getDocCount();
+    merging = false;
     
     int version = -1;
     int numFields = -1;
@@ -441,8 +464,10 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
     if (addresses == null) {
       data.seek(bytes.addressesOffset);
       addresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count+1, false);
-      addressInstances.put(field.name, addresses);
-      ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        addressInstances.put(field.name, addresses);
+        ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     return addresses;
   }
@@ -479,8 +504,10 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
       data.seek(bytes.addressesOffset);
       final long size = (bytes.count + INTERVAL_MASK) >>> INTERVAL_SHIFT;
       addresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
-      addressInstances.put(field.name, addresses);
-      ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        addressInstances.put(field.name, addresses);
+        ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     return addresses;
   }
@@ -497,8 +524,10 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
       PagedBytes pagedBytes = new PagedBytes(15);
       pagedBytes.copy(data, dataSize);
       index.terms = pagedBytes.freeze(true);
-      reverseIndexInstances.put(field.name, index);
-      ramBytesUsed.addAndGet(index.ramBytesUsed());
+      if (!merging) {
+        reverseIndexInstances.put(field.name, index);
+        ramBytesUsed.addAndGet(index.ramBytesUsed());
+      }
     }
     return index;
   }
@@ -560,8 +589,10 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
     if (instance == null) {
       data.seek(entry.offset);
       instance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count+1, false);
-      ordIndexInstances.put(field.name, instance);
-      ramBytesUsed.addAndGet(instance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      if (!merging) {
+        ordIndexInstances.put(field.name, instance);
+        ramBytesUsed.addAndGet(instance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+      }
     }
     return instance;
   }
@@ -723,6 +754,11 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
       default:
         throw new AssertionError();
     }
+  }
+
+  @Override
+  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+    return new Lucene410DocValuesProducer(this);
   }
 
   @Override

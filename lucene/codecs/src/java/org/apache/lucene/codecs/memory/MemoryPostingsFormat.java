@@ -29,6 +29,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -53,7 +54,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Builder;
@@ -276,7 +276,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
 
   private static String EXTENSION = "ram";
   private static final String CODEC_NAME = "MemoryPostings";
-  private static final int VERSION_START = 0;
+  private static final int VERSION_START = 1;
   private static final int VERSION_CURRENT = VERSION_START;
 
   private class MemoryFieldsConsumer extends FieldsConsumer {
@@ -288,7 +288,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       out = state.directory.createOutput(fileName, state.context);
       boolean success = false;
       try {
-        CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
+        CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         success = true;
       } finally {
         if (!success) {
@@ -894,7 +894,9 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       this.termCount = termCount;
       final int fieldNumber = in.readVInt();
       field = fieldInfos.fieldInfo(fieldNumber);
-      if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+      if (field == null) {
+        throw new CorruptIndexException("invalid field number: " + fieldNumber, in);
+      } else if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
         sumTotalTermFreq = in.readVLong();
       } else {
         sumTotalTermFreq = -1;
@@ -973,24 +975,27 @@ public final class MemoryPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
-    final ChecksumIndexInput in = state.directory.openChecksumInput(fileName, IOContext.READONCE);
 
     final SortedMap<String,TermsReader> fields = new TreeMap<>();
 
-    try {
-      CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
-      while(true) {
-        final int termCount = in.readVInt();
-        if (termCount == 0) {
-          break;
+    try (ChecksumIndexInput in = state.directory.openChecksumInput(fileName, IOContext.READONCE)) {
+      Throwable priorE = null;
+      try {
+        CodecUtil.checkSegmentHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        while(true) {
+          final int termCount = in.readVInt();
+          if (termCount == 0) {
+            break;
+          }
+          final TermsReader termsReader = new TermsReader(state.fieldInfos, in, termCount);
+          // System.out.println("load field=" + termsReader.field.name);
+          fields.put(termsReader.field.name, termsReader);
         }
-        final TermsReader termsReader = new TermsReader(state.fieldInfos, in, termCount);
-        // System.out.println("load field=" + termsReader.field.name);
-        fields.put(termsReader.field.name, termsReader);
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(in, priorE);
       }
-      CodecUtil.checkFooter(in);
-    } finally {
-      in.close();
     }
 
     return new FieldsProducer() {

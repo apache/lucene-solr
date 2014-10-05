@@ -25,7 +25,6 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput;
 
 /**

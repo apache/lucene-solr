@@ -47,4 +47,12 @@ public abstract class NormsProducer implements Closeable, Accountable {
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
+  
+  /** 
+   * Returns an instance optimized for merging.
+   * <p>
+   * The default implementation returns {@code this} */
+  public NormsProducer getMergeInstance() throws IOException {
+    return this;
+  }
 }

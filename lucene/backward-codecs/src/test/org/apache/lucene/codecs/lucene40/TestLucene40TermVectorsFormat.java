@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene40;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
-import org.junit.BeforeClass;
 
 public class TestLucene40TermVectorsFormat extends BaseTermVectorsFormatTestCase {
   

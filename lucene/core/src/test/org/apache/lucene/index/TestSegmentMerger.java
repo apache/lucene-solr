@@ -83,7 +83,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
     SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(reader1, reader2),
         si, InfoStream.getDefault(), mergedDir,
-        MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), newIOContext(random()), true);
+        MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), newIOContext(random()));
     MergeState mergeState = merger.merge();
     int docsMerged = mergeState.segmentInfo.getDocCount();
     assertTrue(docsMerged == 2);

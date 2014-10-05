@@ -23,12 +23,13 @@ import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.LuceneTestCase;
 
-/** 
- * Simulates writing Lucene 4.0 Stored Fields Format.
- */ 
-public class Lucene40RWTermVectorsFormat extends Lucene40TermVectorsFormat {
+/**
+ * Read-write version of 4.0 term vectors format for testing
+ * @deprecated for test purposes only
+ */
+@Deprecated
+public final class Lucene40RWTermVectorsFormat extends Lucene40TermVectorsFormat {
 
   @Override
   public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {

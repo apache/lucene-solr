@@ -36,8 +36,8 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable, Accoun
   protected StoredFieldsReader() {
   }
   
-  /** Visit the stored fields for document <code>n</code> */
-  public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws IOException;
+  /** Visit the stored fields for document <code>docID</code> */
+  public abstract void visitDocument(int docID, StoredFieldVisitor visitor) throws IOException;
 
   @Override
   public abstract StoredFieldsReader clone();
@@ -50,4 +50,12 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable, Accoun
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
+  
+  /** 
+   * Returns an instance optimized for merging.
+   * <p>
+   * The default implementation returns {@code this} */
+  public StoredFieldsReader getMergeInstance() throws IOException {
+    return this;
+  }
 }

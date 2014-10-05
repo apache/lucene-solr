@@ -40,14 +40,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 /**
- * Class responsible for access to stored document fields.
- * <p/>
- * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
- * 
- * @see Lucene40StoredFieldsFormat
- * @lucene.internal
+ * Reader for 4.0 stored fields
+ * @deprecated only for reading 4.0 segments
  */
-public final class Lucene40StoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {
+@Deprecated
+final class Lucene40StoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {
 
   // NOTE: bit 0 is free here!  You can steal it!
   static final int FIELD_IS_BINARY = 1 << 1;
@@ -76,10 +73,10 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
 
 
   /** Extension of stored fields file */
-  public static final String FIELDS_EXTENSION = "fdt";
+  static final String FIELDS_EXTENSION = "fdt";
   
   /** Extension of stored fields index file */
-  public static final String FIELDS_INDEX_EXTENSION = "fdx";
+  static final String FIELDS_INDEX_EXTENSION = "fdx";
   
   private static final long RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Lucene40StoredFieldsReader.class);
 

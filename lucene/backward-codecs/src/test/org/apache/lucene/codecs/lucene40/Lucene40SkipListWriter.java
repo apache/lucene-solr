@@ -25,14 +25,11 @@ import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 
 
 /**
- * Implements the skip list writer for the 4.0 posting list format
- * that stores positions and payloads.
- * 
- * @see Lucene40PostingsFormat
- * @deprecated Only for reading old 4.0 segments
+ * Writer of 4.0 skip lists for testing
+ * @deprecated for test purposes only
  */
 @Deprecated
-public class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
+final class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
   private int[] lastSkipDoc;
   private int[] lastSkipPayloadLength;
   private int[] lastSkipOffsetLength;

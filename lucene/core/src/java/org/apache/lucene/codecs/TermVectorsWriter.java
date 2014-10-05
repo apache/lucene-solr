@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -177,25 +176,34 @@ public abstract class TermVectorsWriter implements Closeable {
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
-    for (int i = 0; i < mergeState.readers.size(); i++) {
-      final LeafReader reader = mergeState.readers.get(i);
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
+    int numReaders = mergeState.maxDocs.length;
+    for (int i = 0; i < numReaders; i++) {
+      int maxDoc = mergeState.maxDocs[i];
+      Bits liveDocs = mergeState.liveDocs[i];
+      TermVectorsReader termVectorsReader = mergeState.termVectorsReaders[i];
+      if (termVectorsReader != null) {
+        termVectorsReader.checkIntegrity();
+      }
 
-      for (int docID = 0; docID < maxDoc; docID++) {
+      for (int docID=0;docID<maxDoc;docID++) {
         if (liveDocs != null && !liveDocs.get(docID)) {
           // skip deleted docs
           continue;
         }
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors = reader.getTermVectors(docID);
+        Fields vectors;
+        if (termVectorsReader == null) {
+          vectors = null;
+        } else {
+          vectors = termVectorsReader.get(docID);
+        }
         addAllDocVectors(vectors, mergeState);
         docCount++;
         mergeState.checkAbort.work(300);
       }
     }
-    finish(mergeState.fieldInfos, docCount);
+    finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
   }
   
@@ -227,7 +235,7 @@ public abstract class TermVectorsWriter implements Closeable {
     int fieldCount = 0;
     for(String fieldName : vectors) {
       fieldCount++;
-      final FieldInfo fieldInfo = mergeState.fieldInfos.fieldInfo(fieldName);
+      final FieldInfo fieldInfo = mergeState.mergeFieldInfos.fieldInfo(fieldName);
 
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;

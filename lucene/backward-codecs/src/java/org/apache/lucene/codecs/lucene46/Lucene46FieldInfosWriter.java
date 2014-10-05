@@ -34,9 +34,9 @@ import org.apache.lucene.store.IOContext;
 /**
  * Lucene 4.6 FieldInfos writer.
  * 
- * @see Lucene46FieldInfosFormat
- * @lucene.experimental
+ * @deprecated only for old 4.x segments
  */
+@Deprecated
 final class Lucene46FieldInfosWriter extends FieldInfosWriter {
   
   /** Sole constructor. */

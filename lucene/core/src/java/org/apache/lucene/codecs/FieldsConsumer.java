@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MappedMultiFields;
 import org.apache.lucene.index.MergeState;
@@ -90,11 +89,12 @@ public abstract class FieldsConsumer implements Closeable {
 
     int docBase = 0;
 
-    for(int readerIndex=0;readerIndex<mergeState.readers.size();readerIndex++) {
-      final LeafReader reader = mergeState.readers.get(readerIndex);
-      final Fields f = reader.fields();
-      final int maxDoc = reader.maxDoc();
+    for(int readerIndex=0;readerIndex<mergeState.fieldsProducers.length;readerIndex++) {
+      final FieldsProducer f = mergeState.fieldsProducers[readerIndex];
+
+      final int maxDoc = mergeState.maxDocs[readerIndex];
       if (f != null) {
+        f.checkIntegrity();
         slices.add(new ReaderSlice(docBase, maxDoc, readerIndex));
         fields.add(f);
       }

@@ -33,12 +33,11 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Version;
 
 /**
- * Lucene 4.6 implementation of {@link SegmentInfoReader}.
- * 
- * @see Lucene46SegmentInfoFormat
- * @lucene.experimental
+ * Lucene 4.6 segment infos reader
+ * @deprecated only for old 4.x segments
  */
-public class Lucene46SegmentInfoReader extends SegmentInfoReader {
+@Deprecated
+final class Lucene46SegmentInfoReader extends SegmentInfoReader {
 
   /** Sole constructor. */
   public Lucene46SegmentInfoReader() {

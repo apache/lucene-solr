@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,7 +27,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Lucene 4.1 stored fields format.
+ * Lucene 5.0 stored fields format.
  *
  * <p><b>Principle</b></p>
  * <p>This {@link StoredFieldsFormat} compresses blocks of 16KB of documents in
@@ -52,7 +52,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>Here is a more detailed description of the field data file format:</p>
  * <ul>
  * <li>FieldData (.fdt) --&gt; &lt;Header&gt;, PackedIntsVersion, &lt;Chunk&gt;<sup>ChunkCount</sup></li>
- * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkCount is not known in advance and is the number of chunks necessary to store all document of the segment</li>
  * <li>Chunk --&gt; DocBase, ChunkDocs, DocFieldCounts, DocLengths, &lt;CompressedDocs&gt;</li>
@@ -104,7 +104,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>A fields index file (extension <tt>.fdx</tt>).</p>
  * <ul>
  * <li>FieldsIndex (.fdx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;</li>
- * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
  * </ul>
  * </li>
@@ -114,11 +114,11 @@ import org.apache.lucene.util.packed.PackedInts;
  * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.</p>
  * @lucene.experimental
  */
-public final class Lucene41StoredFieldsFormat extends CompressingStoredFieldsFormat {
+public final class Lucene50StoredFieldsFormat extends CompressingStoredFieldsFormat {
 
   /** Sole constructor. */
-  public Lucene41StoredFieldsFormat() {
-    super("Lucene41StoredFields", CompressionMode.FAST, 1 << 14);
+  public Lucene50StoredFieldsFormat() {
+    super("Lucene50StoredFields", CompressionMode.FAST, 1 << 14);
   }
 
 }

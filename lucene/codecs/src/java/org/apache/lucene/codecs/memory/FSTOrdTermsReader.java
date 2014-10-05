@@ -75,7 +75,6 @@ public class FSTOrdTermsReader extends FieldsProducer {
   static final int INTERVAL = FSTOrdTermsWriter.SKIP_INTERVAL;
   final TreeMap<String, TermsReader> fields = new TreeMap<>();
   final PostingsReaderBase postingsReader;
-  int version;
   //static final boolean TEST = false;
 
   public FSTOrdTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
@@ -89,11 +88,20 @@ public class FSTOrdTermsReader extends FieldsProducer {
     try {
       indexIn = state.directory.openChecksumInput(termsIndexFileName, state.context);
       blockIn = state.directory.openInput(termsBlockFileName, state.context);
-      version = readHeader(indexIn);
-      readHeader(blockIn);
-      if (version >= FSTOrdTermsWriter.TERMS_VERSION_CHECKSUM) {
-        CodecUtil.checksumEntireFile(blockIn);
+      int version = CodecUtil.checkSegmentHeader(indexIn, FSTOrdTermsWriter.TERMS_INDEX_CODEC_NAME, 
+                                                          FSTOrdTermsWriter.VERSION_START, 
+                                                          FSTOrdTermsWriter.VERSION_CURRENT, 
+                                                          state.segmentInfo.getId(), state.segmentSuffix);
+      int version2 = CodecUtil.checkSegmentHeader(blockIn, FSTOrdTermsWriter.TERMS_CODEC_NAME, 
+                                                           FSTOrdTermsWriter.VERSION_START, 
+                                                           FSTOrdTermsWriter.VERSION_CURRENT, 
+                                                           state.segmentInfo.getId(), state.segmentSuffix);
+      
+      if (version != version2) {
+        throw new CorruptIndexException("Format versions mismatch: index=" + version + ", terms=" + version2, blockIn);
       }
+
+      CodecUtil.checksumEntireFile(blockIn);
       
       this.postingsReader.init(blockIn);
       seekDir(blockIn);
@@ -114,11 +122,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         TermsReader previous = fields.put(fieldInfo.name, current);
         checkFieldSummary(state.segmentInfo, indexIn, blockIn, current, previous);
       }
-      if (version >= FSTOrdTermsWriter.TERMS_VERSION_CHECKSUM) {
-        CodecUtil.checkFooter(indexIn);
-      } else {
-        CodecUtil.checkEOF(indexIn);
-      }
+      CodecUtil.checkFooter(indexIn);
       success = true;
     } finally {
       if (success) {
@@ -129,17 +133,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
   }
 
-  private int readHeader(IndexInput in) throws IOException {
-    return CodecUtil.checkHeader(in, FSTOrdTermsWriter.TERMS_CODEC_NAME,
-                                     FSTOrdTermsWriter.TERMS_VERSION_START,
-                                     FSTOrdTermsWriter.TERMS_VERSION_CURRENT);
-  }
   private void seekDir(IndexInput in) throws IOException {
-    if (version >= FSTOrdTermsWriter.TERMS_VERSION_CHECKSUM) {
-      in.seek(in.length() - CodecUtil.footerLength() - 8);
-    } else {
-      in.seek(in.length() - 8);
-    }
+    in.seek(in.length() - CodecUtil.footerLength() - 8);
     in.seek(in.readLong());
   }
   private void checkFieldSummary(SegmentInfo info, IndexInput indexIn, IndexInput blockIn, TermsReader field, TermsReader previous) throws IOException {

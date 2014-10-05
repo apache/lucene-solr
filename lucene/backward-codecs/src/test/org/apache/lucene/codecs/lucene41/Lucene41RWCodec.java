@@ -15,7 +15,6 @@ import org.apache.lucene.codecs.lucene40.Lucene40RWDocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWNormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWTermVectorsFormat;
-import org.apache.lucene.util.LuceneTestCase;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,11 +34,12 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 
 /**
- * Read-write version of {@link Lucene41Codec} for testing.
+ * Read-write version of 4.1 codec for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene41RWCodec extends Lucene41Codec {
-  private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
+@Deprecated
+public final class Lucene41RWCodec extends Lucene41Codec {
+  private final StoredFieldsFormat fieldsFormat = new Lucene41RWStoredFieldsFormat();
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {
     @Override
     public FieldInfosWriter getFieldInfosWriter() throws IOException {

@@ -18,8 +18,8 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
@@ -30,17 +30,9 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 4.0 index format, with configurable per-field postings formats.
- * <p>
- * If you want to reuse functionality of this codec in another codec, extend
- * {@link FilterCodec}.
- *
- * @see org.apache.lucene.codecs.lucene40 package documentation for file format details.
+ * Reader for the 4.0 file format
  * @deprecated Only for reading old 4.0 segments
  */
-// NOTE: if we make largish changes in a minor release, easier to just make Lucene42Codec or whatever
-// if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
-// (it writes a minor version, etc).
 @Deprecated
 public class Lucene40Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene40StoredFieldsFormat();
@@ -48,6 +40,7 @@ public class Lucene40Codec extends Codec {
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
+  private final CompoundFormat compoundFormat = new Lucene40CompoundFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -86,6 +79,11 @@ public class Lucene40Codec extends Codec {
     return infosFormat;
   }
   
+  @Override
+  public CompoundFormat compoundFormat() {
+    return compoundFormat;
+  }
+
   private final DocValuesFormat defaultDVFormat = new Lucene40DocValuesFormat();
 
   @Override

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,10 +18,10 @@ package org.apache.lucene.codecs.lucene41;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-public class TestLucene41StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
+public class TestLucene50TermVectorsFormat extends BaseTermVectorsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return TestUtil.getDefaultCodec();

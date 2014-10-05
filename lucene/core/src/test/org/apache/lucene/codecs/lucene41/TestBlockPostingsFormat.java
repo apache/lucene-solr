@@ -17,8 +17,17 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.blocktree.FieldReader;
+import org.apache.lucene.codecs.blocktree.Stats;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -30,5 +39,29 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return codec;
+  }
+  
+  /** Make sure the final sub-block(s) are not skipped. */
+  public void testFinalBlock() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
+    for(int i=0;i<25;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("field", Character.toString((char) (97+i)), Field.Store.NO));
+      doc.add(newStringField("field", "z" + Character.toString((char) (97+i)), Field.Store.NO));
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    assertEquals(1, r.leaves().size());
+    FieldReader field = (FieldReader) r.leaves().get(0).reader().fields().terms("field");
+    // We should see exactly two blocks: one root block (prefix empty string) and one block for z* terms (prefix z):
+    Stats stats = field.computeStats();
+    assertEquals(0, stats.floorBlockCount);
+    assertEquals(2, stats.nonFloorBlockCount);
+    r.close();
+    w.close();
+    d.close();
   }
 }

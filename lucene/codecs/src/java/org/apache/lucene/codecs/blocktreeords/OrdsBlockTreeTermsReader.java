@@ -31,12 +31,9 @@ import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -62,42 +59,33 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
 
   private final TreeMap<String,OrdsFieldReader> fields = new TreeMap<>();
 
-  /** File offset where the directory starts in the terms file. */
-  private long dirOffset;
-
-  /** File offset where the directory starts in the index file. */
-  private long indexDirOffset;
-
-  final String segment;
-  
-  private final int version;
-
   /** Sole constructor. */
-  public OrdsBlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
-                                  PostingsReaderBase postingsReader, IOContext ioContext,
-                                  String segmentSuffix)
-    throws IOException {
+  public OrdsBlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
     
     this.postingsReader = postingsReader;
 
-    this.segment = info.name;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, OrdsBlockTreeTermsWriter.TERMS_EXTENSION),
-                       ioContext);
+    String termsFile = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+                                                      state.segmentSuffix, 
+                                                      OrdsBlockTreeTermsWriter.TERMS_EXTENSION);
+    in = state.directory.openInput(termsFile, state.context);
 
     boolean success = false;
     IndexInput indexIn = null;
 
     try {
-      version = CodecUtil.checkHeader(in,
-                                      OrdsBlockTreeTermsWriter.TERMS_CODEC_NAME,
-                                      OrdsBlockTreeTermsWriter.VERSION_START,
-                                      OrdsBlockTreeTermsWriter.VERSION_CURRENT);
-      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, OrdsBlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
-                              ioContext);
-      int indexVersion = CodecUtil.checkHeader(indexIn,
-                                               OrdsBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
-                                               OrdsBlockTreeTermsWriter.VERSION_START,
-                                               OrdsBlockTreeTermsWriter.VERSION_CURRENT);
+      int version = CodecUtil.checkSegmentHeader(in, OrdsBlockTreeTermsWriter.TERMS_CODEC_NAME,
+                                                     OrdsBlockTreeTermsWriter.VERSION_START,
+                                                     OrdsBlockTreeTermsWriter.VERSION_CURRENT,
+                                                     state.segmentInfo.getId(), state.segmentSuffix);
+      
+      String indexFile = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+                                                        state.segmentSuffix, 
+                                                        OrdsBlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
+      indexIn = state.directory.openInput(indexFile, state.context);
+      int indexVersion = CodecUtil.checkSegmentHeader(indexIn, OrdsBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+                                                               OrdsBlockTreeTermsWriter.VERSION_START,
+                                                               OrdsBlockTreeTermsWriter.VERSION_CURRENT,
+                                                               state.segmentInfo.getId(), state.segmentSuffix);
       if (indexVersion != version) {
         throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion, indexIn);
       }
@@ -116,8 +104,8 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
       CodecUtil.retrieveChecksum(in);
 
       // Read per-field details
-      seekDir(in, dirOffset);
-      seekDir(indexIn, indexDirOffset);
+      seekDir(in);
+      seekDir(indexIn);
 
       final int numFields = in.readVInt();
       if (numFields < 0) {
@@ -134,7 +122,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
         in.readBytes(code.bytes, 0, numBytes);
         code.length = numBytes;
         final Output rootCode = OrdsBlockTreeTermsWriter.FST_OUTPUTS.newOutput(code, 0, numTerms);
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         assert fieldInfo != null: "field=" + field;
         assert numTerms <= Integer.MAX_VALUE;
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
@@ -145,8 +133,8 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
 
         BytesRef minTerm = readBytesRef(in);
         BytesRef maxTerm = readBytesRef(in);
-        if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
-          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount(), in);
+        if (docCount < 0 || docCount > state.segmentInfo.getDocCount()) { // #docs with field must be <= #docs
+          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + state.segmentInfo.getDocCount(), in);
         }
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
           throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, in);
@@ -182,10 +170,9 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Seek {@code input} to the directory offset. */
-  private void seekDir(IndexInput input, long dirOffset)
-      throws IOException {
+  private void seekDir(IndexInput input) throws IOException {
     input.seek(input.length() - CodecUtil.footerLength() - 8);
-    dirOffset = input.readLong();
+    long dirOffset = input.readLong();
     input.seek(dirOffset);
   }
 

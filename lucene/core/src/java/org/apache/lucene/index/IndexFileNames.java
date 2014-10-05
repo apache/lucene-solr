@@ -53,12 +53,6 @@ public final class IndexFileNames {
   /** Name of the generation reference file name */
   public static final String OLD_SEGMENTS_GEN = "segments.gen";
 
-  /** Extension of compound file */
-  public static final String COMPOUND_FILE_EXTENSION = "cfs";
-  
-  /** Extension of compound file entries */
-  public static final String COMPOUND_FILE_ENTRIES_EXTENSION = "cfe";
-
   /**
    * Computes the full file name from base, extension and generation. If the
    * generation is -1, the file name is null. If it's 0, the file name is

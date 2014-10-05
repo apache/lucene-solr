@@ -35,7 +35,6 @@ import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.BytesRef;
 
 // TODO: we could make separate base class that can wrapp
 // any PostingsBaseFormat and make it ord-able...
@@ -100,11 +99,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
 
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.directory,
-                                                 state.fieldInfos,
-                                                 state.segmentInfo.name,
-                                                 BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                 state.segmentSuffix, state.context);
+      indexReader = new FixedGapTermsIndexReader(state);
       success = true;
     } finally {
       if (!success) {
@@ -114,13 +109,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
 
     success = false;
     try {
-      FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.directory,
-                                                state.fieldInfos,
-                                                state.segmentInfo,
-                                                postings,
-                                                state.context,
-                                                state.segmentSuffix);
+      FieldsProducer ret = new BlockTermsReader(indexReader, postings, state);
       success = true;
       return ret;
     } finally {

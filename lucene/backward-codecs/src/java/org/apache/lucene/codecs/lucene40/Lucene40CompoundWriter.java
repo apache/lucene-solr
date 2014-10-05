@@ -1,4 +1,4 @@
-package org.apache.lucene.store;
+package org.apache.lucene.codecs.lucene40;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,15 +31,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * Combines multiple files into a single compound file.
- * 
- * @see CompoundFileDirectory
- * @lucene.internal
+ * @deprecated only for testing
  */
-final class CompoundFileWriter implements Closeable{
+@Deprecated
+final class Lucene40CompoundWriter implements Closeable{
 
   private static final class FileEntry {
     /** source file */
@@ -70,6 +75,10 @@ final class CompoundFileWriter implements Closeable{
   private final AtomicBoolean outputTaken = new AtomicBoolean(false);
   final String entryTableName;
   final String dataFileName;
+  
+  // preserve the IOContext we were originally passed
+  // previously this was not also passed to the .CFE
+  private final IOContext context;
 
   /**
    * Create the compound stream in the specified file. The file name is the
@@ -78,7 +87,7 @@ final class CompoundFileWriter implements Closeable{
    * @throws NullPointerException
    *           if <code>dir</code> or <code>name</code> is null
    */
-  CompoundFileWriter(Directory dir, String name) {
+  Lucene40CompoundWriter(Directory dir, String name, IOContext context) {
     if (dir == null)
       throw new NullPointerException("directory cannot be null");
     if (name == null)
@@ -86,16 +95,16 @@ final class CompoundFileWriter implements Closeable{
     directory = dir;
     entryTableName = IndexFileNames.segmentFileName(
         IndexFileNames.stripExtension(name), "",
-        IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+        Lucene40CompoundFormat.COMPOUND_FILE_ENTRIES_EXTENSION);
     dataFileName = name;
-    
+    this.context = context;
   }
   
   private synchronized IndexOutput getOutput(IOContext context) throws IOException {
     if (dataOut == null) {
       boolean success = false;
       try {
-        dataOut = directory.createOutput(dataFileName, context);
+        dataOut = directory.createOutput(dataFileName, this.context);
         CodecUtil.writeHeader(dataOut, DATA_CODEC, VERSION_CURRENT);
         success = true;
       } finally {
@@ -138,10 +147,7 @@ final class CompoundFileWriter implements Closeable{
         throw new IllegalStateException("CFS has pending open files");
       }
       closed = true;
-      // open the compound stream; we can safely use IOContext.DEFAULT
-      // here because this will only open the output if no file was
-      // added to the CFS
-      getOutput(IOContext.DEFAULT);
+      getOutput(this.context);
       assert dataOut != null;
       CodecUtil.writeFooter(dataOut);
       success = true;
@@ -154,7 +160,7 @@ final class CompoundFileWriter implements Closeable{
     }
     success = false;
     try {
-      entryTableOut = directory.createOutput(entryTableName, IOContext.DEFAULT);
+      entryTableOut = directory.createOutput(entryTableName, this.context);
       writeEntryTable(entries.values(), entryTableOut);
       success = true;
     } finally {
@@ -235,10 +241,10 @@ final class CompoundFileWriter implements Closeable{
       final DirectCFSIndexOutput out;
 
       if ((outputLocked = outputTaken.compareAndSet(false, true))) {
-        out = new DirectCFSIndexOutput(getOutput(context), entry, false);
+        out = new DirectCFSIndexOutput(getOutput(this.context), entry, false);
       } else {
         entry.dir = this.directory;
-        out = new DirectCFSIndexOutput(directory.createOutput(name, context), entry,
+        out = new DirectCFSIndexOutput(directory.createOutput(name, this.context), entry,
             true);
       }
       success = true;
@@ -264,7 +270,7 @@ final class CompoundFileWriter implements Closeable{
       try {
         while (!pendingEntries.isEmpty()) {
           FileEntry entry = pendingEntries.poll();
-          copyFileEntry(getOutput(new IOContext(new FlushInfo(0, entry.length))), entry);
+          copyFileEntry(getOutput(this.context), entry);
           entries.put(entry.file, entry);
         }
       } finally {

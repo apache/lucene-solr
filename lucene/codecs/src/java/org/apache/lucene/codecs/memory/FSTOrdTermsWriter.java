@@ -39,7 +39,6 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
@@ -76,7 +75,7 @@ import org.apache.lucene.util.fst.Util;
  * <ul>
  *  <li>TermIndex(.tix) --&gt; Header, TermFST<sup>NumFields</sup>, Footer</li>
  *  <li>TermFST --&gt; {@link FST FST&lt;long&gt;}</li>
- *  <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *  <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  *
@@ -114,7 +113,7 @@ import org.apache.lucene.util.fst.Util;
  *  <li>StatsBlock --&gt; &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) ? &gt; <sup>NumTerms</sup>
  *  <li>MetaLongsBlock --&gt; &lt; LongDelta<sup>LongsSize</sup>, BytesSize &gt; <sup>NumTerms</sup>
  *  <li>MetaBytesBlock --&gt; Byte <sup>MetaBytesBlockLength</sup>
- *  <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader CodecHeader}</li>
  *  <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *  <li>NumFields, FieldNumber, DocCount, DocFreq, LongsSize, 
  *        FieldNumber, DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
@@ -149,10 +148,11 @@ import org.apache.lucene.util.fst.Util;
 public class FSTOrdTermsWriter extends FieldsConsumer {
   static final String TERMS_INDEX_EXTENSION = "tix";
   static final String TERMS_BLOCK_EXTENSION = "tbk";
-  static final String TERMS_CODEC_NAME = "FST_ORD_TERMS_DICT";
-  public static final int TERMS_VERSION_START = 0;
-  public static final int TERMS_VERSION_CHECKSUM = 1;
-  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_CHECKSUM;
+  static final String TERMS_CODEC_NAME = "FSTOrdTerms";
+  static final String TERMS_INDEX_CODEC_NAME = "FSTOrdIndex";
+
+  public static final int VERSION_START = 2;
+  public static final int VERSION_CURRENT = VERSION_START;
   public static final int SKIP_INTERVAL = 8;
   
   final PostingsWriterBase postingsWriter;
@@ -174,8 +174,10 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
     try {
       this.indexOut = state.directory.createOutput(termsIndexFileName, state.context);
       this.blockOut = state.directory.createOutput(termsBlockFileName, state.context);
-      writeHeader(indexOut);
-      writeHeader(blockOut);
+      CodecUtil.writeSegmentHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT, 
+                                             state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeSegmentHeader(blockOut, TERMS_CODEC_NAME, VERSION_CURRENT, 
+                                             state.segmentInfo.getId(), state.segmentSuffix);
       this.postingsWriter.init(blockOut); 
       success = true;
     } finally {
@@ -260,9 +262,6 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
     }
   }
 
-  private void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT);   
-  }
   private void writeTrailer(IndexOutput out, long dirStart) throws IOException {
     out.writeLong(dirStart);
   }

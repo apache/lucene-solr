@@ -37,13 +37,10 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * Lucene 4.0 FieldInfos reader.
- * 
- * @lucene.experimental
- * @see Lucene40FieldInfosFormat
  * @deprecated Only for reading old 4.0 and 4.1 segments
  */
 @Deprecated
-class Lucene40FieldInfosReader extends FieldInfosReader {
+final class Lucene40FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
   public Lucene40FieldInfosReader() {

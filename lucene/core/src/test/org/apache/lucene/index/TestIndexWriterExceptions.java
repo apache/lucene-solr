@@ -1232,17 +1232,19 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     long gen = SegmentInfos.getLastCommitGeneration(dir);
     assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
-
-    String[] files = dir.listAll();
+    
     boolean corrupted = false;
-    for(int i=0;i<files.length;i++) {
-      if (files[i].endsWith(".cfs")) {
-        dir.deleteFile(files[i]);
-        corrupted = true;
-        break;
-      }
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    for (SegmentCommitInfo si : sis) {
+      assertTrue(si.info.getUseCompoundFile());
+      String cfsFiles[] = si.info.getCodec().compoundFormat().files(si.info);
+      dir.deleteFile(cfsFiles[0]);
+      corrupted = true;
+      break;
     }
-    assertTrue("failed to find cfs file to remove", corrupted);
+
+    assertTrue("failed to find cfs file to remove: ", corrupted);
 
     IndexReader reader = null;
     try {

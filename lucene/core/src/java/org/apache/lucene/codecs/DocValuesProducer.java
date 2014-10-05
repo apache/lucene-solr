@@ -79,4 +79,12 @@ public abstract class DocValuesProducer implements Closeable, Accountable {
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
+  
+  /** 
+   * Returns an instance optimized for merging.
+   * <p>
+   * The default implementation returns {@code this} */
+  public DocValuesProducer getMergeInstance() throws IOException {
+    return this;
+  }
 }

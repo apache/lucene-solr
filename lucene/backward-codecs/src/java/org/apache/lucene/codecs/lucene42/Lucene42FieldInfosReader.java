@@ -38,9 +38,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Lucene 4.2 FieldInfos reader.
  * 
- * @lucene.experimental
  * @deprecated Only for reading old 4.2-4.5 segments
- * @see Lucene42FieldInfosFormat
  */
 @Deprecated
 final class Lucene42FieldInfosReader extends FieldInfosReader {

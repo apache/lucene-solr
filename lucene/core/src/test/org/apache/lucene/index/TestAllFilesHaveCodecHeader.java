@@ -28,11 +28,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -83,40 +81,38 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   }
   
   private void checkHeaders(Directory dir, Map<String,String> namesToExtensions) throws IOException {
-    for (String file : dir.listAll()) {
-      if (file.equals(IndexWriter.WRITE_LOCK_NAME)) {
-        continue; // write.lock has no header, thats ok
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    checkHeader(dir, sis.getSegmentsFileName(), namesToExtensions);
+    
+    for (SegmentCommitInfo si : sis) {
+      for (String file : si.files()) {
+        checkHeader(dir, file, namesToExtensions);
       }
-      if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
-        CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
-        checkHeaders(cfsDir, namesToExtensions); // recurse into cfs
-        cfsDir.close();
+      if (si.info.getUseCompoundFile()) {
+        try (Directory cfsDir = si.info.getCodec().compoundFormat().getCompoundReader(dir, si.info, newIOContext(random()))) {
+          for (String cfsFile : cfsDir.listAll()) {
+            checkHeader(cfsDir, cfsFile, namesToExtensions);
+          }
+        }
       }
-      IndexInput in = null;
-      boolean success = false;
-      try {
-        in = dir.openInput(file, newIOContext(random()));
-        int val = in.readInt();
-        assertEquals(file + " has no codec header, instead found: " + val, CodecUtil.CODEC_MAGIC, val);
-        String codecName = in.readString();
-        assertFalse(codecName.isEmpty());
-        String extension = IndexFileNames.getExtension(file);
-        if (extension == null) {
-          assertTrue(file.startsWith(IndexFileNames.SEGMENTS));
-          extension = "<segments> (not a real extension, designates segments file)";
-        }
-        String previous = namesToExtensions.put(codecName, extension);
-        if (previous != null && !previous.equals(extension)) {
-          //TODO: not yet 
-          // fail("extensions " + previous + " and " + extension + " share same codecName " + codecName);
-        }
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(in);
-        } else {
-          IOUtils.closeWhileHandlingException(in);
-        }
+    }
+  }
+  
+  private void checkHeader(Directory dir, String file, Map<String,String> namesToExtensions) throws IOException {
+    try (IndexInput in = dir.openInput(file, newIOContext(random()))) {
+      int val = in.readInt();
+      assertEquals(file + " has no codec header, instead found: " + val, CodecUtil.CODEC_MAGIC, val);
+      String codecName = in.readString();
+      assertFalse(codecName.isEmpty());
+      String extension = IndexFileNames.getExtension(file);
+      if (extension == null) {
+        assertTrue(file.startsWith(IndexFileNames.SEGMENTS));
+        extension = "<segments> (not a real extension, designates segments file)";
+      }
+      String previous = namesToExtensions.put(codecName, extension);
+      if (previous != null && !previous.equals(extension)) {
+        fail("extensions " + previous + " and " + extension + " share same codecName " + codecName);
       }
     }
   }

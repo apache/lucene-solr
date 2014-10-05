@@ -19,8 +19,6 @@ package org.apache.lucene.codecs.lucene42;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
@@ -30,19 +28,9 @@ import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Lucene 4.2 score normalization format.
- * <p>
- * NOTE: this uses the same format as {@link Lucene42DocValuesFormat}
- * Numeric DocValues, but with different file extensions, and passing
- * {@link PackedInts#FASTEST} for uncompressed encoding: trading off
- * space for performance.
- * <p>
- * Files:
- * <ul>
- *   <li><tt>.nvd</tt>: DocValues data</li>
- *   <li><tt>.nvm</tt>: DocValues metadata</li>
- * </ul>
- * @see Lucene42DocValuesFormat
+ * @deprecated only for reading old 4.x segments
  */
+@Deprecated
 public class Lucene42NormsFormat extends NormsFormat {
   final float acceptableOverheadRatio;
 
@@ -73,7 +61,7 @@ public class Lucene42NormsFormat extends NormsFormat {
   }
   
   @Override
-  public NormsProducer normsProducer(SegmentReadState state) throws IOException {
+  public final NormsProducer normsProducer(SegmentReadState state) throws IOException {
     return new Lucene42NormsProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   

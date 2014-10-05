@@ -20,13 +20,18 @@ package org.apache.lucene.codecs.lucene49;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41RWStoredFieldsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46RWSegmentInfoFormat;
 
 /**
- * Read-write version of {@link Lucene49Codec} for testing.
+ * Read-Write version of 4.9 codec for testing
+ * @deprecated for test purposes only
  */
-@SuppressWarnings("deprecation")
-public class Lucene49RWCodec extends Lucene49Codec {
+@Deprecated
+public final class Lucene49RWCodec extends Lucene49Codec {
   
   private static final DocValuesFormat docValues = new Lucene49RWDocValuesFormat();
   
@@ -35,7 +40,7 @@ public class Lucene49RWCodec extends Lucene49Codec {
     return docValues;
   }
   
-  private static final NormsFormat norms = new Lucene49NormsFormat();
+  private static final NormsFormat norms = new Lucene49RWNormsFormat();
 
   @Override
   public NormsFormat normsFormat() {
@@ -47,5 +52,19 @@ public class Lucene49RWCodec extends Lucene49Codec {
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
     return segmentInfos;
+  }
+  
+  private static final StoredFieldsFormat storedFields = new Lucene41RWStoredFieldsFormat();
+
+  @Override
+  public StoredFieldsFormat storedFieldsFormat() {
+    return storedFields;
+  }
+  
+  private final TermVectorsFormat vectorsFormat = new Lucene42RWTermVectorsFormat();
+
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return vectorsFormat;
   }
 }

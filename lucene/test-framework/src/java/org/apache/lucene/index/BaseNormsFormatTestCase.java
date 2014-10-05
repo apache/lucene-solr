@@ -139,6 +139,19 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
   }
   
+  public void testSparse() throws Exception {
+    int iterations = atLeast(1);
+    final Random r = random();
+    for (int i = 0; i < iterations; i++) {
+      doTestNormsVersusStoredFields(new LongProducer() {
+        @Override
+        long next() {
+          return r.nextInt(100) == 0 ? TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE) : 0;
+        }
+      });
+    }
+  }
+  
   private void doTestNormsVersusStoredFields(LongProducer longs) throws Exception {
     int numDocs = atLeast(500);
     long norms[] = new long[numDocs];

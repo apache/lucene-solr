@@ -94,12 +94,7 @@ public class Ords41PostingsFormat extends PostingsFormat {
                                                                    state.segmentSuffix);
     boolean success = false;
     try {
-      FieldsProducer ret = new OrdsBlockTreeTermsReader(state.directory,
-                                                        state.fieldInfos,
-                                                        state.segmentInfo,
-                                                        postingsReader,
-                                                        state.context,
-                                                        state.segmentSuffix);
+      FieldsProducer ret = new OrdsBlockTreeTermsReader(postingsReader, state);
       success = true;
       return ret;
     } finally {

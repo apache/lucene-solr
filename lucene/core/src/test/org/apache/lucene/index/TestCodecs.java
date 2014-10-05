@@ -247,10 +247,10 @@ public class TestCodecs extends LuceneTestCase {
     final FieldData[] fields = new FieldData[] {field};
     final FieldInfos fieldInfos = builder.finish();
     final Directory dir = newDirectory();
-    this.write(fieldInfos, dir, fields);
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, SEGMENT, 10000, false, codec, null, StringHelper.randomId());
-
+    
+    this.write(si, fieldInfos, dir, fields);
     final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random())));
 
     final Iterator<String> fieldsEnum = reader.iterator();
@@ -304,9 +304,9 @@ public class TestCodecs extends LuceneTestCase {
       System.out.println("TEST: now write postings");
     }
 
-    this.write(fieldInfos, dir, fields);
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, SEGMENT, 10000, false, codec, null, StringHelper.randomId());
+    this.write(si, fieldInfos, dir, fields);
 
     if (VERBOSE) {
       System.out.println("TEST: now read postings");
@@ -798,10 +798,9 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields) throws Throwable {
+  private void write(SegmentInfo si, final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields) throws Throwable {
 
-    final Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, SEGMENT, 10000, false, codec, null, StringHelper.randomId());
+    final Codec codec = si.getCodec();
     final SegmentWriteState state = new SegmentWriteState(InfoStream.getDefault(), dir, si, fieldInfos, null, newIOContext(random()));
 
     Arrays.sort(fields);

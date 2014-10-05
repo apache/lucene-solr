@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -50,7 +51,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
@@ -865,6 +865,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
   }
+  
+  // reads latest field infos for the commit
+  // this is used on IW init and addIndexes(Dir) to create/update the global field map.
+  // TODO: fix tests abusing this method!
+  static FieldInfos readFieldInfos(SegmentCommitInfo si) throws IOException {
+    Codec codec = si.info.getCodec();
+    FieldInfosReader reader = codec.fieldInfosFormat().getFieldInfosReader();
+    
+    if (si.hasFieldUpdates()) {
+      // there are updates, we read latest (always outside of CFS)
+      final String segmentSuffix = Long.toString(si.getFieldInfosGen(), Character.MAX_RADIX);
+      return reader.read(si.info.dir, si.info, segmentSuffix, IOContext.READONCE);
+    } else if (si.info.getUseCompoundFile()) {
+      // cfs
+      try (Directory cfs = codec.compoundFormat().getCompoundReader(si.info.dir, si.info, IOContext.DEFAULT)) {
+        return reader.read(cfs, si.info, "", IOContext.READONCE);
+      }
+    } else {
+      // no cfs
+      return reader.read(si.info.dir, si.info, "", IOContext.READONCE);
+    }
+  }
 
   /**
    * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
@@ -874,7 +896,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     final FieldNumbers map = new FieldNumbers();
 
     for(SegmentCommitInfo info : segmentInfos) {
-      for(FieldInfo fi : SegmentReader.readFieldInfos(info)) {
+      FieldInfos fis = readFieldInfos(info);
+      for(FieldInfo fi : fis) {
         map.addOrGet(fi.name, fi.number, fi.getDocValuesType());
       }
     }
@@ -2388,7 +2411,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.sizeInBytes(), true, -1));
 
-            for(FieldInfo fi : SegmentReader.readFieldInfos(info)) {
+            FieldInfos fis = readFieldInfos(info);
+            for(FieldInfo fi : fis) {
               globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
@@ -2512,7 +2536,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
                                                MergeState.CheckAbort.NONE, globalFieldNumberMap, 
-                                               context, config.getCheckIntegrityAtMerge());
+                                               context);
       
       if (!merger.shouldMerge()) {
         return;
@@ -2570,7 +2594,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       success = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.fieldInfos, context);
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.mergeFieldInfos, context);
         success = true;
       } finally {
         if (!success) {
@@ -3909,19 +3933,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
           merge.info.info, infoStream, dirWrapper,
           checkAbort, globalFieldNumberMap, 
-          context, config.getCheckIntegrityAtMerge());
+                                                     context);
 
       merge.checkAborted(directory);
 
       // This is where all the work happens:
-      MergeState mergeState;
       boolean success3 = false;
       try {
-        if (!merger.shouldMerge()) {
-          // would result in a 0 document segment: nothing to merge!
-          mergeState = new MergeState(new ArrayList<LeafReader>(), merge.info.info, infoStream, checkAbort);
-        } else {
-          mergeState = merger.merge();
+        if (merger.shouldMerge()) {
+          merger.merge();
         }
         success3 = true;
       } finally {
@@ -3931,23 +3951,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
+      MergeState mergeState = merger.mergeState;
       assert mergeState.segmentInfo == merge.info.info;
       merge.info.info.setFiles(new HashSet<>(dirWrapper.getCreatedFiles()));
 
       // Record which codec was used to write the segment
 
       if (infoStream.isEnabled("IW")) {
-        if (merge.info.info.getDocCount() == 0) {
-          infoStream.message("IW", "merge away fully deleted segments");
-        } else {
+        if (merger.shouldMerge()) {
           infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
-                           (mergeState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
-                           (mergeState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
-                           (mergeState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
-                           (mergeState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
-                           (mergeState.fieldInfos.hasProx() ? "freqs" : "no freqs"));
+                           (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
+                           (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
+                           (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
+                           (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
+                           (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs"));
+        } else {
+          infoStream.message("IW", "skip merging fully deleted segments");
         }
       }
+
+      if (merger.shouldMerge() == false) {
+        // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove all the 0-doc segments that we "merged":
+        assert merge.info.info.getDocCount() == 0;
+        commitMerge(merge, mergeState);
+        return 0;
+      }
+
+      assert merge.info.info.getDocCount() > 0;
 
       // Very important to do this before opening the reader
       // because codec must know if prox was written for
@@ -3961,6 +3991,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (useCompoundFile) {
         success = false;
 
+        String cfsFiles[] = merge.info.info.getCodec().compoundFormat().files(merge.info.info);
         Collection<String> filesToRemove = merge.info.files();
 
         try {
@@ -3985,8 +4016,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             }
 
             synchronized(this) {
-              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+              for (String cfsFile : cfsFiles) {
+                deleter.deleteFile(cfsFile);
+              }
               deleter.deleteNewFiles(merge.info.files());
             }
           }
@@ -4007,8 +4039,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "abort merge after building CFS");
             }
-            deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-            deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+            for (String cfsFile : cfsFiles) {
+              deleter.deleteFile(cfsFile);
+            }
             return 0;
           }
         }
@@ -4027,7 +4060,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       boolean success2 = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, mergeState.fieldInfos, context);
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, mergeState.mergeFieldInfos, context);
         success2 = true;
       } finally {
         if (!success2) {
@@ -4046,7 +4079,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
-      if (poolReaders && mergedSegmentWarmer != null && merge.info.info.getDocCount() != 0) {
+      if (poolReaders && mergedSegmentWarmer != null) {
         final ReadersAndUpdates rld = readerPool.get(merge.info, true);
         final SegmentReader sr = rld.getReader(IOContext.READ);
         try {
@@ -4059,8 +4092,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
 
-      // Force READ context because we merge deletes onto
-      // this reader:
       if (!commitMerge(merge, mergeState)) {
         // commitMerge will return false if this merge was
         // aborted
@@ -4457,40 +4488,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   static final Collection<String> createCompoundFile(InfoStream infoStream, Directory directory, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
           throws IOException {
 
-    final String fileName = IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    // TODO: use trackingdirectorywrapper instead of files() to know which files to delete when things fail:
+    String cfsFiles[] = info.getCodec().compoundFormat().files(info);
+    
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "create compound file " + fileName);
+      infoStream.message("IW", "create compound file");
     }
     // Now merge all added files
     Collection<String> files = info.files();
-    CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
+    
     boolean success = false;
     try {
-      for (String file : files) {
-        directory.copy(cfsDir, file, file, context);
-        checkAbort.work(directory.fileLength(file));
-      }
+      info.getCodec().compoundFormat().write(directory, info, files, checkAbort, context);
       success = true;
     } finally {
-      if (success) {
-        IOUtils.close(cfsDir);
-      } else {
-        IOUtils.closeWhileHandlingException(cfsDir);
-        try {
-          directory.deleteFile(fileName);
-        } catch (Throwable t) {
-        }
-        try {
-          directory.deleteFile(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-        } catch (Throwable t) {
-        }
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(directory, cfsFiles);
       }
     }
 
     // Replace all previous files with the CFS/CFE files:
     Set<String> siFiles = new HashSet<>();
-    siFiles.add(fileName);
-    siFiles.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+    for (String cfsFile : cfsFiles) {
+      siFiles.add(cfsFile);
+    };
     info.setFiles(siFiles);
 
     return files;

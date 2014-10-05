@@ -18,8 +18,8 @@ package org.apache.lucene.codecs.lucene42;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -28,12 +28,16 @@ import org.apache.lucene.util.Accountable;
 
 /**
  * Reads 4.2-4.8 norms.
- * Implemented the same as docvalues, but with a different filename.
  * @deprecated Only for reading old segments
  */
 @Deprecated
-class Lucene42NormsProducer extends NormsProducer {
-  private final Lucene42DocValuesProducer impl;
+final class Lucene42NormsProducer extends NormsProducer {
+  private final DocValuesProducer impl;
+  
+  // clone for merge
+  Lucene42NormsProducer(DocValuesProducer impl) throws IOException {
+    this.impl = impl.getMergeInstance();
+  }
   
   Lucene42NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     impl = new Lucene42DocValuesProducer(state, dataCodec, dataExtension, metaCodec, metaExtension);
@@ -62,6 +66,11 @@ class Lucene42NormsProducer extends NormsProducer {
   @Override
   public void close() throws IOException {
     impl.close();
+  }
+
+  @Override
+  public NormsProducer getMergeInstance() throws IOException {
+    return new Lucene42NormsProducer(impl);
   }
 
   @Override

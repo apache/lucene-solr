@@ -340,11 +340,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("MockRandomCodec: fixed-gap terms index");
           }
-          indexReader = new FixedGapTermsIndexReader(state.directory,
-                                                     state.fieldInfos,
-                                                     state.segmentInfo.name,
-                                                     BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                     state.segmentSuffix, state.context);
+          indexReader = new FixedGapTermsIndexReader(state);
         } else {
           final int n2 = random.nextInt(3);
           if (n2 == 1) {
@@ -355,10 +351,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("MockRandomCodec: variable-gap terms index");
           }
-          indexReader = new VariableGapTermsIndexReader(state.directory,
-                                                        state.fieldInfos,
-                                                        state.segmentInfo.name,
-                                                        state.segmentSuffix, state.context);
+          indexReader = new VariableGapTermsIndexReader(state);
 
         }
 
@@ -371,13 +364,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       success = false;
       try {
-        fields = new BlockTermsReader(indexReader,
-                                      state.directory,
-                                      state.fieldInfos,
-                                      state.segmentInfo,
-                                      postingsReader,
-                                      state.context,
-                                      state.segmentSuffix);
+        fields = new BlockTermsReader(indexReader, postingsReader, state);
         success = true;
       } finally {
         if (!success) {
@@ -396,12 +383,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new OrdsBlockTreeTermsReader(state.directory,
-                                              state.fieldInfos,
-                                              state.segmentInfo,
-                                              postingsReader,
-                                              state.context,
-                                              state.segmentSuffix);
+        fields = new OrdsBlockTreeTermsReader(postingsReader, state);
         success = true;
       } finally {
         if (!success) {

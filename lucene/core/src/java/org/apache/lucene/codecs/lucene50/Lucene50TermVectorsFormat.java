@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene42;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,15 +22,14 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsIndexWriter;
 import org.apache.lucene.codecs.compressing.CompressingTermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
-import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Lucene 4.2 {@link TermVectorsFormat term vectors format}.
+ * Lucene 5.0 {@link TermVectorsFormat term vectors format}.
  * <p>
- * Very similarly to {@link Lucene41StoredFieldsFormat}, this format is based
+ * Very similarly to {@link Lucene50StoredFieldsFormat}, this format is based
  * on compressed chunks of data, with document-level granularity so that a
  * document can never span across distinct chunks. Moreover, data is made as
  * compact as possible:<ul>
@@ -60,7 +59,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>Here is a more detailed description of the field data file format:</p>
  * <ul>
  * <li>VectorData (.tvd) --&gt; &lt;Header&gt;, PackedIntsVersion, ChunkSize, &lt;Chunk&gt;<sup>ChunkCount</sup>, Footer</li>
- * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkSize is the number of bytes of terms to accumulate before flushing, as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkCount is not known in advance and is the number of chunks necessary to store all document of the segment</li>
@@ -114,7 +113,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>An index file (extension <tt>.tvx</tt>).</p>
  * <ul>
  * <li>VectorIndex (.tvx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer</li>
- * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
@@ -122,11 +121,11 @@ import org.apache.lucene.util.packed.PackedInts;
  * </ol>
  * @lucene.experimental
  */
-public final class Lucene42TermVectorsFormat extends CompressingTermVectorsFormat {
+public final class Lucene50TermVectorsFormat extends CompressingTermVectorsFormat {
 
   /** Sole constructor. */
-  public Lucene42TermVectorsFormat() {
-    super("Lucene41StoredFields", "", CompressionMode.FAST, 1 << 12);
+  public Lucene50TermVectorsFormat() {
+    super("Lucene50TermVectors", "", CompressionMode.FAST, 1 << 12);
   }
 
 }

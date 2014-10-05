@@ -868,7 +868,6 @@ public abstract class LuceneTestCase extends Assert {
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
-    c.setCheckIntegrityAtMerge(r.nextBoolean());
     return c;
   }
 
@@ -1038,12 +1037,6 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       // change CFS flush parameters
       c.setUseCompoundFile(r.nextBoolean());
-      didChange = true;
-    }
-    
-    if (rarely(r)) {
-      // change merge integrity check parameters
-      c.setCheckIntegrityAtMerge(r.nextBoolean());
       didChange = true;
     }
     

@@ -24,10 +24,12 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-/** 
- * Simulates writing Lucene 4.0 Stored Fields Format.
- */ 
-public class Lucene40RWStoredFieldsFormat extends Lucene40StoredFieldsFormat {
+/**
+ * Read-write version of 4.0 stored fields format for testing
+ * @deprecated for test purposes only
+ */
+@Deprecated
+final class Lucene40RWStoredFieldsFormat extends Lucene40StoredFieldsFormat {
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
