@@ -49,6 +49,7 @@ public final class RequestHandlers {
   // the map implementation should be thread safe
   private final Map<String, SolrRequestHandler> handlers =
       new ConcurrentHashMap<>() ;
+  private final Map<String, SolrRequestHandler> immutableHandlers = Collections.unmodifiableMap(handlers) ;
 
   /**
    * Trim the trailing '/' if its there, and convert null to empty string.
@@ -59,7 +60,7 @@ public final class RequestHandlers {
    * to map to the same handler 
    * 
    */
-  private static String normalize( String p )
+  public static String normalize( String p )
   {
     if(p == null) return "";
     if( p.endsWith( "/" ) && p.length() > 1 )
@@ -114,7 +115,7 @@ public final class RequestHandlers {
    * Returns an unmodifiable Map containing the registered handlers
    */
   public Map<String,SolrRequestHandler> getRequestHandlers() {
-    return Collections.unmodifiableMap( handlers );
+    return immutableHandlers;
   }
 
 

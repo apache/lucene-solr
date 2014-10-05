@@ -52,6 +52,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -134,7 +135,7 @@ public class SolrRequestParsers
     parsers.put( STANDARD, standard );
     parsers.put( "", standard );
   }
-  
+
   public SolrQueryRequest parse( SolrCore core, String path, HttpServletRequest req ) throws Exception
   {
     SolrRequestParser parser = standard;
@@ -149,7 +150,8 @@ public class SolrRequestParsers
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
     sreq.getContext().put( "path", path );
-    
+    sreq.getContext().put("httpMethod", req.getMethod());
+
     if(addHttpRequestToContext) {
       sreq.getContext().put("httpRequest", req);
     }

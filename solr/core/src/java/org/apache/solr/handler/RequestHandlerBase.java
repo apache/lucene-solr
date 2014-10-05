@@ -33,12 +33,13 @@ import org.apache.solr.util.stats.Timer;
 import org.apache.solr.util.stats.TimerContext;
 
 import java.net.URL;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean, NestedRequestHandler {
 
   protected NamedList initArgs = null;
   protected SolrParams defaults;
@@ -193,6 +194,41 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public URL[] getDocs() {
     return null;  // this can be overridden, but not required
   }
+
+
+  @Override
+  public SolrRequestHandler getSubHandler(String path) {
+    return null;
+  }
+
+
+  /**
+   * Get the request handler registered to a given name.
+   *
+   * This function is thread safe.
+   */
+  public static SolrRequestHandler getRequestHandler(String handlerName, Map<String, SolrRequestHandler> reqHandlers) {
+    if(handlerName == null) return null;
+    SolrRequestHandler handler = reqHandlers.get(handlerName);
+    int idx = 0;
+    if(handler == null) {
+      for (; ; ) {
+        idx = handlerName.indexOf('/', idx+1);
+        if (idx > 0) {
+          String firstPart = handlerName.substring(0, idx);
+          handler = reqHandlers.get(firstPart);
+          if (handler == null) continue;
+          if (handler instanceof NestedRequestHandler) {
+            return ((NestedRequestHandler) handler).getSubHandler(handlerName.substring(idx));
+          }
+        } else {
+          break;
+        }
+      }
+    }
+    return handler;
+  }
+
 
   @Override
   public NamedList<Object> getStatistics() {
