@@ -18,8 +18,18 @@
 package org.apache.solr.client.solrj;
 
 
-import com.google.common.collect.Maps;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
 import junit.framework.Assert;
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -51,18 +61,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import com.google.common.collect.Maps;
 
 /**
  * This should include tests against the example solr config
@@ -84,6 +83,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
    * query the example
    */
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-6589")
   public void testExampleConfig() throws Exception
   {    
     SolrServer server = getSolrServer();
