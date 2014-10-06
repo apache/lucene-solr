@@ -20,8 +20,11 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -41,6 +44,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.NoHttpResponseException;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
@@ -1623,6 +1628,23 @@ public final class ZkController {
               server.request(prepCmd);
               break;
             } catch (Exception e) {
+
+              // if the core container is shutdown, don't wait
+              if (cc.isShutDown()) {
+                throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+                    "Core container is shutdown.");
+              }
+
+              Throwable rootCause = SolrException.getRootCause(e);
+              if (rootCause instanceof IOException) {
+                // if there was a communication error talking to the leader, see if the leader is even alive
+                if (!zkStateReader.getClusterState().liveNodesContain(leaderProps.getNodeName())) {
+                  throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+                      "Node "+leaderProps.getNodeName()+" hosting leader for "+
+                          shard+" in "+collection+" is not live!");
+                }
+              }
+
               SolrException.log(log,
                   "There was a problem making a request to the leader", e);
               try {
