@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -43,7 +42,7 @@ final class Lucene46SegmentInfoWriter extends SegmentInfoWriter {
 
   /** Save a single segment's info. */
   @Override
-  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene46SegmentInfoFormat.SI_EXTENSION);
     si.addFile(fileName);
 

@@ -151,6 +151,8 @@ API Changes
   to return an instance optimized for merging instead of searching.
   (Mike McCandless, Robert Muir)
 
+* LUCENE-5992: Remove FieldInfos from SegmentInfosWriter.write API. (Robert Muir, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

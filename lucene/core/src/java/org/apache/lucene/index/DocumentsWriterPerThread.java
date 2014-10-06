@@ -517,7 +517,7 @@ class DocumentsWriterPerThread {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
+      codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, newSegment.info, context);
 
       // TODO: ideally we would freeze newSegment here!!
       // because any changes after writing the .si will be

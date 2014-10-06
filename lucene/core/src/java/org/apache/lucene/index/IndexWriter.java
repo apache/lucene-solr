@@ -2594,7 +2594,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       success = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.mergeFieldInfos, context);
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, context);
         success = true;
       } finally {
         if (!success) {
@@ -4060,7 +4060,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       boolean success2 = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, mergeState.mergeFieldInfos, context);
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, context);
         success2 = true;
       } finally {
         if (!success2) {

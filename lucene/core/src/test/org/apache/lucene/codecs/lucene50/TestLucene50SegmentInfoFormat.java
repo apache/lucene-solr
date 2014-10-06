@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,26 +17,23 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 /**
- * Specifies an API for classes that can write out {@link SegmentInfo} data.
- * @lucene.experimental
+ * Tests Lucene50SegmentInfoFormat
  */
+public class TestLucene50SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
 
-public abstract class SegmentInfoWriter {
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected SegmentInfoWriter() {
+  @Override
+  protected Version[] getVersions() {
+    return new Version[] { Version.LATEST };
   }
 
-  /**
-   * Write {@link SegmentInfo} data. 
-   * @throws IOException If an I/O error occurs
-   */
-  public abstract void write(Directory dir, SegmentInfo info, IOContext ioContext) throws IOException;
+  @Override
+  protected Codec getCodec() {
+    return TestUtil.getDefaultCodec();
+  }
 }
