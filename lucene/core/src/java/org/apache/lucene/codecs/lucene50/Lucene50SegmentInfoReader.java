@@ -55,12 +55,7 @@ public class Lucene50SegmentInfoReader extends SegmentInfoReader {
         CodecUtil.checkHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
                                      Lucene50SegmentInfoFormat.VERSION_START,
                                      Lucene50SegmentInfoFormat.VERSION_CURRENT);
-        final Version version;
-        try {
-          version = Version.parse(input.readString());
-        } catch (ParseException pe) {
-          throw new CorruptIndexException("unable to parse version string: " + pe.getMessage(), input, pe);
-        }
+        final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
         
         final int docCount = input.readInt();
         if (docCount < 0) {

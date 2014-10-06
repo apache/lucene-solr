@@ -58,7 +58,10 @@ public class Lucene50SegmentInfoWriter extends SegmentInfoWriter {
         throw new IllegalArgumentException("invalid major version: should be >= 5 but got: " + version.major + " segment=" + si);
       }
       // Write the Lucene version that created this segment, since 3.1
-      output.writeString(version.toString());
+      output.writeInt(version.major);
+      output.writeInt(version.minor);
+      output.writeInt(version.bugfix);
+      assert version.prerelease == 0;
       output.writeInt(si.getDocCount());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
