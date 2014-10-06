@@ -23,9 +23,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -35,7 +35,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.WAH8DocIdSet;
+import org.apache.lucene.util.RoaringDocIdSet;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
   Directory dir;
@@ -241,7 +241,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       if (originalSet.isCacheable()) {
         assertEquals("Cached DocIdSet must be of same class like uncached, if cacheable", originalSet.getClass(), cachedSet.getClass());
       } else {
-        assertTrue("Cached DocIdSet must be an WAH8DocIdSet if the original one was not cacheable", cachedSet instanceof WAH8DocIdSet || cachedSet == null);
+        assertTrue("Cached DocIdSet must be a RoaringDocIdSet if the original one was not cacheable", cachedSet instanceof RoaringDocIdSet || cachedSet == null);
       }
     }
   }

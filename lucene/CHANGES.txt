@@ -206,6 +206,9 @@ Optimizations
   per-segment/per-producer, and norms and doc values merging no longer cause 
   RAM spikes for latent fields. (Mike McCandless, Robert Muir)
 
+* LUCENE-5983: CachingWrapperFilter now uses a new DocIdSet implementation
+  called RoaringDocIdSet instead of WAH8DocIdSet. (Adrien Grand)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
