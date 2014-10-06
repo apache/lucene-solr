@@ -57,8 +57,8 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
   /** Test length=0. */
   public void testNoBit() throws IOException {
     final BitSet bs = new BitSet(1);
-    final T copy = copyOf(bs, TestUtil.nextInt(random(), 1, 10000));
-    assertEquals(0, bs, copy);
+    final T copy = copyOf(bs, 1);
+    assertEquals(1, bs, copy);
   }
 
   /** Test length=1. */
@@ -67,7 +67,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     if (random().nextBoolean()) {
       bs.set(0);
     }
-    final T copy = copyOf(bs, TestUtil.nextInt(random(), 1, 10000));
+    final T copy = copyOf(bs, 1);
     assertEquals(1, bs, copy);
   }
 
@@ -80,7 +80,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     if (random().nextBoolean()) {
       bs.set(1);
     }
-    final T copy = copyOf(bs, TestUtil.nextInt(random(), 1, 10000));
+    final T copy = copyOf(bs, 2);
     assertEquals(2, bs, copy);
   }
 
@@ -88,7 +88,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
   public void testAgainstBitSet() throws IOException {
     final int numBits = TestUtil.nextInt(random(), 100, 1 << 20);
     // test various random sets with various load factors
-    for (float percentSet : new float[] {0f, 0.0001f, random().nextFloat() / 2, 0.9f, 1f}) {
+    for (float percentSet : new float[] {0f, 0.0001f, random().nextFloat(), 0.9f, 1f}) {
       final BitSet set = randomSet(numBits, percentSet);
       final T copy = copyOf(set, numBits);
       assertEquals(numBits, set, copy);
