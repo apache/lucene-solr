@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -46,7 +45,7 @@ public class Lucene50SegmentInfoWriter extends SegmentInfoWriter {
 
   /** Save a single segment's info. */
   @Override
-  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
     si.addFile(fileName);
 
@@ -58,7 +57,10 @@ public class Lucene50SegmentInfoWriter extends SegmentInfoWriter {
         throw new IllegalArgumentException("invalid major version: should be >= 5 but got: " + version.major + " segment=" + si);
       }
       // Write the Lucene version that created this segment, since 3.1
-      output.writeString(version.toString());
+      output.writeInt(version.major);
+      output.writeInt(version.minor);
+      output.writeInt(version.bugfix);
+      assert version.prerelease == 0;
       output.writeInt(si.getDocCount());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));

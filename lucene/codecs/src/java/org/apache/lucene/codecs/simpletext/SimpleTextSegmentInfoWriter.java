@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -51,7 +50,7 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
   final static BytesRef SI_ID               = new BytesRef("    id ");
   
   @Override
-  public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {
+  public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
 
     String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
     si.addFile(segFileName);

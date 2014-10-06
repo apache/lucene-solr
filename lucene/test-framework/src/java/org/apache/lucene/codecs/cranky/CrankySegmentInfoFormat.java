@@ -23,7 +23,6 @@ import java.util.Random;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -57,11 +56,11 @@ class CrankySegmentInfoFormat extends SegmentInfoFormat {
     }
     
     @Override
-    public void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException {
+    public void write(Directory dir, SegmentInfo info, IOContext ioContext) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from SegmentInfoWriter.write()");
       }
-      delegate.write(dir, info, fis, ioContext);
+      delegate.write(dir, info, ioContext);
     }
   }
 }
