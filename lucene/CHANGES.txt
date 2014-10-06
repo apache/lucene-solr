@@ -1250,6 +1250,10 @@ New Features
   approximate value of the diameter of the earth at the given latitude.
   (Adrien Grand)
 
+* LUCENE-5979: FilteredQuery uses the cost API to decide on whether to use
+  random-access or leap-frog to intersect the filter with the query.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;

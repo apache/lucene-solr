@@ -387,7 +387,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     if (useRandomAccess) {
       return new FilteredQuery.RandomAccessFilterStrategy() {
         @Override
-        protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
+        protected boolean useRandomAccess(Bits bits, long filterCost) {
           return true;
         }
       };
