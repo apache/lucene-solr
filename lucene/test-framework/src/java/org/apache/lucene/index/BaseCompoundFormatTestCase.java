@@ -435,29 +435,8 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     expected.seek(0);
     assertSameStreams("basic clone two", expected, two);
     
-    // Now close the first stream
-    one.close();
-    
-    // The following should really fail since we couldn't expect to
-    // access a file once close has been called on it (regardless of
-    // buffering and/or clone magic)
-    expected.seek(0);
-    two.seek(0);
-    assertSameStreams("basic clone two/2", expected, two);
-    
     // Now close the compound reader
     cr.close();
-    
-    // The following may also fail since the compound stream is closed
-    expected.seek(0);
-    two.seek(0);
-    //assertSameStreams("basic clone two/3", expected, two);
-    
-    // Now close the second clone
-    two.close();
-    expected.seek(0);
-    //assertSameStreams("basic clone two/4", expected, two);
-    
     expected.close();
     dir.close();
   }
