@@ -248,6 +248,9 @@ Other Changes
   managed schema update to block until all replicas of the same collection have processed the
   update or until the specified timeout is reached (Timothy Potter)
 
+* SOLR-6597: SolrIndexConfig parameter in one of the SolrIndexSearcher constructor has been removed.
+  It was just passed and never used via that constructor. (Anshum Gupta)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
