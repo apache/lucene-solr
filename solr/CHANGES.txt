@@ -275,6 +275,9 @@ Other Changes
 * SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
    SolrException back to the client-side (Timothy Potter)
 
+* SOLR-6597: SolrIndexConfig parameter in one of the SolrIndexSearcher constructor has been removed.
+  It was just passed and never used via that constructor. (Anshum Gupta)
+
 ==================  4.10.1 ==================
 
 Bug Fixes

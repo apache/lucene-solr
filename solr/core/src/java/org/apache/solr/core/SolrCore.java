@@ -1527,8 +1527,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         // (caches take a little while to instantiate)
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
-        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), 
-                                    getSolrConfig().indexConfig, newName,
+        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), newName,
                                     newReader, true, useCaches, true, directoryFactory);
 
       } else {
@@ -1539,7 +1538,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           // so that we pick up any uncommitted changes and so we don't go backwards
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
-          tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
+          tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), 
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else if (solrConfig.nrtMode) {
           RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
@@ -1549,7 +1548,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           } finally {
             writer.decref();
           }
-          tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
+          tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else {
          // normal open that happens at startup
