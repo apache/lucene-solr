@@ -23,6 +23,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,5 +136,10 @@ public class InfoHandler extends RequestHandlerBase {
 
   protected void setSystemInfoHandler(SystemInfoHandler systemInfoHandler) {
     this.systemInfoHandler = systemInfoHandler;
+  }
+
+  @Override
+  public SolrRequestHandler getSubHandler(String path) {
+    return this;
   }
 }
