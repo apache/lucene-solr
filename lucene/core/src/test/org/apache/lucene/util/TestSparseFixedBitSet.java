@@ -34,14 +34,14 @@ public class TestSparseFixedBitSet extends BaseDocIdSetTestCase<SparseFixedBitSe
     for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
       buffer.add(doc);
       if (buffer.size() >= 100000) {
-        Collections.shuffle(buffer);
+        Collections.shuffle(buffer, random());
         for (int i : buffer) {
           set.set(i);
         }
         buffer.clear();
       }
     }
-    Collections.shuffle(buffer);
+    Collections.shuffle(buffer, random());
     for (int i : buffer) {
       set.set(i);
     }

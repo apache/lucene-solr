@@ -162,10 +162,7 @@ public abstract class StringHelper {
     if (prop != null) {
       // So if there is a test failure that relied on hash
       // order, we remain reproducible based on the test seed:
-      if (prop.length() > 8) {
-        prop = prop.substring(prop.length()-8);
-      }
-      GOOD_FAST_HASH_SEED = (int) Long.parseLong(prop, 16);
+      GOOD_FAST_HASH_SEED = prop.hashCode();
     } else {
       GOOD_FAST_HASH_SEED = (int) System.currentTimeMillis();
     }

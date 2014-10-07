@@ -23,7 +23,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
@@ -48,6 +47,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -163,6 +163,18 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       ZkStateReader.REPLICATION_FACTOR, "1",
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false");
+
+  private static final Random RANDOM;
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }
 
   public ExecutorService tpe ;
   
@@ -1623,8 +1635,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       Set<String> nodes = clusterState.getLiveNodes();
       List<String> nodeList = new ArrayList<>(nodes.size());
       nodeList.addAll(nodes);
-      
-      Collections.shuffle(nodeList);
+
+      Collections.shuffle(nodeList, RANDOM);
 
       // TODO: Have maxShardsPerNode param for this operation?
 
@@ -1634,7 +1646,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
       for (int i = 1; i <= subSlices.size(); i++) {
-        Collections.shuffle(nodeList);
+        Collections.shuffle(nodeList, RANDOM);
         String sliceName = subSlices.get(i - 1);
         for (int j = 2; j <= repFactor; j++) {
           String subShardNodeName = nodeList.get((repFactor * (i - 1) + (j - 2)) % nodeList.size());
@@ -2284,7 +2296,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       List<String> nodeList = new ArrayList<>(nodes.size());
       nodeList.addAll(nodes);
       if (createNodeList != null) nodeList.retainAll(createNodeList);
-      Collections.shuffle(nodeList);
+      Collections.shuffle(nodeList, RANDOM);
       
       if (nodeList.size() <= 0) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName

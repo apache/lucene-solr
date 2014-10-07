@@ -137,7 +137,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     log.info("Current leader {} ", currentLeader);
     l.remove(currentLeader);
 
-    Collections.shuffle(l);
+    Collections.shuffle(l, random());
     String overseerDesignate = l.get(0);
     log.info("overseerDesignate {}",overseerDesignate);
     setOverseerRole(CollectionAction.ADDROLE,overseerDesignate);
@@ -165,7 +165,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     l.remove(overseerDesignate);
 
-    Collections.shuffle(l);
+    Collections.shuffle(l, random());
 
     String anotherOverseer = l.get(0);
     log.info("Adding another overseer designate {}", anotherOverseer);
