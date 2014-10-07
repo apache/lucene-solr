@@ -32,7 +32,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RoaringDocIdSet;
-import org.apache.lucene.util.WAH8DocIdSet;
 
 /**
  * Wraps another {@link Filter}'s result and caches it.  The purpose is to allow

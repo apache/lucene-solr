@@ -52,7 +52,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     final FixedBitSet ref = new FixedBitSet(maxDoc);
     for (int i = 0; i < numIterators; ++i) {
       final int baseInc = 200000 + random().nextInt(10000);
-      WAH8DocIdSet.Builder b = new WAH8DocIdSet.Builder();
+      RoaringDocIdSet.Builder b = new RoaringDocIdSet.Builder(maxDoc);
       for (int doc = random().nextInt(100); doc < maxDoc; doc += baseInc + random().nextInt(10000)) {
         b.add(doc);
         ref.set(doc);
@@ -73,11 +73,11 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       // try upgrades
       final int doc = random().nextInt(maxDoc);
       ref.set(doc);
-      builder.or(new WAH8DocIdSet.Builder().add(doc).build().iterator());
+      builder.or(new RoaringDocIdSet.Builder(maxDoc).add(doc).build().iterator());
     }
     for (int i = 0; i < numIterators; ++i) {
       final int baseInc = 2 + random().nextInt(10000);
-      WAH8DocIdSet.Builder b = new WAH8DocIdSet.Builder();
+      RoaringDocIdSet.Builder b = new RoaringDocIdSet.Builder(maxDoc);
       for (int doc = random().nextInt(10000); doc < maxDoc; doc += baseInc + random().nextInt(2000)) {
         b.add(doc);
         ref.set(doc);
