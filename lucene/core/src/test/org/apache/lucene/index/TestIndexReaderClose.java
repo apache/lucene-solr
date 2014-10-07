@@ -122,7 +122,7 @@ public class TestIndexReaderClose extends LuceneTestCase {
       leafReader.addCoreClosedListener(listeners.get(random().nextInt(listeners.size())));
     }
     final int removed = random().nextInt(numListeners);
-    Collections.shuffle(listeners);
+    Collections.shuffle(listeners, random());
     for (int i = 0; i < removed; ++i) {
       leafReader.removeCoreClosedListener(listeners.get(i));
     }
