@@ -171,6 +171,8 @@ Bug Fixes
   not have the regular "spinlock" of DirectoryReader.open. It now implements
   Closeable and you must close it to release the lock.  (Mike McCandless, Robert Muir)
 
+* LUCENE-5980: Don't let document length overflow. (Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
