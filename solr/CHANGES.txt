@@ -152,6 +152,11 @@ New Features
   this property from all other replicas within a particular slice. 
   (Erick Erickson)
 
+* SOLR-6513: Add a collectionsAPI call BALANCESLICEUNIQUE. Allows the even
+  distribution of custom replica properties across nodes making up a 
+  collection, at most one node per slice will have the property.
+
+
 Bug Fixes
 ----------------------
 

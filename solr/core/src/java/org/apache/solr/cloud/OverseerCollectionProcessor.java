@@ -26,6 +26,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESLICEUNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
@@ -153,6 +154,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   public static final String ONLY_IF_DOWN = "onlyIfDown";
 
   public static final String SLICE_UNIQUE = "sliceUnique";
+
+  public static final String ONLY_ACTIVE_NODES = "onlyactivenodes";
 
   public int maxParallelThreads = 10;
 
@@ -645,6 +648,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           case DELETEREPLICAPROP:
             processReplicaDeletePropertyCommand(message);
             break;
+          case BALANCESLICEUNIQUE:
+            balanceProperty(message);
+            break;
           default:
             throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
                 + operation);
@@ -707,6 +713,21 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     ZkNodeProps m = new ZkNodeProps(propMap);
     inQueue.offer(ZkStateReader.toJSON(m));
   }
+
+  private void balanceProperty(ZkNodeProps message) throws KeeperException, InterruptedException {
+    if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
+              "' parameters are required for the BALANCESLICEUNIQUE operation, no action taken");
+    }
+    SolrZkClient zkClient = zkStateReader.getZkClient();
+    DistributedQueue inQueue = Overseer.getInQueue(zkClient);
+    Map<String, Object> propMap = new HashMap<>();
+    propMap.put(Overseer.QUEUE_OPERATION, BALANCESLICEUNIQUE.toLower());
+    propMap.putAll(message.getProperties());
+    inQueue.offer(ZkStateReader.toJSON(new ZkNodeProps(propMap)));
+  }
+
 
   @SuppressWarnings("unchecked")
   private void getOverseerStatus(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
