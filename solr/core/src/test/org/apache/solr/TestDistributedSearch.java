@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -442,6 +443,16 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+
+    // SOLR-6545, wild card field list
+    indexr(id, "19", "text", "d", "cat_a_sS", "1" ,t1, "2");
+    commit();
+
+    rsp = query("q", "id:19", "fl", "id", "fl", "*a_sS");
+    assertFieldValues(rsp.getResults(), "id", 19);
+
+    rsp = query("q", "id:19", "fl", "id," + t1 + ",cat*");
+    assertFieldValues(rsp.getResults(), "id", 19);
 
     // Check Info is added to for each shard
     ModifiableSolrParams q = new ModifiableSolrParams();
