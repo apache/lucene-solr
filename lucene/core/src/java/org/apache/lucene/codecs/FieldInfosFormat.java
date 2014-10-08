@@ -20,6 +20,9 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfos; // javadocs
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Encodes/decodes {@link FieldInfos}
@@ -30,12 +33,11 @@ public abstract class FieldInfosFormat {
    *  constructors, typically implicit.) */
   protected FieldInfosFormat() {
   }
+  
+  /** Read the {@link FieldInfos} previously written with {@link #write}. */
+  public abstract FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext iocontext) throws IOException;
 
-  /** Returns a {@link FieldInfosReader} to read field infos
-   *  from the index */
-  public abstract FieldInfosReader getFieldInfosReader() throws IOException;
-
-  /** Returns a {@link FieldInfosWriter} to write field infos
-   *  to the index */
-  public abstract FieldInfosWriter getFieldInfosWriter() throws IOException;
+  /** Writes the provided {@link FieldInfos} to the
+   *  directory. */
+  public abstract void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException;
 }

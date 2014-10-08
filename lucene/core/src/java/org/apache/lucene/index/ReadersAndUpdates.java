@@ -451,7 +451,7 @@ class ReadersAndUpdates {
     final IOContext infosContext = new IOContext(new FlushInfo(info.info.getDocCount(), estInfosSize));
     // separately also track which files were created for this gen
     final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
-    infosFormat.getFieldInfosWriter().write(trackingDir, info.info, segmentSuffix, fieldInfos, infosContext);
+    infosFormat.write(trackingDir, info.info, segmentSuffix, fieldInfos, infosContext);
     info.advanceFieldInfosGen();
     return trackingDir.getCreatedFiles();
   }

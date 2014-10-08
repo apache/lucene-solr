@@ -153,6 +153,9 @@ API Changes
 
 * LUCENE-5992: Remove FieldInfos from SegmentInfosWriter.write API. (Robert Muir, Mike McCandless)
 
+* LUCENE-5998: Simplify Field/SegmentInfoFormat to read+write methods.
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

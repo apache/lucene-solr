@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FieldInfosReader;
+import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -871,7 +871,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // TODO: fix tests abusing this method!
   static FieldInfos readFieldInfos(SegmentCommitInfo si) throws IOException {
     Codec codec = si.info.getCodec();
-    FieldInfosReader reader = codec.fieldInfosFormat().getFieldInfosReader();
+    FieldInfosFormat reader = codec.fieldInfosFormat();
     
     if (si.hasFieldUpdates()) {
       // there are updates, we read latest (always outside of CFS)
@@ -2594,7 +2594,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       success = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, context);
+        codec.segmentInfoFormat().write(trackingDir, info, context);
         success = true;
       } finally {
         if (!success) {
@@ -4060,7 +4060,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       boolean success2 = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, context);
+        codec.segmentInfoFormat().write(directory, merge.info.info, context);
         success2 = true;
       } finally {
         if (!success2) {

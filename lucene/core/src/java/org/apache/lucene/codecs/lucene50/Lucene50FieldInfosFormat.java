@@ -18,14 +18,25 @@ package org.apache.lucene.codecs.lucene50;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 
 /**
  * Lucene 5.0 Field Infos format.
@@ -91,21 +102,148 @@ import org.apache.lucene.store.DataOutput;
  * @lucene.experimental
  */
 public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
-  private final FieldInfosReader reader = new Lucene50FieldInfosReader();
-  private final FieldInfosWriter writer = new Lucene50FieldInfosWriter();
   
   /** Sole constructor. */
   public Lucene50FieldInfosFormat() {
   }
-
+  
   @Override
-  public FieldInfosReader getFieldInfosReader() throws IOException {
-    return reader;
+  public FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene50FieldInfosFormat.EXTENSION);
+    try (ChecksumIndexInput input = directory.openChecksumInput(fileName, context)) {
+      Throwable priorE = null;
+      FieldInfo infos[] = null;
+      try {
+        CodecUtil.checkSegmentHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
+                                     Lucene50FieldInfosFormat.FORMAT_START, 
+                                     Lucene50FieldInfosFormat.FORMAT_CURRENT,
+                                     segmentInfo.getId(), segmentSuffix);
+        
+        final int size = input.readVInt(); //read in the size
+        infos = new FieldInfo[size];
+        
+        for (int i = 0; i < size; i++) {
+          String name = input.readString();
+          final int fieldNumber = input.readVInt();
+          if (fieldNumber < 0) {
+            throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber, input);
+          }
+          byte bits = input.readByte();
+          boolean isIndexed = (bits & Lucene50FieldInfosFormat.IS_INDEXED) != 0;
+          boolean storeTermVector = (bits & Lucene50FieldInfosFormat.STORE_TERMVECTOR) != 0;
+          boolean omitNorms = (bits & Lucene50FieldInfosFormat.OMIT_NORMS) != 0;
+          boolean storePayloads = (bits & Lucene50FieldInfosFormat.STORE_PAYLOADS) != 0;
+          final IndexOptions indexOptions;
+          if (!isIndexed) {
+            indexOptions = null;
+          } else if ((bits & Lucene50FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+            indexOptions = IndexOptions.DOCS_ONLY;
+          } else if ((bits & Lucene50FieldInfosFormat.OMIT_POSITIONS) != 0) {
+            indexOptions = IndexOptions.DOCS_AND_FREQS;
+          } else if ((bits & Lucene50FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS) != 0) {
+            indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+          } else {
+            indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+          }
+          
+          // DV Types are packed in one byte
+          byte val = input.readByte();
+          final DocValuesType docValuesType = getDocValuesType(input, (byte) (val & 0x0F));
+          final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
+          final long dvGen = input.readLong();
+          final Map<String,String> attributes = input.readStringStringMap();
+          try {
+            infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, 
+                                     indexOptions, docValuesType, normsType, dvGen, Collections.unmodifiableMap(attributes));
+            infos[i].checkConsistency();
+          } catch (IllegalStateException e) {
+            throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
+          }
+        }
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(input, priorE);
+      }
+      return new FieldInfos(infos);
+    }
+  }
+  
+  private static DocValuesType getDocValuesType(IndexInput input, byte b) throws IOException {
+    if (b == 0) {
+      return null;
+    } else if (b == 1) {
+      return DocValuesType.NUMERIC;
+    } else if (b == 2) {
+      return DocValuesType.BINARY;
+    } else if (b == 3) {
+      return DocValuesType.SORTED;
+    } else if (b == 4) {
+      return DocValuesType.SORTED_SET;
+    } else if (b == 5) {
+      return DocValuesType.SORTED_NUMERIC;
+    } else {
+      throw new CorruptIndexException("invalid docvalues byte: " + b, input);
+    }
   }
 
   @Override
-  public FieldInfosWriter getFieldInfosWriter() throws IOException {
-    return writer;
+  public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene50FieldInfosFormat.EXTENSION);
+    try (IndexOutput output = directory.createOutput(fileName, context)) {
+      CodecUtil.writeSegmentHeader(output, Lucene50FieldInfosFormat.CODEC_NAME, Lucene50FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
+      output.writeVInt(infos.size());
+      for (FieldInfo fi : infos) {
+        fi.checkConsistency();
+        IndexOptions indexOptions = fi.getIndexOptions();
+        byte bits = 0x0;
+        if (fi.hasVectors()) bits |= Lucene50FieldInfosFormat.STORE_TERMVECTOR;
+        if (fi.omitsNorms()) bits |= Lucene50FieldInfosFormat.OMIT_NORMS;
+        if (fi.hasPayloads()) bits |= Lucene50FieldInfosFormat.STORE_PAYLOADS;
+        if (fi.isIndexed()) {
+          bits |= Lucene50FieldInfosFormat.IS_INDEXED;
+          assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
+          if (indexOptions == IndexOptions.DOCS_ONLY) {
+            bits |= Lucene50FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS;
+          } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
+            bits |= Lucene50FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS;
+          } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
+            bits |= Lucene50FieldInfosFormat.OMIT_POSITIONS;
+          }
+        }
+        output.writeString(fi.name);
+        output.writeVInt(fi.number);
+        output.writeByte(bits);
+
+        // pack the DV types in one byte
+        final byte dv = docValuesByte(fi.getDocValuesType());
+        final byte nrm = docValuesByte(fi.getNormType());
+        assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
+        byte val = (byte) (0xff & ((nrm << 4) | dv));
+        output.writeByte(val);
+        output.writeLong(fi.getDocValuesGen());
+        output.writeStringStringMap(fi.attributes());
+      }
+      CodecUtil.writeFooter(output);
+    }
+  }
+  
+  private static byte docValuesByte(DocValuesType type) {
+    if (type == null) {
+      return 0;
+    } else if (type == DocValuesType.NUMERIC) {
+      return 1;
+    } else if (type == DocValuesType.BINARY) {
+      return 2;
+    } else if (type == DocValuesType.SORTED) {
+      return 3;
+    } else if (type == DocValuesType.SORTED_SET) {
+      return 4;
+    } else if (type == DocValuesType.SORTED_NUMERIC) {
+      return 5;
+    } else {
+      throw new AssertionError();
+    }
   }
   
   /** Extension of field infos */

@@ -51,7 +51,7 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
                                                      "dv", 
                                                      Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
-    return new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY);
+    return new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosFormat.LEGACY_DV_TYPE_KEY);
   }
   
   // constants for VAR_INTS

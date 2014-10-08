@@ -17,14 +17,25 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.SegmentInfoReader;
-import org.apache.lucene.codecs.SegmentInfoWriter;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.SegmentInfo; // javadocs
 import org.apache.lucene.index.SegmentInfos; // javadocs
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput; // javadocs
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * Lucene 5.0 Segment info format.
@@ -67,21 +78,86 @@ import org.apache.lucene.store.DataOutput; // javadocs
  * @lucene.experimental
  */
 public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
-  private final SegmentInfoReader reader = new Lucene50SegmentInfoReader();
-  private final SegmentInfoWriter writer = new Lucene50SegmentInfoWriter();
 
   /** Sole constructor. */
   public Lucene50SegmentInfoFormat() {
   }
   
   @Override
-  public SegmentInfoReader getSegmentInfoReader() {
-    return reader;
+  public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
+    try (ChecksumIndexInput input = dir.openChecksumInput(fileName, context)) {
+      Throwable priorE = null;
+      SegmentInfo si = null;
+      try {
+        CodecUtil.checkHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
+                                     Lucene50SegmentInfoFormat.VERSION_START,
+                                     Lucene50SegmentInfoFormat.VERSION_CURRENT);
+        final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
+        
+        final int docCount = input.readInt();
+        if (docCount < 0) {
+          throw new CorruptIndexException("invalid docCount: " + docCount, input);
+        }
+        final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
+        final Map<String,String> diagnostics = input.readStringStringMap();
+        final Set<String> files = input.readStringSet();
+        
+        byte[] id = new byte[StringHelper.ID_LENGTH];
+        input.readBytes(id, 0, id.length);
+        
+        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, id);
+        si.setFiles(files);
+      } catch (Throwable exception) {
+        priorE = exception;
+      } finally {
+        CodecUtil.checkFooter(input, priorE);
+      }
+      return si;
+    }
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfoWriter() {
-    return writer;
+  public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
+    si.addFile(fileName);
+
+    boolean success = false;
+    try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
+      CodecUtil.writeHeader(output, Lucene50SegmentInfoFormat.CODEC_NAME, Lucene50SegmentInfoFormat.VERSION_CURRENT);
+      Version version = si.getVersion();
+      if (version.major < 5) {
+        throw new IllegalArgumentException("invalid major version: should be >= 5 but got: " + version.major + " segment=" + si);
+      }
+      // Write the Lucene version that created this segment, since 3.1
+      output.writeInt(version.major);
+      output.writeInt(version.minor);
+      output.writeInt(version.bugfix);
+      assert version.prerelease == 0;
+      output.writeInt(si.getDocCount());
+
+      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
+      output.writeStringStringMap(si.getDiagnostics());
+      Set<String> files = si.files();
+      for (String file : files) {
+        if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
+          throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
+        }
+      }
+      output.writeStringSet(files);
+      byte[] id = si.getId();
+      if (id.length != StringHelper.ID_LENGTH) {
+        throw new IllegalArgumentException("invalid id, got=" + StringHelper.idToString(id));
+      }
+      output.writeBytes(id, 0, id.length);
+      CodecUtil.writeFooter(output);
+      success = true;
+    } finally {
+      if (!success) {
+        // TODO: are we doing this outside of the tracking wrapper? why must SIWriter cleanup like this?
+        IOUtils.deleteFilesIgnoringExceptions(si.dir, fileName);
+      }
+    }
   }
 
   /** File extension used to store {@link SegmentInfo}. */

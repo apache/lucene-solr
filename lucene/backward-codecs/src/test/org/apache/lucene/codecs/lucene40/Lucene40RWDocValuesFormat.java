@@ -35,6 +35,6 @@ public final class Lucene40RWDocValuesFormat extends Lucene40DocValuesFormat {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
           "dv", 
           Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
-    return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY);
+    return new Lucene40DocValuesWriter(state, filename, Lucene40FieldInfosFormat.LEGACY_DV_TYPE_KEY);
   }
 }

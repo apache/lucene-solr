@@ -17,10 +17,20 @@ package org.apache.lucene.codecs.lucene46;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.SegmentInfoReader;
-import org.apache.lucene.codecs.SegmentInfoWriter;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Version;
 
 /**
  * Lucene 4.6 Segment info format.
@@ -28,19 +38,48 @@ import org.apache.lucene.index.SegmentInfo;
  */
 @Deprecated
 public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
-  private final SegmentInfoReader reader = new Lucene46SegmentInfoReader();
 
   /** Sole constructor. */
   public Lucene46SegmentInfoFormat() {
   }
   
   @Override
-  public final SegmentInfoReader getSegmentInfoReader() {
-    return reader;
+  public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene46SegmentInfoFormat.SI_EXTENSION);
+    try (ChecksumIndexInput input = dir.openChecksumInput(fileName, context)) {
+      int codecVersion = CodecUtil.checkHeader(input, Lucene46SegmentInfoFormat.CODEC_NAME,
+                                                      Lucene46SegmentInfoFormat.VERSION_START,
+                                                      Lucene46SegmentInfoFormat.VERSION_CURRENT);
+      final Version version;
+      try {
+        version = Version.parse(input.readString());
+      } catch (ParseException pe) {
+        throw new CorruptIndexException("unable to parse version string: " + pe.getMessage(), input, pe);
+      }
+
+      final int docCount = input.readInt();
+      if (docCount < 0) {
+        throw new CorruptIndexException("invalid docCount: " + docCount, input);
+      }
+      final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
+      final Map<String,String> diagnostics = input.readStringStringMap();
+      final Set<String> files = input.readStringSet();
+
+      if (codecVersion >= Lucene46SegmentInfoFormat.VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(input);
+      } else {
+        CodecUtil.checkEOF(input);
+      }
+
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, null);
+      si.setFiles(files);
+
+      return si;
+    }
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfoWriter() {
+  public void write(Directory dir, SegmentInfo info, IOContext ioContext) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
