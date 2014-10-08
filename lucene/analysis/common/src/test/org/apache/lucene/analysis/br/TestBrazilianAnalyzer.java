@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Brazilian Stem Filter, which only modifies the term text.
@@ -35,7 +36,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * It is very similar to the snowball portuguese algorithm but not exactly the same.
  *
  */
-public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
+public class TestBrazilianAnalyzer extends BaseTokenStreamTestCase {
   
   public void testWithSnowballExamples() throws Exception {
    check("boa", "boa");
@@ -175,5 +176,12 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+  }
+
+  public void testBackcompat40() throws IOException {
+    BrazilianAnalyzer a = new BrazilianAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
   }
 }

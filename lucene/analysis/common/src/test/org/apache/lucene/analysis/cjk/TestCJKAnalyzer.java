@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Most tests adopted from TestCJKTokenizer
@@ -289,5 +290,12 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+  }
+
+  public void testBackcompat40() throws IOException {
+    CJKAnalyzer a = new CJKAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
   }
 }

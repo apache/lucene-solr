@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.analysis.standard;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,9 +27,10 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.core.WordBreakTestUnicode_6_1_0;
+import org.apache.lucene.analysis.standard.std40.StandardTokenizer40;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
@@ -274,6 +275,19 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     WordBreakTestUnicode_6_3_0 wordBreakTest = new WordBreakTestUnicode_6_3_0();
     wordBreakTest.test(a);
   }
+
+  public void testUnicodeWordBreaksTokenizer40() throws Exception {
+    WordBreakTestUnicode_6_1_0 wordBreakTest = new WordBreakTestUnicode_6_1_0();
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+
+        Tokenizer tokenizer = new StandardTokenizer40(newAttributeFactory());
+        return new TokenStreamComponents(tokenizer);
+      }
+    };
+    wordBreakTest.test(analyzer);
+  }
   
   public void testSupplementary() throws Exception {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "𩬅艱鍟䇹愯瀛", 
@@ -373,5 +387,12 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
                       }
                     },
                     100*RANDOM_MULTIPLIER, 8192);
+  }
+
+  public void testBackcompat40() throws IOException {
+    StandardAnalyzer a = new StandardAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
   }
 }

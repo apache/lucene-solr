@@ -18,12 +18,15 @@ package org.apache.lucene.analysis.standard;
  */
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.standard.std40.StandardTokenizer40;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -82,15 +85,28 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
-    final StandardTokenizer src = new StandardTokenizer();
-    src.setMaxTokenLength(maxTokenLength);
+    final Tokenizer src;
+    if (getVersion().onOrAfter(Version.LUCENE_4_7_0)) {
+      StandardTokenizer t = new StandardTokenizer();
+      t.setMaxTokenLength(maxTokenLength);
+      src = t;
+    } else {
+      StandardTokenizer40 t = new StandardTokenizer40();
+      t.setMaxTokenLength(maxTokenLength);
+      src = t;
+    }
     TokenStream tok = new StandardFilter(src);
     tok = new LowerCaseFilter(tok);
     tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
       protected void setReader(final Reader reader) throws IOException {
-        src.setMaxTokenLength(StandardAnalyzer.this.maxTokenLength);
+        int m = StandardAnalyzer.this.maxTokenLength;
+        if (src instanceof StandardTokenizer) {
+          ((StandardTokenizer)src).setMaxTokenLength(m);
+        } else {
+          ((StandardTokenizer40)src).setMaxTokenLength(m);
+        }
         super.setReader(reader);
       }
     };

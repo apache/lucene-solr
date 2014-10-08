@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -123,5 +124,12 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
           new String[] { "this", "is", "a", "test", "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
           new int[] { 0, 5, 8, 10, 16, 19, 22, 25, 29, 33, 36, 39 },
           new int[] { 4, 7, 9, 14, 19, 22, 25, 29, 33, 36, 39, 41 });
+  }
+
+  public void testBackcompat40() throws IOException {
+    ThaiAnalyzer a = new ThaiAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
   }
 }

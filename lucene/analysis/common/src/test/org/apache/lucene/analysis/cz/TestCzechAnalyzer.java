@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the CzechAnalyzer
@@ -52,5 +53,12 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new CzechAnalyzer(), 1000*RANDOM_MULTIPLIER);
+  }
+
+  public void testBackcompat40() throws IOException {
+    CzechAnalyzer a = new CzechAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
   }
 }

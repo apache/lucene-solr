@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.analysis.standard;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

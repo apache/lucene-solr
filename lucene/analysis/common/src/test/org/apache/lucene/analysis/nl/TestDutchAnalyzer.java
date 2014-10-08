@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Dutch Stem Filter, which only modifies the term text.
@@ -30,7 +31,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * The code states that it uses the snowball algorithm, but tests reveal some differences.
  * 
  */
-public class TestDutchStemmer extends BaseTokenStreamTestCase {
+public class TestDutchAnalyzer extends BaseTokenStreamTestCase {
   
   public void testWithSnowballExamples() throws Exception {
    check("lichaamsziek", "lichaamsziek");
@@ -169,5 +170,11 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new DutchAnalyzer(), 1000*RANDOM_MULTIPLIER);
   }
-  
+
+  public void testBackcompat40() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
+  }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test case for FrenchAnalyzer.
@@ -170,5 +171,12 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new FrenchAnalyzer();
     checkOneTerm(a, "sécuritaires", "securitair");
     checkOneTerm(a, "securitaires", "securitair");
+  }
+
+  public void testBackcompat40() throws IOException {
+    FrenchAnalyzer a = new FrenchAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
   }
 }

@@ -16,8 +16,11 @@ package org.apache.lucene.analysis.el;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * A unit test class for verifying the correct operation of the GreekAnalyzer.
@@ -67,5 +70,12 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new GreekAnalyzer(), 1000*RANDOM_MULTIPLIER);
+  }
+
+  public void testBackcompat40() throws IOException {
+    GreekAnalyzer a = new GreekAnalyzer();
+    a.setVersion(Version.LUCENE_4_6_1);
+    // this is just a test to see the correct unicode version is being used, not actually testing hebrew
+    assertAnalyzesTo(a, "א\"א", new String[] {"א", "א"});
   }
 }

@@ -1,0 +1,267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <meta name="robots" content="index,nofollow">
+
+  <title>Resources - Lucene-java Wiki</title>
+  <script type="text/javascript" src="/moin_static184/common/js/common.js"></script>
+
+  <script type="text/javascript">
+    <!--
+    var search_hint = "Search";
+    //-->
+  </script>
+
+
+  <link rel="stylesheet" type="text/css" charset="utf-8" media="all" href="/moin_static184/modernized/css/common.css">
+  <link rel="stylesheet" type="text/css" charset="utf-8" media="screen" href="/moin_static184/modernized/css/screen.css">
+  <link rel="stylesheet" type="text/css" charset="utf-8" media="print" href="/moin_static184/modernized/css/print.css">
+  <link rel="stylesheet" type="text/css" charset="utf-8" media="projection" href="/moin_static184/modernized/css/projection.css">
+
+  <!-- css only for MS IE6/IE7 browsers -->
+  <!--[if lt IE 8]>
+  <link rel="stylesheet" type="text/css" charset="utf-8" media="all" href="/moin_static184/modernized/css/msie.css">
+  <![endif]-->
+
+
+
+
+
+  <link rel="Start" href="/lucene-java/FrontPageEN">
+  <link rel="Alternate" title="Wiki Markup" href="/lucene-java/Resources?action=raw">
+  <link rel="Alternate" media="print" title="Print View" href="/lucene-java/Resources?action=print">
+  <link rel="Appendix" title="IntroductionToApacheLucene.jp.jpg" href="/lucene-java/Resources?action=AttachFile&amp;do=view&amp;target=IntroductionToApacheLucene.jp.jpg">
+  <link rel="Appendix" title="SuchmaschinenEntwickelnMitApacheLucene.de.jpg" href="/lucene-java/Resources?action=AttachFile&amp;do=view&amp;target=SuchmaschinenEntwickelnMitApacheLucene.de.jpg">
+  <link rel="Appendix" title="building.search.applications.png" href="/lucene-java/Resources?action=AttachFile&amp;do=view&amp;target=building.search.applications.png">
+  <link rel="Appendix" title="lia3d.jpg" href="/lucene-java/Resources?action=AttachFile&amp;do=view&amp;target=lia3d.jpg">
+  <link rel="Search" href="/lucene-java/FindPage">
+  <link rel="Index" href="/lucene-java/TitleIndex">
+  <link rel="Glossary" href="/lucene-java/WordIndex">
+  <link rel="Help" href="/lucene-java/HelpOnFormatting">
+</head>
+
+<body  lang="en" dir="ltr">
+
+<div id="header">
+
+  <form id="searchform" method="get" action="/lucene-java/Resources">
+    <div>
+      <input type="hidden" name="action" value="fullsearch">
+      <input type="hidden" name="context" value="180">
+      <label for="searchinput">Search:</label>
+      <input id="searchinput" type="text" name="value" value="" size="20"
+             onfocus="searchFocus(this)" onblur="searchBlur(this)"
+             onkeyup="searchChange(this)" onchange="searchChange(this)" alt="Search">
+      <input id="titlesearch" name="titlesearch" type="submit"
+             value="Titles" alt="Search Titles">
+      <input id="fullsearch" name="fullsearch" type="submit"
+             value="Text" alt="Search Full Text">
+    </div>
+  </form>
+  <script type="text/javascript">
+    <!--// Initialize search form
+    var f = document.getElementById('searchform');
+    f.getElementsByTagName('label')[0].style.display = 'none';
+    var e = document.getElementById('searchinput');
+    searchChange(e);
+    searchBlur(e);
+    //-->
+  </script>
+
+  <div id="logo"><a href="/lucene-java/FrontPageEN">Lucene-java Wiki</a></div>
+  <div id="username"><a href="/lucene-java/Resources?action=login" id="login" rel="nofollow">Login</a></div>
+  <h1 id="locationline">
+
+    <span id="pagelocation"><a class="backlink" href="/lucene-java/Resources?action=fullsearch&amp;context=180&amp;value=linkto%3A%22Resources%22" rel="nofollow" title="Click to do a full-text search for this title">Resources</a></span>
+  </h1>
+
+
+  <ul id="navibar">
+    <li class="wikilink"><a href="/lucene-java/FrontPageEN">FrontPageEN</a></li><li class="wikilink"><a href="/lucene-java/RecentChanges">RecentChanges</a></li><li class="wikilink"><a href="/lucene-java/FindPage">FindPage</a></li><li class="wikilink"><a href="/lucene-java/HelpContents">HelpContents</a></li><li class="current"><a href="/lucene-java/Resources">Resources</a></li>
+  </ul>
+
+  <div id="pageline"><hr style="display:none;"></div>
+
+  <ul class="editbar"><li><span class="disabled">Immutable Page</span></li><li class="toggleCommentsButton" style="display:none;"><a href="#" class="nbcomment" onClick="toggleComments();return false;">Comments</a></li><li><a class="nbinfo" href="/lucene-java/Resources?action=info" rel="nofollow">Info</a></li><li>
+    <form class="actionsmenu" method="GET" action="/lucene-java/Resources">
+      <div>
+        <label>More Actions:</label>
+        <select name="action"
+                onchange="if ((this.selectedIndex != 0) &&
+                      (this.options[this.selectedIndex].disabled == false)) {
+                this.form.submit();
+            }
+            this.selectedIndex = 0;">
+          <option value="raw">Raw Text</option>
+          <option value="print">Print View</option>
+          <option value="RenderAsDocbook">Render as Docbook</option>
+          <option value="refresh">Delete Cache</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="SpellCheck">Check Spelling</option>
+          <option value="LikePages">Like Pages</option>
+          <option value="LocalSiteMap">Local Site Map</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="RenamePage" disabled class="disabled">Rename Page</option>
+          <option value="CopyPage">Copy Page</option>
+          <option value="DeletePage" disabled class="disabled">Delete Page</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="MyPages">My Pages</option>
+          <option value="show" disabled class="disabled">Subscribe User</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="show" disabled class="disabled">Remove Spam</option>
+          <option value="show" disabled class="disabled">Revert to this revision</option>
+          <option value="show" disabled class="disabled">Package Pages</option>
+          <option value="SyncPages">Sync Pages</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="Load">Load</option>
+          <option value="Save">Save</option>
+        </select>
+        <input type="submit" value="Do">
+
+      </div>
+      <script type="text/javascript">
+        <!--// Init menu
+        actionsMenuInit('More Actions:');
+        //-->
+      </script>
+    </form>
+  </li></ul>
+
+</div>
+
+<div id="page" lang="en" dir="ltr">
+  <div dir="ltr" id="content" lang="en"><span class="anchor" id="top"></span>
+    <span class="anchor" id="line-2"></span><p class="line867"><div class="table-of-contents"><p class="table-of-contents-heading">Contents<ol><li>
+      <a href="#Introductions">Introductions</a></li><li>
+      <a href="#Blogs">Blogs</a></li><li>
+      <a href="#Books">Books</a></li><li>
+      <a href="#Articles">Articles</a></li><li>
+      <a href="#Interviews">Interviews</a></li><li>
+      <a href="#Papers">Papers</a></li><li>
+      <a href="#Presentations">Presentations</a></li><li>
+      <a href="#Training">Training</a></li><li>
+      <a href="#Corpora">Corpora</a></li><li>
+      <a href="#Other">Other</a></li></ol></div> <span class="anchor" id="line-3"></span><span class="anchor" id="line-4"></span><p class="line867">
+    <h1 id="Introductions">Introductions</h1>
+    <span class="anchor" id="line-5"></span><span class="anchor" id="line-6"></span><ul><li><p class="line862">The API documentation contains  <a class="http" href="http://lucene.apache.org/java/3_0_1/api/all/overview-summary.html#overview_description">a short and simple code example</a> that shows the basic way to index and search <span class="anchor" id="line-7"></span></li><li><p class="line862">The <a class="http" href="http://lucene.apache.org/java/3_0_1/gettingstarted.html">Getting Started Guide</a> that describes the demos that come with Lucene <span class="anchor" id="line-8"></span><span class="anchor" id="line-9"></span><span class="anchor" id="line-10"></span></li></ul><p class="line867">
+    <h1 id="Blogs">Blogs</h1>
+    <span class="anchor" id="line-11"></span><span class="anchor" id="line-12"></span><ul><li><p class="line891"><a class="http" href="http://lucene.grantingersoll.com">Grant's Grunts: Lucene edition</a> - Grant Ingersoll's thoughts on the Lucene ecosystem. <span class="anchor" id="line-13"></span></li><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/blog/">Lucid Imagination's Blog</a> - Many of the Lucene and Solr committers blog here about how to use Lucene and Solr <span class="anchor" id="line-14"></span></li><li><p class="line891"><a class="http" href="http://blog.sematext.com/">Sematext Blog</a> - Search and Analytics covering Lucene, Solr, Nutch, Hadoop, HBase, and more <span class="anchor" id="line-15"></span><span class="anchor" id="line-16"></span><span class="anchor" id="line-17"></span></li></ul><p class="line867">
+    <h1 id="Books">Books</h1>
+    <span class="anchor" id="line-18"></span><span class="anchor" id="line-19"></span><ul><li><p class="line891"><img alt="http://www.manning.com/hatcher3/hatcher3_cover150.jpg" class="external_image" src="http://www.manning.com/hatcher3/hatcher3_cover150.jpg" title="http://www.manning.com/hatcher3/hatcher3_cover150.jpg" /> "<a class="http" href="http://www.manning.com/hatcher3/">Lucene in Action, Second Edition"</a> by Erik Hatcher, Otis Gospodneti&#263;, and Michael McCandless <span class="anchor" id="line-20"></span></li><li><p class="line891"><img alt="building.search.applications.png" class="attachment" src="/lucene-java/Resources?action=AttachFile&amp;do=get&amp;target=building.search.applications.png" title="building.search.applications.png" /> "<a class="http" href="http://www.amazon.com/Building-Search-Applications-Lucene-Lingpipe/dp/0615204252/">Building Search Applications: Lucene, LingPipe, and Gate</a>" by Manu Konchady; Mustru Publishing; June 2008; ISBN 978-0615204253 <span class="anchor" id="line-21"></span></li><li><p class="line891"><img alt="IntroductionToApacheLucene.jp.jpg" class="attachment" src="/lucene-java/Resources?action=AttachFile&amp;do=get&amp;target=IntroductionToApacheLucene.jp.jpg" title="IntroductionToApacheLucene.jp.jpg" /> "<a class="http" href="http://www.amazon.co.jp/exec/obidos/ASIN/4774127809/503-9461699-1775907">Apache Lucene 入門 ~Java・オープンソース・全文検索システムの構築</a>" 関口 宏司 ; 技術評論社 ; 2006/05/17 ; ISBN: 4774127809 (<span class="u">Introduction to Apache Lucene: Construction of Java Open Source Full Text Retrieval Systems</span> by Koshi Sekiguti ; Gijutsu-Hyohron Co., Ltd.) <span class="anchor" id="line-22"></span></li><li><p class="line891"><img alt="lia3d.jpg" class="attachment" src="/lucene-java/Resources?action=AttachFile&amp;do=get&amp;target=lia3d.jpg" title="lia3d.jpg" /> "<a class="http" href="http://www.lucenebook.com">Lucene In Action</a>" by Erik Hatcher, Otis Gospodneti&#263;; Manning Publications; December 2004; ISBN 1932394281 (also available from <a class="http" href="http://www.amazon.com/exec/obidos/ASIN/1932394281">Amazon.com</a>) <span class="anchor" id="line-23"></span></li><li><p class="line891"><img alt="SuchmaschinenEntwickelnMitApacheLucene.de.jpg" class="attachment" src="/lucene-java/Resources?action=AttachFile&amp;do=get&amp;target=SuchmaschinenEntwickelnMitApacheLucene.de.jpg" title="SuchmaschinenEntwickelnMitApacheLucene.de.jpg" /> Manfred Hardt, Dr. Fabian Theis: "<a class="http" href="http://www.amazon.de/Suchmaschinen-entwickeln-mit-Apache-Lucene/dp/3935042450">Suchmaschinen entwickeln mit Apache Lucene</a>"; Software &amp; Support Verlag, Frankfurt/Main, Germany; September 2004; ISBN 3935042450 (<span class="u">Developing Search Engines with Apache Lucene</span>) <span class="anchor" id="line-24"></span><span class="anchor" id="line-25"></span></li></ul><p class="line867">
+    <h1 id="Articles">Articles</h1>
+    <span class="anchor" id="line-26"></span><span class="anchor" id="line-27"></span><ul><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/Community/Hear-from-the-Experts/Articles/Getting-Started-with-Lucene/">Getting Started with Lucene</a> (by Grant Ingersoll) <br>
+      (<em>Published: January 2009 - article</em>) <span class="anchor" id="line-28"></span></li><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/Community/Hear-from-the-Experts/Articles/Optimizing-Findability-in-Lucene-and-Solr/">Optimizing Findability in Lucene and Solr</a> (by  Grant Ingersoll)<br>
+      (<em>Published: January 2009 - article</em>) <span class="anchor" id="line-29"></span></li><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/Community/Hear-from-the-Experts/Articles/Debugging-Relevance-Issues-in-Search/">Debugging Relevance Issues in Search</a> (by Grant Ingersoll)<br>
+      (<em>Published: January 2009 - article</em>) <span class="anchor" id="line-30"></span></li><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/Community/Hear-from-the-Experts/Articles/Scaling-Lucene-and-Solr/">Scaling Lucene and Solr</a> (by Mark Miller)<br>
+      (<em>Published: January 2009 - article</em>)  <span class="anchor" id="line-31"></span></li><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/Community/Hear-from-the-Experts/Articles/Introduction-to-Apache-Lucene-and-Solr/">Introduction to Apache Lucene and Solr</a> (by Marc Krellenstein)<br>
+      (<em>Published: January 2009 - article</em>)  <span class="anchor" id="line-32"></span></li><li><p class="line891"><a class="http" href="http://cephas.net/blog/2008/03/30/how-morelikethis-works-in-lucene/">How MoreLikeThis Works in Lucene</a> (by Aaron Johnson)<br>
+      (<em>Last updated: March 2008 - blog entry</em>) <span class="anchor" id="line-33"></span></li><li><p class="line891"><a class="http" href="http://schmidt.devlib.org/software/lucene-wikipedia.html">Lucene Wikipedia indexer</a> (by Marco Schmidt)<br>
+      (<em>Last updated: November 2007 - tutorial</em>) <span class="anchor" id="line-34"></span></li><li><p class="line891"><a class="http" href="http://marceloochoa.blogspot.com/2007/09/running-lucene-inside-your-oracle-jvm.html">Running Lucene inside your Oracle JVM</a> (by Marcelo Ochoa)<br>
+      (<em>Last updated: September 2007 - blog entry</em>) <span class="anchor" id="line-35"></span></li><li><p class="line891"><a class="http" href="http://www.onjava.com/pub/a/onjava/2007/05/24/using-the-lucene-query-parser-without-lucene.html">Using the Lucene Query Parser Without Lucene</a> (by Marcin Maciukiewicz and Daniel Owsiański)<br>
+      (<em>Published: May 2007 - article</em>) <span class="anchor" id="line-36"></span></li><li><p class="line891"><a class="http" href="http://www.javaworld.com/javaworld/jw-09-2006/jw-0925-lucene.html">Integrate advanced search functionalities into your apps</a> (by John Ferguson Smart)<br>
+      (<em>Published: September 2006 - article</em>) <span class="anchor" id="line-37"></span></li><li><p class="line891"><a class="http" href="http://www-128.ibm.com/developerworks/java/library/wa-lucene2/index.html?ca=drs-">Beef up Web search applications with Lucene</a> (by Deng Peng Zhou)<br>
+      (<em>Published: August 2006 - article</em>) <span class="anchor" id="line-38"></span></li><li><p class="line891"><a class="http" href="http://www.freesearch.pe.kr/tag/Lucene">Lecture &amp; Etc : Lucene index file format for Korean</a> (by Jeon Hee-Won)<br>
+      (<em>Published: July 2006 - article</em>) <span class="anchor" id="line-39"></span></li><li>Cai Ziegler: "Suche nach Suche -- Apaches Lucene: eigene Suche und Indizierung"; iX 6/2006, Seite 120; Heise Zeitschriften Verlag, Hannover, Germany <span class="anchor" id="line-40"></span></li><li><p class="line891"><a class="http" href="http://www-128.ibm.com/developerworks/java/library/wa-lucene/index.html">Delve inside the Lucene indexing mechanism</a> (by Deng Peng Zhou)<br>
+      (<em>Published: June 2006 - article</em>) <span class="anchor" id="line-41"></span></li><li><p class="line891"><a class="http" href="http://www.onjava.com/pub/a/onjava/2006/01/18/using-lucene-to-search-java-source.html">Using Lucene to Search Java Source Code</a> (by Renuka Sindhgatta)<br>
+      (<em>Published: January 2006 - article</em>) <span class="anchor" id="line-42"></span></li><li><p class="line891"><a class="http" href="http://www.jroller.com/page/wakaleo/?anchor=lucene_a_tutorial_introduction_to">Lucene : a tutorial introduction to full-text indexing in Java</a> (by John Ferguson Smart)<br>
+      (<em>Published: October 2005 - article</em>) <span class="anchor" id="line-43"></span></li><li>Daniel Naber: "Herr der Suche -- Eigene Anwendungen mit Volltextsuche erweitern"; c't 7/2005, Seite 196; Heise Zeitschriften Verlag, Hannover, Germany <span class="anchor" id="line-44"></span></li><li><p class="line891"><a class="http" href="http://blog.dev.sf.net/index.php?/archives/10-Behind-the-Scenes-of-the-SourceForge.net-Search-System.html">Behind the Scenes of the SourceForge.net Search System</a> (by Chris Conrad)<br>
+      (<em>Last updated: June 2005 - blog entry</em>) <span class="anchor" id="line-45"></span></li><li><p class="line891"><a class="http" href="http://today.java.net/pub/a/today/2005/08/09/didyoumean.html">Did You Mean: Lucene?</a> (by Tom White)<br>
+      (<em>Published: August 2005 - article</em>) <span class="anchor" id="line-46"></span></li><li><p class="line891"><a class="http" href="http://www.developer.com/java/other/article.php/3490471">Meet Lucene</a> (by Otis Gospodneti&#263;, Eric Hatcher)<br>
+      (<em>Published: March 2005 - article</em>) <span class="anchor" id="line-47"></span></li><li><p class="line891"><a class="http" href="http://www.theserverside.com/tt/articles/article.tss?l=ILoveLucene">I Love Lucene</a> (by Dion Almaer)<br>
+      (<em>Published: January 2005 - article</em>) <span class="anchor" id="line-48"></span></li><li><p class="line891"><a class="http" href="http://javaboutique.internet.com/tutorials/HTMLParser/article.html">Unweaving a Tangled Web With HTMLParser and Lucene</a> (by Keld H. Hansen)<br>
+      (<em>Last updated: October 2004 - tutorial</em>) <span class="anchor" id="line-49"></span></li><li><p class="line891"><a class="http" href="http://bilgidata.com/localhost/bilgidata/yazi.jsp@dosya=a_lucene.xml.html">Lucene Introduction in Turkish</a> Java Bazl&#305; Arama Motoru - Lusin (by Burak Bayraml&#305;)<br>
+      (<em>Last updated: August 2004 - tutorial</em>) <span class="anchor" id="line-50"></span></li><li><p class="line891"><a class="http" href="http://www.chedong.com/tech/lucene.html">Lucene Introduction in Chinese</a> Lucene&#65306;&#22522;&#20110;Java&#30340;&#20840;&#25991;&#26816;&#32034;&#24341;&#25806;&#31616;&#20171; (by Che Dong; &#20316;&#32773;&#65306; &#36710;&#19996;)<br>
+      (<em>Last updated: May 2004 - tutorial</em>) <span class="anchor" id="line-51"></span></li><li><p class="line891"><a class="http" href="http://javatechniques.com/public/java/docs/basics/lucene-memory-search.html">Lucene In-Memory Text Search</a> (by Philip Isenhour)<br>
+      (<em>Last updated: May 2004 - tutorial</em>) <span class="anchor" id="line-52"></span></li><li><p class="line891"><a class="http" href="http://www.javaranch.com/newsletter/200404/Lucene.html">The Lucene Search Engine: Adding Search to Your Applications</a> (by Thomas Paul)<br>
+      (<em>Published: April 2004 - article</em>) <span class="anchor" id="line-53"></span></li><li><p class="line891"><a class="http" href="http://www.darksleep.com/lucene/">Lucene Tutorial</a> (by Steven J. Owens)<br>
+      (<em>Last updated: March 2004 - tutorial</em>) <span class="anchor" id="line-54"></span></li><li><p class="line891"><a class="http" href="http://www-igm.univ-mlv.fr/~dr/XPOSE2003/lucene/articleLucene.html">Lucene Introduction in French</a> Exposés Système sur le thème de l'opensource : Analyse de la structure de Lucene. (by Sun Seng TAN)<br>
+      (<em>Last updated: February 2004 - tutorial</em>) <span class="anchor" id="line-55"></span></li><li><p class="line891"><a class="http" href="http://today.java.net/pub/a/today/2003/11/07/QueryParserRules.html">QueryParser Rules</a> (by Erik Hatcher)<br>
+      (<em>Published November 2003 - article</em>) <span class="anchor" id="line-56"></span></li><li><p class="line891"><a class="http" href="http://builder.com.com/5100-6389-5054799.html">Give your Web site its own search engine using Lucene</a> (by Jeffrey Linwood)<br>
+      (<em>Published July 2003 - article</em>) <span class="anchor" id="line-57"></span></li><li><p class="line891"><a class="http" href="http://today.java.net/pub/a/today/2003/07/30/LuceneIntro.html">Lucene Intro</a> (by Erik Hatcher)<br>
+      (<em>Published: July 2003 - article</em>) <span class="anchor" id="line-58"></span></li><li><p class="line891"><a class="http" href="http://www-106.ibm.com/developerworks/library/j-lucene/">Parsing, indexing, and searching XML with Digester and Lucene</a> (by Otis Gospodneti&#263;)<br>
+      (<em>Published June 2003 - article</em>) <span class="anchor" id="line-59"></span></li><li><p class="line891"><a class="http" href="http://www.xml.com/pub/a/ws/2003/05/13/email.html">Using Python, Jython, and Lucene to Search Outlook Email</a> (by Jon Udell)<br>
+      (<em>Published: May 2003 - article</em>) <span class="anchor" id="line-60"></span></li><li><p class="line891"><a class="http" href="http://www.onjava.com/pub/a/onjava/2003/03/05/lucene.html">Advanced Text Indexing with Lucene</a> (by Otis Gospodneti&#263;)<br>
+      (<em>Published: March 2003 - article</em>) <span class="anchor" id="line-61"></span></li><li><p class="line891"><a class="http" href="http://www.onjava.com/pub/a/onjava/2003/01/15/lucene.html">Introduction to Text Indexing with Apache Jakarta Lucene</a> (by Otis Gospodneti&#263;)<br>
+      (<em>Published: January 2003 - article</em>) <span class="anchor" id="line-62"></span></li><li><p class="line862">Manfred Hardt: "Suchmaschinen entwickeln mit Java und Lucene - Wo war denn noch gleich ... ?"; JavaMagazin 9/2002; Software &amp; Support Verlag, Frankfurt/Main, Germany <span class="anchor" id="line-63"></span></li><li><p class="line891"><a class="http" href="http://javangelist.snipsnap.org/space/Lucene-Mini-Tutorial">Lucene Mini-Tutorial</a> (by funzel)<br>
+      (<em>Last updated: April 2002 - tutorial</em>) <span class="anchor" id="line-64"></span></li><li><p class="line891"><a class="http" href="http://www.javaworld.com/javaworld/jw-09-2000/jw-0915-lucene.html">The Lucene search engine Powerful flexible and free</a> (by Brian Goetz)<br>
+      (<em>Published September 2000 - article</em>) <span class="anchor" id="line-65"></span><span class="anchor" id="line-66"></span></li></ul><p class="line867">
+    <h1 id="Interviews">Interviews</h1>
+    <span class="anchor" id="line-67"></span><span class="anchor" id="line-68"></span><ul><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/index.php?option=com_content&amp;task=view&amp;id=109">Interview with Lucene creator Doug Cutting</a> Podcast.  Summary: Doug talks about the creation of Lucene, Nutch and Hadoop. (<em>Published January 2009</em>) <span class="anchor" id="line-69"></span></li><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/index.php?option=com_content&amp;task=view&amp;id=108">Interview with Lucene/Solr committer Chris Hostetter</a> Podcast.  Summary: Chris talks about Solr, Lucene and their usage at CNET. (<em>Published January 2009</em>) <span class="anchor" id="line-70"></span></li><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/index.php?option=com_content&amp;task=view&amp;id=113">Interview with Lucene/Solr committer Ryan McKinley</a> Podcast.  Summary: Ryan discusses Solr, Lucene and geospatial searching with Lucene (<a class="nonexistent" href="/lucene-java/LocalLucene/LocalSolr">LocalLucene/LocalSolr</a>) and his usage of Lucene/Solr throughout his career. (<em>Published January 2009</em>) <span class="anchor" id="line-71"></span><span class="anchor" id="line-72"></span><span class="anchor" id="line-73"></span><span class="anchor" id="line-74"></span></li></ul><p class="line867">
+    <h1 id="Papers">Papers</h1>
+    <span class="anchor" id="line-75"></span><span class="anchor" id="line-76"></span><ul><li><p class="line891"><a class="http" href="http://lucene.sourceforge.net/publications.html">http://lucene.sourceforge.net/publications.html</a> Doug Cuttings papers from the old Lucene web site <span class="anchor" id="line-77"></span><span class="anchor" id="line-78"></span></li></ul><p class="line867">
+    <h1 id="Presentations">Presentations</h1>
+    <span class="anchor" id="line-79"></span><ul><li><p class="line891"><a class="http" href="http://people.apache.org/~buschmi/apachecon/AdvancedIndexingLuceneAtlanta07.ppt">Advanced Indexing Techniques with Apache Lucene - Payloads</a> presented by Michael Busch at <a class="http" href="http://www.us.apachecon.com/us2007/">ApacheCon U.S. 2007</a><br>
+      (<em>Presented November 2007 - PDF slide show</em>) <span class="anchor" id="line-80"></span></li><li><p class="line891"><a class="http" href="http://people.apache.org/~yonik/presentations/lucene_intro.pdf">Full-Text Search with Lucene</a> presented by Yonik Seeley at <a class="http" href="http://www.eu.apachecon.com">ApacheCon Europe 2007</a>.<br>
+      (<em>Presented May 2007 - PDF slide show</em>) <span class="anchor" id="line-81"></span></li><li><p class="line891"><a class="http" href="http://www.cnlp.org/presentations/slides/AdvancedLuceneEU.pdf">Advanced Lucene</a> presented by Grant Ingersoll of <a class="http" href="http://www.cnlp.org">CNLP</a> at <a class="http" href="http://www.eu.apachecon.com">ApacheCon Europe 2007</a>.  Covers term vectors, query tips and tricks and Lucene performance tuning related to indexing, searching and document retrieval.<br>
+      (<em>Presented May 2007 - PDF slide show</em>) <span class="anchor" id="line-82"></span></li><li><p class="line891"><a class="http" href="http://blogs.atlassian.com/rebelutionary/downloads/tssjs2007-lucene-generic-data-indexing.pdf">Lucene: Generic Data Indexing</a> presented by Mike Cannon-Brookes, CEO, <a class="http" href="http://www.atlassian.com/">Atlassian Software Systems</a> at <a class="http" href="http://javasymposium.techtarget.com/lasvegas/index.html">TSSJS Las Vegas 2007</a>.  Covers how Atlassian use Lucene as a generic indexing framework for indexing and finding arbitrary collections of complex objects.<br>
+      (<em>Presented March 2007 - PDF slide show</em>) <span class="anchor" id="line-83"></span></li><li><p class="line891"><a class="http" href="http://www.cnlp.org/apachecon2005/AdvancedLucene.ppt">Advanced Lucene</a> presented by Grant Ingersoll of the <a class="http" href="http://www.cnlp.org">Center for Natural Language Processing</a> at <a class="http" href="http://www.apachecon.com">ApacheCon 2005</a>.  Covers term vectors, span queries, using Lucene in a basic question answering system, and several Lucene case studies from <a class="http" href="http://www.cnlp.org">http://www.cnlp.org</a>.  The accompanying <a class="http" href="http://www.cnlp.org/apachecon2005">CNLP ApacheCon 2005 Information website</a> contains many working examples using term vectors and span queries. <span class="anchor" id="line-84"></span></li><li><p class="line891"><a class="http" href="http://lucene.sourceforge.net/talks/pisa/">Lucene lecture at The University of Pisa</a> (by Doug Cutting)<br>
+      (<em>Presented November 2004 - lecture notes</em>) <span class="anchor" id="line-85"></span></li><li><p class="line891"><a class="http" href="http://conferences.oreillynet.com/presentations/os2003/hatcher_erik_lucene.pdf">Introducing Lucene</a> (by Erik Hatcher)<br>
+      (<em>Presented at OS2003, July 2003 - PDF slide show</em>) <span class="anchor" id="line-86"></span></li><li><p class="line891"><a class="http" href="http://lucene.sourceforge.net/talks/inktomi/">The Lucene Search Engine: Inktomi Seminar</a> (by Doug Cutting)<br>
+      (<em>Presented June, 2000 - seminar notes</em>) <span class="anchor" id="line-87"></span><span class="anchor" id="line-88"></span></li></ul><p class="line867">
+    <h1 id="Training">Training</h1>
+    <span class="anchor" id="line-89"></span><span class="anchor" id="line-90"></span><ul><li><p class="line891"><a class="http" href="http://www.lucidimagination.com/How-We-Can-Help/Training/">http://www.lucidimagination.com/How-We-Can-Help/Training/</a> - Training on Lucene created by Lucene committers and contributors (Grant Ingersoll, Erik Hatcher and the rest of the team at Lucid Imagination).   <span class="anchor" id="line-91"></span></li><li><p class="line891"><a class="http" href="http://www.lucenebootcamp.com">Lucene Boot Camp</a> - Training by Lucene committer Grant Ingersoll.  Offered exclusively at <a class="http" href="http://www.apachecon.com">ApacheCon</a>. <span class="anchor" id="line-92"></span><span class="anchor" id="line-93"></span></li></ul><p class="line867">
+    <h1 id="Corpora">Corpora</h1>
+    <span class="anchor" id="line-94"></span><ul><li><p class="line862">DMOZ RDF dump - <a class="http" href="http://rdf.dmoz.org/">http://rdf.dmoz.org/</a> <span class="anchor" id="line-95"></span></li><li><p class="line862">CMU newsgroups  - <a class="http" href="http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.html">http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.html</a> <span class="anchor" id="line-96"></span></li><li><p class="line862">CMU webpages  - <a class="http" href="http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/">http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/</a> <span class="anchor" id="line-97"></span></li><li><p class="line862">Reuters  - <a class="http" href="http://www.daviddlewis.com/resources/testcollections/reuters21578">http://www.daviddlewis.com/resources/testcollections/reuters21578</a> <span class="anchor" id="line-98"></span></li><li><p class="line862">Enron emails - <a class="http" href="http://www-2.cs.cmu.edu/~enron/">http://www-2.cs.cmu.edu/~enron/</a> <span class="anchor" id="line-99"></span></li><li><p class="line862">JRC-ACQUIS Multilingual Parallel Corpus - <a class="http" href="http://wt.jrc.it/lt/Acquis/">http://wt.jrc.it/lt/Acquis/</a> <span class="anchor" id="line-100"></span><span class="anchor" id="line-101"></span></li></ul><p class="line867">
+    <h1 id="Other">Other</h1>
+    <span class="anchor" id="line-102"></span><ul><li><p class="line891"><a class="http" href="http://www.java201.com/resources/browse/38-all.html">Lucene Resources</a> - Articles, Books, FAQs, Forums, Presentations, Wiki. <span class="anchor" id="line-103"></span></li><li><p class="line891"><a class="http" href="http://www.nabble.com/Web-Search-f2787.html">Lucene Search Forum</a> - hosted by <a class="http" href="http://www.nabble.com">Nabble</a> archiving all Lucene and Nutch mailing lists into a searchable archive/forum. The search is coded using Lucene. <span class="anchor" id="line-104"></span></li><li><p class="line891"><a class="http" href="http://www.lucenetutorial.com">LuceneTutorial.com</a> - Tips and tricks, sample applications, code samples, best practices. <span class="anchor" id="line-105"></span></li></ul><span class="anchor" id="bottom"></span></div><p id="pageinfo" class="info" lang="en" dir="ltr">Resources  (last edited 2010-05-03 22:31:43 by <span title="SteveRowe @ ist-h335-d03.syr.edu[128.230.84.100]"><a class="nonexistent" href="/lucene-java/SteveRowe" title="SteveRowe @ ist-h335-d03.syr.edu[128.230.84.100]">SteveRowe</a></span>)</p>
+
+  <div id="pagebottom"></div>
+</div>
+
+
+<div id="footer">
+  <ul class="editbar"><li><span class="disabled">Immutable Page</span></li><li class="toggleCommentsButton" style="display:none;"><a href="#" class="nbcomment" onClick="toggleComments();return false;">Comments</a></li><li><a class="nbinfo" href="/lucene-java/Resources?action=info" rel="nofollow">Info</a></li><li>
+    <form class="actionsmenu" method="GET" action="/lucene-java/Resources">
+      <div>
+        <label>More Actions:</label>
+        <select name="action"
+                onchange="if ((this.selectedIndex != 0) &&
+                      (this.options[this.selectedIndex].disabled == false)) {
+                this.form.submit();
+            }
+            this.selectedIndex = 0;">
+          <option value="raw">Raw Text</option>
+          <option value="print">Print View</option>
+          <option value="RenderAsDocbook">Render as Docbook</option>
+          <option value="refresh">Delete Cache</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="SpellCheck">Check Spelling</option>
+          <option value="LikePages">Like Pages</option>
+          <option value="LocalSiteMap">Local Site Map</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="RenamePage" disabled class="disabled">Rename Page</option>
+          <option value="CopyPage">Copy Page</option>
+          <option value="DeletePage" disabled class="disabled">Delete Page</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="MyPages">My Pages</option>
+          <option value="show" disabled class="disabled">Subscribe User</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="show" disabled class="disabled">Remove Spam</option>
+          <option value="show" disabled class="disabled">Revert to this revision</option>
+          <option value="show" disabled class="disabled">Package Pages</option>
+          <option value="SyncPages">Sync Pages</option>
+          <option value="show" disabled class="disabled">------------------------</option>
+          <option value="Load">Load</option>
+          <option value="Save">Save</option>
+        </select>
+        <input type="submit" value="Do">
+
+      </div>
+      <script type="text/javascript">
+        <!--// Init menu
+        actionsMenuInit('More Actions:');
+        //-->
+      </script>
+    </form>
+  </li></ul>
+
+  <ul id="credits">
+    <li><a href="http://moinmo.in/" title="This site uses the MoinMoin Wiki software.">MoinMoin Powered</a></li><li><a href="http://moinmo.in/Python" title="MoinMoin is written in Python.">Python Powered</a></li><li><a href="http://moinmo.in/GPL" title="MoinMoin is GPL licensed.">GPL licensed</a></li><li><a href="http://validator.w3.org/check?uri=referer" title="Click here to validate this page.">Valid HTML 4.01</a></li>
+  </ul>
+
+
+</div>
+</body>
+</html>
+
