@@ -17,7 +17,16 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.SegmentInfoWriter;
+import java.io.IOException;
+import java.util.Collections;
+
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Read-write version of 4.0 segmentinfo format for testing
@@ -27,7 +36,33 @@ import org.apache.lucene.codecs.SegmentInfoWriter;
 public final class Lucene40RWSegmentInfoFormat extends Lucene40SegmentInfoFormat {
 
   @Override
-  public SegmentInfoWriter getSegmentInfoWriter() {
-    return new Lucene40SegmentInfoWriter();
+  public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
+    si.addFile(fileName);
+
+    final IndexOutput output = dir.createOutput(fileName, ioContext);
+
+    boolean success = false;
+    try {
+      CodecUtil.writeHeader(output, Lucene40SegmentInfoFormat.CODEC_NAME, Lucene40SegmentInfoFormat.VERSION_CURRENT);
+      // Write the Lucene version that created this segment, since 3.1
+      output.writeString(si.getVersion().toString());
+      output.writeInt(si.getDocCount());
+
+      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
+      output.writeStringStringMap(si.getDiagnostics());
+      output.writeStringStringMap(Collections.<String,String>emptyMap());
+      output.writeStringSet(si.files());
+
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(output);
+        // TODO: why must we do this? do we not get tracking dir wrapper?
+        IOUtils.deleteFilesIgnoringExceptions(si.dir, fileName);
+      } else {
+        output.close();
+      }
+    }
   }
 }

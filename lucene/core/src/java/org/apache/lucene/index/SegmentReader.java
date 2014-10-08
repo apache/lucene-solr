@@ -182,7 +182,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
       // updates always outside of CFS
       FieldInfosFormat fisFormat = si.info.getCodec().fieldInfosFormat();
       final String segmentSuffix = Long.toString(si.getFieldInfosGen(), Character.MAX_RADIX);
-      return fisFormat.getFieldInfosReader().read(si.info.dir, si.info, segmentSuffix, IOContext.READONCE);
+      return fisFormat.read(si.info.dir, si.info, segmentSuffix, IOContext.READONCE);
     }
   }
   

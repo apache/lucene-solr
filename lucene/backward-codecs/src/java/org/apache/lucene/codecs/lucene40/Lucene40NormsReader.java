@@ -40,7 +40,7 @@ final class Lucene40NormsReader extends NormsProducer {
   }
   
   Lucene40NormsReader(SegmentReadState state, String filename) throws IOException {
-    impl = new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
+    impl = new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosFormat.LEGACY_NORM_TYPE_KEY);
   }
   
   @Override

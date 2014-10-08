@@ -17,11 +17,8 @@ package org.apache.lucene.codecs.lucene42;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -39,13 +36,7 @@ public final class Lucene42RWCodec extends Lucene42Codec {
   private static final DocValuesFormat dv = new Lucene42RWDocValuesFormat();
   private static final NormsFormat norms = new Lucene42RWNormsFormat();
   private static final StoredFieldsFormat storedFields = new Lucene41RWStoredFieldsFormat();
-
-  private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
-    @Override
-    public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      return new Lucene42FieldInfosWriter();
-    }
-  };
+  private static final FieldInfosFormat fieldInfosFormat = new Lucene42RWFieldInfosFormat();
 
   @Override
   public DocValuesFormat getDocValuesFormatForField(String field) {

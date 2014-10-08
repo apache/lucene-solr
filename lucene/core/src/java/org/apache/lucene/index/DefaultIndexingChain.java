@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
@@ -118,8 +117,7 @@ final class DefaultIndexingChain extends DocConsumer {
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
-    FieldInfosWriter infosWriter = docWriter.codec.fieldInfosFormat().getFieldInfosWriter();
-    infosWriter.write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
+    docWriter.codec.fieldInfosFormat().write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
   }
 
   /** Writes all buffered doc values (called from {@link #flush}). */

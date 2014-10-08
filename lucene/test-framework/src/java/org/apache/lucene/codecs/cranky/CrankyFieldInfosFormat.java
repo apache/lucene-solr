@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -36,35 +34,17 @@ class CrankyFieldInfosFormat extends FieldInfosFormat {
     this.delegate = delegate;
     this.random = random;
   }
-  
+
   @Override
-  public FieldInfosReader getFieldInfosReader() throws IOException {
-    return delegate.getFieldInfosReader();
+  public FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext iocontext) throws IOException {
+    return delegate.read(directory, segmentInfo, segmentSuffix, iocontext);
   }
 
   @Override
-  public FieldInfosWriter getFieldInfosWriter() throws IOException {
+  public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from FieldInfosFormat.getFieldInfosWriter()");
     }
-    return new CrankyFieldInfosWriter(delegate.getFieldInfosWriter(), random);
-  }
-  
-  static class CrankyFieldInfosWriter extends FieldInfosWriter {
-    final FieldInfosWriter delegate;
-    final Random random;
-    
-    CrankyFieldInfosWriter(FieldInfosWriter delegate, Random random) {
-      this.delegate = delegate;
-      this.random = random;
-    }
-
-    @Override
-    public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException from FieldInfosWriter.write()");
-      }
-      delegate.write(directory, segmentInfo, segmentSuffix, infos, context);
-    }
+    delegate.write(directory, segmentInfo, segmentSuffix, infos, context);
   }
 }

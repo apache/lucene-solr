@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
@@ -35,13 +34,7 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 @Deprecated
 public final class Lucene40RWCodec extends Lucene40Codec {
   
-  private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {
-    @Override
-    public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      return new Lucene40FieldInfosWriter();
-    }
-  };
-  
+  private final FieldInfosFormat fieldInfos = new Lucene40RWFieldInfosFormat();
   private final DocValuesFormat docValues = new Lucene40RWDocValuesFormat();
   private final NormsFormat norms = new Lucene40RWNormsFormat();
   private final StoredFieldsFormat stored = new Lucene40RWStoredFieldsFormat();

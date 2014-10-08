@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
@@ -147,8 +146,7 @@ final class SegmentMerger {
     }
     
     // write the merged infos
-    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
-    fieldInfosWriter.write(directory, mergeState.segmentInfo, "", mergeState.mergeFieldInfos, context);
+    codec.fieldInfosFormat().write(directory, mergeState.segmentInfo, "", mergeState.mergeFieldInfos, context);
 
     return mergeState;
   }

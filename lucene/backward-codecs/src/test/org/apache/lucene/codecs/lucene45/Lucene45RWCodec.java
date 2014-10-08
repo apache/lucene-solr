@@ -17,19 +17,15 @@ package org.apache.lucene.codecs.lucene45;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWStoredFieldsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosWriter;
+import org.apache.lucene.codecs.lucene42.Lucene42RWFieldInfosFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42RWNormsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
 
@@ -39,12 +35,7 @@ import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
 @SuppressWarnings("deprecation")
 public final class Lucene45RWCodec extends Lucene45Codec {
   
-  private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat() {
-    @Override
-    public FieldInfosWriter getFieldInfosWriter() throws IOException {
-      return new Lucene42FieldInfosWriter();
-    }
-  };
+  private static final FieldInfosFormat fieldInfosFormat = new Lucene42RWFieldInfosFormat();
 
   @Override
   public FieldInfosFormat fieldInfosFormat() {
