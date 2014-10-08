@@ -19,6 +19,12 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 ==================  4.10.2 ==================
 
+Bug Fixes
+----------------------
+
+* SOLR-6511: Fencepost error in LeaderInitiatedRecoveryThread (Timothy Potter)
+
+
 Other Changes
 ----------------------
 
@@ -296,6 +302,7 @@ Optimizations
 * SOLR-6261: Run ZooKeeper watch event callbacks in parallel to the ZooKeeper
   event thread. (Ramkumar Aiyengar via Mark Miller)
 
+
 Other Changes
 ---------------------
 
@@ -437,7 +444,6 @@ New Features
 
 * SOLR-6064: DebugComponent track output should be returned as a JSON
   object rather than a list (Christine Poerschke, Alan Woodward)
-
 
 Bug Fixes
 ----------------------

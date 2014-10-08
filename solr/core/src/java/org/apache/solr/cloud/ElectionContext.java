@@ -382,7 +382,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                                                     collection,
                                                     shardId,
                                                     coreNodeProps,
-                                                    120);
+                                                    120,
+                                                    coreNodeName);
               zkController.ensureReplicaInLeaderInitiatedRecovery(
                   collection, shardId, coreNodeProps.getCoreUrl(), coreNodeProps, false);
               
