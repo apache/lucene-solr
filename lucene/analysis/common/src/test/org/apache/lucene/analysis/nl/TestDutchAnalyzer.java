@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * The code states that it uses the snowball algorithm, but tests reveal some differences.
  * 
  */
-public class TestDutchStemmer extends BaseTokenStreamTestCase {
+public class TestDutchAnalyzer extends BaseTokenStreamTestCase {
   
   public void testWithSnowballExamples() throws Exception {
    check("lichaamsziek", "lichaamsziek");

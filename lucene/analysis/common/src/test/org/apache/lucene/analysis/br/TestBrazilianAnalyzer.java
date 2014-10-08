@@ -35,7 +35,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * It is very similar to the snowball portuguese algorithm but not exactly the same.
  *
  */
-public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
+public class TestBrazilianAnalyzer extends BaseTokenStreamTestCase {
   
   public void testWithSnowballExamples() throws Exception {
    check("boa", "boa");
