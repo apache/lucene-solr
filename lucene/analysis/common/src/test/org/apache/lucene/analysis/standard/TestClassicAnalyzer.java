@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;

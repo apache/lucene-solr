@@ -43,7 +43,7 @@ org.apache.lucene.analysis.compound.TestHyphenationCompoundWordTokenFilterFactor
 org.apache.lucene.analysis.core.TestAllAnalyzersHaveFactories=797,1216,957,1445,1085,479,1093
 org.apache.lucene.analysis.core.TestAnalyzers=1771,3282,4168,4511,6763,2480,2815
 org.apache.lucene.analysis.core.TestBugInSomething=36,38,807,7,23,13,46
-org.apache.lucene.analysis.core.TestClassicAnalyzer=993,3056,1978,1141,1280,3766,1754
+org.apache.lucene.analysis.standard.TestClassicAnalyzer=993,3056,1978,1141,1280,3766,1754
 org.apache.lucene.analysis.core.TestDuelingAnalyzers=1844,4104,2325,2041,2568,1984,5501
 org.apache.lucene.analysis.core.TestFactories=13995,17156,12500,15103,14760,22010,13206
 org.apache.lucene.analysis.core.TestKeywordAnalyzer=241,205,234,403,223,326,209
