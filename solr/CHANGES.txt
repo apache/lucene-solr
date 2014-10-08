@@ -19,6 +19,12 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 ==================  4.10.2 ==================
 
+Other Changes
+----------------------
+
+* SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
+   SolrException back to the client-side (Timothy Potter)
+
 ==================  4.10.1 ==================
 
 Bug Fixes

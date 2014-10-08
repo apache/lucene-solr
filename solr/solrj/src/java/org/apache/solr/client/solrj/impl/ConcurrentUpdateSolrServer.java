@@ -237,7 +237,22 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
               msg.append(response.getStatusLine().getReasonPhrase());
               msg.append("\n\n\n\n");
               msg.append("request: ").append(method.getURI());
-              handleError(new SolrException(ErrorCode.getErrorCode(statusCode), msg.toString()));
+
+              SolrException solrExc = new SolrException(ErrorCode.getErrorCode(statusCode), msg.toString());
+              // parse out the metadata from the SolrException
+              try {
+                NamedList<Object> resp =
+                    server.parser.processResponse(response.getEntity().getContent(),
+                        response.getEntity().getContentType().getValue());
+                NamedList<Object> error = (NamedList<Object>) resp.get("error");
+                if (error != null)
+                  solrExc.setMetadata((NamedList<String>) error.get("metadata"));
+              } catch (Exception exc) {
+                // don't want to fail to report error if parsing the response fails
+                log.warn("Failed to parse error response from "+server.getBaseURL()+" due to: "+exc);
+              }
+
+              handleError(solrExc);
             } else {
               onSuccess(response);
             }
