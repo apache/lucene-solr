@@ -142,7 +142,7 @@ public class TieredMergePolicy extends MergePolicy {
       throw new IllegalArgumentException("maxMergedSegmentMB must be >=0 (got " + v + ")");
     }
     v *= 1024 * 1024;
-    maxMergedSegmentBytes = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
+    maxMergedSegmentBytes = v > Long.MAX_VALUE ? Long.MAX_VALUE : (long) v;
     return this;
   }
 
@@ -183,7 +183,7 @@ public class TieredMergePolicy extends MergePolicy {
       throw new IllegalArgumentException("floorSegmentMB must be >= 0.0 (got " + v + ")");
     }
     v *= 1024 * 1024;
-    floorSegmentBytes = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
+    floorSegmentBytes = v > Long.MAX_VALUE ? Long.MAX_VALUE : (long) v;
     return this;
   }
 
@@ -314,8 +314,12 @@ public class TieredMergePolicy extends MergePolicy {
     // If we have too-large segments, grace them out
     // of the maxSegmentCount:
     int tooBigCount = 0;
-    while (tooBigCount < infosSorted.size() && size(infosSorted.get(tooBigCount), writer) >= maxMergedSegmentBytes/2.0) {
-      totIndexBytes -= size(infosSorted.get(tooBigCount), writer);
+    while (tooBigCount < infosSorted.size()) {
+      long segBytes = size(infosSorted.get(tooBigCount), writer);
+      if (segBytes < maxMergedSegmentBytes/2.0) {
+        break;
+      }
+      totIndexBytes -= segBytes;
       tooBigCount++;
     }
 
@@ -351,7 +355,7 @@ public class TieredMergePolicy extends MergePolicy {
       for(int idx = tooBigCount; idx<infosSorted.size(); idx++) {
         final SegmentCommitInfo info = infosSorted.get(idx);
         if (merging.contains(info)) {
-          mergingBytes += info.sizeInBytes();
+          mergingBytes += size(info, writer);
         } else if (!toBeMerged.contains(info)) {
           eligible.add(info);
         }
@@ -399,6 +403,10 @@ public class TieredMergePolicy extends MergePolicy {
             candidate.add(info);
             totAfterMergeBytes += segBytes;
           }
+
+          // We should never see an empty candidate: we iterated over maxMergeAtOnce
+          // segments, and already pre-excluded the too-large segments:
+          assert candidate.size() > 0;
 
           final MergeScore score = score(candidate, hitTooLarge, mergingBytes, writer);
           if (verbose(writer)) {
