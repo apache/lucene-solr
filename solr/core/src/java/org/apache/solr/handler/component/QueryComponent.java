@@ -804,7 +804,8 @@ public class QueryComponent extends SearchComponent
     boolean distribSinglePass = rb.req.getParams().getBool(ShardParams.DISTRIB_SINGLE_PASS, false);
 
     if(distribSinglePass || (fields != null && fields.wantsField(keyFieldName)
-        && fields.getRequestedFieldNames() != null && Arrays.asList(keyFieldName, "score").containsAll(fields.getRequestedFieldNames()))) {
+        && fields.getRequestedFieldNames() != null  
+        && (!fields.hasPatternMatching() && Arrays.asList(keyFieldName, "score").containsAll(fields.getRequestedFieldNames())))) {
       sreq.purpose |= ShardRequest.PURPOSE_GET_FIELDS;
       rb.onePassDistributedQuery = true;
     }

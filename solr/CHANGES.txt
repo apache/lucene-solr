@@ -211,6 +211,9 @@ Bug Fixes
 * SOLR-6587: Misleading exception when creating collections in SolrCloud with bad configuration.
   (Tomás Fernández Löbbe)
 
+* SOLR-6545: Query field list with wild card on dynamic field fails.
+  (Burke Webster, Xu Zhang, shalin)
+
 Other Changes
 ----------------------
 
