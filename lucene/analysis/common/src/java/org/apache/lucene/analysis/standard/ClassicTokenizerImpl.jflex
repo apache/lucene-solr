@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %%
 
 %class ClassicTokenizerImpl
-%implements StandardTokenizerInterface
 %unicode 3.0
 %integer
 %function getNextToken

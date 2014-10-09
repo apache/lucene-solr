@@ -49,7 +49,7 @@ import org.apache.lucene.util.AttributeFactory;
 
 public final class ClassicTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
-  private StandardTokenizerInterface scanner;
+  private ClassicTokenizerImpl scanner;
 
   public static final int ALPHANUM          = 0;
   public static final int APOSTROPHE        = 1;
@@ -135,7 +135,7 @@ public final class ClassicTokenizer extends Tokenizer {
     while(true) {
       int tokenType = scanner.getNextToken();
 
-      if (tokenType == StandardTokenizerInterface.YYEOF) {
+      if (tokenType == ClassicTokenizerImpl.YYEOF) {
         return false;
       }
 
