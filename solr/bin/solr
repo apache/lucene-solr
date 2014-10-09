@@ -79,6 +79,23 @@ else
   DEFAULT_SERVER_DIR=$SOLR_TIP/example
 fi
 
+# If an include wasn't specified in the environment, then search for one...
+if [ "x$SOLR_INCLUDE" == "x" ]; then
+    # Locations (in order) to use when searching for an include file.
+    for include in "`dirname "$0"`/solr.in.sh" \
+                   "$HOME/.solr.in.sh" \
+                   /usr/share/solr/solr.in.sh \
+                   /usr/local/share/solr/solr.in.sh \
+                   /opt/solr/solr.in.sh; do
+        if [ -r "$include" ]; then
+            . "$include"
+            break
+        fi
+    done
+elif [ -r "$SOLR_INCLUDE" ]; then
+    . "$SOLR_INCLUDE"
+fi
+
 if [ "$SOLR_JAVA_HOME" != "" ]; then
   JAVA=$SOLR_JAVA_HOME/bin/java
 elif [ -n "$JAVA_HOME" ]; then
@@ -108,16 +125,20 @@ function print_usage() {
     echo "Usage: solr COMMAND OPTIONS"
     echo "       where COMMAND is one of: start, stop, restart, healthcheck"
     echo ""
-    echo "  Example: Start Solr running in the background on port 8984:" 
+    echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
     echo "    ./solr start -p 8984"
     echo ""
+    echo "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to ZooKeeper, with 1g max heap size and remote Java debug options enabled):"
+    echo ""
+    echo "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\""
+    echo ""
     echo "Pass -help after any COMMAND to see command-specific usage information,"
-    echo "  such as:    ./solr start -help" 
+    echo "  such as:    ./solr start -help or ./solr stop -help"
     echo ""
   elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-a \"additional-options\"] [-V]"
+    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-a \"additional-options\"] [-V]"
     echo ""
     echo "  -f            Start Solr in foreground; default starts Solr in the background"
     echo "                  and sends stdout / stderr to solr-PORT-console.log"
@@ -136,6 +157,13 @@ function print_usage() {
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
+    echo ""
+    echo "  -s <dir>      Sets the solr.solr.home system property; Solr will create core directories under"
+    echo "                  this directory. This allows you to run multiple Solr instances on the same host"
+    echo "                  while reusing the same server directory set using the -d parameter. If set, the"
+    echo "                  specified directory should contain a solr.xml file. The default value is example/solr."
+    echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
+    echo "                  on which example is run."
     echo ""
     echo "  -e <example>  Name of the example to run; available examples:"
     echo "      cloud:         SolrCloud example"
@@ -213,7 +241,7 @@ function jetty_port() {
 function run_tool() {
   
   # Extract the solr.war if it hasn't been done already (so we can access the SolrCLI class)
-  if [ ! -d "$DEFAULT_SERVER_DIR/solr-webapp/webapp" ]; then
+  if [[ -e $DEFAULT_SERVER_DIR/webapps/solr.war && ! -d "$DEFAULT_SERVER_DIR/solr-webapp/webapp" ]]; then
     (mkdir -p $DEFAULT_SERVER_DIR/solr-webapp/webapp && cd $DEFAULT_SERVER_DIR/solr-webapp/webapp && jar xf $DEFAULT_SERVER_DIR/webapps/solr.war)    
   fi
   
@@ -370,23 +398,6 @@ if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD
   exit 1
 fi
 
-# If an include wasn't specified in the environment, then search for one...
-if [ "x$SOLR_INCLUDE" == "x" ]; then
-    # Locations (in order) to use when searching for an include file.
-    for include in "`dirname "$0"`/solr.in.sh" \
-                   "$HOME/.solr.in.sh" \
-                   /usr/share/solr/solr.in.sh \
-                   /usr/local/share/solr/solr.in.sh \
-                   /opt/solr/solr.in.sh; do
-        if [ -r "$include" ]; then
-            . "$include"
-            break
-        fi
-    done
-elif [ -r "$SOLR_INCLUDE" ]; then
-    . "$SOLR_INCLUDE"
-fi
-
 # Run in foreground (default is to run in the background)
 FG="false"
 noprompt=false
@@ -405,11 +416,20 @@ if [ $# -gt 0 ]; then
             fi
 
             # see if the arg value is relative to the tip vs full path
-            if [ -d "$SOLR_TIP/$2" ]; then
-              SOLR_SERVER_DIR="$SOLR_TIP/$2"              
-            else            
+            if [[ $2 != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
+              SOLR_SERVER_DIR="$SOLR_TIP/$2"
+            else
               SOLR_SERVER_DIR="$2"
             fi
+            shift 2
+        ;;
+        -s|-solr.home)
+            if [ "${2:0:1}" == "-" ]; then
+              print_usage "$SCRIPT_CMD" "Expected directory but found $2 instead!"
+              exit 1
+            fi
+
+            SOLR_HOME="$2"
             shift 2
         ;;
         -e|-example)
@@ -459,6 +479,10 @@ if [ $# -gt 0 ]; then
         ;;
         -a|-addlopts)
             ADDITIONAL_CMD_OPTS="$2"
+            shift 2
+        ;;
+        -k|-key)
+            STOP_KEY="$2"
             shift 2
         ;;
         -help|-usage)
@@ -613,7 +637,21 @@ fi
 
 if [ "$SOLR_HOME" == "" ]; then
   SOLR_HOME="$SOLR_SERVER_DIR/solr"
+else
+  if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+    SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
+  fi
 fi
+
+if [ ! -e "$SOLR_HOME" ]; then
+  echo -e "\nSolr home directory $SOLR_HOME not found!\n"
+  exit 1
+fi
+if [ ! -e "$SOLR_HOME/solr.xml" ]; then
+  echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
+  exit 1
+fi
+
 
 if [ "$STOP_KEY" == "" ]; then
   STOP_KEY="solrrocks"
@@ -832,15 +870,26 @@ else
   SOLR_SERVER_DIR=$SOLR_TIP/node1
   SOLR_HOME=$SOLR_TIP/node1/solr
   SOLR_PORT=${CLOUD_PORTS[0]}
+
   if [ "$ZK_HOST" != "" ]; then
     DASHZ="-z $ZK_HOST"
   fi
 
+  if [ "$SOLR_HEAP" != "" ]; then
+    DASHM="-m $SOLR_HEAP"
+  fi
+
+  if [ "$ADDITIONAL_CMD_OPTS" != "" ]; then
+    DASHA="-a $ADDITIONAL_CMD_OPTS"
+  fi
+
   echo -e "\nStarting up SolrCloud node1 on port ${CLOUD_PORTS[0]} using command:\n"
-  echo -e "solr start -cloud -d node1 -p $SOLR_PORT $DASHZ\n\n"
+  echo -e "solr start -cloud -d node1 -p $SOLR_PORT $DASHZ $DASHM $DASHA\n\n"
     
   # can't launch this node in the foreground else we can't run anymore commands
-  launch_solr "false" ""
+  launch_solr "false" "$ADDITIONAL_CMD_OPTS"
+
+  sleep 5
 
   # if user did not define a specific -z parameter, assume embedded in first cloud node we launched above
   zk_host=$ZK_HOST
@@ -848,15 +897,15 @@ else
     zk_port=$[$SOLR_PORT+1000]
     zk_host=localhost:$zk_port
   fi
-  
+
   for (( s=1; s<$CLOUD_NUM_NODES; s++ ))
   do
     ndx=$[$s+1]
     next_port=${CLOUD_PORTS[$s]}
     echo -e "\n\nStarting node$ndx on port $next_port using command:\n"
-    echo -e "solr start -cloud -d node$ndx -p $next_port -z $zk_host \n\n"
+    echo -e "solr start -cloud -d node$ndx -p $next_port -z $zk_host $DASHM $DASHA \n\n"
     # call this script again with correct args for next node    
-    $SOLR_TIP/bin/solr start -cloud -d node$ndx -p $next_port -z $zk_host
+    $SOLR_TIP/bin/solr start -cloud -d node$ndx -p $next_port -z $zk_host $DASHM $DASHA
   done
   
   # TODO: better (shorter) name??
