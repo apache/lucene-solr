@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.standard.std40;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
@@ -29,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * @deprecated This class is only for exact backwards compatibility
  */
 
-public final class StandardTokenizerImpl40 implements StandardTokenizerInterface {
+public final class StandardTokenizerImpl40 {
 
   /** This character denotes the end of file */
   public static final int YYEOF = -1;
@@ -1187,7 +1186,7 @@ public final class StandardTokenizerImpl40 implements StandardTokenizerInterface
           if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
             zzAtEOF = true;
               {
-                return StandardTokenizerInterface.YYEOF;
+                return YYEOF;
               }
           } 
           else {

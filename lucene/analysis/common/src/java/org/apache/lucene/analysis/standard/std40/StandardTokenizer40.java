@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -35,7 +34,7 @@ import org.apache.lucene.util.AttributeFactory;
 @Deprecated
 public final class StandardTokenizer40 extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
-  private StandardTokenizerInterface scanner;
+  private StandardTokenizerImpl40 scanner;
 
   public static final int ALPHANUM          = 0;
   /** @deprecated (3.1) */
@@ -140,7 +139,7 @@ public final class StandardTokenizer40 extends Tokenizer {
     while(true) {
       int tokenType = scanner.getNextToken();
 
-      if (tokenType == StandardTokenizerInterface.YYEOF) {
+      if (tokenType == StandardTokenizerImpl40.YYEOF) {
         return false;
       }
 
