@@ -156,6 +156,8 @@ New Features
   distribution of custom replica properties across nodes making up a 
   collection, at most one node per slice will have the property.
 
+* SOLR-6605: Make ShardHandlerFactory maxConnections configurable.
+  (Christine Poerschke via shalin)
 
 Bug Fixes
 ----------------------
