@@ -330,12 +330,11 @@ public class HttpSolrServer extends SolrServer {
             boolean isMultipart = ((this.useMultiPartPost && SolrRequest.METHOD.POST == request.getMethod())
               || ( streams != null && streams.size() > 1 )) && !hasNullStreamName;
 
-            // send server list and request list as query string params
-            ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
-            queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
-
             LinkedList<NameValuePair> postOrPutParams = new LinkedList<>();
             if (streams == null || isMultipart) {
+              // send server list and request list as query string params
+              ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
+              queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
               String fullQueryUrl = url + ClientUtils.toQueryString( queryParams, false );
               HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
                 new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
