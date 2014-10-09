@@ -48,6 +48,7 @@ SOLR_SCRIPT="$0"
 verbose=false
 THIS_OS=`uname -s`
 hasLsof=$(which lsof)
+stop_all=false
 
 # for now, we don't support running this script from cygwin due to problems
 # like not having lsof, ps waux, curl, and awkward directory handling
@@ -189,6 +190,8 @@ function print_usage() {
     echo ""
     echo "  -p <port>     Specify the port the Solr HTTP listener is bound to; default is 8983"
     echo ""
+    echo "  -all          Find and stop all running Solr servers on this host"
+    echo ""
     echo "  -V            Verbose messages from this script"
     echo ""
     echo "NOTE: If port is not specified, then all running Solr servers are stopped."
@@ -218,6 +221,19 @@ spinner()
       printf "\b\b\b\b\b\b"
   done
   printf "    \b\b\b\b"
+}
+
+# given a port, find the pid for a Solr process
+function solr_pid_by_port() {
+  THE_PORT="$1"
+  if [ -e "$SOLR_TIP/bin/solr-$THE_PORT.pid" ]; then
+    PID=`cat $SOLR_TIP/bin/solr-$THE_PORT.pid`
+    CHECK_PID=`ps waux | awk '{print $2}' | grep $PID | sort -r | tr -d ' '`
+    if [ "$CHECK_PID" != "" ]; then
+      local solrPID=$PID
+    fi
+  fi
+  echo "$solrPID"
 }
 
 # extract the value of the -Djetty.port parameter from a running Solr process 
@@ -254,11 +270,12 @@ function run_tool() {
 # get information about any Solr nodes running on this host
 function get_info() {
   # first, see if Solr is running
-  numSolrs=`ps waux | grep java | grep start.jar | wc -l | sed -e 's/^[ \t]*//'`
+  numSolrs=`find $SOLR_TIP/bin -name "solr-*.pid" -type f | wc -l | tr -d ' '`
   if [ "$numSolrs" != "0" ]; then
     echo -e "\nFound $numSolrs Solr nodes: "
-    for ID in `ps waux | grep java | grep start.jar | awk '{print $2}' | sort -r`
+    for PIDF in `find $SOLR_TIP/bin -name "solr-*.pid" -type f`
       do
+        ID=`cat $PIDF`
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
           echo ""
@@ -281,27 +298,30 @@ function stop_solr() {
   SOLR_PORT="$2"
   STOP_PORT="79${SOLR_PORT: -2}"
   STOP_KEY="$3"
-  
-  SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+  SOLR_PID="$4"
+
   if [ "$SOLR_PID" != "" ]; then
     echo -e "Sending stop command to Jetty stop port $STOP_PORT ... waiting 5 seconds to allow process $SOLR_PID to stop gracefully."
     $JAVA -jar $DIR/start.jar STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
     (sleep 5) &
     spinner $!
+    rm -f $SOLR_TIP/bin/solr-$SOLR_PORT.pid
   else
     echo -e "No Solr nodes found to stop."
     exit 0
   fi
 
-  SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
-  if [ "$SOLR_PID" != "" ]; then
+  CHECK_PID=`ps waux | awk '{print $2}' | grep $SOLR_PID | sort -r | tr -d ' '`
+  if [ "$CHECK_PID" != "" ]; then
     echo -e "Solr process $SOLR_PID is still running; forcefully killing it now."
     kill -9 $SOLR_PID
     echo "Killed process $SOLR_PID"
+    rm -f $SOLR_TIP/bin/solr-$SOLR_PORT.pid
+    sleep 1
   fi
 
-  SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
-  if [ "$SOLR_PID" != "" ]; then
+  CHECK_PID=`ps waux | awk '{print $2}' | grep $SOLR_PID | sort -r | tr -d ' '`
+  if [ "$CHECK_PID" != "" ]; then
     echo "ERROR: Failed to kill previous Solr Java process $SOLR_PID ... script fails."
     exit 1
   fi
@@ -497,6 +517,10 @@ if [ $# -gt 0 ]; then
             verbose=true
             shift
         ;;
+        -all)
+            stop_all=true
+            shift
+        ;;
         --)
             shift
             break
@@ -635,42 +659,32 @@ if [ "$EXAMPLE" != "" ]; then
     esac
 fi
 
-if [ "$SOLR_HOME" == "" ]; then
-  SOLR_HOME="$SOLR_SERVER_DIR/solr"
-else
-  if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
-    SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
-  fi
-fi
-
-if [ ! -e "$SOLR_HOME" ]; then
-  echo -e "\nSolr home directory $SOLR_HOME not found!\n"
-  exit 1
-fi
-if [ ! -e "$SOLR_HOME/solr.xml" ]; then
-  echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
-  exit 1
-fi
-
-
 if [ "$STOP_KEY" == "" ]; then
   STOP_KEY="solrrocks"
 fi
 
 # stop all if no port specified
 if [[ "$SCRIPT_CMD" == "stop" && "$SOLR_PORT" == "" ]]; then
-  numSolrs=`ps waux | grep java | grep start.jar | wc -l | sed -e 's/^[ \t]*//'`
-  if [ "$numSolrs" != "0" ]; then
-    echo -e "\nFound $numSolrs Solr nodes to stop."
-    for ID in `ps waux | grep java | grep start.jar | awk '{print $2}' | sort -r`
+  if $stop_all; then
+    none_stopped=true
+    for PIDF in `find $SOLR_TIP/bin -name "solr-*.pid" -type f`
       do
-        port=`jetty_port "$ID"`
-        stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY"      
-      done
+        NEXT_PID=`cat $PIDF`
+        port=`jetty_port "$NEXT_PID"`
+        if [ "$port" != "" ]; then
+          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
+          none_stopped=false
+        fi
+        rm -f $PIDF
+    done
+    if $none_stopped; then
+      echo -e "\nNo Solr nodes found to stop.\n"
+    fi
   else
-    echo -e "\nNo Solr nodes found to stop.\n"
+    echo -e "\nERROR: Must either specify a port using -p or -all to stop all Solr nodes on this host.\n"
+    exit 1
   fi
-  exit  
+  exit
 fi
 
 if [ "$SOLR_PORT" == "" ]; then
@@ -683,7 +697,7 @@ fi
 
 if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
-  SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+  SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
   if [ "$SOLR_PID" != "" ]; then
     echo -e "\nSolr already running on port $SOLR_PORT (pid: $SOLR_PID)!"
     echo -e "Please use the 'restart' command if you want to restart this node.\n"
@@ -691,7 +705,12 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
   fi
 else
   # either stop or restart
-  stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY"
+  SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
+  if [ "$SOLR_PID" != "" ]; then
+  stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
+  else
+    echo -e "No process found for Solr node running on port $SOLR_PORT"
+  fi
 fi
 
 # backup the log files
@@ -715,6 +734,22 @@ if [ "$SCRIPT_CMD" == "stop" ]; then
 fi
 
 # if we get here, then we're starting a new node up ...
+if [ "$SOLR_HOME" == "" ]; then
+  SOLR_HOME="$SOLR_SERVER_DIR/solr"
+else
+  if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+    SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
+  fi
+fi
+
+if [ ! -e "$SOLR_HOME" ]; then
+  echo -e "\nSolr home directory $SOLR_HOME not found!\n"
+  exit 1
+fi
+if [ ! -e "$SOLR_HOME/solr.xml" ]; then
+  echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
+  exit 1
+fi
 
 # if verbose gc logging enabled, setup the location of the log file
 if [ "$GC_LOG_OPTS" != "" ]; then
@@ -827,7 +862,7 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
     $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar
   else
     # run Solr in the background
-    nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar 1>$SOLR_SERVER_DIR/logs/solr-$SOLR_PORT-console.log 2>&1 &
+    nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar 1>$SOLR_SERVER_DIR/logs/solr-$SOLR_PORT-console.log 2>&1 & echo $! > $SOLR_TIP/bin/solr-$SOLR_PORT.pid
   
     # no lsof on cygwin though
     if [ "$hasLsof" != "" ]; then

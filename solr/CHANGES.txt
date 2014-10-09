@@ -297,6 +297,9 @@ Other Changes
 * SOLR-6549: bin/solr script should support a -s option to set the -Dsolr.solr.home property.
   (Timothy Potter)
 
+* SOLR-6529: Stop command in the start scripts should only stop the instance that it had started.
+  (Varun Thacker, Timothy Potter)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
