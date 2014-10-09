@@ -214,6 +214,12 @@ Bug Fixes
 * SOLR-6545: Query field list with wild card on dynamic field fails.
   (Burke Webster, Xu Zhang, shalin)
 
+Optimizations
+----------------------
+
+* SOLR-6603: LBHttpSolrServer - lazily allocate skipped-zombie-servers list.
+  (Christine Poerschke via shalin)
+
 Other Changes
 ----------------------
 

@@ -286,7 +286,7 @@ public class LBHttpSolrServer extends SolrServer {
     Rsp rsp = new Rsp();
     Exception ex = null;
     boolean isUpdate = req.request instanceof IsUpdateRequest;
-    List<ServerWrapper> skipped = new ArrayList<>(req.getNumDeadServersToTry());
+    List<ServerWrapper> skipped = null;
 
     for (String serverStr : req.getServers()) {
       serverStr = normalize(serverStr);
@@ -294,8 +294,16 @@ public class LBHttpSolrServer extends SolrServer {
       ServerWrapper wrapper = zombieServers.get(serverStr);
       if (wrapper != null) {
         // System.out.println("ZOMBIE SERVER QUERIED: " + serverStr);
-        if (skipped.size() < req.getNumDeadServersToTry())
-          skipped.add(wrapper);
+        final int numDeadServersToTry = req.getNumDeadServersToTry();
+        if (numDeadServersToTry > 0) {
+          if (skipped == null) {
+            skipped = new ArrayList<>(numDeadServersToTry);
+            skipped.add(wrapper);
+          }
+          else if (skipped.size() < numDeadServersToTry) {
+            skipped.add(wrapper);
+          }
+        }
         continue;
       }
       rsp.server = serverStr;
@@ -308,10 +316,12 @@ public class LBHttpSolrServer extends SolrServer {
     }
 
     // try the servers we previously skipped
-    for (ServerWrapper wrapper : skipped) {
-      ex = doRequest(wrapper.solrServer, req, rsp, isUpdate, true, wrapper.getKey());
-      if (ex == null) {
-         return rsp; // SUCCESS
+    if (skipped != null) {
+      for (ServerWrapper wrapper : skipped) {
+        ex = doRequest(wrapper.solrServer, req, rsp, isUpdate, true, wrapper.getKey());
+        if (ex == null) {
+          return rsp; // SUCCESS
+        }
       }
     }
 
