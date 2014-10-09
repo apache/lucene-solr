@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
@@ -451,6 +452,9 @@ public class Grouping {
       searcher.search(query, luceneFilter, collector);
     } catch (TimeLimitingCollector.TimeExceededException x) {
       logger.warn( "Query: " + query + "; " + x.getMessage() );
+      qr.setPartialResults(true);
+    } catch (ExitableDirectoryReader.ExitingReaderException e) {
+      logger.warn( "Query: " + query + "; " + e.getMessage() );
       qr.setPartialResults(true);
     }
   }

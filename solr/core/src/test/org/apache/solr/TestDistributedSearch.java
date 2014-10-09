@@ -503,24 +503,17 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           ShardParams.SHARDS_TOLERANT, "true");
 
       // test group query
-      // TODO: Remove this? This doesn't make any real sense now that timeAllowed might trigger early
-      //       termination of the request during Terms enumeration/Query expansion.
-      //       During such an exit, partial results isn't supported as it wouldn't make any sense.
-      // Increasing the timeAllowed from 1 to 100 for now.
-      //
-      // TODO: still failing in jenkins - see SOLR-5986
-      //
-      // queryPartialResults(upShards, upClients,
-      //     "q", "*:*",
-      //     "rows", 100,
-      //     "fl", "id," + i1,
-      //     "group", "true",
-      //     "group.query", t1 + ":kings OR " + t1 + ":eggs",
-      //     "group.limit", 10,
-      //     "sort", i1 + " asc, id asc",
-      //     CommonParams.TIME_ALLOWED, 100,
-      //     ShardParams.SHARDS_INFO, "true",
-      //     ShardParams.SHARDS_TOLERANT, "true");
+      queryPartialResults(upShards, upClients,
+           "q", "*:*",
+           "rows", 100,
+           "fl", "id," + i1,
+           "group", "true",
+           "group.query", t1 + ":kings OR " + t1 + ":eggs",
+           "group.limit", 10,
+           "sort", i1 + " asc, id asc",
+           CommonParams.TIME_ALLOWED, 1,
+           ShardParams.SHARDS_INFO, "true",
+           ShardParams.SHARDS_TOLERANT, "true");
 
       queryPartialResults(upShards, upClients,
           "q", "*:*",

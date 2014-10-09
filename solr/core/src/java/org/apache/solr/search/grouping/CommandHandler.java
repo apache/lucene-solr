@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Filter;
@@ -230,6 +231,9 @@ public class CommandHandler {
     } catch (TimeLimitingCollector.TimeExceededException x) {
       partialResults = true;
       logger.warn( "Query: " + query + "; " + x.getMessage() );
+    } catch (ExitableDirectoryReader.ExitingReaderException e) {
+      partialResults = true;
+      logger.warn( "Query: " + query + "; " + e.getMessage() );
     }
 
     if (includeHitCount) {

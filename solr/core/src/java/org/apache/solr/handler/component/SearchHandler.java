@@ -244,8 +244,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Request took too long during query expansion. Terminating request.");
       } finally {
         SolrQueryTimeoutImpl.reset();
       }

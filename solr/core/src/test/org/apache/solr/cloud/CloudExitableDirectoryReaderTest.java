@@ -20,14 +20,10 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.SolrException.ErrorCode;
 
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
@@ -36,7 +32,7 @@ import static org.apache.solr.common.SolrException.ErrorCode;
 public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(CloudExitableDirectoryReaderTest.class);
   private static final int NUM_DOCS_PER_TYPE = 20;
-
+  
   public CloudExitableDirectoryReaderTest() {
     configString = "solrconfig-tlog-with-delayingcomponent.xml";
     schemaString = "schema.xml";
@@ -74,7 +70,7 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
   }
 
   public void doTimeoutTests() throws Exception {
-    assertFail(params("q", "name:a*", "timeAllowed", "1"));
+    assertPartialResults(params("q", "name:a*", "timeAllowed", "1"));
 
     /*
     query rewriting for NUM_DOCS_PER_TYPE terms should take less 
@@ -86,7 +82,7 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
     Long timeAllowed = TestUtil.nextLong(random(), fiveSeconds, Long.MAX_VALUE);
     assertSuccess(params("q", "name:a*", "timeAllowed",timeAllowed.toString()));
 
-    assertFail(params("q", "name:a*", "timeAllowed", "1"));
+    assertPartialResults(params("q", "name:a*", "timeAllowed", "1"));
 
     timeAllowed = TestUtil.nextLong(random(), fiveSeconds, Long.MAX_VALUE);
     assertSuccess(params("q", "name:b*", "timeAllowed",timeAllowed.toString()));
@@ -100,37 +96,14 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
   /**
    * execute a request, verify that we get an expected error
    */
-  public void assertFail(ModifiableSolrParams p) throws Exception {
-    String timeoutMessage = "Request took too long during query expansion. Terminating request.";
-
-    try {
-      ignoreException(timeoutMessage);
-      queryServer(p);
-      fail("no exception matching expected: " + ErrorCode.BAD_REQUEST.code + ": " + timeoutMessage);
-    } catch (SolrServerException e) {
-      assertTrue("Exception " + e.getCause() + " is not a SolrException:\n" + prettyStackTrace(e.getCause()),
-          e.getCause() instanceof SolrException);
-      assertEquals(ErrorCode.BAD_REQUEST.code, ((SolrException)e.getCause()).code());
-      assertTrue("Expected error message substr not found: " + timeoutMessage + " <!< " + e.getMessage(),
-                 e.getMessage().contains(timeoutMessage));
-    } finally {
-      unIgnoreException(timeoutMessage);
-    }
+  public void assertPartialResults(ModifiableSolrParams p) throws Exception {
+      QueryResponse rsp = queryServer(p);
+      assertEquals("partialResults were expected", true, rsp.getHeader().get("partialResults"));
   }
   
   public void assertSuccess(ModifiableSolrParams p) throws Exception {
     QueryResponse response = queryServer(p);
     assertEquals("Wrong #docs in response", NUM_DOCS_PER_TYPE - 1, response.getResults().getNumFound());
-  }
-
-  public String prettyStackTrace(Throwable t) {
-    StringBuilder builder = new StringBuilder();
-    for (StackTraceElement elem : t.getStackTrace()) {
-      builder.append("    at ");
-      builder.append(elem.toString());
-      builder.append('\n');
-    }
-    return builder.toString();
   }
 }
 
