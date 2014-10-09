@@ -42,7 +42,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * </ul>
  */
 
-public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterface {
+public final class UAX29URLEmailTokenizerImpl {
 
   /** This character denotes the end of file */
   public static final int YYEOF = -1;
@@ -7204,11 +7204,11 @@ public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterf
             zzAtEOF = true;
             switch (zzLexicalState) {
             case YYINITIAL: {
-              return StandardTokenizerInterface.YYEOF;
+              return YYEOF;
             }
             case 2910: break;
             case AVOID_BAD_URL: {
-              return StandardTokenizerInterface.YYEOF;
+              return YYEOF;
             }
             case 2911: break;
             default:

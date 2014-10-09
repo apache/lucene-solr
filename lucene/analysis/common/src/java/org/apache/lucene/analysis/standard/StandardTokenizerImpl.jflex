@@ -43,7 +43,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %final
 %public
 %class StandardTokenizerImpl
-%implements StandardTokenizerInterface
 %function getNextToken
 %char
 %buffer 255
@@ -118,7 +117,7 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
 // UAX#29 WB1.   sot   ÷
 //        WB2.     ÷   eot
 //
-<<EOF>> { return StandardTokenizerInterface.YYEOF; }
+<<EOF>> { return YYEOF; }
 
 // UAX#29 WB8.   Numeric × Numeric
 //        WB11.  Numeric (MidNum | MidNumLet | Single_Quote) × Numeric

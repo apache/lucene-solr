@@ -156,6 +156,10 @@ API Changes
 * LUCENE-5998: Simplify Field/SegmentInfoFormat to read+write methods.
   (Robert Muir)
 
+* LUCENE-6000: Removed StandardTokenizerInterface.  Tokenizers now use
+  their jflex impl directly.
+  (Ryan Ernst)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

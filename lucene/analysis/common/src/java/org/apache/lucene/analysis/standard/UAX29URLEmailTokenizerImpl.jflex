@@ -46,7 +46,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %final
 %public
 %class UAX29URLEmailTokenizerImpl
-%implements StandardTokenizerInterface
 %function getNextToken
 %char
 %xstate AVOID_BAD_URL
@@ -208,7 +207,7 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 // UAX#29 WB1.   sot   ÷
 //        WB2.     ÷   eot
 //
-  <<EOF>> { return StandardTokenizerInterface.YYEOF; }
+  <<EOF>> { return YYEOF; }
 
   {URL}   { yybegin(YYINITIAL); return URL_TYPE; }
 

@@ -39,7 +39,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * </ul>
  */
 
-public final class StandardTokenizerImpl implements StandardTokenizerInterface {
+public final class StandardTokenizerImpl {
 
   /** This character denotes the end of file */
   public static final int YYEOF = -1;
@@ -804,7 +804,7 @@ public final class StandardTokenizerImpl implements StandardTokenizerInterface {
           if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
             zzAtEOF = true;
               {
-                return StandardTokenizerInterface.YYEOF;
+                return YYEOF;
               }
           } 
           else {
