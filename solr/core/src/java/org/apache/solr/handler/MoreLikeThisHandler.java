@@ -54,6 +54,8 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -77,6 +79,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase
 {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
   private static final Pattern splitList = Pattern.compile(",| ");
+
+  protected static Logger log = LoggerFactory.getLogger(MoreLikeThisHandler.class);
   
   @Override
   public void init(NamedList args) {
@@ -267,8 +271,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "MLTHandler Request took too long during query expansion. Terminating request.");
+        log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
       } finally {
         SolrQueryTimeoutImpl.reset();
       }

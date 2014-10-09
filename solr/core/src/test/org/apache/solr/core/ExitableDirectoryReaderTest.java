@@ -20,6 +20,8 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,6 +33,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   
   static int NUM_DOCS_PER_TYPE = 100;
   static final String assertionString = "//result[@numFound='"+ (NUM_DOCS_PER_TYPE - 1) + "']";
+  static final String failureAssertionString = "/responseHeader/partialResults==true]";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -57,16 +60,12 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPrefixQuery() {
-    assertQEx("", req("q","name:a*", "indent","true","timeAllowed","1")
-        , SolrException.ErrorCode.BAD_REQUEST
-    );
+  public void testPrefixQuery() throws Exception {
+    assertJQ(req("q", "name:a*", "indent", "true", "timeAllowed", "1"), failureAssertionString);
 
     assertQ(req("q","name:a*", "indent","true", "timeAllowed","10000"), assertionString);
 
-    assertQEx("", req("q","name:a*", "indent","true", "timeAllowed","1")
-        , SolrException.ErrorCode.BAD_REQUEST
-    );
+    assertJQ(req("q","name:a*", "indent","true", "timeAllowed","1"), failureAssertionString);
 
     assertQ(req("q","name:b*", "indent","true", "timeAllowed","10000"), assertionString);
 
@@ -78,18 +77,16 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testQueriesOnDocsWithMultipleTerms() {
+  public void testQueriesOnDocsWithMultipleTerms() throws Exception {
     assertQ(req("q","name:dummy", "indent","true", "timeAllowed","10000"), assertionString);
 
     // This should pass even though this may take more than the 'timeAllowed' time, it doesn't take long
     // to iterate over 1 term (dummy).
-    assertQ(req("q","name:dummy", "indent","true", "timeAllowed","10000"), assertionString);
+    assertQ(req("q", "name:dummy", "indent", "true", "timeAllowed", "10000"), assertionString);
 
-    assertQEx("", req("q","name:doc*", "indent","true", "timeAllowed","1")
-        , SolrException.ErrorCode.BAD_REQUEST
-    );
-
+    assertJQ(req("q", "name:doc*", "indent", "true", "timeAllowed", "1"), failureAssertionString);
   }
+  
 }
 
 

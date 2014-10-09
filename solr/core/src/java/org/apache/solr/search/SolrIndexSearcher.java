@@ -232,7 +232,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     catch( TimeLimitingCollector.TimeExceededException x ) {
       log.warn( "Query: " + query + "; " + x.getMessage() );
       qr.setPartialResults(true);
-    }        
+    } catch ( ExitableDirectoryReader.ExitingReaderException e) {
+      log.warn("Query: " + query + "; " + e.getMessage());
+      qr.setPartialResults(true);
+    }
   }
   
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name,
@@ -1217,11 +1220,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
 
-    if (filter==null) {
-      super.search(query,null,collector);
-    } else {
-      Filter luceneFilter = filter.getTopFilter();
-      super.search(query, luceneFilter, collector);
+    try {
+      if (filter == null) {
+        super.search(query, null, collector);
+      } else {
+        Filter luceneFilter = filter.getTopFilter();
+        super.search(query, luceneFilter, collector);
+      }
+    } catch ( ExitableDirectoryReader.ExitingReaderException e) {
+        log.warn("Query: " + query + "; " + e.getMessage());
     }
     return collector.getDocSet();
   }
