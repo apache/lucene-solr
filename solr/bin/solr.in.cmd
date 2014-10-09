@@ -25,7 +25,7 @@ REM Increase Java Min/Max Heap as needed to support your indexing / query needs
 set SOLR_JAVA_MEM=-Xms512m -Xmx512m -XX:MaxPermSize=256m -XX:PermSize=256m
 
 REM Enable verbose GC logging
-set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution
+set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
 
 REM These GC settings have shown to work well for a number of common Solr workloads
 set GC_TUNE=-XX:-UseSuperWord ^
@@ -34,11 +34,13 @@ set GC_TUNE=-XX:-UseSuperWord ^
  -XX:TargetSurvivorRatio=90 ^
  -XX:MaxTenuringThreshold=8 ^
  -XX:+UseConcMarkSweepGC ^
+ -XX:+UseParNewGC ^
+ -XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 ^
  -XX:+CMSScavengeBeforeRemark ^
  -XX:PretenureSizeThreshold=64m ^
  -XX:CMSFullGCsBeforeCompaction=1 ^
  -XX:+UseCMSInitiatingOccupancyOnly ^
- -XX:CMSInitiatingOccupancyFraction=70 ^
+ -XX:CMSInitiatingOccupancyFraction=50 ^
  -XX:CMSTriggerPermRatio=80 ^
  -XX:CMSMaxAbortablePrecleanTime=6000 ^
  -XX:+CMSParallelRemarkEnabled ^

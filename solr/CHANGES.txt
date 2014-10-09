@@ -294,6 +294,9 @@ Other Changes
 * SOLR-6597: SolrIndexConfig parameter in one of the SolrIndexSearcher constructor has been removed.
   It was just passed and never used via that constructor. (Anshum Gupta)
 
+* SOLR-6549: bin/solr script should support a -s option to set the -Dsolr.solr.home property.
+  (Timothy Potter)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
