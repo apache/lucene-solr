@@ -69,6 +69,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int soTimeout = 0; 
   int connectionTimeout = 0; 
   int maxConnectionsPerHost = 20;
+  int maxConnections = 10000;
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
   int keepAliveTime = 5;
@@ -122,6 +123,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
     this.connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
     this.maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
+    this.maxConnections = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
     this.corePoolSize = getParameter(args, INIT_CORE_POOL_SIZE, corePoolSize);
     this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, maximumPoolSize);
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime);
@@ -148,7 +150,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
-    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
+    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
     clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
     clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
     clientParams.set(HttpClientUtil.PROP_USE_RETRY, false);
