@@ -153,25 +153,29 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
     final int i4096 = i >>> 12;
     final long index = indices[i4096];
     final int i64 = i >>> 6;
-    if (index == 0) {
-      // if the index is 0, it means that we just found a block of 4096 bits
-      // that has no bit that is set yet. So let's initialize a new block:
-      indices[i4096] = 1L << i64; // shifts are mod 64 in java
-      assert bits[i4096] == null;
-      bits[i4096] = new long[] { 1L << i }; // shifts are mod 64 in java
-      ++nonZeroLongCount;
-      ramBytesUsed += SINGLE_ELEMENT_ARRAY_BYTES_USED;
-    } else if ((index & (1L << i64)) == 0) {
-      // in that case we found a block of 4096 bits that has some values, but
-      // the sub-block of 64 bits that we are interested in has no value yet,
-      // so we need to insert a new long
-      insertLong(i4096, i64, i, index);
-    } else {
+    if ((index & (1L << i64)) != 0) {
       // in that case the sub 64-bits block we are interested in already exists,
       // we just need to set a bit in an existing long: the number of ones on
       // the right of i64 gives us the index of the long we need to update
       bits[i4096][Long.bitCount(index & ((1L << i64) - 1))] |= 1L << i; // shifts are mod 64 in java
+    } else if (index == 0) {
+      // if the index is 0, it means that we just found a block of 4096 bits
+      // that has no bit that is set yet. So let's initialize a new block:
+      insertBlock(i4096, i64, i);
+    } else {
+      // in that case we found a block of 4096 bits that has some values, but
+      // the sub-block of 64 bits that we are interested in has no value yet,
+      // so we need to insert a new long
+      insertLong(i4096, i64, i, index);
     }
+  }
+  
+  private void insertBlock(int i4096, int i64, int i) {
+    indices[i4096] = 1L << i64; // shifts are mod 64 in java
+    assert bits[i4096] == null;
+    bits[i4096] = new long[] { 1L << i }; // shifts are mod 64 in java
+    ++nonZeroLongCount;
+    ramBytesUsed += SINGLE_ELEMENT_ARRAY_BYTES_USED;
   }
 
   private void insertLong(int i4096, int i64, int i, long index) {
@@ -244,7 +248,7 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
 
     @Override
     public int nextDoc() throws IOException {
-      if (doc == NO_MORE_DOCS || ++doc >= length) {
+      if (++doc >= length) {
         return doc = NO_MORE_DOCS;
       }
       return currentOrNextDoc();
@@ -253,22 +257,17 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
     private int currentOrNextDoc() {
       final int i4096 = doc >>> 12;
       final long index = indices[i4096];
-      if (index == 0) {
+      int i64 = doc >>> 6;
+      long indexBits = index >>> i64;
+      if (indexBits == 0) {
         // if the index is zero, it means that there is no value in the
         // current block, so return the first document of the next block
+        // or
+        // if neither the i64-th bit or any other bit on its left is set then
+        // it means that there are no more documents in this block, go to the
+        // next one
         return firstDoc(i4096 + 1);
       } else {
-        // now we are on a block that contains at least one document
-        assert Long.bitCount(index) <= bits[i4096].length;
-        int i64 = doc >>> 6;
-        long indexBits = index >>> i64; // shifts are mod 64 in java
-        if (indexBits == 0) {
-          // if neither the i64-th bit or any other bit on its left is set then
-          // it means that there are no more documents in this block, go to the
-          // next one
-          return firstDoc(i4096 + 1);
-        }
-
         // We know we still have some 64-bits blocks that have bits set, let's
         // advance to the next one by skipping trailing zeros of the index
         int i1 = doc & 0x3F;
