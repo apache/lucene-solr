@@ -278,9 +278,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(commit());
 
     // Just checking if no errors occur
-    // TODO: Check if this makes any sense now that timeAllowed is also used during Terms enumeration.
-    //       The query can potentially timeout iterating over terms if this is set to too low.
-    assertJQ(req("q", "*:*", "group", "true", "group.query", "id:1", "group.query", "id:2", "timeAllowed", "100"));
+    assertJQ(req("q", "*:*", "group", "true", "group.query", "id:1", "group.query", "id:2", "timeAllowed", "1"));
   }
 
   @Test
