@@ -2138,6 +2138,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         deleter.refresh();
         deleter.close();
 
+        // Must set closed while inside same sync block where we call deleter.refresh, else concurrent threads may try to sneak a flush in,
+        // after we leave this sync block and before we enter the sync block in the finally clause below that sets closed:
+        closed = true;
+
         IOUtils.close(writeLock);                     // release write lock
         writeLock = null;
         
@@ -2381,6 +2385,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       synchronized (this) {
         // Lock order IW -> BDS
+        ensureOpen(false);
         synchronized (bufferedUpdatesStream) {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "publishFlushedSegment");
