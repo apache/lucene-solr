@@ -84,11 +84,12 @@ import org.slf4j.LoggerFactory;
  * 'id' - if this is not the case, you must set the right name
  * with {@link #setIdField(String)}.
  */
+@SuppressWarnings("serial")
 public class CloudSolrServer extends SolrServer {
-  private static final Logger log = LoggerFactory.getLogger(CloudSolrServer.class);
+  protected static final Logger log = LoggerFactory.getLogger(CloudSolrServer.class);
 
   private volatile ZkStateReader zkStateReader;
-  private String zkHost; // the zk server address
+  private String zkHost; // the zk server connect string
   private int zkConnectTimeout = 10000;
   private int zkClientTimeout = 10000;
   private volatile String defaultCollection;
@@ -187,6 +188,57 @@ public class CloudSolrServer extends SolrServer {
   }
   
   /**
+   * Create a new client object using multiple string values in a Collection
+   * instead of a standard zkHost connection string. Note that this method will
+   * not be used if there is only one String argument - that will use
+   * {@link #CloudSolrServer(String)} instead.
+   * 
+   * @param zkHosts
+   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
+   *          each host in the zookeeper ensemble. Note that with certain
+   *          Collection types like HashSet, the order of hosts in the final
+   *          connect string may not be in the same order you added them.
+   * @param chroot
+   *          A chroot value for zookeeper, starting with a forward slash. If no
+   *          chroot is required, use null.
+   * @throws IllegalArgumentException
+   *           if the chroot value does not start with a forward slash.
+   * @see #CloudSolrServer(String)
+   */
+  public CloudSolrServer(Collection<String> zkHosts, String chroot) {
+    
+    StringBuilder zkBuilder = new StringBuilder();
+    int lastIndexValue = zkHosts.size() - 1;
+    int i = 0;
+    for (String zkHost : zkHosts) {
+      zkBuilder.append(zkHost);
+      if (i < lastIndexValue) {
+        zkBuilder.append(",");
+      }
+      i++;
+    }
+    if (chroot != null) {
+      if (chroot.startsWith("/")) {
+        zkBuilder.append(chroot);
+      } else {
+        throw new IllegalArgumentException(
+            "The chroot must start with a forward slash.");
+      }
+    }
+    
+    /* Log the constructed connection string and then initialize. */
+    log.info("Final constructed zkHost string: " + zkBuilder.toString());
+    
+    this.zkHost = zkBuilder.toString();
+    this.myClient = HttpClientUtil.createClient(null);
+    this.lbServer = new LBHttpSolrServer(myClient);
+    this.lbServer.setRequestWriter(new BinaryRequestWriter());
+    this.lbServer.setParser(new BinaryResponseParser());
+    this.updatesToLeaders = true;
+    shutdownLBHttpSolrServer = true;
+  }
+  
+  /**
    * @param zkHost
    *          A zookeeper client endpoint.
    * @param updatesToLeaders
@@ -263,6 +315,13 @@ public class CloudSolrServer extends SolrServer {
   
   public void setRequestWriter(RequestWriter requestWriter) {
     lbServer.setRequestWriter(requestWriter);
+  }
+
+  /**
+   * @return the zkHost value used to connect to zookeeper.
+   */
+  public String getZkHost() {
+    return zkHost;
   }
 
   public ZkStateReader getZkStateReader() {
@@ -349,7 +408,7 @@ public class CloudSolrServer extends SolrServer {
     this.parallelUpdates = parallelUpdates;
   }
 
-  private NamedList directUpdate(AbstractUpdateRequest request, ClusterState clusterState) throws SolrServerException {
+  private NamedList<Object> directUpdate(AbstractUpdateRequest request, ClusterState clusterState) throws SolrServerException {
     UpdateRequest updateRequest = (UpdateRequest) request;
     ModifiableSolrParams params = (ModifiableSolrParams) request.getParams();
     ModifiableSolrParams routableParams = new ModifiableSolrParams();
@@ -396,8 +455,8 @@ public class CloudSolrServer extends SolrServer {
       return null;
     }
 
-    NamedList<Throwable> exceptions = new NamedList<Throwable>();
-    NamedList<NamedList> shardResponses = new NamedList<NamedList>();
+    NamedList<Throwable> exceptions = new NamedList<>();
+    NamedList<NamedList> shardResponses = new NamedList<>();
 
     Map<String, LBHttpSolrServer.Req> routes = updateRequest.getRoutes(router, col, urlMap, routableParams, this.idField);
     if (routes == null) {
@@ -440,7 +499,7 @@ public class CloudSolrServer extends SolrServer {
         String url = entry.getKey();
         LBHttpSolrServer.Req lbRequest = entry.getValue();
         try {
-          NamedList rsp = lbServer.request(lbRequest).getResponse();
+          NamedList<Object> rsp = lbServer.request(lbRequest).getResponse();
           shardResponses.add(url, rsp);
         } catch (Exception e) {
           throw new SolrServerException(e);
@@ -752,7 +811,7 @@ public class CloudSolrServer extends SolrServer {
     
     if (request instanceof IsUpdateRequest) {
       if (request instanceof UpdateRequest) {
-        NamedList response = directUpdate((AbstractUpdateRequest) request,
+        NamedList<Object> response = directUpdate((AbstractUpdateRequest) request,
             clusterState);
         if (response != null) {
           return response;
