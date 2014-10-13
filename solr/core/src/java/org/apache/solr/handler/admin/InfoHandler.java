@@ -139,7 +139,7 @@ public class InfoHandler extends RequestHandlerBase {
   }
 
   @Override
-  public SolrRequestHandler getSubHandler(String path) {
+  public SolrRequestHandler getSubHandler(String subPath) {
     return this;
   }
 }

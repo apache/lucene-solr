@@ -88,8 +88,8 @@ public class DumpRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public SolrRequestHandler getSubHandler(String path) {
-    if(subpaths !=null && subpaths.contains(path)) return this;
+  public SolrRequestHandler getSubHandler(String subPath) {
+    if(subpaths !=null && subpaths.contains(subPath)) return this;
     return null;
   }
   private List<String> subpaths;
