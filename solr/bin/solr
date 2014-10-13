@@ -285,7 +285,23 @@ function get_info() {
        fi
     done
   else
-    echo -e "\nNo Solr nodes are running.\n"
+    # no pid files but check using ps just to be sure
+    numSolrs=`ps waux | grep java | grep start.jar | wc -l | sed -e 's/^[ \t]*//'`
+    if [ "$numSolrs" != "0" ]; then
+      echo -e "\nFound $numSolrs Solr nodes: "
+      for ID in `ps waux | grep java | grep start.jar | awk '{print $2}' | sort -r`
+        do
+          port=`jetty_port "$ID"`
+          if [ "$port" != "" ]; then
+            echo ""
+            echo "Found Solr process $ID running on port $port"
+            run_tool status -solr http://localhost:$port/solr
+            echo ""
+          fi
+      done
+    else
+      echo -e "\nNo Solr nodes are running.\n"
+    fi
   fi
   
 } # end get_info
@@ -711,9 +727,14 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
   fi
 else
   # either stop or restart
+  # see if Solr is already running
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
+  if [ "$SOLR_PID" == "" ]; then
+    # not found using the pid file ... but use ps to ensure not found
+    SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+  fi
   if [ "$SOLR_PID" != "" ]; then
-  stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
+    stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
   else
     echo -e "No process found for Solr node running on port $SOLR_PORT"
   fi
