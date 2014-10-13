@@ -216,6 +216,8 @@ Bug Fixes
 * SOLR-6545: Query field list with wild card on dynamic field fails.
   (Burke Webster, Xu Zhang, shalin)
 
+* SOLR-6540 Fix NPE from strdist() func when doc value source does not exist in a doc (hossman)
+
 Optimizations
 ----------------------
 
