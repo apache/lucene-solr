@@ -30,8 +30,16 @@ REM Used to report errors before exiting the script
 set SCRIPT_ERROR=
 set NO_USER_PROMPT=0
 
+REM Allow user to import vars from an include file
+REM vars set in the include file can be overridden with
+REM command line args
+IF "%SOLR_INCLUDE%"=="" set SOLR_INCLUDE=solr.in.cmd
+IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
+
 REM Verify Java is available
-if NOT DEFINED JAVA_HOME goto need_java_home
+IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
+IF NOT DEFINED JAVA_HOME goto need_java_home
+set JAVA_HOME=%JAVA_HOME:"=%
 "%JAVA_HOME%"\bin\java -version:1.8 -version > nul 2>&1
 IF ERRORLEVEL 1 "%JAVA_HOME%"\bin\java -version:1.7 -version > nul 2>&1
 IF ERRORLEVEL 1 goto need_java_vers
@@ -59,14 +67,14 @@ IF "%1"=="start" goto set_script_cmd
 IF "%1"=="stop" goto set_script_cmd
 IF "%1"=="restart" goto set_script_cmd
 IF "%1"=="healthcheck" (
-REM healthcheck uses different arg parsing strategy
-SHIFT
-goto parse_healthcheck_args
+  REM healthcheck uses different arg parsing strategy
+  SHIFT
+  goto parse_healthcheck_args
 )
-goto include_vars
+goto parse_args
 
 :usage
-IF NOT "%SCRIPT_ERROR%"=="" ECHO %SCRIPT_ERROR%  
+IF NOT "%SCRIPT_ERROR%"=="" ECHO %SCRIPT_ERROR%
 IF [%FIRST_ARG%]==[] goto script_usage
 IF "%FIRST_ARG%"=="-help" goto script_usage
 IF "%FIRST_ARG%"=="-usage" goto script_usage
@@ -81,18 +89,22 @@ goto done
 @echo Usage: solr COMMAND OPTIONS
 @echo        where COMMAND is one of: start, stop, restart, healthcheck
 @echo.
-@echo   Example: Start Solr running in the background on port 8984: 
+@echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
-@echo     ./solr start -p 8984
+@echo     solr start -p 8984
+@echo.
+@echo   SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to ZooKeeper, with 1g max heap size and remote Java debug options enabled):
+@echo.
+@echo     solr start -c -m 1g -z localhost:2181 -a "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044"
 @echo.
 @echo Pass -help after any COMMAND to see command-specific usage information,
-@echo   such as:    ./solr start -help
+@echo   such as:    solr start -help or solr stop -help
 @echo.
 goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-a "additional-options"] [-V]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
@@ -112,12 +124,24 @@ goto done
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
 @echo.
+@echo   -s dir        Sets the solr.solr.home system property; Solr will create core directories under
+@echo                   this directory. This allows you to run multiple Solr instances on the same host
+@echo                   while reusing the same server directory set using the -d parameter. If set, the
+@echo                   specified directory should contain a solr.xml file. The default value is example/solr.
+@echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
+@echo                   on which example is run.
+@echo.
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       default:        Solr default example
 @echo       dih:            Data Import Handler
 @echo       schemaless:     Schema-less example
 @echo       multicore:      Multicore
+@echo.
+@echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
+@echo                 Java debug options. For example, to enable a Java debugger to attach to the Solr JVM
+@echo                 you could pass: -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"
+@echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
 @echo   -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
@@ -149,14 +173,6 @@ goto done
 @echo.
 goto done
 
-REM Allow user to import vars from an include file
-REM vars set in the include file can be overridden with
-REM command line args
-:include_vars
-IF "%SOLR_INCLUDE%"=="" set SOLR_INCLUDE=solr.in.cmd
-IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
-goto parse_args
-
 REM Really basic command-line arg parsing
 :parse_args
 IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
@@ -172,6 +188,8 @@ IF "%1"=="-c" goto set_cloud_mode
 IF "%1"=="-cloud" goto set_cloud_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="-dir" goto set_server_dir
+IF "%1"=="-s" goto set_solr_home_dir
+IF "%1"=="-solr.home" goto set_solr_home_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="-example" goto set_example
 IF "%1"=="-h" goto set_host
@@ -182,14 +200,17 @@ IF "%1"=="-p" goto set_port
 IF "%1"=="-port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="-zkhost" goto set_zookeeper
+IF "%1"=="-a" goto set_addl_opts
+IF "%1"=="-addlopts" goto set_addl_opts
 IF "%1"=="-noprompt" goto set_noprompt
+IF "%1"=="-k" goto set_stop_key
+IF "%1"=="-key" goto set_stop_key
 IF NOT "%1"=="" goto invalid_cmd_line
-process_script_cmd
 
 :set_script_cmd
 set SCRIPT_CMD=%1
 SHIFT
-goto include_vars
+goto parse_args
 
 :set_foreground_mode
 set FG=1
@@ -208,7 +229,7 @@ goto parse_args
 
 :set_server_dir
 
-set "arg=%2"
+set "arg=%~2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected directory but found %2 instead!
@@ -216,80 +237,112 @@ IF "%firstChar%"=="-" (
 )
 
 REM See if they are using a short-hand name relative from the Solr tip directory
-IF EXIST "%SOLR_TIP%\%2" (
-  set "SOLR_SERVER_DIR=%SOLR_TIP%\%2"
+IF EXIST "%SOLR_TIP%\%~2" (
+  set "SOLR_SERVER_DIR=%SOLR_TIP%\%~2"
 ) ELSE (
-  set "SOLR_SERVER_DIR=%2"
+  set "SOLR_SERVER_DIR=%~2"
 )
+SHIFT
+SHIFT
+goto parse_args
+
+:set_solr_home_dir
+
+set "arg=%~2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=Expected directory but found %2 instead!
+  goto invalid_cmd_line
+)
+set "SOLR_HOME=%~2"
 SHIFT
 SHIFT
 goto parse_args
 
 :set_example
 
-set "arg=%2"
+set "arg=%~2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected example name but found %2 instead!
   goto invalid_cmd_line
 )
 
-set EXAMPLE=%2
+set EXAMPLE=%~2
 SHIFT
 SHIFT
 goto parse_args
 
 :set_memory
 
-set "arg=%2"
+set "arg=%~2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected memory setting but found %2 instead!
   goto invalid_cmd_line
 )
 
-set SOLR_HEAP=%2
-@echo SOLR_HEAP=%SOLR_HEAP%
+set SOLR_HEAP=%~2
 SHIFT
 SHIFT
 goto parse_args
 
 :set_host
-set "arg=%2"
+set "arg=%~2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected hostname but found %2 instead!
   goto invalid_cmd_line
 )
 
-set SOLR_HOST=%2
+set SOLR_HOST=%~2
 SHIFT
 SHIFT
 goto parse_args
 
 :set_port
-set "arg=%2"
+set "arg=%~2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected port but found %2 instead!
   goto invalid_cmd_line
 )
 
-set SOLR_PORT=%2
+set SOLR_PORT=%~2
+SHIFT
+SHIFT
+goto parse_args
+
+:set_stop_key
+set "arg=%~2"
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=Expected port but found %2 instead!
+  goto invalid_cmd_line
+)
+
+set STOP_KEY=%~2
 SHIFT
 SHIFT
 goto parse_args
 
 :set_zookeeper
 
-set "arg=%2"
+set "arg=%~2"
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected ZooKeeper connection string but found %2 instead!
   goto invalid_cmd_line
 )
 
-set "ZK_HOST=%2"
+set "ZK_HOST=%~2"
+SHIFT
+SHIFT
+goto parse_args
+
+:set_addl_opts
+set "arg=%~2"
+set "SOLR_ADDL_ARGS=%~2"
 SHIFT
 SHIFT
 goto parse_args
@@ -305,7 +358,7 @@ REM Perform the requested command after processing args
 IF "%verbose%"=="1" (
   @echo Using Solr root directory: %SOLR_TIP%
   @echo Using Java: %JAVA%
-  %JAVA% -version
+  "%JAVA%" -version
 )
 
 IF NOT "%SOLR_HOST%"=="" (
@@ -344,6 +397,19 @@ IF "%EXAMPLE%"=="" (
 
 :start_solr
 IF "%SOLR_HOME%"=="" set "SOLR_HOME=%SOLR_SERVER_DIR%\solr"
+IF NOT EXIST "%SOLR_HOME%\" (
+  IF EXIST "%SOLR_SERVER_DIR%\%SOLR_HOME%" (
+    set "SOLR_HOME=%SOLR_SERVER_DIR%\%SOLR_HOME%"
+  ) ELSE (
+    set SCRIPT_ERROR=Solr home directory %SOLR_HOME% not found!
+    goto err
+  )
+)
+
+IF NOT EXIST "%SOLR_HOME%\solr.xml" (
+  set SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!
+  goto err
+)
 
 IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 
@@ -360,7 +426,7 @@ IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
 IF "%STOP_PORT%"=="" set STOP_PORT=79%SOLR_PORT:~-2,2%
 
 IF "%SCRIPT_CMD%"=="start" (
-  REM see if Solr is already running using netstat 
+  REM see if Solr is already running using netstat
   For /f "tokens=5" %%j in ('netstat -aon ^| find /i "listening" ^| find ":%SOLR_PORT%"') do (
     set "SCRIPT_ERROR=Process %%j is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
     goto err
@@ -403,8 +469,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
   ) ELSE (
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded ZooKeeper using -DzkRun
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
-    IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
-  )  
+  )
+  IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
 )
@@ -425,7 +491,7 @@ IF NOT "%SOLR_HOST%"=="" set REMOTE_JMX_OPTS=%REMOTE_JMX_OPTS% -Djava.rmi.server
 
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
 IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
-IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC 
+IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
 IF "%verbose%"=="1" (
     @echo Starting Solr using the following settings:
@@ -452,14 +518,14 @@ IF NOT "%SOLR_HOST_ARG%"=="" set START_OPTS=%START_OPTS% %SOLR_HOST_ARG%
 cd "%SOLR_SERVER_DIR%"
 @echo.
 @echo Starting Solr on port %SOLR_PORT% from %SOLR_SERVER_DIR%
-@echo.    
+@echo.
 IF "%FG%"=="1" (
   REM run solr in the foreground
   "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar
 ) ELSE (
   START "" "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=%STOP_PORT% -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar > "%SOLR_TIP%\bin\solr-%SOLR_PORT%-console.log"
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -jar start.jar > "%SOLR_SERVER_DIR%\logs\solr-%SOLR_PORT%-console.log"
 )
 
 goto done
@@ -484,14 +550,14 @@ IF "%NO_USER_PROMPT%"=="1" (
   goto while_num_nodes_not_valid
 )
 
-:while_num_nodes_not_valid 
+:while_num_nodes_not_valid
 IF "%USER_INPUT%"=="" set USER_INPUT=2
 SET /A INPUT_AS_NUM=!USER_INPUT!*1
 IF %INPUT_AS_NUM% GEQ 1 IF %INPUT_AS_NUM% LEQ 4 set CLOUD_NUM_NODES=%INPUT_AS_NUM%
 IF NOT DEFINED CLOUD_NUM_NODES (
   SET USER_INPUT=
   SET /P "USER_INPUT=Please enter a number between 1 and 4 [2]: "
-  goto while_num_nodes_not_valid    
+  goto while_num_nodes_not_valid
 )
 @echo Ok, let's start up %CLOUD_NUM_NODES% Solr nodes for your example SolrCloud cluster.
 
@@ -511,7 +577,7 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
       )
     )
   )
-  
+
   IF "%NO_USER_PROMPT%"=="1" (
     set NODE_PORT=!DEF_PORT!
   ) ELSE (
@@ -521,20 +587,37 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
     echo node%%x port: !NODE_PORT!
     @echo.
   )
-  
+
   IF NOT EXIST "%SOLR_TIP%\node%%x" (
     @echo Cloning %DEFAULT_SERVER_DIR% into %SOLR_TIP%\node%%x
     xcopy /Q /E /I "%DEFAULT_SERVER_DIR%" "%SOLR_TIP%\node%%x"
   )
-  
-  IF %%x EQU 1 (  
+
+  IF NOT "!SOLR_HEAP!"=="" (
+    set "DASHM=-m !SOLR_HEAP!"
+  ) ELSE (
+    set "DASHM="
+  )
+
+  IF %%x EQU 1 (
     set EXAMPLE=
-    START "" "%SDIR%\solr" -f -c -p !NODE_PORT! -d node1
+    IF NOT "!ZK_HOST!"=="" (
+      set "DASHZ=-z !ZK_HOST!"
+    ) ELSE (
+      set "DASHZ="
+    )
+    @echo Starting node1 on port !NODE_PORT! using command:
+    @echo solr -cloud -p !NODE_PORT! -d node1 !DASHZ! !DASHM!
+    START "" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -d node1 !DASHZ! !DASHM!
     set NODE1_PORT=!NODE_PORT!
   ) ELSE (
-    set /A ZK_PORT=!NODE1_PORT!+1000
-    set "ZK_HOST=localhost:!ZK_PORT!"
-    START "" "%SDIR%\solr" -f -c -p !NODE_PORT! -d node%%x -z !ZK_HOST!    
+    IF "!ZK_HOST!"=="" (
+      set /A ZK_PORT=!NODE1_PORT!+1000
+      set "ZK_HOST=localhost:!ZK_PORT!"
+    )
+    @echo Starting node%%x on port !NODE_PORT! using command:
+    @echo solr -cloud -p !NODE_PORT! -d node%%x -z !ZK_HOST! !DASHM!
+    START "" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -d node%%x -z !ZK_HOST! !DASHM!
   )
 
   timeout /T 10
@@ -600,7 +683,7 @@ echo.
 set COLLECTIONS_API=http://localhost:!NODE1_PORT!/solr/admin/collections
 
 set "CLOUD_CREATE_COLLECTION_CMD=%COLLECTIONS_API%?action=CREATE&name=%CLOUD_COLLECTION%&replicationFactor=%CLOUD_REPFACT%&numShards=%CLOUD_NUM_SHARDS%&collection.configName=!CLOUD_CONFIG!&maxShardsPerNode=%MAX_SHARDS_PER_NODE%&wt=json&indent=2"
-echo Creating new collection %CLOUD_COLLECTION% with %CLOUD_NUM_SHARDS% shards and replication factor %CLOUD_REPFACT% using Collections API command: 
+echo Creating new collection %CLOUD_COLLECTION% with %CLOUD_NUM_SHARDS% shards and replication factor %CLOUD_REPFACT% using Collections API command:
 echo.
 @echo "%CLOUD_CREATE_COLLECTION_CMD%"
 echo.
@@ -620,7 +703,7 @@ goto done
 
 
 :get_info
-REM Find all Java processes, correlate with those listening on a port 
+REM Find all Java processes, correlate with those listening on a port
 REM and then try to contact via that port using the status tool
 for /f "tokens=2" %%a in ('tasklist ^| find "java.exe"') do (
   for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening"') do (
@@ -633,11 +716,11 @@ for /f "tokens=2" %%a in ('tasklist ^| find "java.exe"') do (
           "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
             -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
             org.apache.solr.util.SolrCLI status -solr http://localhost:%%y/solr
-        
+
           @echo.
         )
       )
-    )  
+    )
   )
 )
 if NOT "!has_info!"=="1" echo No running Solr nodes found.
@@ -656,13 +739,13 @@ IF "%1"=="/?" goto usage
 goto run_healthcheck
 
 :set_healthcheck_collection
-set HEALTHCHECK_COLLECTION=%2
+set HEALTHCHECK_COLLECTION=%~2
 SHIFT
 SHIFT
 goto parse_healthcheck_args
 
 :set_healthcheck_zk
-set HEALTHCHECK_ZK_HOST=%2
+set HEALTHCHECK_ZK_HOST=%~2
 SHIFT
 SHIFT
 goto parse_healthcheck_args

@@ -22,6 +22,8 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 Bug Fixes
 ----------------------
 
+* SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
+
 * SOLR-6511: Fencepost error in LeaderInitiatedRecoveryThread (Timothy Potter)
 
 
@@ -30,6 +32,15 @@ Other Changes
 
 * SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
    SolrException back to the client-side (Timothy Potter)
+
+* SOLR-6486: solr start script can have a debug flag option; use -a to set arbitrary options
+  (Noble Paul, Timothy Potter)
+
+* SOLR-6549: bin/solr script should support a -s option to set the -Dsolr.solr.home property.
+  (Timothy Potter)
+
+* SOLR-6529: Stop command in the start scripts should only stop the instance that it had started.
+  (Varun Thacker, Timothy Potter)
 
 ==================  4.10.1 ==================
 
