@@ -300,6 +300,9 @@ Other Changes
 * SOLR-6529: Stop command in the start scripts should only stop the instance that it had started.
   (Varun Thacker, Timothy Potter)
 
+* SOLR-5852: Add CloudSolrServer helper method to connect to a ZK ensemble. (Varun Thacker, Furkan KAMACI,
+  Shawn Heisey, Mark Miller, Erick Erickson via shalin)
+
 ==================  4.10.1 ==================
 
 Bug Fixes

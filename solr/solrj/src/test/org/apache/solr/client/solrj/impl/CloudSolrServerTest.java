@@ -158,7 +158,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     request.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
     
     // Test single threaded routed updates for UpdateRequest
-    NamedList response = cloudClient.request(request);
+    NamedList<Object> response = cloudClient.request(request);
     CloudSolrServer.RouteResponse rr = (CloudSolrServer.RouteResponse) response;
     Map<String,LBHttpSolrServer.Req> routes = rr.getRoutes();
     Iterator<Map.Entry<String,LBHttpSolrServer.Req>> it = routes.entrySet()
@@ -330,11 +330,8 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     // use generic request to avoid extra processing of queries
     QueryRequest req = new QueryRequest(params);
     NamedList<Object> resp = server.request(req);
-    NamedList mbeans = (NamedList) resp.get("solr-mbeans");
-    NamedList queryHandler = (NamedList) mbeans.get("QUERYHANDLER");
-    NamedList select = (NamedList) queryHandler.get("org.apache.solr.handler.StandardRequestHandler");
-    NamedList stats = (NamedList) select.get("stats");
-    return (Long) stats.get("requests");
+    return (Long) resp.findRecursive("solr-mbeans", "QUERYHANDLER",
+        "org.apache.solr.handler.StandardRequestHandler", "stats", "requests");
   }
   
   @Override
