@@ -2021,7 +2021,7 @@ public final class ZkController {
       log.warn(exc.getMessage(), exc);
     }
     if (stateObj == null)
-      stateObj = new LinkedHashMap<String,Object>();
+      stateObj = new LinkedHashMap<>();
 
     stateObj.put("state", state);
     // only update the createdBy value if its not set
