@@ -554,6 +554,29 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', edit)", "fq", "id:1"), "//float[@name='score']='0.75'");
     assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', jw)", "fq", "id:1"), "//float[@name='score']='0.8833333'");
     assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', ngram, 2)", "fq", "id:1"), "//float[@name='score']='0.875'");
+
+    // strdist on a missing valuesource should itself by missing, so the ValueSourceAugmenter 
+    // should supress it...
+    assertQ(req("q", "id:1",
+                "fl", "good:strdist(x_s, 'toil', edit)", 
+                "fl", "bad1:strdist(missing1_s, missing2_s, edit)", 
+                "fl", "bad2:strdist(missing1_s, 'something', edit)", 
+                "fl", "bad3:strdist(missing1_s, x_s, edit)")
+            , "//float[@name='good']='0.75'"
+            , "count(//float[starts-with(@name,'bad')])=0"
+            );
+
+    // in a query context, there is always a number...
+    //
+    // if a ValueSource is missing, it is maximally distant from every other
+    // value source *except* for another missing value source 
+    // ie: strdist(null,null)==1 but strdist(null,anything)==0
+    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, missing2_s, edit)"), 
+            "//float[@name='score']='1.0'");
+    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, x_s, edit)"), 
+            "//float[@name='score']='0.0'");
+    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, 'const', edit)"), 
+            "//float[@name='score']='0.0'");
   }
 
   public void dofunc(String func, double val) throws Exception {
