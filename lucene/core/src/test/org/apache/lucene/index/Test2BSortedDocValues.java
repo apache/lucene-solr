@@ -24,6 +24,7 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -31,8 +32,10 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Memory", "Direct"})
-@TimeoutSuite(millis = 80 * TimeUnits.HOUR)
-@Monster("very slow")
+@TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
+// The six hour time was achieved on a Linux 3.13 system with these specs:
+// 3-core AMD at 2.5Ghz, 12 GB RAM, 5GB test heap, 2 test JVMs, 2TB SATA.
+@Monster("Takes ~ 6 hours if the heap is 5gb")
 public class Test2BSortedDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
@@ -48,7 +51,8 @@ public class Test2BSortedDocValues extends LuceneTestCase {
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
         .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+        .setCodec(TestUtil.getDefaultCodec()));
 
     Document doc = new Document();
     byte bytes[] = new byte[2];
@@ -103,7 +107,8 @@ public class Test2BSortedDocValues extends LuceneTestCase {
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
         .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+        .setCodec(TestUtil.getDefaultCodec()));
 
     Document doc = new Document();
     byte bytes[] = new byte[4];

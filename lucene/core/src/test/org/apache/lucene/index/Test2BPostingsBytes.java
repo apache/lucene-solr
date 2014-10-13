@@ -30,6 +30,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -42,7 +43,6 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
  * @lucene.experimental
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
-@TimeoutSuite(millis = 4 * TimeUnits.HOUR)
 @Monster("takes ~20GB-30GB of space and 10 minutes, and more heap space sometimes")
 public class Test2BPostingsBytes extends LuceneTestCase {
 
@@ -58,7 +58,8 @@ public class Test2BPostingsBytes extends LuceneTestCase {
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
         .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+        .setCodec(TestUtil.getDefaultCodec()));
 
     MergePolicy mp = w.getConfig().getMergePolicy();
     if (mp instanceof LogByteSizeMergePolicy) {
