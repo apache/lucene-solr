@@ -18,6 +18,7 @@ package org.apache.solr.schema;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.CommandOperation;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,9 +50,9 @@ public class TestSchemaManager extends SolrTestCaseJ4 {
         "\n" +
         "}";
 
-    List<SchemaManager.Operation> ops = SchemaManager.parse(new StringReader(x));
+    List<CommandOperation> ops = CommandOperation.parse(new StringReader(x));
     assertEquals(2,ops.size());
-    assertTrue( SchemaManager.captureErrors(ops).isEmpty());
+    assertTrue( CommandOperation.captureErrors(ops).isEmpty());
 
     x = " {\"add-field\" : [{\n" +
         "                                 \"name\":\"a1\",\n" +
@@ -66,9 +67,9 @@ public class TestSchemaManager extends SolrTestCaseJ4 {
         "                             \"indexed\":true\n" +
         "                             }]\n" +
         "           }";
-    ops = SchemaManager.parse(new StringReader(x));
+    ops = CommandOperation.parse(new StringReader(x));
     assertEquals(2,ops.size());
-    assertTrue( SchemaManager.captureErrors(ops).isEmpty());
+    assertTrue( CommandOperation.captureErrors(ops).isEmpty());
 
   }
 

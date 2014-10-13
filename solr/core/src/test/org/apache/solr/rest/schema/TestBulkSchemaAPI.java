@@ -19,7 +19,6 @@ package org.apache.solr.rest.schema;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -98,10 +97,10 @@ public class TestBulkSchemaAPI extends RestTestBase {
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     List l = (List) map.get("errors");
 
-    List errorList = (List) ((Map) l.get(0)).get(SchemaManager.ERR_MSGS);
+    List errorList = (List) ((Map) l.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue (((String)errorList.get(0)).contains("No such field type"));
-    errorList = (List) ((Map) l.get(1)).get(SchemaManager.ERR_MSGS);
+    errorList = (List) ((Map) l.get(1)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue (((String)errorList.get(0)).contains("is a required field"));
 

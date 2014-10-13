@@ -24,29 +24,22 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.BaseSolrResource;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
+import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.EMPTY_MAP;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 import static org.apache.solr.schema.IndexSchema.DESTINATION;
 import static org.apache.solr.schema.IndexSchema.NAME;
@@ -87,20 +80,20 @@ public class SchemaManager {
    * @return Lis of errors . If the List is empty then the operation is successful.
    */
   public List performOperations(Reader rdr)  {
-    List<Operation> ops = null;
+    List<CommandOperation> ops = null;
     try {
-      ops = SchemaManager.parse(rdr);
+      ops = CommandOperation.parse(rdr);
     } catch (Exception e) {
       String msg= "Error parsing schema operations ";
       log.warn(msg  ,e );
-      return Collections.singletonList(singletonMap(ERR_MSGS, msg + ":" + e.getMessage()));
+      return Collections.singletonList(singletonMap(CommandOperation.ERR_MSGS, msg + ":" + e.getMessage()));
     }
-    List errs = captureErrors(ops);
+    List errs = CommandOperation.captureErrors(ops);
     if(!errs.isEmpty()) return errs;
 
     IndexSchema schema = req.getCore().getLatestSchema();
     if (!(schema instanceof ManagedIndexSchema)) {
-      return singletonList( singletonMap(ERR_MSGS,"schema is not editable"));
+      return singletonList( singletonMap(CommandOperation.ERR_MSGS,"schema is not editable"));
     }
 
     synchronized (schema.getSchemaUpdateLock()) {
@@ -109,14 +102,14 @@ public class SchemaManager {
 
   }
 
-  private List<String> doOperations(List<Operation> operations){
+  private List doOperations(List<CommandOperation> operations){
     int timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, -1);
     long startTime = System.nanoTime();
     long endTime = timeout >0  ? System.nanoTime()+ (timeout * 1000*1000) : Long.MAX_VALUE;
     SolrCore core = req.getCore();
     for(;System.nanoTime() < endTime ;) {
       managedIndexSchema = (ManagedIndexSchema) core.getLatestSchema();
-      for (Operation op : operations) {
+      for (CommandOperation op : operations) {
         if (ADD_FIELD.equals(op.name) || ADD_DYNAMIC_FIELD.equals(op.name)) {
           applyAddField(op);
         } else if(ADD_COPY_FIELD.equals(op.name)) {
@@ -128,7 +121,7 @@ public class SchemaManager {
           op.addError("No such operation : " + op.name);
         }
       }
-      List errs = captureErrors(operations);
+      List errs = CommandOperation.captureErrors(operations);
       if (!errs.isEmpty()) return errs;
 
       try {
@@ -169,13 +162,13 @@ public class SchemaManager {
     }
   }
 
-  private boolean applyAddType(Operation op) {
+  private boolean applyAddType(CommandOperation op) {
     String name = op.getStr(NAME);
     String clz = op.getStr(CLASS_NAME);
     if(op.hasError())
       return false;
     try {
-      FieldType fieldType = managedIndexSchema.newFieldType(name, clz, (Map<String, ?>) op.commandData);
+      FieldType fieldType = managedIndexSchema.newFieldType(name, clz, op.getDataMap());
       managedIndexSchema = managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
       return true;
     } catch (Exception e) {
@@ -184,7 +177,7 @@ public class SchemaManager {
     }
   }
 
-  private String getErrorStr(Exception e) {
+  public static String getErrorStr(Exception e) {
     StringBuilder sb = new StringBuilder();
     Throwable cause= e;
     for(int i =0;i<5;i++) {
@@ -195,7 +188,7 @@ public class SchemaManager {
     return sb.toString();
   }
 
-  private boolean applyAddCopyField(Operation op) {
+  private boolean applyAddCopyField(CommandOperation op) {
     String src  = op.getStr(SOURCE);
     List<String> dest = op.getStrs(DESTINATION);
     if(op.hasError())
@@ -210,7 +203,7 @@ public class SchemaManager {
   }
 
 
-  private boolean applyAddField( Operation op) {
+  private boolean applyAddField( CommandOperation op) {
     String name = op.getStr(NAME);
     String type = op.getStr(TYPE);
     if(op.hasError())
@@ -237,143 +230,5 @@ public class SchemaManager {
     }
     return true;
   }
-
-
-  public static class Operation {
-    public final String name;
-    private Object commandData;//this is most often a map
-    private List<String> errors = new ArrayList<>();
-
-    Operation(String operationName, Object metaData) {
-      commandData = metaData;
-      this.name = operationName;
-      if(!KNOWN_OPS.contains(this.name)) errors.add("Unknown Operation :"+this.name);
-    }
-
-    public String getStr(String key, String def){
-      String s = (String) getMapVal(key);
-      return s == null ? def : s;
-    }
-
-    private Object getMapVal(String key) {
-      if (commandData instanceof Map) {
-        Map metaData = (Map) commandData;
-        return metaData.get(key);
-      } else {
-        String msg= " value has to be an object for operation :"+name;
-        if(!errors.contains(msg)) errors.add(msg);
-        return null;
-      }
-    }
-
-    public List<String> getStrs(String key){
-      List<String> val = getStrs(key, null);
-      if(val == null) errors.add("'"+key + "' is a required field");
-      return val;
-
-    }
-
-    /**Get collection of values for a key. If only one val is present a
-     * single value collection is returned
-     */
-    public List<String> getStrs(String key, List<String> def){
-      Object v = getMapVal(key);
-      if(v == null){
-        return def;
-      } else {
-        if (v instanceof List) {
-          ArrayList<String> l =  new ArrayList<>();
-          for (Object o : (List)v) {
-            l.add(String.valueOf(o));
-          }
-          if(l.isEmpty()) return def;
-          return  l;
-        } else {
-          return singletonList(String.valueOf(v));
-        }
-      }
-
-    }
-
-    /**Get a required field. If missing it adds to the errors
-     */
-    public String getStr(String key){
-      String s = getStr(key,null);
-      if(s==null) errors.add("'"+key + "' is a required field");
-      return s;
-    }
-
-    private Map errorDetails(){
-       return makeMap(name, commandData, ERR_MSGS, errors);
-    }
-
-    public boolean hasError() {
-      return !errors.isEmpty();
-    }
-
-    public void addError(String s) {
-      errors.add(s);
-    }
-
-    /**Get all the values from the metadata for the command
-     * without the specified keys
-     */
-    public Map getValuesExcluding(String... keys) {
-      getMapVal(null);
-      if(hasError()) return emptyMap();//just to verify the type is Map
-      LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String,?>) commandData);
-      if(keys == null) return cp;
-      for (String key : keys) {
-        cp.remove(key);
-      }
-      return cp;
-    }
-
-
-    public List<String> getErrors() {
-      return errors;
-    }
-  }
-
-  /**Parse the command operations into command objects
-   */
-  static List<Operation> parse(Reader rdr ) throws IOException {
-    JSONParser parser = new JSONParser(rdr);
-
-    ObjectBuilder ob = new ObjectBuilder(parser);
-
-    if(parser.lastEvent() != JSONParser.OBJECT_START) {
-      throw new RuntimeException("The JSON must be an Object of the form {\"command\": {...},...");
-    }
-    List<Operation> operations = new ArrayList<>();
-    for(;;) {
-      int ev = parser.nextEvent();
-      if (ev==JSONParser.OBJECT_END) return operations;
-      Object key =  ob.getKey();
-      ev = parser.nextEvent();
-      Object val = ob.getVal();
-      if (val instanceof List) {
-        List list = (List) val;
-        for (Object o : list) {
-          operations.add(new Operation(String.valueOf(key), o));
-        }
-      } else {
-        operations.add(new Operation(String.valueOf(key), val));
-      }
-    }
-
-  }
-
-  static List<Map> captureErrors(List<Operation> ops){
-    List<Map> errors = new ArrayList<>();
-    for (SchemaManager.Operation op : ops) {
-      if(op.hasError()) {
-        errors.add(op.errorDetails());
-      }
-    }
-    return errors;
-  }
-  public static final String ERR_MSGS = "errorMessages";
-
 
 }
