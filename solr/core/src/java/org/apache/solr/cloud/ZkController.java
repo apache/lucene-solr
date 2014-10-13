@@ -1989,8 +1989,18 @@ public final class ZkController {
     }
 
     Map<String,Object> stateObj = null;
-    if (stateData != null && stateData.length > 0)
-      stateObj = (Map<String, Object>) ZkStateReader.fromJSON(stateData);
+    if (stateData != null && stateData.length > 0) {
+      Object parsedJson = ZkStateReader.fromJSON(stateData);
+      if (parsedJson instanceof Map) {
+        stateObj = (Map<String,Object>)parsedJson;
+      } else if (parsedJson instanceof String) {
+        // old format still in ZK
+        stateObj = new LinkedHashMap<>();
+        stateObj.put("state", (String)parsedJson);
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Leader-initiated recovery state data is invalid! "+parsedJson);
+      }
+    }
 
     return stateObj;
   }
