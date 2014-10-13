@@ -698,6 +698,12 @@ fi
 if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
+
+  if [ "$SOLR_PID" == "" ]; then
+    # not found using the pid file ... but use ps to ensure not found
+    SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+  fi
+
   if [ "$SOLR_PID" != "" ]; then
     echo -e "\nSolr already running on port $SOLR_PORT (pid: $SOLR_PID)!"
     echo -e "Please use the 'restart' command if you want to restart this node.\n"
