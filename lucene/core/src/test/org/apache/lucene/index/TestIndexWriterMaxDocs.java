@@ -34,10 +34,12 @@ import org.apache.lucene.util.TimeUnits;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
-@TimeoutSuite(millis = 6 * TimeUnits.HOUR)
+@TimeoutSuite(millis = 8 * TimeUnits.HOUR)
 public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
-  @Monster("takes a long time")
+  // The two hour time was achieved on a Linux 3.13 system with these specs:
+  // 3-core AMD at 2.5Ghz, 12 GB RAM, 5GB test heap, 2 test JVMs, 2TB SATA.
+  @Monster("takes over two hours")
   public void testExactlyAtTrueLimit() throws Exception {
     Directory dir = newFSDirectory(createTempDir("2BDocs3"));
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));

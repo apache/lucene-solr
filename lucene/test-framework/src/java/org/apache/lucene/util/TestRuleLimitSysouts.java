@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
@@ -180,6 +181,7 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
 
     if (LuceneTestCase.VERBOSE || 
         LuceneTestCase.INFOSTREAM ||
+        target.isAnnotationPresent(Monster.class) ||
         target.isAnnotationPresent(SuppressSysoutChecks.class)) {
       return false;
     }

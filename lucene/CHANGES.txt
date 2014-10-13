@@ -198,6 +198,12 @@ Tests
   index files to use Version.toString() in filename.
   (Ryan Ernst)
 
+* LUCENE-6002: Monster tests no longer fail.  Most of them now have an 80 hour
+  timeout, effectively removing the timeout.  The tests that operate near the 2
+  billion limit now use IndexWriter.MAX_DOCS instead of Integer.MAX_VALUE.
+  Some of the slow Monster tests now explicitly choose the default codec.
+  (Mike McCandless, Shawn Heisey)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
