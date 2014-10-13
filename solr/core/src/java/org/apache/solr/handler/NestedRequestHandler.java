@@ -24,8 +24,6 @@ import org.apache.solr.request.SolrRequestHandler;
  */
 public interface NestedRequestHandler {
   /** Return a Requestandler to handle a subpath from the path this handler is registered.
-   * @param subPath
-   * @return a SolrRequestHandler instance
    */
   public SolrRequestHandler getSubHandler(String subPath);
 }
