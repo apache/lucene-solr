@@ -267,9 +267,12 @@ final class TermInfosWriter implements Closeable {
     lastTerm.copyBytes(term);
   }
 
+  static final long MAGIC = 0x71cf7f5aaaa251e5L;
+
   /** Called to complete TermInfos creation. */
   public void close() throws IOException {
     try {
+      output.writeLong(MAGIC);
       // the "real" 3.x seeked back to offset 4, and wrote 8 bytes there.
       // we write 8 bytes at the end of the file
       output.writeLong(size);
