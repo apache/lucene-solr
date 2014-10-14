@@ -89,6 +89,11 @@ Upgrading from Solr 4.x
   for "createcollection", "delete" for "removecollection" and "deleteshard" for
   "removeshard".
 
+* If you have been using the /update/json/docs to index documents, SOLR-6617 introduces
+  backward incompatible change. the key names created are fully qualified paths of keys .
+  If you need the old functionality back , please add an extra parameter f=/**
+  example: /update/json/docs?f=/**
+
 Detailed Change List
 ----------------------
 
@@ -158,6 +163,11 @@ New Features
 
 * SOLR-6605: Make ShardHandlerFactory maxConnections configurable.
   (Christine Poerschke via shalin)
+
+* SOLR-6585: RequestHandlers can optionaly handle sub paths as well (Noble Paul)
+
+* SOLR-6617: /update/json/docs path will use fully qualified node names by default
+             (NOble Paul)
 
 Bug Fixes
 ----------------------
@@ -443,7 +453,6 @@ New Features
 * SOLR-6233: Provide basic command line tools for checking Solr status and health.
   (Timothy Potter)
 
-* SOLR-6585: RequestHandlers can optionaly handle sub paths as well (Noble Paul)
 
 Bug Fixes
 ----------------------
