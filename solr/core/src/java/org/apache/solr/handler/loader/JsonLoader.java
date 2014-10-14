@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.params.SolrParams;
@@ -191,7 +192,7 @@ public class JsonLoader extends ContentStreamLoader {
 
     private void handleSplitMode(String split, String[] fields) throws IOException {
       if(split == null) split = "/";
-      if(fields == null || fields.length ==0) fields = new String[]{"/**"};
+      if(fields == null || fields.length ==0) fields = new String[]{"$FQN:/**"};
       final boolean echo = "true".equals( req.getParams().get("echo"));
       JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
       jsonRecordReader.streamRecords(parser,new JsonRecordReader.Handler() {
@@ -222,7 +223,7 @@ public class JsonLoader extends ContentStreamLoader {
       });
     }
 
-    private void handleStreamingSingleDocs() throws IOException
+    /*private void handleStreamingSingleDocs() throws IOException
     {
       while( true ) {
         int ev = parser.nextEvent();
@@ -240,7 +241,7 @@ public class JsonLoader extends ContentStreamLoader {
           throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected event :"+ev);
         }
       }
-    }
+    }*/
 
     //
     // "delete":"id"
