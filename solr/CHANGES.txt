@@ -228,6 +228,8 @@ Bug Fixes
 
 * SOLR-6540 Fix NPE from strdist() func when doc value source does not exist in a doc (hossman)
 
+* SOLR-6624 Spelling mistakes in the Java source (Hrishikesh Gadre)
+
 Optimizations
 ----------------------
 
