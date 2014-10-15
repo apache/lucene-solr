@@ -45,8 +45,9 @@ import java.util.*;
  * Do <b>NOT</b> use this class for indexing in master/slave scenarios since documents must be sent to the
  * correct master; no inter-node routing is done.
  *
- * In SolrCloud (leader/replica) scenarios, this class may be used for updates since updates will be forwarded
- * to the appropriate leader.
+ * In SolrCloud (leader/replica) scenarios, it is usually better to use
+ * {@link org.apache.solr.client.solrj.impl.CloudSolrServer}, but this class may be used
+ * for updates because the server will forward them to the appropriate leader.
  *
  * Also see the <a href="http://wiki.apache.org/solr/LBHttpSolrServer">wiki</a> page.
  *
@@ -631,6 +632,9 @@ public class LBHttpSolrServer extends SolrServer {
     };
   }
 
+  /**
+   * Return the HttpClient this instance uses.
+   */
   public HttpClient getHttpClient() {
     return httpClient;
   }
@@ -638,11 +642,29 @@ public class LBHttpSolrServer extends SolrServer {
   public ResponseParser getParser() {
     return parser;
   }
-  
+
+  /**
+   * Changes the {@link ResponseParser} that will be used for the internal
+   * SolrServer objects. Throws an exception if used after internal server
+   * objects have been added, so if you want to use this method, you must
+   * not put any URLs in your constructor.
+   *
+   * @param parser Default Response Parser chosen to parse the response if the parser
+   *               were not specified as part of the request.
+   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   */
   public void setParser(ResponseParser parser) {
     this.parser = parser;
   }
-  
+
+  /**
+   * Changes the {@link RequestWriter} that will be used for the internal
+   * SolrServer objects. Throws an exception if used after internal server
+   * objects have been added, so if you want to use this method, you must
+   * not put any URLs in your constructor.
+   *
+   * @param requestWriter Default RequestWriter, used to encode requests sent to the server.
+   */
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }

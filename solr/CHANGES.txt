@@ -169,6 +169,9 @@ New Features
 * SOLR-6617: /update/json/docs path will use fully qualified node names by default
              (NOble Paul)
 
+* SOLR-4715: Add CloudSolrServer constructors which accept a HttpClient instance.
+  (Hardik Upadhyay, Shawn Heisey, shalin)
+
 Bug Fixes
 ----------------------
 

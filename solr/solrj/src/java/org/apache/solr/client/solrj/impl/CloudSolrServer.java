@@ -96,6 +96,7 @@ public class CloudSolrServer extends SolrServer {
   private final LBHttpSolrServer lbServer;
   private final boolean shutdownLBHttpSolrServer;
   private HttpClient myClient;
+  private final boolean clientIsInternal;
   //no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES = 5;
   Random rand = new Random();
@@ -177,6 +178,7 @@ public class CloudSolrServer extends SolrServer {
    */
   public CloudSolrServer(String zkHost) {
       this.zkHost = zkHost;
+      this.clientIsInternal = true;
       this.myClient = HttpClientUtil.createClient(null);
       this.lbServer = new LBHttpSolrServer(myClient);
       this.lbServer.setRequestWriter(new BinaryRequestWriter());
@@ -184,7 +186,41 @@ public class CloudSolrServer extends SolrServer {
       this.updatesToLeaders = true;
       shutdownLBHttpSolrServer = true;
       lbServer.addQueryParams(STATE_VERSION);
+  }
 
+  /**
+   * Create a new client object that connects to Zookeeper and is always aware
+   * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
+   * SolrCloud has enough replicas for every shard in a collection, there is no
+   * single point of failure. Updates will be sent to shard leaders by default.
+   *
+   * @param zkHost
+   *          The client endpoint of the zookeeper quorum containing the cloud
+   *          state. The full specification for this string is one or more comma
+   *          separated HOST:PORT values, followed by an optional chroot value
+   *          that starts with a forward slash. Using a chroot allows multiple
+   *          applications to coexist in one ensemble. For full details, see the
+   *          Zookeeper documentation. Some examples:
+   *          <p/>
+   *          "host1:2181"
+   *          <p/>
+   *          "host1:2181,host2:2181,host3:2181/mysolrchroot"
+   *          <p/>
+   *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
+   * @param httpClient
+   *          the {@see HttpClient} instance to be used for all requests. The
+   *          provided httpClient should use a multi-threaded connection manager.
+   */
+  public CloudSolrServer(String zkHost, HttpClient httpClient)  {
+    this.zkHost = zkHost;
+    this.clientIsInternal = httpClient == null;
+    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
+    this.lbServer = new LBHttpSolrServer(myClient);
+    this.lbServer.setRequestWriter(new BinaryRequestWriter());
+    this.lbServer.setParser(new BinaryResponseParser());
+    this.updatesToLeaders = true;
+    shutdownLBHttpSolrServer = true;
+    lbServer.addQueryParams(STATE_VERSION);
   }
   
   /**
@@ -206,7 +242,31 @@ public class CloudSolrServer extends SolrServer {
    * @see #CloudSolrServer(String)
    */
   public CloudSolrServer(Collection<String> zkHosts, String chroot) {
-    
+    this(zkHosts, chroot, null);
+  }
+
+  /**
+   * Create a new client object using multiple string values in a Collection
+   * instead of a standard zkHost connection string. Note that this method will
+   * not be used if there is only one String argument - that will use
+   * {@link #CloudSolrServer(String)} instead.
+   *
+   * @param zkHosts
+   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
+   *          each host in the zookeeper ensemble. Note that with certain
+   *          Collection types like HashSet, the order of hosts in the final
+   *          connect string may not be in the same order you added them.
+   * @param chroot
+   *          A chroot value for zookeeper, starting with a forward slash. If no
+   *          chroot is required, use null.
+   * @param httpClient
+   *          the {@see HttpClient} instance to be used for all requests. The provided httpClient should use a
+   *          multi-threaded connection manager.
+   * @throws IllegalArgumentException
+   *           if the chroot value does not start with a forward slash.
+   * @see #CloudSolrServer(String)
+   */
+  public CloudSolrServer(Collection<String> zkHosts, String chroot, HttpClient httpClient) {
     StringBuilder zkBuilder = new StringBuilder();
     int lastIndexValue = zkHosts.size() - 1;
     int i = 0;
@@ -225,12 +285,13 @@ public class CloudSolrServer extends SolrServer {
             "The chroot must start with a forward slash.");
       }
     }
-    
+
     /* Log the constructed connection string and then initialize. */
     log.info("Final constructed zkHost string: " + zkBuilder.toString());
-    
+
     this.zkHost = zkBuilder.toString();
-    this.myClient = HttpClientUtil.createClient(null);
+    this.clientIsInternal = httpClient == null;
+    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
     this.lbServer = new LBHttpSolrServer(myClient);
     this.lbServer.setRequestWriter(new BinaryRequestWriter());
     this.lbServer.setParser(new BinaryResponseParser());
@@ -246,8 +307,23 @@ public class CloudSolrServer extends SolrServer {
    * @see #CloudSolrServer(String) for full description and details on zkHost
    */
   public CloudSolrServer(String zkHost, boolean updatesToLeaders) {
+    this(zkHost, updatesToLeaders, null);
+  }
+
+  /**
+   * @param zkHost
+   *          A zookeeper client endpoint.
+   * @param updatesToLeaders
+   *          If true, sends updates only to shard leaders.
+   * @param httpClient
+   *          the {@see HttpClient} instance to be used for all requests. The provided httpClient should use a
+   *          multi-threaded connection manager.
+   * @see #CloudSolrServer(String) for full description and details on zkHost
+   */
+  public CloudSolrServer(String zkHost, boolean updatesToLeaders, HttpClient httpClient) {
     this.zkHost = zkHost;
-    this.myClient = HttpClientUtil.createClient(null);
+    this.clientIsInternal = httpClient == null;
+    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
     this.lbServer = new LBHttpSolrServer(myClient);
     this.lbServer.setRequestWriter(new BinaryRequestWriter());
     this.lbServer.setParser(new BinaryResponseParser());
@@ -289,8 +365,8 @@ public class CloudSolrServer extends SolrServer {
     this.lbServer = lbServer;
     this.updatesToLeaders = updatesToLeaders;
     shutdownLBHttpSolrServer = false;
+    this.clientIsInternal = false;
     lbServer.addQueryParams(STATE_VERSION);
-
   }
   
   public ResponseParser getParser() {
@@ -978,7 +1054,7 @@ public class CloudSolrServer extends SolrServer {
       lbServer.shutdown();
     }
     
-    if (myClient!=null) {
+    if (clientIsInternal && myClient!=null) {
       myClient.getConnectionManager().shutdown();
     }
 
