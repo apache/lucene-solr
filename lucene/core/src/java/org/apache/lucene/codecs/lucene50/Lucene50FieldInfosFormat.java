@@ -102,7 +102,7 @@ import org.apache.lucene.store.IndexOutput;
  * @lucene.experimental
  */
 public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
-  
+
   /** Sole constructor. */
   public Lucene50FieldInfosFormat() {
   }
@@ -149,12 +149,11 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
           // DV Types are packed in one byte
           byte val = input.readByte();
           final DocValuesType docValuesType = getDocValuesType(input, (byte) (val & 0x0F));
-          final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
           final long dvGen = input.readLong();
           final Map<String,String> attributes = input.readStringStringMap();
           try {
             infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, 
-                                     indexOptions, docValuesType, normsType, dvGen, Collections.unmodifiableMap(attributes));
+                                     indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(attributes));
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -215,12 +214,10 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
         output.writeVInt(fi.number);
         output.writeByte(bits);
 
-        // pack the DV types in one byte
+        // pack the DV type and hasNorms in one byte
         final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.getNormType());
-        assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
-        byte val = (byte) (0xff & ((nrm << 4) | dv));
-        output.writeByte(val);
+        assert (dv & (~0xF)) == 0;
+        output.writeByte(dv);
         output.writeLong(fi.getDocValuesGen());
         output.writeStringStringMap(fi.attributes());
       }

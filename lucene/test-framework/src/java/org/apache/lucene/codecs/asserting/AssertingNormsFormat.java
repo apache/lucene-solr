@@ -93,7 +93,7 @@ public class AssertingNormsFormat extends NormsFormat {
 
     @Override
     public NumericDocValues getNorms(FieldInfo field) throws IOException {
-      assert field.getNormType() == FieldInfo.DocValuesType.NUMERIC;
+      assert field.hasNorms();
       NumericDocValues values = in.getNorms(field);
       assert values != null;
       return new AssertingLeafReader.AssertingNumericDocValues(values, maxDoc);

@@ -89,11 +89,6 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
           fi.setStorePayloads();
         }
       }
-      if (fi.isIndexed() && !fi.omitsNorms()) {
-        if (random().nextBoolean()) {
-          fi.setNormValueType(DocValuesType.NUMERIC);
-        }
-      }
       addAttributes(fi);
     }
     FieldInfos infos = builder.finish();
@@ -165,7 +160,6 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(expected.name, actual.name);
     assertEquals(expected.getDocValuesType(), actual.getDocValuesType());
     assertEquals(expected.getIndexOptions(), actual.getIndexOptions());
-    assertEquals(expected.getNormType(), actual.getNormType());
     assertEquals(expected.hasDocValues(), actual.hasDocValues());
     assertEquals(expected.hasNorms(), actual.hasNorms());
     assertEquals(expected.hasPayloads(), actual.hasPayloads());

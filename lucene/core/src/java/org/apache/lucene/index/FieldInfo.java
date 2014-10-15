@@ -40,15 +40,15 @@ public final class FieldInfo {
   // True if any document indexed term vectors
   private boolean storeTermVector;
 
-  private DocValuesType normType;
   private boolean omitNorms; // omit norms associated with indexed fields  
+
   private IndexOptions indexOptions;
   private boolean storePayloads; // whether this field stores payloads together with term positions
 
   private Map<String,String> attributes;
 
   private long dvGen;
-  
+
   /**
    * Controls how much information is stored in the postings lists.
    * @lucene.experimental
@@ -120,12 +120,12 @@ public final class FieldInfo {
   }
 
   /**
-   * Sole Constructor.
+   * Sole constructor.
    *
    * @lucene.experimental
    */
   public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, boolean omitNorms, 
-      boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normsType, 
+      boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
       long dvGen, Map<String,String> attributes) {
     this.name = name;
     this.indexed = indexed;
@@ -136,13 +136,11 @@ public final class FieldInfo {
       this.storePayloads = storePayloads;
       this.omitNorms = omitNorms;
       this.indexOptions = indexOptions;
-      this.normType = !omitNorms ? normsType : null;
     } else { // for non-indexed fields, leave defaults
       this.storeTermVector = false;
       this.storePayloads = false;
       this.omitNorms = false;
       this.indexOptions = null;
-      this.normType = null;
     }
     this.dvGen = dvGen;
     this.attributes = attributes;
@@ -158,11 +156,6 @@ public final class FieldInfo {
       if (indexOptions == null) {
         throw new IllegalStateException("indexed field '" + name + "' must have index options");
       }
-      if (omitNorms) {
-        if (normType != null) {
-          throw new IllegalStateException("indexed field '" + name + "' cannot both omit norms and have norms");
-        }
-      }
       // Cannot store payloads unless positions are indexed:
       if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0 && storePayloads) {
         throw new IllegalStateException("indexed field '" + name + "' cannot have payloads without positions");
@@ -177,12 +170,8 @@ public final class FieldInfo {
       if (omitNorms) {
         throw new IllegalStateException("non-indexed field '" + name + "' cannot omit norms");
       }
-      if (normType != null) {
-        throw new IllegalStateException("non-indexed field '" + name + "' cannot have norms");
-      }
       if (indexOptions != null) {
         throw new IllegalStateException("non-indexed field '" + name + "' cannot have index options");
-
       }
     }
     
@@ -206,7 +195,6 @@ public final class FieldInfo {
       this.storePayloads |= storePayloads;
       if (this.omitNorms != omitNorms) {
         this.omitNorms = true;                // if one require omitNorms at least once, it remains off for life
-        this.normType = null;
       }
       if (this.indexOptions != indexOptions) {
         if (this.indexOptions == null) {
@@ -265,13 +253,6 @@ public final class FieldInfo {
     return dvGen;
   }
   
-  /**
-   * Returns {@link DocValuesType} of the norm. this may be null if the field has no norms.
-   */
-  public DocValuesType getNormType() {
-    return normType;
-  }
-
   void setStoreTermVectors() {
     storeTermVector = true;
     assert checkConsistency();
@@ -284,14 +265,6 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  void setNormValueType(DocValuesType type) {
-    if (normType != null && normType != type) {
-      throw new IllegalArgumentException("cannot change Norm type from " + normType + " to " + type + " for field \"" + name + "\"");
-    }
-    normType = type;
-    assert checkConsistency();
-  }
-  
   /**
    * Returns true if norms are explicitly omitted for this field
    */
@@ -303,7 +276,7 @@ public final class FieldInfo {
    * Returns true if this field actually has any norms.
    */
   public boolean hasNorms() {
-    return normType != null;
+    return indexed && omitNorms == false;
   }
   
   /**

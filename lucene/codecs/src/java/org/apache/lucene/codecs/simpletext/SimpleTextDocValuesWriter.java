@@ -71,8 +71,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
     assert fieldSeen(field.name);
-    assert (field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC ||
-            field.getNormType() == FieldInfo.DocValuesType.NUMERIC);
+    assert field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC || field.hasNorms();
     writeFieldEntry(field, FieldInfo.DocValuesType.NUMERIC);
 
     // first pass to find min/max

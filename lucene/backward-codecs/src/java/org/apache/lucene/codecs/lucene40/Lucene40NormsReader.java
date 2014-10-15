@@ -21,6 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.UndeadNormsProducer;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
@@ -45,6 +47,10 @@ final class Lucene40NormsReader extends NormsProducer {
   
   @Override
   public NumericDocValues getNorms(FieldInfo field) throws IOException {
+    if (UndeadNormsProducer.isUndead(field)) {
+      // Bring undead norms back to life; this is set in Lucene40FieldInfosFormat, to emulate pre-5.0 undead norms
+      return DocValues.emptyNumeric();
+    }
     return impl.getNumeric(field);
   }
   

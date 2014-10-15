@@ -183,14 +183,10 @@ final class DefaultIndexingChain extends DocConsumer {
 
           // we must check the final value of omitNorms for the fieldinfo: it could have 
           // changed for this field since the first time we added it.
-          if (fi.omitsNorms() == false) {
-            if (perField.norms != null) {
-              perField.norms.finish(state.segmentInfo.getDocCount());
-              perField.norms.flush(state, normsConsumer);
-              assert fi.getNormType() == DocValuesType.NUMERIC;
-            } else if (fi.isIndexed()) {
-              assert fi.getNormType() == null: "got " + fi.getNormType() + "; field=" + fi.name;
-            }
+          if (fi.omitsNorms() == false && fi.isIndexed()) {
+            assert perField.norms != null: "field=" + fi.name;
+            perField.norms.finish(state.segmentInfo.getDocCount());
+            perField.norms.flush(state, normsConsumer);
           }
         }
       }
@@ -546,6 +542,11 @@ final class DefaultIndexingChain extends DocConsumer {
     void setInvertState() {
       invertState = new FieldInvertState(fieldInfo.name);
       termsHashPerField = termsHash.addField(invertState, fieldInfo);
+      if (fieldInfo.omitsNorms() == false) {
+        assert norms == null;
+        // Even if no documents actually succeed in setting a norm, we still write norms for this segment:
+        norms = new NormValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
+      }
     }
 
     @Override
@@ -554,14 +555,8 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     public void finish() throws IOException {
-      if (fieldInfo.omitsNorms() == false) {
-        if (norms == null) {
-          fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
-          norms = new NormValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
-        }
-        if (invertState.length != 0) {
-          norms.addValue(docState.docID, similarity.computeNorm(invertState));
-        }
+      if (fieldInfo.omitsNorms() == false && invertState.length != 0) {
+        norms.addValue(docState.docID, similarity.computeNorm(invertState));
       }
 
       termsHashPerField.finish();

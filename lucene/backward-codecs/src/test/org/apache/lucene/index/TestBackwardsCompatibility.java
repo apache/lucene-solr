@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -121,7 +120,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   private Path getIndexDir() {
     String path = System.getProperty("tests.bwcdir");
-    assumeTrue("backcompat creation tests must be run with -Dtests,bwcdir=/path/to/write/indexes", path != null);
+    assumeTrue("backcompat creation tests must be run with -Dtests.bwcdir=/path/to/write/indexes", path != null);
     return Paths.get(path);
   }
   

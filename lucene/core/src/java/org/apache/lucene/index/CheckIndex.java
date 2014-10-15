@@ -1791,12 +1791,8 @@ public class CheckIndex implements Closeable {
   }
   
   private static void checkNorms(FieldInfo fi, LeafReader reader, PrintStream infoStream) throws IOException {
-    switch(fi.getNormType()) {
-      case NUMERIC:
-        checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name), new Bits.MatchAllBits(reader.maxDoc()));
-        break;
-      default:
-        throw new AssertionError("wtf: " + fi.getNormType());
+    if (fi.hasNorms()) {
+      checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name), new Bits.MatchAllBits(reader.maxDoc()));
     }
   }
 

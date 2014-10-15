@@ -23,13 +23,14 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -42,7 +43,7 @@ import org.apache.lucene.store.IndexOutput;
  */
 @Deprecated
 public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
-  
+
   /** Sole constructor. */
   public Lucene46FieldInfosFormat() {
   }
@@ -88,8 +89,14 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
         final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
         final long dvGen = input.readLong();
         final Map<String,String> attributes = input.readStringStringMap();
+
+        if (isIndexed && omitNorms == false && normsType == null) {
+          // Undead norms!  Lucene42NormsProducer will check this and bring norms back from the dead:
+          UndeadNormsProducer.setUndead(attributes);
+        }
+
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, dvGen, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(attributes));
       }
       
       if (codecVersion >= Lucene46FieldInfosFormat.FORMAT_CHECKSUM) {
@@ -148,7 +155,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
 
         // pack the DV types in one byte
         final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.getNormType());
+        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : null);
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);

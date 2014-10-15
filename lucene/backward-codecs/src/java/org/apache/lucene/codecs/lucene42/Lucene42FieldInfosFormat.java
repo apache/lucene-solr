@@ -23,13 +23,14 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -41,7 +42,7 @@ import org.apache.lucene.util.IOUtils;
  */
 @Deprecated
 public class Lucene42FieldInfosFormat extends FieldInfosFormat {
-  
+
   /** Sole constructor. */
   public Lucene42FieldInfosFormat() {
   }
@@ -86,8 +87,14 @@ public class Lucene42FieldInfosFormat extends FieldInfosFormat {
         final DocValuesType docValuesType = getDocValuesType(input, (byte) (val & 0x0F));
         final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
         final Map<String,String> attributes = input.readStringStringMap();
+
+        if (isIndexed && omitNorms == false && normsType == null) {
+          // Undead norms!  Lucene42NormsProducer will check this and bring norms back from the dead:
+          UndeadNormsProducer.setUndead(attributes);
+        }
+
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, -1, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, docValuesType, -1, Collections.unmodifiableMap(attributes));
       }
 
       CodecUtil.checkEOF(input);
