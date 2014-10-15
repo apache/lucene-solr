@@ -208,7 +208,7 @@ public class CloudSolrServer extends SolrServer {
    *          <p/>
    *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
    * @param httpClient
-   *          the {@see HttpClient} instance to be used for all requests. The
+   *          the {@link HttpClient} instance to be used for all requests. The
    *          provided httpClient should use a multi-threaded connection manager.
    */
   public CloudSolrServer(String zkHost, HttpClient httpClient)  {
@@ -260,7 +260,7 @@ public class CloudSolrServer extends SolrServer {
    *          A chroot value for zookeeper, starting with a forward slash. If no
    *          chroot is required, use null.
    * @param httpClient
-   *          the {@see HttpClient} instance to be used for all requests. The provided httpClient should use a
+   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
    *          multi-threaded connection manager.
    * @throws IllegalArgumentException
    *           if the chroot value does not start with a forward slash.
@@ -316,7 +316,7 @@ public class CloudSolrServer extends SolrServer {
    * @param updatesToLeaders
    *          If true, sends updates only to shard leaders.
    * @param httpClient
-   *          the {@see HttpClient} instance to be used for all requests. The provided httpClient should use a
+   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
    *          multi-threaded connection manager.
    * @see #CloudSolrServer(String) for full description and details on zkHost
    */
