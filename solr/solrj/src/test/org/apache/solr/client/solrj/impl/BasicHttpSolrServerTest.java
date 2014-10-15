@@ -640,5 +640,21 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       server.request(req);
     } catch (Throwable t) {}
     verifyServletState(server, req);
+
+    // test with both request and server query params with single stream
+    DebugServlet.clear();
+    req = new UpdateRequest();
+    req.add(new SolrInputDocument());
+    server.setQueryParams(setOf("serverOnly", "both"));
+    req.setQueryParams(setOf("requestOnly", "both"));
+    setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
+     try {
+      server.request(req);
+    } catch (Throwable t) {}
+    // NOTE: single stream requests send all the params
+    // as part of the query string.  So add "neither" to the request
+    // so it passes the verification step.
+    req.setQueryParams(setOf("requestOnly", "both", "neither"));
+    verifyServletState(server, req);
   }
 }

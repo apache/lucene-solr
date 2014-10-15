@@ -151,6 +151,15 @@ API Changes
   to return an instance optimized for merging instead of searching.
   (Mike McCandless, Robert Muir)
 
+* LUCENE-5992: Remove FieldInfos from SegmentInfosWriter.write API. (Robert Muir, Mike McCandless)
+
+* LUCENE-5998: Simplify Field/SegmentInfoFormat to read+write methods.
+  (Robert Muir)
+
+* LUCENE-6000: Removed StandardTokenizerInterface.  Tokenizers now use
+  their jflex impl directly.
+  (Ryan Ernst)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -169,6 +178,8 @@ Bug Fixes
   not have the regular "spinlock" of DirectoryReader.open. It now implements
   Closeable and you must close it to release the lock.  (Mike McCandless, Robert Muir)
 
+* LUCENE-5980: Don't let document length overflow. (Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
@@ -186,6 +197,12 @@ Tests
   backcompat test indexes for a given lucene version. Also renamed backcompat
   index files to use Version.toString() in filename.
   (Ryan Ernst)
+
+* LUCENE-6002: Monster tests no longer fail.  Most of them now have an 80 hour
+  timeout, effectively removing the timeout.  The tests that operate near the 2
+  billion limit now use IndexWriter.MAX_DOCS instead of Integer.MAX_VALUE.
+  Some of the slow Monster tests now explicitly choose the default codec.
+  (Mike McCandless, Shawn Heisey)
 
 Optimizations
 
@@ -206,6 +223,9 @@ Optimizations
   per-segment/per-producer, and norms and doc values merging no longer cause 
   RAM spikes for latent fields. (Mike McCandless, Robert Muir)
 
+* LUCENE-5983: CachingWrapperFilter now uses a new DocIdSet implementation
+  called RoaringDocIdSet instead of WAH8DocIdSet. (Adrien Grand)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
@@ -215,6 +235,8 @@ Build
 
 * LUCENE-5962: Rename diffSources.py to createPatch.py and make it work with all text file types.
   (Ryan Ernst)
+
+* LUCENE-5995: Upgrade ICU to 54.1 (Robert Muir)
 
 Other
 
@@ -1248,6 +1270,10 @@ New Features
 
 * LUCENE-5457: Add SloppyMath.earthDiameter(double latitude) that returns an
   approximate value of the diameter of the earth at the given latitude.
+  (Adrien Grand)
+
+* LUCENE-5979: FilteredQuery uses the cost API to decide on whether to use
+  random-access or leap-frog to intersect the filter with the query.
   (Adrien Grand)
 
 Build

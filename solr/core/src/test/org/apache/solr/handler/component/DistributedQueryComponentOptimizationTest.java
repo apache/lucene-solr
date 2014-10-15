@@ -97,6 +97,24 @@ public class DistributedQueryComponentOptimizationTest extends BaseDistributedSe
     verifySinglePass("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20"); // id only is optimized by default
     verifySinglePass("q", "*:*", "fl", "id,score", "sort", "payload desc", "rows", "20"); // id,score only is optimized by default
     verifySinglePass("q", "*:*", "fl", "score", "sort", "payload asc", "rows", "20", "distrib.singlePass", "true");
+
+    // SOLR-6545, wild card field list
+    index(id, "19", "text", "d", "cat_a_sS", "1" ,"dynamic", "2", "payload", ByteBuffer.wrap(new byte[] { (byte)0x80, 0x11, 0x33 }));
+    commit();
+
+    nonDistribRsp = query("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc");
+    rsp = query("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
+
+    assertFieldValues(nonDistribRsp.getResults(), "id", 19);
+    assertFieldValues(rsp.getResults(), "id", 19);
+
+    nonDistribRsp = query("q", "id:19", "fl", "id,dynamic,cat*", "sort", "payload asc");
+    rsp = query("q", "id:19", "fl", "id,dynamic,cat*", "sort", "payload asc", "distrib.singlePass", "true");
+    assertFieldValues(nonDistribRsp.getResults(), "id", 19);
+    assertFieldValues(rsp.getResults(), "id", 19);
+
+    verifySinglePass("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
+    verifySinglePass("q", "id:19", "fl", "id,dynamic,cat*", "sort", "payload asc", "distrib.singlePass", "true");
   }
 
   private void verifySinglePass(String... q) throws SolrServerException {

@@ -61,10 +61,51 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.AlcoholicMergePolicy;
+import org.apache.lucene.index.AssertingDirectoryReader;
+import org.apache.lucene.index.AssertingLeafReader;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldFilterLeafReader;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.LiveIndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MockRandomMergePolicy;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.ParallelCompositeReader;
+import org.apache.lucene.index.ParallelLeafReader;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SimpleMergedSegmentWarmer;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -95,7 +136,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -707,8 +747,9 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static SegmentReader getOnlySegmentReader(DirectoryReader reader) {
     List<LeafReaderContext> subReaders = reader.leaves();
-    if (subReaders.size() != 1)
+    if (subReaders.size() != 1) {
       throw new IllegalArgumentException(reader + " has " + subReaders.size() + " segments instead of exactly one");
+    }
     final LeafReader r = subReaders.get(0).reader();
     assertTrue(r instanceof SegmentReader);
     return (SegmentReader) r;
@@ -862,12 +903,61 @@ public abstract class LuceneTestCase extends Assert {
 
     c.setMergePolicy(newMergePolicy(r));
 
+    avoidPathologicalMerging(c);
+
     if (rarely(r)) {
       c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
     return c;
+  }
+
+  private static void avoidPathologicalMerging(IndexWriterConfig iwc) {
+    // Don't allow "tiny" flushed segments with "big" merge
+    // floor: this leads to pathological O(N^2) merge costs:
+    long estFlushSizeBytes = Long.MAX_VALUE;
+    if (iwc.getMaxBufferedDocs() != IndexWriterConfig.DISABLE_AUTO_FLUSH) {
+      // Gross estimation of 1 KB segment bytes for each doc indexed:
+      estFlushSizeBytes = Math.min(estFlushSizeBytes, iwc.getMaxBufferedDocs() * 1024);
+    }
+    if (iwc.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH) {
+      estFlushSizeBytes = Math.min(estFlushSizeBytes, (long) (iwc.getRAMBufferSizeMB() * 1024 * 1024));
+    }
+    assert estFlushSizeBytes > 0;
+
+    MergePolicy mp = iwc.getMergePolicy();
+    if (mp instanceof TieredMergePolicy) {
+      TieredMergePolicy tmp = (TieredMergePolicy) mp;
+      long floorSegBytes = (long) (tmp.getFloorSegmentMB() * 1024 * 1024);
+      if (floorSegBytes / estFlushSizeBytes > 10) {
+        double newValue = estFlushSizeBytes * 10.0 / 1024 / 1024;
+        if (VERBOSE) {
+          System.out.println("NOTE: LuceneTestCase: changing TieredMergePolicy.floorSegmentMB from " + tmp.getFloorSegmentMB() + " to " + newValue + " to avoid pathological merging");
+        }
+        tmp.setFloorSegmentMB(newValue);
+      }
+    } else if (mp instanceof LogByteSizeMergePolicy) {
+      LogByteSizeMergePolicy lmp = (LogByteSizeMergePolicy) mp;
+      if ((lmp.getMinMergeMB()*1024*1024) / estFlushSizeBytes > 10) {
+        double newValue = estFlushSizeBytes * 10.0 / 1024 / 1024;
+        if (VERBOSE) {
+          System.out.println("NOTE: LuceneTestCase: changing LogByteSizeMergePolicy.minMergeMB from " + lmp.getMinMergeMB() + " to " + newValue + " to avoid pathological merging");
+        }
+        lmp.setMinMergeMB(newValue);
+      }
+    } else if (mp instanceof LogDocMergePolicy) {
+      LogDocMergePolicy lmp = (LogDocMergePolicy) mp;
+      assert estFlushSizeBytes / 1024 < Integer.MAX_VALUE/10;
+      int estFlushDocs = Math.max(1, (int) (estFlushSizeBytes / 1024));
+      if (lmp.getMinMergeDocs() / estFlushDocs > 10) {
+        int newValue = estFlushDocs * 10;
+        if (VERBOSE) {
+          System.out.println("NOTE: LuceneTestCase: changing LogDocMergePolicy.minMergeDocs from " + lmp.getMinMergeDocs() + " to " + newValue + " to avoid pathological merging");
+        }
+        lmp.setMinMergeDocs(newValue);
+      }
+    }
   }
 
   public static MergePolicy newMergePolicy(Random r) {

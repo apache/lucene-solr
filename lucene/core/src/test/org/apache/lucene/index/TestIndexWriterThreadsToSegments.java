@@ -331,7 +331,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
           String segName = IndexFileNames.parseSegmentName(fileName);
           if (segSeen.contains(segName) == false) {
             segSeen.add(segName);
-            SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().getSegmentInfoReader().read(dir, segName, IOContext.DEFAULT);
+            SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, IOContext.DEFAULT);
             si.setCodec(codec);
             SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
             SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);

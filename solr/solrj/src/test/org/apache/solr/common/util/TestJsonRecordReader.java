@@ -181,7 +181,21 @@ public class TestJsonRecordReader  extends SolrTestCaseJ4 {
     assertEquals(2, records.size());
     for (Map<String, Object> record : records) {
       assertEquals(6,record.size());
+      assertTrue(record.containsKey("subject"));
+      assertTrue(record.containsKey("test"));
+      assertTrue(record.containsKey("marks"));
     }
+
+    streamer = JsonRecordReader.getInst("/exams", Collections.singletonList("$FQN:/**"));
+    records = streamer.getAllRecords(new StringReader(json));
+    assertEquals(2, records.size());
+    for (Map<String, Object> record : records) {
+      assertEquals(6,record.size());
+      assertTrue(record.containsKey("exams.subject"));
+      assertTrue(record.containsKey("exams.test"));
+      assertTrue(record.containsKey("exams.marks"));
+    }
+
     streamer = JsonRecordReader.getInst("/", Collections.singletonList("txt:/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(1, records.size());

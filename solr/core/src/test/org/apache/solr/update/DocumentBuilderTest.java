@@ -306,7 +306,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertEquals(1.0F,                    outText[3].boost(), 0.0F);
     assertEquals(1.0F,                    outText[4].boost(), 0.0F);
     
-    // copyField dest with no norms should not have recieved any boost
+    // copyField dest with no norms should not have received any boost
     assertEquals(1.0F, outNoNorms[0].boost(), 0.0F);
     assertEquals(1.0F, outNoNorms[1].boost(), 0.0F);
     

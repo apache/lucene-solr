@@ -63,7 +63,7 @@ class RunUpdateProcessor extends UpdateRequestProcessor
     if (DistributedUpdateProcessor.isAtomicUpdate(cmd)) {
       throw new SolrException
         (SolrException.ErrorCode.BAD_REQUEST,
-         "RunUpdateProcessor has recieved an AddUpdateCommand containing a document that appears to still contain Atomic document update operations, most likely because DistributedUpdateProcessorFactory was explicitly disabled from this updateRequestProcessorChain");
+         "RunUpdateProcessor has received an AddUpdateCommand containing a document that appears to still contain Atomic document update operations, most likely because DistributedUpdateProcessorFactory was explicitly disabled from this updateRequestProcessorChain");
     }
 
     updateHandler.addDoc(cmd);

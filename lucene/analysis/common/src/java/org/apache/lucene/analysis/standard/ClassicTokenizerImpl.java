@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * This class implements the classic lucene StandardTokenizer up until 3.0 
  */
 
-class ClassicTokenizerImpl implements StandardTokenizerInterface {
+class ClassicTokenizerImpl {
 
   /** This character denotes the end of file */
   public static final int YYEOF = -1;

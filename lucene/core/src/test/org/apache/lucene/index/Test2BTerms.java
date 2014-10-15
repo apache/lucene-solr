@@ -55,9 +55,8 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 //   ant test -Dtests.monster=true -Dtests.heapsize=8g -Dtests.codec=Lucene50 -Dtestcase=Test2BTerms
 //
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
-@Monster("very slow, use 8g heap")
-@TimeoutSuite(millis = 6 * TimeUnits.HOUR)
-@SuppressSysoutChecks(bugUrl="We.print.lots.o.stuff.on.purpose")
+@Monster("very slow, use 5g minimum heap")
+@TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
 public class Test2BTerms extends LuceneTestCase {
 
   private final static int TOKEN_LEN = 5;
@@ -185,7 +184,8 @@ public class Test2BTerms extends LuceneTestCase {
                                       .setRAMBufferSizeMB(256.0)
                                       .setMergeScheduler(new ConcurrentMergeScheduler())
                                       .setMergePolicy(newLogMergePolicy(false, 10))
-                                      .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+                                      .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                                      .setCodec(TestUtil.getDefaultCodec()));
 
       MergePolicy mp = w.getConfig().getMergePolicy();
       if (mp instanceof LogByteSizeMergePolicy) {
@@ -261,7 +261,7 @@ public class Test2BTerms extends LuceneTestCase {
   private void testSavedTerms(IndexReader r, List<BytesRef> terms) throws IOException {
     System.out.println("TEST: run " + terms.size() + " terms on reader=" + r);
     IndexSearcher s = newSearcher(r);
-    Collections.shuffle(terms);
+    Collections.shuffle(terms, random());
     TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator(null);
     boolean failed = false;
     for(int iter=0;iter<10*terms.size();iter++) {

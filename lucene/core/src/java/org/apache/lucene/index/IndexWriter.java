@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FieldInfosReader;
+import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -871,7 +871,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // TODO: fix tests abusing this method!
   static FieldInfos readFieldInfos(SegmentCommitInfo si) throws IOException {
     Codec codec = si.info.getCodec();
-    FieldInfosReader reader = codec.fieldInfosFormat().getFieldInfosReader();
+    FieldInfosFormat reader = codec.fieldInfosFormat();
     
     if (si.hasFieldUpdates()) {
       // there are updates, we read latest (always outside of CFS)
@@ -2024,6 +2024,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         
         deleter.close();
 
+        // Must set closed while inside same sync block where we call deleter.refresh, else concurrent threads may try to sneak a flush in,
+        // after we leave this sync block and before we enter the sync block in the finally clause below that sets closed:
+        closed = true;
+
         IOUtils.close(writeLock);                     // release write lock
         writeLock = null;
         
@@ -2267,6 +2271,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       synchronized (this) {
         // Lock order IW -> BDS
+        ensureOpen(false);
         synchronized (bufferedUpdatesStream) {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "publishFlushedSegment");
@@ -2542,10 +2547,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         return;
       }
 
-      MergeState mergeState;
       boolean success = false;
       try {
-        mergeState = merger.merge();                // merge 'em
+        merger.merge();                // merge 'em
         success = true;
       } finally {
         if (!success) { 
@@ -2594,7 +2598,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       success = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.mergeFieldInfos, context);
+        codec.segmentInfoFormat().write(trackingDir, info, context);
         success = true;
       } finally {
         if (!success) {
@@ -3845,8 +3849,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     merge.checkAborted(directory);
 
-    final String mergedName = merge.info.info.name;
-
     List<SegmentCommitInfo> sourceSegments = merge.segments;
     
     IOContext context = new IOContext(merge.getMergeInfo());
@@ -4060,7 +4062,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // above:
       boolean success2 = false;
       try {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, merge.info.info, mergeState.mergeFieldInfos, context);
+        codec.segmentInfoFormat().write(directory, merge.info.info, context);
         success2 = true;
       } finally {
         if (!success2) {
@@ -4511,7 +4513,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     Set<String> siFiles = new HashSet<>();
     for (String cfsFile : cfsFiles) {
       siFiles.add(cfsFile);
-    };
+    }
     info.setFiles(siFiles);
 
     return files;

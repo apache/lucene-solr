@@ -197,7 +197,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
 
   @Override
-  public SolrRequestHandler getSubHandler(String path) {
+  public SolrRequestHandler getSubHandler(String subPath) {
     return null;
   }
 

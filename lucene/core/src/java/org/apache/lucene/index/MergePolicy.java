@@ -117,8 +117,9 @@ public abstract class MergePolicy {
      * @param segments List of {@link SegmentCommitInfo}s
      *        to be merged. */
     public OneMerge(List<SegmentCommitInfo> segments) {
-      if (0 == segments.size())
+      if (0 == segments.size()) {
         throw new RuntimeException("segments must include at least one segment");
+      }
       // clone the list, as the in list may be based off original SegmentInfos and may be modified
       this.segments = new ArrayList<>(segments);
       int count = 0;
@@ -239,14 +240,17 @@ public abstract class MergePolicy {
       StringBuilder b = new StringBuilder();
       final int numSegments = segments.size();
       for(int i=0;i<numSegments;i++) {
-        if (i > 0) b.append(' ');
+        if (i > 0) {
+          b.append(' ');
+        }
         b.append(segments.get(i).toString(dir, 0));
       }
       if (info != null) {
         b.append(" into ").append(info.info.name);
       }
-      if (maxNumSegments != -1)
+      if (maxNumSegments != -1) {
         b.append(" [maxNumSegments=" + maxNumSegments + "]");
+      }
       if (aborted) {
         b.append(" [ABORTED]");
       }
@@ -312,8 +316,9 @@ public abstract class MergePolicy {
       StringBuilder b = new StringBuilder();
       b.append("MergeSpec:\n");
       final int count = merges.size();
-      for(int i=0;i<count;i++)
+      for(int i=0;i<count;i++) {
         b.append("  ").append(1 + i).append(": ").append(merges.get(i).segString(dir));
+      }
       return b.toString();
     }
   }
@@ -477,9 +482,9 @@ public abstract class MergePolicy {
   protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     long byteSize = info.sizeInBytes();
     int delCount = writer.numDeletedDocs(info);
-    double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((float)delCount / (float)info.info.getDocCount()));
+    double delRatio = info.info.getDocCount() <= 0 ? 0.0f : (float) delCount / (float) info.info.getDocCount();
     assert delRatio <= 1.0;
-    return (info.info.getDocCount() <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
+    return (info.info.getDocCount() <= 0 ? byteSize : (long) (byteSize * (1.0 - delRatio)));
   }
   
   /** Returns true if this single info is already fully merged (has no
@@ -527,7 +532,7 @@ public abstract class MergePolicy {
       throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
     }
     v *= 1024 * 1024;
-    this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
+    this.maxCFSSegmentSize = v > Long.MAX_VALUE ? Long.MAX_VALUE : (long) v;
   }
 
 }

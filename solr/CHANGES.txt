@@ -89,6 +89,11 @@ Upgrading from Solr 4.x
   for "createcollection", "delete" for "removecollection" and "deleteshard" for
   "removeshard".
 
+* If you have been using the /update/json/docs to index documents, SOLR-6617 introduces
+  backward incompatible change. the key names created are fully qualified paths of keys .
+  If you need the old functionality back , please add an extra parameter f=/**
+  example: /update/json/docs?f=/**
+
 Detailed Change List
 ----------------------
 
@@ -152,6 +157,18 @@ New Features
   this property from all other replicas within a particular slice. 
   (Erick Erickson)
 
+* SOLR-6513: Add a collectionsAPI call BALANCESLICEUNIQUE. Allows the even
+  distribution of custom replica properties across nodes making up a 
+  collection, at most one node per slice will have the property.
+
+* SOLR-6605: Make ShardHandlerFactory maxConnections configurable.
+  (Christine Poerschke via shalin)
+
+* SOLR-6585: RequestHandlers can optionaly handle sub paths as well (Noble Paul)
+
+* SOLR-6617: /update/json/docs path will use fully qualified node names by default
+             (NOble Paul)
+
 Bug Fixes
 ----------------------
 
@@ -205,6 +222,19 @@ Bug Fixes
 
 * SOLR-6587: Misleading exception when creating collections in SolrCloud with bad configuration.
   (Tomás Fernández Löbbe)
+
+* SOLR-6545: Query field list with wild card on dynamic field fails.
+  (Burke Webster, Xu Zhang, shalin)
+
+* SOLR-6540 Fix NPE from strdist() func when doc value source does not exist in a doc (hossman)
+
+* SOLR-6624 Spelling mistakes in the Java source (Hrishikesh Gadre)
+
+Optimizations
+----------------------
+
+* SOLR-6603: LBHttpSolrServer - lazily allocate skipped-zombie-servers list.
+  (Christine Poerschke via shalin)
 
 Other Changes
 ----------------------
@@ -274,6 +304,21 @@ Other Changes
 
 * SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
    SolrException back to the client-side (Timothy Potter)
+
+* SOLR-6597: SolrIndexConfig parameter in one of the SolrIndexSearcher constructor has been removed.
+  It was just passed and never used via that constructor. (Anshum Gupta)
+
+* SOLR-6549: bin/solr script should support a -s option to set the -Dsolr.solr.home property.
+  (Timothy Potter)
+
+* SOLR-6529: Stop command in the start scripts should only stop the instance that it had started.
+  (Varun Thacker, Timothy Potter)
+
+* SOLR-5852: Add CloudSolrServer helper method to connect to a ZK ensemble. (Varun Thacker, Furkan KAMACI,
+  Shawn Heisey, Mark Miller, Erick Erickson via shalin)
+
+* SOLR-6592: Avoid waiting for the leader to see the down state if that leader is not live.
+  (Timothy Potter)
 
 ==================  4.10.1 ==================
 
@@ -410,7 +455,6 @@ New Features
 * SOLR-6233: Provide basic command line tools for checking Solr status and health.
   (Timothy Potter)
 
-* SOLR-6585: RequestHandlers can optionaly handle sub paths as well (Noble Paul)
 
 Bug Fixes
 ----------------------

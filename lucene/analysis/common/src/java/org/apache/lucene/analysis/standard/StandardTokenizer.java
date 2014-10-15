@@ -39,7 +39,7 @@ import org.apache.lucene.util.AttributeFactory;
 
 public final class StandardTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
-  private StandardTokenizerInterface scanner;
+  private StandardTokenizerImpl scanner;
 
   // TODO: how can we remove these old types?!
   public static final int ALPHANUM          = 0;
@@ -150,7 +150,7 @@ public final class StandardTokenizer extends Tokenizer {
     while(true) {
       int tokenType = scanner.getNextToken();
 
-      if (tokenType == StandardTokenizerInterface.YYEOF) {
+      if (tokenType == StandardTokenizerImpl.YYEOF) {
         return false;
       }
 

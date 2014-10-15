@@ -93,7 +93,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
                 startingGun.await();
                 for(int i=0;i<20;i++) {
                   List<Map.Entry<BytesRef,TopDocs>> shuffled = new ArrayList<>(answers.entrySet());
-                  Collections.shuffle(shuffled);
+                  Collections.shuffle(shuffled, random());
                   for(Map.Entry<BytesRef,TopDocs> ent : shuffled) {
                     TopDocs actual = s.search(new TermQuery(new Term("body", ent.getKey())), 100);
                     TopDocs expected = ent.getValue();

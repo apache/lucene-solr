@@ -17,7 +17,11 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Expert: Controls the format of the 
@@ -33,11 +37,18 @@ public abstract class SegmentInfoFormat {
   protected SegmentInfoFormat() {
   }
 
-  /** Returns the {@link SegmentInfoReader} for reading
-   *  {@link SegmentInfo} instances. */
-  public abstract SegmentInfoReader getSegmentInfoReader();
+  /**
+   * Read {@link SegmentInfo} data from a directory.
+   * @param directory directory to read from
+   * @param segmentName name of the segment to read
+   * @return infos instance to be populated with data
+   * @throws IOException If an I/O error occurs
+   */
+  public abstract SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException;
 
-  /** Returns the {@link SegmentInfoWriter} for writing
-   *  {@link SegmentInfo} instances. */
-  public abstract SegmentInfoWriter getSegmentInfoWriter();
+  /**
+   * Write {@link SegmentInfo} data. 
+   * @throws IOException If an I/O error occurs
+   */
+  public abstract void write(Directory dir, SegmentInfo info, IOContext ioContext) throws IOException;
 }

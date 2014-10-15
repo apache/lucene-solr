@@ -23,6 +23,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -30,8 +31,10 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Memory", "Direct"})
-@TimeoutSuite(millis = 80 * TimeUnits.HOUR)
-@Monster("takes ~ 30 minutes")
+@TimeoutSuite(millis = 8 * TimeUnits.HOUR)
+// The two hour time was achieved on a Linux 3.13 system with these specs:
+// 3-core AMD at 2.5Ghz, 12 GB RAM, 5GB test heap, 2 test JVMs, 2TB SATA.
+@Monster("takes ~ 2 hours if the heap is 5gb")
 public class Test2BNumericDocValues extends LuceneTestCase {
   
   // indexes IndexWriter.MAX_DOCS docs with an increasing dv field
@@ -47,7 +50,8 @@ public class Test2BNumericDocValues extends LuceneTestCase {
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())
         .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+        .setCodec(TestUtil.getDefaultCodec()));
 
     Document doc = new Document();
     NumericDocValuesField dvField = new NumericDocValuesField("dv", 0);

@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -443,6 +444,16 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
 
+    // SOLR-6545, wild card field list
+    indexr(id, "19", "text", "d", "cat_a_sS", "1" ,t1, "2");
+    commit();
+
+    rsp = query("q", "id:19", "fl", "id", "fl", "*a_sS");
+    assertFieldValues(rsp.getResults(), "id", 19);
+
+    rsp = query("q", "id:19", "fl", "id," + t1 + ",cat*");
+    assertFieldValues(rsp.getResults(), "id", 19);
+
     // Check Info is added to for each shard
     ModifiableSolrParams q = new ModifiableSolrParams();
     q.set("q", "*:*");
@@ -492,24 +503,17 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           ShardParams.SHARDS_TOLERANT, "true");
 
       // test group query
-      // TODO: Remove this? This doesn't make any real sense now that timeAllowed might trigger early
-      //       termination of the request during Terms enumeration/Query expansion.
-      //       During such an exit, partial results isn't supported as it wouldn't make any sense.
-      // Increasing the timeAllowed from 1 to 100 for now.
-      //
-      // TODO: still failing in jenkins - see SOLR-5986
-      //
-      // queryPartialResults(upShards, upClients,
-      //     "q", "*:*",
-      //     "rows", 100,
-      //     "fl", "id," + i1,
-      //     "group", "true",
-      //     "group.query", t1 + ":kings OR " + t1 + ":eggs",
-      //     "group.limit", 10,
-      //     "sort", i1 + " asc, id asc",
-      //     CommonParams.TIME_ALLOWED, 100,
-      //     ShardParams.SHARDS_INFO, "true",
-      //     ShardParams.SHARDS_TOLERANT, "true");
+      queryPartialResults(upShards, upClients,
+           "q", "*:*",
+           "rows", 100,
+           "fl", "id," + i1,
+           "group", "true",
+           "group.query", t1 + ":kings OR " + t1 + ":eggs",
+           "group.limit", 10,
+           "sort", i1 + " asc, id asc",
+           CommonParams.TIME_ALLOWED, 1,
+           ShardParams.SHARDS_INFO, "true",
+           ShardParams.SHARDS_TOLERANT, "true");
 
       queryPartialResults(upShards, upClients,
           "q", "*:*",

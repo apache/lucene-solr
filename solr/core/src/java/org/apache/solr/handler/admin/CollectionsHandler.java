@@ -23,6 +23,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SLICE_UNIQUE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_IF_DOWN;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
@@ -37,6 +38,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESLICEUNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
@@ -246,7 +248,10 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleDeleteReplicaProp(req, rsp);
         break;
       }
-
+      case BALANCESLICEUNIQUE: {
+        this.handleBalanceSliceUnique(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
@@ -293,6 +298,27 @@ public class CollectionsHandler extends RequestHandlerBase {
   }
 
 
+
+  private void handleBalanceSliceUnique(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    req.getParams().required().check(COLLECTION_PROP, PROPERTY_PROP);
+    Boolean sliceUnique = Boolean.parseBoolean(req.getParams().get(SLICE_UNIQUE));
+    String prop = req.getParams().get(PROPERTY_PROP).toLowerCase(Locale.ROOT);
+    if (StringUtils.startsWith(prop, OverseerCollectionProcessor.COLL_PROP_PREFIX) == false) {
+      prop = OverseerCollectionProcessor.COLL_PROP_PREFIX + prop;
+    }
+
+    if (sliceUnique == false &&
+        Overseer.sliceUniqueBooleanProperties.contains(prop) == false) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Balancing properties amongst replicas in a slice requires that"
+      + " the property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'sliceUnique' be set to 'true'. " +
+      " Property: " + prop + " sliceUnique: " + Boolean.toString(sliceUnique));
+    }
+
+    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, BALANCESLICEUNIQUE.toLower());
+    copyIfNotNull(req.getParams(), map, COLLECTION_PROP, PROPERTY_PROP, ONLY_ACTIVE_NODES, SLICE_UNIQUE);
+
+    handleResponse(BALANCESLICEUNIQUE.toLower(), new ZkNodeProps(map), rsp);
+  }
 
   private void handleOverseerStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     Map<String, Object> props = ZkNodeProps.makeMap(

@@ -117,6 +117,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // have the leader lose its Zk session temporarily
     testLeaderZkSessionLoss();
+
+    waitForThingsToLevelOut(30000);
+
+    log.info("HttpParitionTest succeeded ... shutting down now!");
   }
   
   protected void testRf2() throws Exception {
@@ -187,6 +191,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     // verify all docs received
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, numDocs + 3);
 
+    log.info("testRf2 succeeded ... deleting the "+testCollectionName+" collection");
+
     // try to clean up
     try {
       CollectionAdminRequest req = new CollectionAdminRequest.Delete();
@@ -240,6 +246,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sendDoc(4);
     
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
+
+    log.info("testRf3 succeeded ... deleting the "+testCollectionName+" collection");
+
     // try to clean up
     try {
       CollectionAdminRequest req = new CollectionAdminRequest.Delete();
@@ -333,6 +342,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       replicasToCheck.add(stillUp.getName());
     waitToSeeReplicasActive(testCollectionName, "shard1", replicasToCheck, 20);
     assertDocsExistInAllReplicas(participatingReplicas, testCollectionName, 1, 2);
+
+    log.info("testLeaderZkSessionLoss succeeded ... deleting the "+testCollectionName+" collection");
 
     // try to clean up
     try {

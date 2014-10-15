@@ -1228,7 +1228,7 @@ public class SnapPuller {
           //read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
-            LOG.warn("No content recieved for file: " + currentFile);
+            LOG.warn("No content received for file: " + currentFile);
             return NO_CONTENT;
           }
           if (buf.length < packetSize)
@@ -1496,7 +1496,7 @@ public class SnapPuller {
           //read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
-            LOG.warn("No content recieved for file: " + currentFile);
+            LOG.warn("No content received for file: " + currentFile);
             return NO_CONTENT;
           }
           if (buf.length < packetSize)

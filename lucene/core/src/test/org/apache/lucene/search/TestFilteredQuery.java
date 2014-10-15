@@ -34,7 +34,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -101,10 +101,10 @@ public class TestFilteredQuery extends LuceneTestCase {
       @Override
       public DocIdSet getDocIdSet (LeafReaderContext context, Bits acceptDocs) {
         if (acceptDocs == null) acceptDocs = new Bits.MatchAllBits(5);
-        BitSet bitset = new BitSet(5);
+        FixedBitSet bitset = new FixedBitSet(context.reader().maxDoc());
         if (acceptDocs.get(1)) bitset.set(1);
         if (acceptDocs.get(3)) bitset.set(3);
-        return new DocIdBitSet(bitset);
+        return bitset;
       }
     };
   }
@@ -183,9 +183,9 @@ public class TestFilteredQuery extends LuceneTestCase {
       @Override
       public DocIdSet getDocIdSet (LeafReaderContext context, Bits acceptDocs) {
         assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
-        BitSet bitset = new BitSet(5);
-        bitset.set(0, 5);
-        return new DocIdBitSet(bitset);
+        FixedBitSet bitset = new FixedBitSet(context.reader().maxDoc());
+        bitset.set(0, Math.min(5, bitset.length()));
+        return bitset;
       }
     };
   }
@@ -387,7 +387,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     if (useRandomAccess) {
       return new FilteredQuery.RandomAccessFilterStrategy() {
         @Override
-        protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
+        protected boolean useRandomAccess(Bits bits, long filterCost) {
           return true;
         }
       };

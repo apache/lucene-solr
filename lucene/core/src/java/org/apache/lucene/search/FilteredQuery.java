@@ -254,12 +254,12 @@ public class FilteredQuery extends Query {
    * jumping past the target document. When both land on the same document, it's
    * collected.
    */
-  private static class LeapFrogScorer extends Scorer {
+  private static final class LeapFrogScorer extends Scorer {
     private final DocIdSetIterator secondary;
     private final DocIdSetIterator primary;
     private final Scorer scorer;
-    protected int primaryDoc = -1;
-    protected int secondaryDoc = -1;
+    private int primaryDoc = -1;
+    private int secondaryDoc = -1;
 
     protected LeapFrogScorer(Weight weight, DocIdSetIterator primary, DocIdSetIterator secondary, Scorer scorer) {
       super(weight);
@@ -321,26 +321,6 @@ public class FilteredQuery extends Query {
     @Override
     public long cost() {
       return Math.min(primary.cost(), secondary.cost());
-    }
-  }
-  
-  // TODO once we have way to figure out if we use RA or LeapFrog we can remove this scorer
-  private static final class PrimaryAdvancedLeapFrogScorer extends LeapFrogScorer {
-    private final int firstFilteredDoc;
-
-    protected PrimaryAdvancedLeapFrogScorer(Weight weight, int firstFilteredDoc, DocIdSetIterator filterIter, Scorer other) {
-      super(weight, filterIter, other, other);
-      this.firstFilteredDoc = firstFilteredDoc;
-      this.primaryDoc = firstFilteredDoc; // initialize to prevent and advance call to move it further
-    }
-
-    @Override
-    protected int primaryNext() throws IOException {
-      if (secondaryDoc != -1) {
-        return super.primaryNext();
-      } else {
-        return firstFilteredDoc;
-      }
     }
   }
   
@@ -421,7 +401,7 @@ public class FilteredQuery extends Query {
    * A {@link FilterStrategy} that conditionally uses a random access filter if
    * the given {@link DocIdSet} supports random access (returns a non-null value
    * from {@link DocIdSet#bits()}) and
-   * {@link RandomAccessFilterStrategy#useRandomAccess(Bits, int)} returns
+   * {@link RandomAccessFilterStrategy#useRandomAccess(Bits, long)} returns
    * <code>true</code>. Otherwise this strategy falls back to a "zig-zag join" (
    * {@link FilteredQuery#LEAP_FROG_FILTER_FIRST_STRATEGY}) strategy.
    * 
@@ -515,7 +495,7 @@ public class FilteredQuery extends Query {
    * A {@link FilterStrategy} that conditionally uses a random access filter if
    * the given {@link DocIdSet} supports random access (returns a non-null value
    * from {@link DocIdSet#bits()}) and
-   * {@link RandomAccessFilterStrategy#useRandomAccess(Bits, int)} returns
+   * {@link RandomAccessFilterStrategy#useRandomAccess(Bits, long)} returns
    * <code>true</code>. Otherwise this strategy falls back to a "zig-zag join" (
    * {@link FilteredQuery#LEAP_FROG_FILTER_FIRST_STRATEGY}) strategy .
    */
@@ -528,25 +508,18 @@ public class FilteredQuery extends Query {
         // this means the filter does not accept any documents.
         return null;
       }  
-
-      final int firstFilterDoc = filterIter.nextDoc();
-      if (firstFilterDoc == DocIdSetIterator.NO_MORE_DOCS) {
-        return null;
-      }
       
       final Bits filterAcceptDocs = docIdSet.bits();
       // force if RA is requested
-      final boolean useRandomAccess = filterAcceptDocs != null && useRandomAccess(filterAcceptDocs, firstFilterDoc);
+      final boolean useRandomAccess = filterAcceptDocs != null && useRandomAccess(filterAcceptDocs, filterIter.cost());
       if (useRandomAccess) {
         // if we are using random access, we return the inner scorer, just with other acceptDocs
         return weight.scorer(context, filterAcceptDocs);
       } else {
-        assert firstFilterDoc > -1;
         // we are gonna advance() this scorer, so we set inorder=true/toplevel=false
         // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
         final Scorer scorer = weight.scorer(context, null);
-        // TODO once we have way to figure out if we use RA or LeapFrog we can remove this scorer
-        return (scorer == null) ? null : new PrimaryAdvancedLeapFrogScorer(weight, firstFilterDoc, filterIter, scorer);
+        return (scorer == null) ? null : new LeapFrogScorer(weight, filterIter, scorer, scorer);
       }
     }
     
@@ -557,14 +530,14 @@ public class FilteredQuery extends Query {
      * However, when the filter is very sparse, it can be faster to execute the query+filter
      * as a conjunction in some cases.
      * 
-     * The default implementation returns <code>true</code> if the first document accepted by the
-     * filter is < 100.
+     * The default implementation returns <code>true</code> if the filter matches more than 1%
+     * of documents
      * 
      * @lucene.internal
      */
-    protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
-      //TODO once we have a cost API on filters and scorers we should rethink this heuristic
-      return firstFilterDoc < 100;
+    protected boolean useRandomAccess(Bits bits, long filterCost) {
+      // if the filter matches more than 1% of documents, we use random-access
+      return filterCost * 100 > bits.length();
     }
   }
   

@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 
 import com.google.common.collect.Lists;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -45,7 +44,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
+public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   public static final String COLLECTION_NAME = "testcollection";
   public static final String COLLECTION_NAME1 = "testcollection1";
@@ -338,9 +337,7 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
 
       // The above should have set exactly one preferredleader...
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r2, "property.preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "property.preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -351,9 +348,7 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
           "property.value", "true");
       // The preferred leader property for shard1 should have switched to the other replica.
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r1, "property.preferredLeader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -365,9 +360,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
 
       // Now we should have a preferred leader in both shards...
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -381,6 +375,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader", "true");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toString(),
@@ -393,9 +389,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       // But first we have to wait for the overseer to finish the action
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
       // Try adding an arbitrary property to one that has the leader property
       doPropertyAction(client,
@@ -409,10 +404,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -426,10 +419,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toLower(),
@@ -444,10 +435,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "nonsense");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
 
       doPropertyAction(client,
@@ -463,10 +452,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "property.testprop", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.DELETEREPLICAPROP.toLower(),
@@ -479,10 +466,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
       verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.testprop");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
       try {
         doPropertyAction(client,
@@ -503,10 +488,8 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
       verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.testprop");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.prop", "silly");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME, c1_s2_r2, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
-      verifyPropertyNotPresent(client, COLLECTION_NAME1, c2_s1_r1, "property.preferredleader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME, "property.preferredLeader");
+      verifyUniquePropertyWithinCollection(client, COLLECTION_NAME1, "property.preferredLeader");
 
       Map<String, String> origProps = getProps(client, COLLECTION_NAME, c1_s1_r1,
           "state", "core", "node_name", "base_url");
@@ -592,68 +575,11 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
     }
   }
 
-  private void doPropertyAction(CloudSolrServer client, String... paramsIn) throws IOException, SolrServerException {
-    assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (int idx = 0; idx < paramsIn.length; idx += 2) {
-      params.set(paramsIn[idx], paramsIn[idx + 1]);
-    }
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    client.request(request);
-
-  }
-
-  private void verifyPropertyNotPresent(CloudSolrServer client, String collectionName, String replicaName,
-                                        String property)
-      throws KeeperException, InterruptedException {
-    ClusterState clusterState = null;
-    Replica replica = null;
-    for (int idx = 0; idx < 300; ++idx) {
-      client.getZkStateReader().updateClusterState(true);
-      clusterState = client.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(collectionName, replicaName);
-      if (replica == null) {
-        fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
-      }
-      if (StringUtils.isBlank(replica.getStr(property))) return;
-      Thread.sleep(100);
-    }
-    fail("Property " + property + " not set correctly for collection/replica pair: " +
-        collectionName + "/" + replicaName + ". Replica props: " + replica.getProperties().toString() +
-        ". Cluster state is " + clusterState.toString());
-
-  }
-
-  // The params are triplets,
-  // collection
-  // shard
-  // replica
-  private void verifyPropertyVal(CloudSolrServer client, String collectionName,
-                                 String replicaName, String property, String val)
-      throws InterruptedException, KeeperException {
-    Replica replica = null;
-    ClusterState clusterState = null;
-
-    for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
-      client.getZkStateReader().updateClusterState(true);
-      clusterState = client.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(collectionName, replicaName);
-      if (replica == null) {
-        fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
-      }
-      if (StringUtils.equals(val, replica.getStr(property))) return;
-      Thread.sleep(100);
-    }
-
-    fail("Property '" + property + "' with value " + replica.getStr(property) +
-        " not set correctly for collection/replica pair: " + collectionName + "/" + replicaName + " property map is " +
-        replica.getProperties().toString() + ".");
-
-  }
 
   // Expects the map will have keys, but blank values.
-  private Map<String, String> getProps(CloudSolrServer client, String collectionName, String replicaName, String... props) throws KeeperException, InterruptedException {
+  private Map<String, String> getProps(CloudSolrServer client, String collectionName, String replicaName, String... props)
+      throws KeeperException, InterruptedException {
+
     client.getZkStateReader().updateClusterState(true);
     ClusterState clusterState = client.getZkStateReader().getClusterState();
     Replica replica = clusterState.getReplica(collectionName, replicaName);

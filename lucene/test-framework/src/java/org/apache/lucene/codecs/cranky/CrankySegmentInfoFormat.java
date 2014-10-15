@@ -21,9 +21,6 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.SegmentInfoReader;
-import org.apache.lucene.codecs.SegmentInfoWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -38,30 +35,15 @@ class CrankySegmentInfoFormat extends SegmentInfoFormat {
   }
   
   @Override
-  public SegmentInfoReader getSegmentInfoReader() {
-    return delegate.getSegmentInfoReader();
+  public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
+    return delegate.read(directory, segmentName, context);
   }
 
   @Override
-  public SegmentInfoWriter getSegmentInfoWriter() {
-    return new CrankySegmentInfoWriter(delegate.getSegmentInfoWriter(), random);
-  }
-  
-  static class CrankySegmentInfoWriter extends SegmentInfoWriter {
-    final SegmentInfoWriter delegate;
-    final Random random;
-    
-    CrankySegmentInfoWriter(SegmentInfoWriter delegate, Random random) {
-      this.delegate = delegate;
-      this.random = random;
+  public void write(Directory dir, SegmentInfo info, IOContext ioContext) throws IOException {
+    if (random.nextInt(100) == 0) {
+      throw new IOException("Fake IOException from SegmentInfoFormat.write()");
     }
-    
-    @Override
-    public void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException {
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException from SegmentInfoWriter.write()");
-      }
-      delegate.write(dir, info, fis, ioContext);
-    }
+    delegate.write(dir, info, ioContext);
   }
 }

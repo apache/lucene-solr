@@ -31,7 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.WAH8DocIdSet;
+import org.apache.lucene.util.RoaringDocIdSet;
 
 /**
  * Wraps another {@link Filter}'s result and caches it.  The purpose is to allow
@@ -86,12 +86,10 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   }
   
   /**
-   * Default cache implementation: uses {@link WAH8DocIdSet}.
+   * Default cache implementation: uses {@link RoaringDocIdSet}.
    */
   protected DocIdSet cacheImpl(DocIdSetIterator iterator, LeafReader reader) throws IOException {
-    WAH8DocIdSet.Builder builder = new WAH8DocIdSet.Builder();
-    builder.add(iterator);
-    return builder.build();
+    return new RoaringDocIdSet.Builder(reader.maxDoc()).add(iterator).build();
   }
 
   // for testing

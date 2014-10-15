@@ -868,17 +868,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (sendRecoveryCommand) {
               maxTries = 120;
             } // else the node is no longer "live" so no need to send any recovery command
-
-          } catch (KeeperException.SessionExpiredException see) {
+          } catch (Exception exc) {
+            Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
             log.error("Leader failed to set replica " +
-                error.req.node.getUrl() + " state to DOWN due to: " + see, see);
-            // our session is expired, which means our state is suspect, so don't go
-            // putting other replicas in recovery (see SOLR-6511)
-            sendRecoveryCommand = false;
-          } catch (Exception e) {
-            log.error("Leader failed to set replica " +
-                error.req.node.getUrl() + " state to DOWN due to: " + e, e);
-            // will go ahead and try to send the recovery command once after this error
+                error.req.node.getUrl() + " state to DOWN due to: " + setLirZnodeFailedCause, setLirZnodeFailedCause);
+            if (setLirZnodeFailedCause instanceof KeeperException.SessionExpiredException ||
+                setLirZnodeFailedCause instanceof KeeperException.ConnectionLossException) {
+              // our session is expired, which means our state is suspect, so don't go
+              // putting other replicas in recovery (see SOLR-6511)
+              sendRecoveryCommand = false;
+            } // else will go ahead and try to send the recovery command once after this error
           }
         } else {
           // not the leader anymore maybe or the error'd node is not my replica?

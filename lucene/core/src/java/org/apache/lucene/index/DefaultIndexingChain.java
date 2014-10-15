@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
@@ -118,8 +117,7 @@ final class DefaultIndexingChain extends DocConsumer {
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
-    FieldInfosWriter infosWriter = docWriter.codec.fieldInfosFormat().getFieldInfosWriter();
-    infosWriter.write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
+    docWriter.codec.fieldInfosFormat().write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
   }
 
   /** Writes all buffered doc values (called from {@link #flush}). */
@@ -622,6 +620,10 @@ final class DefaultIndexingChain extends DocConsumer {
             invertState.lastStartOffset = startOffset;
           }
 
+          invertState.length++;
+          if (invertState.length < 0) {
+            throw new IllegalArgumentException("too many tokens in field '" + field.name() + "'");
+          }
           //System.out.println("  term=" + invertState.termAttribute);
 
           // If we hit an exception in here, we abort
@@ -633,8 +635,6 @@ final class DefaultIndexingChain extends DocConsumer {
           aborting = true;
           termsHashPerField.add();
           aborting = false;
-
-          invertState.length++;
         }
 
         // trigger streams to perform end-of-stream operations

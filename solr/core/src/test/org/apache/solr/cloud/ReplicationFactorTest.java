@@ -43,13 +43,14 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+//@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
+
 /**
  * Tests a client application's ability to get replication factor
  * information back from the cluster after an add or update.
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6157")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final transient Logger log = 
@@ -139,6 +140,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // test a 1x3 collection
     log.info("Testing replication factor handling for repfacttest_c8n_1x3");
     testRf3();
+
+    waitForThingsToLevelOut(30000);
 
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");

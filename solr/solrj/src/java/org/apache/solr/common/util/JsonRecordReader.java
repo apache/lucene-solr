@@ -29,6 +29,7 @@ import static org.noggit.JSONParser.*;
  */
 
 public class JsonRecordReader {
+  public static final String DELIM = ".";
 
   private Node rootNode = new Node("/", (Node)null);
 
@@ -159,6 +160,7 @@ public class JsonRecordReader {
     boolean isRecord = false; //flag: this Node starts a new record
     Node wildCardChild ;
     Node recursiveWildCardChild;
+    private boolean useFqn = false;
 
 
     public Node(String name, Node p) {
@@ -233,6 +235,10 @@ public class JsonRecordReader {
           // path with content we want to store and return
           n.isLeaf = true;        // we have to store text found here
           n.fieldName = fieldName; // name to store collected text against
+          if("$FQN".equals(n.fieldName)) {
+            n.fieldName = null;
+            n.useFqn = true;
+          }
         }
       } else {
         //wildcards must only come at the end
@@ -278,13 +284,13 @@ public class JsonRecordReader {
         event = parser.nextEvent();
         if(event == EOF) break;
         if (event == OBJECT_START) {
-          handleObjectStart(parser, new HashSet<Node>(), handler, values, stack, recordStarted);
+          handleObjectStart(parser, new HashSet<Node>(), handler, values, stack, recordStarted, null);
         } else if (event == ARRAY_START) {
           for (; ; ) {
             event = parser.nextEvent();
             if (event == ARRAY_END) break;
             if (event == OBJECT_START) {
-              handleObjectStart(parser, new HashSet<Node>(), handler, values, stack, recordStarted);
+              handleObjectStart(parser, new HashSet<Node>(), handler, values, stack, recordStarted,null);
             }
           }
         }
@@ -306,7 +312,8 @@ public class JsonRecordReader {
      */
     private void handleObjectStart(final JSONParser parser, final Set<Node> childrenFound,
                                    final Handler handler, final Map<String, Object> values,
-                                   final Stack<Set<String>> stack, boolean recordStarted)
+                                   final Stack<Set<String>> stack, boolean recordStarted,
+                                   MethodFrameWrapper frameWrapper)
         throws IOException {
 
       final boolean isRecordStarted = recordStarted || isRecord;
@@ -324,20 +331,22 @@ public class JsonRecordReader {
       }
 
       class Wrapper extends MethodFrameWrapper {
-        Wrapper( Node node) {
+        Wrapper(Node node, MethodFrameWrapper parent, String name) {
           this.node = node;
+          this.parent= parent;
+          this.name = name;
         }
 
         @Override
         public void walk(int event) throws IOException {
           if (event == OBJECT_START) {
-            node.handleObjectStart(parser, childrenFound, handler, values, stack, isRecordStarted);
+            node.handleObjectStart(parser, childrenFound, handler, values, stack, isRecordStarted, this);
           } else if (event == ARRAY_START) {
             for (; ; ) {
               event = parser.nextEvent();
               if (event == ARRAY_END) break;
               if (event == OBJECT_START) {
-                node.handleObjectStart(parser, childrenFound, handler, values, stack, isRecordStarted);
+                node.handleObjectStart(parser, childrenFound, handler, values, stack, isRecordStarted,this);
               }
             }
           }
@@ -365,10 +374,10 @@ public class JsonRecordReader {
           if (node != null) {
             if (node.isLeaf) {//this is a leaf collect data here
               event = parser.nextEvent();
-              String nameInRecord = node.fieldName == null ? name : node.fieldName;
+              String nameInRecord = node.fieldName == null ? getNameInRecord(name, frameWrapper, node) : node.fieldName;
               MethodFrameWrapper runnable = null;
               if(event == OBJECT_START || event == ARRAY_START){
-                if(node.recursiveWildCardChild !=null) runnable = new Wrapper(node);
+                if(node.recursiveWildCardChild !=null) runnable = new Wrapper(node, frameWrapper,name);
               }
               Object val = parseSingleFieldValue(event, parser, runnable);
               if(val !=null) {
@@ -378,7 +387,7 @@ public class JsonRecordReader {
 
             } else {
               event = parser.nextEvent();
-              new Wrapper(node).walk(event);
+              new Wrapper(node, frameWrapper, name).walk(event);
             }
           } else {
             //this is not something we are interested in  . skip it
@@ -411,6 +420,13 @@ public class JsonRecordReader {
           }
         }
       }
+    }
+
+    private String getNameInRecord(String name,MethodFrameWrapper frameWrapper, Node n) {
+      if(frameWrapper == null || !n.useFqn) return name;
+      StringBuilder sb = new StringBuilder();
+      frameWrapper.prependName(sb);
+      return sb.append(DELIM).append(name).toString();
     }
 
     private boolean isRecord() {
@@ -521,6 +537,16 @@ public class JsonRecordReader {
   }
   static abstract class MethodFrameWrapper {
     Node node;
+    MethodFrameWrapper parent;
+    String name;
+
+    void prependName(StringBuilder sb){
+      if(parent !=null) {
+        parent.prependName(sb);
+        sb.append(DELIM);
+      }
+      sb.append(name);
+    }
 
     public abstract void walk(int event) throws IOException;
   }

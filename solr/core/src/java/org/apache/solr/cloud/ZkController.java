@@ -20,8 +20,11 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -30,6 +33,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,6 +45,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.NoHttpResponseException;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
@@ -78,6 +84,8 @@ import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.data.Stat;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1623,6 +1631,23 @@ public final class ZkController {
               server.request(prepCmd);
               break;
             } catch (Exception e) {
+
+              // if the core container is shutdown, don't wait
+              if (cc.isShutDown()) {
+                throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+                    "Core container is shutdown.");
+              }
+
+              Throwable rootCause = SolrException.getRootCause(e);
+              if (rootCause instanceof IOException) {
+                // if there was a communication error talking to the leader, see if the leader is even alive
+                if (!zkStateReader.getClusterState().liveNodesContain(leaderProps.getNodeName())) {
+                  throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+                      "Node "+leaderProps.getNodeName()+" hosting leader for "+
+                          shard+" in "+collection+" is not live!");
+                }
+              }
+
               SolrException.log(log,
                   "There was a problem making a request to the leader", e);
               try {
@@ -1930,16 +1955,19 @@ public final class ZkController {
   }  
   
   public String getLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName) {
-    
+    Map<String,Object> stateObj = getLeaderInitiatedRecoveryStateObject(collection, shardId, coreNodeName);
+    return (stateObj != null) ? (String)stateObj.get("state") : null;
+  }
+
+  public Map<String,Object> getLeaderInitiatedRecoveryStateObject(String collection, String shardId, String coreNodeName) {
+
     if (collection == null || shardId == null || coreNodeName == null)
       return null; // if we don't have complete data about a core in cloud mode, return null
     
     String znodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId, coreNodeName);
-    String state = null;
+    byte[] stateData = null;
     try {
-      byte[] data = zkClient.getData(znodePath, null, new Stat(), false);
-      if (data != null && data.length > 0)
-        state = new String(data, "UTF-8");
+      stateData = zkClient.getData(znodePath, null, new Stat(), false);
     } catch (NoNodeException ignoreMe) {
       // safe to ignore as this znode will only exist if the leader initiated recovery
     } catch (ConnectionLossException cle) {
@@ -1950,8 +1978,6 @@ public final class ZkController {
       // sort of safe to ignore ??? Usually these are seen when the core is going down
       // or there are bigger issues to deal with than reading this znode
       log.warn("Unable to read "+znodePath+" due to: "+see);
-    } catch (UnsupportedEncodingException e) {
-      throw new Error("JVM Does not seem to support UTF-8", e);
     } catch (Exception exc) {
       log.error("Failed to read data from znode "+znodePath+" due to: "+exc);
       if (exc instanceof SolrException) {
@@ -1961,7 +1987,22 @@ public final class ZkController {
             "Failed to read data from znodePath: "+znodePath, exc);
       }
     }
-    return state;
+
+    Map<String,Object> stateObj = null;
+    if (stateData != null && stateData.length > 0) {
+      Object parsedJson = ZkStateReader.fromJSON(stateData);
+      if (parsedJson instanceof Map) {
+        stateObj = (Map<String,Object>)parsedJson;
+      } else if (parsedJson instanceof String) {
+        // old format still in ZK
+        stateObj = new LinkedHashMap<>();
+        stateObj.put("state", (String)parsedJson);
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Leader-initiated recovery state data is invalid! "+parsedJson);
+      }
+    }
+
+    return stateObj;
   }
   
   private void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName, String state) {
@@ -1982,14 +2023,22 @@ public final class ZkController {
       }
       return;
     }
-    
-    byte[] znodeData = null;
-    try {
-      znodeData = state.getBytes("UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new Error("JVM Does not seem to support UTF-8", e);
-    }
 
+    Map<String,Object> stateObj = null;
+    try {
+      stateObj = getLeaderInitiatedRecoveryStateObject(collection, shardId, coreNodeName);
+    } catch (Exception exc) {
+      log.warn(exc.getMessage(), exc);
+    }
+    if (stateObj == null)
+      stateObj = new LinkedHashMap<>();
+
+    stateObj.put("state", state);
+    // only update the createdBy value if its not set
+    if (stateObj.get("createdByNodeName") == null)
+      stateObj.put("createdByNodeName", String.valueOf(this.nodeName));
+
+    byte[] znodeData = ZkStateReader.toJSON(stateObj);
     boolean retryOnConnLoss = true; // be a little more robust when trying to write data
     try {
       if (zkClient.exists(znodePath, retryOnConnLoss)) {

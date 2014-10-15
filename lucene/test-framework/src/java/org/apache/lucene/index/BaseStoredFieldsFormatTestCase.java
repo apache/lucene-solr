@@ -125,7 +125,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       w.addDocument(doc);
       if (rand.nextInt(50) == 17) {
         // mixup binding of field name -> Number every so often
-        Collections.shuffle(fieldIDs);
+        Collections.shuffle(fieldIDs, random());
       }
       if (rand.nextInt(5) == 3 && i > 0) {
         final String delID = ""+rand.nextInt(i);

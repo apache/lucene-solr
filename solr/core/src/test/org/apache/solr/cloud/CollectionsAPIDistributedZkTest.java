@@ -1266,7 +1266,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       createCollection(collectionName, client, 2, 2);
       String newReplicaName = Assign.assignNode(collectionName, client.getZkStateReader().getClusterState());
       ArrayList<String> nodeList = new ArrayList<>(client.getZkStateReader().getClusterState().getLiveNodes());
-      Collections.shuffle(nodeList);
+      Collections.shuffle(nodeList, random());
       CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
       addReplica.setCollectionName(collectionName);
       addReplica.setShardName("shard1");

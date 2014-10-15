@@ -379,14 +379,13 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     // stats over a string function
     assertQ("strdist func stats",
             req("q", "*:*",
-                "fq", "-id:4", // SOLR-6540
                 "stats","true",
                 "stats.field","{!func}strdist('string22',active_s,edit)")
             , "//double[@name='min'][.='0.75']"
             , "//double[@name='max'][.='0.875']"
             , "//double[@name='sum'][.='2.375']"
             , "//long[@name='count'][.='3']"
-            ,"//long[@name='missing'][.='0']" // SOLR-6540 ==> '1'
+            ,"//long[@name='missing'][.='1']"
             );
 
   }

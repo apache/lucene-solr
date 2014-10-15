@@ -17,9 +17,28 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.SegmentInfoReader;
-import org.apache.lucene.codecs.SegmentInfoWriter;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * plain text segments file format.
@@ -28,18 +47,163 @@ import org.apache.lucene.codecs.SegmentInfoWriter;
  * @lucene.experimental
  */
 public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
-  private final SegmentInfoReader reader = new SimpleTextSegmentInfoReader();
-  private final SegmentInfoWriter writer = new SimpleTextSegmentInfoWriter();
+  final static BytesRef SI_VERSION          = new BytesRef("    version ");
+  final static BytesRef SI_DOCCOUNT         = new BytesRef("    number of documents ");
+  final static BytesRef SI_USECOMPOUND      = new BytesRef("    uses compound file ");
+  final static BytesRef SI_NUM_DIAG         = new BytesRef("    diagnostics ");
+  final static BytesRef SI_DIAG_KEY         = new BytesRef("      key ");
+  final static BytesRef SI_DIAG_VALUE       = new BytesRef("      value ");
+  final static BytesRef SI_NUM_FILES        = new BytesRef("    files ");
+  final static BytesRef SI_FILE             = new BytesRef("      file ");
+  final static BytesRef SI_ID               = new BytesRef("    id ");
 
   public static final String SI_EXTENSION = "si";
   
   @Override
-  public SegmentInfoReader getSegmentInfoReader() {
-    return reader;
+  public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
+    BytesRefBuilder scratch = new BytesRefBuilder();
+    String segFileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
+    ChecksumIndexInput input = directory.openChecksumInput(segFileName, context);
+    boolean success = false;
+    try {
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch.get(), SI_VERSION);
+      final Version version;
+      try {
+        version = Version.parse(readString(SI_VERSION.length, scratch));
+      } catch (ParseException pe) {
+        throw new CorruptIndexException("unable to parse version string: " + pe.getMessage(), input, pe);
+      }
+    
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch.get(), SI_DOCCOUNT);
+      final int docCount = Integer.parseInt(readString(SI_DOCCOUNT.length, scratch));
+    
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch.get(), SI_USECOMPOUND);
+      final boolean isCompoundFile = Boolean.parseBoolean(readString(SI_USECOMPOUND.length, scratch));
+    
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch.get(), SI_NUM_DIAG);
+      int numDiag = Integer.parseInt(readString(SI_NUM_DIAG.length, scratch));
+      Map<String,String> diagnostics = new HashMap<>();
+
+      for (int i = 0; i < numDiag; i++) {
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch.get(), SI_DIAG_KEY);
+        String key = readString(SI_DIAG_KEY.length, scratch);
+      
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch.get(), SI_DIAG_VALUE);
+        String value = readString(SI_DIAG_VALUE.length, scratch);
+        diagnostics.put(key, value);
+      }
+      
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch.get(), SI_NUM_FILES);
+      int numFiles = Integer.parseInt(readString(SI_NUM_FILES.length, scratch));
+      Set<String> files = new HashSet<>();
+
+      for (int i = 0; i < numFiles; i++) {
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch.get(), SI_FILE);
+        String fileName = readString(SI_FILE.length, scratch);
+        files.add(fileName);
+      }
+      
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch.get(), SI_ID);
+      final byte[] id = Arrays.copyOfRange(scratch.bytes(), SI_ID.length, scratch.length());
+
+      SimpleTextUtil.checkFooter(input);
+
+      SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount,
+                                         isCompoundFile, null, diagnostics, id);
+      info.setFiles(files);
+      success = true;
+      return info;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(input);
+      } else {
+        input.close();
+      }
+    }
   }
 
+  private String readString(int offset, BytesRefBuilder scratch) {
+    return new String(scratch.bytes(), offset, scratch.length()-offset, StandardCharsets.UTF_8);
+  }
+  
   @Override
-  public SegmentInfoWriter getSegmentInfoWriter() {
-    return writer;
+  public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
+
+    String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
+    si.addFile(segFileName);
+
+    boolean success = false;
+    IndexOutput output = dir.createOutput(segFileName, ioContext);
+
+    try {
+      BytesRefBuilder scratch = new BytesRefBuilder();
+    
+      SimpleTextUtil.write(output, SI_VERSION);
+      SimpleTextUtil.write(output, si.getVersion().toString(), scratch);
+      SimpleTextUtil.writeNewline(output);
+    
+      SimpleTextUtil.write(output, SI_DOCCOUNT);
+      SimpleTextUtil.write(output, Integer.toString(si.getDocCount()), scratch);
+      SimpleTextUtil.writeNewline(output);
+    
+      SimpleTextUtil.write(output, SI_USECOMPOUND);
+      SimpleTextUtil.write(output, Boolean.toString(si.getUseCompoundFile()), scratch);
+      SimpleTextUtil.writeNewline(output);
+    
+      Map<String,String> diagnostics = si.getDiagnostics();
+      int numDiagnostics = diagnostics == null ? 0 : diagnostics.size();
+      SimpleTextUtil.write(output, SI_NUM_DIAG);
+      SimpleTextUtil.write(output, Integer.toString(numDiagnostics), scratch);
+      SimpleTextUtil.writeNewline(output);
+    
+      if (numDiagnostics > 0) {
+        for (Map.Entry<String,String> diagEntry : diagnostics.entrySet()) {
+          SimpleTextUtil.write(output, SI_DIAG_KEY);
+          SimpleTextUtil.write(output, diagEntry.getKey(), scratch);
+          SimpleTextUtil.writeNewline(output);
+        
+          SimpleTextUtil.write(output, SI_DIAG_VALUE);
+          SimpleTextUtil.write(output, diagEntry.getValue(), scratch);
+          SimpleTextUtil.writeNewline(output);
+        }
+      }
+      
+      Set<String> files = si.files();
+      int numFiles = files == null ? 0 : files.size();
+      SimpleTextUtil.write(output, SI_NUM_FILES);
+      SimpleTextUtil.write(output, Integer.toString(numFiles), scratch);
+      SimpleTextUtil.writeNewline(output);
+
+      if (numFiles > 0) {
+        for(String fileName : files) {
+          SimpleTextUtil.write(output, SI_FILE);
+          SimpleTextUtil.write(output, fileName, scratch);
+          SimpleTextUtil.writeNewline(output);
+        }
+      }
+
+      SimpleTextUtil.write(output, SI_ID);
+      SimpleTextUtil.write(output, new BytesRef(si.getId()));
+      SimpleTextUtil.writeNewline(output);
+      
+      SimpleTextUtil.writeChecksum(output, scratch);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(output);
+        IOUtils.deleteFilesIgnoringExceptions(dir, segFileName);
+      } else {
+        output.close();
+      }
+    }
   }
 }

@@ -198,7 +198,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
         block("Y"),
         block("Z")));
     
-    Collections.shuffle(blocks);
+    Collections.shuffle(blocks, random());
     
     log.trace("{}", blocks);
     

@@ -109,7 +109,7 @@ final class SegmentCoreReaders implements Accountable {
         cfsDir = dir;
       }
 
-      coreFieldInfos = codec.fieldInfosFormat().getFieldInfosReader().read(cfsDir, si.info, "", context);
+      coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, context);
       final PostingsFormat format = codec.postingsFormat();
