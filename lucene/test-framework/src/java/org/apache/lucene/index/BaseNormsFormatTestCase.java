@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -128,7 +130,6 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   
   public void testAllZeros() throws Exception {
     int iterations = atLeast(1);
-    final Random r = random();
     for (int i = 0; i < iterations; i++) {
       doTestNormsVersusStoredFields(new LongProducer() {
         @Override
@@ -264,4 +265,60 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   }
   
   // TODO: test thread safety (e.g. across different fields) explicitly here
+
+  /** 
+   * LUCENE-6006: Tests undead norms.
+   *                                 .....            
+   *                             C C  /            
+   *                            /<   /             
+   *             ___ __________/_#__=o             
+   *            /(- /(\_\________   \              
+   *            \ ) \ )_      \o     \             
+   *            /|\ /|\       |'     |             
+   *                          |     _|             
+   *                          /o   __\             
+   *                         / '     |             
+   *                        / /      |             
+   *                       /_/\______|             
+   *                      (   _(    <              
+   *                       \    \    \             
+   *                        \    \    |            
+   *                         \____\____\           
+   *                         ____\_\__\_\          
+   *                       /`   /`     o\          
+   *                       |___ |_______|
+   *
+   */
+  public void testUndeadNorms() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    int numDocs = atLeast(1000);
+    List<Integer> toDelete = new ArrayList<>();
+    for(int i=0;i<numDocs;i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", ""+i, Field.Store.NO));
+      if (random().nextInt(5) == 1) {
+        toDelete.add(i);
+        doc.add(new TextField("content", "some content", Field.Store.NO));
+      }
+      w.addDocument(doc);
+    }
+    for(Integer id : toDelete) {
+      w.deleteDocuments(new Term("id", ""+id));
+    }
+    w.forceMerge(1);
+    IndexReader r = w.getReader();
+
+    // Confusingly, norms should exist, and should all be 0, even though we deleted all docs that had the field "content".  They should not
+    // be undead:
+    NumericDocValues norms = MultiDocValues.getNormValues(r, "content");
+    assertNotNull(norms);
+    for(int i=0;i<r.maxDoc();i++) {
+      assertEquals(0, norms.get(i));
+    }
+
+    r.close();
+    w.close();
+    dir.close();
+  }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -46,6 +47,10 @@ public class Lucene40NormsFormat extends NormsFormat {
     String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
                                                      "nrm", 
                                                      Lucene40CompoundFormat.COMPOUND_FILE_EXTENSION);
-    return new Lucene40NormsReader(state, filename);
+    if (UndeadNormsProducer.isUndeadArmy(state.fieldInfos)) {
+      return UndeadNormsProducer.INSTANCE;
+    } else {
+      return new Lucene40NormsReader(state, filename);
+    }
   }
 }

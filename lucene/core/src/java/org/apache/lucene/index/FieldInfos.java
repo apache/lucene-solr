@@ -276,10 +276,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
    
     /** NOTE: this method does not carry over termVector
-     *  booleans nor docValuesType; the indexer chain
-     *  (TermVectorsConsumerPerField, DocFieldProcessor) must
-     *  set these fields when they succeed in consuming
-     *  the document */
+     *  the indexer chain must set these fields when they
+     *  succeed in consuming the document */
     public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
       // TODO: really, indexer shouldn't even call this
       // method (it's only called from DocFieldProcessor);
@@ -288,12 +286,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
       // be updated by maybe FreqProxTermsWriterPerField:
       return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
                                  fieldType.omitNorms(), false,
-                                 fieldType.indexOptions(), fieldType.docValueType(), null);
+                                 fieldType.indexOptions(), fieldType.docValueType());
     }
 
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
         boolean storeTermVector,
-        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normType) {
+        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues) {
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
         // This field wasn't yet added to this in-RAM
@@ -302,7 +300,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
-        fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType, -1, null);
+        fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, null);
         assert !byName.containsKey(fi.name);
         assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
@@ -319,26 +317,22 @@ public class FieldInfos implements Iterable<FieldInfo> {
             globalFieldNumbers.setDocValuesType(fi.number, name, docValues);
           }
         }
-
-        if (!fi.omitsNorms() && normType != null) {
-          fi.setNormValueType(normType);
-        }
       }
       return fi;
     }
-    
+
     public FieldInfo add(FieldInfo fi) {
       // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
       return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed(), fi.hasVectors(),
                  fi.omitsNorms(), fi.hasPayloads(),
-                 fi.getIndexOptions(), fi.getDocValuesType(), fi.getNormType());
+                 fi.getIndexOptions(), fi.getDocValuesType());
     }
     
     public FieldInfo fieldInfo(String fieldName) {
       return byName.get(fieldName);
     }
     
-    final FieldInfos finish() {
+    FieldInfos finish() {
       return new FieldInfos(byName.values().toArray(new FieldInfo[byName.size()]));
     }
   }

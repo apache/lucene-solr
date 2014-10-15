@@ -64,7 +64,7 @@ public class TestLucene40FieldInfoFormat extends BaseFieldInfoFormatTestCase {
       }
     }
     
-    if (fi.getNormType() != null) {
+    if (fi.hasNorms()) {
       fi.putAttribute(Lucene40FieldInfosFormat.LEGACY_NORM_TYPE_KEY, LegacyDocValuesType.FIXED_INTS_8.name());
     }
   }

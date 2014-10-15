@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.packed.PackedInts;
@@ -62,7 +63,11 @@ public class Lucene42NormsFormat extends NormsFormat {
   
   @Override
   public final NormsProducer normsProducer(SegmentReadState state) throws IOException {
-    return new Lucene42NormsProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    if (UndeadNormsProducer.isUndeadArmy(state.fieldInfos)) {
+      return UndeadNormsProducer.INSTANCE;
+    } else {
+      return new Lucene42NormsProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    }
   }
   
   static final String DATA_CODEC = "Lucene41NormsData";

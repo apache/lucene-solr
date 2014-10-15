@@ -59,7 +59,6 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   static final BytesRef STORETVOFF      =  new BytesRef("  term vector offsets ");
   static final BytesRef PAYLOADS        =  new BytesRef("  payloads ");
   static final BytesRef NORMS           =  new BytesRef("  norms ");
-  static final BytesRef NORMS_TYPE      =  new BytesRef("  norms type ");
   static final BytesRef DOCVALUES       =  new BytesRef("  doc values ");
   static final BytesRef DOCVALUES_GEN   =  new BytesRef("  doc values gen ");
   static final BytesRef INDEXOPTIONS    =  new BytesRef("  index options ");
@@ -116,11 +115,6 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         boolean omitNorms = !Boolean.parseBoolean(readString(NORMS.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch.get(), NORMS_TYPE);
-        String nrmType = readString(NORMS_TYPE.length, scratch);
-        final DocValuesType normsType = docValuesType(nrmType);
-        
-        SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), DOCVALUES);
         String dvType = readString(DOCVALUES.length, scratch);
         final DocValuesType docValuesType = docValuesType(dvType);
@@ -146,7 +140,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         }
 
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, dvGen, Collections.unmodifiableMap(atts));
+          omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(atts));
       }
 
       SimpleTextUtil.checkFooter(input);
@@ -217,11 +211,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         SimpleTextUtil.write(out, NORMS);
         SimpleTextUtil.write(out, Boolean.toString(!fi.omitsNorms()), scratch);
         SimpleTextUtil.writeNewline(out);
-        
-        SimpleTextUtil.write(out, NORMS_TYPE);
-        SimpleTextUtil.write(out, getDocValuesType(fi.getNormType()), scratch);
-        SimpleTextUtil.writeNewline(out);
-        
+
         SimpleTextUtil.write(out, DOCVALUES);
         SimpleTextUtil.write(out, getDocValuesType(fi.getDocValuesType()), scratch);
         SimpleTextUtil.writeNewline(out);

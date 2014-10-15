@@ -45,7 +45,6 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
@@ -373,7 +372,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
       fieldInfoArray[fieldUpto] = new FieldInfo(field, true, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                null, DocValuesType.NUMERIC, -1, null);
+                                                null, -1, null);
       fieldUpto++;
 
       SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
@@ -702,7 +701,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                                                    doPayloads,
                                                    indexOptions,
                                                    null,
-                                                   DocValuesType.NUMERIC,
                                                    -1,
                                                    null);
     }
