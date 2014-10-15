@@ -645,9 +645,7 @@ public class LBHttpSolrServer extends SolrServer {
 
   /**
    * Changes the {@link ResponseParser} that will be used for the internal
-   * SolrServer objects. Throws an exception if used after internal server
-   * objects have been added, so if you want to use this method, you must
-   * not put any URLs in your constructor.
+   * SolrServer objects.
    *
    * @param parser Default Response Parser chosen to parse the response if the parser
    *               were not specified as part of the request.
@@ -659,9 +657,7 @@ public class LBHttpSolrServer extends SolrServer {
 
   /**
    * Changes the {@link RequestWriter} that will be used for the internal
-   * SolrServer objects. Throws an exception if used after internal server
-   * objects have been added, so if you want to use this method, you must
-   * not put any URLs in your constructor.
+   * SolrServer objects.
    *
    * @param requestWriter Default RequestWriter, used to encode requests sent to the server.
    */
