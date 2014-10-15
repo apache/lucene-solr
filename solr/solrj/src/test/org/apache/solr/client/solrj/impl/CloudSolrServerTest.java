@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -122,6 +123,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     allTests();
     stateVersionParamTest();
+    customHttpClientTest();
   }
 
   private void allTests() throws Exception {
@@ -438,5 +440,21 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     }
     // see SOLR-6146 - this test will fail by virtue of the zkClient tracking performed
     // in the afterClass method of the base class
+  }
+
+  public void customHttpClientTest() {
+    CloudSolrServer server = null;
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 1000);
+    HttpClient client = null;
+
+    try {
+      client = HttpClientUtil.createClient(params);
+      server = new CloudSolrServer(zkServer.getZkAddress(), client);
+      assertTrue(server.getLbServer().getHttpClient() == client);
+    } finally {
+      server.shutdown();
+      client.getConnectionManager().shutdown();
+    }
   }
 }
