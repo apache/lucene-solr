@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.OpenBitSet;
 
 /**
  * Base class for DocIdSet to be used with DocValues. The implementation
@@ -114,8 +113,8 @@ public abstract class DocValuesDocIdSet extends DocIdSet {
           return maxDoc;
         }
       };
-    } else if (acceptDocs instanceof FixedBitSet || acceptDocs instanceof OpenBitSet) {
-      // special case for FixedBitSet / OpenBitSet: use the iterator and filter it
+    } else if (acceptDocs instanceof FixedBitSet) {
+      // special case for FixedBitSet: use the iterator and filter it
       // (used e.g. when Filters are chained by FilteredQuery)
       return new FilteredDocIdSetIterator(((DocIdSet) acceptDocs).iterator()) {
         @Override

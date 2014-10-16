@@ -172,7 +172,7 @@ public class BoolField extends PrimitiveFieldType {
   }
 }
 
-// TODO - this can be much more efficient - use OpenBitSet or Bits
+// TODO - this can be much more efficient - use FixedBitSet or Bits
 class BoolFieldSource extends ValueSource {
   protected String field;
 

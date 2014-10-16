@@ -46,7 +46,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** Handles a terms dict, but decouples all details of
@@ -76,7 +75,7 @@ public class BlockTermsReader extends FieldsProducer {
   private TermsIndexReaderBase indexReader;
   
   // Used as key for the terms cache
-  private static class FieldAndTerm extends DoubleBarrelLRUCache.CloneableKey {
+  private static class FieldAndTerm implements Cloneable {
     String field;
     BytesRef term;
 

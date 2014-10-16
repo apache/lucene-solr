@@ -1376,16 +1376,6 @@ public final class FST<T> implements Accountable {
     public abstract boolean reversed();
   }
 
-  private static class ArcAndState<T> {
-    final Arc<T> arc;
-    final IntsRef chain;
-
-    public ArcAndState(Arc<T> arc, IntsRef chain) {
-      this.arc = arc;
-      this.chain = chain;
-    }
-  }
-
   /*
   public void countSingleChains() throws IOException {
     // TODO: must assert this FST was built with

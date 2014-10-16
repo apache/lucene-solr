@@ -16,3 +16,8 @@ specialization of Collector that returns itself as a per-segment Collector.
 ## Removed ChainedFilter (LUCENE-5984)
 
 Users are advised to switch to BooleanFilter instead.
+
+## Removed OpenBitSet (LUCENE-6010)
+
+OpenBitSet only differs from LongBitSet by its ability to grow automatically.
+In case growth is required, it would need to be managed externally.
