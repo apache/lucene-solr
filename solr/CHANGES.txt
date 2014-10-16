@@ -94,6 +94,12 @@ Upgrading from Solr 4.x
   If you need the old functionality back , please add an extra parameter f=/**
   example: /update/json/docs?f=/**
 
+* Bugs fixed in several ValueSource functions may result in different behavior in 
+  situations where some documents do not have values for fields wrapped in other value 
+  sources.  Users who want to preserve the previous behavior may need to wrap fields
+  in the "def()" function. Example: changing "fl=sum(fieldA,fieldB)" to 
+  "fl=sum(def(fieldA,0.0),def(fieldB,0.0))".  See LUCENE-5961 for more details.
+
 Detailed Change List
 ----------------------
 

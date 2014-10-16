@@ -469,10 +469,9 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         "{!type=func key="+key+" ex=key_ex_tag}field("+f+")",
         "{!type=func key="+key+" ex=key_ex_tag v=field("+f+")}",
         "{!type=func key="+key+" ex=key_ex_tag v='field("+f+")'}",
-
-        // identity math functions don't work as expected due to LUCENE-5961
-        // "{!type=func key="+key+" ex=key_ex_tag v='sum(0,"+f+")'}",
-        // "{!type=func key="+key+" ex=key_ex_tag v='product(1,"+f+")'}",
+        // identity math functions
+        "{!type=func key="+key+" ex=key_ex_tag v='sum(0,"+f+")'}",
+        "{!type=func key="+key+" ex=key_ex_tag v='product(1,"+f+")'}",
       }) {
       
       assertQ("test statistics over field specified as a function: " + param,
@@ -555,10 +554,9 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         "{!type=func key="+f+" ex=key_ex_tag}field("+f+")",
         "{!type=func key="+f+" ex=key_ex_tag v=field("+f+")}",
         "{!type=func key="+f+" ex=key_ex_tag v='field("+f+")'}",
-
-        // identity math functions don't work as expected due to LUCENE-5961
-        // "{!type=func key="+f+" ex=key_ex_tag v='sum(0,"+f+")'}",
-        // "{!type=func key="+f+" ex=key_ex_tag v='product(1,"+f+")'}",
+        // identity math functions
+        "{!type=func key="+f+" ex=key_ex_tag v='sum(0,"+f+")'}",
+        "{!type=func key="+f+" ex=key_ex_tag v='product(1,"+f+")'}",
       }) {
       assertQ("test statis & stats.facet over field specified as a function: " + param,
               req("q", "*:*", "stats", "true", "stats.calcdistinct", "true",

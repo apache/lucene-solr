@@ -102,7 +102,7 @@ public class IfFunction extends BoolFunction {
 
       @Override
       public boolean exists(int doc) {
-        return true; // TODO: flow through to any sub-sources?
+        return ifVals.boolVal(doc) ? trueVals.exists(doc) : falseVals.exists(doc);
       }
 
       @Override

@@ -731,12 +731,17 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testPseudoFieldFunctions() throws Exception {
-    assertU(adoc("id", "1", "text", "hello", "foo_s","A"));
+    assertU(adoc("id", "1", "text", "hello", "foo_s","A", "yak_i", "32"));
     assertU(adoc("id", "2"));
     assertU(commit());
 
-    assertJQ(req("q", "id:1", "fl", "a:1,b:2.0,c:'X',d:{!func}foo_s,e:{!func}bar_s")  // if exists() is false, no pseudo-field should be added
-        , "/response/docs/[0]=={'a':1, 'b':2.0,'c':'X','d':'A'}");
+    // if exists() is false, no pseudo-field should be added
+    assertJQ(req("q", "id:1", "fl", "a:1,b:2.0,c:'X',d:{!func}foo_s,e:{!func}bar_s")  
+             , "/response/docs/[0]=={'a':1, 'b':2.0,'c':'X','d':'A'}");
+    assertJQ(req("q", "id:1", "fl", "a:sum(yak_i,bog_i),b:mul(yak_i,bog_i),c:min(yak_i,bog_i)")  
+             , "/response/docs/[0]=={ 'c':32.0 }");
+    assertJQ(req("q", "id:1", "fl", "a:sum(yak_i,def(bog_i,42)), b:max(yak_i,bog_i)")  
+             , "/response/docs/[0]=={ 'a': 74.0, 'b':32.0 }");
   }
 
   public void testMissingFieldFunctionBehavior() throws Exception {

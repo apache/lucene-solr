@@ -35,11 +35,26 @@ public class MinFloatFunction extends MultiFloatFunction {
 
   @Override
   protected float func(int doc, FunctionValues[] valsArr) {
-    if (valsArr.length == 0) return 0.0f;
+    if ( ! exists(doc, valsArr) ) return 0.0f;
+
     float val = Float.POSITIVE_INFINITY;
     for (FunctionValues vals : valsArr) {
-      val = Math.min(vals.floatVal(doc), val);
+      if (vals.exists(doc)) {
+        val = Math.min(vals.floatVal(doc), val);
+      }
     }
     return val;
   }
+  
+  /** 
+   * True if <em>any</em> of the specified <code>values</code> 
+   * {@link FunctionValues#exists} for the specified doc, else false.
+   *
+   * @see MultiFunction#anyExists
+   */
+  @Override
+  protected boolean exists(int doc, FunctionValues[] valsArr) {
+    return MultiFunction.anyExists(doc, valsArr);
+  }
+
 }
