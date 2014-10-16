@@ -167,10 +167,11 @@ New Features
 * SOLR-6585: RequestHandlers can optionaly handle sub paths as well (Noble Paul)
 
 * SOLR-6617: /update/json/docs path will use fully qualified node names by default
-             (NOble Paul)
+             (Noble Paul)
 
 * SOLR-4715: Add CloudSolrServer constructors which accept a HttpClient instance.
   (Hardik Upadhyay, Shawn Heisey, shalin)
+
 
 Bug Fixes
 ----------------------
@@ -232,6 +233,9 @@ Bug Fixes
 * SOLR-6540 Fix NPE from strdist() func when doc value source does not exist in a doc (hossman)
 
 * SOLR-6624 Spelling mistakes in the Java source (Hrishikesh Gadre)
+
+* SOLR-6307: Atomic update remove does not work for int array or date array
+  (Anurag Sharma , noble)
 
 Optimizations
 ----------------------

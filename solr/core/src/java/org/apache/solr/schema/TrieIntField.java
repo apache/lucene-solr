@@ -31,4 +31,17 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
   {
     type=TrieTypes.INTEGER;
   }
+
+  @Override
+  public Object toNativeType(Object val) {
+    if(val==null) return null;
+    if (val instanceof Number) return ((Number) val).intValue();
+    try {
+      if (val instanceof String) return Integer.parseInt((String) val);
+    } catch (NumberFormatException e) {
+      Float v = Float.parseFloat((String) val);
+      return v.intValue();
+    }
+    return super.toNativeType(val);
+  }
 }
