@@ -61,31 +61,8 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
 
   }
 
-  /**
-   * A no-op SubReaderWrapper that simply returns the parent
-   * DirectoryReader's original subreaders.
-   */
-  public static class StandardReaderWrapper extends SubReaderWrapper {
-
-    /** Constructor */
-    public StandardReaderWrapper() {}
-
-    @Override
-    public LeafReader wrap(LeafReader reader) {
-      return reader;
-    }
-  }
-
   /** The filtered DirectoryReader */
   protected final DirectoryReader in;
-
-  /**
-   * Create a new FilterDirectoryReader that filters a passed in DirectoryReader.
-   * @param in the DirectoryReader to filter
-   */
-  public FilterDirectoryReader(DirectoryReader in) {
-    this(in, new StandardReaderWrapper());
-  }
 
   /**
    * Create a new FilterDirectoryReader that filters a passed in DirectoryReader,

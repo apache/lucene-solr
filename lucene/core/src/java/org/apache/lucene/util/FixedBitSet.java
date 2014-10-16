@@ -325,13 +325,7 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
   /** Does in-place OR of the bits provided by the
    *  iterator. */
   public void or(DocIdSetIterator iter) throws IOException {
-    if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
-      final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
-      or(obs.arr, obs.words);
-      // advance after last doc that would be accepted if standard
-      // iteration is used (to exhaust it):
-      obs.advance(numBits);
-    } else if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
+    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
       final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
       or(fbs.bits, fbs.numWords);
       // advance after last doc that would be accepted if standard
@@ -381,13 +375,7 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
   /** Does in-place AND of the bits provided by the
    *  iterator. */
   public void and(DocIdSetIterator iter) throws IOException {
-    if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
-      final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
-      and(obs.arr, obs.words);
-      // advance after last doc that would be accepted if standard
-      // iteration is used (to exhaust it):
-      obs.advance(numBits);
-    } else if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
+    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
       final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
       and(fbs.bits, fbs.numWords);
       // advance after last doc that would be accepted if standard
@@ -435,13 +423,7 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
   /** Does in-place AND NOT of the bits provided by the
    *  iterator. */
   public void andNot(DocIdSetIterator iter) throws IOException {
-    if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
-      final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
-      andNot(obs.arr, obs.words);
-      // advance after last doc that would be accepted if standard
-      // iteration is used (to exhaust it):
-      obs.advance(numBits);
-    } else if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
+    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
       final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
       andNot(fbs.bits, fbs.numWords);
       // advance after last doc that would be accepted if standard
