@@ -344,4 +344,14 @@ public class TrieDateField extends TrieField implements DateValueFieldType {
               max == null ? null : max.getTime(),
               minInclusive, maxInclusive);
   }
+
+  @Override
+  public Object toNativeType(Object val) {
+    if(val==null) return null;
+    if (val instanceof Date) return  val;
+
+    if (val instanceof String) return parseMath(null,(String)val);
+
+    return super.toNativeType(val);
+  }
 }
