@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene410;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene410;
 import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -41,8 +42,8 @@ import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** writer for {@link Lucene410DocValuesFormat} */
-class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable {
+/** writer for {@link Lucene50DocValuesFormat} */
+class Lucene50DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
   
@@ -69,6 +70,8 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
   public static final int TABLE_COMPRESSED = 2;
   /** Compressed with monotonically increasing values */
   public static final int MONOTONIC_COMPRESSED = 3;
+  /** Compressed with constant value (uses only missing bitset) */
+  public static final int CONST_COMPRESSED = 4;
   
   /** Uncompressed binary, written directly (fixed length). */
   public static final int BINARY_FIXED_UNCOMPRESSED = 0;
@@ -83,20 +86,25 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
   /** Single-valued sorted set values, encoded as sorted values, so no level
    *  of indirection: docId -> ord. */
   public static final int SORTED_SINGLE_VALUED = 1;
+  
+  /** placeholder for missing offset that means there are no missing values */
+  public static final int ALL_LIVE = -1;
+  /** placeholder for missing offset that means all values are missing */
+  public static final int ALL_MISSING = -2;
 
   IndexOutput data, meta;
   final int maxDoc;
   
   /** expert: Creates a new writer */
-  public Lucene410DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  public Lucene50DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeHeader(data, dataCodec, Lucene410DocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeSegmentHeader(data, dataCodec, Lucene50DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeHeader(meta, metaCodec, Lucene410DocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeSegmentHeader(meta, metaCodec, Lucene50DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       maxDoc = state.segmentInfo.getDocCount();
       success = true;
     } finally {
@@ -116,7 +124,8 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     long gcd = 0;
-    boolean missing = false;
+    long missingCount = 0;
+    long zeroCount = 0;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
     if (optimizeStorage) {
@@ -126,9 +135,13 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
         final long v;
         if (nv == null) {
           v = 0;
-          missing = true;
+          missingCount++;
+          zeroCount++;
         } else {
           v = nv.longValue();
+          if (v == 0) {
+            zeroCount++;
+          }
         }
 
         if (gcd != 1) {
@@ -171,7 +184,13 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
         : DirectWriter.bitsRequired(uniqueValues.size() - 1);
 
     final int format;
-    if (uniqueValues != null && tableBitsRequired < deltaBitsRequired) {
+    if (uniqueValues != null 
+        && count <= Integer.MAX_VALUE
+        && (uniqueValues.size() == 1
+           || (uniqueValues.size() == 2 && missingCount > 0 && zeroCount == missingCount))) {
+      // either one unique value C or two unique values: "missing" and C
+      format = CONST_COMPRESSED;
+    } else if (uniqueValues != null && tableBitsRequired < deltaBitsRequired) {
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {
       final long gcdDelta = (maxValue - minValue) / gcd;
@@ -181,18 +200,24 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
       format = DELTA_COMPRESSED;
     }
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene410DocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene50DocValuesFormat.NUMERIC);
     meta.writeVInt(format);
-    if (missing) {
+    if (missingCount == 0) {
+      meta.writeLong(ALL_LIVE);
+    } else if (missingCount == count) {
+      meta.writeLong(ALL_MISSING);
+    } else {
       meta.writeLong(data.getFilePointer());
       writeMissingBitset(values);
-    } else {
-      meta.writeLong(-1L);
     }
     meta.writeLong(data.getFilePointer());
     meta.writeVLong(count);
 
     switch (format) {
+      case CONST_COMPRESSED:
+        // write the constant (nonzero value in the n=2 case, singleton value otherwise)
+        meta.writeLong(minValue < 0 ? Collections.min(uniqueValues) : Collections.max(uniqueValues));
+        break;
       case GCD_COMPRESSED:
         meta.writeLong(minValue);
         meta.writeLong(gcd);
@@ -264,17 +289,17 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // write the byte[] data
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene410DocValuesFormat.BINARY);
+    meta.writeByte(Lucene50DocValuesFormat.BINARY);
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
     long count = 0;
-    boolean missing = false;
+    long missingCount = 0;
     for(BytesRef v : values) {
       final int length;
       if (v == null) {
         length = 0;
-        missing = true;
+        missingCount++;
       } else {
         length = v.length;
       }
@@ -286,11 +311,13 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
       count++;
     }
     meta.writeVInt(minLength == maxLength ? BINARY_FIXED_UNCOMPRESSED : BINARY_VARIABLE_UNCOMPRESSED);
-    if (missing) {
+    if (missingCount == 0) {
+      meta.writeLong(ALL_LIVE);
+    } else if (missingCount == count) {
+      meta.writeLong(ALL_MISSING);
+    } else {
       meta.writeLong(data.getFilePointer());
       writeMissingBitset(values);
-    } else {
-      meta.writeLong(-1L);
     }
     meta.writeVInt(minLength);
     meta.writeVInt(maxLength);
@@ -338,7 +365,7 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
       assert numValues > 0; // we don't have to handle the empty case
       // header
       meta.writeVInt(field.number);
-      meta.writeByte(Lucene410DocValuesFormat.BINARY);
+      meta.writeByte(Lucene50DocValuesFormat.BINARY);
       meta.writeVInt(BINARY_PREFIX_COMPRESSED);
       meta.writeLong(-1L);
       // now write the bytes: sharing prefixes within a block
@@ -467,7 +494,7 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene410DocValuesFormat.SORTED);
+    meta.writeByte(Lucene50DocValuesFormat.SORTED);
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
@@ -475,7 +502,7 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
   @Override
   public void addSortedNumericField(FieldInfo field, final Iterable<Number> docToValueCount, final Iterable<Number> values) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene410DocValuesFormat.SORTED_NUMERIC);
+    meta.writeByte(Lucene50DocValuesFormat.SORTED_NUMERIC);
     if (isSingleValued(docToValueCount)) {
       meta.writeVInt(SORTED_SINGLE_VALUED);
       // The field is single-valued, we can encode it as NUMERIC
@@ -492,7 +519,7 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene410DocValuesFormat.SORTED_SET);
+    meta.writeByte(Lucene50DocValuesFormat.SORTED_SET);
 
     if (isSingleValued(docToOrdCount)) {
       meta.writeVInt(SORTED_SINGLE_VALUED);
@@ -516,7 +543,7 @@ class Lucene410DocValuesConsumer extends DocValuesConsumer implements Closeable 
   // writes addressing information as MONOTONIC_COMPRESSED integer
   private void addAddresses(FieldInfo field, Iterable<Number> values) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(Lucene410DocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene50DocValuesFormat.NUMERIC);
     meta.writeVInt(MONOTONIC_COMPRESSED);
     meta.writeLong(-1L);
     meta.writeLong(data.getFilePointer());

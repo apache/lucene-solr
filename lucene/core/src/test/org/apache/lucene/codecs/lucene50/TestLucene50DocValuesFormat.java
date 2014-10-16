@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene410;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -48,10 +48,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests Lucene410DocValuesFormat
+ * Tests Lucene50DocValuesFormat
  */
-public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene410DocValuesFormat());
+public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
+  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene50DocValuesFormat());
 
   @Override
   protected Codec getCodec() {
@@ -132,7 +132,7 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
       //        break;
       default: throw new AssertionError();
     }
-    final DocValuesFormat dv = new Lucene410DocValuesFormat();
+    final DocValuesFormat dv = new Lucene50DocValuesFormat();
     conf.setCodec(new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {

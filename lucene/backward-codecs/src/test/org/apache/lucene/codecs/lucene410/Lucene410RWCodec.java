@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene45;
+package org.apache.lucene.codecs.lucene410;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,46 +18,37 @@ package org.apache.lucene.codecs.lucene45;
  */
 
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWStoredFieldsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42RWFieldInfosFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42RWNormsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
+import org.apache.lucene.codecs.lucene46.Lucene46RWSegmentInfoFormat;
+import org.apache.lucene.codecs.lucene49.Lucene49RWNormsFormat;
 
 /**
- * Read-write version of {@link Lucene45Codec} for testing.
+ * Read-Write version of 4.10 codec for testing
  * @deprecated for test purposes only
  */
 @Deprecated
-public final class Lucene45RWCodec extends Lucene45Codec {
+public final class Lucene410RWCodec extends Lucene410Codec {
   
-  private static final FieldInfosFormat fieldInfosFormat = new Lucene42RWFieldInfosFormat();
-
-  @Override
-  public FieldInfosFormat fieldInfosFormat() {
-    return fieldInfosFormat;
-  }
-  
-  private static final DocValuesFormat docValues = new Lucene45RWDocValuesFormat();
+  private static final DocValuesFormat docValues = new Lucene410RWDocValuesFormat();
   
   @Override
   public DocValuesFormat getDocValuesFormatForField(String field) {
     return docValues;
   }
-
-  private static final NormsFormat norms = new Lucene42RWNormsFormat();
+  
+  private static final NormsFormat norms = new Lucene49RWNormsFormat();
 
   @Override
   public NormsFormat normsFormat() {
     return norms;
   }
   
-  private static final SegmentInfoFormat segmentInfos = new Lucene40RWSegmentInfoFormat();
+  private static final SegmentInfoFormat segmentInfos = new Lucene46RWSegmentInfoFormat();
 
   @Override
   public SegmentInfoFormat segmentInfoFormat() {

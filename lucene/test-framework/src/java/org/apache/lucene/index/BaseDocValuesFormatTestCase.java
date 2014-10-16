@@ -2883,4 +2883,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   protected boolean codecSupportsSortedNumeric() {
     return true;
   }
+  
+  // nocommit: ensure every type has a *mergeAwayAllValues test, and add simple constant tests
 }

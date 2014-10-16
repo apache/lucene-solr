@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene410;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,7 +33,7 @@ import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 
 /**
- * Lucene 4.10 DocValues format.
+ * Lucene 5.0 DocValues format.
  * <p>
  * Encodes the five per-document value types (Numeric,Binary,Sorted,SortedSet,SortedNumeric) with these strategies:
  * <p>
@@ -49,6 +49,8 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *        common denominator (GCD) is computed, and quotients are stored using Delta-compressed Numerics.
  *    <li>Monotonic-compressed: when all numbers are monotonically increasing offsets, they are written
  *        as blocks of bitpacked integers, encoding the deviation from the expected delta.
+ *    <li>Const-compressed: when there is only one possible non-missing value, only the missing
+ *        bitset is encoded.
  * </ul>
  * <p>
  * {@link DocValuesType#BINARY BINARY}:
@@ -145,7 +147,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *      Otherwise, the binary values are of variable size, and packed integer metadata (PackedVersion,BlockSize)
  *      is written for the addresses.
  *   <p>MissingOffset points to a byte[] containing a bitset of all documents that had a value for the field.
- *      If its -1, then there are no missing values.
+ *      If its -1, then there are no missing values. If its -2, all values are missing.
  *   <p>Checksum contains the CRC32 checksum of all bytes in the .dvm file up
  *      until the checksum. This is used to verify integrity of the file on opening the
  *      index.
@@ -164,26 +166,26 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  * </ol>
  * @lucene.experimental
  */
-public final class Lucene410DocValuesFormat extends DocValuesFormat {
+public final class Lucene50DocValuesFormat extends DocValuesFormat {
 
   /** Sole Constructor */
-  public Lucene410DocValuesFormat() {
-    super("Lucene410");
+  public Lucene50DocValuesFormat() {
+    super("Lucene50");
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene410DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene50DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene410DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene50DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
   
-  static final String DATA_CODEC = "Lucene410DocValuesData";
+  static final String DATA_CODEC = "Lucene50DocValuesData";
   static final String DATA_EXTENSION = "dvd";
-  static final String META_CODEC = "Lucene410ValuesMetadata";
+  static final String META_CODEC = "Lucene50ValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
