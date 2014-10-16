@@ -40,6 +40,18 @@ public abstract class MultiFloatFunction extends ValueSource {
 
   abstract protected String name();
   abstract protected float func(int doc, FunctionValues[] valsArr);
+  /** 
+   * Called by {@link FunctionValues#exists} for each document.
+   *
+   * Default impl returns true if <em>all</em> of the specified <code>values</code> 
+   * {@link FunctionValues#exists} for the specified doc, else false.
+   *
+   * @see FunctionValues#exists
+   * @see MultiFunction#allExists
+   */
+  protected boolean exists(int doc, FunctionValues[] valsArr) {
+    return MultiFunction.allExists(doc, valsArr);
+  }
 
   @Override
   public String description() {
@@ -70,21 +82,12 @@ public abstract class MultiFloatFunction extends ValueSource {
       public float floatVal(int doc) {
         return func(doc, valsArr);
       }
-       @Override
+      public boolean exists(int doc) {
+        return MultiFloatFunction.this.exists(doc, valsArr);
+      }
+      @Override
       public String toString(int doc) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(name()).append('(');
-        boolean firstTime=true;
-        for (FunctionValues vals : valsArr) {
-          if (firstTime) {
-            firstTime=false;
-          } else {
-            sb.append(',');
-          }
-          sb.append(vals.toString(doc));
-        }
-        sb.append(')');
-        return sb.toString();
+        return MultiFunction.toString(name(), valsArr, doc);
       }
     };
   }

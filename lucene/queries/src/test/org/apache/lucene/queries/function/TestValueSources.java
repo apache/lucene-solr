@@ -19,6 +19,8 @@ package org.apache.lucene.queries.function;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -31,9 +33,12 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
@@ -51,6 +56,7 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
 import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
 import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MultiFloatFunction;
 import org.apache.lucene.queries.function.valuesource.NormValueSource;
 import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
 import org.apache.lucene.queries.function.valuesource.PowFloatFunction;
@@ -71,6 +77,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -88,6 +95,11 @@ public class TestValueSources extends LuceneTestCase {
   static IndexReader reader;
   static IndexSearcher searcher;
   
+  static final ValueSource BOGUS_FLOAT_VS = new FloatFieldSource("bogus_field");
+  static final ValueSource BOGUS_DOUBLE_VS = new DoubleFieldSource("bogus_field");
+  static final ValueSource BOGUS_INT_VS = new IntFieldSource("bogus_field");
+  static final ValueSource BOGUS_LONG_VS = new LongFieldSource("bogus_field");
+
   static final List<String[]> documents = Arrays.asList(new String[][] {
       /*             id,  double, float, int,  long,   string, text */ 
       new String[] { "0", "3.63", "5.2", "35", "4343", "test", "this is a test test test" },
@@ -160,100 +172,165 @@ public class TestValueSources extends LuceneTestCase {
   }
   
   public void testConst() throws Exception {
-    assertHits(new FunctionQuery(new ConstValueSource(0.3f)),
-        new float[] { 0.3f, 0.3f });
+    ValueSource vs = new ConstValueSource(0.3f);
+    assertHits(new FunctionQuery(vs),
+               new float[] { 0.3f, 0.3f });
+    assertAllExist(vs);
   }
   
   public void testDiv() throws Exception {
-    assertHits(new FunctionQuery(new DivFloatFunction(
-        new ConstValueSource(10f), new ConstValueSource(5f))),
-        new float[] { 2f, 2f });
+    ValueSource vs = new DivFloatFunction(new ConstValueSource(10f), new ConstValueSource(5f));
+    assertHits(new FunctionQuery(vs),
+               new float[] { 2f, 2f });
+    assertAllExist(vs);
+    vs = new DivFloatFunction(new ConstValueSource(10f), BOGUS_FLOAT_VS);
+    assertNoneExist(vs);
+    vs = new DivFloatFunction(BOGUS_FLOAT_VS, new ConstValueSource(10f));
+    assertNoneExist(vs);
   }
   
   public void testDocFreq() throws Exception {
-    assertHits(new FunctionQuery(
-        new DocFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-        new float[] { 2f, 2f });
+    ValueSource vs = new DocFreqValueSource("bogus", "bogus", "text", new BytesRef("test"));
+    assertHits(new FunctionQuery(vs), new float[] { 2f, 2f });
+    assertAllExist(vs);
   }
   
   public void testDoubleConst() throws Exception {
-    assertHits(new FunctionQuery(new DoubleConstValueSource(0.3d)),
-        new float[] { 0.3f, 0.3f });
+    ValueSource vs = new DoubleConstValueSource(0.3d);
+    assertHits(new FunctionQuery(vs), new float[] { 0.3f, 0.3f });
+    assertAllExist(vs);
   }
   
   public void testDouble() throws Exception {
-    assertHits(new FunctionQuery(new DoubleFieldSource("double")),
-        new float[] { 3.63f, 5.65f });
+    ValueSource vs = new DoubleFieldSource("double");
+    assertHits(new FunctionQuery(vs), new float[] { 3.63f, 5.65f });
+    assertAllExist(vs);
+    assertNoneExist(BOGUS_DOUBLE_VS);
   }
   
   public void testFloat() throws Exception {
-    assertHits(new FunctionQuery(new FloatFieldSource("float")),
-        new float[] { 5.2f, 9.3f });
+    ValueSource vs = new FloatFieldSource("float");
+    assertHits(new FunctionQuery(vs), new float[] { 5.2f, 9.3f });
+    assertAllExist(vs);
+    assertNoneExist(BOGUS_FLOAT_VS);
   }
   
   public void testIDF() throws Exception {
     Similarity saved = searcher.getSimilarity();
     try {
       searcher.setSimilarity(new DefaultSimilarity());
-      assertHits(new FunctionQuery(
-          new IDFValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { 0.5945349f, 0.5945349f });
+      ValueSource vs = new IDFValueSource("bogus", "bogus", "text", new BytesRef("test"));
+      assertHits(new FunctionQuery(vs), new float[] { 0.5945349f, 0.5945349f });
+      assertAllExist(vs);
     } finally {
       searcher.setSimilarity(saved);
     }
   }
   
   public void testIf() throws Exception {
-    assertHits(new FunctionQuery(new IfFunction(
-        new BytesRefFieldSource("id"),
-        new ConstValueSource(1.0f),
-        new ConstValueSource(2.0f)
-        )),
-        new float[] { 1f, 1f });
-    // true just if a value exists...
-    assertHits(new FunctionQuery(new IfFunction(
-        new LiteralValueSource("false"),
-        new ConstValueSource(1.0f),
-        new ConstValueSource(2.0f)
-        )),
-        new float[] { 1f, 1f });
+    ValueSource vs = new IfFunction(new BytesRefFieldSource("id"),
+                                    new ConstValueSource(1.0f), // match
+                                    new ConstValueSource(2.0f));
+    assertHits(new FunctionQuery(vs), new float[] { 1f, 1f });
+    assertAllExist(vs);
+
+    // true just if a test value exists...
+    vs = new IfFunction(new LiteralValueSource("false"),
+                        new ConstValueSource(1.0f), // match
+                        new ConstValueSource(2.0f));
+    assertHits(new FunctionQuery(vs), new float[] { 1f, 1f });
+    assertAllExist(vs);
+
+    // false value if tests value does not exist
+    vs = new IfFunction(BOGUS_FLOAT_VS,
+                        new ConstValueSource(1.0f),
+                        new ConstValueSource(2.0f)); // match
+    assertHits(new FunctionQuery(vs), new float[] { 2F, 2F });
+    assertAllExist(vs);
+    
+    // final value may still not exist
+    vs = new IfFunction(new BytesRefFieldSource("id"),
+                        BOGUS_FLOAT_VS, // match
+                        new ConstValueSource(1.0f));
+    assertNoneExist(vs);
   }
   
   public void testInt() throws Exception {
-    assertHits(new FunctionQuery(new IntFieldSource("int")),
-        new float[] { 35f, 54f });
+    ValueSource vs = new IntFieldSource("int");
+    assertHits(new FunctionQuery(vs), new float[] { 35f, 54f });
+    assertAllExist(vs);
+    assertNoneExist(BOGUS_INT_VS);
+                                 
   }
   
   public void testJoinDocFreq() throws Exception {
-    assertHits(new FunctionQuery(new JoinDocFreqValueSource("string", "text")),
-        new float[] { 2f, 0f });
+    assertHits(new FunctionQuery(new JoinDocFreqValueSource("string", "text")), 
+               new float[] { 2f, 0f });
+
+    // TODO: what *should* the rules be for exist() ?
   }
   
   public void testLinearFloat() throws Exception {
-    assertHits(new FunctionQuery(new LinearFloatFunction(new ConstValueSource(2.0f), 3, 1)),
-        new float[] { 7f, 7f });
+    ValueSource vs = new LinearFloatFunction(new ConstValueSource(2.0f), 3, 1);
+    assertHits(new FunctionQuery(vs), new float[] { 7f, 7f });
+    assertAllExist(vs);
+    vs = new LinearFloatFunction(BOGUS_FLOAT_VS, 3, 1);
+    assertNoneExist(vs);
   }
   
   public void testLong() throws Exception {
-    assertHits(new FunctionQuery(new LongFieldSource("long")),
-        new float[] { 4343f, 1954f });
+    ValueSource vs = new LongFieldSource("long");
+    assertHits(new FunctionQuery(vs), new float[] { 4343f, 1954f });
+    assertAllExist(vs);
+    assertNoneExist(BOGUS_LONG_VS);
   }
   
   public void testMaxDoc() throws Exception {
-    assertHits(new FunctionQuery(new MaxDocValueSource()),
-        new float[] { 2f, 2f });
+    ValueSource vs = new MaxDocValueSource();
+    assertHits(new FunctionQuery(vs), new float[] { 2f, 2f });
+    assertAllExist(vs);
   }
   
   public void testMaxFloat() throws Exception {
-    assertHits(new FunctionQuery(new MaxFloatFunction(new ValueSource[] {
-        new ConstValueSource(1f), new ConstValueSource(2f)})),
-        new float[] { 2f, 2f });
+    ValueSource vs = new MaxFloatFunction(new ValueSource[] {
+        new ConstValueSource(1f), new ConstValueSource(2f)});
+    
+    assertHits(new FunctionQuery(vs), new float[] { 2f, 2f });
+    assertAllExist(vs);
+    
+    // as long as one value exists, then max exists
+    vs = new MaxFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, new ConstValueSource(2F)});
+    assertAllExist(vs);
+    vs = new MaxFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, new ConstValueSource(2F), BOGUS_DOUBLE_VS});
+    assertAllExist(vs);
+    // if none exist, then max doesn't exist
+    vs = new MaxFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, BOGUS_INT_VS, BOGUS_DOUBLE_VS});
+    assertNoneExist(vs);
   }
   
   public void testMinFloat() throws Exception {
-    assertHits(new FunctionQuery(new MinFloatFunction(new ValueSource[] {
-        new ConstValueSource(1f), new ConstValueSource(2f)})),
-        new float[] { 1f, 1f });
+    ValueSource vs = new MinFloatFunction(new ValueSource[] {
+        new ConstValueSource(1f), new ConstValueSource(2f)});
+    
+    assertHits(new FunctionQuery(vs), new float[] { 1f, 1f });
+    assertAllExist(vs);
+    
+    // as long as one value exists, then min exists
+    vs = new MinFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, new ConstValueSource(2F)});
+    assertHits(new FunctionQuery(vs), new float[] { 2F, 2F });
+    assertAllExist(vs);
+    vs = new MinFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, new ConstValueSource(2F), BOGUS_DOUBLE_VS});
+    assertAllExist(vs);
+
+    // if none exist, then min doesn't exist
+    vs = new MinFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, BOGUS_INT_VS, BOGUS_DOUBLE_VS});
+    assertNoneExist(vs);
   }
   
   public void testNorm() throws Exception {
@@ -261,35 +338,95 @@ public class TestValueSources extends LuceneTestCase {
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(new DefaultSimilarity());
-      assertHits(new FunctionQuery(
-          new NormValueSource("byte")),
-          new float[] { 0f, 0f });
+      ValueSource vs = new NormValueSource("byte");
+      assertHits(new FunctionQuery(vs), new float[] { 0f, 0f });
+
+      // regardless of wether norms exist, value source exists == 0
+      assertAllExist(vs);
+
+      vs = new NormValueSource("text");
+      assertAllExist(vs);
+      
     } finally {
       searcher.setSimilarity(saved);
     }
   }
   
   public void testNumDocs() throws Exception {
-    assertHits(new FunctionQuery(new NumDocsValueSource()),
-        new float[] { 2f, 2f });
+    ValueSource vs = new NumDocsValueSource();
+    assertHits(new FunctionQuery(vs), new float[] { 2f, 2f });
+    assertAllExist(vs);
   }
   
   public void testPow() throws Exception {
-    assertHits(new FunctionQuery(new PowFloatFunction(
-        new ConstValueSource(2f), new ConstValueSource(3f))),
-        new float[] { 8f, 8f });
+    ValueSource vs = new PowFloatFunction(new ConstValueSource(2f), new ConstValueSource(3f));
+    assertHits(new FunctionQuery(vs), new float[] { 8f, 8f });
+    assertAllExist(vs);
+    vs = new PowFloatFunction(BOGUS_FLOAT_VS, new ConstValueSource(3f));
+    assertNoneExist(vs);
+    vs = new PowFloatFunction(new ConstValueSource(3f), BOGUS_FLOAT_VS);
+    assertNoneExist(vs);
   }
   
   public void testProduct() throws Exception {
-    assertHits(new FunctionQuery(new ProductFloatFunction(new ValueSource[] {
-        new ConstValueSource(2f), new ConstValueSource(3f)})),
-        new float[] { 6f, 6f });
+    ValueSource vs = new ProductFloatFunction(new ValueSource[] {
+        new ConstValueSource(2f), new ConstValueSource(3f)});
+    assertHits(new FunctionQuery(vs), new float[] { 6f, 6f });
+    assertAllExist(vs);
+    
+    vs = new ProductFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, new ConstValueSource(3f)});
+    assertNoneExist(vs);
   }
   
+  public void testQueryWrapedFuncWrapedQuery() throws Exception {
+    ValueSource vs = new QueryValueSource(new FunctionQuery(new ConstValueSource(2f)), 0f);
+    assertHits(new FunctionQuery(vs), new float[] { 2f, 2f });
+    assertAllExist(vs);
+  }
+
   public void testQuery() throws Exception {
-    assertHits(new FunctionQuery(new QueryValueSource(
-        new FunctionQuery(new ConstValueSource(2f)), 0f)),
-        new float[] { 2f, 2f });
+    Similarity saved = searcher.getSimilarity();
+
+    try {
+      searcher.setSimilarity(new DefaultSimilarity());
+      
+      ValueSource vs = new QueryValueSource(new TermQuery(new Term("string","bar")), 42F);
+      assertHits(new FunctionQuery(vs), new float[] { 42F, 1F });
+
+      // valuesource should exist only for things matching the term query
+      // sanity check via quick & dirty wrapper arround tf
+      ValueSource expected = new MultiFloatFunction(new ValueSource[] {
+          new TFValueSource("bogus", "bogus", "string", new BytesRef("bar"))}) {
+
+        @Override
+        protected String name() { return "tf_based_exists"; }
+
+        @Override
+        protected float func(int doc, FunctionValues[] valsArr) {
+          return valsArr[0].floatVal(doc);
+        }
+        @Override
+        protected boolean exists(int doc, FunctionValues[] valsArr) {
+          // if tf > 0, then it should exist
+          return 0 < func(doc, valsArr);
+        }
+      };
+
+      assertExists(expected, vs);
+
+
+      // Query matches all docs, func exists for all docs
+      vs = new QueryValueSource(new TermQuery(new Term("text","test")), 0F);
+      assertAllExist(vs);
+
+      // Query matches no docs, func exists for no docs
+      vs = new QueryValueSource(new TermQuery(new Term("bogus","does not exist")), 0F);
+      assertNoneExist(vs);
+
+    } finally {
+      searcher.setSimilarity(saved);
+    }
   }
   
   public void testRangeMap() throws Exception {
@@ -300,37 +437,59 @@ public class TestValueSources extends LuceneTestCase {
         5, 6, new SumFloatFunction(new ValueSource[] {new ConstValueSource(1f), new ConstValueSource(2f)}),
         new ConstValueSource(11f))),
         new float[] { 3f, 11f });
+    
+    // TODO: what *should* the rules be for exist() ?
+    // ((source exists && source in range && target exists) OR (source not in range && default exists)) ?
   }
   
   public void testReciprocal() throws Exception {
-    assertHits(new FunctionQuery(new ReciprocalFloatFunction(new ConstValueSource(2f),
-        3, 1, 4)),
-        new float[] { 0.1f, 0.1f });
+    ValueSource vs = new ReciprocalFloatFunction(new ConstValueSource(2f), 3, 1, 4);
+    assertHits(new FunctionQuery(vs), new float[] { 0.1f, 0.1f });
+    assertAllExist(vs);
+    
+    vs =  new ReciprocalFloatFunction(BOGUS_FLOAT_VS, 3, 1, 4);
+    assertNoneExist(vs);
   }
   
   public void testScale() throws Exception {
-    assertHits(new FunctionQuery(new ScaleFloatFunction(new IntFieldSource("int"), 0, 1)),
-       new float[] { 0.0f, 1.0f });
+    ValueSource vs = new ScaleFloatFunction(new IntFieldSource("int"), 0, 1);
+    assertHits(new FunctionQuery(vs), new float[] { 0.0f, 1.0f });
+    assertAllExist(vs);
+    
+    vs = new ScaleFloatFunction(BOGUS_INT_VS, 0, 1);
+    assertNoneExist(vs);
   }
   
   public void testSumFloat() throws Exception {
-    assertHits(new FunctionQuery(new SumFloatFunction(new ValueSource[] {
-        new ConstValueSource(1f), new ConstValueSource(2f)})),
-        new float[] { 3f, 3f });
+    ValueSource vs = new SumFloatFunction(new ValueSource[] {
+        new ConstValueSource(1f), new ConstValueSource(2f)});
+    assertHits(new FunctionQuery(vs), new float[] { 3f, 3f });
+    assertAllExist(vs);
+
+    vs = new SumFloatFunction(new ValueSource[] {
+        BOGUS_FLOAT_VS, new ConstValueSource(2f)});
+    assertNoneExist(vs);
   }
   
   public void testSumTotalTermFreq() throws Exception {
-    assertHits(new FunctionQuery(new SumTotalTermFreqValueSource("text")),
-          new float[] { 8f, 8f });
+    ValueSource vs = new SumTotalTermFreqValueSource("text");
+    assertHits(new FunctionQuery(vs), new float[] { 8f, 8f });
+    assertAllExist(vs);
   }
   
   public void testTermFreq() throws Exception {
-    assertHits(new FunctionQuery(
-        new TermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-        new float[] { 3f, 1f });
-    assertHits(new FunctionQuery(
-        new TermFreqValueSource("bogus", "bogus", "string", new BytesRef("bar"))),
-        new float[] { 0f, 1f });
+    ValueSource vs = new TermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"));
+    assertHits(new FunctionQuery(vs), new float[] { 3f, 1f });
+    assertAllExist(vs);
+
+    vs = new TermFreqValueSource("bogus", "bogus", "string", new BytesRef("bar"));
+    assertHits(new FunctionQuery(vs), new float[] { 0f, 1f });
+    assertAllExist(vs);
+               
+    // regardless of wether norms exist, value source exists == 0
+    vs = new TermFreqValueSource("bogus", "bogus", "bogus", new BytesRef("bogus"));
+    assertHits(new FunctionQuery(vs), new float[] { 0F, 0F });
+    assertAllExist(vs);
   }
   
   public void testTF() throws Exception {
@@ -338,23 +497,71 @@ public class TestValueSources extends LuceneTestCase {
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(new DefaultSimilarity());
-      assertHits(new FunctionQuery(
-          new TFValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-          new float[] { (float)Math.sqrt(3d), (float)Math.sqrt(1d) });
-      assertHits(new FunctionQuery(
-          new TFValueSource("bogus", "bogus", "string", new BytesRef("bar"))),
-          new float[] { 0f, 1f });
+
+      ValueSource vs = new TFValueSource("bogus", "bogus", "text", new BytesRef("test"));
+      assertHits(new FunctionQuery(vs), 
+                 new float[] { (float)Math.sqrt(3d), (float)Math.sqrt(1d) });
+      assertAllExist(vs);
+                 
+      vs = new TFValueSource("bogus", "bogus", "string", new BytesRef("bar"));
+      assertHits(new FunctionQuery(vs), new float[] { 0f, 1f });
+      assertAllExist(vs);
+      
+      // regardless of wether norms exist, value source exists == 0
+      vs = new TFValueSource("bogus", "bogus", "bogus", new BytesRef("bogus"));
+      assertHits(new FunctionQuery(vs), new float[] { 0F, 0F });
+      assertAllExist(vs);
+
     } finally {
       searcher.setSimilarity(saved);
     }
   }
   
   public void testTotalTermFreq() throws Exception {
-    assertHits(new FunctionQuery(
-        new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"))),
-        new float[] { 4f, 4f });
+    ValueSource vs = new TotalTermFreqValueSource("bogus", "bogus", "text", new BytesRef("test"));
+    assertHits(new FunctionQuery(vs), new float[] { 4f, 4f });
+    assertAllExist(vs);
   }
   
+  /** 
+   * Asserts that for every doc, the {@link FunctionValues#exists} value 
+   * from the {@link ValueSource} is <b>true</b>.
+   */
+  void assertAllExist(ValueSource vs) {
+    assertExists(ALL_EXIST_VS, vs);
+  }
+  /** 
+   * Asserts that for every doc, the {@link FunctionValues#exists} value 
+   * from the {@link ValueSource} is <b>false</b>. 
+   */
+  void assertNoneExist(ValueSource vs) {
+    assertExists(NONE_EXIST_VS, vs);
+  }
+  /**
+   * Asserts that for every doc, the {@link FunctionValues#exists} value from the 
+   * <code>actual</code> {@link ValueSource} matches the {@link FunctionValues#exists} 
+   * value from the <code>expected</code> {@link ValueSource}
+   */
+  void assertExists(ValueSource expected, ValueSource actual) {
+    Map context = ValueSource.newContext(searcher);
+    try {
+      expected.createWeight(context, searcher);
+      actual.createWeight(context, searcher);
+
+      for (org.apache.lucene.index.LeafReaderContext leaf : reader.leaves()) {
+        final FunctionValues expectedVals = expected.getValues(context, leaf);
+        final FunctionValues actualVals = actual.getValues(context, leaf);
+        
+        String msg = expected.toString() + " ?= " + actual.toString() + " -> ";
+        for (int i = 0; i < leaf.reader().maxDoc(); ++i) {
+          assertEquals(msg + i, expectedVals.exists(i), actualVals.exists(i));
+        }
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(actual.toString(), e);
+    }
+  }
+
   void assertHits(Query q, float scores[]) throws Exception {
     ScoreDoc expected[] = new ScoreDoc[scores.length];
     int expectedDocs[] = new int[scores.length];
@@ -368,4 +575,54 @@ public class TestValueSources extends LuceneTestCase {
     CheckHits.checkHitsQuery(q, expected, docs.scoreDocs, expectedDocs);
     CheckHits.checkExplanations(q, "", searcher);
   }
+
+  /** 
+   * Simple test value source that implements {@link FunctionValues#exists} as a constant 
+   * @see #ALL_EXIST_VS
+   * @see #NONE_EXIST_VS
+   */
+  private static final class ExistsValueSource extends ValueSource {
+
+    final boolean expected;
+    final int value;
+
+    public ExistsValueSource(boolean expected) {
+      this.expected = expected;
+      this.value = expected ? 1 : 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o == this;
+    }
+
+    @Override
+    public int hashCode() {
+      return value;
+    }
+
+    @Override
+    public String description() {
+      return expected ? "ALL_EXIST" : "NONE_EXIST";
+    }
+    
+    @Override
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) {
+      return new FloatDocValues(this) {
+        @Override
+        public float floatVal(int doc) {
+          return (float)value;
+        }
+        @Override
+        public boolean exists(int doc) {
+          return expected;
+        }
+      };
+    }
+  };
+
+  /** @see ExistsValueSource */
+  private static final ValueSource ALL_EXIST_VS = new ExistsValueSource(true);
+  /** @see ExistsValueSource */
+  private static final ValueSource NONE_EXIST_VS = new ExistsValueSource(false); 
 }
