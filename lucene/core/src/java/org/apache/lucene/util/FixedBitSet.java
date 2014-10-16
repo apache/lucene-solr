@@ -59,24 +59,7 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
     
     @Override
     public int nextDoc() {
-      if (doc == NO_MORE_DOCS || ++doc >= numBits) {
-        return doc = NO_MORE_DOCS;
-      }
-      int i = doc >> 6;
-      long word = bits[i] >> doc;  // skip all the bits to the right of index
-      
-      if (word != 0) {
-        return doc = doc + Long.numberOfTrailingZeros(word);
-      }
-      
-      while (++i < numWords) {
-        word = bits[i];
-        if (word != 0) {
-          return doc = (i << 6) + Long.numberOfTrailingZeros(word);
-        }
-      }
-      
-      return doc = NO_MORE_DOCS;
+      return advance(doc + 1);
     }
     
     @Override
@@ -91,7 +74,7 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
     
     @Override
     public int advance(int target) {
-      if (doc == NO_MORE_DOCS || target >= numBits) {
+      if (target >= numBits) {
         return doc = NO_MORE_DOCS;
       }
       int i = target >> 6;
