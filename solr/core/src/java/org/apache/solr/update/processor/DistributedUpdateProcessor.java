@@ -37,7 +37,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -75,6 +74,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -1144,7 +1144,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               break;
             case "remove":
               updateField = true;
-              doRemove(oldDoc, sif, fieldVal);
+              doRemove(oldDoc, sif, fieldVal, schema);
               break;
             case "inc":
               updateField = true;
@@ -1200,21 +1200,29 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       oldDoc.setField(sif.getName(),  result, sif.getBoost());
     }
   }
-
-  private void doRemove(SolrInputDocument oldDoc, SolrInputField sif, Object fieldVal) {
+  
+  private boolean doRemove(SolrInputDocument oldDoc, SolrInputField sif, Object fieldVal, IndexSchema schema) {
     final String name = sif.getName();
     SolrInputField existingField = oldDoc.get(name);
-    if (existingField != null) {
+    if(existingField == null) return false;
+    SchemaField sf = schema.getField(name);
+    int oldSize = existingField.getValueCount();
+
+    if (sf != null) {
       final Collection<Object> original = existingField.getValues();
       if (fieldVal instanceof Collection) {
-        original.removeAll((Collection) fieldVal);
+        for (Object object : (Collection)fieldVal){
+          original.remove(sf.getType().toNativeType(object));
+        }
       } else {
-        original.remove(fieldVal);
+        original.remove(sf.getType().toNativeType(fieldVal));
       }
 
       oldDoc.setField(name, original);
 
     }
+    
+    return oldSize > existingField.getValueCount();
   }
 
 

@@ -965,6 +965,12 @@ public abstract class FieldType extends FieldProperties {
     }
     return analyzerProps;
   }
+
+  /**Converts any Object to a java Object native to this field type
+   */
+  public Object toNativeType(Object val) {
+    return val;
+  }
   
   /** 
    * Convert a value used by the FieldComparator for this FieldType's SortField

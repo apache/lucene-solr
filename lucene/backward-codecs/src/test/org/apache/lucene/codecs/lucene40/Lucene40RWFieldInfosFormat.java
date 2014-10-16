@@ -75,7 +75,7 @@ public final class Lucene40RWFieldInfosFormat extends Lucene40FieldInfosFormat {
 
         // pack the DV types in one byte
         final byte dv = docValuesByte(fi.getDocValuesType(), fi.getAttribute(LEGACY_DV_TYPE_KEY));
-        final byte nrm = docValuesByte(fi.getNormType(), fi.getAttribute(LEGACY_NORM_TYPE_KEY));
+        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : null, fi.getAttribute(LEGACY_NORM_TYPE_KEY));
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);

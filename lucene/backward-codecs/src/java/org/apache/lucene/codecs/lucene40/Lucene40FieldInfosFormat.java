@@ -23,13 +23,14 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -91,7 +92,7 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
         byte val = input.readByte();
         final LegacyDocValuesType oldValuesType = getDocValuesType((byte) (val & 0x0F));
         final LegacyDocValuesType oldNormsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
-        final Map<String,String> attributes = input.readStringStringMap();;
+        final Map<String,String> attributes = input.readStringStringMap();
         if (oldValuesType.mapping != null) {
           attributes.put(LEGACY_DV_TYPE_KEY, oldValuesType.name());
         }
@@ -101,8 +102,12 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
           }
           attributes.put(LEGACY_NORM_TYPE_KEY, oldNormsType.name());
         }
+        if (isIndexed && omitNorms == false && oldNormsType.mapping == null) {
+          // Undead norms!  Lucene40NormsReader will check this and bring norms back from the dead:
+          UndeadNormsProducer.setUndead(attributes);
+        }
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, oldValuesType.mapping, oldNormsType.mapping, -1, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, oldValuesType.mapping, -1, Collections.unmodifiableMap(attributes));
       }
 
       CodecUtil.checkEOF(input);

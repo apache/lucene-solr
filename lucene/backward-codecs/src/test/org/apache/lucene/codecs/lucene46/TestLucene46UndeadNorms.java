@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene49;
+package org.apache.lucene.codecs.lucene46;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,34 +20,24 @@ package org.apache.lucene.codecs.lucene49;
 import java.io.InputStream;
 import java.nio.file.Path;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseNormsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests Lucene49NormsFormat
- */
-public class TestLucene49NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new Lucene49RWCodec();
-  
-  @Override
-  protected Codec getCodec() {
-    return codec;
-  } 
+public class TestLucene46UndeadNorms extends LuceneTestCase {
 
-  /** Copy this back to /l/491/lucene/CreateUndeadNorms.java, then:
+  /** Copy this back to /l/461/lucene/CreateUndeadNorms.java, then:
    *   - ant clean
    *   - pushd analysis/common; ant jar; popd
    *   - pushd core; ant jar; popd
-   *   - javac -cp build/analysis/common/lucene-analyzers-common-4.9-SNAPSHOT.jar:build/core/lucene-core-4.9-SNAPSHOT.jar CreateUndeadNorms.java
-   *   - java -cp .:build/analysis/common/lucene-analyzers-common-4.9-SNAPSHOT.jar:build/core/lucene-core-4.9-SNAPSHOT.jar CreateUndeadNorms
-   *   - cd /tmp/undeadnorms  ; zip index.49.undeadnorms.zip *
+   *   - javac -cp build/analysis/common/lucene-analyzers-common-4.6-SNAPSHOT.jar:build/core/lucene-core-4.6-SNAPSHOT.jar CreateUndeadNorms.java
+   *   - java -cp .:build/analysis/common/lucene-analyzers-common-4.6-SNAPSHOT.jar:build/core/lucene-core-4.6-SNAPSHOT.jar CreateUndeadNorms
+   *   - cd /tmp/undeadnorms  ; zip index.46.undeadnorms.zip *
 
 import java.io.File;
 import java.io.IOException;
@@ -72,7 +62,7 @@ public class CreateUndeadNorms {
       throw new RuntimeException("please remove /tmp/undeadnorms first");
     }
     Directory dir = FSDirectory.open(file);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_4_9, new WhitespaceAnalyzer(Version.LUCENE_4_9)));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_46, new WhitespaceAnalyzer(Version.LUCENE_46)));
     Document doc = new Document();
     doc.add(new StringField("id", "0", Field.Store.NO));
     w.addDocument(doc);
@@ -98,7 +88,6 @@ public class CreateUndeadNorms {
   }
 }
 */
-
   /** 
    * LUCENE-6006: Test undead norms.
    *                                 .....            
@@ -123,7 +112,7 @@ public class CreateUndeadNorms {
    *
    */
   public void testReadUndeadNorms() throws Exception {
-    InputStream resource = TestLucene49NormsFormat.class.getResourceAsStream("index.49.undeadnorms.zip");
+    InputStream resource = TestLucene46UndeadNorms.class.getResourceAsStream("index.46.undeadnorms.zip");
     assertNotNull(resource);
     Path path = createTempDir("undeadnorms");
     TestUtil.unzip(resource, path);

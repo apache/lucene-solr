@@ -25,7 +25,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -40,8 +42,8 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_START;
 import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene49.Lucene49NormsFormat.VERSION_START;
 
 /**
  * Reader for 4.9 norms
@@ -153,6 +155,10 @@ final class Lucene49NormsProducer extends NormsProducer {
 
   @Override
   public synchronized NumericDocValues getNorms(FieldInfo field) throws IOException {
+    if (UndeadNormsProducer.isUndead(field)) {
+      // Bring undead norms back to life; this is set in Lucene46FieldInfosFormat, to emulate pre-5.0 undead norms
+      return DocValues.emptyNumeric();
+    }
     NumericDocValues instance = instances.get(field.name);
     if (instance == null) {
       instance = loadNorms(field);
