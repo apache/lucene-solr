@@ -248,16 +248,17 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
 
     @Override
     public int nextDoc() throws IOException {
-      if (++doc >= length) {
-        return doc = NO_MORE_DOCS;
-      }
-      return currentOrNextDoc();
+      return advance(doc + 1);
     }
 
-    private int currentOrNextDoc() {
-      final int i4096 = doc >>> 12;
+    @Override
+    public int advance(int target) throws IOException {
+      final int i4096 = target >>> 12;
+      if (i4096 >= indices.length) {
+        return doc = NO_MORE_DOCS;
+      }
       final long index = indices[i4096];
-      int i64 = doc >>> 6;
+      int i64 = target >>> 6;
       long indexBits = index >>> i64;
       if (indexBits == 0) {
         // if the index is zero, it means that there is no value in the
@@ -270,7 +271,7 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
       } else {
         // We know we still have some 64-bits blocks that have bits set, let's
         // advance to the next one by skipping trailing zeros of the index
-        int i1 = doc & 0x3F;
+        int i1 = target & 0x3F;
         int trailingZeros = Long.numberOfTrailingZeros(indexBits);
         if (trailingZeros != 0) {
           // no bits in the current long, go to the next one
@@ -285,7 +286,7 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
         int longIndex = Long.bitCount(index & ((1L << i64) - 1)); // shifts are mod 64 in java
         final long[] longArray = bits[i4096];
         assert longArray[longIndex] != 0;
-        long bits = SparseFixedBitSet.this.bits[i4096][longIndex] >>> i1; // shifts are mod 64 in java
+        long bits = longArray[longIndex] >>> i1; // shifts are mod 64 in java
         if (bits != 0L) {
           // hurray, we found some non-zero bits, this gives us the next document:
           i1 += Long.numberOfTrailingZeros(bits);
@@ -310,17 +311,6 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
         i1 = Long.numberOfTrailingZeros(bits);
         return doc = (i4096 << 12) | ((i64 & 0x3F) << 6) | i1;
       }
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      if (target >= length) {
-        return doc = NO_MORE_DOCS;
-      } else {
-        doc = target;
-      }
-
-      return currentOrNextDoc();
     }
 
     @Override

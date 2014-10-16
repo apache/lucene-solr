@@ -282,9 +282,6 @@ public class RoaringDocIdSet extends DocIdSet {
 
     @Override
     public int nextDoc() throws IOException {
-      if (doc == NO_MORE_DOCS) {
-        return NO_MORE_DOCS;
-      }
       final int subNext = sub.nextDoc();
       if (subNext == NO_MORE_DOCS) {
         return firstDocFromNextBlock();
