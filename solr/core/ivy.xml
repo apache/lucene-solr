@@ -19,7 +19,7 @@
 <ivy-module version="2.0"  xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="core"/>
   
-  <configurations>
+  <configurations defaultconfmapping="compile->master;compile.hadoop->master;test->master;test.DfsMiniCluster->master">
     <!-- artifacts in the "compile" and "compile.hadoop" configurations will go into solr/core/lib/ -->
     <conf name="compile" transitive="false"/>
     <conf name="compile.hadoop" transitive="false"/>
@@ -29,53 +29,53 @@
   </configurations>
 
   <dependencies>
-    <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile->*"/>
-    <dependency org="commons-fileupload" name="commons-fileupload" rev="${/commons-fileupload/commons-fileupload}" conf="compile->*"/>
-    <dependency org="commons-cli" name="commons-cli" rev="${/commons-cli/commons-cli}" conf="compile->*"/>
-    <dependency org="commons-lang" name="commons-lang" rev="${/commons-lang/commons-lang}" conf="compile->*"/>
-    <dependency org="com.google.guava" name="guava" rev="${/com.google.guava/guava}" conf="compile->*"/>
-    <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="compile->*"/>
-    <dependency org="org.antlr" name="antlr-runtime" rev="${/org.antlr/antlr-runtime}" conf="compile->*"/>
-    <dependency org="org.ow2.asm" name="asm" rev="${/org.ow2.asm/asm}" conf="compile->*"/>
-    <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile->*"/>
-    <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile->*"/>
-    <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile->*"/>
-    <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile->*"/>
-    <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" conf="compile->*"/>
-    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile->*"/>
-    <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" conf="compile->*"/>
-    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="compile->*"/>
+    <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
+    <dependency org="commons-fileupload" name="commons-fileupload" rev="${/commons-fileupload/commons-fileupload}" conf="compile"/>
+    <dependency org="commons-cli" name="commons-cli" rev="${/commons-cli/commons-cli}" conf="compile"/>
+    <dependency org="commons-lang" name="commons-lang" rev="${/commons-lang/commons-lang}" conf="compile"/>
+    <dependency org="com.google.guava" name="guava" rev="${/com.google.guava/guava}" conf="compile"/>
+    <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="compile"/>
+    <dependency org="org.antlr" name="antlr-runtime" rev="${/org.antlr/antlr-runtime}" conf="compile"/>
+    <dependency org="org.ow2.asm" name="asm" rev="${/org.ow2.asm/asm}" conf="compile"/>
+    <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile"/>
+    <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile"/>
+    <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile"/>
+    <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
+    <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" conf="compile"/>
+    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
+    <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" conf="compile"/>
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="compile"/>
 
-    <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="test->*"/>
-    <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test->*"/>
-    <dependency org="cglib" name="cglib-nodep" rev="${/cglib/cglib-nodep}" conf="test->*"/>
-    <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test->*"/>
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="test"/>
+    <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test"/>
+    <dependency org="cglib" name="cglib-nodep" rev="${/cglib/cglib-nodep}" conf="test"/>
+    <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
 
-    <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop->*"/>
+    <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop"/>
     <!--
       hadoop-hdfs, hadoop-annotations and hadoop-auth are runtime dependencies,
       so even though they are not compile-time dependencies, they are included
       here as such so that they are included in the runtime distribution.
      -->
-    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="${/org.apache.hadoop/hadoop-hdfs}" conf="compile.hadoop->*"/>
-    <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="${/org.apache.hadoop/hadoop-annotations}" conf="compile.hadoop->*"/>
-    <dependency org="org.apache.hadoop" name="hadoop-auth" rev="${/org.apache.hadoop/hadoop-auth}" conf="compile.hadoop->*"/>
-    <dependency org="commons-configuration" name="commons-configuration" rev="${/commons-configuration/commons-configuration}" conf="compile.hadoop->*"/>
-    <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile.hadoop->*"/>
-    <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="${/com.googlecode.concurrentlinkedhashmap/concurrentlinkedhashmap-lru}" conf="compile.hadoop->*"/>
+    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="${/org.apache.hadoop/hadoop-hdfs}" conf="compile.hadoop"/>
+    <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="${/org.apache.hadoop/hadoop-annotations}" conf="compile.hadoop"/>
+    <dependency org="org.apache.hadoop" name="hadoop-auth" rev="${/org.apache.hadoop/hadoop-auth}" conf="compile.hadoop"/>
+    <dependency org="commons-configuration" name="commons-configuration" rev="${/commons-configuration/commons-configuration}" conf="compile.hadoop"/>
+    <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile.hadoop"/>
+    <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="${/com.googlecode.concurrentlinkedhashmap/concurrentlinkedhashmap-lru}" conf="compile.hadoop"/>
 
     <!-- Hadoop DfsMiniCluster Dependencies-->
-    <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test.DfsMiniCluster->*">
+    <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test.DfsMiniCluster">
       <artifact name="hadoop-common" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
-    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="${/org.apache.hadoop/hadoop-hdfs}" conf="test.DfsMiniCluster->*">
+    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="${/org.apache.hadoop/hadoop-hdfs}" conf="test.DfsMiniCluster">
       <artifact name="hadoop-hdfs" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
-    <dependency org="org.mortbay.jetty" name="jetty" rev="${/org.mortbay.jetty/jetty}" conf="test.DfsMiniCluster->*"/>
-    <dependency org="org.mortbay.jetty" name="jetty-util" rev="${/org.mortbay.jetty/jetty-util}" conf="test.DfsMiniCluster->*"/>
-    <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster->*"/>
-    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test.DfsMiniCluster->*"/>
+    <dependency org="org.mortbay.jetty" name="jetty" rev="${/org.mortbay.jetty/jetty}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.mortbay.jetty" name="jetty-util" rev="${/org.mortbay.jetty/jetty-util}" conf="test.DfsMiniCluster"/>
+    <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster"/>
+    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test.DfsMiniCluster"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

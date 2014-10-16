@@ -18,22 +18,22 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.solr" module="clustering"/>
-  <configurations>
+  <configurations defaultconfmapping="compile->master;test->master">
     <conf name="compile" transitive="false"/>
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="org.carrot2" name="carrot2-mini" rev="${/org.carrot2/carrot2-mini}" transitive="false"/>
+    <dependency org="org.carrot2" name="carrot2-mini" rev="${/org.carrot2/carrot2-mini}" conf="compile"/>
 
-    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" transitive="false"/>
-    <dependency org="org.carrot2.attributes" name="attributes-binder" rev="${/org.carrot2.attributes/attributes-binder}" transitive="false"/>
-    <dependency org="org.simpleframework" name="simple-xml" rev="${/org.simpleframework/simple-xml}" transitive="false"/>
+    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
+    <dependency org="org.carrot2.attributes" name="attributes-binder" rev="${/org.carrot2.attributes/attributes-binder}" conf="compile"/>
+    <dependency org="org.simpleframework" name="simple-xml" rev="${/org.simpleframework/simple-xml}" conf="compile"/>
 
-    <dependency org="org.apache.mahout" name="mahout-math" rev="${/org.apache.mahout/mahout-math}" transitive="false"/>
-    <dependency org="org.apache.mahout" name="mahout-collections" rev="${/org.apache.mahout/mahout-collections}" transitive="false"/>
+    <dependency org="org.apache.mahout" name="mahout-math" rev="${/org.apache.mahout/mahout-math}" conf="compile"/>
+    <dependency org="org.apache.mahout" name="mahout-collections" rev="${/org.apache.mahout/mahout-collections}" conf="compile"/>
 
-    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" transitive="false"/>
-    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" transitive="false"/>
+    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" conf="compile"/>
+    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" conf="compile"/>
 
     <!--
     Included as part of Solr's environment.
@@ -42,7 +42,7 @@
     commons-lang:commons-lang:jar:2.6:compile
      -->
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

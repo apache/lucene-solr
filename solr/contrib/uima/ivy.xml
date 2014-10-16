@@ -18,19 +18,19 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.solr" module="uima"/>
-  <configurations>
+  <configurations defaultconfmapping="compile->master;test->master">
     <conf name="compile" transitive="false"/>
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="commons-digester" name="commons-digester" rev="${/commons-digester/commons-digester}" conf="compile->*"/>
-    <dependency org="org.apache.uima" name="AlchemyAPIAnnotator" rev="${/org.apache.uima/AlchemyAPIAnnotator}" conf="compile->*"/>
-    <dependency org="org.apache.uima" name="OpenCalaisAnnotator" rev="${/org.apache.uima/OpenCalaisAnnotator}" conf="compile->*"/>
-    <dependency org="org.apache.uima" name="Tagger" rev="${/org.apache.uima/Tagger}" conf="compile->*"/>
-    <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="${/org.apache.uima/WhitespaceTokenizer}" conf="compile->*"/>
-    <dependency org="org.apache.uima" name="uimaj-core" rev="${/org.apache.uima/uimaj-core}" conf="compile->*"/>
+    <dependency org="commons-digester" name="commons-digester" rev="${/commons-digester/commons-digester}" conf="compile"/>
+    <dependency org="org.apache.uima" name="AlchemyAPIAnnotator" rev="${/org.apache.uima/AlchemyAPIAnnotator}" conf="compile"/>
+    <dependency org="org.apache.uima" name="OpenCalaisAnnotator" rev="${/org.apache.uima/OpenCalaisAnnotator}" conf="compile"/>
+    <dependency org="org.apache.uima" name="Tagger" rev="${/org.apache.uima/Tagger}" conf="compile"/>
+    <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="${/org.apache.uima/WhitespaceTokenizer}" conf="compile"/>
+    <dependency org="org.apache.uima" name="uimaj-core" rev="${/org.apache.uima/uimaj-core}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

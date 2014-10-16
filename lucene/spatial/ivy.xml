@@ -17,9 +17,12 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="spatial"/>
-    <dependencies>
-      <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" transitive="false"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <info organisation="org.apache.lucene" module="spatial"/>
+  <configurations defaultconfmapping="compile->master">
+    <conf name="compile" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="compile"/>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>

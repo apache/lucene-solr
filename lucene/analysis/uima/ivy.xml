@@ -17,11 +17,14 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="analyzers-uima"/>
-    <dependencies>
-      <dependency org="org.apache.uima" name="Tagger" rev="${/org.apache.uima/Tagger}" transitive="false"/>
-      <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="${/org.apache.uima/WhitespaceTokenizer}" transitive="false"/>
-      <dependency org="org.apache.uima" name="uimaj-core" rev="${/org.apache.uima/uimaj-core}" transitive="false"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <info organisation="org.apache.lucene" module="analyzers-uima"/>
+  <configurations defaultconfmapping="compile->master">
+    <conf name="compile" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="org.apache.uima" name="Tagger" rev="${/org.apache.uima/Tagger}" conf="compile"/>
+    <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="${/org.apache.uima/WhitespaceTokenizer}" conf="compile"/>
+    <dependency org="org.apache.uima" name="uimaj-core" rev="${/org.apache.uima/uimaj-core}" conf="compile"/>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>

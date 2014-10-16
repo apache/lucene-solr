@@ -17,14 +17,14 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.solr" module="analytics"/>
-      <configurations>
-        <conf name="compile" transitive="false"/>
-        <conf name="test" transitive="false"/>
-      </configurations>
+  <info organisation="org.apache.solr" module="analytics"/>
+    <configurations defaultconfmapping="compile->master;test->master">
+      <conf name="compile" transitive="false"/> <!-- keep unused 'compile' configuration to allow build to succeed -->
+      <conf name="test" transitive="false"/>
+    </configurations>
 
-     <dependencies>
-       <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
-     </dependencies>
-
+   <dependencies>
+     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
+     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
+   </dependencies>
 </ivy-module>
