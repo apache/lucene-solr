@@ -18,103 +18,99 @@
 -->
 <ivy-module version="2.0" xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="morphlines-core" />
-  <configurations>
+  <configurations defaultconfmapping="compile->master;test->master;test.DfsMiniCluster->master">
     <!-- artifacts in the "compile" configuration will go into morphlines-core/lib/ -->
     <conf name="compile" transitive="false" />
-    <!-- artifacts in the "test" and "test.DfsMiniCluster" configuration will go into solr/core/test-lib/ -->
+    <!-- artifacts in the "test" and "test.DfsMiniCluster" configuration will go into morphlines-core/test-lib/ -->
     <conf name="test" transitive="false" />
-    <conf name="test.DfsMiniCluster" transitive="false"/>
+    <conf name="test.DfsMiniCluster" transitive="false" />
   </configurations>
 
   <dependencies>
-    <dependency org="org.kitesdk" name="kite-morphlines-core" rev="${/org.kitesdk/kite-morphlines-core}"  conf="compile->*;test->*" >
-      <artifact name="kite-morphlines-core"  ext="jar"/>
-      <artifact name="kite-morphlines-core" type="test" ext="jar" maven:classifier="tests"/>
+    <dependency org="org.kitesdk" name="kite-morphlines-core" rev="${/org.kitesdk/kite-morphlines-core}"  conf="compile;test">
+      <artifact name="kite-morphlines-core"  ext="jar" />
+      <artifact name="kite-morphlines-core" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
 
-    <dependency org="org.kitesdk" name="kite-morphlines-avro" rev="${/org.kitesdk/kite-morphlines-avro}" conf="compile->*" />
+    <dependency org="org.kitesdk" name="kite-morphlines-avro" rev="${/org.kitesdk/kite-morphlines-avro}" conf="compile" />
     
-    <dependency org="com.codahale.metrics" name="metrics-core" rev="${/com.codahale.metrics/metrics-core}" conf="compile->*" />
-    <dependency org="com.codahale.metrics" name="metrics-healthchecks" rev="${/com.codahale.metrics/metrics-healthchecks}" conf="compile->*" />
-    <dependency org="com.typesafe" name="config" rev="${/com.typesafe/config}" conf="compile->*" />
+    <dependency org="com.codahale.metrics" name="metrics-core" rev="${/com.codahale.metrics/metrics-core}" conf="compile" />
+    <dependency org="com.codahale.metrics" name="metrics-healthchecks" rev="${/com.codahale.metrics/metrics-healthchecks}" conf="compile" />
+    <dependency org="com.typesafe" name="config" rev="${/com.typesafe/config}" conf="compile" />
     
     <!-- Test Dependencies -->
 
-    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-core" rev="${/org.apache.hadoop/hadoop-mapreduce-client-core}" conf="test->*" />
-
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-common" rev="${/org.apache.hadoop/hadoop-yarn-common}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-api" rev="${/org.apache.hadoop/hadoop-yarn-api}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-client" rev="${/org.apache.hadoop/hadoop-yarn-client}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-tests" rev="${/org.apache.hadoop/hadoop-yarn-server-tests}" conf="test->*">
+    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-core" rev="${/org.apache.hadoop/hadoop-mapreduce-client-core}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-common" rev="${/org.apache.hadoop/hadoop-yarn-common}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-api" rev="${/org.apache.hadoop/hadoop-yarn-api}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-client" rev="${/org.apache.hadoop/hadoop-yarn-client}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-tests" rev="${/org.apache.hadoop/hadoop-yarn-server-tests}" conf="test">
       <artifact name="hadoop-yarn-server-tests" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-common" rev="${/org.apache.hadoop/hadoop-yarn-server-common}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-nodemanager" rev="${/org.apache.hadoop/hadoop-yarn-server-nodemanager}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-app" rev="${/org.apache.hadoop/hadoop-mapreduce-client-app}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-common" rev="${/org.apache.hadoop/hadoop-mapreduce-client-common}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-hs" rev="${/org.apache.hadoop/hadoop-mapreduce-client-hs}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-resourcemanager" rev="${/org.apache.hadoop/hadoop-yarn-server-resourcemanager}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-shuffle" rev="${/org.apache.hadoop/hadoop-mapreduce-client-shuffle}" conf="test->*" />
-    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-web-proxy" rev="${/org.apache.hadoop/hadoop-yarn-server-web-proxy}" conf="test->*" />
-
-    <dependency org="aopalliance" name="aopalliance" rev="${/aopalliance/aopalliance}" conf="test->*" />
-    <dependency org="com.sun.xml.bind" name="jaxb-impl" rev="${/com.sun.xml.bind/jaxb-impl}" conf="test->*" />
-    <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test->*"/>
-    <dependency org="io.netty" name="netty" rev="${/io.netty/netty}" conf="test->*" />
-    
-    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-jobclient" rev="${/org.apache.hadoop/hadoop-mapreduce-client-jobclient}" conf="test->*">
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-common" rev="${/org.apache.hadoop/hadoop-yarn-server-common}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-nodemanager" rev="${/org.apache.hadoop/hadoop-yarn-server-nodemanager}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-app" rev="${/org.apache.hadoop/hadoop-mapreduce-client-app}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-common" rev="${/org.apache.hadoop/hadoop-mapreduce-client-common}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-hs" rev="${/org.apache.hadoop/hadoop-mapreduce-client-hs}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-resourcemanager" rev="${/org.apache.hadoop/hadoop-yarn-server-resourcemanager}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-shuffle" rev="${/org.apache.hadoop/hadoop-mapreduce-client-shuffle}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-yarn-server-web-proxy" rev="${/org.apache.hadoop/hadoop-yarn-server-web-proxy}" conf="test" />
+    <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-jobclient" rev="${/org.apache.hadoop/hadoop-mapreduce-client-jobclient}" conf="test">
       <artifact name="hadoop-mapreduce-client-jobclient" type="jar" ext="jar" />
       <artifact name="hadoop-mapreduce-client-jobclient" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
 
-    <dependency org="org.apache.mrunit" name="mrunit" rev="${/org.apache.mrunit/mrunit}" conf="test->*">
+    <dependency org="aopalliance" name="aopalliance" rev="${/aopalliance/aopalliance}" conf="test" />
+    <dependency org="com.sun.xml.bind" name="jaxb-impl" rev="${/com.sun.xml.bind/jaxb-impl}" conf="test" />
+    <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test" />
+    <dependency org="io.netty" name="netty" rev="${/io.netty/netty}" conf="test" />
+    <dependency org="org.apache.mrunit" name="mrunit" rev="${/org.apache.mrunit/mrunit}" conf="test">
       <artifact name="mrunit" maven:classifier="hadoop2" />
       <exclude org="log4j" module="log4j" />
     </dependency>
-    
-    <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test->*" />
+    <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test" />
+    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test" />
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test" />
+
 
     <!-- FasterXml Jackson Dependencies -->
-    <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="${/com.fasterxml.jackson.core/jackson-core}" conf="test->*" />
-    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="test->*" />
-    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="test->*" />
+    <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="${/com.fasterxml.jackson.core/jackson-core}" conf="test" />
+    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="test" />
+    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="test" />
 
-    <!-- CodeHause Jackson Dependencies -->
-    <dependency org="org.codehaus.jackson" name="jackson-jaxrs" rev="${/org.codehaus.jackson/jackson-jaxrs}" conf="test->*" />
-    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" conf="test->*" />
-    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" conf="test->*" />
+    <!-- CodeHaus Jackson Dependencies -->
+    <dependency org="org.codehaus.jackson" name="jackson-jaxrs" rev="${/org.codehaus.jackson/jackson-jaxrs}" conf="test" />
+    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" conf="test" />
+    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" conf="test" />
 
     <!-- Jersey Dependencies -->
-    <dependency org="com.sun.jersey.contribs" name="jersey-guice" rev="${/com.sun.jersey.contribs/jersey-guice}" conf="test->*" />
-    <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test->*" />
-    <dependency org="com.sun.jersey" name="jersey-json" rev="${/com.sun.jersey/jersey-json}" conf="test->*" />
-    <dependency org="com.sun.jersey" name="jersey-server" rev="${/com.sun.jersey/jersey-server}" conf="test->*" />
-    <dependency org="com.sun.jersey" name="jersey-bundle" rev="${/com.sun.jersey/jersey-bundle}" conf="test->*" />
+    <dependency org="com.sun.jersey.contribs" name="jersey-guice" rev="${/com.sun.jersey.contribs/jersey-guice}" conf="test" />
+    <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test" />
+    <dependency org="com.sun.jersey" name="jersey-json" rev="${/com.sun.jersey/jersey-json}" conf="test" />
+    <dependency org="com.sun.jersey" name="jersey-server" rev="${/com.sun.jersey/jersey-server}" conf="test" />
+    <dependency org="com.sun.jersey" name="jersey-bundle" rev="${/com.sun.jersey/jersey-bundle}" conf="test" />
 
     <!-- Guice Dependencies -->
-    <dependency org="com.google.inject" name="guice" rev="${/com.google.inject/guice}" conf="test->*" />
-    <dependency org="com.google.inject.extensions" name="guice-servlet" rev="${/com.google.inject.extensions/guice-servlet}" conf="test->*" />
-    <dependency org="javax.inject" name="javax.inject" rev="${/javax.inject/javax.inject}" conf="test->*" />
+    <dependency org="com.google.inject" name="guice" rev="${/com.google.inject/guice}" conf="test" />
+    <dependency org="com.google.inject.extensions" name="guice-servlet" rev="${/com.google.inject.extensions/guice-servlet}" conf="test" />
+    <dependency org="javax.inject" name="javax.inject" rev="${/javax.inject/javax.inject}" conf="test" />
 
     <!-- Avro Dependencies -->
-    <dependency org="org.apache.avro" name="avro" rev="${/org.apache.avro/avro}" conf="test->*" />
-    <dependency org="com.thoughtworks.paranamer" name="paranamer" rev="${/com.thoughtworks.paranamer/paranamer}"  conf="test->*"  />
-    <dependency org="org.xerial.snappy" name="snappy-java" rev="${/org.xerial.snappy/snappy-java}" conf="test->*" />
+    <dependency org="org.apache.avro" name="avro" rev="${/org.apache.avro/avro}" conf="test" />
+    <dependency org="com.thoughtworks.paranamer" name="paranamer" rev="${/com.thoughtworks.paranamer/paranamer}" conf="test" />
+    <dependency org="org.xerial.snappy" name="snappy-java" rev="${/org.xerial.snappy/snappy-java}" conf="test" />
 
     <!-- Hadoop DfsMiniCluster Dependencies -->
-    <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test->*">
+    <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test.DfsMiniCluster">
       <artifact name="hadoop-common" type="jar" ext="jar" />
       <artifact name="hadoop-common" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
-    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="${/org.apache.hadoop/hadoop-hdfs}" conf="test->*">
+    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="${/org.apache.hadoop/hadoop-hdfs}" conf="test.DfsMiniCluster">
       <artifact name="hadoop-hdfs" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
-    <dependency org="org.mortbay.jetty" name="jetty" rev="${/org.mortbay.jetty/jetty}" conf="test.DfsMiniCluster->*"/>
-    <dependency org="org.mortbay.jetty" name="jetty-util" rev="${/org.mortbay.jetty/jetty-util}" conf="test.DfsMiniCluster->*"/>
-    <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test->*" />
-
-    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test->*" />
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="org.mortbay.jetty" name="jetty" rev="${/org.mortbay.jetty/jetty}" conf="test.DfsMiniCluster" />
+    <dependency org="org.mortbay.jetty" name="jetty-util" rev="${/org.mortbay.jetty/jetty-util}" conf="test.DfsMiniCluster" />
+    <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster" />
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
 

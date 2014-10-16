@@ -18,17 +18,17 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.solr" module="velocity"/>
-  <configurations>
+  <configurations defaultconfmapping="compile->master;test->master">
     <conf name="compile" transitive="false"/>
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="commons-beanutils" name="commons-beanutils" rev="${/commons-beanutils/commons-beanutils}" conf="compile->*"/>
-    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile->*"/>
-    <dependency org="org.apache.velocity" name="velocity" rev="${/org.apache.velocity/velocity}" conf="compile->*"/>
-    <dependency org="org.apache.velocity" name="velocity-tools" rev="${/org.apache.velocity/velocity-tools}" conf="compile->*"/>
+    <dependency org="commons-beanutils" name="commons-beanutils" rev="${/commons-beanutils/commons-beanutils}" conf="compile"/>
+    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile"/>
+    <dependency org="org.apache.velocity" name="velocity" rev="${/org.apache.velocity/velocity}" conf="compile"/>
+    <dependency org="org.apache.velocity" name="velocity-tools" rev="${/org.apache.velocity/velocity-tools}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

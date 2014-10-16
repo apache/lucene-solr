@@ -17,26 +17,26 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.solr" module="solr-test-framework"/>
+  <info organisation="org.apache.solr" module="solr-test-framework"/>
 
-    <configurations>
-      <conf name="default" />
-      <!-- 
-      JUnit4 ANT task only, no ANT.
-      This is used from build scripts for taskdefs.
-      -->
-      <conf name="junit4-stdalone" />
-    </configurations>
+  <configurations defaultconfmapping="compile->master;junit4-stdalone->master">
+    <conf name="compile" transitive="false" />
+    <!-- 
+    JUnit4 ANT task only, no ANT.
+    This is used from build scripts for taskdefs.
+    -->
+    <conf name="junit4-stdalone" transitive="false" />
+  </configurations>
 
-    <dependencies defaultconf="default">
-      <dependency org="org.apache.ant" name="ant" rev="${/org.apache.ant/ant}" transitive="false" />
+  <dependencies>
+    <dependency org="org.apache.ant" name="ant" rev="${/org.apache.ant/ant}" conf="compile" />
+ 
+    <dependency org="junit" name="junit" rev="${/junit/junit}" conf="compile;junit4-stdalone">
+      <exclude org="org.hamcrest" module="hamcrest-core" />
+    </dependency>
+    <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="${/com.carrotsearch.randomizedtesting/junit4-ant}" conf="compile;junit4-stdalone" />
+    <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="${/com.carrotsearch.randomizedtesting/randomizedtesting-runner}" conf="compile;junit4-stdalone" />
 
-      <dependency org="junit" name="junit" rev="${/junit/junit}" transitive="false" conf="default->*;junit4-stdalone->*">
-        <exclude org="org.hamcrest" module="hamcrest-core"/>
-      </dependency>
-      <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="${/com.carrotsearch.randomizedtesting/junit4-ant}" transitive="false" conf="default->*;junit4-stdalone->*" />
-      <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="${/com.carrotsearch.randomizedtesting/randomizedtesting-runner}" transitive="false" conf="default->*;junit4-stdalone->*" />
-
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>

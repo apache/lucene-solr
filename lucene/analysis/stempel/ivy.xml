@@ -17,5 +17,5 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="analyzers-stempel"/>
+  <info organisation="org.apache.lucene" module="analyzers-stempel"/>
 </ivy-module>

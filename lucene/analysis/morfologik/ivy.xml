@@ -17,11 +17,14 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="analyzers-morfologik"/>
-    <dependencies>
-      <dependency org="org.carrot2" name="morfologik-polish" rev="${/org.carrot2/morfologik-polish}" transitive="false"/>
-      <dependency org="org.carrot2" name="morfologik-fsa" rev="${/org.carrot2/morfologik-fsa}" transitive="false"/>
-      <dependency org="org.carrot2" name="morfologik-stemming" rev="${/org.carrot2/morfologik-stemming}" transitive="false"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <info organisation="org.apache.lucene" module="analyzers-morfologik"/>
+  <configurations defaultconfmapping="compile->master">
+    <conf name="compile" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="org.carrot2" name="morfologik-polish" rev="${/org.carrot2/morfologik-polish}" conf="compile"/>
+    <dependency org="org.carrot2" name="morfologik-fsa" rev="${/org.carrot2/morfologik-fsa}" conf="compile"/>
+    <dependency org="org.carrot2" name="morfologik-stemming" rev="${/org.carrot2/morfologik-stemming}" conf="compile"/>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>

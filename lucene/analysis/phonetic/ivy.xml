@@ -17,9 +17,12 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="analyzers-phonetic"/>
-    <dependencies>
-      <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" transitive="false"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <info organisation="org.apache.lucene" module="analyzers-phonetic"/>
+  <configurations defaultconfmapping="compile->master">
+    <conf name="compile" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>
