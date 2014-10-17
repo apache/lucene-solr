@@ -50,6 +50,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>Indirect: when norms are extremely sparse, missing values are omitted.
  *        Access to an individual value is slower, but missing norm values are never accessed
  *        by search code.
+ *    <li>Patched: when a single norm value dominates, a sparse bitset encodes docs with exceptions,
+ *        so that access to the common value is still very fast. outliers fall thru to an exception 
+ *        handling mechanism (Indirect or Constant).
  * </ul>
  * <p>
  * Files:
