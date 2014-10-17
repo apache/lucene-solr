@@ -178,6 +178,9 @@ New Features
 * SOLR-4715: Add CloudSolrServer constructors which accept a HttpClient instance.
   (Hardik Upadhyay, Shawn Heisey, shalin)
 
+* SOLR-6517: CollectionsAPI call REBALANCELEADERS. Used to balance leaders
+  across nodes for a particular collection
+
 
 Bug Fixes
 ----------------------

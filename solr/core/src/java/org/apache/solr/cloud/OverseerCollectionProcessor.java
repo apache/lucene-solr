@@ -18,7 +18,9 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
@@ -31,9 +33,9 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CL
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -441,7 +443,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     String ldr = getLeaderNode(zk);
     if(overseerDesignates.contains(ldr)) return;
     log.info("prioritizing overseer nodes at {} overseer designates are {}", myId, overseerDesignates);
-    List<String> electionNodes = getSortedElectionNodes(zk);
+    List<String> electionNodes = getSortedElectionNodes(zk, OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE);
     if(electionNodes.size()<2) return;
     log.info("sorted nodes {}", electionNodes);
 
@@ -484,10 +486,10 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     return nodeNames;
   }
 
-  public static List<String> getSortedElectionNodes(SolrZkClient zk) throws KeeperException, InterruptedException {
+  public static List<String> getSortedElectionNodes(SolrZkClient zk, String path) throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
-      children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+      children = zk.getChildren(path, null, true);
       LeaderElector.sortSeqs(children);
       return children;
     } catch (Exception e) {
@@ -651,6 +653,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           case BALANCESLICEUNIQUE:
             balanceProperty(message);
             break;
+          case REBALANCELEADERS:
+            processAssignLeaders(message);
+            break;
           default:
             throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
                 + operation);
@@ -677,6 +682,32 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   }
 
   @SuppressWarnings("unchecked")
+  // re-purpose BALANCELEADERS to reassign a single leader over here
+  private void processAssignLeaders(ZkNodeProps message) throws KeeperException, InterruptedException {
+    String collectionName = message.getStr(COLLECTION_PROP);
+    String shardId = message.getStr(SHARD_ID_PROP);
+    String baseURL = message.getStr(BASE_URL_PROP);
+    String coreName = message.getStr(CORE_NAME_PROP);
+
+    if (StringUtils.isBlank(collectionName) || StringUtils.isBlank(shardId) || StringUtils.isBlank(baseURL) ||
+        StringUtils.isBlank(coreName)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "The '%s', '%s', '%s' and '%s' parameters are required when assigning a leader",
+              COLLECTION_PROP, SHARD_ID_PROP, BASE_URL_PROP, CORE_NAME_PROP));
+    }
+    SolrZkClient zkClient = zkStateReader.getZkClient();
+    DistributedQueue inQueue = Overseer.getInQueue(zkClient);
+    Map<String, Object> propMap = new HashMap<>();
+    propMap.put(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.LEADER.toLower());
+    propMap.put(COLLECTION_PROP, collectionName);
+    propMap.put(SHARD_ID_PROP, shardId);
+    propMap.put(BASE_URL_PROP, baseURL);
+    propMap.put(CORE_NAME_PROP, coreName);
+    inQueue.offer(zkStateReader.toJSON(propMap));
+  }
+
+
+  @SuppressWarnings("unchecked")
   private void processReplicaAddPropertyCommand(ZkNodeProps message) throws KeeperException, InterruptedException {
     if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) ||
         StringUtils.isBlank(message.getStr(SHARD_ID_PROP)) ||
@@ -684,7 +715,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         StringUtils.isBlank(message.getStr(PROPERTY_PROP)) ||
         StringUtils.isBlank(message.getStr(PROPERTY_VALUE_PROP))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "The '%s', '%s', '%s', '%s', and '%s' parameters are required for all replica properties add/delete' operations",
+          String.format(Locale.ROOT, "The '%s', '%s', '%s', '%s', and '%s' parameters are required for all replica properties add/delete operations",
               COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP));
     }
     SolrZkClient zkClient = zkStateReader.getZkClient();
@@ -702,7 +733,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         StringUtils.isBlank(message.getStr(REPLICA_PROP)) ||
         StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "The '%s', '%s', '%s', and '%s' parameters are required for all replica properties add/delete' operations",
+          String.format(Locale.ROOT, "The '%s', '%s', '%s', and '%s' parameters are required for all replica properties add/delete operations",
               COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP));
     }
     SolrZkClient zkClient = zkStateReader.getZkClient();

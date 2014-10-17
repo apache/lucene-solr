@@ -30,16 +30,23 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.ACTIVE;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.STATE_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESLICEUNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESLICEUNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATEALIAS;
@@ -51,6 +58,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
@@ -80,6 +88,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -252,6 +262,10 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleBalanceSliceUnique(req, rsp);
         break;
       }
+      case REBALANCELEADERS: {
+        this.handleBalanceLeaders(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
@@ -260,6 +274,156 @@ public class CollectionsHandler extends RequestHandlerBase {
     rsp.setHttpCaching(false);
   }
 
+
+  private void handleBalanceLeaders(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    req.getParams().required().check(COLLECTION_PROP);
+
+    String collectionName = req.getParams().get(COLLECTION_PROP);
+    if (StringUtils.isBlank(collectionName)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "The " + COLLECTION_PROP + " is required for the REASSIGNLEADERS command."));
+    }
+    coreContainer.getZkController().getZkStateReader().updateClusterState(true);
+    ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    DocCollection dc = clusterState.getCollection(collectionName);
+    if (dc == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
+    }
+    Map<String, String> current = new HashMap<>();
+    int max = req.getParams().getInt(MAX_AT_ONCE_PROP, Integer.MAX_VALUE);
+    if (max <= 0) max = Integer.MAX_VALUE;
+    int maxWaitSecs = req.getParams().getInt(MAX_WAIT_SECONDS_PROP, 60);
+    NamedList<Object> results = new NamedList<>();
+    SolrQueryResponse rspIgnore = new SolrQueryResponse();
+    final String inactivePreferreds = "inactivePreferreds";
+    final String alreadyLeaders = "alreadyLeaders";
+    boolean keepGoing = true;
+    for (Slice slice : dc.getSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        // Tell the replica to become the leader if we're the preferred leader AND active AND not the leader already
+        if (replica.getBool(Overseer.preferredLeaderProp, false) == false) {
+          continue;
+        }
+        if (StringUtils.equalsIgnoreCase(replica.getStr(STATE_PROP), ACTIVE) == false) {
+          NamedList<Object> inactives = (NamedList<Object>) results.get(inactivePreferreds);
+          if (inactives == null) {
+            inactives = new NamedList<>();
+            results.add(inactivePreferreds, inactives);
+          }
+          NamedList<Object> res = new NamedList<>();
+          res.add("status", "skipped");
+          res.add("msg", "Node is a referredLeader, but it's inactive. Skipping");
+          res.add("nodeName", replica.getNodeName());
+          inactives.add(replica.getName(), res);
+          break; // Don't try to assign if we're not active!
+        }        // OK, we're the one, get in the queue to become the leader.
+        if (replica.getBool(LEADER_PROP, false)) {
+          NamedList<Object> noops = (NamedList<Object>) results.get(alreadyLeaders);
+          if (noops == null) {
+            noops = new NamedList<>();
+            results.add(alreadyLeaders, noops);
+          }
+          NamedList<Object> res = new NamedList<>();
+          res.add("status", "success");
+          res.add("msg", "Already leader");
+          res.add("nodeName", replica.getNodeName());
+          noops.add(replica.getName(), res);
+          break; // already the leader, do nothing.
+        }
+        Map<String, Object> propMap = new HashMap<>();
+        propMap.put(Overseer.QUEUE_OPERATION, REBALANCELEADERS.toLower());
+        propMap.put(COLLECTION_PROP, collectionName);
+        propMap.put(SHARD_ID_PROP, slice.getName());
+        propMap.put(BASE_URL_PROP, replica.get(BASE_URL_PROP));
+
+        String coreName = (String) replica.get(CORE_NAME_PROP);
+        // Put it in the waiting list.
+        String asyncId = REBALANCELEADERS.toLower() + "_" + coreName;
+        current.put(asyncId, String.format(Locale.ROOT, "Collection: '%s', Shard: '%s', Core: '%s', BaseUrl: '%s'",
+            collectionName, slice.getName(), coreName, replica.get(BASE_URL_PROP)));
+
+        propMap.put(CORE_NAME_PROP, coreName);
+        propMap.put(ASYNC, asyncId);
+
+        ZkNodeProps m = new ZkNodeProps(propMap);
+        log.info("Queueing collection '" + collectionName + "' slice '" + slice.getName() + "' replica '" +
+                coreName + "' to become leader.");
+        handleResponse(REBALANCELEADERS.toLower(), m, rspIgnore); // Want to construct my own response here.
+        break; // Done with this slice, skip the rest of the replicas.
+      }
+      if (current.size() == max) {
+        log.info("Queued " + max + " leader reassgnments, waiting for some to complete.");
+        keepGoing = waitForLeaderChange(current, maxWaitSecs, false, results);
+        if (keepGoing == false) {
+          break; // If we've waited longer than specified, don't continue to wait!
+        }
+      }
+    }
+    if (keepGoing == true) {
+      keepGoing = waitForLeaderChange(current, maxWaitSecs, true, results);
+    }
+    if (keepGoing == true) {
+      log.info("All leader reassignments completed.");
+    } else {
+      log.warn("Exceeded specified timeout of ." + maxWaitSecs + "' all leaders may not have been reassigned");
+    }
+
+    rsp.getValues().addAll(results);
+  }
+
+  // currentAsyncIds - map of request IDs and reporting data (value)
+  // maxWaitSecs - How long are we going to wait? Defaults to 30 seconds.
+  // waitForAll - if true, do not return until all assignments have been made.
+  // results - a place to stash results for reporting back to the user.
+  //
+  private boolean waitForLeaderChange(Map<String, String> currentAsyncIds, final int maxWaitSecs,
+                                      Boolean waitForAll, NamedList<Object> results)
+      throws KeeperException, InterruptedException {
+
+    if (currentAsyncIds.size() == 0) return true;
+
+    for (int idx = 0; idx < maxWaitSecs * 10; ++idx) {
+      Iterator<Map.Entry<String, String>> iter = currentAsyncIds.entrySet().iterator();
+      boolean foundChange = false;
+      while (iter.hasNext()) {
+        Map.Entry<String, String> pair = iter.next();
+        String asyncId = pair.getKey();
+        if (coreContainer.getZkController().getOverseerFailureMap().contains(asyncId)) {
+          coreContainer.getZkController().getOverseerFailureMap().remove(asyncId);
+          NamedList<Object> fails = (NamedList<Object>) results.get("failures");
+          if (fails == null) {
+            fails = new NamedList<>();
+            results.add("failures", fails);
+          }
+          NamedList<Object> res = new NamedList<>();
+          res.add("status", "failed");
+          res.add("msg", "Failed to assign '" + pair.getValue() + "' to be leader");
+          fails.add(asyncId.substring(REBALANCELEADERS.toLower().length()), res);
+          iter.remove();
+          foundChange = true;
+        } else if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId)) {
+          coreContainer.getZkController().getOverseerCompletedMap().remove(asyncId);
+          NamedList<Object> successes = (NamedList<Object>) results.get("successes");
+          if (successes == null) {
+            successes = new NamedList<>();
+            results.add("successes", successes);
+          }
+          NamedList<Object> res = new NamedList<>();
+          res.add("status", "success");
+          res.add("msg", "Assigned '" + pair.getValue() + "' to be leader");
+          successes.add(asyncId.substring(REBALANCELEADERS.toLower().length()), res);
+          iter.remove();
+          foundChange = true;
+        }
+      }
+      // We're done if we're processing a few at a time or all requests are processed.
+      if ((foundChange && waitForAll == false) || currentAsyncIds.size() == 0) {
+        return true;
+      }
+      Thread.sleep(100); //TODO: Is there a better thing to do than sleep here?
+    }
+    return false;
+  }
   private void handleAddReplicaProp(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     req.getParams().required().check(COLLECTION_PROP, PROPERTY_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_VALUE_PROP);
 
@@ -425,7 +589,7 @@ public class CollectionsHandler extends RequestHandlerBase {
        }
  
        NamedList<String> r = new NamedList<>();
- 
+
        if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
            coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
            coreContainer.getZkController().getOverseerRunningMap().contains(asyncId) ||

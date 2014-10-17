@@ -49,7 +49,8 @@ public interface CollectionParams
     CLUSTERSTATUS,
     ADDREPLICAPROP,
     DELETEREPLICAPROP,
-    BALANCESLICEUNIQUE;
+    BALANCESLICEUNIQUE,
+    REBALANCELEADERS;
     
     public static CollectionAction get( String p )
     {

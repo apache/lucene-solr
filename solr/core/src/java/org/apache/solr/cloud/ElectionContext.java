@@ -212,7 +212,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
     int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
     if (!weAreReplacement) {
-      waitForReplicasToComeUp(weAreReplacement, leaderVoteWait);
+      waitForReplicasToComeUp(leaderVoteWait);
     }
 
     try (SolrCore core = cc.getCore(coreName)) {
@@ -226,7 +226,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       
       // should I be leader?
       if (weAreReplacement && !shouldIBeLeader(leaderProps, core, weAreReplacement)) {
-        rejoinLeaderElection(leaderSeqPath, core);
+        rejoinLeaderElection(core);
         return;
       }
       
@@ -297,7 +297,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
       }
       if (!success) {
-        rejoinLeaderElection(leaderSeqPath, core);
+        rejoinLeaderElection(core);
         return;
       }
 
@@ -323,7 +323,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
         
         // we could not publish ourselves as leader - try and rejoin election
-        rejoinLeaderElection(leaderSeqPath, core);
+        rejoinLeaderElection(core);
       }
     }
 
@@ -401,7 +401,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     } // core gets closed automagically    
   }
 
-  private void waitForReplicasToComeUp(boolean weAreReplacement, int timeoutms) throws InterruptedException {
+  private void waitForReplicasToComeUp(int timeoutms) throws InterruptedException {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
     
@@ -448,11 +448,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     }
   }
 
-  private void rejoinLeaderElection(String leaderSeqPath, SolrCore core)
+  private void rejoinLeaderElection(SolrCore core)
       throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
     if (cc.isShutDown()) {
-      log.info("Not rejoining election because CoreContainer is close");
+      log.info("Not rejoining election because CoreContainer is closed");
       return;
     }
     
