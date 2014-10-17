@@ -834,7 +834,13 @@ public final class ZkController {
     ZkNodeProps leaderProps = new ZkNodeProps(props);
     
     try {
-      joinElection(desc, afterExpiration);
+      // If we're a preferred leader, insert ourselves at the head of the queue
+      boolean joinAtHead = false;
+      Replica replica = zkStateReader.getClusterState().getReplica(desc.getCloudDescriptor().getCollectionName(), coreZkNodeName);
+      if (replica != null) {
+        joinAtHead = replica.getBool(Overseer.preferredLeaderProp, false);
+      }
+      joinElection(desc, afterExpiration, joinAtHead);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
@@ -988,7 +994,8 @@ public final class ZkController {
   }
 
 
-  private void joinElection(CoreDescriptor cd, boolean afterExpiration) throws InterruptedException, KeeperException, IOException {
+  private void joinElection(CoreDescriptor cd, boolean afterExpiration, boolean joinAtHead)
+      throws InterruptedException, KeeperException, IOException {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
@@ -1018,7 +1025,7 @@ public final class ZkController {
 
     leaderElector.setup(context);
     electionContexts.put(contextKey, context);
-    leaderElector.joinElection(context, false);
+    leaderElector.joinElection(context, false, joinAtHead);
   }
 
 

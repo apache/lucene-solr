@@ -106,7 +106,9 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
           if (!success) {
             leader = OverseerCollectionProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
             if (leader == null)
-              log.error("NOOVERSEER election queue is :" + OverseerCollectionProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient()));
+              log.error("NOOVERSEER election queue is :" +
+                  OverseerCollectionProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
+                      OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE));
             fail("No overseer designate as leader found after restart #" + (i + 1) + ": " + leader);
           }
         }
@@ -115,7 +117,9 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         if (!success) {
           leader = OverseerCollectionProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
           if (leader == null)
-            log.error("NOOVERSEER election queue is :" + OverseerCollectionProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient()));
+            log.error("NOOVERSEER election queue is :" +
+                OverseerCollectionProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
+                    OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE));
           fail("No overseer leader found after restart #" + (i + 1) + ": " + leader);
         }
         
