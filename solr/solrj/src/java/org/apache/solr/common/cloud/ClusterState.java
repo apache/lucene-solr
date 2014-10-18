@@ -205,8 +205,10 @@ public class ClusterState implements JSONWriter.Writable {
       if (c != null) states = Collections.singletonList( c );
     }
 
-    for (CollectionRef coll : states) {
-      for (Slice slice : coll.get().getSlices()) {
+    for (CollectionRef ref : states) {
+      DocCollection coll = ref.get();
+      if(coll == null) continue;// this collection go tremoved in between, skip
+      for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           // TODO: for really large clusters, we could 'index' on this
           String rnodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
@@ -220,25 +222,6 @@ public class ClusterState implements JSONWriter.Writable {
     return null;
   }
   
-  /*public String getShardIdByCoreNodeName(String collectionName, String coreNodeName) {
-    Collection<DocCollection> states = collectionStates.values();
-    if (collectionName != null) {
-      CollectionRef c = collectionStates.get(collectionName);
-      if (c != null) states = Collections.singletonList(c);
-    }
-
-    for (DocCollection coll : states) {
-      for (Slice slice : coll.getSlices()) {
-        for (Replica replica : slice.getReplicas()) {
-          if (coreNodeName.equals(replica.getName())) {
-            return slice.getName();
-          }
-        }
-      }
-    }
-    return null;
-  }*/
-
   /**
    * Check if node is alive. 
    */
