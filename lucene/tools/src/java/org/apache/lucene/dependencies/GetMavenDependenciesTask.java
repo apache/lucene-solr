@@ -681,7 +681,8 @@ public class GetMavenDependenciesTask extends Task {
     String module = getModuleName(ivyXmlFile);
     log("Collecting external dependencies from: " + ivyXmlFile.getPath(), verboseLevel);
     Document document = documentBuilder.parse(ivyXmlFile);
-    String dependencyPath = "/ivy-module/dependencies/dependency[not(starts-with(@conf,'start->'))]";
+    // Exclude the 'start' configuration in solr/example/ivy.xml
+    String dependencyPath = "/ivy-module/dependencies/dependency[not(starts-with(@conf,'start'))]";
     NodeList dependencies = (NodeList)xpath.evaluate(dependencyPath, document, XPathConstants.NODESET);
     for (int depNum = 0 ; depNum < dependencies.getLength() ; ++depNum) {
       Element dependency = (Element)dependencies.item(depNum);
