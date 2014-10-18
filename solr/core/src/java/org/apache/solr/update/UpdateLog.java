@@ -197,7 +197,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   public long getTotalLogsSize() {
     long size = 0;
-    synchronized (logs) {
+    synchronized (this) {
       for (TransactionLog log : logs) {
         size += log.getLogSize();
       }
@@ -206,7 +206,9 @@ public class UpdateLog implements PluginInfoInitialized {
   }
 
   public long getTotalLogsNumber() {
-    return logs.size();
+    synchronized (this) {
+      return logs.size();
+    }
   }
 
   public VersionInfo getVersionInfo() {
@@ -317,7 +319,7 @@ public class UpdateLog implements PluginInfoInitialized {
   /* Takes over ownership of the log, keeping it until no longer needed
      and then decrementing it's reference and dropping it.
    */
-  protected void addOldLog(TransactionLog oldLog, boolean removeOld) {
+  protected synchronized void addOldLog(TransactionLog oldLog, boolean removeOld) {
     if (oldLog == null) return;
 
     numOldRecords += oldLog.numRecords();
