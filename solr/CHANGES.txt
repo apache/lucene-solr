@@ -181,6 +181,8 @@ New Features
 * SOLR-6517: CollectionsAPI call REBALANCELEADERS. Used to balance leaders
   across nodes for a particular collection
 
+* SOLR-5992: add "removeregex" as an atomic update operation
+  (Vitaliy Zhovtyuk via Erick Erickson)
 
 Bug Fixes
 ----------------------

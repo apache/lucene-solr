@@ -815,6 +815,73 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertQ(req("q", "floatRemove:\"111.111\"", "indent", "true"), "//result[@numFound = '3']");
   }
 
+ @Test
+  public void testRemoveregex() throws Exception {
+    SolrInputDocument doc;
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("cat", new String[]{"aaa", "bbb", "ccc", "ccc", "ddd"});
+    assertU(adoc(doc));
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "2");
+    doc.setField("cat", new String[]{"aaa", "bbb", "bbb", "ccc", "ddd"});
+    assertU(adoc(doc));
+
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "20");
+    doc.setField("cat", new String[]{"aaa", "ccc", "ddd"});
+    assertU(adoc(doc));
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "21");
+    doc.setField("cat", new String[]{"aaa", "bbb", "ddd"});
+    assertU(adoc(doc));
+
+
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '3']");
+
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    List<String> removeList = new ArrayList<>();
+    removeList.add(".b.");
+    removeList.add("c+c");
+    doc.setField("cat", ImmutableMap.of("removeregex", removeList)); //behavior when hitting Solr through ZK
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '2']");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "21");
+    removeList = new ArrayList<>();
+    removeList.add("bb*");
+    removeList.add("cc+");
+    doc.setField("cat", ImmutableMap.of("removeregex", removeList)); //behavior when hitting Solr through ZK
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("cat", ImmutableMap.of("removeregex", "a.a")); //behavior when hitting Solr directly
+
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "cat:aaa", "indent", "true"), "//result[@numFound = '3']");
+  }
+
   @Test
   public void testAdd() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
