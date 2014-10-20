@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -244,6 +245,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
+        SolrDocumentList r = (SolrDocumentList) rb.rsp.getValues().get("response");
+        if(r == null)
+          r = new SolrDocumentList();
+        r.setNumFound(0);
+        rb.rsp.add("response", r);
+        if(rb.isDebug()) {
+          NamedList debug = new NamedList();
+          debug.add("explain", new NamedList());
+          rb.rsp.add("debug", debug);
+        }
+        rb.rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
       } finally {
         SolrQueryTimeoutImpl.reset();
       }
