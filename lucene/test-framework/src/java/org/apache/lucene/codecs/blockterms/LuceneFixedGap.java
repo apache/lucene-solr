@@ -36,8 +36,8 @@ import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-// TODO: we could make separate base class that can wrap
-// any PostingsFormat and make it ord-able...
+// TODO: we could make separate base class that can wrapp
+// any PostingsBaseFormat and make it ord-able...
 
 /**
  * Customized version of {@link Lucene50PostingsFormat} that uses
