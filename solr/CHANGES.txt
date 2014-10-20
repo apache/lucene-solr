@@ -248,6 +248,8 @@ Bug Fixes
 * SOLR-6307: Atomic update remove does not work for int array or date array
   (Anurag Sharma , noble)
 
+* SOLR-6573: QueryElevationComponent now works with localParams in the query (janhoy)
+
 Optimizations
 ----------------------
 

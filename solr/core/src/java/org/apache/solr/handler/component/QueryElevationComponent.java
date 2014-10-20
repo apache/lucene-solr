@@ -388,7 +388,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     String exStr = params.get(QueryElevationParams.EXCLUDE);
 
     Query query = rb.getQuery();
-    String qstr = rb.getQueryString();
+    String qstr = QueryElevationComponent.stripLocalParams(rb.getQueryString());
     if (query == null || qstr == null) {
       return;
     }
@@ -488,6 +488,19 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         rb.addDebugInfo("queryBoosting", dbg);
       }
     }
+  }
+
+  /**
+   * Simple stripping of localParam at start of query
+   * @param queryString the raw query string
+   * @return the query string without localParams, or the original queryString if no valid localParam found at beginning of string
+   */
+  protected static String stripLocalParams(String queryString) {
+    if (queryString == null || !queryString.startsWith("{!") || queryString.indexOf("}") == -1) {
+      return queryString;
+    }
+
+    return queryString.substring(queryString.indexOf("}")+1);
   }
 
   private Sort modifySort(SortField[] current, boolean force, ElevationComparatorSource comparator) {
