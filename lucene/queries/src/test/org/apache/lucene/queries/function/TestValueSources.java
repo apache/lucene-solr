@@ -548,7 +548,7 @@ public class TestValueSources extends LuceneTestCase {
       expected.createWeight(context, searcher);
       actual.createWeight(context, searcher);
 
-      for (org.apache.lucene.index.LeafReaderContext leaf : reader.leaves()) {
+      for (org.apache.lucene.index.LeafReaderContext leaf : searcher.getIndexReader().leaves()) {
         final FunctionValues expectedVals = expected.getValues(context, leaf);
         final FunctionValues actualVals = actual.getValues(context, leaf);
         
