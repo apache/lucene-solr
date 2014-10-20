@@ -26,8 +26,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.blocktreeords.Ords41PostingsFormat;
-import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -121,17 +119,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergeScheduler(new SerialMergeScheduler());
     // set to duel against a codec which has ordinals:
-    final PostingsFormat pf;
-    switch (random().nextInt(2)) {
-      case 0: pf = new Lucene41WithOrds();
-              break;
-      case 1: pf = new Ords41PostingsFormat();
-              break;
-      // TODO: these don't actually support ords!
-      //case 2: pf = new FSTOrdPostingsFormat();
-      //        break;
-      default: throw new AssertionError();
-    }
+    final PostingsFormat pf = TestUtil.getPostingsFormatWithOrds(random());
     final DocValuesFormat dv = new Lucene50DocValuesFormat();
     conf.setCodec(new AssertingCodec() {
       @Override

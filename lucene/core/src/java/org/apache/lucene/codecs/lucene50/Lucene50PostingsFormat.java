@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene50;
 
 
 /*
@@ -38,11 +38,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Lucene 4.1 postings format, which encodes postings in packed integer blocks 
+ * Lucene 5.0 postings format, which encodes postings in packed integer blocks 
  * for fast decode.
- *
- * <p><b>NOTE</b>: this format is still experimental and
- * subject to change without backwards compatibility.
  *
  * <p>
  * Basic idea:
@@ -58,7 +55,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  *   <li> 
  *   <b>Block structure</b>: 
- *   <p>When the postings are long enough, Lucene41PostingsFormat will try to encode most integer data 
+ *   <p>When the postings are long enough, Lucene50PostingsFormat will try to encode most integer data 
  *      as a packed block.</p> 
  *   <p>Take a term with 259 documents as an example, the first 256 document ids are encoded as two packed 
  *      blocks, while the remaining 3 are encoded as one VInt block. </p>
@@ -129,14 +126,14 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>PostingsHeader --&gt; Header, PackedBlockSize</li>
  *   <li>TermMetadata --&gt; (DocFPDelta|SingletonDocID), PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
  *                            SkipFPDelta?</li>
- *   <li>Header, --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>Header, --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *   <li>PackedBlockSize, SingletonDocID --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>DocFPDelta, PosFPDelta, PayFPDelta, PosVIntBlockFPDelta, SkipFPDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
- *    <li>Header is a {@link CodecUtil#writeHeader CodecHeader} storing the version information
+ *    <li>Header is a {@link CodecUtil#writeSegmentHeader SegmentHeader} storing the version information
  *        for the postings.</li>
  *    <li>PackedBlockSize is the fixed block size for packed blocks. In packed block, bit width is 
  *        determined by the largest integer. Smaller block size result in smaller variance among width 
@@ -162,7 +159,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SkipFPDelta determines the position of this term's SkipData within the .doc
  *        file. In particular, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum
- *        (i.e. 128 in Lucene41PostingsFormat).</li>
+ *        (i.e. 128 in Lucene50PostingsFormat).</li>
  *    <li>SingletonDocID is an optimization when a term only appears in one document. In this case, instead
  *        of writing a file pointer to the .doc file (DocFPDelta), and then a VIntBlock at that location, the 
  *        single document ID is written to the term dictionary.</li>
@@ -192,7 +189,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * <ul>
  *   <li>docFile(.doc) --&gt; Header, &lt;TermFreqs, SkipData?&gt;<sup>TermCount</sup>, Footer</li>
- *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *   <li>TermFreqs --&gt; &lt;PackedBlock&gt; <sup>PackedDocBlockNum</sup>,  
  *                        VIntBlock? </li>
  *   <li>PackedBlock --&gt; PackedDocDeltaBlock, PackedFreqBlock?
@@ -243,10 +240,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *       We use this trick since the definition of skip entry is a little different from base interface.
  *       In {@link MultiLevelSkipListWriter}, skip data is assumed to be saved for
  *       skipInterval<sup>th</sup>, 2*skipInterval<sup>th</sup> ... posting in the list. However, 
- *       in Lucene41PostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
+ *       in Lucene50PostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
  *       2*skipInterval+1<sup>th</sup> ... posting (skipInterval==PackedBlockSize in this case). 
  *       When DocFreq is multiple of PackedBlockSize, MultiLevelSkipListWriter will expect one 
- *       more skip data than Lucene41SkipWriter. </li>
+ *       more skip data than Lucene50SkipWriter. </li>
  *   <li>SkipDatum is the metadata of one skip entry.
  *      For the first block (no matter packed or VInt), it is omitted.</li>
  *   <li>DocSkip records the document number of every PackedBlockSize<sup>th</sup> document number in
@@ -276,7 +273,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    sometimes stores part of payloads and offsets for speedup.</p>
  * <ul>
  *   <li>PosFile(.pos) --&gt; Header, &lt;TermPositions&gt; <sup>TermCount</sup>, Footer</li>
- *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *   <li>TermPositions --&gt; &lt;PackedPosDeltaBlock&gt; <sup>PackedPosBlockNum</sup>,  
  *                            VIntBlock? </li>
  *   <li>VIntBlock --&gt; &lt;PositionDelta[, PayloadLength?], PayloadData?, 
@@ -329,7 +326,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    Some payloads and offsets will be separated out into .pos file, for performance reasons.</p>
  * <ul>
  *   <li>PayFile(.pay): --&gt; Header, &lt;TermPayloads, TermOffsets?&gt; <sup>TermCount</sup>, Footer</li>
- *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *   <li>TermPayloads --&gt; &lt;PackedPayLengthBlock, SumPayLength, PayData&gt; <sup>PackedPayBlockNum</sup>
  *   <li>TermOffsets --&gt; &lt;PackedOffsetStartDeltaBlock, PackedOffsetLengthBlock&gt; <sup>PackedPayBlockNum</sup>
  *   <li>PackedPayLengthBlock, PackedOffsetStartDeltaBlock, PackedOffsetLengthBlock --&gt; {@link PackedInts PackedInts}</li>
@@ -358,7 +355,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-public final class Lucene41PostingsFormat extends PostingsFormat {
+public final class Lucene50PostingsFormat extends PostingsFormat {
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -387,18 +384,18 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
 
-  /** Creates {@code Lucene41PostingsFormat} with default
+  /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
-  public Lucene41PostingsFormat() {
+  public Lucene50PostingsFormat() {
     this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  /** Creates {@code Lucene41PostingsFormat} with custom
+  /** Creates {@code Lucene50PostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene41PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
-    super("Lucene41");
+  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+    super("Lucene50");
     this.minTermBlockSize = minTermBlockSize;
     assert minTermBlockSize > 1;
     this.maxTermBlockSize = maxTermBlockSize;
@@ -412,7 +409,7 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene41PostingsWriter(state);
+    PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
 
     boolean success = false;
     try {
@@ -431,19 +428,10 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory,
-                                                                state.fieldInfos,
-                                                                state.segmentInfo,
-                                                                state.context,
-                                                                state.segmentSuffix);
+    PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(state.directory,
-                                                    state.fieldInfos,
-                                                    state.segmentInfo,
-                                                    postingsReader,
-                                                    state.context,
-                                                    state.segmentSuffix);
+      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state);
       success = true;
       return ret;
     } finally {

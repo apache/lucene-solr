@@ -30,12 +30,9 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -96,24 +93,22 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   private final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
-                              PostingsReaderBase postingsReader, IOContext ioContext,
-                              String segmentSuffix)
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state)
     throws IOException {
     
     this.postingsReader = postingsReader;
 
-    this.segment = info.name;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_EXTENSION),
-                       ioContext);
+    this.segment = state.segmentInfo.name;
+    String termsFileName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, BlockTreeTermsWriter.TERMS_EXTENSION);
+    in = state.directory.openInput(termsFileName, state.context);
 
     boolean success = false;
     IndexInput indexIn = null;
 
     try {
       version = readHeader(in);
-      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
-                                ioContext);
+      String indexFileName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
+      indexIn = state.directory.openInput(indexFileName, state.context);
       int indexVersion = readIndexHeader(indexIn);
       if (indexVersion != version) {
         throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion, indexIn);
@@ -125,7 +120,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       }
 
       // Have PostingsReader init itself
-      postingsReader.init(in);
+      postingsReader.init(in, state);
       
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
@@ -158,7 +153,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final BytesRef rootCode = new BytesRef(new byte[numBytes]);
         in.readBytes(rootCode.bytes, 0, numBytes);
         rootCode.length = numBytes;
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         if (fieldInfo == null) {
           throw new CorruptIndexException("invalid field number: " + field, in);
         }
@@ -176,8 +171,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         } else {
           minTerm = maxTerm = null;
         }
-        if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
-          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount(), in);
+        if (docCount < 0 || docCount > state.segmentInfo.getDocCount()) { // #docs with field must be <= #docs
+          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + state.segmentInfo.getDocCount(), in);
         }
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
           throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, in);

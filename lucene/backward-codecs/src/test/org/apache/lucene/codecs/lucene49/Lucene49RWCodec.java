@@ -19,9 +19,11 @@ package org.apache.lucene.codecs.lucene49;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41RWPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWStoredFieldsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42RWTermVectorsFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46RWSegmentInfoFormat;
@@ -32,6 +34,13 @@ import org.apache.lucene.codecs.lucene46.Lucene46RWSegmentInfoFormat;
  */
 @Deprecated
 public final class Lucene49RWCodec extends Lucene49Codec {
+  
+  private final PostingsFormat postings = new Lucene41RWPostingsFormat();
+  
+  @Override
+  public PostingsFormat getPostingsFormatForField(String field) {
+    return postings;
+  }
   
   private static final DocValuesFormat docValues = new Lucene49RWDocValuesFormat();
   

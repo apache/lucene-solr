@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41ords;
+package org.apache.lucene.codecs.blockterms;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,13 +26,14 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blockterms.BlockTermsReader;
 import org.apache.lucene.codecs.blockterms.BlockTermsWriter;
-import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexReader;
 import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
 import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
+import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexReader;
+import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat; // javadocs
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -40,24 +41,24 @@ import org.apache.lucene.index.SegmentWriteState;
 // any PostingsBaseFormat and make it ord-able...
 
 /**
- * Customized version of {@link Lucene41PostingsFormat} that uses
- * {@link FixedGapTermsIndexWriter}.
+ * Customized version of {@link Lucene50PostingsFormat} that uses
+ * {@link VariableGapTermsIndexWriter} with a fixed interval.
  */
-public final class Lucene41WithOrds extends PostingsFormat {
+public final class LuceneVarGapFixedInterval extends PostingsFormat {
   final int termIndexInterval;
   
-  public Lucene41WithOrds() {
+  public LuceneVarGapFixedInterval() {
     this(FixedGapTermsIndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
   }
   
-  public Lucene41WithOrds(int termIndexInterval) {
-    super("Lucene41WithOrds");
+  public LuceneVarGapFixedInterval(int termIndexInterval) {
+    super("LuceneVarGapFixedInterval");
     this.termIndexInterval = termIndexInterval;
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docs = new Lucene41PostingsWriter(state);
+    PostingsWriterBase docs = new Lucene50PostingsWriter(state);
 
     // TODO: should we make the terms index more easily
     // pluggable?  Ie so that this codec would record which
@@ -66,7 +67,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
     TermsIndexWriterBase indexWriter;
     boolean success = false;
     try {
-      indexWriter = new FixedGapTermsIndexWriter(state, termIndexInterval);
+      indexWriter = new VariableGapTermsIndexWriter(state, new VariableGapTermsIndexWriter.EveryNTermSelector(termIndexInterval));
       success = true;
     } finally {
       if (!success) {
@@ -94,12 +95,12 @@ public final class Lucene41WithOrds extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase postings = new Lucene50PostingsReader(state);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state);
+      indexReader = new VariableGapTermsIndexReader(state);
       success = true;
     } finally {
       if (!success) {

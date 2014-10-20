@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -43,9 +43,7 @@ import org.apache.lucene.codecs.MultiLevelSkipListWriter;
  * 4. start offset.
  *
  */
-final class Lucene41SkipWriter extends MultiLevelSkipListWriter {
-  // private boolean DEBUG = Lucene41PostingsReader.DEBUG;
-  
+final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
   private int[] lastSkipDoc;
   private long[] lastSkipDocPointer;
   private long[] lastSkipPosPointer;
@@ -66,7 +64,7 @@ final class Lucene41SkipWriter extends MultiLevelSkipListWriter {
   private boolean fieldHasOffsets;
   private boolean fieldHasPayloads;
 
-  public Lucene41SkipWriter(int maxSkipLevels, int blockSize, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
+  public Lucene50SkipWriter(int maxSkipLevels, int blockSize, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
     super(blockSize, 8, maxSkipLevels, docCount);
     this.docOut = docOut;
     this.posOut = posOut;
@@ -145,9 +143,7 @@ final class Lucene41SkipWriter extends MultiLevelSkipListWriter {
   @Override
   protected void writeSkipData(int level, IndexOutput skipBuffer) throws IOException {
     int delta = curDoc - lastSkipDoc[level];
-    // if (DEBUG) {
-    //   System.out.println("writeSkipData level=" + level + " lastDoc=" + curDoc + " delta=" + delta + " curDocPointer=" + curDocPointer);
-    // }
+
     skipBuffer.writeVInt(delta);
     lastSkipDoc[level] = curDoc;
 
@@ -155,9 +151,7 @@ final class Lucene41SkipWriter extends MultiLevelSkipListWriter {
     lastSkipDocPointer[level] = curDocPointer;
 
     if (fieldHasPositions) {
-      // if (DEBUG) {
-      //   System.out.println("  curPosPointer=" + curPosPointer + " curPosBufferUpto=" + curPosBufferUpto);
-      // }
+
       skipBuffer.writeVInt((int) (curPosPointer - lastSkipPosPointer[level]));
       lastSkipPosPointer[level] = curPosPointer;
       skipBuffer.writeVInt(curPosBufferUpto);

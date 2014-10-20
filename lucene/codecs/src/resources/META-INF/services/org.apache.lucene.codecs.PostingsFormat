@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.lucene.codecs.blocktreeords.Ords41PostingsFormat
+org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat
 org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat
 org.apache.lucene.codecs.memory.DirectPostingsFormat
 org.apache.lucene.codecs.memory.FSTOrdPostingsFormat

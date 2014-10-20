@@ -28,13 +28,12 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests BlockPostingsFormat
  */
-public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat());
+public class TestLucene41PostingsFormat extends BasePostingsFormatTestCase {
+  private final Codec codec = new Lucene41RWCodec();
 
   @Override
   protected Codec getCodec() {

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene50;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,7 +27,7 @@ import org.apache.lucene.util.packed.PackedInts.Decoder;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
 
 /**
  * Encode all values in normal area with fixed bit width, 

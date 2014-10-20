@@ -120,7 +120,7 @@ public class BlockTermsReader extends FieldsProducer {
                                        state.segmentInfo.getId(), state.segmentSuffix);
 
       // Have PostingsReader init itself
-      postingsReader.init(in);
+      postingsReader.init(in, state);
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks

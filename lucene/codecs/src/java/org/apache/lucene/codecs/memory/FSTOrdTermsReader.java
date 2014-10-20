@@ -103,7 +103,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       CodecUtil.checksumEntireFile(blockIn);
       
-      this.postingsReader.init(blockIn);
+      this.postingsReader.init(blockIn, state);
       seekDir(blockIn);
 
       final FieldInfos fieldInfos = state.fieldInfos;

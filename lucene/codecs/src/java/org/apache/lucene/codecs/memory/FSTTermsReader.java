@@ -86,7 +86,7 @@ public class FSTTermsReader extends FieldsProducer {
                                        FSTTermsWriter.TERMS_VERSION_CURRENT,
                                        state.segmentInfo.getId(), state.segmentSuffix);
       CodecUtil.checksumEntireFile(in);
-      this.postingsReader.init(in);
+      this.postingsReader.init(in, state);
       seekDir(in);
 
       final FieldInfos fieldInfos = state.fieldInfos;

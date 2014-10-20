@@ -106,7 +106,7 @@ public class Lucene50Codec extends Codec {
   /** Returns the postings format that should be used for writing 
    *  new segments of <code>field</code>.
    *  
-   *  The default implementation always returns "Lucene41"
+   *  The default implementation always returns "Lucene50"
    */
   public PostingsFormat getPostingsFormatForField(String field) {
     return defaultFormat;
@@ -126,7 +126,7 @@ public class Lucene50Codec extends Codec {
     return docValuesFormat;
   }
 
-  private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
+  private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");
   private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene50");
 
   private final NormsFormat normsFormat = new Lucene50NormsFormat();

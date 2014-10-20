@@ -26,7 +26,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -38,34 +37,12 @@ import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
 import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
 import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
 
-
 /**
- * Concrete class that writes docId(maybe frq,pos,offset,payloads) list
- * with postings format.
- *
- * Postings list for each term will be stored separately. 
- *
- * @see Lucene41SkipWriter for details about skipping setting and postings layout.
- * @lucene.experimental
+ * Writes 4.1 postings for testing
+ * @deprecated for test purposes only
  */
+@Deprecated
 public final class Lucene41PostingsWriter extends PushPostingsWriterBase {
-
-  /** 
-   * Expert: The maximum number of skip levels. Smaller values result in 
-   * slightly smaller indexes, but slower skipping in big posting lists.
-   */
-  static final int maxSkipLevels = 10;
-
-  final static String TERMS_CODEC = "Lucene41PostingsWriterTerms";
-  final static String DOC_CODEC = "Lucene41PostingsWriterDoc";
-  final static String POS_CODEC = "Lucene41PostingsWriterPos";
-  final static String PAY_CODEC = "Lucene41PostingsWriterPay";
-
-  // Increment version to change it
-  final static int VERSION_START = 0;
-  final static int VERSION_META_ARRAY = 1;
-  final static int VERSION_CHECKSUM = 2;
-  final static int VERSION_CURRENT = VERSION_CHECKSUM;
 
   IndexOutput docOut;
   IndexOutput posOut;
@@ -119,13 +96,13 @@ public final class Lucene41PostingsWriter extends PushPostingsWriterBase {
     IndexOutput payOut = null;
     boolean success = false;
     try {
-      CodecUtil.writeHeader(docOut, DOC_CODEC, VERSION_CURRENT);
+      CodecUtil.writeHeader(docOut, Lucene41PostingsFormat.DOC_CODEC, Lucene41PostingsFormat.VERSION_CURRENT);
       forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new int[MAX_DATA_SIZE];
         posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.POS_EXTENSION),
                                                       state.context);
-        CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
+        CodecUtil.writeHeader(posOut, Lucene41PostingsFormat.POS_CODEC, Lucene41PostingsFormat.VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
@@ -146,7 +123,7 @@ public final class Lucene41PostingsWriter extends PushPostingsWriterBase {
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
           payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.PAY_EXTENSION),
                                                         state.context);
-          CodecUtil.writeHeader(payOut, PAY_CODEC, VERSION_CURRENT);
+          CodecUtil.writeHeader(payOut, Lucene41PostingsFormat.PAY_CODEC, Lucene41PostingsFormat.VERSION_CURRENT);
         }
       } else {
         posDeltaBuffer = null;
@@ -168,7 +145,7 @@ public final class Lucene41PostingsWriter extends PushPostingsWriterBase {
     freqBuffer = new int[MAX_DATA_SIZE];
 
     // TODO: should we try skipping every 2/4 blocks...?
-    skipWriter = new Lucene41SkipWriter(maxSkipLevels,
+    skipWriter = new Lucene41SkipWriter(Lucene41PostingsFormat.maxSkipLevels,
                                      BLOCK_SIZE, 
                                      state.segmentInfo.getDocCount(),
                                      docOut,
@@ -183,50 +160,14 @@ public final class Lucene41PostingsWriter extends PushPostingsWriterBase {
     this(state, PackedInts.COMPACT);
   }
 
-  final static class IntBlockTermState extends BlockTermState {
-    long docStartFP = 0;
-    long posStartFP = 0;
-    long payStartFP = 0;
-    long skipOffset = -1;
-    long lastPosBlockOffset = -1;
-    // docid when there is a single pulsed posting, otherwise -1
-    // freq is always implicitly totalTermFreq in this case.
-    int singletonDocID = -1;
-
-    @Override
-    public IntBlockTermState clone() {
-      IntBlockTermState other = new IntBlockTermState();
-      other.copyFrom(this);
-      return other;
-    }
-
-    @Override
-    public void copyFrom(TermState _other) {
-      super.copyFrom(_other);
-      IntBlockTermState other = (IntBlockTermState) _other;
-      docStartFP = other.docStartFP;
-      posStartFP = other.posStartFP;
-      payStartFP = other.payStartFP;
-      lastPosBlockOffset = other.lastPosBlockOffset;
-      skipOffset = other.skipOffset;
-      singletonDocID = other.singletonDocID;
-    }
-
-
-    @Override
-    public String toString() {
-      return super.toString() + " docStartFP=" + docStartFP + " posStartFP=" + posStartFP + " payStartFP=" + payStartFP + " lastPosBlockOffset=" + lastPosBlockOffset + " singletonDocID=" + singletonDocID;
-    }
-  }
-
   @Override
   public IntBlockTermState newTermState() {
     return new IntBlockTermState();
   }
 
   @Override
-  public void init(IndexOutput termsOut) throws IOException {
-    CodecUtil.writeHeader(termsOut, TERMS_CODEC, VERSION_CURRENT);
+  public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
+    CodecUtil.writeHeader(termsOut, Lucene41PostingsFormat.TERMS_CODEC, Lucene41PostingsFormat.VERSION_CURRENT);
     termsOut.writeVInt(BLOCK_SIZE);
   }
 

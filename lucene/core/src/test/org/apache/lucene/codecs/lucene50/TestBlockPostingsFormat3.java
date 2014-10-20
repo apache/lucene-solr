@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene50;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -61,7 +61,7 @@ import org.apache.lucene.util.automaton.RegExp;
  * Tests partial enumeration (only pulling a subset of the indexed data) 
  */
 public class TestBlockPostingsFormat3 extends LuceneTestCase {
-  static final int MAXDOC = Lucene41PostingsFormat.BLOCK_SIZE * 20;
+  static final int MAXDOC = Lucene50PostingsFormat.BLOCK_SIZE * 20;
   
   // creates 8 fields with different options and does "duels" of fields against each other
   public void test() throws Exception {
@@ -82,7 +82,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     };
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene50PostingsFormat()));
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
@@ -137,7 +137,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     verify(dir);
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc = newIndexWriterConfig(analyzer);
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene50PostingsFormat()));
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw2 = new IndexWriter(dir, iwc);
     iw2.forceMerge(1);

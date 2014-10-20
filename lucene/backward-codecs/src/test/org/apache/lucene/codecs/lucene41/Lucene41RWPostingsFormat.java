@@ -1,5 +1,4 @@
-package org.apache.lucene.codecs.memory;
-
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,57 +20,36 @@ package org.apache.lucene.codecs.memory;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
-import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
-/** 
- * FSTOrd term dict + Lucene50PBF
+/**
+ * Read-write version of 4.1 postings format for testing
+ * @deprecated for test purposes only
  */
-
-public final class FSTOrdPostingsFormat extends PostingsFormat {
-  public FSTOrdPostingsFormat() {
-    super("FSTOrd50");
-  }
-
-  @Override
-  public String toString() {
-    return getName();
-  }
-
+@Deprecated
+public class Lucene41RWPostingsFormat extends Lucene41PostingsFormat {
+  
+  static final int MIN_BLOCK_SIZE = 25;
+  static final int MAX_BLOCK_SIZE = 48;
+      
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
+    PostingsWriterBase postingsWriter = new Lucene41PostingsWriter(state);
 
     boolean success = false;
     try {
-      FieldsConsumer ret = new FSTOrdTermsWriter(state, postingsWriter);
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, 
+                                                    postingsWriter,
+                                                    MIN_BLOCK_SIZE, 
+                                                    MAX_BLOCK_SIZE);
       success = true;
       return ret;
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(postingsWriter);
-      }
-    }
-  }
-
-  @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
-    boolean success = false;
-    try {
-      FieldsProducer ret = new FSTOrdTermsReader(state, postingsReader);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(postingsReader);
       }
     }
   }

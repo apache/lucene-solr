@@ -94,7 +94,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
       CodecUtil.checksumEntireFile(indexIn);
 
       // Have PostingsReader init itself
-      postingsReader.init(in);
+      postingsReader.init(in, state);
       
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,

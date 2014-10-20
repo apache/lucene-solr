@@ -36,7 +36,7 @@ import org.apache.lucene.util.TestUtil;
  * Tests special cases of BlockPostingsFormat 
  */
 
-public class TestBlockPostingsFormat2 extends LuceneTestCase {
+public class TestLucene41PostingsFormat2 extends LuceneTestCase {
   Directory dir;
   RandomIndexWriter iw;
   
@@ -45,7 +45,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     super.setUp();
     dir = newFSDirectory(createTempDir("testDFBlockSize"));
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+    iwc.setCodec(new Lucene41RWCodec());
     iw = new RandomIndexWriter(random(), dir, iwc);
     iw.setDoRandomForceMerge(false); // we will ourselves
   }
@@ -55,7 +55,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     iw.close();
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+    iwc.setCodec(new Lucene41RWCodec());
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw = new IndexWriter(dir, iwc);
     iw.forceMerge(1);

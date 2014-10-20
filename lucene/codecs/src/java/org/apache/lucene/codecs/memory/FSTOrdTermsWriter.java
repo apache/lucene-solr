@@ -178,7 +178,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
                                              state.segmentInfo.getId(), state.segmentSuffix);
       CodecUtil.writeSegmentHeader(blockOut, TERMS_CODEC_NAME, VERSION_CURRENT, 
                                              state.segmentInfo.getId(), state.segmentSuffix);
-      this.postingsWriter.init(blockOut); 
+      this.postingsWriter.init(blockOut, state); 
       success = true;
     } finally {
       if (!success) {

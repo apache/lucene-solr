@@ -33,14 +33,9 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 
 final class IDVersionPostingsReader extends PostingsReaderBase {
-  final SegmentReadState state;
-  
-  public IDVersionPostingsReader(SegmentReadState state) {
-    this.state = state;
-  }
 
   @Override
-  public void init(IndexInput termsIn) throws IOException {
+  public void init(IndexInput termsIn, SegmentReadState state) throws IOException {
     // Make sure we are talking to the matching postings writer
     CodecUtil.checkSegmentHeader(termsIn,
                                  IDVersionPostingsWriter.TERMS_CODEC,

@@ -34,7 +34,7 @@ import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
-public class TestForUtil extends LuceneTestCase {
+public class TestLucene41ForUtil extends LuceneTestCase {
 
   public void testEncodeDecode() throws IOException {
     final int iterations = RandomInts.randomIntBetween(random(), 1, 1000);

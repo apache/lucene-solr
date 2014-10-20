@@ -39,7 +39,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
 public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new Ords41PostingsFormat());
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new BlockTreeOrdsPostingsFormat());
 
   @Override
   protected Codec getCodec() {

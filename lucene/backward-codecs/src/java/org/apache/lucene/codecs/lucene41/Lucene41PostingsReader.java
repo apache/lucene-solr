@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.lucene41;
 import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
 import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
 import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
-import static org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter.IntBlockTermState;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -32,6 +31,7 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -48,12 +48,10 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Concrete class that reads docId(maybe frq,pos,offset,payloads) list
- * with postings format.
- *
- * @see Lucene41SkipReader for details
- * @lucene.experimental
+ * Lucene 4.1 postings format.
+ * @deprecated only for reading old 4.x segments
  */
+@Deprecated
 public final class Lucene41PostingsReader extends PostingsReaderBase {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Lucene41PostingsReader.class);
@@ -77,12 +75,12 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       docIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.DOC_EXTENSION),
                             ioContext);
       version = CodecUtil.checkHeader(docIn,
-                            Lucene41PostingsWriter.DOC_CODEC,
-                            Lucene41PostingsWriter.VERSION_START,
-                            Lucene41PostingsWriter.VERSION_CURRENT);
+                            Lucene41PostingsFormat.DOC_CODEC,
+                            Lucene41PostingsFormat.VERSION_START,
+                            Lucene41PostingsFormat.VERSION_CURRENT);
       forUtil = new ForUtil(docIn);
       
-      if (version >= Lucene41PostingsWriter.VERSION_CHECKSUM) {
+      if (version >= Lucene41PostingsFormat.VERSION_CHECKSUM) {
         // NOTE: data file is too costly to verify checksum against all the bytes on open,
         // but for now we at least verify proper structure of the checksum footer: which looks
         // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
@@ -93,9 +91,9 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       if (fieldInfos.hasProx()) {
         posIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.POS_EXTENSION),
                               ioContext);
-        CodecUtil.checkHeader(posIn, Lucene41PostingsWriter.POS_CODEC, version, version);
+        CodecUtil.checkHeader(posIn, Lucene41PostingsFormat.POS_CODEC, version, version);
         
-        if (version >= Lucene41PostingsWriter.VERSION_CHECKSUM) {
+        if (version >= Lucene41PostingsFormat.VERSION_CHECKSUM) {
           // NOTE: data file is too costly to verify checksum against all the bytes on open,
           // but for now we at least verify proper structure of the checksum footer: which looks
           // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
@@ -106,9 +104,9 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         if (fieldInfos.hasPayloads() || fieldInfos.hasOffsets()) {
           payIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.PAY_EXTENSION),
                                 ioContext);
-          CodecUtil.checkHeader(payIn, Lucene41PostingsWriter.PAY_CODEC, version, version);
+          CodecUtil.checkHeader(payIn, Lucene41PostingsFormat.PAY_CODEC, version, version);
           
-          if (version >= Lucene41PostingsWriter.VERSION_CHECKSUM) {
+          if (version >= Lucene41PostingsFormat.VERSION_CHECKSUM) {
             // NOTE: data file is too costly to verify checksum against all the bytes on open,
             // but for now we at least verify proper structure of the checksum footer: which looks
             // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
@@ -130,12 +128,12 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void init(IndexInput termsIn) throws IOException {
+  public void init(IndexInput termsIn, SegmentReadState state) throws IOException {
     // Make sure we are talking to the matching postings writer
     CodecUtil.checkHeader(termsIn,
-                          Lucene41PostingsWriter.TERMS_CODEC,
-                          Lucene41PostingsWriter.VERSION_START,
-                          Lucene41PostingsWriter.VERSION_CURRENT);
+                          Lucene41PostingsFormat.TERMS_CODEC,
+                          Lucene41PostingsFormat.VERSION_START,
+                          Lucene41PostingsFormat.VERSION_CURRENT);
     final int indexBlockSize = termsIn.readVInt();
     if (indexBlockSize != BLOCK_SIZE) {
       throw new IllegalStateException("index-time BLOCK_SIZE (" + indexBlockSize + ") != read-time BLOCK_SIZE (" + BLOCK_SIZE + ")");
@@ -187,7 +185,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       termState.posStartFP = 0;
       termState.payStartFP = 0;
     }
-    if (version < Lucene41PostingsWriter.VERSION_META_ARRAY) {  // backward compatibility
+    if (version < Lucene41PostingsFormat.VERSION_META_ARRAY) {  // backward compatibility
       _decodeTerm(in, fieldInfo, termState);
       return;
     }
@@ -488,7 +486,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new Lucene41SkipReader(docIn.clone(),
-                                        Lucene41PostingsWriter.maxSkipLevels,
+                                        Lucene41PostingsFormat.maxSkipLevels,
                                         BLOCK_SIZE,
                                         indexHasPos,
                                         indexHasOffsets,
@@ -821,7 +819,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
           //   System.out.println("    create skipper");
           // }
           skipper = new Lucene41SkipReader(docIn.clone(),
-                                        Lucene41PostingsWriter.maxSkipLevels,
+                                        Lucene41PostingsFormat.maxSkipLevels,
                                         BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,
@@ -1347,7 +1345,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
           //   System.out.println("    create skipper");
           // }
           skipper = new Lucene41SkipReader(docIn.clone(),
-                                        Lucene41PostingsWriter.maxSkipLevels,
+                                        Lucene41PostingsFormat.maxSkipLevels,
                                         BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,
@@ -1590,7 +1588,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
 
   @Override
   public void checkIntegrity() throws IOException {
-    if (version >= Lucene41PostingsWriter.VERSION_CHECKSUM) {
+    if (version >= Lucene41PostingsFormat.VERSION_CHECKSUM) {
       if (docIn != null) {
         CodecUtil.checksumEntireFile(docIn);
       }

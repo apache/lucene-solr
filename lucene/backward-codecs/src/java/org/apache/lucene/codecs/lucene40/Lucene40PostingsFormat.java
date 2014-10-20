@@ -51,13 +51,7 @@ public class Lucene40PostingsFormat extends PostingsFormat {
 
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(
-                                                    state.directory,
-                                                    state.fieldInfos,
-                                                    state.segmentInfo,
-                                                    postings,
-                                                    state.context,
-                                                    state.segmentSuffix);
+      FieldsProducer ret = new BlockTreeTermsReader(postings, state);
       success = true;
       return ret;
     } finally {

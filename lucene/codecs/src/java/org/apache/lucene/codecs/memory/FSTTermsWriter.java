@@ -145,7 +145,7 @@ public class FSTTermsWriter extends FieldsConsumer {
       CodecUtil.writeSegmentHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT,
                                         state.segmentInfo.getId(), state.segmentSuffix);   
 
-      this.postingsWriter.init(out); 
+      this.postingsWriter.init(out, state); 
       success = true;
     } finally {
       if (!success) {
