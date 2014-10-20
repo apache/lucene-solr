@@ -725,4 +725,31 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       delete();
     }
   }
+
+  @Test
+  public void testWithLocalParam() throws Exception {
+    assertEquals("foo", QueryElevationComponent.stripLocalParams("foo"));
+    assertEquals("foo", QueryElevationComponent.stripLocalParams("{!param=value}foo"));
+    assertEquals("", QueryElevationComponent.stripLocalParams("{!param=value}"));
+    assertEquals("{!notTerminated", QueryElevationComponent.stripLocalParams("{!notTerminated"));
+    assertEquals("{notLocalParam}foo", QueryElevationComponent.stripLocalParams("{notLocalParam}foo"));
+    assertEquals(null, QueryElevationComponent.stripLocalParams(null));
+
+    try {
+      init("schema11.xml");
+      clearIndex();
+      assertU(commit());
+      assertU(adoc("id", "7", "text", "AAAA", "str_s", "a"));
+      assertU(commit());
+
+      assertQ("", req(CommonParams.Q, "{!q.op=AND}AAAA", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]")
+          , "//*[@numFound='1']"
+          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
+      );
+    } finally {
+      delete();
+    }
+  }
 }
