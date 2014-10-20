@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,6 +35,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -1146,6 +1149,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               updateField = true;
               doRemove(oldDoc, sif, fieldVal, schema);
               break;
+            case "removeregex":
+              updateField = true;
+              doRemoveRegex(oldDoc, sif, fieldVal);
+              break;
             case "inc":
               updateField = true;
               doInc(oldDoc, schema, sif, fieldVal);
@@ -1225,6 +1232,38 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return oldSize > existingField.getValueCount();
   }
 
+  private void doRemoveRegex(SolrInputDocument oldDoc, SolrInputField sif, Object valuePatterns) {
+    final String name = sif.getName();
+    final SolrInputField existingField = oldDoc.get(name);
+    if (existingField != null) {
+      final Collection<Object> valueToRemove = new HashSet<>();
+      final Collection<Object> original = existingField.getValues();
+      final Collection<Pattern> patterns = preparePatterns(valuePatterns);
+      for (Object value : original) {
+        for(Pattern pattern : patterns) {
+          final Matcher m = pattern.matcher(value.toString());
+          if (m.matches()) {
+            valueToRemove.add(value);
+          }
+        }
+      }
+      original.removeAll(valueToRemove);
+      oldDoc.setField(name, original);
+    }
+  }
+
+  private Collection<Pattern> preparePatterns(Object fieldVal) {
+    final Collection<Pattern> patterns = new LinkedHashSet<>(1);
+    if (fieldVal instanceof Collection) {
+      Collection<String> patternVals = (Collection<String>) fieldVal;
+      for (String patternVal : patternVals) {
+        patterns.add(Pattern.compile(patternVal));
+      }
+    } else {
+      patterns.add(Pattern.compile(fieldVal.toString()));
+    }
+    return patterns;
+  }
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
