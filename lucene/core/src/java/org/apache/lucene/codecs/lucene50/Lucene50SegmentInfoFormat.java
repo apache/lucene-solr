@@ -50,7 +50,7 @@ import org.apache.lucene.util.Version;
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
- *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
+ *   <li>SegVersion --&gt; {@link Version#write Version}</li>
  *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
  *   <li>Diagnostics --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
@@ -61,7 +61,7 @@ import org.apache.lucene.util.Version;
  * Field Descriptions:
  * <p>
  * <ul>
- *   <li>SegVersion is the code version that created the segment.</li>
+ *   <li>SegVersion is the code version that created the segment, written as 4 unsigned bytes (major, minor, bugfix, prerelease)</li>
  *   <li>SegSize is the number of documents contained in the segment index.</li>
  *   <li>IsCompoundFile records whether the segment is written as a compound file or
  *       not. If this is -1, the segment is not a compound file. If it is 1, the segment

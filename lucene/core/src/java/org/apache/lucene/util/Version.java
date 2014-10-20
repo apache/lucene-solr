@@ -18,8 +18,12 @@ package org.apache.lucene.util;
  */
 
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.Locale;
+
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 
 /**
  * Use by certain classes to match version compatibility
@@ -456,5 +460,26 @@ public final class Version {
   @Override
   public int hashCode() {
     return encodedValue;
+  }
+
+  /**
+   * Writes the version to the provided {@link DataOutput}.
+   */
+  public void write(DataOutput out) throws IOException {
+    out.writeByte((byte) major);
+    out.writeByte((byte) minor);
+    out.writeByte((byte) bugfix);
+    out.writeByte((byte) prerelease);
+  }
+
+  /**
+   * Reads a {@code Version} previously written with {@link #writeVersion}.
+   */
+  public static Version read(DataInput in) throws IOException {
+    int major = in.readByte()&0xFF;
+    int minor = in.readByte()&0xFF;
+    int bugfix = in.readByte()&0xFF;
+    int prerelease = in.readByte()&0xFF;
+    return new Version(major, minor, bugfix, prerelease);
   }
 }
