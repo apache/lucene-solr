@@ -725,4 +725,36 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       delete();
     }
   }
+
+  @Test
+  public void testWithLocalParam() throws Exception {
+    try {
+      init("schema11.xml");
+      clearIndex();
+      assertU(commit());
+      assertU(adoc("id", "7", "text", "AAAA", "str_s", "a"));
+      assertU(commit());
+
+      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]")
+          , "//*[@numFound='1']"
+          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
+      );
+      assertQ("", req(CommonParams.Q, "{!q.op=AND}AAAA", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]")
+          , "//*[@numFound='1']"
+          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
+      );
+      assertQ("", req(CommonParams.Q, "{!q.op=AND v='AAAA'}", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]")
+          , "//*[@numFound='1']"
+          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
+      );
+    } finally {
+      delete();
+    }
+  }
 }

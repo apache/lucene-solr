@@ -29,6 +29,7 @@ Bug Fixes
 * SOLR-6530: Commits under network partitions can put any node in down state.
   (Ramkumar Aiyengar, Alan Woodward, Mark Miller, shalin)
 
+* SOLR-6573: QueryElevationComponent now works with localParams in the query (janhoy)
 
 Other Changes
 ----------------------

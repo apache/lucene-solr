@@ -51,6 +51,7 @@ import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
@@ -393,7 +394,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     String exStr = params.get(QueryElevationParams.EXCLUDE);
 
     Query query = rb.getQuery();
-    String qstr = rb.getQueryString();
+    SolrParams localParams = rb.getQparser().getLocalParams();
+    String qstr = localParams == null ? rb.getQueryString() : localParams.get(QueryParsing.V);
     if (query == null || qstr == null) {
       return;
     }
