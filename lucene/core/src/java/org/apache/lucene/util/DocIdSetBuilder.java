@@ -40,7 +40,7 @@ public final class DocIdSetBuilder {
   /** Sole constructor. */
   public DocIdSetBuilder(int maxDoc) {
     this.maxDoc = maxDoc;
-    threshold = maxDoc >>> 14;
+    threshold = maxDoc >>> 10;
   }
 
   /**
