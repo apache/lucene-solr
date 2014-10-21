@@ -17,10 +17,16 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
 import static org.apache.lucene.codecs.lucene50.ForUtil.MAX_DATA_SIZE;
 import static org.apache.lucene.codecs.lucene50.ForUtil.MAX_ENCODED_SIZE;
-import static org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter.IntBlockTermState;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.DOC_CODEC;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.MAX_SKIP_LEVELS;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.PAY_CODEC;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.POS_CODEC;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.TERMS_CODEC;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.VERSION_START;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,6 +35,7 @@ import java.util.Collections;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -48,7 +55,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Concrete class that reads docId(maybe frq,pos,offset,payloads) list
  * with postings format.
  *
- * @see Lucene50SkipReader for details
  * @lucene.experimental
  */
 public final class Lucene50PostingsReader extends PostingsReaderBase {
@@ -68,42 +74,29 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     IndexInput docIn = null;
     IndexInput posIn = null;
     IndexInput payIn = null;
+    
+    // NOTE: these data files are too costly to verify checksum against all the bytes on open,
+    // but for now we at least verify proper structure of the checksum footer: which looks
+    // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+    // such as file truncation.
+    
     String docName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.DOC_EXTENSION);
     try {
       docIn = state.directory.openInput(docName, state.context);
-      version = CodecUtil.checkSegmentHeader(docIn,
-                                             Lucene50PostingsWriter.DOC_CODEC,
-                                             Lucene50PostingsWriter.VERSION_START,
-                                             Lucene50PostingsWriter.VERSION_CURRENT,
-                                             state.segmentInfo.getId(), state.segmentSuffix);
+      version = CodecUtil.checkSegmentHeader(docIn, DOC_CODEC, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       forUtil = new ForUtil(docIn);
-      
-      // NOTE: data file is too costly to verify checksum against all the bytes on open,
-      // but for now we at least verify proper structure of the checksum footer: which looks
-      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-      // such as file truncation.
       CodecUtil.retrieveChecksum(docIn);
 
       if (state.fieldInfos.hasProx()) {
         String proxName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.POS_EXTENSION);
         posIn = state.directory.openInput(proxName, state.context);
-        CodecUtil.checkSegmentHeader(posIn, Lucene50PostingsWriter.POS_CODEC, version, version, state.segmentInfo.getId(), state.segmentSuffix);
-        
-        // NOTE: data file is too costly to verify checksum against all the bytes on open,
-        // but for now we at least verify proper structure of the checksum footer: which looks
-        // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-        // such as file truncation.
+        CodecUtil.checkSegmentHeader(posIn, POS_CODEC, version, version, state.segmentInfo.getId(), state.segmentSuffix);
         CodecUtil.retrieveChecksum(posIn);
 
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
           String payName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.PAY_EXTENSION);
           payIn = state.directory.openInput(payName, state.context);
-          CodecUtil.checkSegmentHeader(payIn, Lucene50PostingsWriter.PAY_CODEC, version, version, state.segmentInfo.getId(), state.segmentSuffix);
-          
-          // NOTE: data file is too costly to verify checksum against all the bytes on open,
-          // but for now we at least verify proper structure of the checksum footer: which looks
-          // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
-          // such as file truncation.
+          CodecUtil.checkSegmentHeader(payIn, PAY_CODEC, version, version, state.segmentInfo.getId(), state.segmentSuffix);
           CodecUtil.retrieveChecksum(payIn);
         }
       }
@@ -122,12 +115,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   @Override
   public void init(IndexInput termsIn, SegmentReadState state) throws IOException {
     // Make sure we are talking to the matching postings writer
-    CodecUtil.checkSegmentHeader(termsIn,
-                                 Lucene50PostingsWriter.TERMS_CODEC,
-                                 Lucene50PostingsWriter.VERSION_START,
-                                 Lucene50PostingsWriter.VERSION_CURRENT,
-                                 state.segmentInfo.getId(),
-                                 state.segmentSuffix);
+    CodecUtil.checkSegmentHeader(termsIn, TERMS_CODEC, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
     final int indexBlockSize = termsIn.readVInt();
     if (indexBlockSize != BLOCK_SIZE) {
       throw new IllegalStateException("index-time BLOCK_SIZE (" + indexBlockSize + ") != read-time BLOCK_SIZE (" + BLOCK_SIZE + ")");
@@ -414,11 +402,11 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new Lucene50SkipReader(docIn.clone(),
-                                        Lucene50PostingsWriter.MAX_SKIP_LEVELS,
-                                        BLOCK_SIZE,
-                                        indexHasPos,
-                                        indexHasOffsets,
-                                        indexHasPayloads);
+                                           MAX_SKIP_LEVELS,
+                                           BLOCK_SIZE,
+                                           indexHasPos,
+                                           indexHasOffsets,
+                                           indexHasPayloads);
         }
 
         if (!skipped) {
@@ -692,11 +680,11 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new Lucene50SkipReader(docIn.clone(),
-                                        Lucene50PostingsWriter.MAX_SKIP_LEVELS,
-                                        BLOCK_SIZE,
-                                        true,
-                                        indexHasOffsets,
-                                        indexHasPayloads);
+                                           MAX_SKIP_LEVELS,
+                                           BLOCK_SIZE,
+                                           true,
+                                           indexHasOffsets,
+                                           indexHasPayloads);
         }
 
         if (!skipped) {
@@ -1118,7 +1106,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
           skipper = new Lucene50SkipReader(docIn.clone(),
-                                        Lucene50PostingsWriter.MAX_SKIP_LEVELS,
+                                        MAX_SKIP_LEVELS,
                                         BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,

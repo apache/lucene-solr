@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene50;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -33,6 +34,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
@@ -373,6 +375,21 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    * See chapter: <a href="#Payloads">Payloads and Offsets</a>
    */
   public static final String PAY_EXTENSION = "pay";
+  
+  /** 
+   * Expert: The maximum number of skip levels. Smaller values result in 
+   * slightly smaller indexes, but slower skipping in big posting lists.
+   */
+  static final int MAX_SKIP_LEVELS = 10;
+
+  final static String TERMS_CODEC = "Lucene50PostingsWriterTerms";
+  final static String DOC_CODEC = "Lucene50PostingsWriterDoc";
+  final static String POS_CODEC = "Lucene50PostingsWriterPos";
+  final static String PAY_CODEC = "Lucene50PostingsWriterPay";
+
+  // Increment version to change it
+  final static int VERSION_START = 0;
+  final static int VERSION_CURRENT = VERSION_START;
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
@@ -438,6 +455,41 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
       if (!success) {
         IOUtils.closeWhileHandlingException(postingsReader);
       }
+    }
+  }
+  
+  final static class IntBlockTermState extends BlockTermState {
+    long docStartFP = 0;
+    long posStartFP = 0;
+    long payStartFP = 0;
+    long skipOffset = -1;
+    long lastPosBlockOffset = -1;
+    // docid when there is a single pulsed posting, otherwise -1
+    // freq is always implicitly totalTermFreq in this case.
+    int singletonDocID = -1;
+
+    @Override
+    public IntBlockTermState clone() {
+      IntBlockTermState other = new IntBlockTermState();
+      other.copyFrom(this);
+      return other;
+    }
+
+    @Override
+    public void copyFrom(TermState _other) {
+      super.copyFrom(_other);
+      IntBlockTermState other = (IntBlockTermState) _other;
+      docStartFP = other.docStartFP;
+      posStartFP = other.posStartFP;
+      payStartFP = other.payStartFP;
+      lastPosBlockOffset = other.lastPosBlockOffset;
+      skipOffset = other.skipOffset;
+      singletonDocID = other.singletonDocID;
+    }
+
+    @Override
+    public String toString() {
+      return super.toString() + " docStartFP=" + docStartFP + " posStartFP=" + posStartFP + " payStartFP=" + payStartFP + " lastPosBlockOffset=" + lastPosBlockOffset + " singletonDocID=" + singletonDocID;
     }
   }
 }
