@@ -278,7 +278,7 @@ public class CheckIndex implements Closeable {
        *  tree terms dictionary (this is only set if the
        *  {@link PostingsFormat} for this segment uses block
        *  tree. */
-      public Map<String,Stats> blockTreeStats = null;
+      public Map<String,Object> blockTreeStats = null;
     }
 
     /**
@@ -1289,14 +1289,12 @@ public class CheckIndex implements Closeable {
         // docs got deleted and then merged away):
         
       } else {
-        if (fieldTerms instanceof FieldReader) {
-          final Stats stats = ((FieldReader) fieldTerms).computeStats();
-          assert stats != null;
-          if (status.blockTreeStats == null) {
-            status.blockTreeStats = new HashMap<>();
-          }
-          status.blockTreeStats.put(field, stats);
+        final Object stats = fieldTerms.getStats();
+        assert stats != null;
+        if (status.blockTreeStats == null) {
+          status.blockTreeStats = new HashMap<>();
         }
+        status.blockTreeStats.put(field, stats);
         
         if (sumTotalTermFreq != 0) {
           final long v = fields.terms(field).getSumTotalTermFreq();
@@ -1423,7 +1421,7 @@ public class CheckIndex implements Closeable {
     }
     
     if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
-      for(Map.Entry<String,Stats> ent : status.blockTreeStats.entrySet()) {
+      for(Map.Entry<String, Object> ent : status.blockTreeStats.entrySet()) {
         infoStream.println("      field \"" + ent.getKey() + "\":");
         infoStream.println("      " + ent.getValue().toString().replace("\n", "\n      "));
       }

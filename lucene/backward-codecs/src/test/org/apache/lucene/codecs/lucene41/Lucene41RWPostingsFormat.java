@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.blocktree.Lucene40BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
@@ -41,7 +41,7 @@ public class Lucene41RWPostingsFormat extends Lucene41PostingsFormat {
 
     boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, 
+      FieldsConsumer ret = new Lucene40BlockTreeTermsWriter(state, 
                                                     postingsWriter,
                                                     MIN_BLOCK_SIZE, 
                                                     MAX_BLOCK_SIZE);

@@ -41,7 +41,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.fst.Builder;
@@ -187,10 +186,12 @@ import org.apache.lucene.util.packed.PackedInts;
  *       sub-block, and its file pointer.
  * </ul>
  *
- * @see BlockTreeTermsReader
+ * @see Lucene40BlockTreeTermsReader
  * @lucene.experimental
+ * @deprecated Only for 4.x backcompat
  */
-public final class BlockTreeTermsWriter extends FieldsConsumer {
+@Deprecated
+public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
 
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
 
@@ -198,12 +199,12 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
-   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
+   *  #Lucene40BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MIN_BLOCK_SIZE = 25;
 
   /** Suggested default value for the {@code
    *  maxItemsInBlock} parameter to {@link
-   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
+   *  #Lucene40BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
   // public final static boolean DEBUG = false;
@@ -220,9 +221,21 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Initial terms format. */
   public static final int VERSION_START = 0;
+  
+  /** Append-only */
+  public static final int VERSION_APPEND_ONLY = 1;
+
+  /** Meta data as array */
+  public static final int VERSION_META_ARRAY = 2;
+  
+  /** checksums */
+  public static final int VERSION_CHECKSUM = 3;
+
+  /** min/max term */
+  public static final int VERSION_MIN_MAX_TERMS = 4;
 
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_START;
+  public static final int VERSION_CURRENT = VERSION_MIN_MAX_TERMS;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -274,11 +287,11 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
    *  sub-blocks) per block will aim to be between
    *  minItemsPerBlock and maxItemsPerBlock, though in some
    *  cases the blocks may be smaller than the min. */
-  public BlockTreeTermsWriter(
-                              SegmentWriteState state,
-                              PostingsWriterBase postingsWriter,
-                              int minItemsInBlock,
-                              int maxItemsInBlock)
+  public Lucene40BlockTreeTermsWriter(
+      SegmentWriteState state,
+      PostingsWriterBase postingsWriter,
+      int minItemsInBlock,
+      int maxItemsInBlock)
     throws IOException
   {
     if (minItemsInBlock <= 1) {

@@ -64,12 +64,13 @@ import org.apache.lucene.util.IOUtils;
  *  option to see summary statistics on the blocks in the
  *  dictionary.
  *
- *  See {@link BlockTreeTermsWriter}.
+ *  See {@link Lucene40BlockTreeTermsWriter}.
  *
  * @lucene.experimental
+ * @deprecated Only for 4.x backcompat
  */
-
-public final class BlockTreeTermsReader extends FieldsProducer {
+@Deprecated
+public final class Lucene40BlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
   final IndexInput in;
@@ -80,7 +81,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   // produce DocsEnum on demand
   final PostingsReaderBase postingsReader;
 
-  private final TreeMap<String,FieldReader> fields = new TreeMap<>();
+  private final TreeMap<String,Lucene40FieldReader> fields = new TreeMap<>();
 
   /** File offset where the directory starts in the terms file. */
   private long dirOffset;
@@ -93,13 +94,13 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   private final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state)
+  public Lucene40BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state)
     throws IOException {
     
     this.postingsReader = postingsReader;
 
     this.segment = state.segmentInfo.name;
-    String termsFileName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, BlockTreeTermsWriter.TERMS_EXTENSION);
+    String termsFileName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, Lucene40BlockTreeTermsWriter.TERMS_EXTENSION);
     in = state.directory.openInput(termsFileName, state.context);
 
     boolean success = false;
@@ -107,7 +108,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
     try {
       version = readHeader(in);
-      String indexFileName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
+      String indexFileName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, Lucene40BlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
       indexIn = state.directory.openInput(indexFileName, state.context);
       int indexVersion = readIndexHeader(indexIn);
       if (indexVersion != version) {
@@ -115,7 +116,9 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       }
       
       // verify
-      CodecUtil.checksumEntireFile(indexIn);
+      if (version >= Lucene40BlockTreeTermsWriter.VERSION_CHECKSUM) {
+        CodecUtil.checksumEntireFile(indexIn);
+      }
 
       // Have PostingsReader init itself
       postingsReader.init(in, state);
@@ -125,7 +128,9 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       // but for now we at least verify proper structure of the checksum footer: which looks
       // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
       // such as file truncation.
-      CodecUtil.retrieveChecksum(in);
+      if (version >= Lucene40BlockTreeTermsWriter.VERSION_CHECKSUM) {
+        CodecUtil.retrieveChecksum(in);
+      }
 
       // Read per-field details
       seekDir(in, dirOffset);
@@ -156,12 +161,17 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
-        final int longsSize = in.readVInt();
+        final int longsSize = version >= Lucene40BlockTreeTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
         if (longsSize < 0) {
           throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize, in);
         }
-        BytesRef minTerm = readBytesRef(in);
-        BytesRef maxTerm = readBytesRef(in);
+        BytesRef minTerm, maxTerm;
+        if (version >= Lucene40BlockTreeTermsWriter.VERSION_MIN_MAX_TERMS) {
+          minTerm = readBytesRef(in);
+          maxTerm = readBytesRef(in);
+        } else {
+          minTerm = maxTerm = null;
+        }
         if (docCount < 0 || docCount > state.segmentInfo.getDocCount()) { // #docs with field must be <= #docs
           throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + state.segmentInfo.getDocCount(), in);
         }
@@ -172,8 +182,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, in);
         }
         final long indexStartFP = indexIn.readVLong();
-        FieldReader previous = fields.put(fieldInfo.name,       
-                                          new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
+        Lucene40FieldReader previous = fields.put(fieldInfo.name,       
+                                          new Lucene40FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
                                                           indexStartFP, longsSize, indexIn, minTerm, maxTerm));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
@@ -200,25 +210,36 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   /** Reads terms file header. */
   private int readHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
+    int version = CodecUtil.checkHeader(input, Lucene40BlockTreeTermsWriter.TERMS_CODEC_NAME,
+                          Lucene40BlockTreeTermsWriter.VERSION_START,
+                          Lucene40BlockTreeTermsWriter.VERSION_CURRENT);
+    if (version < Lucene40BlockTreeTermsWriter.VERSION_APPEND_ONLY) {
+      dirOffset = input.readLong();
+    }
     return version;
   }
 
   /** Reads index file header. */
   private int readIndexHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
+    int version = CodecUtil.checkHeader(input, Lucene40BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+                          Lucene40BlockTreeTermsWriter.VERSION_START,
+                          Lucene40BlockTreeTermsWriter.VERSION_CURRENT);
+    if (version < Lucene40BlockTreeTermsWriter.VERSION_APPEND_ONLY) {
+      indexDirOffset = input.readLong(); 
+    }
     return version;
   }
 
   /** Seek {@code input} to the directory offset. */
   private void seekDir(IndexInput input, long dirOffset)
       throws IOException {
-    input.seek(input.length() - CodecUtil.footerLength() - 8);
-    dirOffset = input.readLong();
+    if (version >= Lucene40BlockTreeTermsWriter.VERSION_CHECKSUM) {
+      input.seek(input.length() - CodecUtil.footerLength() - 8);
+      dirOffset = input.readLong();
+    } else if (version >= Lucene40BlockTreeTermsWriter.VERSION_APPEND_ONLY) {
+      input.seek(input.length() - 8);
+      dirOffset = input.readLong();
+    }
     input.seek(dirOffset);
   }
 
@@ -273,7 +294,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   @Override
   public long ramBytesUsed() {
     long sizeInBytes = postingsReader.ramBytesUsed();
-    for(FieldReader reader : fields.values()) {
+    for(Lucene40FieldReader reader : fields.values()) {
       sizeInBytes += reader.ramBytesUsed();
     }
     return sizeInBytes;
@@ -288,12 +309,14 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   @Override
-  public void checkIntegrity() throws IOException { 
-    // term dictionary
-    CodecUtil.checksumEntireFile(in);
+  public void checkIntegrity() throws IOException {
+    if (version >= Lucene40BlockTreeTermsWriter.VERSION_CHECKSUM) {      
+      // term dictionary
+      CodecUtil.checksumEntireFile(in);
       
-    // postings
-    postingsReader.checkIntegrity();
+      // postings
+      postingsReader.checkIntegrity();
+    }
   }
 
   @Override

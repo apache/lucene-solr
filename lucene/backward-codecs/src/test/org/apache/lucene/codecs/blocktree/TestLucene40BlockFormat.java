@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.blocktree;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,8 +19,9 @@ package org.apache.lucene.codecs.lucene41;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.blocktree.FieldReader;
-import org.apache.lucene.codecs.blocktree.Stats;
+import org.apache.lucene.codecs.blocktree.Lucene40FieldReader;
+import org.apache.lucene.codecs.blocktree.Lucene40Stats;
+import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
@@ -32,7 +33,7 @@ import org.apache.lucene.store.Directory;
 /**
  * Tests BlockPostingsFormat
  */
-public class TestLucene41PostingsFormat extends BasePostingsFormatTestCase {
+public class TestLucene40BlockFormat extends BasePostingsFormatTestCase {
   private final Codec codec = new Lucene41RWCodec();
 
   @Override
@@ -54,9 +55,9 @@ public class TestLucene41PostingsFormat extends BasePostingsFormatTestCase {
 
     DirectoryReader r = DirectoryReader.open(w, true);
     assertEquals(1, r.leaves().size());
-    FieldReader field = (FieldReader) r.leaves().get(0).reader().fields().terms("field");
+    Lucene40FieldReader field = (Lucene40FieldReader) r.leaves().get(0).reader().fields().terms("field");
     // We should see exactly two blocks: one root block (prefix empty string) and one block for z* terms (prefix z):
-    Stats stats = field.computeStats();
+    Lucene40Stats stats = field.computeStats();
     assertEquals(0, stats.floorBlockCount);
     assertEquals(2, stats.nonFloorBlockCount);
     r.close();

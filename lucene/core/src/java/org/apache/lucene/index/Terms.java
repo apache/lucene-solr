@@ -193,4 +193,9 @@ public abstract class Terms {
       scratch.grow(scratch.length());
     }
   }
+  
+  public String getStats() {
+    // nocommit: add a meaningful default
+    return "";
+  }
 }
