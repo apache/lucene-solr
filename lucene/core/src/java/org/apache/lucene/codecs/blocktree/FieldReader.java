@@ -120,6 +120,7 @@ public final class FieldReader extends Terms implements Accountable {
   }
 
   /** For debugging -- used by CheckIndex too*/
+  @Override
   public Stats getStats() throws IOException {
     return new SegmentTermsEnum(this).computeBlockStats();
   }
