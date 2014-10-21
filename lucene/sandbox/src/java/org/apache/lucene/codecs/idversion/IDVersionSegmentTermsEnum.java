@@ -631,7 +631,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
       int cmp = 0;
 
-      // TOOD: we should write our vLong backwards (MSB
+      // TODO: we should write our vLong backwards (MSB
       // first) to get better sharing from the FST
 
       // First compare up to valid seek frames:
@@ -645,7 +645,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         }
         arc = arcs[1+targetUpto];
         assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
-        // TOOD: we could save the outputs in local
+        // TODO: we could save the outputs in local
         // byte[][] instead of making new objs ever
         // seek; but, often the FST doesn't have any
         // shared bytes (but this could change if we
