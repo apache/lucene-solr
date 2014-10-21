@@ -57,7 +57,7 @@ public class TestLucene40BlockFormat extends BasePostingsFormatTestCase {
     assertEquals(1, r.leaves().size());
     Lucene40FieldReader field = (Lucene40FieldReader) r.leaves().get(0).reader().fields().terms("field");
     // We should see exactly two blocks: one root block (prefix empty string) and one block for z* terms (prefix z):
-    Lucene40Stats stats = field.computeStats();
+    Lucene40Stats stats = field.getStats();
     assertEquals(0, stats.floorBlockCount);
     assertEquals(2, stats.nonFloorBlockCount);
     r.close();

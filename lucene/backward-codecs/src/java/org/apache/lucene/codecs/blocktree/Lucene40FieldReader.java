@@ -123,8 +123,7 @@ final class Lucene40FieldReader extends Terms implements Accountable {
   }
 
   /** For debugging -- used by CheckIndex too*/
-  // TODO: maybe push this into Terms?
-  public Lucene40Stats computeStats() throws IOException {
+  public Lucene40Stats getStats() throws IOException {
     return new Lucene40SegmentTermsEnum(this).computeBlockStats();
   }
 

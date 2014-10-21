@@ -29,7 +29,7 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * BlockTree statistics for a single field 
- * returned by {@link Lucene40FieldReader#computeStats()}.
+ * returned by {@link Lucene40FieldReader#getStats()}.
  * @deprecated Only for 4.x backcompat
  */
 @Deprecated

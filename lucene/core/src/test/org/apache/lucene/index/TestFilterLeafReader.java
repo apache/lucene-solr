@@ -166,7 +166,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     for (Method m : superClazz.getMethods()) {
       final int mods = m.getModifiers();
       if (Modifier.isStatic(mods) || Modifier.isAbstract(mods) || Modifier.isFinal(mods) || m.isSynthetic()
-          || m.getName().equals("attributes")) {
+          || m.getName().equals("attributes") || m.getName().equals("getStats")) {
         continue;
       }
       // The point of these checks is to ensure that methods that have a default

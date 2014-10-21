@@ -29,7 +29,7 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * BlockTree statistics for a single field 
- * returned by {@link FieldReader#computeStats()}.
+ * returned by {@link FieldReader#getStats()}.
  */
 public class Stats {
   /** How many nodes in the index FST. */

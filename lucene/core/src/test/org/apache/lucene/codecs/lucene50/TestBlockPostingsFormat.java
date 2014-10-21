@@ -57,7 +57,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     assertEquals(1, r.leaves().size());
     FieldReader field = (FieldReader) r.leaves().get(0).reader().fields().terms("field");
     // We should see exactly two blocks: one root block (prefix empty string) and one block for z* terms (prefix z):
-    Stats stats = field.computeStats();
+    Stats stats = field.getStats();
     assertEquals(0, stats.floorBlockCount);
     assertEquals(2, stats.nonFloorBlockCount);
     r.close();
