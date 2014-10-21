@@ -253,7 +253,7 @@ public class Field implements IndexableField, StorableField {
   /**
    * The value of the field as a String, or null. If null, the Reader value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
   @Override
   public String stringValue() {
@@ -267,9 +267,8 @@ public class Field implements IndexableField, StorableField {
   /**
    * The value of the field as a Reader, or null. If null, the String value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
-  @Override
   public Reader readerValue() {
     return fieldsData instanceof Reader ? (Reader) fieldsData : null;
   }
@@ -416,7 +415,7 @@ public class Field implements IndexableField, StorableField {
   /**
    * Expert: sets the token stream to be used for indexing and causes
    * isIndexed() and isTokenized() to return true. May be combined with stored
-   * values from stringValue() or getBinaryValue()
+   * values from stringValue() or binaryValue()
    */
   public void setTokenStream(TokenStream tokenStream) {
     if (type.indexOptions() == null || !type.tokenized()) {
@@ -469,7 +468,25 @@ public class Field implements IndexableField, StorableField {
   }
 
   @Override
+  public Number numericDocValue() {
+    if (fieldsData instanceof Number) {
+      return (Number) fieldsData;
+    } else {
+      return null;
+    }
+  }
+
+  @Override
   public BytesRef binaryValue() {
+    if (fieldsData instanceof BytesRef) {
+      return (BytesRef) fieldsData;
+    } else {
+      return null;
+    }
+  }
+
+  @Override
+  public BytesRef binaryDocValue() {
     if (fieldsData instanceof BytesRef) {
       return (BytesRef) fieldsData;
     } else {
@@ -497,6 +514,7 @@ public class Field implements IndexableField, StorableField {
   /** Returns the {@link FieldType} for this field. */
   @Override
   public FieldType fieldType() {
+    // nocommit shouldn't we make sure type is frozen at this point?
     return type;
   }
 
@@ -558,54 +576,6 @@ public class Field implements IndexableField, StorableField {
     }
 
     throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value; got " + this);
-  }
-  
-  static final class StringTokenStream extends TokenStream {
-    private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
-    private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
-    private boolean used = false;
-    private String value = null;
-    
-    /** Creates a new TokenStream that returns a String as single token.
-     * <p>Warning: Does not initialize the value, you must call
-     * {@link #setValue(String)} afterwards!
-     */
-    StringTokenStream() {
-    }
-    
-    /** Sets the string value. */
-    void setValue(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public boolean incrementToken() {
-      if (used) {
-        return false;
-      }
-      clearAttributes();
-      termAttribute.append(value);
-      offsetAttribute.setOffset(0, value.length());
-      used = true;
-      return true;
-    }
-
-    @Override
-    public void end() throws IOException {
-      super.end();
-      final int finalOffset = value.length();
-      offsetAttribute.setOffset(finalOffset, finalOffset);
-    }
-    
-    @Override
-    public void reset() {
-      used = false;
-    }
-
-    @Override
-    public void close() {
-      value = null;
-    }
   }
 
   /** Specifies whether and how a field should be stored. */

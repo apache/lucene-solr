@@ -96,9 +96,6 @@ public class TestCodecs extends LuceneTestCase {
         public boolean stored() { return false; }
 
         @Override
-        public boolean tokenized() { return false; }
-
-        @Override
         public boolean storeTermVectors() { return false; }
 
         @Override

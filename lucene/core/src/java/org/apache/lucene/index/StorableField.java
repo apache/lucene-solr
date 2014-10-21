@@ -28,15 +28,18 @@ import org.apache.lucene.util.BytesRef;
 
 public interface StorableField extends GeneralField {
 
-  /** Non-null if this field has a binary value */
+  /** Non-null if this field has a stored binary value */
   public BytesRef binaryValue();
+
+  /** Non-null if this field has a binary doc value */
+  public BytesRef binaryDocValue();
 
   /** Non-null if this field has a string value */
   public String stringValue();
 
-  /** Non-null if this field has a Reader value */
-  public Reader readerValue();
-
   /** Non-null if this field has a numeric value */
   public Number numericValue(); 
+
+  /** Non-null if this field has a numeric doc value */
+  public Number numericDocValue(); 
 }

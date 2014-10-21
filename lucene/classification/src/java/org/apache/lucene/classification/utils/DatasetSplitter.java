@@ -97,9 +97,7 @@ public class DatasetSplitter {
           }
         } else {
           for (StorableField storableField : originalIndex.document(scoreDoc.doc).getFields()) {
-            if (storableField.readerValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.readerValue(), ft));
-            } else if (storableField.binaryValue() != null) {
+            if (storableField.binaryValue() != null) {
               doc.add(new Field(storableField.name(), storableField.binaryValue(), ft));
             } else if (storableField.stringValue() != null) {
               doc.add(new Field(storableField.name(), storableField.stringValue(), ft));

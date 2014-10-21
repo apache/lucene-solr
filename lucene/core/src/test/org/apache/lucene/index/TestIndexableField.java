@@ -29,6 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -49,11 +50,6 @@ public class TestIndexableField extends LuceneTestCase {
       @Override
       public boolean stored() {
         return (counter & 1) == 0 || (counter % 10) == 3;
-      }
-
-      @Override
-      public boolean tokenized() {
-        return true;
       }
 
       @Override
@@ -83,7 +79,11 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public FieldInfo.IndexOptions indexOptions() {
-        return counter%10 == 3 ? null : FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        if ((counter % 10) != 3) {
+          return FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        } else {
+          return null;
+        }
       }
 
       @Override
@@ -120,6 +120,11 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
+    public BytesRef binaryDocValue() {
+      return binaryValue();
+    }
+
+    @Override
     public String stringValue() {
       final int fieldID = counter%10;
       if (fieldID != 3 && fieldID != 7) {
@@ -129,8 +134,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
     }
 
-    @Override
-    public Reader readerValue() {
+    private Reader readerValue() {
       if (counter%10 == 7) {
         return new StringReader("text " + counter);
       } else {
@@ -140,6 +144,11 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public Number numericValue() {
+      return null;
+    }
+
+    @Override
+    public Number numericDocValue() {
       return null;
     }
 
@@ -384,17 +393,22 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
+    public BytesRef binaryDocValue() {
+      return null;
+    }
+
+    @Override
     public String stringValue() {
       return "foobar";
     }
 
     @Override
-    public Reader readerValue() {
+    public Number numericValue() {
       return null;
     }
 
     @Override
-    public Number numericValue() {
+    public Number numericDocValue() {
       return null;
     }
 

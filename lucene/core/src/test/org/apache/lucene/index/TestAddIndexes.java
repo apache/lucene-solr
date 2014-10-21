@@ -29,9 +29,11 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -600,28 +602,28 @@ public class TestAddIndexes extends LuceneTestCase {
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
     lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(100);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        new MockAnalyzer(random()))
+    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, types.getDefaultIndexWriterConfig()
         .setMaxBufferedDocs(5).setMergePolicy(lmp));
+    types.setIndexWriter(writer);
 
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    doc.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", customType));
-    for(int i=0;i<60;i++)
+    Document2 doc = new Document2(types);
+    types.enableTermVectors("content");
+    types.enableTermVectorPositions("content");
+    types.enableTermVectorOffsets("content");
+    doc.addLargeText("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    for(int i=0;i<60;i++) {
       writer.addDocument(doc);
+    }
 
-    Document doc2 = new Document();
-    FieldType customType2 = new FieldType();
-    customType2.setStored(true);
-    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", customType2));
-    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", customType2));
-    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", customType2));
-    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", customType2));
-    for(int i=0;i<10;i++)
-      writer.addDocument(doc2);
+    doc = new Document2(types);
+    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    for(int i=0;i<10;i++) {
+      writer.addDocument(doc);
+    }
     writer.close();
 
     Directory dir2 = newDirectory();

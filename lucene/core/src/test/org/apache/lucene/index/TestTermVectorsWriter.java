@@ -43,7 +43,11 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1442
   public void testDoubleOffsetCounting() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    // nocommit sneaky behavior change ...
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setOffsetGap(0);
+    a.setPositionIncrementGap(0);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
     Document doc = new Document();
     FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
@@ -52,8 +56,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Field f = newField("field", "abcd", customType);
     doc.add(f);
     doc.add(f);
-    Field f2 = newField("field", "", customType);
-    doc.add(f2);
+    doc.add(newField("field", "", customType));
     doc.add(f);
     w.addDocument(doc);
     w.close();

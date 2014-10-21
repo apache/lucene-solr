@@ -167,17 +167,22 @@ public class LazyDocument {
     }
 
     @Override
+    public BytesRef binaryDocValue() {
+      return getRealValue().binaryDocValue();
+    }
+
+    @Override
     public String stringValue() {
       return getRealValue().stringValue();
     }
 
     @Override
-    public Reader readerValue() {
-      return getRealValue().readerValue();
+    public Number numericValue() {
+      return getRealValue().numericValue();
     }
 
     @Override
-    public Number numericValue() {
+    public Number numericDocValue() {
       return getRealValue().numericValue();
     }
 

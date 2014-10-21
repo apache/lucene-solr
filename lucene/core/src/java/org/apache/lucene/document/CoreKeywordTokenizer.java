@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.document;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,14 +20,11 @@ package org.apache.lucene.analysis.core;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
-/**
- * Emits the entire input as a single token.
- */
-public final class KeywordTokenizer extends Tokenizer {
+// nocommit ... this is fork of KeywordTokenizer ... what to do ... must Document2 live outside Lucene core ...
+final class CoreKeywordTokenizer extends Tokenizer {
   /** Default read buffer size */ 
   public static final int DEFAULT_BUFFER_SIZE = 256;
 
@@ -36,25 +33,17 @@ public final class KeywordTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  public KeywordTokenizer() {
+  public CoreKeywordTokenizer() {
     this(DEFAULT_BUFFER_SIZE);
   }
 
-  public KeywordTokenizer(int bufferSize) {
+  CoreKeywordTokenizer(int bufferSize) {
     if (bufferSize <= 0) {
       throw new IllegalArgumentException("bufferSize must be > 0");
     }
     termAtt.resizeBuffer(bufferSize);
   }
 
-  public KeywordTokenizer(AttributeFactory factory, int bufferSize) {
-    super(factory);
-    if (bufferSize <= 0) {
-      throw new IllegalArgumentException("bufferSize must be > 0");
-    }
-    termAtt.resizeBuffer(bufferSize);
-  }
-  
   @Override
   public final boolean incrementToken() throws IOException {
     if (!done) {

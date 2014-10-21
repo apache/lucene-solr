@@ -31,16 +31,6 @@ public interface IndexableFieldType {
   public boolean stored();
   
   /** 
-   * True if this field's value should be analyzed by the
-   * {@link Analyzer}.
-   * <p>
-   * This has no effect if {@link #indexOptions()} returns null.
-   */
-  // TODO: shouldn't we remove this?  Whether/how a field is
-  // tokenized is an impl detail under Field?
-  public boolean tokenized();
-
-  /** 
    * True if this field's indexed form should be also stored 
    * into term vectors.
    * <p>

@@ -1889,41 +1889,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
   
-  public void testDontInvokeAnalyzerForUnAnalyzedFields() throws Exception {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        throw new IllegalStateException("don't invoke me!");
-      }
-
-      @Override
-      public int getPositionIncrementGap(String fieldName) {
-        throw new IllegalStateException("don't invoke me!");
-      }
-
-      @Override
-      public int getOffsetGap(String fieldName) {
-        throw new IllegalStateException("don't invoke me!");
-      }
-    };
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(analyzer));
-    Document doc = new Document();
-    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = newField("field", "abcd", customType);
-    doc.add(f);
-    doc.add(f);
-    Field f2 = newField("field", "", customType);
-    doc.add(f2);
-    doc.add(f);
-    w.addDocument(doc);
-    w.close();
-    dir.close();
-  }
-  
   //LUCENE-1468 -- make sure opening an IndexWriter with
   // create=true does not remove non-index files
   

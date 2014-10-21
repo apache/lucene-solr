@@ -66,9 +66,6 @@ public final class Document implements IndexDocument {
       if (newField.fieldsData == null) {
         newField.fieldsData = field.binaryValue();
       }
-      if (newField.fieldsData == null) {
-        newField.fieldsData = field.readerValue();
-      }
      
       add(newField);
     }

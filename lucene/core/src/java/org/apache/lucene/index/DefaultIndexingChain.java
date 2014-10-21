@@ -402,35 +402,35 @@ final class DefaultIndexingChain extends DocConsumer {
         if (fp.docValuesWriter == null) {
           fp.docValuesWriter = new NumericDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
-        ((NumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
+        ((NumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericDocValue().longValue());
         break;
 
       case BINARY:
         if (fp.docValuesWriter == null) {
           fp.docValuesWriter = new BinaryDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
-        ((BinaryDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
+        ((BinaryDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryDocValue());
         break;
 
       case SORTED:
         if (fp.docValuesWriter == null) {
           fp.docValuesWriter = new SortedDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
-        ((SortedDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
+        ((SortedDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryDocValue());
         break;
         
       case SORTED_NUMERIC:
         if (fp.docValuesWriter == null) {
           fp.docValuesWriter = new SortedNumericDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
-        ((SortedNumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
+        ((SortedNumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericDocValue().longValue());
         break;
 
       case SORTED_SET:
         if (fp.docValuesWriter == null) {
           fp.docValuesWriter = new SortedSetDocValuesWriter(fp.fieldInfo, bytesUsed);
         }
-        ((SortedSetDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
+        ((SortedSetDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryDocValue());
         break;
 
       default:
@@ -563,9 +563,8 @@ final class DefaultIndexingChain extends DocConsumer {
 
       IndexableFieldType fieldType = field.fieldType();
 
-      final boolean analyzed = fieldType.tokenized() && docState.analyzer != null;
-        
       // only bother checking offsets if something will consume them.
+      // nocommit can't we do this todo now?
       // TODO: after we fix analyzers, also check if termVectorOffsets will be indexed.
       final boolean checkOffsets = fieldType.indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
@@ -589,7 +588,8 @@ final class DefaultIndexingChain extends DocConsumer {
           // chokes on a given document), then it's
           // non-aborting and (above) this one document
           // will be marked as deleted, but still
-          // consume a docID
+          // consume a docID since we will have already
+          // written some if its postings into our RAM buffer.
 
           int posIncr = invertState.posIncrAttribute.getPositionIncrement();
           invertState.position += posIncr;
@@ -662,7 +662,8 @@ final class DefaultIndexingChain extends DocConsumer {
         }
       }
 
-      if (analyzed) {
+      // TODO: this "multi-field-ness" (and, Analyzer) should be outside of IW somehow
+      if (docState.analyzer != null) {
         invertState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
         invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
       }
