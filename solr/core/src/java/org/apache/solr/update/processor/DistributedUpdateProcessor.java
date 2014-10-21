@@ -850,10 +850,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         List<ZkCoreNodeProps> myReplicas = zkController.getZkStateReader().getReplicaProps(collection,
             cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
         boolean foundErrorNodeInReplicaList = false;
-        for (ZkCoreNodeProps replicaProp : myReplicas) {
-          if (((Replica) replicaProp.getNodeProps()).getName().equals(((Replica)stdNode.getNodeProps().getNodeProps()).getName()))  {
-            foundErrorNodeInReplicaList = true;
-            break;
+        if (myReplicas != null) {
+          for (ZkCoreNodeProps replicaProp : myReplicas) {
+            if (((Replica) replicaProp.getNodeProps()).getName().equals(((Replica)stdNode.getNodeProps().getNodeProps()).getName()))  {
+              foundErrorNodeInReplicaList = true;
+              break;
+            }
           }
         }
 
