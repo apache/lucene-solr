@@ -32,10 +32,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Test that a plain default puts codec headers in all files.
+ * Test that a plain default puts codec headers in all files
  */
 public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   public void test() throws Exception {
@@ -83,23 +84,24 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   private void checkHeaders(Directory dir, Map<String,String> namesToExtensions) throws IOException {
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
-    checkHeader(dir, sis.getSegmentsFileName(), namesToExtensions);
+    checkHeader(dir, sis.getSegmentsFileName(), namesToExtensions, null);
     
     for (SegmentCommitInfo si : sis) {
+      assertNotNull(si.info.getId());
       for (String file : si.files()) {
-        checkHeader(dir, file, namesToExtensions);
+        checkHeader(dir, file, namesToExtensions, si.info.getId());
       }
       if (si.info.getUseCompoundFile()) {
         try (Directory cfsDir = si.info.getCodec().compoundFormat().getCompoundReader(dir, si.info, newIOContext(random()))) {
           for (String cfsFile : cfsDir.listAll()) {
-            checkHeader(cfsDir, cfsFile, namesToExtensions);
+            checkHeader(cfsDir, cfsFile, namesToExtensions, si.info.getId());
           }
         }
       }
     }
   }
   
-  private void checkHeader(Directory dir, String file, Map<String,String> namesToExtensions) throws IOException {
+  private void checkHeader(Directory dir, String file, Map<String,String> namesToExtensions, byte[] id) throws IOException {
     try (IndexInput in = dir.openInput(file, newIOContext(random()))) {
       int val = in.readInt();
       assertEquals(file + " has no codec header, instead found: " + val, CodecUtil.CODEC_MAGIC, val);
@@ -114,6 +116,15 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       if (previous != null && !previous.equals(extension)) {
         fail("extensions " + previous + " and " + extension + " share same codecName " + codecName);
       }
+      // read version
+      in.readInt();
+      // read segment id (except for segments_N)
+      if (id != null) {
+        byte actualID[] = new byte[StringHelper.ID_LENGTH];
+        in.readBytes(actualID, 0, actualID.length);
+        assertArrayEquals("expected " + StringHelper.idToString(id) + ", got " + StringHelper.idToString(actualID), id, actualID);
+      }
+      
     }
   }
 }

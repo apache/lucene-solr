@@ -42,20 +42,19 @@ import org.apache.lucene.util.Version;
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Id, Footer
+ *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Footer
  * </ul>
  * </p>
  * Data types:
  * <p>
  * <ul>
- *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
  *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
  *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
  *   <li>Diagnostics --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
  *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- *   <li>Id --&gt; {@link DataOutput#writeString String}</li>
  * </ul>
  * </p>
  * Field Descriptions:
@@ -93,6 +92,12 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
         CodecUtil.checkHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
                                      Lucene50SegmentInfoFormat.VERSION_START,
                                      Lucene50SegmentInfoFormat.VERSION_CURRENT);
+        byte id[] = new byte[StringHelper.ID_LENGTH];
+        input.readBytes(id, 0, id.length);
+        String suffix = input.readString();
+        if (!suffix.isEmpty()) {
+          throw new CorruptIndexException("invalid codec header: got unexpected suffix: " + suffix, input);
+        }
         final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
         
         final int docCount = input.readInt();
@@ -102,9 +107,6 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
         final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
         final Map<String,String> diagnostics = input.readStringStringMap();
         final Set<String> files = input.readStringSet();
-        
-        byte[] id = new byte[StringHelper.ID_LENGTH];
-        input.readBytes(id, 0, id.length);
         
         si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, id);
         si.setFiles(files);
@@ -124,7 +126,12 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
 
     boolean success = false;
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
-      CodecUtil.writeHeader(output, Lucene50SegmentInfoFormat.CODEC_NAME, Lucene50SegmentInfoFormat.VERSION_CURRENT);
+      // NOTE: we encode ID in the segment header, for format consistency with all other per-segment files
+      CodecUtil.writeSegmentHeader(output, 
+                                   Lucene50SegmentInfoFormat.CODEC_NAME, 
+                                   Lucene50SegmentInfoFormat.VERSION_CURRENT,
+                                   si.getId(),
+                                   "");
       Version version = si.getVersion();
       if (version.major < 5) {
         throw new IllegalArgumentException("invalid major version: should be >= 5 but got: " + version.major + " segment=" + si);
@@ -145,11 +152,6 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
         }
       }
       output.writeStringSet(files);
-      byte[] id = si.getId();
-      if (id.length != StringHelper.ID_LENGTH) {
-        throw new IllegalArgumentException("invalid id, got=" + StringHelper.idToString(id));
-      }
-      output.writeBytes(id, 0, id.length);
       CodecUtil.writeFooter(output);
       success = true;
     } finally {
