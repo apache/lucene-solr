@@ -184,6 +184,9 @@ New Features
 * SOLR-5992: add "removeregex" as an atomic update operation
   (Vitaliy Zhovtyuk via Erick Erickson)
 
+* SOLR-6633: /update/json/docs path can now save the underlying json doc asa string field
+  and better support added to the default example (Noble Paul)
+
 Bug Fixes
 ----------------------
 
