@@ -151,7 +151,7 @@ final class Lucene40IntersectTermsEnumFrame {
       // Skip first long -- has redundant fp, hasTerms
       // flag, isFloor flag
       final long code = floorDataReader.readVLong();
-      if ((code & Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0) {
+      if ((code & Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0) {
         numFollowFloorBlocks = floorDataReader.readVInt();
         nextFloorLabel = floorDataReader.readByte() & 0xff;
         // if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);

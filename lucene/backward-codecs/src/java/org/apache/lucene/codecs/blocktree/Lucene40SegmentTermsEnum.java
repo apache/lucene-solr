@@ -242,11 +242,11 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
   Lucene40SegmentTermsEnumFrame pushFrame(FST.Arc<BytesRef> arc, BytesRef frameData, int length) throws IOException {
     scratchReader.reset(frameData.bytes, frameData.offset, frameData.length);
     final long code = scratchReader.readVLong();
-    final long fpSeek = code >>> Lucene40BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
+    final long fpSeek = code >>> Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
     final Lucene40SegmentTermsEnumFrame f = getFrame(1+currentFrame.ord);
-    f.hasTerms = (code & Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS) != 0;
+    f.hasTerms = (code & Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS) != 0;
     f.hasTermsOrig = f.hasTerms;
-    f.isFloor = (code & Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0;
+    f.isFloor = (code & Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0;
     if (f.isFloor) {
       f.setFloorData(scratchReader, frameData);
     }
@@ -374,8 +374,8 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
         }
         arc = arcs[1+targetUpto];
         assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
-        if (arc.output != Lucene40BlockTreeTermsWriter.NO_OUTPUT) {
-          output = Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
+        if (arc.output != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -465,7 +465,7 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
     }
 
     // if (DEBUG) {
@@ -521,8 +521,8 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
         term.setByteAt(targetUpto, (byte) targetLabel);
         // Aggregate output as we go:
         assert arc.output != null;
-        if (arc.output != Lucene40BlockTreeTermsWriter.NO_OUTPUT) {
-          output = Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
+        if (arc.output != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
         }
 
         // if (DEBUG) {
@@ -532,7 +532,7 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }
@@ -635,8 +635,8 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
         // seek; but, often the FST doesn't have any
         // shared bytes (but this could change if we
         // reverse vLong byte order)
-        if (arc.output != Lucene40BlockTreeTermsWriter.NO_OUTPUT) {
-          output = Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
+        if (arc.output != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -721,7 +721,7 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
     }
 
     //if (DEBUG) {
@@ -777,8 +777,8 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
         arc = nextArc;
         // Aggregate output as we go:
         assert arc.output != null;
-        if (arc.output != Lucene40BlockTreeTermsWriter.NO_OUTPUT) {
-          output = Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
+        if (arc.output != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
         }
 
         //if (DEBUG) {
@@ -788,7 +788,7 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, Lucene40BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }
@@ -835,9 +835,9 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
         assert f != null;
         final BytesRef prefix = new BytesRef(term.get().bytes, 0, f.prefix);
         if (f.nextEnt == -1) {
-          out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<< Lucene40BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+          out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<< Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
         } else {
-          out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<< Lucene40BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+          out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<< Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
         }
         if (fr.index != null) {
           assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
@@ -852,7 +852,7 @@ final class Lucene40SegmentTermsEnum extends TermsEnum {
           } else if (isSeekFrame && !f.isFloor) {
             final ByteArrayDataInput reader = new ByteArrayDataInput(output.bytes, output.offset, output.length);
             final long codeOrig = reader.readVLong();
-            final long code = (f.fp << Lucene40BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? Lucene40BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0);
+            final long code = (f.fp << Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR:0);
             if (codeOrig != code) {
               out.println("      broken seek state: output code=" + codeOrig + " doesn't match frame code=" + code);
               throw new RuntimeException("seek state is broken");

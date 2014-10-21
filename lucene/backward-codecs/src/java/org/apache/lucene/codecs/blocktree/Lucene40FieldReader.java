@@ -80,7 +80,7 @@ final class Lucene40FieldReader extends Terms implements Accountable {
     //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
     // }
 
-    rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> Lucene40BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
+    rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
 
     if (indexIn != null) {
       final IndexInput clone = indexIn.clone();

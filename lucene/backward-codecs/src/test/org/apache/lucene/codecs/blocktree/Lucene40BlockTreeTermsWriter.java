@@ -193,10 +193,6 @@ import org.apache.lucene.util.packed.PackedInts;
 @Deprecated
 public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
 
-  static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
-
-  static final BytesRef NO_OUTPUT = FST_OUTPUTS.getNoOutput();
-
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
    *  #Lucene40BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
@@ -209,37 +205,6 @@ public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
 
   // public final static boolean DEBUG = false;
   //private final static boolean SAVE_DOT_FILES = false;
-
-  static final int OUTPUT_FLAGS_NUM_BITS = 2;
-  static final int OUTPUT_FLAGS_MASK = 0x3;
-  static final int OUTPUT_FLAG_IS_FLOOR = 0x1;
-  static final int OUTPUT_FLAG_HAS_TERMS = 0x2;
-
-  /** Extension of terms file */
-  static final String TERMS_EXTENSION = "tim";
-  final static String TERMS_CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
-
-  /** Initial terms format. */
-  public static final int VERSION_START = 0;
-  
-  /** Append-only */
-  public static final int VERSION_APPEND_ONLY = 1;
-
-  /** Meta data as array */
-  public static final int VERSION_META_ARRAY = 2;
-  
-  /** checksums */
-  public static final int VERSION_CHECKSUM = 3;
-
-  /** min/max term */
-  public static final int VERSION_MIN_MAX_TERMS = 4;
-
-  /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_MIN_MAX_TERMS;
-
-  /** Extension of terms index file */
-  static final String TERMS_INDEX_EXTENSION = "tip";
-  final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_TERMS_INDEX";
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
@@ -309,7 +274,7 @@ public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
 
     maxDoc = state.segmentInfo.getDocCount();
 
-    final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
+    final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene40BlockTreeTermsReader.TERMS_EXTENSION);
     out = state.directory.createOutput(termsFileName, state.context);
     boolean success = false;
     IndexOutput indexOut = null;
@@ -321,7 +286,7 @@ public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
 
       //DEBUG = state.segmentName.equals("_4a");
 
-      final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
+      final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene40BlockTreeTermsReader.TERMS_INDEX_EXTENSION);
       indexOut = state.directory.createOutput(termsIndexFileName, state.context);
       writeIndexHeader(indexOut);
 
@@ -342,12 +307,12 @@ public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Writes the terms file header. */
   private void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, VERSION_CURRENT);   
+    CodecUtil.writeHeader(out, Lucene40BlockTreeTermsReader.TERMS_CODEC_NAME, Lucene40BlockTreeTermsReader.VERSION_CURRENT);   
   }
 
   /** Writes the index file header. */
   private void writeIndexHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT); 
+    CodecUtil.writeHeader(out, Lucene40BlockTreeTermsReader.TERMS_INDEX_CODEC_NAME, Lucene40BlockTreeTermsReader.VERSION_CURRENT); 
   }
 
   /** Writes the terms file trailer. */
@@ -390,7 +355,7 @@ public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
   
   static long encodeOutput(long fp, boolean hasTerms, boolean isFloor) {
     assert fp < (1L << 62);
-    return (fp << 2) | (hasTerms ? OUTPUT_FLAG_HAS_TERMS : 0) | (isFloor ? OUTPUT_FLAG_IS_FLOOR : 0);
+    return (fp << 2) | (hasTerms ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0) | (isFloor ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0);
   }
 
   private static class PendingEntry {
