@@ -129,7 +129,6 @@ public final class LongField extends Field {
    */
   public static final FieldType TYPE_NOT_STORED = new FieldType();
   static {
-    TYPE_NOT_STORED.setIndexed(true);
     TYPE_NOT_STORED.setTokenized(true);
     TYPE_NOT_STORED.setOmitNorms(true);
     TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
@@ -143,7 +142,6 @@ public final class LongField extends Field {
    */
   public static final FieldType TYPE_STORED = new FieldType();
   static {
-    TYPE_STORED.setIndexed(true);
     TYPE_STORED.setTokenized(true);
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);

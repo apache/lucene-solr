@@ -381,11 +381,10 @@ public class EnumField extends PrimitiveFieldType {
     String intAsString =  intValue.toString();
     final FieldType newType = new FieldType();
 
-    newType.setIndexed(field.indexed());
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(getIndexOptions(field, intAsString));
+    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, intAsString) : null);
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());

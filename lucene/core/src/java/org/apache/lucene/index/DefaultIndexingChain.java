@@ -325,7 +325,7 @@ final class DefaultIndexingChain extends DocConsumer {
     PerField fp = null;
 
     // Invert indexed fields:
-    if (fieldType.indexed()) {
+    if (fieldType.indexOptions() != null) {
       
       // if the field omits norms, the boost cannot be indexed.
       if (fieldType.omitNorms() && field.boost() != 1.0f) {
@@ -591,7 +591,6 @@ final class DefaultIndexingChain extends DocConsumer {
         // reset the TokenStream to the first token
         stream.reset();
         invertState.setAttributeSource(stream);
-
         termsHashPerField.start(field, first);
 
         while (stream.incrementToken()) {

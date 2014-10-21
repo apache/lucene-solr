@@ -130,7 +130,7 @@ public class BBoxStrategy extends SpatialStrategy {
     //for xdlFieldType, copy some similar options. Don't do docValues since it isn't needed here.
     xdlFieldType = new FieldType(StringField.TYPE_NOT_STORED);
     xdlFieldType.setStored(fieldType.stored());
-    xdlFieldType.setIndexed(fieldType.indexed());
+    xdlFieldType.setIndexOptions(fieldType.indexOptions());
     xdlFieldType.freeze();
   }
 

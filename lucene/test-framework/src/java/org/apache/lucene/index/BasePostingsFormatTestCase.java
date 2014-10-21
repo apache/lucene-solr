@@ -370,7 +370,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
         continue;
       }
 
-      fieldInfoArray[fieldUpto] = new FieldInfo(field, true, fieldUpto, false, false, true,
+      fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
                                                 null, -1, null);
       fieldUpto++;
@@ -694,7 +694,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
 
       newFieldInfoArray[fieldUpto] = new FieldInfo(oldFieldInfo.name,
-                                                   true,
                                                    fieldUpto,
                                                    false,
                                                    false,
@@ -1739,7 +1738,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     for (IndexOptions opts : IndexOptions.values()) {
       FieldType ft = new FieldType();
       ft.setIndexOptions(opts);
-      ft.setIndexed(true);
       ft.freeze();
       final int numFields = random().nextInt(5);
       for (int j = 0; j < numFields; ++j) {

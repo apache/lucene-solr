@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermQuery;
@@ -815,12 +816,12 @@ public class TestStressIndexing2 extends LuceneTestCase {
           case 0:
             customType.setStored(true);
             customType.setOmitNorms(true);
-            customType.setIndexed(true);
+            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
             customType.freeze();
             fields.add(newField(fieldName, getString(1), customType));
             break;
           case 1:
-            customType.setIndexed(true);
+            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
             customType.setTokenized(true);
             customType.freeze();
             fields.add(newField(fieldName, getString(0), customType));
@@ -835,7 +836,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             break;
           case 3:
             customType.setStored(true);
-            customType.setIndexed(true);
+            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
             customType.setTokenized(true);
             customType.freeze();
             fields.add(newField(fieldName, getString(bigFieldSize), customType));

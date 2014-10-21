@@ -90,7 +90,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       custom1.setStoreTermVectorOffsets(true);
       
       custom2.setStored(true);
-      custom2.setIndexed(true);
+      custom2.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
       
       custom3.setStored(true);
 

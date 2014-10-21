@@ -43,7 +43,6 @@ public class FieldType implements IndexableFieldType {
     DOUBLE
   }
 
-  private boolean indexed;
   private boolean stored;
   private boolean tokenized = true;
   private boolean storeTermVectors;
@@ -51,7 +50,7 @@ public class FieldType implements IndexableFieldType {
   private boolean storeTermVectorPositions;
   private boolean storeTermVectorPayloads;
   private boolean omitNorms;
-  private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+  private IndexOptions indexOptions;
   private NumericType numericType;
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
@@ -61,7 +60,6 @@ public class FieldType implements IndexableFieldType {
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
    */
   public FieldType(FieldType ref) {
-    this.indexed = ref.indexed();
     this.stored = ref.stored();
     this.tokenized = ref.tokenized();
     this.storeTermVectors = ref.storeTermVectors();
@@ -100,29 +98,6 @@ public class FieldType implements IndexableFieldType {
    * {@inheritDoc}
    * <p>
    * The default is <code>false</code>.
-   * @see #setIndexed(boolean)
-   */
-  @Override
-  public boolean indexed() {
-    return this.indexed;
-  }
-  
-  /**
-   * Set to <code>true</code> to index (invert) this field.
-   * @param value true if this field should be indexed.
-   * @throws IllegalStateException if this FieldType is frozen against
-   *         future modifications.
-   * @see #indexed()
-   */
-  public void setIndexed(boolean value) {
-    checkIfFrozen();
-    this.indexed = value;
-  }
-
-  /**
-   * {@inheritDoc}
-   * <p>
-   * The default is <code>false</code>.
    * @see #setStored(boolean)
    */
   @Override
@@ -148,7 +123,6 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>true</code>.
    * @see #setTokenized(boolean)
    */
-  @Override
   public boolean tokenized() {
     return this.tokenized;
   }
@@ -367,7 +341,7 @@ public class FieldType implements IndexableFieldType {
     if (stored()) {
       result.append("stored");
     }
-    if (indexed()) {
+    if (indexOptions != null) {
       if (result.length() > 0)
         result.append(",");
       result.append("indexed");
@@ -439,7 +413,6 @@ public class FieldType implements IndexableFieldType {
     int result = 1;
     result = prime * result + ((docValueType == null) ? 0 : docValueType.hashCode());
     result = prime * result + ((indexOptions == null) ? 0 : indexOptions.hashCode());
-    result = prime * result + (indexed ? 1231 : 1237);
     result = prime * result + numericPrecisionStep;
     result = prime * result + ((numericType == null) ? 0 : numericType.hashCode());
     result = prime * result + (omitNorms ? 1231 : 1237);
@@ -460,7 +433,6 @@ public class FieldType implements IndexableFieldType {
     FieldType other = (FieldType) obj;
     if (docValueType != other.docValueType) return false;
     if (indexOptions != other.indexOptions) return false;
-    if (indexed != other.indexed) return false;
     if (numericPrecisionStep != other.numericPrecisionStep) return false;
     if (numericType != other.numericType) return false;
     if (omitNorms != other.omitNorms) return false;

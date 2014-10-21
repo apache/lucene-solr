@@ -316,6 +316,12 @@ public final class NumericTokenStream extends TokenStream {
   public int getPrecisionStep() {
     return precisionStep;
   }
+
+  @Override
+  public String toString() {
+    // We override default because it can throw cryptic "illegal shift value":
+    return getClass().getSimpleName() + "(precisionStep=" + precisionStep + " valueSize=" + numericAtt.getValueSize() + " shift=" + numericAtt.getShift() + ")";
+  }
   
   // members
   private final NumericTermAttribute numericAtt = addAttribute(NumericTermAttribute.class);

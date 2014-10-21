@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -66,7 +67,7 @@ public class TestDocument extends LuceneTestCase {
     
     assertTrue(binaryFld.binaryValue() != null);
     assertTrue(binaryFld.fieldType().stored());
-    assertFalse(binaryFld.fieldType().indexed());
+    assertNull(binaryFld.fieldType().indexOptions());
     
     String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));
@@ -237,7 +238,7 @@ public class TestDocument extends LuceneTestCase {
     FieldType stored = new FieldType();
     stored.setStored(true);
     FieldType indexedNotTokenized = new FieldType();
-    indexedNotTokenized.setIndexed(true);
+    indexedNotTokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     indexedNotTokenized.setTokenized(false);
     doc.add(new StringField("keyword", "test1", Field.Store.YES));
     doc.add(new StringField("keyword", "test2", Field.Store.YES));
@@ -245,10 +246,8 @@ public class TestDocument extends LuceneTestCase {
     doc.add(new TextField("text", "test2", Field.Store.YES));
     doc.add(new Field("unindexed", "test1", stored));
     doc.add(new Field("unindexed", "test2", stored));
-    doc
-        .add(new TextField("unstored", "test1", Field.Store.NO));
-    doc
-        .add(new TextField("unstored", "test2", Field.Store.NO));
+    doc.add(new TextField("unstored", "test1", Field.Store.NO));
+    doc.add(new TextField("unstored", "test2", Field.Store.NO));
     doc.add(new Field("indexed_not_tokenized", "test1", indexedNotTokenized));
     doc.add(new Field("indexed_not_tokenized", "test2", indexedNotTokenized));
     return doc;

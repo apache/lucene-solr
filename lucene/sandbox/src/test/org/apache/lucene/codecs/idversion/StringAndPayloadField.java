@@ -36,7 +36,6 @@ class StringAndPayloadField extends Field {
   public static final FieldType TYPE = new FieldType();
 
   static {
-    TYPE.setIndexed(true);
     TYPE.setOmitNorms(true);
     TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     TYPE.setTokenized(true);

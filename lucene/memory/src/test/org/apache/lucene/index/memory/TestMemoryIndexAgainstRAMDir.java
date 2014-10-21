@@ -432,7 +432,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
       for (IndexableField field : nextDoc.getFields()) {
-        if (field.fieldType().indexed()) {
+        if (field.fieldType().indexOptions() != null) {
           doc.add(field);
           if (random().nextInt(3) == 0) {
             doc.add(field);  // randomly add the same field twice
@@ -443,7 +443,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       writer.addDocument(doc);
       writer.close();
       for (IndexableField field : doc.getFields()) {
-          memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
+        memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
       }
       DirectoryReader competitor = DirectoryReader.open(dir);
       LeafReader memIndexReader= (LeafReader) memory.createSearcher().getIndexReader();

@@ -600,9 +600,8 @@ public class TrieField extends PrimitiveFieldType {
     FieldType ft = new FieldType();
     ft.setStored(stored);
     ft.setTokenized(true);
-    ft.setIndexed(indexed);
     ft.setOmitNorms(field.omitNorms());
-    ft.setIndexOptions(getIndexOptions(field, value.toString()));
+    ft.setIndexOptions(indexed ? getIndexOptions(field, value.toString()) : null);
 
     switch (type) {
       case INTEGER:

@@ -95,7 +95,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
           UndeadNormsProducer.setUndead(attributes);
         }
 
-        infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
+        infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(attributes));
       }
       

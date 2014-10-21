@@ -163,7 +163,6 @@ public class PreAnalyzedField extends FieldType {
       return null;
     }
     org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
-    newType.setIndexed(field.indexed());
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
@@ -243,7 +242,6 @@ public class PreAnalyzedField extends FieldType {
     
     if (parse.hasTokenStream()) {
       if (field.indexed()) {
-        type.setIndexed(true);
         type.setTokenized(true);
         if (f != null) {
           f.setTokenStream(parse);
@@ -252,7 +250,7 @@ public class PreAnalyzedField extends FieldType {
         }
       } else {
         if (f != null) {
-          f.fieldType().setIndexed(false);
+          f.fieldType().setIndexOptions(null);
           f.fieldType().setTokenized(false);
         }
       }

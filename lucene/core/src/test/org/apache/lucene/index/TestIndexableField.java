@@ -48,11 +48,6 @@ public class TestIndexableField extends LuceneTestCase {
     private final int counter;
     private final IndexableFieldType fieldType = new IndexableFieldType() {
       @Override
-      public boolean indexed() {
-        return (counter % 10) != 3;
-      }
-
-      @Override
       public boolean stored() {
         return (counter & 1) == 0 || (counter % 10) == 3;
       }
@@ -64,7 +59,7 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public boolean storeTermVectors() {
-        return indexed() && counter % 2 == 1 && counter % 10 != 9;
+        return indexOptions() != null && counter % 2 == 1 && counter % 10 != 9;
       }
 
       @Override
@@ -89,7 +84,7 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public FieldInfo.IndexOptions indexOptions() {
-        return FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        return counter%10 == 3 ? null : FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       }
 
       @Override

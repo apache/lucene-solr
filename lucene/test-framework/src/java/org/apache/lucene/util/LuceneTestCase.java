@@ -1337,7 +1337,7 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns a FieldType derived from newType but whose
    *  term vector options match the old type */
   private static FieldType mergeTermVectorOptions(FieldType newType, FieldType oldType) {
-    if (newType.indexed() && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
+    if (newType.indexOptions() != null && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
       newType = new FieldType(newType);
       newType.setStoreTermVectors(oldType.storeTermVectors());
       newType.setStoreTermVectorPositions(oldType.storeTermVectorPositions());
@@ -1362,7 +1362,7 @@ public abstract class LuceneTestCase extends Assert {
 
     FieldType prevType = fieldToType.get(name);
 
-    if (usually(random) || !type.indexed() || prevType != null) {
+    if (usually(random) || type.indexOptions() == null || prevType != null) {
       // most of the time, don't modify the params
       if (prevType == null) {
         fieldToType.put(name, new FieldType(type));

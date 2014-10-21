@@ -204,10 +204,10 @@ class DocHelper {
     for (int i=0; i<fields.length; i++) {
       IndexableField f = fields[i];
       add(all,f);
-      if (f.fieldType().indexed()) add(indexed,f);
+      if (f.fieldType().indexOptions() != null) add(indexed,f);
       else add(unindexed,f);
       if (f.fieldType().storeTermVectors()) add(termvector,f);
-      if (f.fieldType().indexed() && !f.fieldType().storeTermVectors()) add(notermvector,f);
+      if (f.fieldType().indexOptions() != null && !f.fieldType().storeTermVectors()) add(notermvector,f);
       if (f.fieldType().stored()) add(stored,f);
       else add(unstored,f);
       if (f.fieldType().indexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);

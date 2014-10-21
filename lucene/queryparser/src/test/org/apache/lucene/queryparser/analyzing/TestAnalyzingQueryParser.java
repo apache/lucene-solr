@@ -34,6 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -272,7 +273,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, analyzer);
     Document doc = new Document();
     FieldType fieldType = new FieldType();
-    fieldType.setIndexed(true);
+    fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     fieldType.setTokenized(true);
     fieldType.setStored(true);
     Field field = new Field(FIELD, content, fieldType);
