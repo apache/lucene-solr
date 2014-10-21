@@ -41,6 +41,7 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 /** Minimal port of benchmark's LneDocSource +
  * DocMaker, so tests can enum docs from a line file created
@@ -170,6 +171,7 @@ public class LineFileDocs implements Closeable {
       doc.add(title);
 
       FieldType ft = new FieldType(TextField.TYPE_STORED);
+      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
       ft.setStoreTermVectors(true);
       ft.setStoreTermVectorOffsets(true);
       ft.setStoreTermVectorPositions(true);

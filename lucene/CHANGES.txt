@@ -164,6 +164,10 @@ API Changes
   will be DocValuesType.NUMERIC if the field indexed and does not omit
   norms, else null.  (Robert Muir, Mike McCandless)
 
+* LUCENE-6013: Removed indexed boolean from IndexableFieldType and
+  FieldInfo, since it's redundant with IndexOptions != null. (Robert
+  Muir, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

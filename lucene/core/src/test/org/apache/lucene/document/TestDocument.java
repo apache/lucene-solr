@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StorableField;
@@ -64,7 +65,7 @@ public class TestDocument extends LuceneTestCase {
     
     assertTrue(binaryFld.binaryValue() != null);
     assertTrue(binaryFld.fieldType().stored());
-    assertFalse(binaryFld.fieldType().indexed());
+    assertNull(binaryFld.fieldType().indexOptions());
     
     String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));
@@ -263,7 +264,7 @@ public class TestDocument extends LuceneTestCase {
     FieldType stored = new FieldType();
     stored.setStored(true);
     FieldType indexedNotTokenized = new FieldType();
-    indexedNotTokenized.setIndexed(true);
+    indexedNotTokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     indexedNotTokenized.setTokenized(false);
     doc.add(new StringField("keyword", "test1", Field.Store.YES));
     doc.add(new StringField("keyword", "test2", Field.Store.YES));

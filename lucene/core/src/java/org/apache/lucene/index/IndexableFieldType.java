@@ -27,9 +27,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  */
 public interface IndexableFieldType {
 
-  /** True if this field should be indexed (inverted) */
-  public boolean indexed();
-
   /** True if the field's value should be stored */
   public boolean stored();
   
@@ -37,7 +34,7 @@ public interface IndexableFieldType {
    * True if this field's value should be analyzed by the
    * {@link Analyzer}.
    * <p>
-   * This has no effect if {@link #indexed()} returns false.
+   * This has no effect if {@link #indexOptions()} returns null.
    */
   // TODO: shouldn't we remove this?  Whether/how a field is
   // tokenized is an impl detail under Field?
@@ -51,7 +48,7 @@ public interface IndexableFieldType {
    * can be accessed in a document-oriented way from 
    * {@link IndexReader#getTermVector(int,String)}.
    * <p>
-   * This option is illegal if {@link #indexed()} returns false.
+   * This option is illegal if {@link #indexOptions()} returns null.
    */
   public boolean storeTermVectors();
 
@@ -91,7 +88,8 @@ public interface IndexableFieldType {
   public boolean omitNorms();
 
   /** {@link IndexOptions}, describing what should be
-   * recorded into the inverted index */
+   *  recorded into the inverted index, or null if this field
+   *  is not indexed */
   public IndexOptions indexOptions();
 
   /** 

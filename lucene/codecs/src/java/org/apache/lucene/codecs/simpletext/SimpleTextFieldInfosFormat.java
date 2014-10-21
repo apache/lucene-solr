@@ -53,7 +53,6 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   static final BytesRef NUMFIELDS       =  new BytesRef("number of fields ");
   static final BytesRef NAME            =  new BytesRef("  name ");
   static final BytesRef NUMBER          =  new BytesRef("  number ");
-  static final BytesRef ISINDEXED       =  new BytesRef("  indexed ");
   static final BytesRef STORETV         =  new BytesRef("  term vectors ");
   static final BytesRef STORETVPOS      =  new BytesRef("  term vector positions ");
   static final BytesRef STORETVOFF      =  new BytesRef("  term vector offsets ");
@@ -89,19 +88,16 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         assert StringHelper.startsWith(scratch.get(), NUMBER);
         int fieldNumber = Integer.parseInt(readString(NUMBER.length, scratch));
 
-        SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch.get(), ISINDEXED);
-        boolean isIndexed = Boolean.parseBoolean(readString(ISINDEXED.length, scratch));
-        
         final IndexOptions indexOptions;
-        if (isIndexed) {
-          SimpleTextUtil.readLine(input, scratch);
-          assert StringHelper.startsWith(scratch.get(), INDEXOPTIONS);
-          indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));          
-        } else {
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch.get(), INDEXOPTIONS);
+        String s = readString(INDEXOPTIONS.length, scratch);
+        if ("null".equals(s)) {
           indexOptions = null;
+        } else {
+          indexOptions = IndexOptions.valueOf(s);
         }
-        
+
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), STORETV);
         boolean storeTermVector = Boolean.parseBoolean(readString(STORETV.length, scratch));
@@ -139,7 +135,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
           atts.put(key, value);
         }
 
-        infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
+        infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(atts));
       }
 
@@ -189,16 +185,15 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         SimpleTextUtil.write(out, Integer.toString(fi.number), scratch);
         SimpleTextUtil.writeNewline(out);
         
-        SimpleTextUtil.write(out, ISINDEXED);
-        SimpleTextUtil.write(out, Boolean.toString(fi.isIndexed()), scratch);
-        SimpleTextUtil.writeNewline(out);
-        
-        if (fi.isIndexed()) {
+        SimpleTextUtil.write(out, INDEXOPTIONS);
+        IndexOptions indexOptions = fi.getIndexOptions();
+        if (indexOptions != null) {
           assert fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
-          SimpleTextUtil.write(out, INDEXOPTIONS);
           SimpleTextUtil.write(out, fi.getIndexOptions().toString(), scratch);
-          SimpleTextUtil.writeNewline(out);
+        } else {
+          SimpleTextUtil.write(out, "null", scratch);
         }
+        SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, STORETV);
         SimpleTextUtil.write(out, Boolean.toString(fi.hasVectors()), scratch);

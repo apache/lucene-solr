@@ -362,7 +362,6 @@ public class TestPostingsOffsets extends LuceneTestCase {
       if (i < 99 && random().nextInt(2) == 0) {
         // stored only
         FieldType ft = new FieldType();
-        ft.setIndexed(false);
         ft.setStored(true);
         doc.add(new Field("foo", "boo!", ft));
       } else {

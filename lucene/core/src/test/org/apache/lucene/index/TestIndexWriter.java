@@ -1247,7 +1247,8 @@ public class TestIndexWriter extends LuceneTestCase {
     customType.setTokenized(true);
     
     Field f = new Field("binary", b, 10, 17, customType);
-    customType.setIndexed(true);
+    // TODO: this is evil, changing the type after creating the field:
+    customType.setIndexOptions(IndexOptions.DOCS_ONLY);
     final MockTokenizer doc1field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     doc1field1.setReader(new StringReader("doc1field1"));
     f.setTokenStream(doc1field1);

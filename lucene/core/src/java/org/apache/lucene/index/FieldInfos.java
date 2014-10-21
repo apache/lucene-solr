@@ -284,12 +284,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
       // rather, each component in the chain should update
       // what it "owns".  EG fieldType.indexOptions() should
       // be updated by maybe FreqProxTermsWriterPerField:
-      return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
+      return addOrUpdateInternal(name, -1, false,
                                  fieldType.omitNorms(), false,
                                  fieldType.indexOptions(), fieldType.docValueType());
     }
 
-    private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
+    private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber,
         boolean storeTermVector,
         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues) {
       FieldInfo fi = fieldInfo(name);
@@ -300,12 +300,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
-        fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, null);
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, null);
         assert !byName.containsKey(fi.name);
         assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
       } else {
-        fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
+        fi.update(storeTermVector, omitNorms, storePayloads, indexOptions);
 
         if (docValues != null) {
           // only pay the synchronization cost if fi does not already have a DVType
@@ -323,7 +323,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
 
     public FieldInfo add(FieldInfo fi) {
       // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
-      return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed(), fi.hasVectors(),
+      return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                  fi.omitsNorms(), fi.hasPayloads(),
                  fi.getIndexOptions(), fi.getDocValuesType());
     }

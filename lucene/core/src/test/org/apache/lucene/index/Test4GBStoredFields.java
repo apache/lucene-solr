@@ -59,7 +59,6 @@ public class Test4GBStoredFields extends LuceneTestCase {
 
     final Document doc = new Document();
     final FieldType ft = new FieldType();
-    ft.setIndexed(false);
     ft.setStored(true);
     ft.freeze();
     final int valueLength = RandomInts.randomIntBetween(random(), 1 << 13, 1 << 20);

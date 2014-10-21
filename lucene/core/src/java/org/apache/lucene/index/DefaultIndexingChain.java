@@ -361,7 +361,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   private static void verifyFieldType(String name, IndexableFieldType ft) {
-    if (ft.indexed() == false) {
+    if (ft.indexOptions() == null) {
       if (ft.storeTermVectors()) {
         throw new IllegalArgumentException("cannot store term vectors "
                                            + "for a field that is not indexed (field=\"" + name + "\")");
@@ -580,7 +580,6 @@ final class DefaultIndexingChain extends DocConsumer {
         // reset the TokenStream to the first token
         stream.reset();
         invertState.setAttributeSource(stream);
-
         termsHashPerField.start(field, first);
 
         while (stream.incrementToken()) {

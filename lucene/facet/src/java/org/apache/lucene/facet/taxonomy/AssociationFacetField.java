@@ -24,6 +24,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.Facets;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 
 /** Add an instance of this to your {@link Document} to add
@@ -40,7 +41,7 @@ public class AssociationFacetField extends Field {
   /** Indexed {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setIndexed(true);
+    TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     TYPE.freeze();
   }
   
