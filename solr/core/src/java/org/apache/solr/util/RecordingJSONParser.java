@@ -1,4 +1,4 @@
-package org.apache.solr.util.xslt;
+package org.apache.solr.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

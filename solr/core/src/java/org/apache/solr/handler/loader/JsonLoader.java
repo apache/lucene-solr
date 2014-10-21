@@ -16,12 +16,9 @@ package org.apache.solr.handler.loader;
  * limitations under the License.
  */
 
-import java.io.FilterReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.reflect.Field;
-import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,19 +28,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
-import com.ctc.wstx.stax.FilteredStreamReader;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.TeeInputStream;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.JsonRecordReader;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.xslt.RecordingJSONParser;
-import org.noggit.CharArr;
+import org.apache.solr.util.RecordingJSONParser;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
