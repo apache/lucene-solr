@@ -1057,6 +1057,19 @@
       <str name="df">text</str>
     </lst>
   </initParams>
+
+  <initParams path="/update/json/docs">
+    <lst name="defaults">
+      <!--this ensures that the entire json doc will be stored verbatim into one field-->
+      <str name="srcField">_src</str>
+      <!--This means a the uniqueKeyField will be extracted from the fields and
+       all fields go into the 'df' field. In this config df is already configured to be 'text'
+        -->
+      <str name="mapUniqueKeyOnly">true</str>
+    </lst>
+
+  </initParams>
+
   <!-- The following are implicitly added
   <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
         <lst name="defaults">
