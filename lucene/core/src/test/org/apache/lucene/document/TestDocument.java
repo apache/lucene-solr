@@ -272,10 +272,8 @@ public class TestDocument extends LuceneTestCase {
     doc.add(new TextField("text", "test2", Field.Store.YES));
     doc.add(new Field("unindexed", "test1", stored));
     doc.add(new Field("unindexed", "test2", stored));
-    doc
-        .add(new TextField("unstored", "test1", Field.Store.NO));
-    doc
-        .add(new TextField("unstored", "test2", Field.Store.NO));
+    doc.add(new TextField("unstored", "test1", Field.Store.NO));
+    doc.add(new TextField("unstored", "test2", Field.Store.NO));
     doc.add(new Field("indexed_not_tokenized", "test1", indexedNotTokenized));
     doc.add(new Field("indexed_not_tokenized", "test2", indexedNotTokenized));
     return doc;
