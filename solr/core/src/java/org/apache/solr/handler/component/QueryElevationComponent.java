@@ -49,6 +49,7 @@ import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
@@ -388,7 +389,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     String exStr = params.get(QueryElevationParams.EXCLUDE);
 
     Query query = rb.getQuery();
-    String qstr = QueryElevationComponent.stripLocalParams(rb.getQueryString());
+    SolrParams localParams = rb.getQparser().getLocalParams();
+    String qstr = localParams == null ? rb.getQueryString() : localParams.get(QueryParsing.V);
     if (query == null || qstr == null) {
       return;
     }
@@ -488,19 +490,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         rb.addDebugInfo("queryBoosting", dbg);
       }
     }
-  }
-
-  /**
-   * Simple stripping of localParam at start of query
-   * @param queryString the raw query string
-   * @return the query string without localParams, or the original queryString if no valid localParam found at beginning of string
-   */
-  protected static String stripLocalParams(String queryString) {
-    if (queryString == null || !queryString.startsWith("{!") || queryString.indexOf("}") == -1) {
-      return queryString;
-    }
-
-    return queryString.substring(queryString.indexOf("}")+1);
   }
 
   private Sort modifySort(SortField[] current, boolean force, ElevationComparatorSource comparator) {
