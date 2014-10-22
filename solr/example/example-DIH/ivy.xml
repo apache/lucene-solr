@@ -18,10 +18,12 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="example-DIH"/>
-
+    <configurations defaultconfmapping="compile->master">
+      <conf name="compile" transitive="false"/>
+    </configurations>
     <dependencies>
-      <dependency org="hsqldb" name="hsqldb" rev="${/hsqldb/hsqldb}" transitive="false"/>
-      <dependency org="org.apache.derby" name="derby" rev="${/org.apache.derby/derby}" transitive="false"/>
+      <dependency org="hsqldb" name="hsqldb" rev="${/hsqldb/hsqldb}" conf="compile"/>
+      <dependency org="org.apache.derby" name="derby" rev="${/org.apache.derby/derby}" conf="compile"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

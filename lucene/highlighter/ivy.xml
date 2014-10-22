@@ -17,5 +17,5 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="highlighter"/>
+  <info organisation="org.apache.lucene" module="highlighter"/>
 </ivy-module>

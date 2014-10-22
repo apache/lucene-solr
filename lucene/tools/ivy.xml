@@ -17,10 +17,13 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="core-tools"/>
-    <dependencies>
-       <dependency org="org.apache.ant" name="ant" rev="${/org.apache.ant/ant}" transitive="false" />
-       <dependency org="org.apache.ivy" name="ivy" rev="${/org.apache.ivy/ivy}" transitive="false" />
-       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
-    </dependencies>
+  <info organisation="org.apache.lucene" module="core-tools"/>
+  <configurations defaultconfmapping="compile->master">
+    <conf name="compile" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="org.apache.ant" name="ant" rev="${/org.apache.ant/ant}" conf="compile"/>
+    <dependency org="org.apache.ivy" name="ivy" rev="${/org.apache.ivy/ivy}" conf="compile"/>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
+  </dependencies>
 </ivy-module>
