@@ -172,7 +172,7 @@ public class BitSetPerf {
         for (int i=0; i<numSets; i++) {
           if (impl=="open") {
             final FixedBitSet set = osets[i];
-            final FixedBitSetIterator iterator = new FixedBitSetIterator(set);
+            final FixedBitSetIterator iterator = new FixedBitSetIterator(set, 0);
             for(int next=iterator.nextDoc(); next>=0; next=iterator.nextDoc()) {
               ret += next;
             }

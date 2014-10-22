@@ -26,6 +26,7 @@ import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /** A {@link CachingWrapperFilter} that caches sets using a {@link FixedBitSet},
@@ -42,7 +43,7 @@ public final class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter 
       throws IOException {
     if (docIdSet == null) {
       return EMPTY;
-    } else if (docIdSet instanceof FixedBitSet) {
+    } else if (docIdSet instanceof FixedBitDocIdSet) {
       // this is different from CachingWrapperFilter: even when the DocIdSet is
       // cacheable, we convert it to a FixedBitSet since we require all the
       // cached filters to be FixedBitSets
@@ -54,7 +55,7 @@ public final class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter 
       } else {
         final FixedBitSet copy = new FixedBitSet(reader.maxDoc());
         copy.or(it);
-        return copy;
+        return new FixedBitDocIdSet(copy);
       }
     }
   }

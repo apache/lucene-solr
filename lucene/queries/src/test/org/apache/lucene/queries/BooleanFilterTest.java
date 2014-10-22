@@ -17,6 +17,8 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -27,18 +29,17 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.TermRangeFilter;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 public class BooleanFilterTest extends LuceneTestCase {
   private Directory directory;
@@ -93,7 +94,7 @@ public class BooleanFilterTest extends LuceneTestCase {
     return new Filter() {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-        return new FixedBitSet(context.reader().maxDoc());
+        return new FixedBitDocIdSet(new FixedBitSet(context.reader().maxDoc()));
       }
     };
   }

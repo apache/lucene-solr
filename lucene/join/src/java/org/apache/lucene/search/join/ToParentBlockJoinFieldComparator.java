@@ -17,14 +17,15 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
 
 /**
  * A field comparator that allows parent documents to be sorted by fields
@@ -69,8 +70,8 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
     DocIdSet innerDocuments = childFilter.getDocIdSet(context, null);
     if (isEmpty(innerDocuments)) {
       this.childDocuments = null;
-    } else if (innerDocuments instanceof FixedBitSet) {
-      this.childDocuments = (FixedBitSet) innerDocuments;
+    } else if (innerDocuments instanceof FixedBitDocIdSet) {
+      this.childDocuments = ((FixedBitDocIdSet) innerDocuments).bits();
     } else {
       DocIdSetIterator iterator = innerDocuments.iterator();
       if (iterator != null) {
@@ -82,8 +83,8 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
     DocIdSet rootDocuments = parentFilter.getDocIdSet(context, null);
     if (isEmpty(rootDocuments)) {
       this.parentDocuments = null;
-    } else if (rootDocuments instanceof FixedBitSet) {
-      this.parentDocuments = (FixedBitSet) rootDocuments;
+    } else if (rootDocuments instanceof FixedBitDocIdSet) {
+      this.parentDocuments = ((FixedBitDocIdSet) rootDocuments).bits();
     } else {
       DocIdSetIterator iterator = rootDocuments.iterator();
       if (iterator != null) {

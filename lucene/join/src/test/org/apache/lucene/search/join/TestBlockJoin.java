@@ -359,7 +359,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final List<LeafReaderContext> leaves = reader.leaves();
     final int subIndex = ReaderUtil.subIndex(childDocID, leaves);
     final LeafReaderContext leaf = leaves.get(subIndex);
-    final FixedBitSet bits = (FixedBitSet) parents.getDocIdSet(leaf, null);
+    final FixedBitSet bits = (FixedBitSet) parents.getDocIdSet(leaf, null).bits();
     return leaf.reader().document(bits.nextSetBit(childDocID - leaf.docBase));
   }
   

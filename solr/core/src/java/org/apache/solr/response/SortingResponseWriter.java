@@ -17,11 +17,16 @@
     
 package org.apache.solr.response;
 
-import org.apache.lucene.index.LeafReaderContext;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.List;
+
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
@@ -29,30 +34,26 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
+import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.TrieFloatField;
+import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TrieDoubleField;
+import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
-import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.Writer;
-import java.io.PrintWriter;
-import java.util.List;
 
 
 public class SortingResponseWriter implements QueryResponseWriter {
@@ -127,8 +128,6 @@ public class SortingResponseWriter implements QueryResponseWriter {
     SortQueue queue = new SortQueue(queueSize, sortDoc);
     SortDoc[] outDocs = new SortDoc[queueSize];
 
-    long total = 0;
-
     while(count < totalHits) {
       //long begin = System.nanoTime();
       boolean commaNeeded = false;
@@ -136,7 +135,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
       SortDoc top = queue.top();
       for(int i=0; i<leaves.size(); i++) {
         sortDoc.setNextReader(leaves.get(i));
-        DocIdSetIterator it = sets[i].iterator();
+        DocIdSetIterator it = new FixedBitSetIterator(sets[i], 0); // cost is not useful here
         int docId = -1;
         while((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           sortDoc.setValues(docId);
