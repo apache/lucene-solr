@@ -63,8 +63,6 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
     doVectors = false;
 
-    assert docState.testPoint("TermVectorsTermsWriterPerField.finish start");
-
     final int numPostings = bytesHash.size();
 
     final BytesRef flushTerm = termsWriter.flushTerm;
@@ -226,7 +224,6 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
   @Override
   void newTerm(final int termID) {
-    assert docState.testPoint("TermVectorsTermsWriterPerField.newTerm start");
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
     postings.freqs[termID] = 1;
@@ -238,7 +235,6 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
   @Override
   void addTerm(final int termID) {
-    assert docState.testPoint("TermVectorsTermsWriterPerField.addTerm start");
     TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
     postings.freqs[termID]++;

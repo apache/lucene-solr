@@ -120,11 +120,15 @@
   <property name="tests.monster" value="false" />
   <property name="tests.slow" value="true" />
   <property name="tests.cleanthreads.sysprop" value="perMethod"/>
-  <property name="tests.asserts.gracious" value="false"/>
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
   <property name="tests.filterstacks" value="true"/>
   <property name="tests.luceneMatchVersion" value="${version.base}"/>
+  <property name="tests.asserts" value="true" />
+
+  <condition property="tests.asserts.args" value="-ea -esa" else="">
+    <istrue value="${tests.asserts}"/>
+  </condition>
 
   <condition property="tests.heapsize" value="768M" else="512M">
     <isset property="run.clover"/>
@@ -963,16 +967,11 @@
             <classpath refid="@{junit.classpath}"/>
             <classpath refid="clover.classpath" />
 
-            <!-- Assertions. -->
-            <assertions>
-              <enable package="org.apache.lucene"/>
-              <enable package="org.apache.solr"/>
-            </assertions>  
-
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
             <jvmarg line="${tests.heapdump.args}"/>
             <jvmarg line="${tests.clover.args}"/>
+            <jvmarg line="${tests.asserts.args}"/>
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>
@@ -1010,7 +1009,7 @@
             <sysproperty key="tests.slow" value="@{tests.slow}"/>
               
             <!-- set whether tests framework should not require java assertions enabled -->
-            <sysproperty key="tests.asserts.gracious" value="${tests.asserts.gracious}"/>
+            <sysproperty key="tests.asserts" value="${tests.asserts}"/>
 
             <!-- TODO: create propertyset for test properties, so each project can have its own set -->
             <sysproperty key="tests.multiplier" value="@{tests.multiplier}"/>
