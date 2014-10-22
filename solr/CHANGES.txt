@@ -352,6 +352,9 @@ Other Changes
 * SOLR-6641: SystemInfoHandler should include the zkHost the node is using (when running in solrcloud mode)
   (Timothy Potter)
 
+* SOLR-6295: Fix child filter query creation to never match parent docs in SolrExampleTests.
+  (Varun Thacker, Mikhail Khludnev via shalin)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
