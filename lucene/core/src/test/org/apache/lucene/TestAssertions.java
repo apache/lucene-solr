@@ -17,8 +17,8 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * validate that assertions are enabled during tests
@@ -43,13 +43,14 @@ public class TestAssertions extends LuceneTestCase {
   public void testTokenStreams() {
     new TestTokenStream1();
     new TestTokenStream2();
-    boolean doFail = false;
     try {
       new TestTokenStream3();
-      doFail = true;
+      if (assertsAreEnabled) {
+        fail("TestTokenStream3 should fail assertion");
+      }
     } catch (AssertionError e) {
       // expected
+      e.printStackTrace(System.out);
     }
-    assertFalse("TestTokenStream3 should fail assertion", doFail);
   }
 }

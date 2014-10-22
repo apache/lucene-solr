@@ -386,6 +386,8 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static final int RANDOM_MULTIPLIER = systemPropertyAsInt("tests.multiplier", 1);
 
+  public static final boolean TEST_ASSERTS_ENABLED = systemPropertyAsBoolean("tests.asserts", true);
+
   /** TODO: javadoc? */
   public static final String DEFAULT_LINE_DOCS_FILE = "europarl.lines.txt.gz";
 
@@ -2459,5 +2461,14 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static Path createTempFile() throws IOException {
     return createTempFile("tempFile", ".tmp");
+  }
+
+  /** True if assertions (-ea) are enabled (at least for this class). */
+  public static final boolean assertsAreEnabled;
+
+  static {
+    boolean enabled = false;
+    assert enabled = true; // Intentional side-effect!!!
+    assertsAreEnabled = enabled;
   }
 }

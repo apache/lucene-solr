@@ -78,9 +78,8 @@ class DocumentsWriterPerThread {
       this.infoStream = infoStream;
     }
 
-    // Only called by asserts
-    public boolean testPoint(String name) {
-      return docWriter.testPoint(name);
+    public void testPoint(String name) {
+      docWriter.testPoint(name);
     }
 
     public void clear() {
@@ -203,11 +202,10 @@ class DocumentsWriterPerThread {
     return retval;
   }
   
-  final boolean testPoint(String message) {
+  final void testPoint(String message) {
     if (infoStream.isEnabled("TP")) {
       infoStream.message("TP", message);
     }
-    return true;
   }
 
   /** Anything that will add N docs to the index should reserve first to
@@ -221,7 +219,7 @@ class DocumentsWriterPerThread {
   }
 
   public void updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException {
-    assert testPoint("DocumentsWriterPerThread addDocument start");
+    testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
     docState.doc = doc;
     docState.analyzer = analyzer;
@@ -259,7 +257,7 @@ class DocumentsWriterPerThread {
   }
 
   public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException {
-    assert testPoint("DocumentsWriterPerThread addDocuments start");
+    testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
