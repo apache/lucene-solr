@@ -1354,7 +1354,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // verifications are driven only by the results
     {
       int parentLevel = TestUtil.nextInt(random(), 0, maxDepth-1);
-      int kidLevelMin = TestUtil.nextInt(random(), parentLevel, maxDepth);
+      int kidLevelMin = TestUtil.nextInt(random(), parentLevel + 1, maxDepth);
       int kidLevelMax = TestUtil.nextInt(random(), kidLevelMin, maxDepth);
 
       String parentFilter = "level_i:" + parentLevel;
@@ -1478,7 +1478,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   private int idCounter = 0;
   /** used by genNestedDocuments */
   private static final String[] names 
-    = new String[] { "java","pyhon","scala","ruby","clojure" };
+    = new String[] { "java","python","scala","ruby","clojure" };
 
   /**
    * recursive method for generating a document, which may also have child documents;
