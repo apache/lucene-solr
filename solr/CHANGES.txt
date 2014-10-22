@@ -256,6 +256,9 @@ Bug Fixes
 * SOLR-6524: Collections left in recovery state after node restart because recovery sleep time
   increases exponentially between retries. (Mark Miller, shalin)
 
+* SOLR-6224: Post soft-commit callbacks are called before soft commit actually happens.
+  (shalin)
+
 Optimizations
 ----------------------
 

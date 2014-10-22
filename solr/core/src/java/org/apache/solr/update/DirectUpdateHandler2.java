@@ -587,8 +587,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           // SolrCore.verbose("writer.commit() end");
           numDocsPending.set(0);
           callPostCommitCallbacks();
-        } else {
-          callPostSoftCommitCallbacks();
         }
       } finally {
         iw.decref();
@@ -607,7 +605,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           core.getSearcher(true, false, waitSearcher, true);
           if (ulog != null) ulog.postSoftCommit(cmd);
         }
-        // ulog.postSoftCommit();
+        callPostSoftCommitCallbacks();
       } else {
         synchronized (solrCoreState.getUpdateLock()) {
           if (ulog != null) ulog.preSoftCommit(cmd);
