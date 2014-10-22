@@ -184,7 +184,7 @@ public final class Lucene50DocValuesFormat extends DocValuesFormat {
   
   static final String DATA_CODEC = "Lucene50DocValuesData";
   static final String DATA_EXTENSION = "dvd";
-  static final String META_CODEC = "Lucene50ValuesMetadata";
+  static final String META_CODEC = "Lucene50DocValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;

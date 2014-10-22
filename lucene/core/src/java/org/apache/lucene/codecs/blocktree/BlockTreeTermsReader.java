@@ -84,7 +84,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tim";
-  final static String TERMS_CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
+  final static String TERMS_CODEC_NAME = "BlockTreeTermsDict";
 
   /** Initial terms format. */
   public static final int VERSION_START = 0;
@@ -94,7 +94,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
-  final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_TERMS_INDEX";
+  final static String TERMS_INDEX_CODEC_NAME = "BlockTreeTermsIndex";
 
   // Open input to the main terms dict file (_X.tib)
   final IndexInput termsIn;

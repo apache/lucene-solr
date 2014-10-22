@@ -118,7 +118,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tiv";
-  final static String TERMS_CODEC_NAME = "VERSION_BLOCK_TREE_TERMS_DICT";
+  final static String TERMS_CODEC_NAME = "VersionBlockTreeTermsDict";
 
   /** Initial terms format. */
   public static final int VERSION_START = 1;
@@ -128,7 +128,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tipv";
-  final static String TERMS_INDEX_CODEC_NAME = "VERSION_BLOCK_TREE_TERMS_INDEX";
+  final static String TERMS_INDEX_CODEC_NAME = "VersionBlockTreeTermsIndex";
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
