@@ -529,8 +529,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
 
         try {
-          // start at 1 sec and work up to a couple min
-          double loopCount = Math.min(Math.pow(2, retries), 600); 
+          // start at 1 sec and work up to a min
+          double loopCount = Math.min(Math.pow(2, retries), 60);
           log.info("Wait {} seconds before trying to recover again ({})", loopCount, retries);
           for (int i = 0; i < loopCount; i++) {
             if (isClosed()) break; // check if someone closed us

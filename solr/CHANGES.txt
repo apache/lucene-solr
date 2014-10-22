@@ -253,6 +253,9 @@ Bug Fixes
 
 * SOLR-6573: QueryElevationComponent now works with localParams in the query (janhoy)
 
+* SOLR-6524: Collections left in recovery state after node restart because recovery sleep time
+  increases exponentially between retries. (Mark Miller, shalin)
+
 Optimizations
 ----------------------
 
