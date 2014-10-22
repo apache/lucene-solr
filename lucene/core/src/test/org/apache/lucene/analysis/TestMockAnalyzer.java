@@ -305,7 +305,6 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory());
     final Document doc = new Document();
     final FieldType ft = new FieldType();
-    ft.setIndexed(true);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
     ft.setTokenized(true);
     ft.setStoreTermVectors(true);

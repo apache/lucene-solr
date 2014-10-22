@@ -18,18 +18,20 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.lucene" module="analyzers-kuromoji"/>
-    <configurations>
-      <conf name="default" description="compile dependencies"/>
-      <conf name="ipadic" description="ipadic dictionary"/>
-      <conf name="naist" description="naist-jdic dictionary"/>
-    </configurations>
+  
+  <configurations defaultconfmapping="ipadic->default;naist->default"> <!-- 'master' conf not available to map to -->
+    <conf name="default" description="explicitly declare this configuration in order to not download dictionaries unless explicitly called for"/>
+    <conf name="ipadic" description="ipadic dictionary" transitive="false"/>
+    <conf name="naist" description="naist-jdic dictionary" transitive="false"/>
+  </configurations>
 
   <dependencies>
-    <dependency org="mecab" name="mecab-ipadic" rev="${/mecab/mecab-ipadic}" conf="ipadic->default"> 
-       <artifact name="ipadic" type=".tar.gz" url="http://mecab.googlecode.com/files/mecab-ipadic-2.7.0-20070801.tar.gz"/>
-     </dependency>
-     <dependency org="mecab" name="mecab-naist-jdic" rev="${/mecab/mecab-naist-jdic}" conf="naist->default">
-       <artifact name="mecab-naist-jdic" type=".tar.gz" url="http://sourceforge.jp/frs/redir.php?m=iij&amp;f=/naist-jdic/53500/mecab-naist-jdic-0.6.3b-20111013.tar.gz"/>
-     </dependency>
-    </dependencies>
+    <dependency org="mecab" name="mecab-ipadic" rev="${/mecab/mecab-ipadic}" conf="ipadic"> 
+      <artifact name="ipadic" type=".tar.gz" url="http://mecab.googlecode.com/files/mecab-ipadic-2.7.0-20070801.tar.gz"/>
+    </dependency>
+    <dependency org="mecab" name="mecab-naist-jdic" rev="${/mecab/mecab-naist-jdic}" conf="naist">
+      <artifact name="mecab-naist-jdic" type=".tar.gz" url="http://sourceforge.jp/frs/redir.php?m=iij&amp;f=/naist-jdic/53500/mecab-naist-jdic-0.6.3b-20111013.tar.gz"/>
+    </dependency>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
+  </dependencies>
 </ivy-module>

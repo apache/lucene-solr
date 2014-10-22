@@ -17,9 +17,12 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.lucene" module="core-demo"/>
-    <dependencies>
-      <dependency org="javax.servlet" name="servlet-api" rev="${/javax.servlet/servlet-api}"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <info organisation="org.apache.lucene" module="core-demo"/>
+  <configurations defaultconfmapping="compile->master">
+    <conf name="compile" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="javax.servlet" name="servlet-api" rev="${/javax.servlet/servlet-api}" conf="compile"/>
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>

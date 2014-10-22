@@ -92,7 +92,7 @@ public  class CommandOperation {
     return val;
 
   }
-  static final String REQD = "'{0}' is a required field";
+  static final String REQD = "''{0}'' is a required field";
 
 
   /**Get collection of values for a key. If only one val is present a

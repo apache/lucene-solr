@@ -71,7 +71,7 @@ New Features
   Robert Muir)
 
 * LUCENE-5911: Add MemoryIndex.freeze() to allow thread-safe searching over a 
-  MemoryIndex. (Alan Woodward)
+  MemoryIndex. (Alan Woodward, David Smiley, Robert Muir)
 
 * LUCENE-5969: Lucene 5.0 has a new index format with mismatched file detection,
   improved exception handling, and indirect norms encoding for sparse fields.
@@ -164,6 +164,10 @@ API Changes
   will be DocValuesType.NUMERIC if the field indexed and does not omit
   norms, else null.  (Robert Muir, Mike McCandless)
 
+* LUCENE-6013: Removed indexed boolean from IndexableFieldType and
+  FieldInfo, since it's redundant with IndexOptions != null. (Robert
+  Muir, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -183,6 +187,10 @@ Bug Fixes
   Closeable and you must close it to release the lock.  (Mike McCandless, Robert Muir)
 
 * LUCENE-5980: Don't let document length overflow. (Robert Muir)
+
+* LUCENE-5961: Fix the exists() method for FunctionValues returned by many ValueSoures to
+  behave properly when wrapping other ValueSources which do not exist for the specified document
+  (hossman)
 
 Documentation
 

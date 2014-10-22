@@ -17,17 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import java.io.IOException;
-
-import org.junit.Before;
 import org.junit.After;
+import org.junit.Before;
 
 /**
  * Tests that a useful exception is thrown when attempting to index a term that is 
@@ -58,7 +59,7 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
       (dir, newIndexWriterConfig(random(), new MockAnalyzer(random())));
     try {
       final FieldType ft = new FieldType();
-      ft.setIndexed(true);
+      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
       ft.setStored(random().nextBoolean());
       ft.freeze();
       

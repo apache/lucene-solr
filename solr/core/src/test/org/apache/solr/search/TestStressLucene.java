@@ -83,14 +83,12 @@ public class TestStressLucene extends TestRTGBase {
 
 
     final FieldType idFt = new FieldType();
-    idFt.setIndexed(true);
     idFt.setStored(true);
     idFt.setOmitNorms(true);
     idFt.setTokenized(false);
     idFt.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
 
     final FieldType ft2 = new FieldType();
-    ft2.setIndexed(false);
     ft2.setStored(true);
 
 

@@ -142,7 +142,6 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   public static final FieldType FIELD_TYPE = new FieldType();
 
   static {
-    FIELD_TYPE.setIndexed(true);
     FIELD_TYPE.setTokenized(true);
     FIELD_TYPE.setOmitNorms(true);
     FIELD_TYPE.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);

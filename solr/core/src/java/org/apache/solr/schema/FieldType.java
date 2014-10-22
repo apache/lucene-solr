@@ -265,11 +265,10 @@ public abstract class FieldType extends FieldProperties {
     if (val==null) return null;
 
     org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
-    newType.setIndexed(field.indexed());
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(getIndexOptions(field, val));
+    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : null);
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());

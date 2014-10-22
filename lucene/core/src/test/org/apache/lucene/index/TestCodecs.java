@@ -93,9 +93,6 @@ public class TestCodecs extends LuceneTestCase {
       fieldInfo = fieldInfos.addOrUpdate(name, new IndexableFieldType() {
 
         @Override
-        public boolean indexed() { return true; }
-
-        @Override
         public boolean stored() { return false; }
 
         @Override

@@ -29,10 +29,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 
 @Slow
@@ -61,7 +64,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       // shards, replicationfactor, maxreplicaspernode
       int shards = random().nextInt(7);
       if (shards < 2) shards = 2;
-      int rFactor = random().nextInt(3);
+      int rFactor = random().nextInt(4);
       if (rFactor < 2) rFactor = 2;
       createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "conf1");
     } finally {
@@ -186,9 +189,54 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       verifyPropertyVal(client, COLLECTION_NAME,
           c1_s1_r2, "property.bogus1", "whatever");
 
+      // At this point we've assigned a preferred leader. Make it happen and check that all the nodes that are
+      // leaders _also_ have the preferredLeader property set.
+
+
+      doPropertyAction(client,
+          "action", CollectionParams.CollectionAction.REBALANCELEADERS.toString(),
+          "collection", COLLECTION_NAME);
+
+      verifyLeaderAssignment(client, COLLECTION_NAME);
+
     } finally {
       client.shutdown();
     }
+  }
+
+  private void verifyLeaderAssignment(CloudSolrServer client, String collectionName)
+      throws InterruptedException, KeeperException {
+    String lastFailMsg = "";
+    for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
+      lastFailMsg = "";
+      client.getZkStateReader().updateClusterState(true);
+      ClusterState clusterState = client.getZkStateReader().getClusterState();
+      for (Slice slice : clusterState.getSlices(collectionName)) {
+        Boolean foundLeader = false;
+        Boolean foundPreferred = false;
+        for (Replica replica : slice.getReplicas()) {
+          Boolean isLeader = replica.getBool("leader", false);
+          Boolean isPreferred = replica.getBool("property.preferredleader", false);
+          if (isLeader != isPreferred) {
+            lastFailMsg = "Replica should NOT have preferredLeader != leader. Preferred: " + isPreferred.toString() +
+                " leader is " + isLeader.toString();
+          }
+          if (foundLeader && isLeader) {
+            lastFailMsg = "There should only be a single leader in _any_ shard! Replica " + replica.getName() +
+                " is the second leader in slice " + slice.getName();
+          }
+          if (foundPreferred && isPreferred) {
+            lastFailMsg = "There should only be a single preferredLeader in _any_ shard! Replica " + replica.getName() +
+                " is the second preferredLeader in slice " + slice.getName();
+          }
+          foundLeader = foundLeader ? foundLeader : isLeader;
+          foundPreferred = foundPreferred ? foundPreferred : isPreferred;
+        }
+      }
+      if (lastFailMsg.length() == 0) return;
+      Thread.sleep(100);
+    }
+    fail(lastFailMsg);
   }
 
   private void addProperty(CloudSolrServer client, String... paramsIn) throws IOException, SolrServerException {

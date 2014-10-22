@@ -19,7 +19,7 @@
 <ivy-module version="2.0">
   <info organisation="org.apache.solr" module="solrj"/>
 
-  <configurations>
+  <configurations defaultconfmapping="compile->master;test->master">
     <!-- artifacts in the "compile" configuration will go into solr/solrj/lib/ -->
     <conf name="compile" transitive="false"/>
     <!-- artifacts in the "test" configuration will go into solr/solrj/test-lib/ -->
@@ -27,17 +27,17 @@
   </configurations>
 
   <dependencies>
-    <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" conf="compile->*"/>
-    <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="compile->*"/>
-    <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile->*"/>
-    <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile->*"/>
-    <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile->*"/>
-    <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="${/org.codehaus.woodstox/wstx-asl}" conf="compile->*"/>
-    <dependency org="org.noggit" name="noggit" rev="${/org.noggit/noggit}" conf="compile->*"/>
-    <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile->*"/>
+    <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" conf="compile"/>
+    <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="compile"/>
+    <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile"/>
+    <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile"/>
+    <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
+    <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="${/org.codehaus.woodstox/wstx-asl}" conf="compile"/>
+    <dependency org="org.noggit" name="noggit" rev="${/org.noggit/noggit}" conf="compile"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
-    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="test->*"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

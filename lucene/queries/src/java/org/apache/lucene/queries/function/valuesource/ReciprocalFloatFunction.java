@@ -69,6 +69,10 @@ public class ReciprocalFloatFunction extends ValueSource {
         return a/(m*vals.floatVal(doc) + b);
       }
       @Override
+      public boolean exists(int doc) {
+        return vals.exists(doc);
+      }
+      @Override
       public String toString(int doc) {
         return Float.toString(a) + "/("
                 + m + "*float(" + vals.toString(doc) + ')'

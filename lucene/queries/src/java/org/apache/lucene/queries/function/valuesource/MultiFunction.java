@@ -43,6 +43,35 @@ public abstract class MultiFunction extends ValueSource {
     return description(name(), sources);
   }
 
+  /**
+   * Helper utility for {@link FunctionValues} wrapping multiple {@link FunctionValues}
+   *
+   * @return true if <em>all</em> of the specified <code>values</code> 
+   *         {@link FunctionValues#exists} for the specified doc, else false.
+   */
+  public static boolean allExists(int doc, FunctionValues... values) {
+    for (FunctionValues v : values) {
+      if ( ! v.exists(doc) ) {
+        return false;
+      }
+    }
+    return true;
+  }
+  /**
+   * Helper utility for {@link FunctionValues} wrapping multiple {@link FunctionValues}
+   *
+   * @return true if <em>any</em> of the specified <code>values</code> 
+   *         {@link FunctionValues#exists} for the specified doc, else false.
+   */
+  public static boolean anyExists(int doc, FunctionValues... values) {
+    for (FunctionValues v : values) {
+      if ( v.exists(doc) ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static String description(String name, List<ValueSource> sources) {
     StringBuilder sb = new StringBuilder();
     sb.append(name).append('(');

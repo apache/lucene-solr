@@ -319,7 +319,7 @@ public final class Document implements IndexDocument {
     return new FilterIterator<IndexableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
-        return field.type.indexed();
+        return field.type.indexOptions() != null;
       }
     };
   }

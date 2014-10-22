@@ -18,17 +18,13 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.similarities.DefaultSimilarity; // javadocs
 import org.apache.lucene.search.similarities.Similarity; // javadocs
-import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
-
-// TODO: we need to break out separate StoredField...
 
 /** Represents a single field for indexing.  IndexWriter
  *  consumes Iterable&lt;IndexableField&gt; as a document.
@@ -68,7 +64,7 @@ public interface IndexableField extends GeneralField {
    * the range of that encoding.
    * <p>
    * It is illegal to return a boost other than 1.0f for a field that is not
-   * indexed ({@link IndexableFieldType#indexed()} is false) or omits normalization values
+   * indexed ({@link IndexableFieldType#indexOptions()} is null) or omits normalization values
    * ({@link IndexableFieldType#omitNorms()} returns true).
    *
    * @see Similarity#computeNorm(FieldInvertState)

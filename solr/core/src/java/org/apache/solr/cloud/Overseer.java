@@ -130,7 +130,9 @@ public class Overseer implements Closeable {
 
   static enum LeaderStatus {DONT_KNOW, NO, YES}
 
-  public static final Set<String> sliceUniqueBooleanProperties = ImmutableSet.of("property.preferredleader");
+  public static final String preferredLeaderProp = COLL_PROP_PREFIX + "preferredleader";
+
+  public static final Set<String> sliceUniqueBooleanProperties = ImmutableSet.of(preferredLeaderProp);
 
   private long lastUpdatedTime = 0;
 
@@ -1169,7 +1171,7 @@ public class Overseer implements Closeable {
         return null;
       }
 
-    ClusterState updateSlice(ClusterState state, String collectionName, Slice slice) {
+    private ClusterState updateSlice(ClusterState state, String collectionName, Slice slice) {
         // System.out.println("###!!!### OLD CLUSTERSTATE: " + JSONUtil.toJSON(state.getCollectionStates()));
         // System.out.println("Updating slice:" + slice);
         DocCollection newCollection = null;
@@ -1396,7 +1398,6 @@ public class Overseer implements Closeable {
       }
 
   }
-
   // Class to encapsulate processing replica properties that have at most one replica hosting a property per slice.
   private class ExclusiveSliceProperty {
     private ClusterStateUpdater updater;
@@ -1698,6 +1699,7 @@ public class Overseer implements Closeable {
       this.replica = replica;
     }
   }
+
   static void getShardNames(Integer numShards, List<String> shardNames) {
     if(numShards == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");

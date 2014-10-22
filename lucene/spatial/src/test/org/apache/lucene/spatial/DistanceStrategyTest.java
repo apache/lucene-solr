@@ -96,7 +96,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
     if (strategy instanceof BBoxStrategy && random().nextBoolean()) {//disable indexing sometimes
       BBoxStrategy bboxStrategy = (BBoxStrategy)strategy;
       final FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setIndexed(false);
+      fieldType.setIndexOptions(null);
       bboxStrategy.setFieldType(fieldType);
     }
   }

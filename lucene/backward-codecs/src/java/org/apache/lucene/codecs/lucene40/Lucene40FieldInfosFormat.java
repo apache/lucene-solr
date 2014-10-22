@@ -106,7 +106,7 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
           // Undead norms!  Lucene40NormsReader will check this and bring norms back from the dead:
           UndeadNormsProducer.setUndead(attributes);
         }
-        infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
+        infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, oldValuesType.mapping, -1, Collections.unmodifiableMap(attributes));
       }
 

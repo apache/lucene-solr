@@ -17,6 +17,15 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -36,16 +45,6 @@ import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
@@ -109,12 +108,12 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
+    masterClient.shutdown();
+    masterClient  = null;
     masterJetty.stop();
     master.tearDown();
     masterJetty = null;
     master = null;
-    masterClient.shutdown();
-    masterClient  = null;
   }
 
 
@@ -142,15 +141,15 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         backupNames = new String[2];
       }
       for (int i = 0; i < 2; i++) {
-        BackupThread backupThread;
+        BackupCommand backupCommand;
         final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
         if (!namedBackup) {
-          backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
+          backupCommand = new BackupCommand(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
         } else {
-          backupThread = new BackupThread(backupName, ReplicationHandler.CMD_BACKUP);
+          backupCommand = new BackupCommand(backupName, ReplicationHandler.CMD_BACKUP);
           backupNames[i] = backupName;
         }
-        backupThread.start();
+        backupCommand.runCommand();
 
         File dataDir = new File(master.getDataDir());
 
@@ -167,8 +166,8 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
           Thread.sleep(200);
         }
 
-        if (backupThread.fail != null) {
-          fail(backupThread.fail);
+        if (backupCommand.fail != null) {
+          fail(backupCommand.fail);
         }
         File[] files = null;
         if (!namedBackup) {
@@ -225,20 +224,25 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   }
 
   private void testDeleteNamedBackup(String backupNames[]) throws InterruptedException, IOException {
+    String lastTimestamp = null;
     for (int i = 0; i < 2; i++) {
-      BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
-      deleteBackupThread.start();
-      CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus(backupNames[i]);
+      BackupCommand deleteBackupCommand = new BackupCommand(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
+      deleteBackupCommand.runCommand();
+      CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus(backupNames[i], lastTimestamp);
       while (true) {
         boolean success = checkDeleteBackupStatus.fetchStatus();
         if (success) {
+          lastTimestamp = checkDeleteBackupStatus.lastTimestamp;
+          if (i == 0) {
+            Thread.sleep(1000); //make the timestamp change
+          }
           break;
         }
         Thread.sleep(200);
       }
 
-      if (deleteBackupThread.fail != null) {
-        fail(deleteBackupThread.fail);
+      if (deleteBackupCommand.fail != null) {
+        fail(deleteBackupCommand.fail);
       }
     }
   }
@@ -284,24 +288,25 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     };
   }
 
-  private class BackupThread extends Thread {
-    volatile String fail = null;
+  private class BackupCommand {
+    String fail = null;
     final boolean addNumberToKeepInRequest;
     String backupKeepParamName;
     String backupName;
     String cmd;
-    BackupThread(boolean addNumberToKeepInRequest, String backupKeepParamName, String command) {
+    
+    BackupCommand(boolean addNumberToKeepInRequest, String backupKeepParamName, String command) {
       this.addNumberToKeepInRequest = addNumberToKeepInRequest;
       this.backupKeepParamName = backupKeepParamName;
       this.cmd = command;
     }
-    BackupThread(String backupName, String command) {
+    BackupCommand(String backupName, String command) {
       this.backupName = backupName;
       addNumberToKeepInRequest = false;
       this.cmd = command;
     }
-    @Override
-    public void run() {
+    
+    public void runCommand() {
       String masterUrl = null;
       if(backupName != null) {
         masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/replication?command=" + cmd +
@@ -330,9 +335,11 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     String response = null;
     private String backupName;
     final Pattern p = Pattern.compile("<str name=\"snapshotDeletedAt\">(.*?)</str>");
-
-    private CheckDeleteBackupStatus(String backupName) {
+    String lastTimestamp;
+    
+    private CheckDeleteBackupStatus(String backupName, String lastTimestamp) {
       this.backupName = backupName;
+      this.lastTimestamp = lastTimestamp;
     }
 
     public boolean fetchStatus() throws IOException {
@@ -345,7 +352,8 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         response = IOUtils.toString(stream, "UTF-8");
         if(response.contains("<str name=\"status\">success</str>")) {
           Matcher m = p.matcher(response);
-          if(m.find()) {
+          if(m.find() && (lastTimestamp == null || !lastTimestamp.equals(m.group(1)))) {
+            lastTimestamp = m.group(1);
             return true;
           }
         } else if(response.contains("<str name=\"status\">Unable to delete snapshot: " + backupName + "</str>" )) {

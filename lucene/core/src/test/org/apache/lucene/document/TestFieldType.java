@@ -43,7 +43,7 @@ public class TestFieldType extends LuceneTestCase {
     assertFalse(ft4.equals(ft));
     
     FieldType ft5 = new FieldType();
-    ft5.setIndexed(true);
+    ft5.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     assertFalse(ft5.equals(ft));
     
     FieldType ft6 = new FieldType();

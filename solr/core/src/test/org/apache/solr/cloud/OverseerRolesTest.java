@@ -197,7 +197,9 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     assertNotNull("Could not find a jetty2 kill",  leaderJetty);
 
     log.info("leader node {}", leaderJetty.getBaseUrl());
-    log.info ("current election Queue", OverseerCollectionProcessor.getSortedElectionNodes(client.getZkStateReader().getZkClient()));
+    log.info ("current election Queue",
+        OverseerCollectionProcessor.getSortedElectionNodes(client.getZkStateReader().getZkClient(),
+            OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE));
     ChaosMonkey.stop(leaderJetty);
     timeout = System.currentTimeMillis() + 10000;
     leaderchanged = false;

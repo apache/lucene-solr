@@ -18,12 +18,19 @@ package org.apache.lucene.index.memory;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -63,12 +70,46 @@ public class TestMemoryIndex extends LuceneTestCase {
       assertThat(e.getMessage(), containsString("frozen"));
     }
 
+    try {
+      mi.setSimilarity(new BM25Similarity(1, 1));
+      fail("Expected an IllegalArgumentException when setting the Similarity after calling freeze()");
+    }
+    catch (RuntimeException e) {
+      assertThat(e.getMessage(), containsString("frozen"));
+    }
+
     assertThat(mi.search(new TermQuery(new Term("f1", "some"))), not(is(0.0f)));
 
     mi.reset();
     mi.addField("f1", "wibble", analyzer);
     assertThat(mi.search(new TermQuery(new Term("f1", "some"))), is(0.0f));
     assertThat(mi.search(new TermQuery(new Term("f1", "wibble"))), not(is(0.0f)));
+
+    // check we can set the Similarity again
+    mi.setSimilarity(new DefaultSimilarity());
+
+  }
+
+  @Test
+  public void testSimilarities() throws IOException {
+
+    MemoryIndex mi = new MemoryIndex();
+    mi.addField("f1", "a long text field that contains many many terms", analyzer);
+
+    IndexSearcher searcher = mi.createSearcher();
+    LeafReader reader = (LeafReader) searcher.getIndexReader();
+    float n1 = reader.getNormValues("f1").get(0);
+
+    // Norms aren't cached, so we can change the Similarity
+    mi.setSimilarity(new DefaultSimilarity() {
+      @Override
+      public float lengthNorm(FieldInvertState state) {
+        return 74;
+      }
+    });
+    float n2 = reader.getNormValues("f1").get(0);
+
+    assertTrue(n1 != n2);
 
   }
 

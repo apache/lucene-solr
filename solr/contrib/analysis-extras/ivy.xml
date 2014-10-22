@@ -18,22 +18,22 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.solr" module="analysis-extras"/>
-  <configurations>
+  <configurations defaultconfmapping="compile->master;test->master">
     <conf name="compile" transitive="false"/>
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile->*"/>
+    <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile"/>
     <!--
       Although the 3rd party morfologik jars are not dependencies of code in
       the analysis-extras contrib, they must remain here in order to
       populate the Solr distribution
      -->
-    <dependency org="org.carrot2" name="morfologik-polish" rev="${/org.carrot2/morfologik-polish}" conf="compile->*"/>
-    <dependency org="org.carrot2" name="morfologik-fsa" rev="${/org.carrot2/morfologik-fsa}" conf="compile->*"/>
-    <dependency org="org.carrot2" name="morfologik-stemming" rev="${/org.carrot2/morfologik-stemming}" conf="compile->*"/>
+    <dependency org="org.carrot2" name="morfologik-polish" rev="${/org.carrot2/morfologik-polish}" conf="compile"/>
+    <dependency org="org.carrot2" name="morfologik-fsa" rev="${/org.carrot2/morfologik-fsa}" conf="compile"/>
+    <dependency org="org.carrot2" name="morfologik-stemming" rev="${/org.carrot2/morfologik-stemming}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

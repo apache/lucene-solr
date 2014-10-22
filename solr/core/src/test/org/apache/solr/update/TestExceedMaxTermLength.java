@@ -34,7 +34,7 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
   public final static String TEST_SCHEMAXML_NAME = "schema11.xml";
 
   private final static int minTestTermLength = IndexWriter.MAX_TERM_LENGTH + 1;
-  private final static int maxTestTermLegnth = IndexWriter.MAX_TERM_LENGTH * 2;
+  private final static int maxTestTermLength = IndexWriter.MAX_TERM_LENGTH * 2;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -54,12 +54,12 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
     final String longFieldName = "cat";
     final String longFieldValue = TestUtil.randomSimpleString(random(),
         minTestTermLength,
-        maxTestTermLegnth);
+        maxTestTermLength);
 
     final String okayFieldName = TestUtil.randomSimpleString(random(), 1, 50) + "_sS" ; //Dynamic field
     final String okayFieldValue = TestUtil.randomSimpleString(random(),
         minTestTermLength,
-        maxTestTermLegnth);
+        maxTestTermLength);
 
     boolean includeOkayFields = random().nextBoolean();
 
@@ -105,12 +105,12 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
     final String longFieldName = "cat_length";
     final String longFieldValue = TestUtil.randomSimpleString(random(),
         minTestTermLength,
-        maxTestTermLegnth);
+        maxTestTermLength);
 
     final String okayFieldName = TestUtil.randomSimpleString(random(), 1, 50) + "_sS" ; //Dynamic field
     final String okayFieldValue = TestUtil.randomSimpleString(random(),
         minTestTermLength,
-        maxTestTermLegnth);
+        maxTestTermLength);
 
     boolean includeOkayFields = random().nextBoolean();
 
@@ -138,7 +138,6 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
           updateJ(json(jsonStr), null);
         }
       } catch (Exception e) {
-        //expected
         fail("Should not have failed adding doc " + jsonStr);
         String msg= e.getCause().getMessage();
         assertTrue(msg.contains("one immense term in field=\"cat\""));

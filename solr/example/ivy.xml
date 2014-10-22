@@ -17,36 +17,39 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.solr" module="example"/>
-    <configurations>
-      <conf name="jetty" description="jetty jars"/>
-      <conf name="start" description="jetty start jar"/>
-      <conf name="servlet" description="servlet-api jar"/>
-      <conf name="logging" description="logging setup"/>
-    </configurations>
+  <info organisation="org.apache.solr" module="example"/>
+  <configurations defaultconfmapping="jetty->master;start->master;servlet->master;logging->master">
+    <conf name="jetty" description="jetty jars" transitive="false"/>
+    <conf name="start" description="jetty start jar" transitive="false"/>
+    <conf name="servlet" description="servlet-api jar" transitive="false"/>
+    <conf name="logging" description="logging setup" transitive="false"/>
+  </configurations>
 
-    <dependencies>
-    
-      <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" transitive="false" conf="logging->default"/>
-      <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" transitive="false" conf="logging->default"/>
-      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" transitive="false" conf="logging->default"/>
-      <dependency org="org.slf4j" name="jul-to-slf4j" rev="${/org.slf4j/jul-to-slf4j}" transitive="false" conf="logging->default"/> 
-      <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" transitive="false" conf="logging->default"/> 
-      <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${/org.eclipse.jetty/jetty-continuation}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-deploy" rev="${/org.eclipse.jetty/jetty-deploy}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-jmx" rev="${/org.eclipse.jetty/jetty-jmx}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-security" rev="${/org.eclipse.jetty/jetty-security}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-server" rev="${/org.eclipse.jetty/jetty-server}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="${/org.eclipse.jetty/jetty-servlet}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${/org.eclipse.jetty/jetty-webapp}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${/org.eclipse.jetty/jetty-xml}" transitive="false" conf="jetty->default"/>
-      <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" transitive="false" conf="start->default"/>
-      <dependency org="org.eclipse.jetty.orbit" name="javax.servlet" rev="${/org.eclipse.jetty.orbit/javax.servlet}" transitive="false" conf="servlet->default">
-        <artifact name="javax.servlet" type="orbit" ext="jar"/>
-      </dependency>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <dependencies>
+    <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" conf="logging"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="logging"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="logging"/>
+    <dependency org="org.slf4j" name="jul-to-slf4j" rev="${/org.slf4j/jul-to-slf4j}" conf="logging"/> 
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="logging"/> 
+      
+    <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${/org.eclipse.jetty/jetty-continuation}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-deploy" rev="${/org.eclipse.jetty/jetty-deploy}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-jmx" rev="${/org.eclipse.jetty/jetty-jmx}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-security" rev="${/org.eclipse.jetty/jetty-security}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-server" rev="${/org.eclipse.jetty/jetty-server}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="${/org.eclipse.jetty/jetty-servlet}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${/org.eclipse.jetty/jetty-webapp}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${/org.eclipse.jetty/jetty-xml}" conf="jetty"/>
+
+    <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start"/>
+
+    <dependency org="org.eclipse.jetty.orbit" name="javax.servlet" rev="${/org.eclipse.jetty.orbit/javax.servlet}" conf="servlet">
+      <artifact name="javax.servlet" type="orbit" ext="jar"/>
+    </dependency>
+
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>

@@ -208,6 +208,8 @@ public class MemoryIndex {
   private Counter bytesUsed;
 
   private boolean frozen = false;
+
+  private Similarity normSimilarity = IndexSearcher.getDefaultSimilarity();
   
   /**
    * Sorts term entries into ascending order; also works for
@@ -445,7 +447,7 @@ public class MemoryIndex {
 
       if (!fieldInfos.containsKey(fieldName)) {
         fieldInfos.put(fieldName, 
-            new FieldInfo(fieldName, true, fieldInfos.size(), false, false, false, this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS , null, -1, null));
+            new FieldInfo(fieldName, fieldInfos.size(), false, false, false, this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, -1, null));
       }
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
@@ -500,6 +502,15 @@ public class MemoryIndex {
   }
 
   /**
+   * Set the Similarity to be used for calculating field norms
+   */
+  public void setSimilarity(Similarity similarity) {
+    if (frozen)
+      throw new IllegalArgumentException("Cannot set Similarity when MemoryIndex is frozen");
+    this.normSimilarity = similarity;
+  }
+
+  /**
    * Creates and returns a searcher that can be used to execute arbitrary
    * Lucene queries and to collect the resulting query results as hits.
    * 
@@ -508,7 +519,7 @@ public class MemoryIndex {
   public IndexSearcher createSearcher() {
     MemoryIndexReader reader = new MemoryIndexReader();
     IndexSearcher searcher = new IndexSearcher(reader); // ensures no auto-close !!
-    reader.setSearcher(searcher); // to later get hold of searcher.getSimilarity()
+    searcher.setSimilarity(normSimilarity);
     return searcher;
   }
 
@@ -524,6 +535,7 @@ public class MemoryIndex {
     for (Map.Entry<String,Info> info : sortedFields) {
       info.getValue().sortTerms();
     }
+    calculateNormValues();
   }
   
   /**
@@ -743,8 +755,6 @@ public class MemoryIndex {
    * required by the Lucene IndexReader contracts.
    */
   private final class MemoryIndexReader extends LeafReader {
-    
-    private IndexSearcher searcher; // needed to find searcher.getSimilarity() 
     
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -1169,15 +1179,6 @@ public class MemoryIndex {
         return null;
       }
     }
-
-    private Similarity getSimilarity() {
-      if (searcher != null) return searcher.getSimilarity();
-      return IndexSearcher.getDefaultSimilarity();
-    }
-    
-    private void setSearcher(IndexSearcher searcher) {
-      this.searcher = searcher;
-    }
   
     @Override
     public int numDocs() {
@@ -1202,33 +1203,35 @@ public class MemoryIndex {
       if (DEBUG) System.err.println("MemoryIndexReader.doClose");
     }
     
-    /** performance hack: cache norms to avoid repeated expensive calculations */
-    private NumericDocValues cachedNormValues;
-    private String cachedFieldName;
-    private Similarity cachedSimilarity;
-    
     @Override
     public NumericDocValues getNormValues(String field) {
-      FieldInfo fieldInfo = fieldInfos.get(field);
-      if (fieldInfo == null || fieldInfo.omitsNorms())
-        return null;
-      NumericDocValues norms = cachedNormValues;
-      Similarity sim = getSimilarity();
-      if (!field.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
-        Info info = getInfo(field);
-        int numTokens = info != null ? info.numTokens : 0;
-        int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
-        float boost = info != null ? info.getBoost() : 1.0f; 
-        FieldInvertState invertState = new FieldInvertState(field, 0, numTokens, numOverlapTokens, 0, boost);
-        long value = sim.computeNorm(invertState);
-        norms = new MemoryIndexNormDocValues(value);
-        // cache it for future reuse
-        cachedNormValues = norms;
-        cachedFieldName = field;
-        cachedSimilarity = sim;
-        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + value + ":" + numTokens);
-      }
-      return norms;
+      if (norms == null)
+        return calculateFieldNormValue(field);
+      return norms.get(field);
+    }
+
+  }
+
+  private Map<String, NumericDocValues> norms = null;
+
+  private NumericDocValues calculateFieldNormValue(String field) {
+    FieldInfo fieldInfo = fieldInfos.get(field);
+    if (fieldInfo == null)
+      return null;
+    Info info = fields.get(field);
+    int numTokens = info != null ? info.numTokens : 0;
+    int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
+    float boost = info != null ? info.getBoost() : 1.0f;
+    FieldInvertState invertState = new FieldInvertState(field, 0, numTokens, numOverlapTokens, 0, boost);
+    long value = normSimilarity.computeNorm(invertState);
+    if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + value + ":" + numTokens);
+    return new MemoryIndexNormDocValues(value);
+  }
+
+  private void calculateNormValues() {
+    norms = new HashMap<>();
+    for (String field : fieldInfos.keySet()) {
+      norms.put(field, calculateFieldNormValue(field));
     }
   }
   
@@ -1239,6 +1242,8 @@ public class MemoryIndex {
     this.fieldInfos.clear();
     this.fields.clear();
     this.sortedFields = null;
+    this.norms = null;
+    this.normSimilarity = IndexSearcher.getDefaultSimilarity();
     byteBlockPool.reset(false, false); // no need to 0-fill the buffers
     intBlockPool.reset(true, false); // here must must 0-fill since we use slices
     this.frozen = false;

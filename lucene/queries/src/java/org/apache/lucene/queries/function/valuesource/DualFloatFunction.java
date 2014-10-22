@@ -60,7 +60,14 @@ public abstract class DualFloatFunction extends ValueSource {
       public float floatVal(int doc) {
         return func(doc, aVals, bVals);
       }
-
+      /** 
+       * True if and only if <em>all</em> of the wrapped {@link FunctionValues} 
+       * <code>exists</code> for the specified doc 
+       */
+      @Override
+      public boolean exists(int doc) {
+        return MultiFunction.allExists(doc, aVals, bVals);
+      }
       @Override
       public String toString(int doc) {
         return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';

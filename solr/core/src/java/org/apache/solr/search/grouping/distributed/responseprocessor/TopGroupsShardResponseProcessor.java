@@ -120,6 +120,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         continue; // continue if there was an error and we're tolerant.  
       }
       NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");
+      if(secondPhaseResult == null)
+        continue;
       Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, sortWithinGroup, srsp.getShard());
       int numFound = 0;
       float maxScore = Float.NaN;

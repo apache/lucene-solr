@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -35,6 +34,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
@@ -1142,7 +1142,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriter w = new IndexWriter(toAdd, conf);
       Document doc = new Document();
       FieldType customType = new FieldType();
-      customType.setIndexed(true); 
+      customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); 
       doc.add(newField("foo", "bar", customType));
       w.addDocument(doc);
       w.close();

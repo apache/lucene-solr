@@ -94,6 +94,12 @@ Upgrading from Solr 4.x
   If you need the old functionality back , please add an extra parameter f=/**
   example: /update/json/docs?f=/**
 
+* Bugs fixed in several ValueSource functions may result in different behavior in 
+  situations where some documents do not have values for fields wrapped in other value 
+  sources.  Users who want to preserve the previous behavior may need to wrap fields
+  in the "def()" function. Example: changing "fl=sum(fieldA,fieldB)" to 
+  "fl=sum(def(fieldA,0.0),def(fieldB,0.0))".  See LUCENE-5961 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -172,6 +178,14 @@ New Features
 * SOLR-4715: Add CloudSolrServer constructors which accept a HttpClient instance.
   (Hardik Upadhyay, Shawn Heisey, shalin)
 
+* SOLR-6517: CollectionsAPI call REBALANCELEADERS. Used to balance leaders
+  across nodes for a particular collection
+
+* SOLR-5992: add "removeregex" as an atomic update operation
+  (Vitaliy Zhovtyuk via Erick Erickson)
+
+* SOLR-6633: /update/json/docs path can now save the underlying json doc asa string field
+  and better support added to the default example (Noble Paul)
 
 Bug Fixes
 ----------------------
@@ -236,6 +250,8 @@ Bug Fixes
 
 * SOLR-6307: Atomic update remove does not work for int array or date array
   (Anurag Sharma , noble)
+
+* SOLR-6573: QueryElevationComponent now works with localParams in the query (janhoy)
 
 Optimizations
 ----------------------

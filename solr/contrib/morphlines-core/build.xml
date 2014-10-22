@@ -91,6 +91,14 @@
     </ant>
   </target>
 
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <sequential>
+      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
+      <ivy:retrieve conf="test,test.DfsMiniCluster" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
+                    pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
+    </sequential>
+  </target>
+
   <target name="compile-core" depends="resolve-extraction-libs, compile-solr-extraction, solr-contrib-build.compile-core"/>
   <target name="dist" depends="common-solr.dist"/>
 

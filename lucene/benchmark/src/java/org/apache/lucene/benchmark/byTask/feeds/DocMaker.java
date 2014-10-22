@@ -231,7 +231,6 @@ public class DocMaker implements Closeable {
     
     // Set ID_FIELD
     FieldType ft = new FieldType(valType);
-    ft.setIndexed(true);
     ft.setStored(true);
 
     Field idField = ds.getField(ID_FIELD, ft);

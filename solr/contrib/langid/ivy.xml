@@ -18,15 +18,15 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.solr" module="langid"/>
-  <configurations>
+  <configurations defaultconfmapping="compile->master;test->master">
     <conf name="compile" transitive="false"/>
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="com.cybozu.labs" name="langdetect" rev="${/com.cybozu.labs/langdetect}" conf="compile->*"/>
-    <dependency org="net.arnx" name="jsonic" rev="${/net.arnx/jsonic}" conf="compile->*"/>
+    <dependency org="com.cybozu.labs" name="langdetect" rev="${/com.cybozu.labs/langdetect}" conf="compile"/>
+    <dependency org="net.arnx" name="jsonic" rev="${/net.arnx/jsonic}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

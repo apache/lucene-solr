@@ -70,20 +70,22 @@ public class ScaleFloatFunction extends ValueSource {
       int maxDoc = leaf.reader().maxDoc();
       FunctionValues vals =  source.getValues(context, leaf);
       for (int i=0; i<maxDoc; i++) {
-
-      float val = vals.floatVal(i);
-      if ((Float.floatToRawIntBits(val) & (0xff<<23)) == 0xff<<23) {
-        // if the exponent in the float is all ones, then this is +Inf, -Inf or NaN
-        // which don't make sense to factor into the scale function
-        continue;
+        if ( ! vals.exists(i) ) {
+          continue;
+        }
+        float val = vals.floatVal(i);
+        if ((Float.floatToRawIntBits(val) & (0xff<<23)) == 0xff<<23) {
+          // if the exponent in the float is all ones, then this is +Inf, -Inf or NaN
+          // which don't make sense to factor into the scale function
+          continue;
+        }
+        if (val < minVal) {
+          minVal = val;
+        }
+        if (val > maxVal) {
+          maxVal = val;
+        }
       }
-      if (val < minVal) {
-        minVal = val;
-      }
-      if (val > maxVal) {
-        maxVal = val;
-      }
-    }
     }
 
     if (minVal == Float.POSITIVE_INFINITY) {
@@ -113,6 +115,10 @@ public class ScaleFloatFunction extends ValueSource {
     final FunctionValues vals =  source.getValues(context, readerContext);
 
     return new FloatDocValues(this) {
+      @Override
+      public boolean exists(int doc) {
+        return vals.exists(doc);
+      }
       @Override
       public float floatVal(int doc) {
         return (vals.floatVal(doc) - minSource) * scale + min;
