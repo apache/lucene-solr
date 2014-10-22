@@ -123,12 +123,12 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
           b.clear(idx);
           
           idx = random().nextInt(sz);
-          a.flip(idx);
+          a.flip(idx, idx+1);
           b.flip(idx, idx+1);
 
           idx = random().nextInt(sz);
           a.flip(idx);
-          b.flip(idx, idx+1);
+          b.flip(idx);
 
           boolean val2 = b.get(idx);
           boolean val = b.getAndSet(idx);
@@ -201,7 +201,7 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
       b0=b;
     }
   }
-  
+
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() throws IOException {

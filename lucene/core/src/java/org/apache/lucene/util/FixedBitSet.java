@@ -338,20 +338,31 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
   
   /** this = this XOR other */
   public void xor(FixedBitSet other) {
-    assert other.numWords <= numWords : "numWords=" + numWords + ", other.numWords=" + other.numWords;
-    final long[] thisBits = this.bits;
-    final long[] otherBits = other.bits;
-    int pos = Math.min(numWords, other.numWords);
-    while (--pos >= 0) {
-      thisBits[pos] ^= otherBits[pos];
-    }
+    xor(other.bits, other.numWords);
   }
   
   /** Does in-place XOR of the bits provided by the iterator. */
   public void xor(DocIdSetIterator iter) throws IOException {
-    int doc;
-    while ((doc = iter.nextDoc()) < numBits) {
-      flip(doc, doc + 1);
+    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
+      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
+      xor(fbs.bits, fbs.numWords);
+      // advance after last doc that would be accepted if standard
+      // iteration is used (to exhaust it):
+      fbs.advance(numBits);
+    } else {
+      int doc;
+      while ((doc = iter.nextDoc()) < numBits) {
+        flip(doc);
+      }
+    }
+  }
+
+  private void xor(long[] otherBits, int otherNumWords) {
+    assert otherNumWords <= numWords : "numWords=" + numWords + ", other.numWords=" + otherNumWords;
+    final long[] thisBits = this.bits;
+    int pos = Math.min(numWords, otherNumWords);
+    while (--pos >= 0) {
+      thisBits[pos] ^= otherBits[pos];
     }
   }
 
@@ -474,6 +485,15 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
     }
 
     bits[endWord] ^= endmask;
+  }
+
+  /** Flip the bit at the provided index. */
+  public void flip(int index) {
+    assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
+    int wordNum = index >> 6;      // div 64
+    int bit = index & 0x3f;     // mod 64
+    long bitmask = 1L << bit;
+    bits[wordNum] ^= bitmask;
   }
 
   /** Sets a range of bits
