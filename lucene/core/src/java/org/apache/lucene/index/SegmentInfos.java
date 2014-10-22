@@ -60,7 +60,7 @@ import org.apache.lucene.util.StringHelper;
  * Files:
  * <ul>
  * <li><tt>segments_N</tt>: Header, Version, NameCounter, SegCount, &lt;SegName,
- * SegCodec, DelGen, DeletionCount, FieldInfosGen, DocValuesGen,
+ * SegID, SegCodec, DelGen, DeletionCount, FieldInfosGen, DocValuesGen,
  * UpdatesFiles&gt;<sup>SegCount</sup>, CommitUserData, Footer
  * </ul>
  * </p>
@@ -94,6 +94,7 @@ import org.apache.lucene.util.StringHelper;
  * <li>DeletionCount records the number of deleted documents in this segment.</li>
  * <li>SegCodec is the {@link Codec#getName() name} of the Codec that encoded
  * this segment.</li>
+ * <li>SegID is the id of the Codec that encoded this segment. </li>
  * <li>CommitUserData stores an optional user-supplied opaque
  * Map&lt;String,String&gt; that was passed to
  * {@link IndexWriter#setCommitData(java.util.Map)}.</li>

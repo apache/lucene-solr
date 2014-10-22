@@ -41,7 +41,7 @@ import org.apache.lucene.util.MutableBits;
  * deletions.</p>
  * <p>Although per-segment, this file is maintained exterior to compound segment
  * files.</p>
- * <p>Deletions (.liv) --&gt; SegmentHeader,Generation,Bits</p>
+ * <p>Deletions (.liv) --&gt; IndexHeader,Generation,Bits</p>
  * <ul>
  *   <li>SegmentHeader --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup></li>

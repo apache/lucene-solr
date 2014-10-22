@@ -112,7 +112,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *     <li>SortedNumericEntry --&gt; EntryType,NumericEntry,NumericEntry</li>
  *     <li>FieldNumber,PackedVersion,MinLength,MaxLength,BlockSize,ValueCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *     <li>EntryType,CompressionType --&gt; {@link DataOutput#writeByte Byte}</li>
- *     <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *     <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *     <li>MinValue,GCD,MissingOffset,AddressOffset,DataOffset,EndOffset --&gt; {@link DataOutput#writeLong Int64}</li>
  *     <li>TableSize,BitsPerValue --&gt; {@link DataOutput#writeVInt vInt}</li>
  *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
@@ -135,6 +135,8 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *             using blocks of delta-encoded ints.
  *         <li>2 --&gt; table-compressed. When the number of unique numeric values is small and it would save space,
  *             a lookup table of unique values is written, followed by the ordinal for each document.
+ *         <li>3 --&gt; monotonic-compressed. Used to implement addressing for BINARY, SORTED_SET, SORTED_NUMERIC.
+ *         <li>4 --&gt; const-compressed. Used when all non-missing values are the same.
  *      </ul>
  *   <p>BinaryType indicates how Binary values will be stored:
  *      <ul>
@@ -148,9 +150,6 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *      is written for the addresses.
  *   <p>MissingOffset points to a byte[] containing a bitset of all documents that had a value for the field.
  *      If its -1, then there are no missing values. If its -2, all values are missing.
- *   <p>Checksum contains the CRC32 checksum of all bytes in the .dvm file up
- *      until the checksum. This is used to verify integrity of the file on opening the
- *      index.
  *   <li><a name="dvd" id="dvd"></a>
  *   <p>The DocValues data or .dvd file.</p>
  *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>
