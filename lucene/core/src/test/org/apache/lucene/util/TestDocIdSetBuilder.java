@@ -76,9 +76,8 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       builder.or(new RoaringDocIdSet.Builder(maxDoc).add(doc).build().iterator());
     }
     for (int i = 0; i < numIterators; ++i) {
-      final int baseInc = 2 + random().nextInt(10);
       RoaringDocIdSet.Builder b = new RoaringDocIdSet.Builder(maxDoc);
-      for (int doc = random().nextInt(10000); doc < maxDoc; doc += baseInc + random().nextInt(2000)) {
+      for (int doc = random().nextInt(1000); doc < maxDoc; doc += 1 + random().nextInt(1000)) {
         b.add(doc);
         ref.set(doc);
       }
