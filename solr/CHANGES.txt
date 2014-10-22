@@ -355,6 +355,9 @@ Other Changes
 * SOLR-6295: Fix child filter query creation to never match parent docs in SolrExampleTests.
   (Varun Thacker, Mikhail Khludnev via shalin)
 
+* SOLR-6578: Update commons-io dependency to the latest 2.4 version
+  (Steve Rowe, Shawn Heisey)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
