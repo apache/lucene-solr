@@ -20,6 +20,8 @@ package org.apache.solr.update;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.DirectoryReader;
@@ -27,9 +29,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -339,7 +344,45 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
     sr.close();
   }
-  
 
+  @Test
+  public void testPostSoftCommitEvents() throws Exception {
+    SolrCore core = h.getCore();
+    assert core != null;
+    DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
+    MySolrEventListener listener = new MySolrEventListener();
+    core.registerNewSearcherListener(listener);
+    updater.registerSoftCommitCallback(listener);
+    assertU(adoc("id", "999"));
+    assertU(commit("softCommit", "true"));
+    assertEquals("newSearcher was called more than once", 1, listener.newSearcherCount.get());
+    assertFalse("postSoftCommit was not called", listener.postSoftCommitAt.get() == Long.MAX_VALUE);
+    assertTrue("newSearcher was called after postSoftCommitCallback", listener.postSoftCommitAt.get() >= listener.newSearcherOpenedAt.get());
+  }
 
+  static class MySolrEventListener implements SolrEventListener {
+    AtomicInteger newSearcherCount = new AtomicInteger(0);
+    AtomicLong newSearcherOpenedAt = new AtomicLong(Long.MAX_VALUE);
+    AtomicLong postSoftCommitAt = new AtomicLong(Long.MAX_VALUE);
+
+    @Override
+    public void postCommit() {
+    }
+
+    @Override
+    public void postSoftCommit() {
+      postSoftCommitAt.set(System.currentTimeMillis());
+    }
+
+    @Override
+    public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
+      newSearcherCount.incrementAndGet();
+      newSearcherOpenedAt.set(newSearcher.getOpenTime());
+    }
+
+    @Override
+    public void init(NamedList args) {
+
+    }
+  }
 }
