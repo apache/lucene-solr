@@ -18,7 +18,9 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -90,6 +92,12 @@ import org.apache.lucene.util.NumericUtils;
 //   PerFieldAnalyzerWrapper
 //   oal.document
 
+// nocommit maybe have an across-the-board default for "stored"?
+
+// nocommit should we validate field names here?
+
+// nocommit can we somehow always store a "source"?
+
 // nocommit make ValueType public?  add setter so you can set that too?
 
 // language for the field?  (to default collator)
@@ -101,8 +109,6 @@ import org.apache.lucene.util.NumericUtils;
 // nocommit need index vs search time analysis?
 
 // nocommit suggesters
-
-// nocommit how to change block tree's block settings?
 
 // nocommit index-time sorting should be here too
 
@@ -122,10 +128,6 @@ import org.apache.lucene.util.NumericUtils;
 
 // nocommit how to randomize IWC?  RIW?
 
-// nocommit add .getSort method
-
-// nocommit add .getXXXQuery? method
-
 // nocommit maybe we need change IW's setCommitData API to be "add/remove key/value from commit data"?
 
 // nocommit just persist as FieldInfos?  but that's per-segment, and ... it enforces the low-level constraints?
@@ -137,6 +139,8 @@ import org.apache.lucene.util.NumericUtils;
 // nocommit fix all change methods to call validate / rollback
 
 // nocommit boolean, float16
+
+// nocommit collapse IndexableField/Type
 
 // nocommit can we move multi-field-ness out of IW?  so IW only gets a single instance of each field
 
@@ -169,7 +173,8 @@ public class FieldTypes {
 
   private final Map<String,FieldType> fields = new HashMap<>();
 
-  private final Analyzer defaultAnalyzer;
+  private final Analyzer defaultIndexAnalyzer;
+  private final Analyzer defaultQueryAnalyzer;
   private final Similarity defaultSimilarity;
 
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
@@ -188,6 +193,11 @@ public class FieldTypes {
     volatile Integer blockTreeMinItemsInBlock;
     volatile Integer blockTreeMaxItemsInBlock;
 
+    // Gaps to add between multiple values of the same field; if these are not set, we fallback to the Analyzer for that field.
+    volatile Integer analyzerPositionGap;
+    volatile Integer analyzerOffsetGap;
+
+    // If the field is numeric, this is the precision step we use:
     volatile Integer numericPrecisionStep;
     
     // Whether this field's values are stored, or null if it's not yet set:
@@ -195,6 +205,7 @@ public class FieldTypes {
 
     // Whether this field's values should be indexed as doc values for sorting:
     private volatile Boolean sortable;
+    private volatile Boolean sortReversed;
 
     // Whether this field may appear more than once per document:
     private volatile Boolean multiValued;
@@ -215,19 +226,26 @@ public class FieldTypes {
     private volatile String postingsFormat;
     private volatile String docValuesFormat;
 
-    // NOTE: not persisted, because we don't have API for persisting any analyzer :(
-    private volatile Analyzer analyzer;
+    private volatile Boolean highlighted;
+
+    // NOTE: not persisted, because we don't have API for persisting arbitrary analyzers, or maybe we require AnalysisFactory is always used
+    // (which we can serialize)?
+    private volatile Analyzer queryAnalyzer;
+    private volatile Analyzer indexAnalyzer;
     private volatile Similarity similarity;
 
-    private boolean validate() {
+    boolean validate() {
       if (valueType != null) {
         switch (valueType) {
         case INT:
         case FLOAT:
         case LONG:
         case DOUBLE:
-          if (analyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have an analyzer");
+          if (indexAnalyzer != null) {
+            illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
+          }
+          if (queryAnalyzer != null) {
+            illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
           }
           if (docValuesType != null && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
             illegalState(name, "type " + valueType + " must use NUMERIC docValuesType (got: " + docValuesType + ")");
@@ -250,16 +268,22 @@ public class FieldTypes {
           }
           break;
         case BINARY:
-          if (analyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have an analyzer");
+          if (indexAnalyzer != null) {
+            illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
+          }
+          if (queryAnalyzer != null) {
+            illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
           }
           if (docValuesType != null && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
             illegalState(name, "type " + valueType + " must use BINARY docValuesType (got: " + docValuesType + ")");
           }
           break;
         case ATOM:
-          if (analyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have an analyzer");
+          if (indexAnalyzer != null) {
+            illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
+          }
+          if (queryAnalyzer != null) {
+            illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
           }
           // nocommit make sure norms are disabled?
           if (indexOptions != null && indexOptions.compareTo(IndexOptions.DOCS_ONLY) > 0) {
@@ -280,12 +304,61 @@ public class FieldTypes {
         illegalState(name, "DocValuesType=" + docValuesType + " cannot be multi-valued");
       }
 
-      if (indexOptions == null && blockTreeMinItemsInBlock != null) {
-        illegalState(name, "can only setTermsDictBlockSize if the field is indexed");
+      // nocommit we need a separate "doc values disabled" setting?
+      /*
+      if (sortable == Boolean.TRUE && (docValuesType == null || docValuesType == DocValuesType.BINARY)) {
+        illegalState(name, "cannot sort when DocValuesType=" + docValuesType);
+      }
+      */
+
+
+      if (indexOptions == null) {
+        if (blockTreeMinItemsInBlock != null) {
+          illegalState(name, "can only setTermsDictBlockSize if the field is indexed");
+        }
+        if (indexAnalyzer != null) {
+          illegalState(name, "can only setIndexAnalyzer if the field is indexed");
+        }
+        if (queryAnalyzer != null) {
+          illegalState(name, "can only setQueryAnalyzer if the field is indexed");
+        }
+      } else {
+        if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && indexAnalyzer != null) {
+          illegalState(name, "can only setIndexAnalyzer for short text and large text fields; got valueType=" + valueType);
+        }
+        if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && queryAnalyzer != null) {
+          illegalState(name, "can only setQueryAnalyzer for short text and large text fields; got valueType=" + valueType);
+        }
+      }
+
+      if (analyzerPositionGap != null) {
+        if (indexOptions == null) {
+          illegalState(name, "can only setAnalyzerPositionGap if the field is indexed");
+        }
+        if (multiValued != Boolean.TRUE) {
+          illegalState(name, "can only setAnalyzerPositionGap if the field is multi-valued");
+        }
+      }
+      if (analyzerOffsetGap != null) {
+        if (indexOptions == null) {
+          illegalState(name, "can only setAnalyzerOffsetGap if the field is indexed");
+        }
+        if (multiValued != Boolean.TRUE) {
+          illegalState(name, "can only setAnalyzerOffsetGap if the field is multi-valued");
+        }
       }
 
       if (postingsFormat != null && blockTreeMinItemsInBlock != null) {
         illegalState(name, "cannot use both setTermsDictBlockSize and setPostingsFormat");
+      }
+
+      if (highlighted == Boolean.TRUE) {
+        if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT) {
+          illegalState(name, "can only enable highlighting for TEXT or SHORT_TEXT fields; got valueType=" + valueType);
+        }
+        if (indexOptions != null && indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
+          illegalState(name, "must index with IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS when highlighting is enabled");
+        }
       }
 
       return true;
@@ -397,14 +470,15 @@ public class FieldTypes {
   /** Create a new index-time (writable) instance using the specified default analyzer, and {@link IndexSearcher#getDefaultSimilarity}
    *  similarity.  Note that you must call {@link #setIndexWriter} before changing any types. */
   public FieldTypes(Analyzer defaultAnalyzer) {
-    this(defaultAnalyzer, IndexSearcher.getDefaultSimilarity());
+    this(defaultAnalyzer, defaultAnalyzer, IndexSearcher.getDefaultSimilarity());
   }
 
   /** Create a new index-time (writable) instance using the specified default analyzer and similarity.  Note that you must call {@link
    *  #setIndexWriter} before changing any types. */
-  public FieldTypes(Analyzer defaultAnalyzer, Similarity defaultSimilarity) {
+  public FieldTypes(Analyzer defaultIndexAnalyzer, Analyzer defaultQueryAnalyzer, Similarity defaultSimilarity) {
     this.reader = null;
-    this.defaultAnalyzer = defaultAnalyzer;
+    this.defaultIndexAnalyzer = defaultIndexAnalyzer;
+    this.defaultQueryAnalyzer = defaultQueryAnalyzer;
     this.defaultSimilarity = defaultSimilarity;
   }
 
@@ -415,9 +489,10 @@ public class FieldTypes {
   }
 
   /** Create a new search-time (read-only) instance using the specified default analyzer. */
-  public FieldTypes(DirectoryReader reader, Analyzer defaultAnalyzer, Similarity defaultSimilarity) throws IOException {
+  public FieldTypes(DirectoryReader reader, Analyzer defaultQueryAnalyzer, Similarity defaultSimilarity) throws IOException {
     this.reader = reader;
-    this.defaultAnalyzer = defaultAnalyzer;
+    this.defaultIndexAnalyzer = null;
+    this.defaultQueryAnalyzer = defaultQueryAnalyzer;
     this.defaultSimilarity = defaultSimilarity;
     loadFields(reader.getIndexCommit().getUserData());
   }
@@ -493,7 +568,7 @@ public class FieldTypes {
 
   /** Returns a new default {@link IndexWriterConfig}, with {@link Analyzer}, {@link Similarity} and {@link Codec}) pre-set. */
   public IndexWriterConfig getDefaultIndexWriterConfig() {
-    IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
+    IndexWriterConfig iwc = new IndexWriterConfig(indexAnalyzer);
     iwc.setSimilarity(similarity);
     iwc.setCodec(codec);
 
@@ -552,21 +627,67 @@ public class FieldTypes {
       }
     };
 
-  private final Analyzer analyzer = new DelegatingAnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY) {
+  private abstract class FieldTypeAnalyzer extends DelegatingAnalyzerWrapper {
+    public FieldTypeAnalyzer() {
+      super(Analyzer.PER_FIELD_REUSE_STRATEGY);
+    }
+
+    @Override
+    public int getPositionIncrementGap(String fieldName) {
+      // Field must exist:
+      FieldType field = getFieldType(fieldName);
+      if (field.analyzerPositionGap != null) {
+        return field.analyzerPositionGap.intValue();
+      } else if (field.indexAnalyzer != null) {
+        return field.indexAnalyzer.getPositionIncrementGap(fieldName);
+      } else {
+        return defaultIndexAnalyzer.getPositionIncrementGap(fieldName);
+      }
+    }
+
+    @Override
+    public int getOffsetGap(String fieldName) {
+      // Field must exist:
+      FieldType field = getFieldType(fieldName);
+      if (field.analyzerOffsetGap != null) {
+        return field.analyzerOffsetGap.intValue();
+      } else if (field.indexAnalyzer != null) {
+        return field.indexAnalyzer.getOffsetGap(fieldName);
+      } else {
+        return defaultIndexAnalyzer.getOffsetGap(fieldName);
+      }
+    }
+
+    // nocommit what about wrapReader?
+  }
+
+  private final Analyzer indexAnalyzer = new FieldTypeAnalyzer() {
       @Override
       protected Analyzer getWrappedAnalyzer(String fieldName) {
         // Field must exist:
         FieldType field = getFieldType(fieldName);
-        if (field.analyzer != null) {
-          return field.analyzer;
+        if (field.indexAnalyzer != null) {
+          return field.indexAnalyzer;
         } else if (field.valueType == ValueType.ATOM) {
-          // nocommit need test showing that if you index an ATOM and search field:"XXX YYY" with that atom, it works
+          // BUG
+          illegalState(fieldName, "ATOM fields should not be analyzed during indexing");
+        }
+        return defaultIndexAnalyzer;
+      }
+    };
+
+  private final Analyzer queryAnalyzer = new FieldTypeAnalyzer() {
+      @Override
+      protected Analyzer getWrappedAnalyzer(String fieldName) {
+        // Field must exist:
+        FieldType field = getFieldType(fieldName);
+        if (field.queryAnalyzer != null) {
+          return field.queryAnalyzer;
+        } else if (field.valueType == ValueType.ATOM) {
           return KEYWORD_ANALYZER;
         }
-        return FieldTypes.this.defaultAnalyzer;
+        return defaultQueryAnalyzer;
       }
-
-      // nocommit what about wrapReader?
     };
 
   /** Returns {@link Similarity} that returns the per-field Similarity. */
@@ -579,30 +700,91 @@ public class FieldTypes {
     return codec;
   }
 
-  /** Returns {@link Analyzer} that returns the per-field analyzer. */
-  public Analyzer getAnalyzer() {
-    return analyzer;
+  /** Returns {@link Analyzer} that returns the per-field analyzer for use during indexing. */
+  public Analyzer getIndexAnalyzer() {
+    if (writer == null) {
+      return null;
+    } else {
+      return indexAnalyzer;
+    }
   }
+
+  /** Returns {@link Analyzer} that returns the per-field analyzer for use during searching. */
+  public Analyzer getQueryAnalyzer() {
+    return queryAnalyzer;
+  }
+
+  // nocommit we should note that the field has a specific analyzer set, and then throw exc if it didn't get set again after load
 
   /** NOTE: analyzer does not persist, so each time you create {@code FieldTypes} from
    *  {@linkIndexWriter} or {@link IndexReader} you must set all per-field analyzers again. */
   public synchronized void setAnalyzer(String fieldName, Analyzer analyzer) {
+    setIndexAnalyzer(fieldName, analyzer);
+    setQueryAnalyzer(fieldName, analyzer);
+  }
+
+  /** NOTE: analyzer does not persist, so each time you create {@code FieldTypes} from
+   *  {@linkIndexWriter} or {@link IndexReader} you must set all per-field analyzers again. */
+  public synchronized void setIndexAnalyzer(String fieldName, Analyzer analyzer) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = new FieldType(fieldName);
-      current.analyzer = analyzer;
+      current.indexAnalyzer = analyzer;
       fields.put(fieldName, current);
       changed();
-    } else {
-      current.analyzer = analyzer;
+    } else if (current.indexAnalyzer == null) {
+      boolean success = false;
+      try {
+        current.indexAnalyzer = analyzer;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.indexAnalyzer = null;
+        }
+      }
       changed();
+    } else {
+      illegalState(fieldName, "analyzer was already set");
     }
   }
 
-  public synchronized Analyzer getAnalyzer(String fieldName) {
+  public synchronized Analyzer getIndexAnalyzer(String fieldName) {
     FieldType current = fields.get(fieldName);
     fieldMustExist(fieldName, current);
-    return current.analyzer;
+    return current.indexAnalyzer;
+  }
+
+  /** NOTE: analyzer does not persist, so each time you create {@code FieldTypes} from
+   *  {@linkIndexWriter} or {@link IndexReader} you must set all per-field analyzers again. */
+  public synchronized void setQueryAnalyzer(String fieldName, Analyzer analyzer) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.queryAnalyzer = analyzer;
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.queryAnalyzer == null) {
+      boolean success = false;
+      try {
+        current.queryAnalyzer = analyzer;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.queryAnalyzer = null;
+        }
+      }
+      changed();
+    } else {
+      illegalState(fieldName, "analyzer was already set");
+    }
+  }
+
+  public synchronized Analyzer getQueryAnalyzer(String fieldName) {
+    FieldType current = fields.get(fieldName);
+    fieldMustExist(fieldName, current);
+    return current.queryAnalyzer;
   }
 
   /** NOTE: similarity does not persist, so each time you create {@code FieldTypes} from
@@ -659,6 +841,58 @@ public class FieldTypes {
     return current.multiValued == Boolean.TRUE;
   }
 
+  /** The gap that should be added to token positions between each multi-valued field. */
+  public synchronized void setAnalyzerPositionGap(String fieldName, int gap) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.analyzerPositionGap = gap;
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.analyzerPositionGap == null) {
+      Integer oldValue = current.analyzerPositionGap;
+      boolean success = false;
+      try {
+        current.analyzerPositionGap = gap;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.analyzerPositionGap = oldValue;
+        }
+      }
+      changed();
+    } else if (current.analyzerPositionGap.intValue() != gap) {
+      illegalState(fieldName, "analyzerPositionGap was already set to " + current.analyzerPositionGap + "; cannot change again to " + gap);
+    }
+  }
+
+  /** The gap that should be added to token positions between each multi-valued field. */
+  public synchronized void setAnalyzerOffsetGap(String fieldName, int gap) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.analyzerOffsetGap = gap;
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.analyzerOffsetGap == null) {
+      Integer oldValue = current.analyzerOffsetGap;
+      boolean success = false;
+      try {
+        current.analyzerOffsetGap = gap;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.analyzerOffsetGap = oldValue;
+        }
+      }
+      changed();
+    } else if (current.analyzerOffsetGap.intValue() != gap) {
+      illegalState(fieldName, "analyzerOffsetGap was already set to " + current.analyzerOffsetGap + "; cannot change again to " + gap);
+    }
+  }
+
   /** Sets the minimum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
    *  effect for newly written (flushed or merged) segments.  The default is 25; higher values make fewer, larger blocks, which require less
    *  heap in the IndexReader but slows down term lookups. */
@@ -708,32 +942,43 @@ public class FieldTypes {
 
   /** Enables sorting for this field, using doc values of the appropriate type. */
   // nocommit either rename this, or rename enableStored, or both (they are the same letters just shuffled!)
-  public synchronized void enableSorted(String fieldName) {
+  public synchronized void enableSorting(String fieldName) {
+    enableSorting(fieldName, false);
+  }
+
+  public synchronized void enableSorting(String fieldName, boolean reversed) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = new FieldType(fieldName);
       current.sortable = Boolean.TRUE;
+      current.sortReversed = reversed;
       fields.put(fieldName, current);
       changed();
     } else if (current.sortable == null) {
+      assert current.sortReversed == null;
       boolean success = false;
       try {
         current.sortable = Boolean.TRUE;
+        current.sortReversed = reversed;
         current.validate();
         success = true;
       } finally {
         if (success == false) {
           current.sortable = null;
+          current.sortReversed = null;
         }
       }
       changed();
     } else if (current.sortable == Boolean.FALSE) {
       illegalState(fieldName, "sorting was already disabled");
+    } else if (current.sortReversed != reversed) {
+      current.sortReversed = reversed;
+      changed();
     }
   }
 
   /** Disables sorting for this field. */
-  public synchronized void disableSorted(String fieldName) {
+  public synchronized void disableSorting(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = new FieldType(fieldName);
@@ -741,9 +986,11 @@ public class FieldTypes {
       fields.put(fieldName, current);
       changed();
     } else if (current.sortable != Boolean.FALSE) {
+      // nocommit don't we need to ... turn off DocValues if they were only on because of sorting?
       // nocommit ok to allow this?
       // nocommit should we validate?
       current.sortable = Boolean.FALSE;
+      current.sortReversed = null;
       changed();
     }
   }
@@ -754,17 +1001,59 @@ public class FieldTypes {
     return current.sortable == Boolean.TRUE;
   }
 
-  // nocommit too ambitious?
-  public synchronized void enableHighlighted(String fieldName) {
+  /** Enables highlighting for this field, using postings highlighter. */
+  public synchronized void enableHighlighting(String fieldName) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.highlighted = Boolean.TRUE;
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.highlighted == null) {
+      boolean success = false;
+      try {
+        current.highlighted = Boolean.TRUE;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.highlighted = null;
+        }
+      }
+      changed();
+    } else if (current.highlighted == Boolean.FALSE) {
+      illegalState(fieldName, "cannot enable highlighting: it was already disabled");
+    }
   }
 
-  // nocommit too ambitious?
-  public synchronized void disableHighlighted(String fieldName) {
+  /** Disables highlighting for this field. */
+  public synchronized void disableHighlighting(String fieldName) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.highlighted = Boolean.FALSE;
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.highlighted == null) {
+      Boolean currentValue = current.highlighted;
+      boolean success = false;
+      try {
+        current.highlighted = Boolean.FALSE;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.highlighted = currentValue;
+        }
+      }
+      changed();
+    }
   }
 
-  // nocommit too ambitious?
   public synchronized boolean getHighlighted(String fieldName) {
-    return false;
+    FieldType current = fields.get(fieldName);
+    fieldMustExist(fieldName, current);
+    return current.highlighted == Boolean.TRUE;
   }
 
   /** Enables norms for this field.  This is only allowed if norms were not already disabled. */
@@ -1144,15 +1433,17 @@ public class FieldTypes {
     case FLOAT:
     case LONG:
     case DOUBLE:
-      // By default, numbers are trie-indexed as DOCS_ONLY without norms, and enabled for sorting (numeric doc values)
+      if (field.highlighted == null) {
+        field.highlighted = Boolean.FALSE;
+      }
       if (field.sortable == null) {
         field.sortable = Boolean.TRUE;
       }
       if (field.multiValued == null) {
         field.multiValued = Boolean.FALSE;
       }
-      if (field.indexOptions == null) {
-        field.indexOptions = IndexOptions.DOCS_ONLY;
+      if (field.stored == null) {
+        field.stored = Boolean.TRUE;
       }
       if (field.sortable == Boolean.TRUE && field.docValuesType == null) {
         if (field.multiValued == Boolean.TRUE) {
@@ -1160,6 +1451,9 @@ public class FieldTypes {
         } else {
           field.docValuesType = DocValuesType.NUMERIC;
         }
+      }
+      if (field.indexOptions == null) {
+        field.indexOptions = IndexOptions.DOCS_ONLY;
       }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
@@ -1174,12 +1468,17 @@ public class FieldTypes {
       break;
 
     case SHORT_TEXT:
-      // By default, short text is indexed as DOCS_ONLY without norms, and enabled for sorting (sorted doc values)
+      if (field.highlighted == null) {
+        field.highlighted = Boolean.TRUE;
+      }
       if (field.sortable == null) {
         field.sortable = Boolean.TRUE;
       }
       if (field.multiValued == null) {
         field.multiValued = Boolean.FALSE;
+      }
+      if (field.stored == null) {
+        field.stored = Boolean.TRUE;
       }
       if (field.sortable == Boolean.TRUE && field.docValuesType == null) {
         if (field.multiValued == Boolean.TRUE) {
@@ -1189,7 +1488,11 @@ public class FieldTypes {
         }
       }
       if (field.indexOptions == null) {
-        field.indexOptions = IndexOptions.DOCS_ONLY;
+        if (field.highlighted) {
+          field.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+        } else {
+          field.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        }
       }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
@@ -1197,11 +1500,20 @@ public class FieldTypes {
       break;
 
     case ATOM:
+      if (field.highlighted == null) {
+        field.highlighted = Boolean.FALSE;
+      }
       if (field.sortable == null) {
         field.sortable = Boolean.FALSE;
       }
       if (field.multiValued == null) {
         field.multiValued = Boolean.FALSE;
+      }
+      if (field.stored == null) {
+        field.stored = Boolean.TRUE;
+      }
+      if (field.indexOptions == null) {
+        field.indexOptions = IndexOptions.DOCS_ONLY;
       }
       if (field.sortable == Boolean.TRUE && field.docValuesType == null) {
         if (field.multiValued == Boolean.TRUE) {
@@ -1210,16 +1522,15 @@ public class FieldTypes {
           field.docValuesType = DocValuesType.SORTED;
         }
       }
-      if (field.indexOptions == null) {
-        field.indexOptions = IndexOptions.DOCS_ONLY;
-      }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
       }
       break;
 
     case BINARY:
-      // By default, binary is just a stored blob:
+      if (field.highlighted == null) {
+        field.highlighted = Boolean.FALSE;
+      }
       if (field.sortable == null) {
         field.sortable = Boolean.FALSE;
       }
@@ -1228,21 +1539,31 @@ public class FieldTypes {
       }
       if (field.stored == null) {
         field.stored = Boolean.TRUE;
+      }
+      if (field.indexNorms == null) {
+        field.indexNorms = Boolean.FALSE;
       }
       break;
 
     case TEXT:
-      if (field.stored == null) {
-        field.stored = Boolean.TRUE;
-      }
-      if (field.multiValued == null) {
-        field.multiValued = Boolean.FALSE;
+      if (field.highlighted == null) {
+        field.highlighted = Boolean.TRUE;
       }
       if (field.sortable == null) {
         field.sortable = Boolean.FALSE;
       }
+      if (field.multiValued == null) {
+        field.multiValued = Boolean.FALSE;
+      }
+      if (field.stored == null) {
+        field.stored = Boolean.TRUE;
+      }
       if (field.indexOptions == null) {
-        field.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        if (field.highlighted) {
+          field.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+        } else {
+          field.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        }
       }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.TRUE;
@@ -1252,6 +1573,13 @@ public class FieldTypes {
     default:
       throw new AssertionError("missing value type in switch");
     }
+
+    assert field.highlighted != null;
+    assert field.stored != null;
+    assert field.multiValued != null;
+    assert field.sortable != null;
+    assert field.indexOptions == null || field.indexNorms != null;
+    assert field.validate();
   } 
 
   /** Returns a query matching all documents that have this int term. */
@@ -1385,6 +1713,8 @@ public class FieldTypes {
     }
   }
 
+  // nocommit newPhraseQuery?
+
   /** Builds a sort from arbitrary list of fieldName, reversed pairs. */
   public Sort newSort(Object... fields) {
     if (fields.length == 0) {
@@ -1392,26 +1722,24 @@ public class FieldTypes {
     }
 
     int upto = 0;
-    SortField[] sortFields = new SortField[(fields.length+1)/2];
+    List<SortField> sortFields = new ArrayList<>();
 
     while (upto < fields.length) {
       if ((fields[upto] instanceof String) == false) {
-        throw new IllegalArgumentException("arguments must alternate String, Boolean; expected String but got: " + fields[upto]);
+        throw new IllegalArgumentException("arguments must (String [Boolean])+; expected String but got: " + fields[upto].getClass());
       }
-      String fieldName = (String) fields[upto];
-      boolean reversed;
-      if (fields.length <= upto+1) {
-        reversed = false;
-      } else if ((fields[upto+1] instanceof Boolean) == false) {
-        throw new IllegalArgumentException("arguments must alternate String, Boolean; expected Boolean but got: " + fields[upto]);
+      String fieldName = (String) fields[upto++];
+      Boolean reversed;
+      if (upto == fields.length || (fields[upto] instanceof Boolean) == false) {
+        reversed = null;
       } else {
-        reversed = ((Boolean) fields[upto+1]).booleanValue();
+        reversed = (Boolean) fields[upto+1];
+        upto++;
       }
-      sortFields[upto/2] = newSortField(fieldName, reversed);
-      upto += 2;
+      sortFields.add(newSortField(fieldName, reversed));
     }
 
-    return new Sort(sortFields);
+    return new Sort(sortFields.toArray(new SortField[sortFields.size()]));
   }
 
   /** Returns the SortField for this field. */
@@ -1419,13 +1747,19 @@ public class FieldTypes {
     return newSortField(fieldName, false);
   }
 
-  /** Returns the SortField for this field, optionally reversed. */
-  public SortField newSortField(String fieldName, boolean reverse) {
+  /** Returns the SortField for this field, optionally reversed.  If reverse is null, we use the default for the field. */
+  public SortField newSortField(String fieldName, Boolean reverse) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
     if (fieldType.sortable != Boolean.TRUE) {
       illegalState(fieldName, "this field was not indexed for sorting");
+    }
+    if (reverse == null) {
+      reverse = fieldType.sortReversed;
+    }
+    if (reverse == null) {
+      reverse = Boolean.FALSE;
     }
     switch (fieldType.valueType) {
     case INT:
@@ -1478,6 +1812,7 @@ public class FieldTypes {
     // Push to IW's commit data
     assert writer != null;
     // nocommit must serialize current fields to IW's commit data, but this is O(N^2)... hmm
+    // nocommit the schema format itself needs to be versioned too
   }
 
   private synchronized void ensureWritable() {

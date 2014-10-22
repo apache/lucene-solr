@@ -83,8 +83,9 @@ public class PhraseQuery extends Query {
    */
   public void add(Term term) {
     int position = 0;
-    if(positions.size() > 0)
-        position = positions.get(positions.size()-1).intValue() + 1;
+    if (positions.size() > 0) {
+      position = positions.get(positions.size()-1).intValue() + 1;
+    }
 
     add(term, position);
   }
@@ -117,10 +118,10 @@ public class PhraseQuery extends Query {
    * Returns the relative positions of terms in this phrase.
    */
   public int[] getPositions() {
-      int[] result = new int[positions.size()];
-      for(int i = 0; i < positions.size(); i++)
-          result[i] = positions.get(i).intValue();
-      return result;
+    int[] result = new int[positions.size()];
+    for(int i = 0; i < positions.size(); i++)
+      result[i] = positions.get(i).intValue();
+    return result;
   }
 
   @Override

@@ -33,12 +33,15 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -66,7 +69,7 @@ public class TestDocument2 extends LuceneTestCase {
     doc.addShortText("title", "a title");
     doc.addAtom("id", "29jafnn");
     doc.addStored("bytes", new byte[7]);
-    doc.addNumber("number", 17);
+    doc.addInt("int", 17);
     w.addDocument(doc);
     w.close();
     dir.close();
@@ -99,7 +102,8 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, types.getDefaultIndexWriterConfig());
     types.setIndexWriter(w);
     types.enableStored("id");
-    types.enableSorted("binary");
+    // Sort reverse by default:
+    types.enableSorting("binary", true);
 
     Document2 doc = new Document2(types);
     byte[] value = new byte[5];
@@ -117,8 +121,8 @@ public class TestDocument2 extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new MatchAllDocsQuery(), 2, types.newSort("binary"));
     assertEquals(2, hits.scoreDocs.length);
-    assertEquals("1", r.document(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("0", r.document(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("0", r.document(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
     r.close();
     w.close();
     dir.close();
@@ -189,9 +193,9 @@ public class TestDocument2 extends LuceneTestCase {
     types.setDocValuesType("sortednumeric", DocValuesType.SORTED_NUMERIC);
 
     Document2 doc = new Document2(types);
-    doc.addNumber("sortednumeric", 3);
-    doc.addNumber("sortednumeric", 1);
-    doc.addNumber("sortednumeric", 2);
+    doc.addInt("sortednumeric", 3);
+    doc.addInt("sortednumeric", 1);
+    doc.addInt("sortednumeric", 2);
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
     SortedNumericDocValues sndv = MultiDocValues.getSortedNumericValues(r, "sortednumeric");
@@ -214,21 +218,21 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, types.getDefaultIndexWriterConfig());
     types.setIndexWriter(w);
     types.enableStored("id");
-    types.enableSorted("id");
+    types.enableSorting("id");
     //System.out.println("id type: " + types.getFieldType("id"));
 
     Document2 doc = new Document2(types);
-    doc.addNumber("float", 3f);
+    doc.addFloat("float", 3f);
     doc.addAtom("id", "one");
     w.addDocument(doc);
 
     doc = new Document2(types);
-    doc.addNumber("float", 2f);
+    doc.addFloat("float", 2f);
     doc.addAtom("id", "two");
     w.addDocument(doc);
 
     doc = new Document2(types);
-    doc.addNumber("float", 7f);
+    doc.addFloat("float", 7f);
     doc.addAtom("id", "three");
     w.addDocument(doc);
 
@@ -282,16 +286,8 @@ public class TestDocument2 extends LuceneTestCase {
     types.setIndexWriter(w);
 
     Document2 doc = new Document2(types);
-    doc.addNumber("int", 3);
+    doc.addInt("int", 3);
     w.addDocument(doc);
-
-    doc = new Document2(types);
-    try {
-      doc.addNumber("int", 2.0);
-      fail("did not hit exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
     w.close();
     dir.close();
   }
@@ -305,15 +301,15 @@ public class TestDocument2 extends LuceneTestCase {
     types.setIndexWriter(w);
 
     Document2 doc = new Document2(types);
-    doc.addNumber("int", 3);
+    doc.addInt("int", 3);
     w.addDocument(doc);
 
     doc = new Document2(types);
-    doc.addNumber("int", 2);
+    doc.addInt("int", 2);
     w.addDocument(doc);
 
     doc = new Document2(types);
-    doc.addNumber("int", 7);
+    doc.addInt("int", 7);
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w, true);
@@ -344,10 +340,8 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes types = new FieldTypes(a);
     IndexWriter w = new IndexWriter(dir, types.getDefaultIndexWriterConfig());
     types.setIndexWriter(w);
-    types.setAnalyzer("atom", a);
-    Document2 doc = new Document2(types);
     try {
-      doc.addAtom("atom", "blahblah");
+      types.setAnalyzer("atom", a);
       fail("did not hit expected exception");
     } catch (IllegalStateException ise) {
       // expected
@@ -366,7 +360,7 @@ public class TestDocument2 extends LuceneTestCase {
     types.setDocValuesType("string", DocValuesType.SORTED);
     Document2 doc = new Document2(types);
     try {
-      doc.addNumber("string", 17);
+      doc.addInt("string", 17);
       fail("did not hit expected exception");
     } catch (IllegalStateException ise) {
       // expected
@@ -387,7 +381,7 @@ public class TestDocument2 extends LuceneTestCase {
     types.setDocValuesType("binary", DocValuesType.BINARY);
     Document2 doc = new Document2(types);
     try {
-      doc.addNumber("binary", 17);
+      doc.addInt("binary", 17);
       fail("did not hit expected exception");
     } catch (IllegalStateException ise) {
       // expected
@@ -448,7 +442,7 @@ public class TestDocument2 extends LuceneTestCase {
     types.setIndexWriter(w);
 
     // Normally sorting is not enabled for atom fields:
-    types.enableSorted("id");
+    types.enableSorting("id", true);
     types.enableStored("id");
 
     Document2 doc = new Document2(types);
@@ -462,8 +456,8 @@ public class TestDocument2 extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new MatchAllDocsQuery(), 2, types.newSort("id"));
     assertEquals(2, hits.scoreDocs.length);
-    assertEquals("one", r.document(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("two", r.document(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("two", r.document(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("one", r.document(hits.scoreDocs[1].doc).get("id"));
     r.close();
     w.close();
     dir.close();
@@ -477,18 +471,18 @@ public class TestDocument2 extends LuceneTestCase {
     types.setIndexWriter(w);
 
     types.setMultiValued("numbers");
-    types.enableSorted("numbers");
+    types.enableSorting("numbers");
     types.enableStored("id");
 
     Document2 doc = new Document2(types);
-    doc.addNumber("numbers", 1);
-    doc.addNumber("numbers", 2);
+    doc.addInt("numbers", 1);
+    doc.addInt("numbers", 2);
     doc.addAtom("id", "one");
     w.addDocument(doc);
 
     doc = new Document2(types);
-    doc.addNumber("numbers", -10);
-    doc.addNumber("numbers", -20);
+    doc.addInt("numbers", -10);
+    doc.addInt("numbers", -20);
     doc.addAtom("id", "two");
     w.addDocument(doc);
 
@@ -511,7 +505,7 @@ public class TestDocument2 extends LuceneTestCase {
     types.setIndexWriter(w);
 
     types.setMultiValued("strings");
-    types.enableSorted("strings");
+    types.enableSorting("strings");
     types.enableStored("id");
 
     Document2 doc = new Document2(types);
@@ -597,7 +591,7 @@ public class TestDocument2 extends LuceneTestCase {
     }
     assertFalse(types.getMultiValued("numeric"));
     Document2 doc = new Document2(types);
-    doc.addNumber("numeric", 17);
+    doc.addInt("numeric", 17);
     w.addDocument(doc);
     w.close();
     dir.close();
@@ -644,7 +638,7 @@ public class TestDocument2 extends LuceneTestCase {
     types.setIndexWriter(w);
 
     Document2 doc = new Document2(types);
-    doc.addNumber("id", 1L);
+    doc.addLong("id", 1L);
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w, true);
@@ -665,13 +659,33 @@ public class TestDocument2 extends LuceneTestCase {
     types.setIndexWriter(w);
 
     Document2 doc = new Document2(types);
-    doc.addNumber("id", 1);
+    doc.addInt("id", 1);
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(types.newTermQuery("id", 1), 1);
     assertEquals(1, hits.scoreDocs.length);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testNumericPrecisionStep() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer a = new MockAnalyzer(random());
+    FieldTypes types = new FieldTypes(a);
+    IndexWriterConfig iwc = types.getDefaultIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    types.setIndexWriter(w);
+    types.setNumericPrecisionStep("long", 4);
+
+    Document2 doc = new Document2(types);
+    doc.addLong("long", 17);
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w, true);
+    assertEquals(16, MultiFields.getTerms(r, "long").size());
     r.close();
     w.close();
     dir.close();
@@ -709,7 +723,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     types.setDocValuesFormat("id", "Memory");
     types.enableStored("id");
-    types.enableSorted("id");
+    types.enableSorting("id");
 
     Document2 doc = new Document2(types);
     doc.addAtom("id", "1");
@@ -815,7 +829,71 @@ public class TestDocument2 extends LuceneTestCase {
     Document2 doc = new Document2(types);
     doc.addAtom("id", "foo bar");
     w.addDocument(doc);
-    BaseTokenStreamTestCase.assertTokenStreamContents(types.getAnalyzer().tokenStream("id", "foo bar"), new String[] {"foo bar"}, new int[1], new int[] {7});
+    BaseTokenStreamTestCase.assertTokenStreamContents(types.getQueryAnalyzer().tokenStream("id", "foo bar"), new String[] {"foo bar"}, new int[1], new int[] {7});
+    w.close();
+    dir.close();
+  }
+
+  public void testHighlight() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer a = new MockAnalyzer(random());
+    FieldTypes types = new FieldTypes(a);
+    IndexWriterConfig iwc = types.getDefaultIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    types.setIndexWriter(w);
+    types.disableHighlighting("no_highlight");
+
+    Document2 doc = new Document2(types);
+    doc.addLargeText("highlight", "here is some content");
+    doc.addLargeText("no_highlight", "here is some content");
+    w.addDocument(doc);
+
+    // nocommit: we can't actually run highlighter ... w/o being outside core ... maybe this test should be elsewhere?
+    IndexReader r = DirectoryReader.open(w, true);
+    assertTrue(MultiFields.getTerms(r, "highlight").hasOffsets());
+    assertFalse(MultiFields.getTerms(r, "no_highlight").hasOffsets());
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testAnalyzerPositionGap() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer a = new MockAnalyzer(random());
+    FieldTypes types = new FieldTypes(a);
+    IndexWriterConfig iwc = types.getDefaultIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    types.setIndexWriter(w);
+    types.setIndexOptions("nogap", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    types.setMultiValued("nogap");
+    types.disableHighlighting("nogap");
+    types.setAnalyzerPositionGap("nogap", 0);
+
+    types.setIndexOptions("onegap", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    types.setMultiValued("onegap");
+    types.disableHighlighting("onegap");
+    types.setAnalyzerPositionGap("onegap", 1);
+
+    Document2 doc = new Document2(types);
+    doc.addLargeText("nogap", "word1");
+    doc.addLargeText("nogap", "word2");
+    doc.addLargeText("onegap", "word1");
+    doc.addLargeText("onegap", "word2");
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);   
+    
+    PhraseQuery q = new PhraseQuery();
+    q.add(new Term("nogap", "word1"));
+    q.add(new Term("nogap", "word2"));
+    assertEquals(1, s.search(q, 1).totalHits);
+
+    q = new PhraseQuery();
+    q.add(new Term("onegap", "word1"));
+    q.add(new Term("onegap", "word2"));
+    assertEquals(0, s.search(q, 1).totalHits);
+    r.close();
     w.close();
     dir.close();
   }
@@ -827,4 +905,6 @@ public class TestDocument2 extends LuceneTestCase {
   // nocommit test for pre-analyzed
 
   // nocommit test multi-valued
+
+  // nocommit test serialize
 }

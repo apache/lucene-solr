@@ -80,7 +80,7 @@ public class Document2 implements IndexDocument {
 
     @Override
     public TokenStream tokenStream(Analyzer analyzerIn, TokenStream reuse) throws IOException {
-      Analyzer analyzer = fieldTypes.getAnalyzer();
+      Analyzer analyzer = fieldTypes.getIndexAnalyzer();
       if (analyzerIn != analyzer) {
         // TODO: remove analyzer from IW APIs
         throw new IllegalArgumentException("analyzer must be the instance from FieldTypes");
@@ -360,29 +360,28 @@ public class Document2 implements IndexDocument {
     fields.add(new FieldValue(fieldName, value, boost));
   }
 
-  // addLongArray, addIntArray
+  // nocommit: addLongArray, addIntArray
 
-  // nocommit don't use overloadign here ... change to addLong, addFloat, etc.
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
-  public void addNumber(String fieldName, int value) {
+  public void addInt(String fieldName, int value) {
     fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.INT);
     fields.add(new FieldValue(fieldName, Integer.valueOf(value)));
   }
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
-  public void addNumber(String fieldName, float value) {
+  public void addFloat(String fieldName, float value) {
     fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.FLOAT);
     fields.add(new FieldValue(fieldName, Float.valueOf(value)));
   }
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
-  public void addNumber(String fieldName, long value) {
+  public void addLong(String fieldName, long value) {
     fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.LONG);
     fields.add(new FieldValue(fieldName, Long.valueOf(value)));
   }
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
-  public void addNumber(String fieldName, double value) {
+  public void addDouble(String fieldName, double value) {
     fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.DOUBLE);
     fields.add(new FieldValue(fieldName, Double.valueOf(value)));
   }

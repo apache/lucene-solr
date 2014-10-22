@@ -559,6 +559,10 @@ final class DefaultIndexingChain extends DocConsumer {
         // First time we're seeing this field (indexed) in
         // this document:
         invertState.reset();
+      } else if (docState.analyzer != null) {
+        // TODO: this "multi-field-ness" (and, Analyzer) should be outside of IW somehow
+        invertState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
+        invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
       }
 
       IndexableFieldType fieldType = field.fieldType();
@@ -660,12 +664,6 @@ final class DefaultIndexingChain extends DocConsumer {
         if (!succeededInProcessingField && docState.infoStream.isEnabled("DW")) {
           docState.infoStream.message("DW", "An exception was thrown while processing field " + fieldInfo.name);
         }
-      }
-
-      // TODO: this "multi-field-ness" (and, Analyzer) should be outside of IW somehow
-      if (docState.analyzer != null) {
-        invertState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
-        invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
       }
 
       invertState.boost *= field.boost();
