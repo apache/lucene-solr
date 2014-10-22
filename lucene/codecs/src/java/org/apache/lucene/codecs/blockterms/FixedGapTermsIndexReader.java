@@ -74,7 +74,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     try {
       
-      CodecUtil.checkSegmentHeader(in, FixedGapTermsIndexWriter.CODEC_NAME,
+      CodecUtil.checkIndexHeader(in, FixedGapTermsIndexWriter.CODEC_NAME,
                                        FixedGapTermsIndexWriter.VERSION_CURRENT, 
                                        FixedGapTermsIndexWriter.VERSION_CURRENT,
                                        state.segmentInfo.getId(), state.segmentSuffix);

@@ -110,7 +110,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     boolean success = false;
     try {
       fieldInfos = state.fieldInfos;
-      CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       currentField = null;
       this.postingsWriter = postingsWriter;
       // segment = state.segmentName;

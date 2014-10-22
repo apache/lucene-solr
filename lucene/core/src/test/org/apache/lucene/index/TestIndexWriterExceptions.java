@@ -1236,8 +1236,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
     
     boolean corrupted = false;
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     for (SegmentCommitInfo si : sis) {
       assertTrue(si.info.getUseCompoundFile());
       String cfsFiles[] = si.info.getCodec().compoundFormat().files(si.info);
@@ -1314,8 +1313,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         w.close();
         IndexReader reader = DirectoryReader.open(dir);
         assertTrue(reader.numDocs() > 0);
-        SegmentInfos sis = new SegmentInfos();
-        sis.read(dir);
+        SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
         for(LeafReaderContext context : reader.leaves()) {
           assertFalse(context.reader().getFieldInfos().hasVectors());
         }
@@ -1682,7 +1680,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       if (doFail && name.startsWith("segments_")) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("read".equals(trace[i].getMethodName())) {
+          if ("readCommit".equals(trace[i].getMethodName()) || "readLatestCommit".equals(trace[i].getMethodName())) {
             throw new UnsupportedOperationException("expected UOE");
           }
         }

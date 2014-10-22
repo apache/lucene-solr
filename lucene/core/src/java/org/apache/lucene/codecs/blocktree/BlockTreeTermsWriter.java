@@ -279,12 +279,12 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     boolean success = false;
     IndexOutput indexOut = null;
     try {
-      CodecUtil.writeSegmentHeader(termsOut, BlockTreeTermsReader.TERMS_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
+      CodecUtil.writeIndexHeader(termsOut, BlockTreeTermsReader.TERMS_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
                                   state.segmentInfo.getId(), state.segmentSuffix);
 
       final String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockTreeTermsReader.TERMS_INDEX_EXTENSION);
       indexOut = state.directory.createOutput(indexName, state.context);
-      CodecUtil.writeSegmentHeader(indexOut, BlockTreeTermsReader.TERMS_INDEX_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
+      CodecUtil.writeIndexHeader(indexOut, BlockTreeTermsReader.TERMS_INDEX_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
                                    state.segmentInfo.getId(), state.segmentSuffix);
 
       postingsWriter.init(termsOut, state);                          // have consumer write its format/header

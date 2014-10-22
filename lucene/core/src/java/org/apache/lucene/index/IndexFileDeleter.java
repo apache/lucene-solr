@@ -165,9 +165,9 @@ final class IndexFileDeleter implements Closeable {
             if (infoStream.isEnabled("IFD")) {
               infoStream.message("IFD", "init: load commit \"" + fileName + "\"");
             }
-            SegmentInfos sis = new SegmentInfos();
+            SegmentInfos sis = null;
             try {
-              sis.read(directory, fileName);
+              sis = SegmentInfos.readCommit(directory, fileName);
             } catch (FileNotFoundException | NoSuchFileException e) {
               // LUCENE-948: on NFS (and maybe others), if
               // you have writers switching back and forth
@@ -179,7 +179,6 @@ final class IndexFileDeleter implements Closeable {
               if (infoStream.isEnabled("IFD")) {
                 infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
               }
-              sis = null;
             } catch (IOException e) {
               if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen && directory.fileLength(fileName) > 0) {
                 throw e;
@@ -187,7 +186,6 @@ final class IndexFileDeleter implements Closeable {
                 // Most likely we are opening an index that
                 // has an aborted "future" commit, so suppress
                 // exc in this case
-                sis = null;
               }
             }
             if (sis != null) {
@@ -215,9 +213,9 @@ final class IndexFileDeleter implements Closeable {
       // listing was stale (eg when index accessed via NFS
       // client with stale directory listing cache).  So we
       // try now to explicitly open this commit point:
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = null;
       try {
-        sis.read(directory, currentSegmentsFile);
+        sis = SegmentInfos.readCommit(directory, currentSegmentsFile);
       } catch (IOException e) {
         throw new CorruptIndexException("unable to read current segments_N file", currentSegmentsFile, e);
       }

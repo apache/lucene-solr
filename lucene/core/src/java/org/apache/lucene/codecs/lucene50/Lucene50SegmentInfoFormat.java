@@ -48,7 +48,7 @@ import org.apache.lucene.util.Version;
  * Data types:
  * <p>
  * <ul>
- *   <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
  *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
  *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
@@ -83,21 +83,16 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
   }
   
   @Override
-  public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
+  public SegmentInfo read(Directory dir, String segment, byte[] segmentID, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
     try (ChecksumIndexInput input = dir.openChecksumInput(fileName, context)) {
       Throwable priorE = null;
       SegmentInfo si = null;
       try {
-        CodecUtil.checkHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
-                                     Lucene50SegmentInfoFormat.VERSION_START,
-                                     Lucene50SegmentInfoFormat.VERSION_CURRENT);
-        byte id[] = new byte[StringHelper.ID_LENGTH];
-        input.readBytes(id, 0, id.length);
-        String suffix = input.readString();
-        if (!suffix.isEmpty()) {
-          throw new CorruptIndexException("invalid codec header: got unexpected suffix: " + suffix, input);
-        }
+        CodecUtil.checkIndexHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
+                                          Lucene50SegmentInfoFormat.VERSION_START,
+                                          Lucene50SegmentInfoFormat.VERSION_CURRENT,
+                                          segmentID, "");
         final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
         
         final int docCount = input.readInt();
@@ -108,7 +103,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
         final Map<String,String> diagnostics = input.readStringStringMap();
         final Set<String> files = input.readStringSet();
         
-        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, id);
+        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID);
         si.setFiles(files);
       } catch (Throwable exception) {
         priorE = exception;
@@ -126,8 +121,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
 
     boolean success = false;
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
-      // NOTE: we encode ID in the segment header, for format consistency with all other per-segment files
-      CodecUtil.writeSegmentHeader(output, 
+      CodecUtil.writeIndexHeader(output, 
                                    Lucene50SegmentInfoFormat.CODEC_NAME, 
                                    Lucene50SegmentInfoFormat.VERSION_CURRENT,
                                    si.getId(),

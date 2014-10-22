@@ -37,7 +37,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   @Override
   public void init(IndexInput termsIn, SegmentReadState state) throws IOException {
     // Make sure we are talking to the matching postings writer
-    CodecUtil.checkSegmentHeader(termsIn,
+    CodecUtil.checkIndexHeader(termsIn,
                                  IDVersionPostingsWriter.TERMS_CODEC,
                                  IDVersionPostingsWriter.VERSION_START,
                                  IDVersionPostingsWriter.VERSION_CURRENT,

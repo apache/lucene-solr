@@ -107,14 +107,14 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     IndexOutput payOut = null;
     boolean success = false;
     try {
-      CodecUtil.writeSegmentHeader(docOut, DOC_CODEC, VERSION_CURRENT, 
+      CodecUtil.writeIndexHeader(docOut, DOC_CODEC, VERSION_CURRENT, 
                                    state.segmentInfo.getId(), state.segmentSuffix);
       forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new int[MAX_DATA_SIZE];
         String posFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.POS_EXTENSION);
         posOut = state.directory.createOutput(posFileName, state.context);
-        CodecUtil.writeSegmentHeader(posOut, POS_CODEC, VERSION_CURRENT,
+        CodecUtil.writeIndexHeader(posOut, POS_CODEC, VERSION_CURRENT,
                                      state.segmentInfo.getId(), state.segmentSuffix);
 
         if (state.fieldInfos.hasPayloads()) {
@@ -136,7 +136,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
           String payFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.PAY_EXTENSION);
           payOut = state.directory.createOutput(payFileName, state.context);
-          CodecUtil.writeSegmentHeader(payOut, PAY_CODEC, VERSION_CURRENT,
+          CodecUtil.writeIndexHeader(payOut, PAY_CODEC, VERSION_CURRENT,
                                        state.segmentInfo.getId(), state.segmentSuffix);
         }
       } else {
@@ -176,7 +176,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
-    CodecUtil.writeSegmentHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+    CodecUtil.writeIndexHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
     termsOut.writeVInt(BLOCK_SIZE);
   }
 

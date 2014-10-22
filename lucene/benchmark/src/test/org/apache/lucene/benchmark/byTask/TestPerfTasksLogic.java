@@ -833,8 +833,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     ir.close();
 
     // Make sure we have 3 segments:
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(benchmark.getRunData().getDirectory());
+    SegmentInfos infos = SegmentInfos.readLatestCommit(benchmark.getRunData().getDirectory());
     assertEquals(3, infos.size());
   }
   

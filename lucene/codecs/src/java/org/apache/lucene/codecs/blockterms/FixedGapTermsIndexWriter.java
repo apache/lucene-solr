@@ -72,7 +72,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {
-      CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       out.writeVInt(termIndexInterval);
       out.writeVInt(PackedInts.VERSION_CURRENT);
       out.writeVInt(BLOCKSIZE);

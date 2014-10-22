@@ -34,8 +34,10 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
@@ -331,7 +333,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
           String segName = IndexFileNames.parseSegmentName(fileName);
           if (segSeen.contains(segName) == false) {
             segSeen.add(segName);
-            SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, IOContext.DEFAULT);
+            byte id[] = readSegmentInfoID(dir, fileName);
+            SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
             si.setCodec(codec);
             SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
             SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);
@@ -348,5 +351,18 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
     w.close();
     dir.close();
+  }
+  
+  // TODO: remove this hack and fix this test to be better?
+  // the whole thing relies on default codec too...
+  byte[] readSegmentInfoID(Directory dir, String file) throws IOException {
+    try (IndexInput in = dir.openInput(file, IOContext.DEFAULT)) {
+      in.readInt(); // magic
+      in.readString(); // codec name
+      in.readInt(); // version
+      byte id[] = new byte[StringHelper.ID_LENGTH];
+      in.readBytes(id, 0, id.length);
+      return id;
+    }
   }
 }

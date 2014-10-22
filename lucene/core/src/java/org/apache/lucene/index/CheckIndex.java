@@ -451,7 +451,7 @@ public class CheckIndex implements Closeable {
   public Status checkIndex(List<String> onlySegments) throws IOException {
     ensureOpen();
     NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = null;
     Status result = new Status();
     result.dir = dir;
     String[] files = dir.listAll();
@@ -462,7 +462,7 @@ public class CheckIndex implements Closeable {
     try {
       // Do not use SegmentInfos.read(Directory) since the spooky
       // retrying it does is not necessary here (we hold the write lock):
-      sis.read(dir, lastSegmentsFile);
+      sis = SegmentInfos.readCommit(dir, lastSegmentsFile);
     } catch (Throwable t) {
       if (failFast) {
         IOUtils.reThrow(t);

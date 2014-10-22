@@ -130,7 +130,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
     try (ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context)) {
       Throwable priorE = null;
       try {
-        version = CodecUtil.checkSegmentHeader(in, metaCodec, 
+        version = CodecUtil.checkIndexHeader(in, metaCodec, 
                                         Lucene50DocValuesFormat.VERSION_START,
                                         Lucene50DocValuesFormat.VERSION_CURRENT,
                                         state.segmentInfo.getId(),
@@ -148,7 +148,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
     this.data = state.directory.openInput(dataName, state.context);
     boolean success = false;
     try {
-      final int version2 = CodecUtil.checkSegmentHeader(data, dataCodec, 
+      final int version2 = CodecUtil.checkIndexHeader(data, dataCodec, 
                                                  Lucene50DocValuesFormat.VERSION_START,
                                                  Lucene50DocValuesFormat.VERSION_CURRENT,
                                                  state.segmentInfo.getId(),

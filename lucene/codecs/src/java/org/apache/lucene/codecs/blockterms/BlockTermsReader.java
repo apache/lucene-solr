@@ -114,7 +114,7 @@ public class BlockTermsReader extends FieldsProducer {
 
     boolean success = false;
     try {
-      CodecUtil.checkSegmentHeader(in, BlockTermsWriter.CODEC_NAME, 
+      CodecUtil.checkIndexHeader(in, BlockTermsWriter.CODEC_NAME, 
                                        BlockTermsWriter.VERSION_START,
                                        BlockTermsWriter.VERSION_CURRENT,
                                        state.segmentInfo.getId(), state.segmentSuffix);

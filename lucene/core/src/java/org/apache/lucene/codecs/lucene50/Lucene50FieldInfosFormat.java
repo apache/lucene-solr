@@ -46,7 +46,7 @@ import org.apache.lucene.store.IndexOutput;
  * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup>,Footer</p>
  * <p>Data types:
  * <ul>
- *   <li>Header --&gt; {@link CodecUtil#checkSegmentHeader SegmentHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#checkIndexHeader IndexHeader}</li>
  *   <li>FieldsCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>FieldName --&gt; {@link DataOutput#writeString String}</li>
  *   <li>FieldBits, DocValuesBits --&gt; {@link DataOutput#writeByte Byte}</li>
@@ -114,7 +114,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
       Throwable priorE = null;
       FieldInfo infos[] = null;
       try {
-        CodecUtil.checkSegmentHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
+        CodecUtil.checkIndexHeader(input, Lucene50FieldInfosFormat.CODEC_NAME, 
                                      Lucene50FieldInfosFormat.FORMAT_START, 
                                      Lucene50FieldInfosFormat.FORMAT_CURRENT,
                                      segmentInfo.getId(), segmentSuffix);
@@ -190,7 +190,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
   public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene50FieldInfosFormat.EXTENSION);
     try (IndexOutput output = directory.createOutput(fileName, context)) {
-      CodecUtil.writeSegmentHeader(output, Lucene50FieldInfosFormat.CODEC_NAME, Lucene50FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
+      CodecUtil.writeIndexHeader(output, Lucene50FieldInfosFormat.CODEC_NAME, Lucene50FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
         fi.checkConsistency();

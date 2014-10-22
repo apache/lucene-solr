@@ -46,7 +46,7 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
    * <p>
    * <code>formatName</code> is the name of the format. This name will be used
    * in the file formats to perform
-   * {@link CodecUtil#checkSegmentHeader codec header checks}.
+   * {@link CodecUtil#checkIndexHeader codec header checks}.
    * <p>
    * The <code>compressionMode</code> parameter allows you to choose between
    * compression algorithms that have various compression and decompression

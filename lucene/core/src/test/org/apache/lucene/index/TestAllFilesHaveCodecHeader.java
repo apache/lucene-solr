@@ -30,9 +30,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -41,11 +39,6 @@ import org.apache.lucene.util.TestUtil;
 public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
-
-    if (dir instanceof MockDirectoryWrapper) {
-      // Else we might remove .cfe but not the corresponding .cfs, causing false exc when trying to verify headers:
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
 
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(TestUtil.getDefaultCodec());
@@ -71,10 +64,12 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       if (random().nextInt(7) == 0) {
         riw.commit();
       }
-      // TODO: we should make a new format with a clean header...
-      // if (random().nextInt(20) == 0) {
-      //  riw.deleteDocuments(new Term("id", Integer.toString(i)));
-      // }
+      if (random().nextInt(20) == 0) {
+        riw.deleteDocuments(new Term("id", Integer.toString(i)));
+      }
+      if (random().nextInt(15) == 0) {
+        riw.updateNumericDocValue(new Term("id"), "dv", Long.valueOf(i));
+      }
     }
     riw.close();
     checkHeaders(dir, new HashMap<String,String>());
@@ -82,9 +77,8 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   }
   
   private void checkHeaders(Directory dir, Map<String,String> namesToExtensions) throws IOException {
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
-    checkHeader(dir, sis.getSegmentsFileName(), namesToExtensions, null);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
+    checkHeader(dir, sis.getSegmentsFileName(), namesToExtensions, sis.getId());
     
     for (SegmentCommitInfo si : sis) {
       assertNotNull(si.info.getId());
@@ -118,13 +112,8 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       }
       // read version
       in.readInt();
-      // read segment id (except for segments_N)
-      if (id != null) {
-        byte actualID[] = new byte[StringHelper.ID_LENGTH];
-        in.readBytes(actualID, 0, actualID.length);
-        assertArrayEquals("expected " + StringHelper.idToString(id) + ", got " + StringHelper.idToString(actualID), id, actualID);
-      }
-      
+      // read object id
+      CodecUtil.checkIndexHeaderID(in, id);      
     }
   }
 }

@@ -57,7 +57,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
-    CodecUtil.writeSegmentHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+    CodecUtil.writeIndexHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
   }
 
   @Override

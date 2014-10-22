@@ -197,8 +197,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
       }
     }
     riw.close();
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
+    SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     for (SegmentCommitInfo si : infos) {
       if (si.info.getUseCompoundFile()) {
         try (Directory cfsDir = si.info.getCodec().compoundFormat().getCompoundReader(dir, si.info, newIOContext(random()))) {

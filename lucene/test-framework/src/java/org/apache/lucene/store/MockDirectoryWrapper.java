@@ -800,11 +800,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
               if (LuceneTestCase.VERBOSE) {
                 System.out.println("MDW: Unreferenced check: Ignoring segments file: " + file + " that we could not delete.");
               }
-              SegmentInfos sis = new SegmentInfos();
+              SegmentInfos sis;
               try {
-                sis.read(in, file);
+                sis = SegmentInfos.readCommit(in, file);
               } catch (IOException ioe) {
                 // OK: likely some of the .si files were deleted
+                sis = new SegmentInfos();
               }
 
               try {

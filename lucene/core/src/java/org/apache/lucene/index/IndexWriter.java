@@ -773,7 +773,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       // If index is too old, reading the segments will throw
       // IndexFormatTooOldException.
-      segmentInfos = new SegmentInfos();
 
       boolean initialIndexExists = true;
 
@@ -782,13 +781,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // against an index that's currently open for
         // searching.  In this case we write the next
         // segments_N file with no segments:
+        SegmentInfos sis = null;
         try {
-          segmentInfos.read(directory);
-          segmentInfos.clear();
+          sis = SegmentInfos.readLatestCommit(directory);
+          sis.clear();
         } catch (IOException e) {
           // Likely this means it's a fresh directory
           initialIndexExists = false;
+          sis = new SegmentInfos();
         }
+        
+        segmentInfos = sis;
 
         // Record that we have a change (zero out all
         // segments) pending:
@@ -802,7 +805,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         // Do not use SegmentInfos.read(Directory) since the spooky
         // retrying it does is not necessary here (we hold the write lock):
-        segmentInfos.read(directory, lastSegmentsFile);
+        segmentInfos = SegmentInfos.readCommit(directory, lastSegmentsFile);
 
         IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
@@ -813,8 +816,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // points.
           if (commit.getDirectory() != directory)
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
-          SegmentInfos oldInfos = new SegmentInfos();
-          oldInfos.read(directory, commit.getSegmentsFileName());
+          SegmentInfos oldInfos = SegmentInfos.readCommit(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changed();
           if (infoStream.isEnabled("IW")) {
@@ -2401,8 +2403,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "addIndexes: process directory " + dir);
           }
-          SegmentInfos sis = new SegmentInfos(); // read infos from dir
-          sis.read(dir);
+          SegmentInfos sis = SegmentInfos.readLatestCommit(dir); // read infos from dir
           totalDocCount += sis.totalDocCount();
 
           for (SegmentCommitInfo info : sis) {

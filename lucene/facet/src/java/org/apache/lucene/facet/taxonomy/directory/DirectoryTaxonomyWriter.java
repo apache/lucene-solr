@@ -131,8 +131,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   /** Reads the commit data from a Directory. */
   private static Map<String, String> readCommitData(Directory dir) throws IOException {
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
+    SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     return infos.getUserData();
   }
   

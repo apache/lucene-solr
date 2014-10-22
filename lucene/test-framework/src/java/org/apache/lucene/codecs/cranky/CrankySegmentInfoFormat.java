@@ -35,8 +35,8 @@ class CrankySegmentInfoFormat extends SegmentInfoFormat {
   }
   
   @Override
-  public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
-    return delegate.read(directory, segmentName, context);
+  public SegmentInfo read(Directory directory, String segmentName, byte[] segmentID, IOContext context) throws IOException {
+    return delegate.read(directory, segmentName, segmentID, context);
   }
 
   @Override

@@ -182,7 +182,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     try {
       fieldInfos = state.fieldInfos;
       this.policy = policy;
-      CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       success = true;
     } finally {
       if (!success) {
