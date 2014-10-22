@@ -24,6 +24,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 
@@ -171,7 +172,7 @@ abstract class DocSetBase implements DocSet {
         final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
 
         if (context.isTopLevel) {
-          return BitsFilteredDocIdSet.wrap(bs, acceptDocs);
+          return BitsFilteredDocIdSet.wrap(new FixedBitDocIdSet(bs), acceptDocs);
         }
 
         final int base = context.docBase;

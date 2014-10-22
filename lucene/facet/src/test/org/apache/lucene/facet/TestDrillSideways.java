@@ -58,6 +58,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -657,7 +658,7 @@ public class TestDrillSideways extends FacetTestCase {
                   bits.set(docID);
                 }
               }
-              return bits;
+              return new FixedBitDocIdSet(bits);
             }
           };
       } else {

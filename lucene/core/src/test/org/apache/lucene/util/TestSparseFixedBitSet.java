@@ -23,10 +23,10 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 
-public class TestSparseFixedBitSet extends BaseDocIdSetTestCase<SparseFixedBitSet> {
+public class TestSparseFixedBitSet extends BaseDocIdSetTestCase<SparseFixedBitDocIdSet> {
 
   @Override
-  public SparseFixedBitSet copyOf(BitSet bs, int length) throws IOException {
+  public SparseFixedBitDocIdSet copyOf(BitSet bs, int length) throws IOException {
     final SparseFixedBitSet set = new SparseFixedBitSet(length);
     // SparseFixedBitSet can be sensitive to the order of insertion so
     // randomize insertion a bit
@@ -45,15 +45,15 @@ public class TestSparseFixedBitSet extends BaseDocIdSetTestCase<SparseFixedBitSe
     for (int i : buffer) {
       set.set(i);
     }
-    return set;
+    return new SparseFixedBitDocIdSet(set, set.approximateCardinality());
   }
 
   @Override
-  public void assertEquals(int numBits, BitSet ds1, SparseFixedBitSet ds2) throws IOException {
+  public void assertEquals(int numBits, BitSet ds1, SparseFixedBitDocIdSet ds2) throws IOException {
     for (int i = 0; i < numBits; ++i) {
-      assertEquals(ds1.get(i), ds2.get(i));
+      assertEquals(ds1.get(i), ds2.bits().get(i));
     }
-    assertEquals(ds1.cardinality(), ds2.cardinality());
+    assertEquals(ds1.cardinality(), ds2.bits().cardinality());
     super.assertEquals(numBits, ds1, ds2);
   }
 

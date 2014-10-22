@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -116,7 +117,7 @@ public abstract class DocValuesDocIdSet extends DocIdSet {
     } else if (acceptDocs instanceof FixedBitSet) {
       // special case for FixedBitSet: use the iterator and filter it
       // (used e.g. when Filters are chained by FilteredQuery)
-      return new FilteredDocIdSetIterator(((DocIdSet) acceptDocs).iterator()) {
+      return new FilteredDocIdSetIterator(new FixedBitDocIdSet((FixedBitSet) acceptDocs).iterator()) {
         @Override
         protected boolean match(int doc) {
           return DocValuesDocIdSet.this.matchDoc(doc);

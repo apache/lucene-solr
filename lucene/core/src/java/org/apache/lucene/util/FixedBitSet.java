@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -31,7 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * 
  * @lucene.internal
  */
-public final class FixedBitSet extends DocIdSet implements MutableBits {
+public final class FixedBitSet implements MutableBits, Accountable {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class);
 
@@ -43,18 +44,20 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
     
     final int numBits, numWords;
     final long[] bits;
+    final long cost;
     int doc = -1;
     
     /** Creates an iterator over the given {@link FixedBitSet}. */
-    public FixedBitSetIterator(FixedBitSet bits) {
-      this(bits.bits, bits.numBits, bits.numWords);
+    public FixedBitSetIterator(FixedBitSet bits, long cost) {
+      this(bits.bits, bits.numBits, bits.numWords, cost);
     }
     
     /** Creates an iterator over the given array of bits. */
-    public FixedBitSetIterator(long[] bits, int numBits, int wordLength) {
+    public FixedBitSetIterator(long[] bits, int numBits, int wordLength, long cost) {
       this.bits = bits;
       this.numBits = numBits;
       this.numWords = wordLength;
+      this.cost = cost;
     }
     
     @Override
@@ -69,7 +72,7 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
     
     @Override
     public long cost() {
-      return numBits;
+      return cost;
     }
     
     @Override
@@ -179,31 +182,20 @@ public final class FixedBitSet extends DocIdSet implements MutableBits {
     this.numBits = numBits;
     this.bits = storedBits;
   }
-  
-  @Override
-  public DocIdSetIterator iterator() {
-    return new FixedBitSetIterator(bits, numBits, numWords);
-  }
-
-  @Override
-  public Bits bits() {
-    return this;
-  }
 
   @Override
   public int length() {
     return numBits;
   }
 
-  /** This DocIdSet implementation is cacheable. */
-  @Override
-  public boolean isCacheable() {
-    return true;
-  }
-
   @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(bits);
+  }
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 
   /** Expert. */

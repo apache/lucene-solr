@@ -21,16 +21,17 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 
-public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
+public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitDocIdSet> {
 
   @Override
-  public FixedBitSet copyOf(BitSet bs, int length) throws IOException {
+  public FixedBitDocIdSet copyOf(BitSet bs, int length) throws IOException {
     final FixedBitSet set = new FixedBitSet(length);
     for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
       set.set(doc);
     }
-    return set;
+    return new FixedBitDocIdSet(set);
   }
 
   void doGet(BitSet a, FixedBitSet b) {
@@ -81,7 +82,7 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
 
   void doIterate1(BitSet a, FixedBitSet b) throws IOException {
     int aa=-1,bb=-1;
-    DocIdSetIterator iterator = b.iterator();
+    DocIdSetIterator iterator = new FixedBitSetIterator(b, 0);
     do {
       aa = a.nextSetBit(aa+1);
       bb = (bb < b.length() && random().nextBoolean()) ? iterator.nextDoc() : iterator.advance(bb + 1);
@@ -91,7 +92,7 @@ public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
 
   void doIterate2(BitSet a, FixedBitSet b) throws IOException {
     int aa=-1,bb=-1;
-    DocIdSetIterator iterator = b.iterator();
+    DocIdSetIterator iterator = new FixedBitSetIterator(b, 0);
     do {
       aa = a.nextSetBit(aa+1);
       bb = random().nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);

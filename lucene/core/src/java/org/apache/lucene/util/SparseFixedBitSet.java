@@ -18,8 +18,8 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
@@ -33,7 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  *
  * @lucene.internal
  */
-public class SparseFixedBitSet extends DocIdSet implements Bits {
+public class SparseFixedBitSet implements Bits, Accountable {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SparseFixedBitSet.class);
   private static final long SINGLE_ELEMENT_ARRAY_BYTES_USED = RamUsageEstimator.sizeOf(new long[1]);
@@ -69,18 +69,8 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
   }
 
   @Override
-  public boolean isCacheable() {
-    return true;
-  }
-
-  @Override
   public int length() {
     return length;
-  }
-
-  @Override
-  public Bits bits() throws IOException {
-    return this;
   }
 
   private boolean consistent(int index) {
@@ -218,14 +208,27 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
   }
 
   @Override
-  public DocIdSetIterator iterator() throws IOException {
-    return new Iterator();
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 
-  class Iterator extends DocIdSetIterator {
+  /**
+   * A {@link DocIdSetIterator} which iterates over set bits in a
+   * {@link SparseFixedBitSet}.
+   */
+  public static class SparseFixedBitSetIterator extends DocIdSetIterator {
 
+    private final long[] indices;
+    private final long[][] bits;
+    private final long cost;
     private int doc = -1;
-    private int cost = -1;
+
+    /** Sole constructor. */
+    public SparseFixedBitSetIterator(SparseFixedBitSet set, long cost) {
+      indices = set.indices;
+      bits = set.bits;
+      this.cost = cost;
+    }
 
     @Override
     public int docID() {
@@ -315,13 +318,6 @@ public class SparseFixedBitSet extends DocIdSet implements Bits {
 
     @Override
     public long cost() {
-      // although constant-time, approximateCardinality is a bit expensive so
-      // we cache it to avoid performance traps eg. when sorting iterators by
-      // cost
-      if (cost < 0) {
-        cost = approximateCardinality();
-      }
-      assert cost >= 0;
       return cost;
     }
 

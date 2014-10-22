@@ -92,7 +92,7 @@ public class RoaringDocIdSet extends DocIdSet {
           sets[currentBlock] = new NotDocIdSet(BLOCK_SIZE, new ShortArrayDocIdSet(excludedDocs));
         } else {
           // Neither sparse nor super dense, use a fixed bit set
-          sets[currentBlock] = denseBuffer;
+          sets[currentBlock] = new FixedBitDocIdSet(denseBuffer, currentBlockCardinality);
         }
         denseBuffer = null;
       }

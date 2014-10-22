@@ -17,15 +17,17 @@
 
 package org.apache.solr.handler.component;
 
-import com.carrotsearch.hppc.IntObjectMap;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.IntOpenHashSet;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -41,6 +43,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.ShardParams;
@@ -60,13 +63,11 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.carrotsearch.hppc.IntObjectMap;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -307,7 +308,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     public GroupExpandCollector(SortedDocValues docValues, FixedBitSet groupBits, IntOpenHashSet collapsedSet, int limit, Sort sort) throws IOException {
       int numGroups = collapsedSet.size();
       groups = new IntObjectOpenHashMap<>(numGroups * 2);
-      DocIdSetIterator iterator = groupBits.iterator();
+      DocIdSetIterator iterator = new FixedBitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, true) : TopFieldCollector.create(sort, limit, false, false, false, true);

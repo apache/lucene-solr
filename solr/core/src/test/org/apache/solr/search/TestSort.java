@@ -30,18 +30,18 @@ import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -53,6 +53,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -339,7 +340,7 @@ public class TestSort extends SolrTestCaseJ4 {
     for (int i=0; i<n; i++) {
       obs.set(r.nextInt(sz));
     }
-    return obs;
+    return new FixedBitDocIdSet(obs);
   }  
   
 

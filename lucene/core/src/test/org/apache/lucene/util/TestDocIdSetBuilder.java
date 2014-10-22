@@ -60,8 +60,8 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       builder.or(b.build().iterator());
     }
     DocIdSet result = builder.build();
-    assertTrue(result instanceof SparseFixedBitSet);
-    assertEquals(ref, result);
+    assertTrue(result instanceof SparseFixedBitDocIdSet);
+    assertEquals(new FixedBitDocIdSet(ref), result);
   }
 
   public void testDense() throws IOException {
@@ -84,8 +84,8 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       builder.or(b.build().iterator());
     }
     DocIdSet result = builder.build();
-    assertTrue(result instanceof FixedBitSet);
-    assertEquals(ref, result);
+    assertTrue(result instanceof FixedBitDocIdSet);
+    assertEquals(new FixedBitDocIdSet(ref), result);
   }
 
 }

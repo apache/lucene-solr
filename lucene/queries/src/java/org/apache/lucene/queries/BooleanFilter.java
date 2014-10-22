@@ -30,6 +30,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -98,7 +99,10 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       }
     }
 
-    return BitsFilteredDocIdSet.wrap(res, acceptDocs);
+    if (res == null) {
+      return null;
+    }
+    return BitsFilteredDocIdSet.wrap(new FixedBitDocIdSet(res), acceptDocs);
   }
 
   private static DocIdSetIterator getDISI(Filter filter, LeafReaderContext context)

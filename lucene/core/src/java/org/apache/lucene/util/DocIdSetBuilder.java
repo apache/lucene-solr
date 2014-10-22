@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.SparseFixedBitSet.SparseFixedBitSetIterator;
 
 /**
  * A builder of {@link DocIdSet}s that supports random access.
@@ -63,7 +64,7 @@ public final class DocIdSetBuilder {
         denseSet = new FixedBitSet(maxDoc);
         denseSet.or(it);
         if (sparseSet != null) {
-          denseSet.or(sparseSet.iterator());
+          denseSet.or(new SparseFixedBitSetIterator(sparseSet, 0L));
         }
         return;
       }
@@ -84,7 +85,14 @@ public final class DocIdSetBuilder {
    * anymore after this method has been called.
    */
   public DocIdSet build() {
-    final DocIdSet result = denseSet != null ? denseSet : sparseSet;
+    final DocIdSet result;
+    if (denseSet != null) {
+      result = new FixedBitDocIdSet(denseSet, denseSet.cardinality());
+    } else if (sparseSet != null) {
+      result = new SparseFixedBitDocIdSet(sparseSet, sparseSet.approximateCardinality());
+    } else {
+      result = null;
+    }
     denseSet = null;
     sparseSet = null;
     costUpperBound = 0;
