@@ -343,6 +343,9 @@ Other Changes
 * SOLR-6592: Avoid waiting for the leader to see the down state if that leader is not live.
   (Timothy Potter)
 
+* SOLR-6641: SystemInfoHandler should include the zkHost the node is using (when running in solrcloud mode)
+  (Timothy Potter)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
