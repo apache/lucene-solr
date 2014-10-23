@@ -11,6 +11,11 @@ Bug fixes
   work across multi-valued fields. Previously some cases across multi-valued
   fields would happily create a corrupt index. (Dawid Weiss, Robert Muir)
 
+* LUCENE-6019: Detect when DocValuesType illegally changes for the
+  same field name.  Also added -Dtests.asserts=true|false so we can
+  run tests with and without assertions. (Simon Willnauer, Robert
+  Muir, Mike McCandless).
+
 ======================= Lucene 4.10.1 ======================
 
 Bug fixes

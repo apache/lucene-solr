@@ -234,6 +234,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(new SortedDocValuesField("foo", new BytesRef("hello")));
     try {
       w.addDocument(doc);
+      fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
     }
@@ -256,6 +257,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(new SortedDocValuesField("foo", new BytesRef("hello")));
     try {
       w.addDocument(doc);
+      fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
     }
@@ -424,6 +426,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(new SortedDocValuesField("foo", new BytesRef("hello")));
     try {
       w.addDocument(doc);
+      fail("did not get expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
     }
@@ -460,8 +463,82 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     w = new IndexWriter(dir, iwc);
     doc = new Document();
-    doc.add(new SortedDocValuesField("foo", new BytesRef("hello")));
     w.addDocument(doc);
+    w.close();
+    dir.close();
+  }
+
+  public void testMixedTypesAfterReopenAppend1() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("foo", 0));
+    w.addDocument(doc);
+    w.close();
+
+    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    doc = new Document();
+    doc.add(new SortedDocValuesField("foo", new BytesRef("hello")));
+    try {
+      w.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
+
+  public void testMixedTypesAfterReopenAppend2() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesField("foo", new BytesRef("foo")));
+    w.addDocument(doc);
+    w.close();
+
+    doc = new Document();
+    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    doc.add(new BinaryDocValuesField("foo", new BytesRef("foo")));
+    try {
+      // NOTE: this case follows a different code path inside
+      // DefaultIndexingChain/FieldInfos, because the field (foo)
+      // is first added without DocValues:
+      w.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.forceMerge(1);
+    w.close();
+    dir.close();
+  }
+
+  public void testMixedTypesAfterReopenAppend3() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesField("foo", new BytesRef("foo")));
+    w.addDocument(doc);
+    w.close();
+
+    doc = new Document();
+    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    doc.add(new BinaryDocValuesField("foo", new BytesRef("foo")));
+    try {
+      // NOTE: this case follows a different code path inside
+      // DefaultIndexingChain/FieldInfos, because the field (foo)
+      // is first added without DocValues:
+      w.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    // Also add another document so there is a segment to write here:
+    w.addDocument(new Document());
+    w.forceMerge(1);
     w.close();
     dir.close();
   }
@@ -532,6 +609,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     try {
       w.addIndexes(new Directory[] {dir2});
+      fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
     }
@@ -539,6 +617,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir2);
     try {
       w.addIndexes(new IndexReader[] {r});
+      fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
     }
@@ -823,5 +902,4 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     
     dir.close();
   }
-
 }
