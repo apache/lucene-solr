@@ -511,6 +511,34 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     dir.close();
   }
 
+  public void testMixedTypesAfterReopenAppend3() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesField("foo", new BytesRef("foo")));
+    w.addDocument(doc);
+    w.close();
+
+    doc = new Document();
+    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    doc.add(new BinaryDocValuesField("foo", new BytesRef("foo")));
+    try {
+      // NOTE: this case follows a different code path inside
+      // DefaultIndexingChain/FieldInfos, because the field (foo)
+      // is first added without DocValues:
+      w.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    // Also add another document so there is a segment to write here:
+    w.addDocument(new Document());
+    w.forceMerge(1);
+    w.close();
+    dir.close();
+  }
+
   // Two documents with same field as different types, added
   // from separate threads:
   public void testMixedTypesDifferentThreads() throws Exception {

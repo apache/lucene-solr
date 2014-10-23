@@ -387,12 +387,12 @@ final class DefaultIndexingChain extends DocConsumer {
 
     boolean hasDocValues = fp.fieldInfo.hasDocValues();
 
-    // This will throw an exc if the caller tried to
-    // change the DV type for the field:
-    fp.fieldInfo.setDocValuesType(dvType);
     if (hasDocValues == false) {
+      // This will throw an exc if the caller tried to
+      // change the DV type for the field:
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);
     }
+    fp.fieldInfo.setDocValuesType(dvType);
 
     int docID = docState.docID;
 
