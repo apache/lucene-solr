@@ -259,6 +259,9 @@ Bug Fixes
 * SOLR-6224: Post soft-commit callbacks are called before soft commit actually happens.
   (shalin)
 
+* SOLR-6646: bin/solr start script fails to detect solr on non-default port and then after
+  30s tails wrong log file (janhoy)
+
 Optimizations
 ----------------------
 

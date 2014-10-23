@@ -317,7 +317,7 @@ function stop_solr() {
   SOLR_PID="$4"
 
   if [ "$SOLR_PID" != "" ]; then
-    echo -e "Sending stop command to Jetty stop port $STOP_PORT ... waiting 5 seconds to allow process $SOLR_PID to stop gracefully."
+    echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting 5 seconds to allow Jetty process $SOLR_PID to stop gracefully."
     $JAVA -jar $DIR/start.jar STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
     (sleep 5) &
     spinner $!
@@ -620,7 +620,7 @@ if [ "$EXAMPLE" != "" ]; then
                                   
                   # check to see if something is already bound to that port
                   if [ "$hasLsof" != "" ]; then
-                    PORT_IN_USE=`lsof -i:$CLOUD_PORT | grep $CLOUD_PORT`
+                    PORT_IN_USE=`lsof -Pni:$CLOUD_PORT`
                     if [ "$PORT_IN_USE" != "" ]; then
                       read -e -p "Oops! Looks like port $CLOUD_PORT is already being used by another process. Please choose a different port. " USER_INPUT
                     else
@@ -898,14 +898,14 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
       (loops=0
       while true
       do
-        running=`lsof -i:$SOLR_PORT | grep $SOLR_PORT`
+        running=`lsof -Pni:$SOLR_PORT`
         if [ "$running" == "" ]; then
           if [ $loops -lt 6 ]; then
             sleep 5
             loops=$[$loops+1]
           else
             echo -e "Still not seeing Solr listening on $SOLR_PORT after 30 seconds!"
-            tail -30 $SOLR_TIP/node1/logs/solr.log
+            tail -30 $SOLR_SERVER_DIR/logs/solr.log
             exit;
           fi
         else
