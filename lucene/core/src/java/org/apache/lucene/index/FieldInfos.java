@@ -314,14 +314,16 @@ public class FieldInfos implements Iterable<FieldInfo> {
         fi.update(storeTermVector, omitNorms, storePayloads, indexOptions);
 
         if (docValues != null) {
-          // only pay the synchronization cost if fi does not already have a DVType
+          // Only pay the synchronization cost if fi does not already have a DVType
           boolean updateGlobal = !fi.hasDocValues();
-          fi.setDocValuesType(docValues); // this will also perform the consistency check.
           if (updateGlobal) {
-            // must also update docValuesType map so it's
-            // aware of this field's DocValueType 
+            // Must also update docValuesType map so it's
+            // aware of this field's DocValueType.  This will throw IllegalArgumentException if
+            // an illegal type change was attempted.
             globalFieldNumbers.setDocValuesType(fi.number, name, docValues);
           }
+
+          fi.setDocValuesType(docValues); // this will also perform the consistency check.
         }
       }
       return fi;

@@ -3931,8 +3931,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // we pass merge.getMergeReaders() instead of merge.readers to allow the
       // OneMerge to return a view over the actual segments to merge
       final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
-          merge.info.info, infoStream, dirWrapper,
-          checkAbort, globalFieldNumberMap, 
+                                                     merge.info.info, infoStream, dirWrapper,
+                                                     checkAbort, globalFieldNumberMap, 
                                                      context);
 
       merge.checkAborted(directory);
