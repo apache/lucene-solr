@@ -50,7 +50,6 @@ public class TestAssertions extends LuceneTestCase {
       }
     } catch (AssertionError e) {
       // expected
-      e.printStackTrace(System.out);
     }
   }
 }
