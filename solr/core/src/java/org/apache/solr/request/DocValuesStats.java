@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
@@ -32,10 +31,9 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.StatsValuesFactory;
@@ -62,11 +60,17 @@ public class DocValuesStats {
     //Initialize facetstats, if facets have been passed in
     final FieldFacetStats[] facetStats = new FieldFacetStats[facet.length];
     int upto = 0;
+       
     for (String facetField : facet) {
+      SchemaField fsf = searcher.getSchema().getField(facetField);
+      if ( fsf.multiValued()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Stats can only facet on single-valued fields, not: " + facetField );
+      }
+      
       SchemaField facetSchemaField = searcher.getSchema().getField(facetField);
       facetStats[upto++] = new FieldFacetStats(searcher, facetField, schemaField, facetSchemaField, calcDistinct);
     }
-    
     // TODO: remove multiValuedFieldCache(), check dv type / uninversion type?
     final boolean multiValued = schemaField.multiValued() || ft.multiValuedFieldCache();
 
@@ -74,6 +78,7 @@ public class DocValuesStats {
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
     if (multiValued) {
       si = searcher.getAtomicReader().getSortedSetDocValues(fieldName);
+      
       if (si instanceof MultiSortedSetDocValues) {
         ordinalMap = ((MultiSortedSetDocValues)si).mapping;
       }
@@ -90,26 +95,27 @@ public class DocValuesStats {
     if (si.getValueCount() >= Integer.MAX_VALUE) {
       throw new UnsupportedOperationException("Currently this stats method is limited to " + Integer.MAX_VALUE + " unique terms");
     }
-
-    DocSet missing = docs.andNot( searcher.getDocSet(new TermRangeQuery(fieldName, null, null, false, false)));
-
-    final int nTerms = (int) si.getValueCount();   
     
+    int missingDocCountTotal = 0;
+    final int nTerms = (int) si.getValueCount();    
     // count collection array only needs to be as big as the number of terms we are
     // going to collect counts for.
     final int[] counts = new int[nTerms];
     
     Filter filter = docs.getTopFilter();
     List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    
     for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
       AtomicReaderContext leaf = leaves.get(subIndex);
       DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
       DocIdSetIterator disi = null;
+      
       if (dis != null) {
         disi = dis.iterator();
       }
       if (disi != null) {
         int docBase = leaf.docBase;
+        
         if (multiValued) {
           SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(fieldName);
           if (sub == null) {
@@ -118,23 +124,23 @@ public class DocValuesStats {
           final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
           if (singleton != null) {
             // some codecs may optimize SORTED_SET storage for single-valued fields
-            accumSingle(counts, docBase, facetStats, singleton, disi, subIndex, ordinalMap);
+            missingDocCountTotal += accumSingle(counts, docBase, facetStats, singleton, disi, subIndex, ordinalMap);
           } else {
-            accumMulti(counts, docBase, facetStats, sub, disi, subIndex, ordinalMap);
+            missingDocCountTotal += accumMulti(counts, docBase, facetStats, sub, disi, subIndex, ordinalMap);
           }
         } else {
           SortedDocValues sub = leaf.reader().getSortedDocValues(fieldName);
           if (sub == null) {
             sub = DocValues.emptySorted();
           }
-          accumSingle(counts, docBase, facetStats, sub, disi, subIndex, ordinalMap);
+          missingDocCountTotal += accumSingle(counts, docBase, facetStats, sub, disi, subIndex, ordinalMap);
         }
       }
     }
-    
     // add results in index order
     for (int ord = 0; ord < counts.length; ord++) {
       int count = counts[ord];
+
       if (count > 0) {
         final BytesRef value = si.lookupOrd(ord);
         res.accumulate(value, count);
@@ -143,26 +149,23 @@ public class DocValuesStats {
         }
       }
     }
-
-    res.addMissing(missing.size());
+    res.addMissing(missingDocCountTotal);
+    
     if (facetStats.length > 0) {
       for (FieldFacetStats f : facetStats) {
-        Map<String, StatsValues> facetStatsValues = f.facetStatsValues;
-        FieldType facetType = searcher.getSchema().getFieldType(f.name);
-        for (Map.Entry<String,StatsValues> entry : facetStatsValues.entrySet()) {
-          String termLabel = entry.getKey();
-          int missingCount = searcher.numDocs(new TermQuery(new Term(f.name, facetType.toInternal(termLabel))), missing);
-          entry.getValue().addMissing(missingCount);
-        }
+        Map<String,StatsValues> facetStatsValues = f.facetStatsValues;
+        f.accumulateMissing();
         res.addFacet(f.name, facetStatsValues);
       }
     }
+    
     return res;
   }
 
   /** accumulates per-segment single-valued stats */
-  static void accumSingle(int counts[], int docBase, FieldFacetStats[] facetStats, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+  static int accumSingle(int counts[], int docBase, FieldFacetStats[] facetStats, SortedDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
     final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
+    int missingDocCount = 0;
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       int term = si.getOrd(doc);
@@ -174,18 +177,29 @@ public class DocValuesStats {
         for (FieldFacetStats f : facetStats) {
           f.facetTermNum(docBase + doc, term);
         }
+      }else{
+        for (FieldFacetStats f : facetStats) {
+          f.facetMissingNum(docBase + doc);
+        }
+        
+        missingDocCount++;
       }
     }
+    return missingDocCount;
   }
   
   /** accumulates per-segment multi-valued stats */
-  static void accumMulti(int counts[], int docBase, FieldFacetStats[] facetStats, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
+  
+  static int accumMulti(int counts[], int docBase, FieldFacetStats[] facetStats, SortedSetDocValues si, DocIdSetIterator disi, int subIndex, OrdinalMap map) throws IOException {
     final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
+    int missingDocCount = 0;
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       si.setDocument(doc);
       long ord;
+      boolean emptyTerm = true;
       while ((ord = si.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        emptyTerm = false;
         int term = (int) ord;
         if (map != null) {
           term = (int) ordMap.get(term);
@@ -195,6 +209,15 @@ public class DocValuesStats {
           f.facetTermNum(docBase + doc, term);
         }
       }
+      if (emptyTerm){
+        for (FieldFacetStats f : facetStats) {
+          f.facetMissingNum(docBase + doc);
+        }
+        
+        missingDocCount++;
+      }
     }
+    
+    return missingDocCount;
   }
 }

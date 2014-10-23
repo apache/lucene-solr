@@ -36,6 +36,9 @@ Bug Fixes
   
 * SOLR-6587: Misleading exception when creating collections in SolrCloud with bad configuration.
   (Tomás Fernández Löbbe)
+  
+* SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and 
+  indexed=false (Xu Zhang via Tomás Fernández Löbbe)
 
 Other Changes
 ----------------------
@@ -73,6 +76,7 @@ Bug Fixes
 
 * SOLR-6501: Binary Response Writer does not return wildcard fields.
   (Mike Hugo, Constantin Mitocaru, sarowe, shalin)
+
 
 Other Changes
 ---------------------
