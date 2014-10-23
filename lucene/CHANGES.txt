@@ -243,6 +243,9 @@ Optimizations
 * LUCENE-5983: CachingWrapperFilter now uses a new DocIdSet implementation
   called RoaringDocIdSet instead of WAH8DocIdSet. (Adrien Grand)
 
+* LUCENE-6022: DocValuesDocIdSet checks live docs before doc values.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
