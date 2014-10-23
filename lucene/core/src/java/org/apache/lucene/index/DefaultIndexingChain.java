@@ -130,6 +130,10 @@ final class DefaultIndexingChain extends DocConsumer {
         PerField perField = fieldHash[i];
         while (perField != null) {
           if (perField.docValuesWriter != null) {
+            if (perField.fieldInfo.hasDocValues() == false) {
+              // BUG
+              throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no docValues but wrote them");
+            }
             if (dvConsumer == null) {
               // lazy init
               DocValuesFormat fmt = state.segmentInfo.getCodec().docValuesFormat();
@@ -139,6 +143,9 @@ final class DefaultIndexingChain extends DocConsumer {
             perField.docValuesWriter.finish(docCount);
             perField.docValuesWriter.flush(state, dvConsumer);
             perField.docValuesWriter = null;
+          } else if (perField.fieldInfo.hasDocValues()) {
+            // BUG
+            throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has docValues but did not write them");
           }
           perField = perField.next;
         }
@@ -155,6 +162,16 @@ final class DefaultIndexingChain extends DocConsumer {
       } else {
         IOUtils.closeWhileHandlingException(dvConsumer);
       }
+    }
+
+    if (state.fieldInfos.hasDocValues() == false) {
+      if (dvConsumer != null) {
+        // BUG
+        throw new AssertionError("segment=" + state.segmentInfo + ": fieldInfos has no docValues but wrote them");
+      }
+    } else if (dvConsumer == null) {
+      // BUG
+      throw new AssertionError("segment=" + state.segmentInfo + ": fieldInfos has docValues but did not wrote them");
     }
   }
 
