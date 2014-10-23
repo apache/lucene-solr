@@ -21,6 +21,7 @@ package org.apache.solr.core;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.handler.component.SearchComponent;
@@ -144,7 +145,12 @@ public class SolrConfig extends Config {
       return new SolrConfig(loader, name, null);
     }
     catch (Exception e) {
-      String resource = loader.getConfigDir() + name;
+      String resource;
+      if (loader instanceof ZkSolrResourceLoader) {
+        resource = name;
+      } else {
+        resource = loader.getConfigDir() + name;
+      }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading solr config from " + resource, e);
     }
   }

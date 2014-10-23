@@ -17,9 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -27,8 +25,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -151,12 +147,13 @@ public class BasicZkTest extends AbstractZkTestCase {
  
     // we set the solrconfig to nothing, so this reload should fail
     try {
-      SolrTestCaseJ4.ignoreException("SolrException");
+      ignoreException("solrconfig.xml");
       h.getCoreContainer().reload(h.getCore().getName());
-      SolrTestCaseJ4.resetExceptionIgnores();
       fail("The reloaded SolrCore did not pick up configs from zookeeper");
     } catch(SolrException e) {
-      
+      resetExceptionIgnores();
+      assertTrue(e.getMessage().contains("Unable to reload core [collection1]"));
+      assertTrue(e.getCause().getMessage().contains("Error loading solr config from solrconfig.xml"));
     }
     
     // test stats call

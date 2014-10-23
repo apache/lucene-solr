@@ -33,6 +33,9 @@ Bug Fixes
 
 * SOLR-6524: Collections left in recovery state after node restart because recovery sleep time
   increases exponentially between retries. (Mark Miller, shalin)
+  
+* SOLR-6587: Misleading exception when creating collections in SolrCloud with bad configuration.
+  (Tomás Fernández Löbbe)
 
 Other Changes
 ----------------------
