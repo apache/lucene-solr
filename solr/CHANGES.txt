@@ -40,6 +40,9 @@ Bug Fixes
 * SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and 
   indexed=false (Xu Zhang via Tomás Fernández Löbbe)
 
+* SOLR-6646: bin/solr start script fails to detect solr on non-default port and then after
+  30s tails wrong log file (janhoy)
+
 Other Changes
 ----------------------
 
