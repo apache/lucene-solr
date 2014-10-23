@@ -262,6 +262,8 @@ Bug Fixes
 * SOLR-6646: bin/solr start script fails to detect solr on non-default port and then after
   30s tails wrong log file (janhoy)
 
+* SOLR-6647: Bad error message when missing resource from ZK when parsing Schema (janhoy)
+
 Optimizations
 ----------------------
 

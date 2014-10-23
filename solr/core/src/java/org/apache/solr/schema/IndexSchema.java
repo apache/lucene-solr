@@ -28,6 +28,7 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
@@ -445,7 +446,8 @@ public class IndexSchema {
   }
 
   protected void readSchema(InputSource is) {
-    log.info("Reading Solr Schema from " + resourceName);
+    String resourcePath = CloudUtil.unifiedResourcePath(loader) + resourceName;
+    log.info("Reading Solr Schema from " + resourcePath);
 
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
@@ -594,11 +596,11 @@ public class IndexSchema {
       }
     } catch (SolrException e) {
       throw new SolrException(ErrorCode.getErrorCode(e.code()), e.getMessage() + ". Schema file is " +
-          loader.getConfigDir() + resourceName, e);
+          resourcePath, e);
     } catch(Exception e) {
       // unexpected exception...
       throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Schema Parsing Failed: " + e.getMessage() + ". Schema file is " + loader.getConfigDir() + resourceName,
+          "Schema Parsing Failed: " + e.getMessage() + ". Schema file is " + resourcePath,
           e);
     }
 
