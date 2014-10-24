@@ -24,7 +24,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 
@@ -172,7 +172,7 @@ abstract class DocSetBase implements DocSet {
         final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
 
         if (context.isTopLevel) {
-          return BitsFilteredDocIdSet.wrap(new FixedBitDocIdSet(bs), acceptDocs);
+          return BitsFilteredDocIdSet.wrap(new BitDocIdSet(bs), acceptDocs);
         }
 
         final int base = context.docBase;
@@ -194,14 +194,14 @@ abstract class DocSetBase implements DocSet {
               @Override
               public int nextDoc() {
                 pos = bs.nextSetBit(pos+1);
-                return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
+                return adjustedDoc = pos<max ? pos-base : NO_MORE_DOCS;
               }
 
               @Override
               public int advance(int target) {
                 if (target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
                 pos = bs.nextSetBit(target+base);
-                return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
+                return adjustedDoc = pos<max ? pos-base : NO_MORE_DOCS;
               }
 
               @Override

@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.BaseBitSetTestCase.randomSet;
+
 import java.io.IOException;
 import java.util.BitSet;
 
@@ -28,31 +30,6 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
 
   /** Create a copy of the given {@link BitSet} which has <code>length</code> bits. */
   public abstract T copyOf(BitSet bs, int length) throws IOException;
-
-  /** Create a random set which has <code>numBitsSet</code> of its <code>numBits</code> bits set. */
-  protected static BitSet randomSet(int numBits, int numBitsSet) {
-    assert numBitsSet <= numBits;
-    final BitSet set = new BitSet(numBits);
-    if (numBitsSet == numBits) {
-      set.set(0, numBits);
-    } else {
-      for (int i = 0; i < numBitsSet; ++i) {
-        while (true) {
-          final int o = random().nextInt(numBits);
-          if (!set.get(o)) {
-            set.set(o);
-            break;
-          }
-        }
-      }
-    }
-    return set;
-  }
-
-  /** Same as {@link #randomSet(int, int)} but given a load factor. */
-  protected static BitSet randomSet(int numBits, float percentSet) {
-    return randomSet(numBits, (int) (percentSet * numBits));
-  }
 
   /** Test length=0. */
   public void testNoBit() throws IOException {

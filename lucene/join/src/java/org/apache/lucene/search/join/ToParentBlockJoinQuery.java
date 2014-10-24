@@ -39,7 +39,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -184,11 +183,11 @@ public class ToParentBlockJoinQuery extends Query {
         // No matches
         return null;
       }
-      if (!(parents instanceof FixedBitDocIdSet)) {
-        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);
+      if (!(parents.bits() instanceof FixedBitSet)) {
+        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents.bits());
       }
 
-      return new BlockJoinScorer(this, childScorer, ((FixedBitDocIdSet) parents).bits(), firstChildDoc, scoreMode, acceptDocs);
+      return new BlockJoinScorer(this, childScorer, (FixedBitSet) parents.bits(), firstChildDoc, scoreMode, acceptDocs);
     }
 
     @Override
@@ -288,7 +287,7 @@ public class ToParentBlockJoinQuery extends Query {
         }
 
         //System.out.println("  parentDoc=" + parentDoc);
-        assert parentDoc != -1;
+        assert parentDoc != DocIdSetIterator.NO_MORE_DOCS;
 
         //System.out.println("  nextChildDoc=" + nextChildDoc);
         if (acceptDocs != null && !acceptDocs.get(parentDoc)) {

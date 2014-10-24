@@ -40,7 +40,7 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /** Collects hits for subsequent faceting.  Once you've run
@@ -129,7 +129,7 @@ public class FacetsCollector extends SimpleCollector {
       
       @Override
       public DocIdSet getDocIdSet() {
-        return new FixedBitDocIdSet(bits);
+        return new BitDocIdSet(bits);
       }
     };
   }

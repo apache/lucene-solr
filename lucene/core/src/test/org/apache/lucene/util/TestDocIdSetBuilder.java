@@ -45,6 +45,16 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     }
   }
 
+  public void testFull() throws IOException {
+    final int maxDoc = 1 + random().nextInt(1000);
+    DocIdSetBuilder builder = new DocIdSetBuilder(maxDoc, true);
+    DocIdSet set = builder.build();
+    DocIdSetIterator it = set.iterator();
+    for (int i = 0; i < maxDoc; ++i) {
+      assertEquals(i, it.nextDoc());
+    }
+  }
+
   public void testSparse() throws IOException {
     final int maxDoc = 1000000 + random().nextInt(1000000);
     DocIdSetBuilder builder = new DocIdSetBuilder(maxDoc);
@@ -60,8 +70,8 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       builder.or(b.build().iterator());
     }
     DocIdSet result = builder.build();
-    assertTrue(result instanceof SparseFixedBitDocIdSet);
-    assertEquals(new FixedBitDocIdSet(ref), result);
+    assertTrue(result instanceof BitDocIdSet);
+    assertEquals(new BitDocIdSet(ref), result);
   }
 
   public void testDense() throws IOException {
@@ -84,8 +94,8 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       builder.or(b.build().iterator());
     }
     DocIdSet result = builder.build();
-    assertTrue(result instanceof FixedBitDocIdSet);
-    assertEquals(new FixedBitDocIdSet(ref), result);
+    assertTrue(result instanceof BitDocIdSet);
+    assertEquals(new BitDocIdSet(ref), result);
   }
 
 }

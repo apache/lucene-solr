@@ -14,7 +14,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -146,7 +146,7 @@ public class TestScorerPerf extends LuceneTestCase {
       @Override
       public DocIdSet getDocIdSet (LeafReaderContext context, Bits acceptDocs) {
         assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
-        return new FixedBitDocIdSet(rnd);
+        return new BitDocIdSet(rnd);
       }
     });
     bq.add(q, BooleanClause.Occur.MUST);

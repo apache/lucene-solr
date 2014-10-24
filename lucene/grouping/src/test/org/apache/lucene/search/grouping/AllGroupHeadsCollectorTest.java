@@ -43,6 +43,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -405,7 +406,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       expected.set(expectedDoc);
     }
 
-    for (int docId = expected.nextSetBit(0); docId != -1; docId = docId + 1 >= expected.length() ? -1 : expected.nextSetBit(docId + 1)) {
+    for (int docId = expected.nextSetBit(0); docId != DocIdSetIterator.NO_MORE_DOCS; docId = docId + 1 >= expected.length() ? DocIdSetIterator.NO_MORE_DOCS : expected.nextSetBit(docId + 1)) {
       if (!actual.get(docId)) {
         return false;
       }

@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 public class SingleDocTestFilter extends Filter {
@@ -36,6 +36,6 @@ public class SingleDocTestFilter extends Filter {
     FixedBitSet bits = new FixedBitSet(context.reader().maxDoc());
     bits.set(doc);
     if (acceptDocs != null && !acceptDocs.get(doc)) bits.clear(doc);
-    return new FixedBitDocIdSet(bits);
+    return new BitDocIdSet(bits);
   }
 }

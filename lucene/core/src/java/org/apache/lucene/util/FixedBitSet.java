@@ -32,71 +32,9 @@ import org.apache.lucene.search.DocIdSetIterator;
  * 
  * @lucene.internal
  */
-public final class FixedBitSet implements MutableBits, Accountable {
+public final class FixedBitSet extends BitSet implements MutableBits, Accountable {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class);
-
-  /**
-   * A {@link DocIdSetIterator} which iterates over set bits in a
-   * {@link FixedBitSet}.
-   */
-  public static final class FixedBitSetIterator extends DocIdSetIterator {
-    
-    final int numBits, numWords;
-    final long[] bits;
-    final long cost;
-    int doc = -1;
-    
-    /** Creates an iterator over the given {@link FixedBitSet}. */
-    public FixedBitSetIterator(FixedBitSet bits, long cost) {
-      this(bits.bits, bits.numBits, bits.numWords, cost);
-    }
-    
-    /** Creates an iterator over the given array of bits. */
-    public FixedBitSetIterator(long[] bits, int numBits, int wordLength, long cost) {
-      this.bits = bits;
-      this.numBits = numBits;
-      this.numWords = wordLength;
-      this.cost = cost;
-    }
-    
-    @Override
-    public int nextDoc() {
-      return advance(doc + 1);
-    }
-    
-    @Override
-    public int docID() {
-      return doc;
-    }
-    
-    @Override
-    public long cost() {
-      return cost;
-    }
-    
-    @Override
-    public int advance(int target) {
-      if (target >= numBits) {
-        return doc = NO_MORE_DOCS;
-      }
-      int i = target >> 6;
-      long word = bits[i] >> target; // skip all the bits to the right of index
-      
-      if (word != 0) {
-        return doc = target + Long.numberOfTrailingZeros(word);
-      }
-      
-      while (++i < numWords) {
-        word = bits[i];
-        if (word != 0) {
-          return doc = (i << 6) + Long.numberOfTrailingZeros(word);
-        }
-      }
-      
-      return doc = NO_MORE_DOCS;
-    }
-  }
 
   /**
    * If the given {@link FixedBitSet} is large enough to hold {@code numBits},
@@ -203,9 +141,7 @@ public final class FixedBitSet implements MutableBits, Accountable {
     return bits;
   }
 
-  /** Returns number of set bits.  NOTE: this visits every
-   *  long in the backing bits array, and the result is not
-   *  internally cached! */
+  @Override
   public int cardinality() {
     return (int) BitUtil.pop_array(bits, 0, bits.length);
   }
@@ -236,6 +172,7 @@ public final class FixedBitSet implements MutableBits, Accountable {
     return val;
   }
 
+  @Override
   public void clear(int index) {
     assert index >= 0 && index < numBits;
     int wordNum = index >> 6;
@@ -252,9 +189,7 @@ public final class FixedBitSet implements MutableBits, Accountable {
     return val;
   }
 
-  /** Returns the index of the first set bit starting at the index specified.
-   *  -1 is returned if there are no more set bits.
-   */
+  @Override
   public int nextSetBit(int index) {
     assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
     int i = index >> 6;
@@ -271,7 +206,7 @@ public final class FixedBitSet implements MutableBits, Accountable {
       }
     }
 
-    return -1;
+    return DocIdSetIterator.NO_MORE_DOCS;
   }
 
   /** Returns the index of the last set bit before or on the index specified.
@@ -297,20 +232,16 @@ public final class FixedBitSet implements MutableBits, Accountable {
     return -1;
   }
 
-  /** Does in-place OR of the bits provided by the
-   *  iterator. */
+  @Override
   public void or(DocIdSetIterator iter) throws IOException {
-    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
-      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
-      or(fbs.bits, fbs.numWords);
+    if (BitSetIterator.getFixedBitSetOrNull(iter) != null && iter.docID() == -1) {
+      final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
+      or(bits);
       // advance after last doc that would be accepted if standard
       // iteration is used (to exhaust it):
-      fbs.advance(numBits);
+      iter.advance(numBits);
     } else {
-      int doc;
-      while ((doc = iter.nextDoc()) < numBits) {
-        set(doc);
-      }
+      super.or(iter);
     }
   }
 
@@ -335,12 +266,12 @@ public final class FixedBitSet implements MutableBits, Accountable {
   
   /** Does in-place XOR of the bits provided by the iterator. */
   public void xor(DocIdSetIterator iter) throws IOException {
-    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
-      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
-      xor(fbs.bits, fbs.numWords);
+    if (BitSetIterator.getFixedBitSetOrNull(iter) != null && iter.docID() == -1) {
+      final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
+      xor(bits);
       // advance after last doc that would be accepted if standard
       // iteration is used (to exhaust it):
-      fbs.advance(numBits);
+      iter.advance(numBits);
     } else {
       int doc;
       while ((doc = iter.nextDoc()) < numBits) {
@@ -358,26 +289,16 @@ public final class FixedBitSet implements MutableBits, Accountable {
     }
   }
 
-  /** Does in-place AND of the bits provided by the
-   *  iterator. */
+  @Override
   public void and(DocIdSetIterator iter) throws IOException {
-    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
-      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
-      and(fbs.bits, fbs.numWords);
+    if (BitSetIterator.getFixedBitSetOrNull(iter) != null && iter.docID() == -1) {
+      final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
+      and(bits);
       // advance after last doc that would be accepted if standard
       // iteration is used (to exhaust it):
-      fbs.advance(numBits);
+      iter.advance(numBits);
     } else {
-      if (numBits == 0) return;
-      int disiDoc, bitSetDoc = nextSetBit(0);
-      while (bitSetDoc != -1 && (disiDoc = iter.advance(bitSetDoc)) < numBits) {
-        clear(bitSetDoc, disiDoc);
-        disiDoc++;
-        bitSetDoc = (disiDoc < numBits) ? nextSetBit(disiDoc) : -1;
-      }
-      if (bitSetDoc != -1) {
-        clear(bitSetDoc, numBits);
-      }
+      super.and(iter);
     }
   }
 
@@ -406,20 +327,16 @@ public final class FixedBitSet implements MutableBits, Accountable {
     }
   }
 
-  /** Does in-place AND NOT of the bits provided by the
-   *  iterator. */
+  @Override
   public void andNot(DocIdSetIterator iter) throws IOException {
-    if (iter instanceof FixedBitSetIterator && iter.docID() == -1) {
-      final FixedBitSetIterator fbs = (FixedBitSetIterator) iter;
-      andNot(fbs.bits, fbs.numWords);
+    if (BitSetIterator.getFixedBitSetOrNull(iter) != null && iter.docID() == -1) {
+      final FixedBitSet bits = BitSetIterator.getFixedBitSetOrNull(iter); 
+      andNot(bits);
       // advance after last doc that would be accepted if standard
       // iteration is used (to exhaust it):
-      fbs.advance(numBits);
+      iter.advance(numBits);
     } else {
-      int doc;
-      while ((doc = iter.nextDoc()) < numBits) {
-        clear(doc);
-      }
+      super.andNot(iter);
     }
   }
 
@@ -516,11 +433,7 @@ public final class FixedBitSet implements MutableBits, Accountable {
     bits[endWord] |= endmask;
   }
 
-  /** Clears a range of bits.
-   *
-   * @param startIndex lower index
-   * @param endIndex one-past the last bit to clear
-   */
+  @Override
   public void clear(int startIndex, int endIndex) {
     assert startIndex >= 0 && startIndex < numBits : "startIndex=" + startIndex + ", numBits=" + numBits;
     assert endIndex >= 0 && endIndex <= numBits : "endIndex=" + endIndex + ", numBits=" + numBits;

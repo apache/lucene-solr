@@ -37,7 +37,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -94,7 +94,7 @@ public class BooleanFilterTest extends LuceneTestCase {
     return new Filter() {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-        return new FixedBitDocIdSet(new FixedBitSet(context.reader().maxDoc()));
+        return new BitDocIdSet(new FixedBitSet(context.reader().maxDoc()));
       }
     };
   }

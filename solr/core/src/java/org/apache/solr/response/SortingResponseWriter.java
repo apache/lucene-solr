@@ -32,10 +32,10 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -135,7 +135,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
       SortDoc top = queue.top();
       for(int i=0; i<leaves.size(); i++) {
         sortDoc.setNextReader(leaves.get(i));
-        DocIdSetIterator it = new FixedBitSetIterator(sets[i], 0); // cost is not useful here
+        DocIdSetIterator it = new BitSetIterator(sets[i], 0); // cost is not useful here
         int docId = -1;
         while((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           sortDoc.setValues(docId);

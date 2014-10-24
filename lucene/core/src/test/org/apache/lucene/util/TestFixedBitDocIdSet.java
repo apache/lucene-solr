@@ -15,32 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.search.join;
+package org.apache.lucene.util;
 
-import org.apache.lucene.util.FixedBitSet;
+import java.io.IOException;
+import java.util.BitSet;
 
-class BitSetSlice {
-  private final FixedBitSet fbs;
-  private final int off;
-  private final int len;
+public class TestFixedBitDocIdSet extends BaseDocIdSetTestCase<BitDocIdSet> {
 
-  BitSetSlice(FixedBitSet fbs, int off, int len) {
-    this.fbs = fbs;
-    this.off = off;
-    this.len = len;
+  @Override
+  public BitDocIdSet copyOf(BitSet bs, int length) throws IOException {
+    final FixedBitSet set = new FixedBitSet(length);
+    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
+      set.set(doc);
+    }
+    return new BitDocIdSet(set);
   }
-
-  public boolean get(int pos) {
-    return fbs.get(pos + off);
-  }
-
-  public int prevSetBit(int pos) {
-    int result = fbs.prevSetBit(pos + off) - off;
-    return (result < 0) ? -1 : result;
-  }
-
-  public int nextSetBit(int pos) {
-    int result = fbs.nextSetBit(pos + off) - off;
-    return (result >= len) ? -1 : result;
-  }
+  
 }

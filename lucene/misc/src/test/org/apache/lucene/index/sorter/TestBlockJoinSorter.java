@@ -41,7 +41,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -58,7 +58,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
         throws IOException {
       final FixedBitSet cached = new FixedBitSet(reader.maxDoc());
       cached.or(iterator);
-      return new FixedBitDocIdSet(cached);
+      return new BitDocIdSet(cached);
     }
 
   }

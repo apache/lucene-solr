@@ -36,11 +36,11 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 
 class TermsIncludingScoreQuery extends Query {
 
@@ -329,7 +329,7 @@ class TermsIncludingScoreQuery extends Query {
       FixedBitSet matchingDocs = new FixedBitSet(maxDoc);
       this.scores = new float[maxDoc];
       fillDocsAndScores(matchingDocs, acceptDocs, termsEnum);
-      this.matchingDocsIterator = new FixedBitSetIterator(matchingDocs, cost);
+      this.matchingDocsIterator = new BitSetIterator(matchingDocs, cost);
       this.cost = cost;
     }
 

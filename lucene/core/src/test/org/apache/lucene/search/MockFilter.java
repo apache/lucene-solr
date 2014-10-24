@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 
@@ -29,7 +29,7 @@ public class MockFilter extends Filter {
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
     wasCalled = true;
     FixedBitSet bits = new FixedBitSet(context.reader().maxDoc());
-    return new FixedBitDocIdSet(bits);
+    return new BitDocIdSet(bits);
   }
 
   public void clear() {

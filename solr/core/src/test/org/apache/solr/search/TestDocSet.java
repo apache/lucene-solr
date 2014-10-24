@@ -39,9 +39,9 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -68,7 +68,7 @@ public class TestDocSet extends LuceneTestCase {
 
   public DocSet getHashDocSet(FixedBitSet bs) {
     int[] docs = new int[bs.cardinality()];
-    FixedBitSetIterator iter = new FixedBitSetIterator(bs, 0);
+    BitSetIterator iter = new BitSetIterator(bs, 0);
     for (int i=0; i<docs.length; i++) {
       docs[i] = iter.nextDoc();
     }
@@ -77,7 +77,7 @@ public class TestDocSet extends LuceneTestCase {
 
   public DocSet getIntDocSet(FixedBitSet bs) {
     int[] docs = new int[bs.cardinality()];
-    FixedBitSetIterator iter = new FixedBitSetIterator(bs, 0);
+    BitSetIterator iter = new BitSetIterator(bs, 0);
     for (int i=0; i<docs.length; i++) {
       docs[i] = iter.nextDoc();
     }
@@ -95,7 +95,7 @@ public class TestDocSet extends LuceneTestCase {
     int offset = 3;
     int end = offset + len;
 
-    FixedBitSetIterator iter = new FixedBitSetIterator(bs, 0);
+    BitSetIterator iter = new BitSetIterator(bs, 0);
     // put in opposite order... DocLists are not ordered.
     for (int i=end-1; i>=offset; i--) {
       arr[i] = iter.nextDoc();

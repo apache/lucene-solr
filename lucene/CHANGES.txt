@@ -171,6 +171,9 @@ API Changes
   FieldInfo, since it's redundant with IndexOptions != null. (Robert
   Muir, Mike McCandless)
 
+* LUCENE-6021: FixedBitSet.nextSetBit now returns DocIdSetIterator.NO_MORE_DOCS
+  instead of -1 when there are no more bits which are set. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

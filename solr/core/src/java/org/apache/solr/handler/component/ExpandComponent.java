@@ -40,10 +40,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.ShardParams;
@@ -308,7 +308,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     public GroupExpandCollector(SortedDocValues docValues, FixedBitSet groupBits, IntOpenHashSet collapsedSet, int limit, Sort sort) throws IOException {
       int numGroups = collapsedSet.size();
       groups = new IntObjectOpenHashMap<>(numGroups * 2);
-      DocIdSetIterator iterator = new FixedBitSetIterator(groupBits, 0); // cost is not useful here
+      DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, true) : TopFieldCollector.create(sort, limit, false, false, false, true);

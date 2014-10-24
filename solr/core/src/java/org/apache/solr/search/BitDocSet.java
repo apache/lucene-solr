@@ -23,10 +23,10 @@ import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
-import org.apache.lucene.util.FixedBitDocIdSet;
 
 /**
  * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
@@ -92,7 +92,7 @@ public class BitDocSet extends DocSetBase {
   @Override
   public DocIterator iterator() {
     return new DocIterator() {
-      private final FixedBitSetIterator iter = new FixedBitSetIterator(bits, 0L); // cost is not useful here
+      private final BitSetIterator iter = new BitSetIterator(bits, 0L); // cost is not useful here
       private int pos = iter.nextDoc();
       @Override
       public boolean hasNext() {
@@ -277,7 +277,7 @@ public class BitDocSet extends DocSetBase {
         final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
 
         if (context.isTopLevel) {
-          return BitsFilteredDocIdSet.wrap(new FixedBitDocIdSet(bs), acceptDocs);
+          return BitsFilteredDocIdSet.wrap(new BitDocIdSet(bs), acceptDocs);
         }
 
         final int base = context.docBase;
@@ -302,7 +302,7 @@ public class BitDocSet extends DocSetBase {
                   return adjustedDoc = NO_MORE_DOCS;
                 } else {
                   pos = bs.nextSetBit(pos + 1);
-                  return adjustedDoc = (pos >= 0 && pos < max) ? pos - base : NO_MORE_DOCS;
+                  return adjustedDoc = pos < max ? pos - base : NO_MORE_DOCS;
                 }
               }
 
@@ -314,7 +314,7 @@ public class BitDocSet extends DocSetBase {
                   return adjustedDoc = NO_MORE_DOCS;
                 } else {
                   pos = bs.nextSetBit(adjusted);
-                  return adjustedDoc = (pos >= 0 && pos < max) ? pos - base : NO_MORE_DOCS;
+                  return adjustedDoc = pos < max ? pos - base : NO_MORE_DOCS;
                 }
               }
 

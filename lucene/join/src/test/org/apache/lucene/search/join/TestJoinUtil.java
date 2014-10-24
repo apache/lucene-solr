@@ -64,10 +64,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
@@ -505,12 +505,12 @@ public class TestJoinUtil extends LuceneTestCase {
         // Asserting bit set...
         if (VERBOSE) {
           System.out.println("expected cardinality:" + expectedResult.cardinality());
-          DocIdSetIterator iterator = new FixedBitSetIterator(expectedResult, expectedResult.cardinality());
+          DocIdSetIterator iterator = new BitSetIterator(expectedResult, expectedResult.cardinality());
           for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
             System.out.println(String.format(Locale.ROOT, "Expected doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
           }
           System.out.println("actual cardinality:" + actualResult.cardinality());
-          iterator = new FixedBitSetIterator(actualResult, actualResult.cardinality());
+          iterator = new BitSetIterator(actualResult, actualResult.cardinality());
           for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
             System.out.println(String.format(Locale.ROOT, "Actual doc[%d] with id value %s", doc, indexSearcher.doc(doc).get("id")));
           }
