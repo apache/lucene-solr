@@ -1372,6 +1372,8 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
         tup = int(name[0]), int(name[1]), 0
       elif len(name) == 3:
         tup = int(name[0]), int(name[1]), int(name[2])
+      elif len(name) == 4 and name.startswith('410'):
+        tup = 4, 10, int(name[3:])
       else:
         raise RuntimeError('do not know how to parse index name %s' % name)
       testedIndices.add(tup)
