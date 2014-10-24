@@ -34,7 +34,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -105,7 +105,7 @@ public class TestFilteredQuery extends LuceneTestCase {
         FixedBitSet bitset = new FixedBitSet(context.reader().maxDoc());
         if (acceptDocs.get(1)) bitset.set(1);
         if (acceptDocs.get(3)) bitset.set(3);
-        return new FixedBitDocIdSet(bitset);
+        return new BitDocIdSet(bitset);
       }
     };
   }
@@ -186,7 +186,7 @@ public class TestFilteredQuery extends LuceneTestCase {
         assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
         FixedBitSet bitset = new FixedBitSet(context.reader().maxDoc());
         bitset.set(0, Math.min(5, bitset.length()));
-        return new FixedBitDocIdSet(bitset);
+        return new BitDocIdSet(bitset);
       }
     };
   }

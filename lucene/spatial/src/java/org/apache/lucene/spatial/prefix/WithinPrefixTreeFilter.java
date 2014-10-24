@@ -25,7 +25,7 @@ import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 import com.spatial4j.core.context.SpatialContext;
@@ -136,7 +136,7 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
       @Override
       protected DocIdSet finish() {
         inside.andNot(outside);
-        return new FixedBitDocIdSet(inside);
+        return new BitDocIdSet(inside);
       }
 
       @Override

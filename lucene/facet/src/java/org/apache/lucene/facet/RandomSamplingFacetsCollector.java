@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -213,7 +213,7 @@ public class RandomSamplingFacetsCollector extends FacetsCollector {
         }
       }
       
-      return new MatchingDocs(docs.context, new FixedBitDocIdSet(sampleDocs), docs.totalHits, null);
+      return new MatchingDocs(docs.context, new BitDocIdSet(sampleDocs), docs.totalHits, null);
     } catch (IOException e) {
       throw new RuntimeException();
     }

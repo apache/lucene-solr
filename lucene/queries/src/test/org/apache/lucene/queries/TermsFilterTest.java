@@ -47,7 +47,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -82,19 +82,19 @@ public class TermsFilterTest extends LuceneTestCase {
 
     List<Term> terms = new ArrayList<>();
     terms.add(new Term(fieldName, "19"));
-    FixedBitDocIdSet bits = (FixedBitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
+    BitDocIdSet bits = (BitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
     assertNull("Must match nothing", bits);
 
     terms.add(new Term(fieldName, "20"));
-    bits = (FixedBitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
+    bits = (BitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must match 1", 1, bits.bits().cardinality());
 
     terms.add(new Term(fieldName, "10"));
-    bits = (FixedBitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
+    bits = (BitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must match 2", 2, bits.bits().cardinality());
 
     terms.add(new Term(fieldName, "00"));
-    bits = (FixedBitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
+    bits = (BitDocIdSet) termsFilter(random().nextBoolean(), terms).getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must match 2", 2, bits.bits().cardinality());
 
     reader.close();
@@ -127,7 +127,7 @@ public class TermsFilterTest extends LuceneTestCase {
       if (context.reader().docFreq(new Term(fieldName, "content1")) == 0) {
         assertNull(docIdSet);
       } else {
-        FixedBitDocIdSet bits = (FixedBitDocIdSet) docIdSet;
+        BitDocIdSet bits = (BitDocIdSet) docIdSet;
         assertTrue("Must be >= 0", bits.bits().cardinality() >= 0);      
       }
     }
@@ -164,7 +164,7 @@ public class TermsFilterTest extends LuceneTestCase {
     LeafReaderContext context = reader.leaves().get(0);
     TermsFilter tf = new TermsFilter(terms);
 
-    FixedBitDocIdSet bits = (FixedBitDocIdSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
+    BitDocIdSet bits = (BitDocIdSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must be num fields - 1 since we skip only one field", num-1, bits.bits().cardinality());  
     reader.close();
     dir.close();
@@ -200,7 +200,7 @@ public class TermsFilterTest extends LuceneTestCase {
     LeafReaderContext context = reader.leaves().get(0);
     TermsFilter tf = new TermsFilter(new ArrayList<>(terms));
 
-    FixedBitDocIdSet bits = (FixedBitDocIdSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
+    BitDocIdSet bits = (BitDocIdSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals(context.reader().numDocs(), bits.bits().cardinality());  
     reader.close();
     dir.close();

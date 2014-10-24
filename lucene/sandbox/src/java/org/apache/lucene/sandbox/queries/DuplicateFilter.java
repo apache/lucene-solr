@@ -27,11 +27,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.SparseFixedBitDocIdSet;
 import org.apache.lucene.util.SparseFixedBitSet;
 
 /**
@@ -127,7 +126,7 @@ public class DuplicateFilter extends Filter {
         }
       }
     }
-    return new SparseFixedBitDocIdSet(bits, bits.approximateCardinality());
+    return new BitDocIdSet(bits, bits.approximateCardinality());
   }
 
   private DocIdSet fastBits(LeafReader reader, Bits acceptDocs) throws IOException {
@@ -172,7 +171,7 @@ public class DuplicateFilter extends Filter {
       }
     }
 
-    return new FixedBitDocIdSet(bits);
+    return new BitDocIdSet(bits);
   }
 
   public String getFieldName() {

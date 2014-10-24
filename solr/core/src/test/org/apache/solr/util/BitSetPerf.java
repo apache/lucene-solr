@@ -20,8 +20,9 @@ package org.apache.solr.util;
 import java.util.BitSet;
 import java.util.Random;
 
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 
 /** Performance tester for FixedBitSet.
  * Use -Xbatch for more predictable results, and run tests such that the duration
@@ -153,7 +154,7 @@ public class BitSetPerf {
         for (int i=0; i<numSets; i++) {
           if (impl=="open") {
             final FixedBitSet set = osets[i];
-            for(int next=set.nextSetBit(0); next>=0; next=set.nextSetBit(next+1)) {
+            for(int next=set.nextSetBit(0); next != DocIdSetIterator.NO_MORE_DOCS; next=set.nextSetBit(next+1)) {
               ret += next;
             }
           } else {
@@ -172,7 +173,7 @@ public class BitSetPerf {
         for (int i=0; i<numSets; i++) {
           if (impl=="open") {
             final FixedBitSet set = osets[i];
-            final FixedBitSetIterator iterator = new FixedBitSetIterator(set, 0);
+            final BitSetIterator iterator = new BitSetIterator(set, 0);
             for(int next=iterator.nextDoc(); next>=0; next=iterator.nextDoc()) {
               ret += next;
             }

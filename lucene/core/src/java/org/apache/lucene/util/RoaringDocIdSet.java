@@ -85,14 +85,14 @@ public class RoaringDocIdSet extends DocIdSet {
           int excludedDoc = -1;
           for (int i = 0; i < excludedDocs.length; ++i) {
             excludedDoc = denseBuffer.nextSetBit(excludedDoc + 1);
-            assert excludedDoc != -1;
+            assert excludedDoc != DocIdSetIterator.NO_MORE_DOCS;
             excludedDocs[i] = (short) excludedDoc;
           }
-          assert excludedDoc + 1 == denseBuffer.length() || denseBuffer.nextSetBit(excludedDoc + 1) == -1;
+          assert excludedDoc + 1 == denseBuffer.length() || denseBuffer.nextSetBit(excludedDoc + 1) == DocIdSetIterator.NO_MORE_DOCS;
           sets[currentBlock] = new NotDocIdSet(BLOCK_SIZE, new ShortArrayDocIdSet(excludedDocs));
         } else {
           // Neither sparse nor super dense, use a fixed bit set
-          sets[currentBlock] = new FixedBitDocIdSet(denseBuffer, currentBlockCardinality);
+          sets[currentBlock] = new BitDocIdSet(denseBuffer, currentBlockCardinality);
         }
         denseBuffer = null;
       }

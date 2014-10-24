@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
@@ -222,7 +223,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
       for (int doc=-1;;) {
         if (doc+1 >= model.indexSize) break;
         doc = pset.nextSetBit(doc+1);
-        if (doc < 0) break;
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) break;
         sb.append((positive ? " ":" -") + f+":"+doc);
       }
 

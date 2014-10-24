@@ -26,9 +26,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -142,7 +142,7 @@ public class PKIndexSplitter {
       if (in.hasDeletions()) {
         final Bits oldLiveDocs = in.getLiveDocs();
         assert oldLiveDocs != null;
-        final DocIdSetIterator it = new FixedBitSetIterator(bits, 0L); // the cost is not useful here
+        final DocIdSetIterator it = new BitSetIterator(bits, 0L); // the cost is not useful here
         for (int i = it.nextDoc(); i < maxDoc; i = it.nextDoc()) {
           if (!oldLiveDocs.get(i)) {
             // we can safely modify the current bit, as the iterator already stepped over it:

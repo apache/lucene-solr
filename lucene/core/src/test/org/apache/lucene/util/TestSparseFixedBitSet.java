@@ -18,43 +18,18 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.List;
 
-public class TestSparseFixedBitSet extends BaseDocIdSetTestCase<SparseFixedBitDocIdSet> {
+import org.apache.lucene.search.DocIdSetIterator;
+
+public class TestSparseFixedBitSet extends BaseBitSetTestCase<SparseFixedBitSet> {
 
   @Override
-  public SparseFixedBitDocIdSet copyOf(BitSet bs, int length) throws IOException {
+  public SparseFixedBitSet copyOf(BitSet bs, int length) throws IOException {
     final SparseFixedBitSet set = new SparseFixedBitSet(length);
-    // SparseFixedBitSet can be sensitive to the order of insertion so
-    // randomize insertion a bit
-    List<Integer> buffer = new ArrayList<>();
-    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
-      buffer.add(doc);
-      if (buffer.size() >= 100000) {
-        Collections.shuffle(buffer, random());
-        for (int i : buffer) {
-          set.set(i);
-        }
-        buffer.clear();
-      }
+    for (int doc = bs.nextSetBit(0); doc != DocIdSetIterator.NO_MORE_DOCS; doc = doc + 1 >= length ? DocIdSetIterator.NO_MORE_DOCS : bs.nextSetBit(doc + 1)) {
+      set.set(doc);
     }
-    Collections.shuffle(buffer, random());
-    for (int i : buffer) {
-      set.set(i);
-    }
-    return new SparseFixedBitDocIdSet(set, set.approximateCardinality());
-  }
-
-  @Override
-  public void assertEquals(int numBits, BitSet ds1, SparseFixedBitDocIdSet ds2) throws IOException {
-    for (int i = 0; i < numBits; ++i) {
-      assertEquals(ds1.get(i), ds2.bits().get(i));
-    }
-    assertEquals(ds1.cardinality(), ds2.bits().cardinality());
-    super.assertEquals(numBits, ds1, ds2);
+    return set;
   }
 
   public void testApproximateCardinality() {
@@ -70,12 +45,11 @@ public class TestSparseFixedBitSet extends BaseDocIdSetTestCase<SparseFixedBitDo
   public void testApproximateCardinalityOnDenseSet() {
     // this tests that things work as expected in approximateCardinality when
     // all longs are different than 0, in which case we divide by zero
-    final int numDocs = 70;//TestUtil.nextInt(random(), 1, 10000);
+    final int numDocs = TestUtil.nextInt(random(), 1, 10000);
     final SparseFixedBitSet set = new SparseFixedBitSet(numDocs);
     for (int i = 0; i < set.length(); ++i) {
       set.set(i);
     }
     assertEquals(numDocs, set.approximateCardinality());
   }
-
 }

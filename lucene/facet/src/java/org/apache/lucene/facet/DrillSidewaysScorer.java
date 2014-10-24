@@ -330,7 +330,7 @@ class DrillSidewaysScorer extends BulkScorer {
       // Fold in baseScorer, using advance:
       int filledCount = 0;
       int slot0 = 0;
-      while (slot0 < CHUNK && (slot0 = seen.nextSetBit(slot0)) != -1) {
+      while (slot0 < CHUNK && (slot0 = seen.nextSetBit(slot0)) != DocIdSetIterator.NO_MORE_DOCS) {
         int ddDocID = docIDs[slot0];
         assert ddDocID != -1;
 

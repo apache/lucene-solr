@@ -24,7 +24,6 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.util.FixedBitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -70,8 +69,8 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
     DocIdSet innerDocuments = childFilter.getDocIdSet(context, null);
     if (isEmpty(innerDocuments)) {
       this.childDocuments = null;
-    } else if (innerDocuments instanceof FixedBitDocIdSet) {
-      this.childDocuments = ((FixedBitDocIdSet) innerDocuments).bits();
+    } else if (innerDocuments.bits() instanceof FixedBitSet) {
+      this.childDocuments = (FixedBitSet) innerDocuments.bits();
     } else {
       DocIdSetIterator iterator = innerDocuments.iterator();
       if (iterator != null) {
@@ -83,8 +82,8 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
     DocIdSet rootDocuments = parentFilter.getDocIdSet(context, null);
     if (isEmpty(rootDocuments)) {
       this.parentDocuments = null;
-    } else if (rootDocuments instanceof FixedBitDocIdSet) {
-      this.parentDocuments = ((FixedBitDocIdSet) rootDocuments).bits();
+    } else if (rootDocuments.bits() instanceof FixedBitSet) {
+      this.parentDocuments = (FixedBitSet) rootDocuments.bits();
     } else {
       DocIdSetIterator iterator = rootDocuments.iterator();
       if (iterator != null) {
@@ -144,7 +143,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
       // We need to copy the lowest value from all child docs into slot.
       int prevParentDoc = parentDocuments.prevSetBit(parentDoc - 1);
       int childDoc = childDocuments.nextSetBit(prevParentDoc + 1);
-      if (childDoc >= parentDoc || childDoc == -1) {
+      if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
         return 0;
       }
 
@@ -156,7 +155,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       while (true) {
         childDoc = childDocuments.nextSetBit(childDoc + 1);
-        if (childDoc >= parentDoc || childDoc == -1) {
+        if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
           return cmp;
         }
         int cmp1 = wrappedComparator.compareBottom(childDoc);
@@ -179,7 +178,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
       // We need to copy the lowest value from all child docs into slot.
       int prevParentDoc = parentDocuments.prevSetBit(parentDoc - 1);
       int childDoc = childDocuments.nextSetBit(prevParentDoc + 1);
-      if (childDoc >= parentDoc || childDoc == -1) {
+      if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
         return;
       }
       wrappedComparator.copy(spareSlot, childDoc);
@@ -187,7 +186,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       while (true) {
         childDoc = childDocuments.nextSetBit(childDoc + 1);
-        if (childDoc >= parentDoc || childDoc == -1) {
+        if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
           return;
         }
         wrappedComparator.copy(spareSlot, childDoc);
@@ -207,7 +206,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
       // We need to copy the lowest value from all nested docs into slot.
       int prevParentDoc = parentDocuments.prevSetBit(parentDoc - 1);
       int childDoc = childDocuments.nextSetBit(prevParentDoc + 1);
-      if (childDoc >= parentDoc || childDoc == -1) {
+      if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
         return 0;
       }
 
@@ -219,7 +218,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       while (true) {
         childDoc = childDocuments.nextSetBit(childDoc + 1);
-        if (childDoc >= parentDoc || childDoc == -1) {
+        if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
           return cmp;
         }
         int cmp1 = wrappedComparator.compareTop(childDoc);
@@ -262,7 +261,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       int prevParentDoc = parentDocuments.prevSetBit(parentDoc - 1);
       int childDoc = childDocuments.nextSetBit(prevParentDoc + 1);
-      if (childDoc >= parentDoc || childDoc == -1) {
+      if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
         return 0;
       }
 
@@ -273,7 +272,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       while (true) {
         childDoc = childDocuments.nextSetBit(childDoc + 1);
-        if (childDoc >= parentDoc || childDoc == -1) {
+        if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
           return cmp;
         }
         int cmp1 = wrappedComparator.compareBottom(childDoc);
@@ -295,7 +294,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       int prevParentDoc = parentDocuments.prevSetBit(parentDoc - 1);
       int childDoc = childDocuments.nextSetBit(prevParentDoc + 1);
-      if (childDoc >= parentDoc || childDoc == -1) {
+      if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
         return;
       }
       wrappedComparator.copy(spareSlot, childDoc);
@@ -303,7 +302,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       while (true) {
         childDoc = childDocuments.nextSetBit(childDoc + 1);
-        if (childDoc >= parentDoc || childDoc == -1) {
+        if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
           return;
         }
         wrappedComparator.copy(spareSlot, childDoc);
@@ -322,7 +321,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       int prevParentDoc = parentDocuments.prevSetBit(parentDoc - 1);
       int childDoc = childDocuments.nextSetBit(prevParentDoc + 1);
-      if (childDoc >= parentDoc || childDoc == -1) {
+      if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
         return 0;
       }
 
@@ -333,7 +332,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
 
       while (true) {
         childDoc = childDocuments.nextSetBit(childDoc + 1);
-        if (childDoc >= parentDoc || childDoc == -1) {
+        if (childDoc >= parentDoc || childDoc == DocIdSetIterator.NO_MORE_DOCS) {
           return cmp;
         }
         int cmp1 = wrappedComparator.compareTop(childDoc);

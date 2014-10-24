@@ -33,7 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitDocIdSet;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -145,11 +145,11 @@ public class ToChildBlockJoinQuery extends Query {
         // No matches
         return null;
       }
-      if (!(parents instanceof FixedBitDocIdSet)) {
-        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);
+      if (!(parents.bits() instanceof FixedBitSet)) {
+        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents.bits());
       }
 
-      return new ToChildBlockJoinScorer(this, parentScorer, ((FixedBitDocIdSet) parents).bits(), doScores, acceptDocs);
+      return new ToChildBlockJoinScorer(this, parentScorer, (FixedBitSet) parents.bits(), doScores, acceptDocs);
     }
 
     @Override

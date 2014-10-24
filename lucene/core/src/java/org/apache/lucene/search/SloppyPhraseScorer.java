@@ -511,7 +511,7 @@ final class SloppyPhraseScorer extends Scorer {
     Term[] t = tord.keySet().toArray(new Term[0]);
     for (int i=0; i<bb.size(); i++) { // i is the group no.
       FixedBitSet bits = bb.get(i);
-      for (int ord = bits.nextSetBit(0); ord != -1; ord = ord + 1 >= bits.length() ? -1 : bits.nextSetBit(ord + 1)) {
+      for (int ord = bits.nextSetBit(0); ord != DocIdSetIterator.NO_MORE_DOCS; ord = ord + 1 >= bits.length() ? DocIdSetIterator.NO_MORE_DOCS : bits.nextSetBit(ord + 1)) {
         tg.put(t[ord],i);
       }
     }

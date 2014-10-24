@@ -19,17 +19,16 @@ package org.apache.lucene.util;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.FixedBitSet.FixedBitSetIterator;
 
 /**
- * Implementation of the {@link DocIdSet} interface on top of a {@link FixedBitSet}.
+ * Implementation of the {@link DocIdSet} interface on top of a {@link BitSet}.
  * @lucene.internal
  */
-public class FixedBitDocIdSet extends DocIdSet {
+public class BitDocIdSet extends DocIdSet {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SparseFixedBitDocIdSet.class);
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BitDocIdSet.class);
 
-  private final FixedBitSet set;
+  private final BitSet set;
   private final long cost;
 
   /**
@@ -37,26 +36,26 @@ public class FixedBitDocIdSet extends DocIdSet {
    * {@link FixedBitSet} should not be modified after having wrapped as a
    * {@link DocIdSet}.
    */
-  public FixedBitDocIdSet(FixedBitSet set, long cost) {
+  public BitDocIdSet(BitSet set, long cost) {
     this.set = set;
     this.cost = cost;
   }
 
   /**
-   * Same as {@link #FixedBitDocIdSet(FixedBitSet, long)} but uses the set
-   * {@link FixedBitSet#cardinality() cardinality} as a cost.
+   * Same as {@link #BitDocIdSet(BitSet, long)} but uses the set's
+   * {@link BitSet#approximateCardinality() approximate cardinality} as a cost.
    */
-  public FixedBitDocIdSet(FixedBitSet set) {
-    this(set, set.cardinality());
+  public BitDocIdSet(BitSet set) {
+    this(set, set.approximateCardinality());
   }
 
   @Override
   public DocIdSetIterator iterator() {
-    return new FixedBitSetIterator(set, cost);
+    return new BitSetIterator(set, cost);
   }
 
   @Override
-  public FixedBitSet bits() {
+  public BitSet bits() {
     return set;
   }
 

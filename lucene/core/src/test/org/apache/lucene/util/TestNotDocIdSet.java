@@ -30,7 +30,7 @@ public class TestNotDocIdSet extends BaseDocIdSetTestCase<NotDocIdSet> {
     for (int doc = bs.nextClearBit(0); doc < length; doc = bs.nextClearBit(doc + 1)) {
       set.set(doc);
     }
-    return new NotDocIdSet(length, new FixedBitDocIdSet(set));
+    return new NotDocIdSet(length, new BitDocIdSet(set));
   }
 
   @Override
@@ -48,7 +48,7 @@ public class TestNotDocIdSet extends BaseDocIdSetTestCase<NotDocIdSet> {
 
   public void testBits() throws IOException {
     assertNull(new NotDocIdSet(3, DocIdSet.EMPTY).bits());
-    assertNotNull(new NotDocIdSet(3, new FixedBitDocIdSet(new FixedBitSet(3))).bits());
+    assertNotNull(new NotDocIdSet(3, new BitDocIdSet(new FixedBitSet(3))).bits());
   }
 
 }
