@@ -253,6 +253,7 @@ public class SolrConfig extends Config {
       jmxConfig = new JmxConfiguration(false, null, null, null);
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
+     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", 1000);
 
      loadPluginInfo(SolrRequestHandler.class,"requestHandler",
                     REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
@@ -412,6 +413,7 @@ public class SolrConfig extends Config {
   public final boolean useColdSearcher;
   public final Version luceneMatchVersion;
   protected String dataDir;
+  public final int slowQueryThresholdMillis;  // threshold above which a query is considered slow
   
   //JMX configuration
   public final JmxConfiguration jmxConfig;

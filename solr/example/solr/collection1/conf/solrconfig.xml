@@ -481,6 +481,21 @@
       -->
     <maxBooleanClauses>1024</maxBooleanClauses>
 
+ 
+    <!-- Slow Query Threshold (in millis)
+    
+         At high request rates, logging all requests can become a bottleneck 
+         and therefore INFO logging is often turned off. However, it is still
+         useful to be able to set a latency threshold above which a request
+         is considered "slow" and log that request at WARN level so we can
+         easily identify slow queries.
+
+         This setting only applies if the logger for the
+         org.apache.solr.core.SolrCore is set to WARN or greater.
+
+    --> 
+    <slowQueryThresholdMillis>1000</slowQueryThresholdMillis>
+
 
     <!-- Solr Internal Query Caches
 

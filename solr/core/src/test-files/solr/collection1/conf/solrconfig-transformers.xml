@@ -35,6 +35,7 @@
   </processor>
   <processor class="solr.LogUpdateProcessorFactory" >
    <int name="maxNumToLog">100</int>
+   <int name="slowUpdateThresholdMillis">2000</int>
   </processor>
   <processor class="solr.CustomUpdateRequestProcessorFactory" >
    <lst name="name">

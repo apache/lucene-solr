@@ -238,6 +238,14 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertNotNull("bean not registered", bean);
   }
 
+  @Test
+  public void testConfiguration() throws Exception {
+    assertEquals("wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
+    assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
+    assertEquals("wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
+    assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
+  }
+
 }
 
 

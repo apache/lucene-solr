@@ -666,6 +666,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.solrConfig = null;
     this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = 2;  // we don't have a config yet, just pick a number.
+    this.slowQueryThresholdMillis = 1000;
     this.resourceLoader = null;
     this.updateHandler = null;
     this.isReloaded = true;
@@ -766,6 +767,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.dataDir = dataDir;
     this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = config.maxWarmingSearchers;
+    this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
 
     booleanQueryMaxClauseCount();
   
@@ -1357,6 +1359,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private Object searcherLock = new Object();  // the sync object for the searcher
   private ReentrantLock openSearcherLock = new ReentrantLock(true);     // used to serialize opens/reopens for absolute ordering
   private final int maxWarmingSearchers;  // max number of on-deck searchers allowed
+  private final int slowQueryThresholdMillis;  // threshold above which a query is considered slow
 
   private RefCounted<SolrIndexSearcher> realtimeSearcher;
   private Callable<DirectoryReader> newReaderCreator;
@@ -1983,8 +1986,15 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     handler.handleRequest(req,rsp);
     postDecorateResponse(handler, req, rsp);
 
-    if (log.isInfoEnabled() && rsp.getToLog().size() > 0) {
-      log.info(rsp.getToLogAsString(logid));
+    if (rsp.getToLog().size() > 0) {
+      if (log.isInfoEnabled()) {
+        log.info(rsp.getToLogAsString(logid));
+      } else if (log.isWarnEnabled()) {
+        final int qtime = (int)(rsp.getEndTime() - req.getStartTime());
+        if (qtime >= slowQueryThresholdMillis) {
+          log.warn(rsp.getToLogAsString(logid));
+        }
+      }
     }
   }
 
