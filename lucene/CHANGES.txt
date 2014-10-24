@@ -70,9 +70,6 @@ New Features
   exiting requests that take too long to enumerate over terms. (Anshum Gupta, Steve Rowe,
   Robert Muir)
 
-* LUCENE-5911: Add MemoryIndex.freeze() to allow thread-safe searching over a 
-  MemoryIndex. (Alan Woodward, David Smiley, Robert Muir)
-
 * LUCENE-5969: Lucene 5.0 has a new index format with mismatched file detection,
   improved exception handling, and indirect norms encoding for sparse fields.
   (Mike McCandless, Ryan Ernst, Robert Muir)
@@ -273,6 +270,13 @@ Other
   (Adrien Grand, Robert Muir)
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
+
+======================= Lucene 4.10.2 ======================
+
+New features
+
+* LUCENE-5911: Add MemoryIndex.freeze() to allow thread-safe searching over a 
+  MemoryIndex. (Alan Woodward, David Smiley, Robert Muir)
 
 ======================= Lucene 4.10.1 ======================
 
