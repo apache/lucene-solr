@@ -187,6 +187,9 @@ New Features
 * SOLR-6633: /update/json/docs path can now save the underlying json doc asa string field
   and better support added to the default example (Noble Paul)
 
+* SOLR-6650: Add optional slow request logging at WARN level
+  (Jessica Cheng Mallet via Timothy Potter)
+
 Bug Fixes
 ----------------------
 

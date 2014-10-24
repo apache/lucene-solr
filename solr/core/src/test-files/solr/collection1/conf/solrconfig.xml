@@ -183,6 +183,8 @@
     </listener>
     -->
 
+    <slowQueryThresholdMillis>2000</slowQueryThresholdMillis>
+
   </query>
   
   <queryResponseWriter name="xml" default="true"

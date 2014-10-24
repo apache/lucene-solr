@@ -49,11 +49,13 @@ import org.slf4j.LoggerFactory;
 public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory implements UpdateRequestProcessorFactory.RunAlways {
   
   int maxNumToLog = 10;
+  int slowUpdateThresholdMillis = 1000;
   @Override
   public void init( final NamedList args ) {
     if( args != null ) {
       SolrParams params = SolrParams.toSolrParams( args );
       maxNumToLog = params.getInt( "maxNumToLog", maxNumToLog );
+      slowUpdateThresholdMillis = params.getInt("slowUpdateThresholdMillis", slowUpdateThresholdMillis);
     }
   }
 
@@ -78,6 +80,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
   private List<String> deletes;
 
   private final int maxNumToLog;
+  private final int slowUpdateThresholdMillis;
 
   private final boolean logDebug = log.isDebugEnabled();//cache to avoid volatile-read
 
@@ -88,6 +91,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     maxNumToLog = factory.maxNumToLog;  // TODO: make configurable
     // TODO: make log level configurable as well, or is that overkill?
     // (ryan) maybe?  I added it mostly to show that it *can* be configurable
+    slowUpdateThresholdMillis = factory.slowUpdateThresholdMillis;
 
     this.toLog = new SimpleOrderedMap<>();
   }
@@ -181,22 +185,31 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
 
     if (log.isInfoEnabled()) {
-      StringBuilder sb = new StringBuilder(rsp.getToLogAsString(req.getCore().getLogId()));
-
-      rsp.getToLog().clear();   // make it so SolrCore.exec won't log this again
-
-      // if id lists were truncated, show how many more there were
-      if (adds != null && numAdds > maxNumToLog) {
-        adds.add("... (" + numAdds + " adds)");
-      }
-      if (deletes != null && numDeletes > maxNumToLog) {
-        deletes.add("... (" + numDeletes + " deletes)");
-      }
+      log.info(getLogStringAndClearRspToLog());
+    } else if (log.isWarnEnabled()) {
       long elapsed = rsp.getEndTime() - req.getStartTime();
-
-      sb.append(toLog).append(" 0 ").append(elapsed);
-      log.info(sb.toString());
+      if (elapsed >= slowUpdateThresholdMillis) {
+        log.warn(getLogStringAndClearRspToLog());
+      }
     }
+  }
+
+  private String getLogStringAndClearRspToLog() {
+    StringBuilder sb = new StringBuilder(rsp.getToLogAsString(req.getCore().getLogId()));
+
+    rsp.getToLog().clear();   // make it so SolrCore.exec won't log this again
+
+    // if id lists were truncated, show how many more there were
+    if (adds != null && numAdds > maxNumToLog) {
+      adds.add("... (" + numAdds + " adds)");
+    }
+    if (deletes != null && numDeletes > maxNumToLog) {
+      deletes.add("... (" + numDeletes + " deletes)");
+    }
+    long elapsed = rsp.getEndTime() - req.getStartTime();
+
+    sb.append(toLog).append(" 0 ").append(elapsed);
+    return sb.toString();
   }
 }
 
