@@ -230,8 +230,15 @@ public final class Version {
 
   /**
    * Match settings and bugs in Lucene's 4.10.1 release.
+   * @deprecated Use latest
    */
+  @Deprecated
   public static final Version LUCENE_4_10_1 = new Version(4, 10, 1);
+
+  /**
+   * Match settings and bugs in Lucene's 4.10.2 release.
+   */
+  public static final Version LUCENE_4_10_2 = new Version(4, 10, 2);
 
   /* Add new constants for later versions **here** to respect order! */
 
@@ -254,7 +261,7 @@ public final class Version {
    * some defaults may have changed and may break functionality 
    * in your application.
    */
-  public static final Version LATEST = LUCENE_4_10_1;
+  public static final Version LATEST = LUCENE_4_10_2;
 
   /**
    * Constant for backwards compatibility.
