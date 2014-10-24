@@ -37,6 +37,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
@@ -48,6 +49,7 @@ import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.DELTA_COMP
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.TABLE_COMPRESSED;
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.INDIRECT;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED;
 
 /**
  * Reader for {@link Lucene50NormsFormat}
@@ -63,6 +65,7 @@ class Lucene50NormsProducer extends NormsProducer {
   
   private final AtomicLong ramBytesUsed;
   private final AtomicInteger activeCount = new AtomicInteger();
+  private final int maxDoc;
   
   private final boolean merging;
   
@@ -75,11 +78,13 @@ class Lucene50NormsProducer extends NormsProducer {
     instancesInfo.putAll(original.instancesInfo);
     ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
     activeCount.set(original.activeCount.get());
+    maxDoc = original.maxDoc;
     merging = true;
   }
     
   Lucene50NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     merging = false;
+    maxDoc = state.segmentInfo.getDocCount();
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     int version = -1;
@@ -88,7 +93,7 @@ class Lucene50NormsProducer extends NormsProducer {
     try (ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context)) {
       Throwable priorE = null;
       try {
-        version = CodecUtil.checkSegmentHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        version = CodecUtil.checkIndexHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         readFields(in, state.fieldInfos);
       } catch (Throwable exception) {
         priorE = exception;
@@ -101,7 +106,7 @@ class Lucene50NormsProducer extends NormsProducer {
     this.data = state.directory.openInput(dataName, state.context);
     boolean success = false;
     try {
-      final int version2 = CodecUtil.checkSegmentHeader(data, dataCodec, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      final int version2 = CodecUtil.checkIndexHeader(data, dataCodec, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch: meta=" + version + ",data=" + version2, data);
       }
@@ -146,6 +151,7 @@ class Lucene50NormsProducer extends NormsProducer {
       case TABLE_COMPRESSED:
       case DELTA_COMPRESSED:
         break;
+      case PATCHED:
       case INDIRECT:
         if (meta.readVInt() != info.number) {
           throw new CorruptIndexException("indirect norms entry for field: " + info.name + " is corrupt", meta);
@@ -254,6 +260,7 @@ class Lucene50NormsProducer extends NormsProducer {
       }
       case INDIRECT: {
         data.seek(entry.offset);
+        final long common = data.readLong();
         int packedIntsVersion = data.readVInt();
         int blockSize = data.readVInt();
         final MonotonicBlockPackedReader live = MonotonicBlockPackedReader.of(data, packedIntsVersion, blockSize, entry.count, false);
@@ -279,7 +286,34 @@ class Lucene50NormsProducer extends NormsProducer {
                 return values.get(mid);
               }
             }
-            return 0;
+            return common;
+          }
+        };
+        break;
+      }
+      case PATCHED: {
+        data.seek(entry.offset);
+        final long common = data.readLong();
+        int packedIntsVersion = data.readVInt();
+        int blockSize = data.readVInt();
+        MonotonicBlockPackedReader live = MonotonicBlockPackedReader.of(data, packedIntsVersion, blockSize, entry.count, true);
+        final SparseFixedBitSet set = new SparseFixedBitSet(maxDoc);
+        for (int i = 0; i < live.size(); i++) {
+          int doc = (int) live.get(i);
+          set.set(doc);
+        }
+        LoadedNorms nestedInstance = loadNorms(entry.nested);
+        instance.ramBytesUsed = set.ramBytesUsed() + nestedInstance.ramBytesUsed;
+        instance.info = Accountables.namedAccountable("patched -> " + nestedInstance.info, instance.ramBytesUsed);
+        final NumericDocValues values = nestedInstance.norms;
+        instance.norms = new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            if (set.get(docID)) {
+              return values.get(docID);
+            } else {
+              return common;
+            }
           }
         };
         break;

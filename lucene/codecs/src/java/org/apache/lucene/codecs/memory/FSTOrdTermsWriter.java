@@ -75,7 +75,7 @@ import org.apache.lucene.util.fst.Util;
  * <ul>
  *  <li>TermIndex(.tix) --&gt; Header, TermFST<sup>NumFields</sup>, Footer</li>
  *  <li>TermFST --&gt; {@link FST FST&lt;long&gt;}</li>
- *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *  <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  *
@@ -113,7 +113,7 @@ import org.apache.lucene.util.fst.Util;
  *  <li>StatsBlock --&gt; &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) ? &gt; <sup>NumTerms</sup>
  *  <li>MetaLongsBlock --&gt; &lt; LongDelta<sup>LongsSize</sup>, BytesSize &gt; <sup>NumTerms</sup>
  *  <li>MetaBytesBlock --&gt; Byte <sup>MetaBytesBlockLength</sup>
- *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader CodecHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *  <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *  <li>NumFields, FieldNumber, DocCount, DocFreq, LongsSize, 
  *        FieldNumber, DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
@@ -174,11 +174,11 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
     try {
       this.indexOut = state.directory.createOutput(termsIndexFileName, state.context);
       this.blockOut = state.directory.createOutput(termsBlockFileName, state.context);
-      CodecUtil.writeSegmentHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT, 
+      CodecUtil.writeIndexHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT, 
                                              state.segmentInfo.getId(), state.segmentSuffix);
-      CodecUtil.writeSegmentHeader(blockOut, TERMS_CODEC_NAME, VERSION_CURRENT, 
+      CodecUtil.writeIndexHeader(blockOut, TERMS_CODEC_NAME, VERSION_CURRENT, 
                                              state.segmentInfo.getId(), state.segmentSuffix);
-      this.postingsWriter.init(blockOut); 
+      this.postingsWriter.init(blockOut, state); 
       success = true;
     } finally {
       if (!success) {

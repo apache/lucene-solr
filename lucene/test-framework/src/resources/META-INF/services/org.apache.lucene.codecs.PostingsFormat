@@ -15,8 +15,8 @@
 
 org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat
 org.apache.lucene.codecs.ramonly.RAMOnlyPostingsFormat
-org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds
-org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval
-org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapDocFreqInterval
+org.apache.lucene.codecs.blockterms.LuceneFixedGap
+org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval
+org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval
 org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings
 org.apache.lucene.codecs.asserting.AssertingPostingsFormat

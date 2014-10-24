@@ -44,7 +44,7 @@ public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
   }
   
   @Override
-  public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
+  public SegmentInfo read(Directory dir, String segment, byte segmentID[], IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene46SegmentInfoFormat.SI_EXTENSION);
     try (ChecksumIndexInput input = dir.openChecksumInput(fileName, context)) {
       int codecVersion = CodecUtil.checkHeader(input, Lucene46SegmentInfoFormat.CODEC_NAME,

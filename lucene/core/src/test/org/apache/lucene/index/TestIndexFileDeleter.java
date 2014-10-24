@@ -85,8 +85,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     writer.close();
     
     // read in index to try to not depend on codec-specific filenames so much
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     SegmentInfo si0 = sis.info(0).info;
     SegmentInfo si1 = sis.info(1).info;
     SegmentInfo si3 = sis.info(3).info;
@@ -123,10 +122,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     // Create a bogus fnm file when the CFS already exists:
     copyFile(dir, cfsFiles0[0], "_0.fnm");
-    
-    // Create some old segments file:
-    copyFile(dir, "segments_2", "segments");
-    copyFile(dir, "segments_2", "segments_1");
 
     // Create a bogus cfs file shadowing a non-cfs segment:
     
@@ -143,8 +138,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     
     String[] filesPre = dir.listAll();
 
-    // Open & close a writer: it should delete the above 4
-    // files and nothing more:
+    // Open & close a writer: it should delete the above files and nothing more:
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                     .setOpenMode(OpenMode.APPEND));
     writer.close();
@@ -265,8 +259,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();   
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.getGeneration());
     
     // no inflation
@@ -283,8 +276,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();   
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.getGeneration());
     
     // add trash commit
@@ -308,8 +300,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();   
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(0, sis.counter);
     
     // no inflation
@@ -333,8 +324,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     iw.addDocument(new Document());
     iw.commit();
     iw.close();
-    sis = new SegmentInfos();
-    sis.read(dir);
+    sis = SegmentInfos.readLatestCommit(dir);
     assertEquals("_4", sis.info(0).info.name);
     assertEquals(5, sis.counter);
     
@@ -351,8 +341,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     iw.close();   
     
     // no deletes: start at 1
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.info(0).getNextDelGen());
     
     // no inflation
@@ -376,8 +365,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();   
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.getGeneration());
     
     // add trash file
@@ -400,8 +388,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     iw.close();   
     
     // no deletes: start at 1
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.info(0).getNextDelGen());
     
     // add trash file

@@ -47,11 +47,10 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   /** called from DirectoryReader.open(...) methods */
   static DirectoryReader open(final Directory directory, final IndexCommit commit) throws IOException {
-    return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
+    return new SegmentInfos.FindSegmentsFile<DirectoryReader>(directory) {
       @Override
-      protected Object doBody(String segmentFileName) throws IOException {
-        SegmentInfos sis = new SegmentInfos();
-        sis.read(directory, segmentFileName);
+      protected DirectoryReader doBody(String segmentFileName) throws IOException {
+        SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
         for (int i = sis.size()-1; i >= 0; i--) {
           boolean success = false;
@@ -309,11 +308,10 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   private DirectoryReader doOpenFromCommit(IndexCommit commit) throws IOException {
-    return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
+    return new SegmentInfos.FindSegmentsFile<DirectoryReader>(directory) {
       @Override
-      protected Object doBody(String segmentFileName) throws IOException {
-        final SegmentInfos infos = new SegmentInfos();
-        infos.read(directory, segmentFileName);
+      protected DirectoryReader doBody(String segmentFileName) throws IOException {
+        final SegmentInfos infos = SegmentInfos.readCommit(directory, segmentFileName);
         return doOpenIfChanged(infos);
       }
     }.run(commit);
@@ -338,8 +336,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       // IndexWriter.prepareCommit has been called (but not
       // yet commit), then the reader will still see itself as
       // current:
-      SegmentInfos sis = new SegmentInfos();
-      sis.read(directory);
+      SegmentInfos sis = SegmentInfos.readLatestCommit(directory);
 
       // we loaded SegmentInfos from the directory
       return sis.getVersion() == segmentInfos.getVersion();

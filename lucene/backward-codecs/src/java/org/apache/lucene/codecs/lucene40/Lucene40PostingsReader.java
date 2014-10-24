@@ -31,6 +31,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
@@ -104,7 +105,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void init(IndexInput termsIn) throws IOException {
+  public void init(IndexInput termsIn, SegmentReadState state) throws IOException {
 
     // Make sure we are talking to the matching past writer
     CodecUtil.checkHeader(termsIn, TERMS_CODEC, VERSION_START, VERSION_CURRENT);

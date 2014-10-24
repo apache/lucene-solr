@@ -151,6 +151,11 @@ public class FilterLeafReader extends LeafReader {
     public boolean hasPayloads() {
       return in.hasPayloads();
     }
+
+    @Override
+    public Object getStats() throws IOException {
+      return in.getStats();
+    }
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */

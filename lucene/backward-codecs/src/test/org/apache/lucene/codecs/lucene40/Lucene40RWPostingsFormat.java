@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.blocktree.Lucene40BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
@@ -46,7 +46,7 @@ public final class Lucene40RWPostingsFormat extends Lucene40PostingsFormat {
     // Or... you must make a new Codec for this?
     boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
+      FieldsConsumer ret = new Lucene40BlockTreeTermsWriter(state, docs, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
       success = true;
       return ret;
     } finally {

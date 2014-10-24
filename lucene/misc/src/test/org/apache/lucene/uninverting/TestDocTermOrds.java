@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
@@ -129,7 +128,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     // Sometimes swap in codec that impls ord():
     if (random().nextInt(10) == 7) {
       // Make sure terms index has ords:
-      Codec codec = TestUtil.alwaysPostingsFormat(PostingsFormat.forName("Lucene41WithOrds"));
+      Codec codec = TestUtil.alwaysPostingsFormat(TestUtil.getPostingsFormatWithOrds(random()));
       conf.setCodec(codec);
     }
     
@@ -226,7 +225,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     // Sometimes swap in codec that impls ord():
     if (random().nextInt(10) == 7) {
-      Codec codec = TestUtil.alwaysPostingsFormat(PostingsFormat.forName("Lucene41WithOrds"));
+      Codec codec = TestUtil.alwaysPostingsFormat(TestUtil.getPostingsFormatWithOrds(random()));
       conf.setCodec(codec);
     }
     

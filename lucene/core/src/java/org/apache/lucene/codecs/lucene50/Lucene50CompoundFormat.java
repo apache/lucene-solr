@@ -46,7 +46,7 @@ import org.apache.lucene.store.IndexOutput;
  *   <li>Compound (.cfs) --&gt; Header, FileData <sup>FileCount</sup>, Footer</li>
  *   <li>Compound Entry Table (.cfe) --&gt; Header, FileCount, &lt;FileName,
  *       DataOffset, DataLength&gt; <sup>FileCount</sup></li>
- *   <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *   <li>FileCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>DataOffset,DataLength,Checksum --&gt; {@link DataOutput#writeLong UInt64}</li>
  *   <li>FileName --&gt; {@link DataOutput#writeString String}</li>
@@ -79,8 +79,8 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
     
     try (IndexOutput data =    dir.createOutput(dataFile, context);
          IndexOutput entries = dir.createOutput(entriesFile, context)) {
-      CodecUtil.writeSegmentHeader(data,    DATA_CODEC, VERSION_CURRENT, si.getId(), "");
-      CodecUtil.writeSegmentHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
+      CodecUtil.writeIndexHeader(data,    DATA_CODEC, VERSION_CURRENT, si.getId(), "");
+      CodecUtil.writeIndexHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
       
       // write number of files
       entries.writeVInt(files.size());

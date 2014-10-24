@@ -48,8 +48,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
         writer.addDocument(doc);
       writer.close();
 
-      SegmentInfos sis = new SegmentInfos();
-      sis.read(dir);
+      SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
       final int segCount = sis.size();
 
       ldmp = new LogDocMergePolicy();
@@ -59,8 +58,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       writer.forceMerge(3);
       writer.close();
 
-      sis = new SegmentInfos();
-      sis.read(dir);
+      sis = SegmentInfos.readLatestCommit(dir);
       final int optSegCount = sis.size();
 
       if (segCount < 3)
@@ -93,16 +91,14 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       writer.waitForMerges();
       writer.commit();
 
-      SegmentInfos sis = new SegmentInfos();
-      sis.read(dir);
+      SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
 
       final int segCount = sis.size();
       writer.forceMerge(7);
       writer.commit();
       writer.waitForMerges();
 
-      sis = new SegmentInfos();
-      sis.read(dir);
+      sis = SegmentInfos.readLatestCommit(dir);
       final int optSegCount = sis.size();
 
       if (segCount < 7)
@@ -226,8 +222,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
         assertTrue(reader.leaves().size() > 1);
         reader.close();
 
-        SegmentInfos infos = new SegmentInfos();
-        infos.read(dir);
+        SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
         assertEquals(2, infos.size());
       }
     }

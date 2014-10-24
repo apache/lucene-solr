@@ -45,7 +45,7 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
   }
   
   @Override
-  public final SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
+  public final SegmentInfo read(Directory dir, String segment, byte segmentID[], IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
     final IndexInput input = dir.openInput(fileName, context);
     boolean success = false;

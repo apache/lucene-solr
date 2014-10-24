@@ -54,7 +54,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
     try {
       
-      CodecUtil.checkSegmentHeader(in, VariableGapTermsIndexWriter.CODEC_NAME,
+      CodecUtil.checkIndexHeader(in, VariableGapTermsIndexWriter.CODEC_NAME,
                                        VariableGapTermsIndexWriter.VERSION_START,
                                        VariableGapTermsIndexWriter.VERSION_CURRENT,
                                        state.segmentInfo.getId(), state.segmentSuffix);

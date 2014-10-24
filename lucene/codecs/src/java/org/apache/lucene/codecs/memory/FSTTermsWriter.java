@@ -90,7 +90,7 @@ import org.apache.lucene.util.fst.Util;
  *  <li>TermFST --&gt; {@link FST FST&lt;TermData&gt;}</li>
  *  <li>TermData --&gt; Flag, BytesSize?, LongDelta<sup>LongsSize</sup>?, Byte<sup>BytesSize</sup>?, 
  *                      &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) &gt; ? </li>
- *  <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ *  <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *  <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *  <li>DocFreq, LongsSize, BytesSize, NumFields,
  *        FieldNumber, DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
@@ -142,10 +142,10 @@ public class FSTTermsWriter extends FieldsConsumer {
 
     boolean success = false;
     try {
-      CodecUtil.writeSegmentHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT,
+      CodecUtil.writeIndexHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT,
                                         state.segmentInfo.getId(), state.segmentSuffix);   
 
-      this.postingsWriter.init(out); 
+      this.postingsWriter.init(out, state); 
       success = true;
     } finally {
       if (!success) {

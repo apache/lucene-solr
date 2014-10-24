@@ -288,7 +288,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       out = state.directory.createOutput(fileName, state.context);
       boolean success = false;
       try {
-        CodecUtil.writeSegmentHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        CodecUtil.writeIndexHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         success = true;
       } finally {
         if (!success) {
@@ -981,7 +981,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     try (ChecksumIndexInput in = state.directory.openChecksumInput(fileName, IOContext.READONCE)) {
       Throwable priorE = null;
       try {
-        CodecUtil.checkSegmentHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        CodecUtil.checkIndexHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         while(true) {
           final int termCount = in.readVInt();
           if (termCount == 0) {

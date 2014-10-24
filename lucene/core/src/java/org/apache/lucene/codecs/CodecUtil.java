@@ -94,46 +94,48 @@ public final class CodecUtil {
   }
   
   /**
-   * Writes a codec header for a per-segment, which records both a string to
-   * identify the file, a version number, and the unique ID of the segment. 
-   * This header can be parsed and validated with 
-   * {@link #checkSegmentHeader(DataInput, String, int, int, byte[], String) checkSegmentHeader()}.
+   * Writes a codec header for an index file, which records both a string to
+   * identify the format of the file, a version number, and data to identify
+   * the file instance (ID and auxiliary suffix such as generation).
    * <p>
-   * CodecSegmentHeader --&gt; CodecHeader,SegmentID,SegmentSuffix
+   * This header can be parsed and validated with 
+   * {@link #checkIndexHeader(DataInput, String, int, int, byte[], String) checkIndexHeader()}.
+   * <p>
+   * IndexHeader --&gt; CodecHeader,ObjectID,ObjectSuffix
    * <ul>
    *    <li>CodecHeader   --&gt; {@link #writeHeader}
-   *    <li>SegmentID     --&gt; {@link DataOutput#writeByte byte}<sup>16</sup>
-   *    <li>SegmentSuffix --&gt; SuffixLength,SuffixBytes
+   *    <li>ObjectID     --&gt; {@link DataOutput#writeByte byte}<sup>16</sup>
+   *    <li>ObjectSuffix --&gt; SuffixLength,SuffixBytes
    *    <li>SuffixLength  --&gt; {@link DataOutput#writeByte byte}
    *    <li>SuffixBytes   --&gt; {@link DataOutput#writeByte byte}<sup>SuffixLength</sup>
    * </ul>
    * <p>
-   * Note that the length of a segment header depends only upon the
+   * Note that the length of an index header depends only upon the
    * name of the codec and suffix, so this length can be computed at any time
-   * with {@link #segmentHeaderLength(String,String)}.
+   * with {@link #indexHeaderLength(String,String)}.
    * 
    * @param out Output stream
-   * @param codec String to identify this file. It should be simple ASCII, 
+   * @param codec String to identify the format of this file. It should be simple ASCII, 
    *              less than 128 characters in length.
-   * @param segmentID Unique identifier for the segment
-   * @param segmentSuffix auxiliary suffix for the file. It should be simple ASCII,
+   * @param id Unique identifier for this particular file instance.
+   * @param suffix auxiliary suffix information for the file. It should be simple ASCII,
    *              less than 256 characters in length.
    * @param version Version number
    * @throws IOException If there is an I/O error writing to the underlying medium.
    * @throws IllegalArgumentException If the codec name is not simple ASCII, or 
-   *         is more than 127 characters in length, or if segmentID is invalid,
-   *         or if the segmentSuffix is not simple ASCII, or more than 255 characters
+   *         is more than 127 characters in length, or if id is invalid,
+   *         or if the suffix is not simple ASCII, or more than 255 characters
    *         in length.
    */
-  public static void writeSegmentHeader(DataOutput out, String codec, int version, byte[] segmentID, String segmentSuffix) throws IOException {
-    if (segmentID.length != StringHelper.ID_LENGTH) {
-      throw new IllegalArgumentException("Invalid id: " + StringHelper.idToString(segmentID));
+  public static void writeIndexHeader(DataOutput out, String codec, int version, byte[] id, String suffix) throws IOException {
+    if (id.length != StringHelper.ID_LENGTH) {
+      throw new IllegalArgumentException("Invalid id: " + StringHelper.idToString(id));
     }
     writeHeader(out, codec, version);
-    out.writeBytes(segmentID, 0, segmentID.length);
-    BytesRef suffixBytes = new BytesRef(segmentSuffix);
-    if (suffixBytes.length != segmentSuffix.length() || suffixBytes.length >= 256) {
-      throw new IllegalArgumentException("codec must be simple ASCII, less than 256 characters in length [got " + segmentSuffix + "]");
+    out.writeBytes(id, 0, id.length);
+    BytesRef suffixBytes = new BytesRef(suffix);
+    if (suffixBytes.length != suffix.length() || suffixBytes.length >= 256) {
+      throw new IllegalArgumentException("codec must be simple ASCII, less than 256 characters in length [got " + suffix + "]");
     }
     out.writeByte((byte)suffixBytes.length);
     out.writeBytes(suffixBytes.bytes, suffixBytes.offset, suffixBytes.length);
@@ -151,14 +153,14 @@ public final class CodecUtil {
   }
   
   /**
-   * Computes the length of a segment header.
+   * Computes the length of an index header.
    * 
    * @param codec Codec name.
-   * @return length of the entire segment header.
-   * @see #writeSegmentHeader(DataOutput, String, int, byte[], String)
+   * @return length of the entire index header.
+   * @see #writeIndexHeader(DataOutput, String, int, byte[], String)
    */
-  public static int segmentHeaderLength(String codec, String segmentSuffix) {
-    return headerLength(codec) + StringHelper.ID_LENGTH + 1 + segmentSuffix.length();
+  public static int indexHeaderLength(String codec, String suffix) {
+    return headerLength(codec) + StringHelper.ID_LENGTH + 1 + suffix.length();
   }
 
   /**
@@ -220,11 +222,11 @@ public final class CodecUtil {
   
   /**
    * Reads and validates a header previously written with 
-   * {@link #writeSegmentHeader(DataOutput, String, int, byte[], String)}.
+   * {@link #writeIndexHeader(DataOutput, String, int, byte[], String)}.
    * <p>
    * When reading a file, supply the expected <code>codec</code>,
    * expected version range (<code>minVersion to maxVersion</code>),
-   * and segment ID.
+   * and object ID and suffix.
    * 
    * @param in Input stream, positioned at the point where the
    *        header was previously written. Typically this is located
@@ -232,41 +234,53 @@ public final class CodecUtil {
    * @param codec The expected codec name.
    * @param minVersion The minimum supported expected version number.
    * @param maxVersion The maximum supported expected version number.
-   * @param segmentID The expected segment this file belongs to.
-   * @param segmentSuffix The expected auxiliary segment suffix for this file.
+   * @param expectedID The expected object identifier for this file.
+   * @param expectedSuffix The expected auxiliary suffix for this file.
    * @return The actual version found, when a valid header is found 
    *         that matches <code>codec</code>, with an actual version 
    *         where <code>minVersion <= actual <= maxVersion</code>, 
-   *         and matching <code>segmentID</code>
+   *         and matching <code>expectedID</code> and <code>expectedSuffix</code>
    *         Otherwise an exception is thrown.
    * @throws CorruptIndexException If the first four bytes are not
    *         {@link #CODEC_MAGIC}, or if the actual codec found is
-   *         not <code>codec</code>, or if the <code>segmentID</code>
-   *         or <code>segmentSuffix</code> do not match.
+   *         not <code>codec</code>, or if the <code>expectedID</code>
+   *         or <code>expectedSuffix</code> do not match.
    * @throws IndexFormatTooOldException If the actual version is less 
    *         than <code>minVersion</code>.
    * @throws IndexFormatTooNewException If the actual version is greater 
    *         than <code>maxVersion</code>.
    * @throws IOException If there is an I/O error reading from the underlying medium.
-   * @see #writeSegmentHeader(DataOutput, String, int, byte[],String)
+   * @see #writeIndexHeader(DataOutput, String, int, byte[],String)
    */
-  public static int checkSegmentHeader(DataInput in, String codec, int minVersion, int maxVersion, byte[] segmentID, String segmentSuffix) throws IOException {
+  public static int checkIndexHeader(DataInput in, String codec, int minVersion, int maxVersion, byte[] expectedID, String expectedSuffix) throws IOException {
     int version = checkHeader(in, codec, minVersion, maxVersion);
+    checkIndexHeaderID(in, expectedID);
+    checkIndexHeaderSuffix(in, expectedSuffix);
+    return version;
+  }
+  
+  /** Expert: just reads and verifies the object ID of an index header */
+  public static byte[] checkIndexHeaderID(DataInput in, byte[] expectedID) throws IOException {
     byte id[] = new byte[StringHelper.ID_LENGTH];
     in.readBytes(id, 0, id.length);
-    if (!Arrays.equals(id, segmentID)) {
-      throw new CorruptIndexException("file mismatch, expected segment id=" + StringHelper.idToString(segmentID) 
-                                                                 + ", got=" + StringHelper.idToString(id), in);
+    if (!Arrays.equals(id, expectedID)) {
+      throw new CorruptIndexException("file mismatch, expected id=" + StringHelper.idToString(expectedID) 
+                                                         + ", got=" + StringHelper.idToString(id), in);
     }
+    return id;
+  }
+  
+  /** Expert: just reads and verifies the suffix of an index header */
+  public static String checkIndexHeaderSuffix(DataInput in, String expectedSuffix) throws IOException {
     int suffixLength = in.readByte() & 0xFF;
     byte suffixBytes[] = new byte[suffixLength];
     in.readBytes(suffixBytes, 0, suffixBytes.length);
     String suffix = new String(suffixBytes, 0, suffixBytes.length, StandardCharsets.UTF_8);
-    if (!suffix.equals(segmentSuffix)) {
-      throw new CorruptIndexException("file mismatch, expected segment suffix=" + segmentSuffix
-                                                                     + ", got=" + suffix, in);
+    if (!suffix.equals(expectedSuffix)) {
+      throw new CorruptIndexException("file mismatch, expected suffix=" + expectedSuffix
+                                                             + ", got=" + suffix, in);
     }
-    return version;
+    return suffix;
   }
   
   /**

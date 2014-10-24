@@ -118,8 +118,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       Throwable priorE = null;
       try {
         final String codecNameIdx = formatName + CODEC_SFX_IDX;
-        version = CodecUtil.checkSegmentHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
-        assert CodecUtil.segmentHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
+        version = CodecUtil.checkIndexHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+        assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
         indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
         maxPointer = indexStream.readVLong();
       } catch (Throwable exception) {
@@ -141,11 +141,11 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         throw new CorruptIndexException("Invalid fieldsStream maxPointer (file truncated?): maxPointer=" + maxPointer + ", length=" + fieldsStream.length(), fieldsStream);
       }
       final String codecNameDat = formatName + CODEC_SFX_DAT;
-      final int fieldsVersion = CodecUtil.checkSegmentHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+      final int fieldsVersion = CodecUtil.checkIndexHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
       if (version != fieldsVersion) {
         throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + fieldsVersion, fieldsStream);
       }
-      assert CodecUtil.segmentHeaderLength(codecNameDat, segmentSuffix) == fieldsStream.getFilePointer();
+      assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == fieldsStream.getFilePointer();
 
       chunkSize = fieldsStream.readVInt();
       packedIntsVersion = fieldsStream.readVInt();

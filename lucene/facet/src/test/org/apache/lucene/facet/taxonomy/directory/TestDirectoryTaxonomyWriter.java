@@ -324,8 +324,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
   }
 
   private long getEpoch(Directory taxoDir) throws IOException {
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(taxoDir);
+    SegmentInfos infos = SegmentInfos.readLatestCommit(taxoDir);
     return Long.parseLong(infos.getUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH));
   }
   

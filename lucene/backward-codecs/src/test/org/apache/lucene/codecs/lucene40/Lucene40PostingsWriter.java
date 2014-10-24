@@ -129,7 +129,7 @@ final class Lucene40PostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public void init(IndexOutput termsOut) throws IOException {
+  public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
     CodecUtil.writeHeader(termsOut, Lucene40PostingsReader.TERMS_CODEC, Lucene40PostingsReader.VERSION_CURRENT);
     termsOut.writeInt(skipInterval);                // write skipInterval
     termsOut.writeInt(maxSkipLevels);               // write maxSkipLevels

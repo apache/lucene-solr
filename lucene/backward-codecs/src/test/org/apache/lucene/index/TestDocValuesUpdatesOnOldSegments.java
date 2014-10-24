@@ -32,7 +32,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-
+/** 
+ * Tests performing docvalues updates against versions of lucene
+ * that did not support it.
+ */
 public class TestDocValuesUpdatesOnOldSegments extends LuceneTestCase {
 
   static long getValue(BinaryDocValues bdv, int idx) {
@@ -60,56 +63,62 @@ public class TestDocValuesUpdatesOnOldSegments extends LuceneTestCase {
 
   public void testBinaryUpdates() throws Exception {
     Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec(), new Lucene45RWCodec() };
-    Directory dir = newDirectory();
-
-    // create a segment with an old Codec
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
-    IndexWriter writer = new IndexWriter(dir, conf);
-    Document doc = new Document();
-    doc.add(new StringField("id", "doc", Store.NO));
-    doc.add(new BinaryDocValuesField("f", toBytes(5L)));
-    writer.addDocument(doc);
-    writer.close();
-
-    conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    writer = new IndexWriter(dir, conf);
-    writer.updateBinaryDocValue(new Term("id", "doc"), "f", toBytes(4L));
-    try {
+    
+    for (Codec codec : oldCodecs) {
+      Directory dir = newDirectory();
+      
+      // create a segment with an old Codec
+      IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+      conf.setCodec(codec);
+      IndexWriter writer = new IndexWriter(dir, conf);
+      Document doc = new Document();
+      doc.add(new StringField("id", "doc", Store.NO));
+      doc.add(new BinaryDocValuesField("f", toBytes(5L)));
+      writer.addDocument(doc);
       writer.close();
-      fail("should not have succeeded to update a segment written with an old Codec");
-    } catch (UnsupportedOperationException e) {
-      writer.rollback();
+      
+      conf = newIndexWriterConfig(new MockAnalyzer(random()));
+      writer = new IndexWriter(dir, conf);
+      writer.updateBinaryDocValue(new Term("id", "doc"), "f", toBytes(4L));
+      try {
+        writer.close();
+        fail("should not have succeeded to update a segment written with an old Codec");
+      } catch (UnsupportedOperationException e) {
+        writer.rollback();
+      }
+      
+      dir.close();
     }
-
-    dir.close();
   }
 
   public void testNumericUpdates() throws Exception {
     Codec[] oldCodecs = new Codec[] { new Lucene40RWCodec(), new Lucene41RWCodec(), new Lucene42RWCodec(), new Lucene45RWCodec() };
-    Directory dir = newDirectory();
-
-    // create a segment with an old Codec
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setCodec(oldCodecs[random().nextInt(oldCodecs.length)]);
-    IndexWriter writer = new IndexWriter(dir, conf);
-    Document doc = new Document();
-    doc.add(new StringField("id", "doc", Store.NO));
-    doc.add(new NumericDocValuesField("f", 5));
-    writer.addDocument(doc);
-    writer.close();
-
-    conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    writer = new IndexWriter(dir, conf);
-    writer.updateNumericDocValue(new Term("id", "doc"), "f", 4L);
-    try {
+    
+    for (Codec codec : oldCodecs) {
+      Directory dir = newDirectory();
+      
+      // create a segment with an old Codec
+      IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+      conf.setCodec(codec);
+      IndexWriter writer = new IndexWriter(dir, conf);
+      Document doc = new Document();
+      doc.add(new StringField("id", "doc", Store.NO));
+      doc.add(new NumericDocValuesField("f", 5));
+      writer.addDocument(doc);
       writer.close();
-      fail("should not have succeeded to update a segment written with an old Codec");
-    } catch (UnsupportedOperationException e) {
-      writer.rollback();
+      
+      conf = newIndexWriterConfig(new MockAnalyzer(random()));
+      writer = new IndexWriter(dir, conf);
+      writer.updateNumericDocValue(new Term("id", "doc"), "f", 4L);
+      try {
+        writer.close();
+        fail("should not have succeeded to update a segment written with an old Codec");
+      } catch (UnsupportedOperationException e) {
+        writer.rollback();
+      }
+      
+      dir.close();
     }
-
-    dir.close();
   }
 
 }
