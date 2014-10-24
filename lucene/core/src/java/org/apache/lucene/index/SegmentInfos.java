@@ -119,18 +119,6 @@ import org.apache.lucene.util.StringHelper;
  */
 public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo> {
 
-  /** The file format version for the segments_N codec header, up to 4.5. */
-  public static final int VERSION_40 = 0;
-
-  /** The file format version for the segments_N codec header, since 4.6+. */
-  public static final int VERSION_46 = 1;
-  
-  /** The file format version for the segments_N codec header, since 4.8+ */
-  public static final int VERSION_48 = 2;
-  
-  /** The file format version for the segments_N codec header, since 4.9+ */
-  public static final int VERSION_49 = 3;
-
   /** The file format version for the segments_N codec header, since 5.0+ */
   public static final int VERSION_50 = 4;
 
@@ -262,9 +250,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   }
 
   /** Since Lucene 5.0, every commit (segments_N) writes a unique id.  This will
-   *  return that id, or null if this commit was prior to 5.0. */
+   *  return that id */
   public byte[] getId() {
-    return id == null ? null : id.clone();
+    return id.clone();
   }
 
   /**
@@ -286,15 +274,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       if (magic != CodecUtil.CODEC_MAGIC) {
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
-      // 4.0+
-      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_50);
-      // 5.0+
-      byte id[] = null;
-      if (format >= VERSION_50) {
-        id = new byte[StringHelper.ID_LENGTH];
-        input.readBytes(id, 0, id.length);
-        CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
-      }
+      CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_50, VERSION_50);
+      byte id[] = new byte[StringHelper.ID_LENGTH];
+      input.readBytes(id, 0, id.length);
+      CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
       
       SegmentInfos infos = new SegmentInfos();
       infos.id = id;
@@ -309,18 +292,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       for (int seg = 0; seg < numSegments; seg++) {
         String segName = input.readString();
         final byte segmentID[];
-        if (format >= VERSION_50) {
-          byte hasID = input.readByte();
-          if (hasID == 1) {
-            segmentID = new byte[StringHelper.ID_LENGTH];
-            input.readBytes(segmentID, 0, segmentID.length);
-          } else if (hasID == 0) {
-            segmentID = null; // 4.x segment, doesn't have an ID
-          } else {
-            throw new CorruptIndexException("invalid hasID byte, got: " + hasID, input);
-          }
+        byte hasID = input.readByte();
+        if (hasID == 1) {
+          segmentID = new byte[StringHelper.ID_LENGTH];
+          input.readBytes(segmentID, 0, segmentID.length);
         } else {
-          segmentID = null;
+          throw new CorruptIndexException("invalid hasID byte, got: " + hasID, input);
         }
         Codec codec = Codec.forName(input.readString());
         SegmentInfo info = codec.segmentInfoFormat().read(directory, segName, segmentID, IOContext.READ);
@@ -330,65 +307,26 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         if (delCount < 0 || delCount > info.getDocCount()) {
           throw new CorruptIndexException("invalid deletion count: " + delCount + " vs docCount=" + info.getDocCount(), input);
         }
-        long fieldInfosGen = -1;
-        if (format >= VERSION_46) {
-          fieldInfosGen = input.readLong();
-        }
-        long dvGen = -1;
-        if (format >= VERSION_49) {
-          dvGen = input.readLong();
-        } else {
-          dvGen = fieldInfosGen;
-        }
+        long fieldInfosGen = input.readLong();
+        long dvGen = input.readLong();
         SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, dvGen);
-        if (format >= VERSION_46) {
-          if (format < VERSION_49) {
-            // Recorded per-generation files, which were buggy (see
-            // LUCENE-5636). We need to read and keep them so we continue to
-            // reference those files. Unfortunately it means that the files will
-            // be referenced even if the fields are updated again, until the
-            // segment is merged.
-            final int numGensUpdatesFiles = input.readInt();
-            final Map<Long,Set<String>> genUpdatesFiles;
-            if (numGensUpdatesFiles == 0) {
-              genUpdatesFiles = Collections.emptyMap();
-            } else {
-              genUpdatesFiles = new HashMap<>(numGensUpdatesFiles);
-              for (int i = 0; i < numGensUpdatesFiles; i++) {
-                genUpdatesFiles.put(input.readLong(), input.readStringSet());
-              }
-            }
-            siPerCommit.setGenUpdatesFiles(genUpdatesFiles);
-          } else {
-            siPerCommit.setFieldInfosFiles(input.readStringSet());
-            final Map<Integer,Set<String>> dvUpdateFiles;
-            final int numDVFields = input.readInt();
-            if (numDVFields == 0) {
-              dvUpdateFiles = Collections.emptyMap();
-            } else {
-              dvUpdateFiles = new HashMap<>(numDVFields);
-              for (int i = 0; i < numDVFields; i++) {
-                dvUpdateFiles.put(input.readInt(), input.readStringSet());
-              }
-            }
-            siPerCommit.setDocValuesUpdatesFiles(dvUpdateFiles);
+        siPerCommit.setFieldInfosFiles(input.readStringSet());
+        final Map<Integer,Set<String>> dvUpdateFiles;
+        final int numDVFields = input.readInt();
+        if (numDVFields == 0) {
+          dvUpdateFiles = Collections.emptyMap();
+        } else {
+          dvUpdateFiles = new HashMap<>(numDVFields);
+          for (int i = 0; i < numDVFields; i++) {
+            dvUpdateFiles.put(input.readInt(), input.readStringSet());
           }
         }
+        siPerCommit.setDocValuesUpdatesFiles(dvUpdateFiles);
         infos.add(siPerCommit);
       }
       infos.userData = input.readStringStringMap();
 
-      if (format >= VERSION_48) {
-        CodecUtil.checkFooter(input);
-      } else {
-        final long checksumNow = input.getChecksum();
-        final long checksumThen = input.readLong();
-        if (checksumNow != checksumThen) {
-          throw new CorruptIndexException("checksum failed (hardware problem?) : expected=" + Long.toHexString(checksumThen) +  
-                                          " actual=" + Long.toHexString(checksumNow), input);
-        }
-        CodecUtil.checkEOF(input);
-      }
+      CodecUtil.checkFooter(input);
 
       return infos;
     }

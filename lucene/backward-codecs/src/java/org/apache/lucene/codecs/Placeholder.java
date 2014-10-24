@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene410;
+package org.apache.lucene.codecs;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,26 +17,7 @@ package org.apache.lucene.codecs.lucene410;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.SegmentWriteState;
-
-/**
- * Read-Write version of 4.10 docvalues format for testing
- * @deprecated for test purposes only
- */
-class Lucene410RWDocValuesFormat extends Lucene410DocValuesFormat {
-
-  @Override
-  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene410DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION) {
-      @Override
-      void checkCanWrite(FieldInfo field) {
-        // allow writing all fields 
-      }
-    };
-  }
+/** Remove this file when adding back compat codecs */
+public class Placeholder {
   
 }

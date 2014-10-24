@@ -119,9 +119,7 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
     TokenStream result = new StandardFilter(source);
-    if (getVersion().onOrAfter(Version.LUCENE_4_8_0)) {
-      result = new ApostropheFilter(result);
-    }
+    result = new ApostropheFilter(result);
     result = new TurkishLowerCaseFilter(result);
     result = new StopFilter(result, stopwords);
     if (!stemExclusionSet.isEmpty()) {

@@ -172,18 +172,6 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     checkAnalysisConsistency(random, a, random.nextBoolean(), "");
   }
 
-  public void testLucene43() throws IOException {
-    TokenFilter filter = new Lucene43NGramTokenFilter(input, 2, 3);
-    assertTokenStreamContents(filter,
-        new String[]{"ab","bc","cd","de","abc","bcd","cde"},
-        new int[]{0,1,2,3,0,1,2},
-        new int[]{2,3,4,5,3,4,5},
-        null,
-        new int[]{1,1,1,1,1,1,1},
-        null, null, false
-        );
-  }
-
   public void testSupplementaryCharacters() throws IOException {
     final String s = TestUtil.randomUnicodeString(random(), 10);
     final int codePointCount = s.codePointCount(0, s.length());

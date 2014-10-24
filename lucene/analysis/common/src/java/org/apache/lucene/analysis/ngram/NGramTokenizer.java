@@ -51,8 +51,6 @@ import org.apache.lucene.util.AttributeFactory;
  * tokens in a different order, tokens are now emitted by increasing start
  * offsets while they used to be emitted by increasing lengths (which prevented
  * from supporting large input streams).
- * <p>Although <b style="color:red">highly</b> discouraged, it is still possible
- * to use the old behavior through {@link Lucene43NGramTokenizer}.
  */
 // non-final to allow for overriding isTokenChar, but all other methods should be final
 public class NGramTokenizer extends Tokenizer {

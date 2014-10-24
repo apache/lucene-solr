@@ -498,9 +498,6 @@ public class IndexSchema {
         similarityFactory = new DefaultSimilarityFactory();
         final NamedList similarityParams = new NamedList();
         Version luceneVersion = getDefaultLuceneMatchVersion();
-        if (!luceneVersion.onOrAfter(Version.LUCENE_4_7_0)) {
-          similarityParams.add(DefaultSimilarityFactory.DISCOUNT_OVERLAPS, false);
-        }
         similarityFactory.init(SolrParams.toSolrParams(similarityParams));
       } else {
         isExplicitSimilarity = true;

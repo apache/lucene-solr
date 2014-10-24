@@ -592,7 +592,7 @@ public class CheckIndex implements Closeable {
       segInfoStat.docCount = info.info.getDocCount();
       
       final Version version = info.info.getVersion();
-      if (info.info.getDocCount() <= 0 && version != null && version.onOrAfter(Version.LUCENE_4_5_0)) {
+      if (info.info.getDocCount() <= 0) {
         throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.getDocCount());
       }
 

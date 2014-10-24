@@ -24,11 +24,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Thai language. It uses {@link java.text.BreakIterator} to break words.
@@ -92,23 +89,14 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link ThaiWordFilter}, and
-   *         {@link StopFilter}
+   *         built from a {@link ThaiTokenizer} filtered with
+   *         {@link LowerCaseFilter} and {@link StopFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    if (getVersion().onOrAfter(Version.LUCENE_4_8_0)) {
-      final Tokenizer source = new ThaiTokenizer();
-      TokenStream result = new LowerCaseFilter(source);
-      result = new StopFilter(result, stopwords);
-      return new TokenStreamComponents(source, result);
-    } else {
-      final Tokenizer source = new StandardTokenizer();
-      TokenStream result = new StandardFilter(source);
-      result = new LowerCaseFilter(result);
-      result = new ThaiWordFilter(result);
-      return new TokenStreamComponents(source, new StopFilter(result, stopwords));
-    }
+    final Tokenizer source = new ThaiTokenizer();
+    TokenStream result = new LowerCaseFilter(source);
+    result = new StopFilter(result, stopwords);
+    return new TokenStreamComponents(source, result);
   }
 }
