@@ -202,7 +202,9 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
       if (si.info.getUseCompoundFile()) {
         try (Directory cfsDir = si.info.getCodec().compoundFormat().getCompoundReader(dir, si.info, newIOContext(random()))) {
           for (String cfsFile : cfsDir.listAll()) {
-            try (IndexInput cfsIn = cfsDir.openInput(cfsFile, IOContext.DEFAULT)) {}
+            try (IndexInput cfsIn = cfsDir.openInput(cfsFile, IOContext.DEFAULT)) {
+              assert cfsIn != null;
+            }
           }
         }
       }
