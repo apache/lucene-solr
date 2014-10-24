@@ -5,11 +5,6 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.10.2 ======================
 
-New Features
-
-* LUCENE-5911: Add MemoryIndex.freeze() to allow thread-safe searching over a 
-  MemoryIndex. (Alan Woodward, David Smiley, Robert Muir)
-
 Bug fixes
 
 * LUCENE-5977: Fix tokenstream safety checks in IndexWriter to properly

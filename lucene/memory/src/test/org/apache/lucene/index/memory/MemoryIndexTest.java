@@ -69,11 +69,12 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.TestUtil;
 
@@ -83,7 +84,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
  * Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
  * returning the same results for queries on some randomish indexes.
  */
-public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
+public class MemoryIndexTest extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<>();
   
   public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
@@ -160,7 +161,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     
     memory.addField("foo", fooField.toString(), analyzer);
     memory.addField("term", termField.toString(), analyzer);
-
+    
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DirectoryReader competitor = DirectoryReader.open(ramdir);
     duellReaders(competitor, reader);
