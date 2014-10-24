@@ -41,10 +41,9 @@ import org.apache.lucene.util.MutableBits;
  * deletions.</p>
  * <p>Although per-segment, this file is maintained exterior to compound segment
  * files.</p>
- * <p>Deletions (.liv) --&gt; SegmentHeader,Generation,Bits</p>
+ * <p>Deletions (.liv) --&gt; IndexHeader,Generation,Bits</p>
  * <ul>
- *   <li>SegmentHeader --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
- *   <li>Generation --&gt; {@link DataOutput#writeLong Int64}
+ *   <li>SegmentHeader --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup></li>
  * </ul>
  */
@@ -85,11 +84,8 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     try (ChecksumIndexInput input = dir.openChecksumInput(name, context)) {
       Throwable priorE = null;
       try {
-        CodecUtil.checkSegmentHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, info.info.getId(), "");
-        long filegen = input.readLong();
-        if (gen != filegen) {
-          throw new CorruptIndexException("file mismatch, expected generation=" + gen + ", got=" + filegen, input);
-        }
+        CodecUtil.checkIndexHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, 
+                                     info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
         long data[] = new long[FixedBitSet.bits2words(length)];
         for (int i = 0; i < data.length; i++) {
           data[i] = input.readLong();
@@ -120,8 +116,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     }
     long data[] = fbs.getBits();
     try (IndexOutput output = dir.createOutput(name, context)) {
-      CodecUtil.writeSegmentHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId(), "");
-      output.writeLong(gen);
+      CodecUtil.writeIndexHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
       for (int i = 0; i < data.length; i++) {
         output.writeLong(data[i]);
       }

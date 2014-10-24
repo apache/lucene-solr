@@ -225,8 +225,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
 
     List<IndexCommit> commits = new ArrayList<>();
 
-    SegmentInfos latest = new SegmentInfos();
-    latest.read(dir);
+    SegmentInfos latest = SegmentInfos.readLatestCommit(dir);
     final long currentGen = latest.getGeneration();
 
     commits.add(new StandardDirectoryReader.ReaderCommit(latest, dir));
@@ -239,11 +238,11 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
           !fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN) &&
           SegmentInfos.generationFromSegmentsFileName(fileName) < currentGen) {
 
-        SegmentInfos sis = new SegmentInfos();
+        SegmentInfos sis = null;
         try {
           // IOException allowed to throw there, in case
           // segments_N is corrupt
-          sis.read(dir, fileName);
+          sis = SegmentInfos.readCommit(dir, fileName);
         } catch (FileNotFoundException | NoSuchFileException fnfe) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth
@@ -252,7 +251,6 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
           // file segments_X exists when in fact it
           // doesn't.  So, we catch this and handle it
           // as if the file does not exist
-          sis = null;
         }
 
         if (sis != null)

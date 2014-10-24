@@ -74,12 +74,12 @@ public class Lucene410Codec extends Codec {
   }
   
   @Override
-  public final StoredFieldsFormat storedFieldsFormat() {
+  public StoredFieldsFormat storedFieldsFormat() {
     return fieldsFormat;
   }
   
   @Override
-  public final TermVectorsFormat termVectorsFormat() {
+  public TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
   }
 
@@ -94,7 +94,7 @@ public class Lucene410Codec extends Codec {
   }
   
   @Override
-  public final SegmentInfoFormat segmentInfoFormat() {
+  public SegmentInfoFormat segmentInfoFormat() {
     return segmentInfosFormat;
   }
   
@@ -127,7 +127,7 @@ public class Lucene410Codec extends Codec {
   }
   
   @Override
-  public final DocValuesFormat docValuesFormat() {
+  public DocValuesFormat docValuesFormat() {
     return docValuesFormat;
   }
 
@@ -142,7 +142,7 @@ public class Lucene410Codec extends Codec {
   };
 
   @Override
-  public final NormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     return normsFormat;
   }
 }

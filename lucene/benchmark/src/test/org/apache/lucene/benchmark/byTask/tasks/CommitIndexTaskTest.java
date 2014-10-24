@@ -50,8 +50,7 @@ public class CommitIndexTaskTest extends BenchmarkTestCase {
     CommitIndexTask task = new CommitIndexTask(runData);
     task.setParams("params");
     task.doLogic();
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(runData.getDirectory());
+    SegmentInfos infos = SegmentInfos.readLatestCommit(runData.getDirectory());
     assertEquals("params", infos.getUserData().get(OpenReaderTask.USER_DATA));
     new CloseIndexTask(runData).doLogic();
   }

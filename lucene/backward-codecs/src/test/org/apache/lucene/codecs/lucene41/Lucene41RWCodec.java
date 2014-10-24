@@ -3,6 +3,7 @@ package org.apache.lucene.codecs.lucene41;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
@@ -40,6 +41,12 @@ public final class Lucene41RWCodec extends Lucene41Codec {
   private final DocValuesFormat docValues = new Lucene40RWDocValuesFormat();
   private final NormsFormat norms = new Lucene40RWNormsFormat();
   private final TermVectorsFormat vectors = new Lucene40RWTermVectorsFormat();
+  private final PostingsFormat postings = new Lucene41RWPostingsFormat();
+  
+  @Override
+  public PostingsFormat getPostingsFormatForField(String field) {
+    return postings;
+  }
   
   @Override
   public FieldInfosFormat fieldInfosFormat() {

@@ -1075,8 +1075,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private int checkAllSegmentsUpgraded(Directory dir) throws IOException {
-    final SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
+    final SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     if (VERBOSE) {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
     }
@@ -1087,8 +1086,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private int getNumberOfSegments(Directory dir) throws IOException {
-    final SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
+    final SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     return infos.size();
   }
 
@@ -1306,7 +1304,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer.forceMerge(1);
       writer.commit();
       writer.rollback();
-      new SegmentInfos().read(dir);
+      SegmentInfos.readLatestCommit(dir);
       dir.close();
     }
   }

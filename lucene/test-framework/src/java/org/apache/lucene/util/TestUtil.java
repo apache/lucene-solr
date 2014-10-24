@@ -45,9 +45,11 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
+import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
+import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
+import org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -746,7 +748,7 @@ public final class TestUtil {
    * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
    */
   public static PostingsFormat getDefaultPostingsFormat() {
-    return new Lucene41PostingsFormat();
+    return new Lucene50PostingsFormat();
   }
   
   /** 
@@ -754,14 +756,25 @@ public final class TestUtil {
    * @lucene.internal this may disappear at any time
    */
   public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock) {
-    return new Lucene41PostingsFormat(minItemsPerBlock, maxItemsPerBlock);
+    return new Lucene50PostingsFormat(minItemsPerBlock, maxItemsPerBlock);
+  }
+  
+  /** Returns a random postings format that supports term ordinals */
+  public static PostingsFormat getPostingsFormatWithOrds(Random r) {
+    switch (r.nextInt(2)) {
+      case 0: return new LuceneFixedGap();
+      case 1: return new BlockTreeOrdsPostingsFormat();
+      // TODO: these don't actually support ords!
+      //case 2: return new FSTOrdPostingsFormat();
+      default: throw new AssertionError();
+    }
   }
   
   /** 
    * Returns the actual default docvalues format (e.g. LuceneMNDocValuesFormat for this version of Lucene.
    */
   public static DocValuesFormat getDefaultDocValuesFormat() {
-    return new Lucene410DocValuesFormat();
+    return new Lucene50DocValuesFormat();
   }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to

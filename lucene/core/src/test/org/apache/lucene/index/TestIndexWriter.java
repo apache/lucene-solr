@@ -575,8 +575,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.addDocument(doc);
       writer.flush(false, true);
       writer.close();
-      SegmentInfos sis = new SegmentInfos();
-      sis.read(dir);
+      SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
       // Since we flushed w/o allowing merging we should now
       // have 10 segments
       assertEquals(10, sis.size());
@@ -2768,8 +2767,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(new Document());
     w.close();
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(d);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(d);
     byte[] id1 = sis.getId();
     assertNotNull(id1);
     assertEquals(StringHelper.ID_LENGTH, id1.length);

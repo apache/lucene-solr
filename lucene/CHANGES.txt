@@ -75,7 +75,7 @@ New Features
 
 * LUCENE-5969: Lucene 5.0 has a new index format with mismatched file detection,
   improved exception handling, and indirect norms encoding for sparse fields.
-  (Mike McCandless, Robert Muir)
+  (Mike McCandless, Ryan Ernst, Robert Muir)
 
 API Changes
 
@@ -148,7 +148,10 @@ API Changes
 
 * LUCENE-5969: Add Codec.compoundFormat, which handles the encoding of compound 
   files. Add getMergeInstance() to codec producer APIs, which can be overridden
-  to return an instance optimized for merging instead of searching.
+  to return an instance optimized for merging instead of searching. Add 
+  Terms.getStats() which can return additional codec-specific statistics about a field.
+  Change instance method SegmentInfos.read() to two static methods: SegmentInfos.readCommit()
+  and SegmentInfos.readLatestCommit().
   (Mike McCandless, Robert Muir)
 
 * LUCENE-5992: Remove FieldInfos from SegmentInfosWriter.write API. (Robert Muir, Mike McCandless)

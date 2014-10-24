@@ -72,7 +72,7 @@ public final class VersionBlockTreeTermsReader extends FieldsProducer {
     IndexInput indexIn = null;
 
     try {
-      int termsVersion = CodecUtil.checkSegmentHeader(in, VersionBlockTreeTermsWriter.TERMS_CODEC_NAME,
+      int termsVersion = CodecUtil.checkIndexHeader(in, VersionBlockTreeTermsWriter.TERMS_CODEC_NAME,
                                                           VersionBlockTreeTermsWriter.VERSION_START,
                                                           VersionBlockTreeTermsWriter.VERSION_CURRENT,
                                                           state.segmentInfo.getId(), state.segmentSuffix);
@@ -81,7 +81,7 @@ public final class VersionBlockTreeTermsReader extends FieldsProducer {
                                                         state.segmentSuffix, 
                                                         VersionBlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
       indexIn = state.directory.openInput(indexFile, state.context);
-      int indexVersion = CodecUtil.checkSegmentHeader(indexIn, VersionBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+      int indexVersion = CodecUtil.checkIndexHeader(indexIn, VersionBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
                                                                VersionBlockTreeTermsWriter.VERSION_START,
                                                                VersionBlockTreeTermsWriter.VERSION_CURRENT,
                                                                state.segmentInfo.getId(), state.segmentSuffix);
@@ -94,7 +94,7 @@ public final class VersionBlockTreeTermsReader extends FieldsProducer {
       CodecUtil.checksumEntireFile(indexIn);
 
       // Have PostingsReader init itself
-      postingsReader.init(in);
+      postingsReader.init(in, state);
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks

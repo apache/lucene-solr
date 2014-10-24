@@ -67,7 +67,7 @@ final class IntersectTermsEnum extends TermsEnum {
     this.fr = fr;
     runAutomaton = compiled.runAutomaton;
     compiledAutomaton = compiled;
-    in = fr.parent.in.clone();
+    in = fr.parent.termsIn.clone();
     stack = new IntersectTermsEnumFrame[5];
     for(int idx=0;idx<stack.length;idx++) {
       stack[idx] = new IntersectTermsEnumFrame(this, idx);

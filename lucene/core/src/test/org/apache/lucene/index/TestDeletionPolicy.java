@@ -285,8 +285,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         // if we are on a filesystem that seems to have only
         // 1 second resolution, allow +1 second in commit
         // age tolerance:
-        SegmentInfos sis = new SegmentInfos();
-        sis.read(dir, fileName);
+        SegmentInfos sis = SegmentInfos.readCommit(dir, fileName);
         long modTime = Long.parseLong(sis.getUserData().get("commitTime"));
         oneSecondResolution &= (modTime % 1000) == 0;
         final long leeway = (long) ((SECONDS + (oneSecondResolution ? 1.0:0.0))*1000);

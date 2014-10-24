@@ -154,20 +154,20 @@ its title, url, or an identifier to access a database. The set of stored fields 
 returned for each hit when searching. This is keyed by document number.
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Term dictionary}. 
+{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Term dictionary}. 
 A dictionary containing all of the terms used in all of the
 indexed fields of all of the documents. The dictionary also contains the number
 of documents which contain the term, and pointers to the term's frequency and
 proximity data.
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Term Frequency data}. 
+{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Term Frequency data}. 
 For each term in the dictionary, the numbers of all the
 documents that contain that term, and the frequency of the term in that
 document, unless frequencies are omitted (IndexOptions.DOCS_ONLY)
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Term Proximity data}. 
+{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Term Proximity data}. 
 For each term in the dictionary, the positions that the
 term occurs in each document. Note that this will not exist if all fields in
 all documents omit position data.
@@ -185,7 +185,7 @@ term frequency. To add Term Vectors to your index see the
 {@link org.apache.lucene.document.Field Field} constructors
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat Per-document values}. 
+{@link org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat Per-document values}. 
 Like stored values, these are also keyed by document
 number, but are generally intended to be loaded into main memory for fast
 access. Whereas stored values are generally intended for summary results from
@@ -264,27 +264,27 @@ systems that frequently run out of file handles.</td>
 <td>The stored fields for documents</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Term Dictionary}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Term Dictionary}</td>
 <td>.tim</td>
 <td>The term dictionary, stores term info</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Term Index}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Term Index}</td>
 <td>.tip</td>
 <td>The index into the Term Dictionary</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Frequencies}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Frequencies}</td>
 <td>.doc</td>
 <td>Contains the list of docs which contain each term along with frequency</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Positions}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Positions}</td>
 <td>.pos</td>
 <td>Stores position information about where a term occurs in the index</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat Payloads}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat Payloads}</td>
 <td>.pay</td>
 <td>Stores additional per-position metadata information such as character offsets and user payloads</td>
 </tr>
@@ -294,7 +294,7 @@ systems that frequently run out of file handles.</td>
 <td>Encodes length and boost factors for docs and fields</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat Per-Document Values}</td>
+<td>{@link org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat Per-Document Values}</td>
 <td>.dvd, .dvm</td>
 <td>Encodes additional scoring factors or other per-document information.</td>
 </tr>

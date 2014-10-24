@@ -100,6 +100,7 @@
         <or>
           <containsregexp expression="@author\b" casesensitive="yes"/>
           <containsregexp expression="\bno(n|)commit\b" casesensitive="no"/>
+          <containsregexp expression="\bTOOD:" casesensitive="yes"/>
           <containsregexp expression="\t" casesensitive="no"/>
           <containsregexp expression="\$(?:LastChanged)?Date\b" casesensitive="yes"/>
           <containsregexp expression="\$(?:(?:LastChanged)?Revision|Rev)\b" casesensitive="yes"/>
@@ -112,7 +113,7 @@
       </fileset>
       <map from="${validate.currDir}${file.separator}" to="* "/>
     </pathconvert>
-    <fail if="validate.patternsFound">The following files contain @author tags, tabs, svn keywords or nocommits:${line.separator}${validate.patternsFound}</fail>
+    <fail if="validate.patternsFound">The following files contain @author tags, tabs, TOODs, svn keywords or nocommits:${line.separator}${validate.patternsFound}</fail>
   </target>
 	
   <target name="rat-sources" description="Runs rat across all sources and tests">

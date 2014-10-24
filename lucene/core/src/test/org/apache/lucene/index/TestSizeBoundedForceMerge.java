@@ -66,8 +66,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     }
     writer.close();
 
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     double min = sis.info(0).sizeInBytes();
 
     conf = newWriterConfig();
@@ -80,8 +79,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.close();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
-    sis = new SegmentInfos();
-    sis.read(dir);
+    sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(3, sis.size());
   }
 
@@ -113,8 +111,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.close();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(3, sis.size());
   }
 
@@ -140,8 +137,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
 
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(2, sis.size());
   }
   
@@ -167,8 +163,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(2, sis.size());
   }
   
@@ -194,8 +189,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.size());
   }
   
@@ -220,8 +214,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(3, sis.size());
   }
   
@@ -247,8 +240,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(4, sis.size());
   }
   
@@ -280,8 +272,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     // Should only be 4 segments in the index, because of the merge factor and
     // max merge docs settings.
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(4, sis.size());
   }
   
@@ -309,8 +300,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.close();
     
     // Verify that the last segment does not have deletions.
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(3, sis.size());
     assertFalse(sis.info(2).hasDeletions());
   }
@@ -335,8 +325,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.close();
     
     // Verify that the last segment does not have deletions.
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.size());
   }
 
@@ -363,8 +352,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.close();
     
     // Verify that the last segment does not have deletions.
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(1, sis.size());
     assertTrue(sis.info(0).hasDeletions());
   }

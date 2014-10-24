@@ -24,8 +24,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
@@ -72,11 +70,6 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   protected PushPostingsWriterBase() {
   }
 
-  /** Called once after startup, before any terms have been
-   *  added.  Implementations typically write a header to
-   *  the provided {@code termsOut}. */
-  public abstract void init(IndexOutput termsOut) throws IOException;
-
   /** Return a newly created empty TermState */
   public abstract BlockTermState newTermState() throws IOException;
 
@@ -90,26 +83,11 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
    *  and will holds metadata from PBF when returned */
   public abstract void finishTerm(BlockTermState state) throws IOException;
 
-  /**
-   * Encode metadata as long[] and byte[]. {@code absolute} controls whether 
-   * current term is delta encoded according to latest term. 
-   * Usually elements in {@code longs} are file pointers, so each one always 
-   * increases when a new term is consumed. {@code out} is used to write generic
-   * bytes, which are not monotonic.
-   *
-   * NOTE: sometimes long[] might contain "don't care" values that are unused, e.g. 
-   * the pointer to postings list may not be defined for some terms but is defined
-   * for others, if it is designed to inline  some postings data in term dictionary.
-   * In this case, the postings writer should always use the last value, so that each
-   * element in metadata long[] remains monotonic.
-   */
-  public abstract void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
-
   /** 
    * Sets the current field for writing, and returns the
    * fixed length of long[] metadata (which is fixed per
    * field), called when the writing switches to another field. */
-  // TODO: better name?
+  @Override
   public int setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     indexOptions = fieldInfo.getIndexOptions();

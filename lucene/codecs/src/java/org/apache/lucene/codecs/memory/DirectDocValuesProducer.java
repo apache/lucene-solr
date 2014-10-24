@@ -122,7 +122,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     boolean success = false;
     try {
-      version = CodecUtil.checkSegmentHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, 
+      version = CodecUtil.checkIndexHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, 
                                                  state.segmentInfo.getId(), state.segmentSuffix);
       numEntries = readFields(in, state.fieldInfos);
 
@@ -140,7 +140,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     this.data = state.directory.openInput(dataName, state.context);
     success = false;
     try {
-      final int version2 = CodecUtil.checkSegmentHeader(data, dataCodec, VERSION_START, VERSION_CURRENT,
+      final int version2 = CodecUtil.checkIndexHeader(data, dataCodec, VERSION_START, VERSION_CURRENT,
                                                               state.segmentInfo.getId(), state.segmentSuffix);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch: meta=" + version + ", data=" + version2, data);

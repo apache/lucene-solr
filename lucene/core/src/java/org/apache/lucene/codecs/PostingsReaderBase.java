@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -53,7 +54,7 @@ public abstract class PostingsReaderBase implements Closeable, Accountable {
   /** Performs any initialization, such as reading and
    *  verifying the header from the provided terms
    *  dictionary {@link IndexInput}. */
-  public abstract void init(IndexInput termsIn) throws IOException;
+  public abstract void init(IndexInput termsIn, SegmentReadState state) throws IOException;
 
   /** Return a newly created empty TermState */
   public abstract BlockTermState newTermState() throws IOException;

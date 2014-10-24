@@ -118,7 +118,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tiv";
-  final static String TERMS_CODEC_NAME = "VERSION_BLOCK_TREE_TERMS_DICT";
+  final static String TERMS_CODEC_NAME = "VersionBlockTreeTermsDict";
 
   /** Initial terms format. */
   public static final int VERSION_START = 1;
@@ -128,7 +128,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tipv";
-  final static String TERMS_INDEX_CODEC_NAME = "VERSION_BLOCK_TREE_TERMS_INDEX";
+  final static String TERMS_INDEX_CODEC_NAME = "VersionBlockTreeTermsIndex";
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
@@ -199,20 +199,20 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       fieldInfos = state.fieldInfos;
       this.minItemsInBlock = minItemsInBlock;
       this.maxItemsInBlock = maxItemsInBlock;
-      CodecUtil.writeSegmentHeader(out, TERMS_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);   
+      CodecUtil.writeIndexHeader(out, TERMS_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);   
 
       //DEBUG = state.segmentName.equals("_4a");
 
       final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
       indexOut = state.directory.createOutput(termsIndexFileName, state.context);
-      CodecUtil.writeSegmentHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix); 
+      CodecUtil.writeIndexHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix); 
 
       this.postingsWriter = postingsWriter;
       // segment = state.segmentInfo.name;
 
       // System.out.println("BTW.init seg=" + state.segmentName);
 
-      postingsWriter.init(out);                          // have consumer write its format/header
+      postingsWriter.init(out, state);                          // have consumer write its format/header
       success = true;
     } finally {
       if (!success) {
