@@ -424,9 +424,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           return;
         } else {
           if (cnt % 40 == 0) {
-            log.info("Waiting until we see more replicas up for shard " + shardId + ": total="
-              + slices.getReplicasMap().size() + " found=" + found
-              + " timeoutin=" + (timeoutAt - System.nanoTime() / (float)(10^9)) + "ms");
+            log.info("Waiting until we see more replicas up for shard {}: total={}"
+              + " found={}" + found
+              + " timeoutin={}ms",
+                shardId, slices.getReplicasMap().size(), found,
+                TimeUnit.MILLISECONDS.convert(timeoutAt - System.nanoTime(), TimeUnit.NANOSECONDS));
           }
         }
         

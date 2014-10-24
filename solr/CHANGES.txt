@@ -363,6 +363,8 @@ Other Changes
 * SOLR-6578: Update commons-io dependency to the latest 2.4 version
   (Steve Rowe, Shawn Heisey)
 
+* SOLR-6651: Fix wrong timeout logged in waitForReplicasToComeUp. (shalin)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
