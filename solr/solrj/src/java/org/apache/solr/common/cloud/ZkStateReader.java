@@ -876,6 +876,7 @@ public class ZkStateReader implements Closeable {
   public void removeZKWatch(final String coll) {
     synchronized (this) {
       watchedCollections.remove(coll);
+      watchedCollectionStates.remove(coll);
       try {
         updateClusterState(true);
       } catch (KeeperException e) {
