@@ -876,8 +876,15 @@ public class ZkStateReader implements Closeable {
   public void removeZKWatch(final String coll) {
     synchronized (this) {
       watchedCollections.remove(coll);
-      clusterState = clusterState.copyWith(Collections
-          .<String,DocCollection> singletonMap(coll, null));
+      watchedCollectionStates.remove(coll);
+      try {
+        updateClusterState(true);
+      } catch (KeeperException e) {
+        log.error("Error updating state",e);
+      } catch (InterruptedException e) {
+        log.error("Error updating state",e);
+        Thread.currentThread().interrupt();
+      }
     }
   }
 

@@ -1039,18 +1039,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
                 "conf1");
             
             // remove collection
-            ModifiableSolrParams params = new ModifiableSolrParams();
-            params.set("action", CollectionAction.DELETE.toString());
-            params.set("name", collectionName);
-            QueryRequest request = new QueryRequest(params);
-            request.setPath("/admin/collections");
-            
-            if (client == null) {
-              client = createCloudClient(null);
-            }
-            
-            client.request(request);
-            
+            CollectionAdminRequest.Delete delete = new CollectionAdminRequest.Delete();
+            delete.setCollectionName(collectionName);
+            client.request(delete);
           } catch (SolrServerException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
