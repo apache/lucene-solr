@@ -261,6 +261,10 @@ public class TestVersion extends LuceneTestCase {
         Version.LATEST.toString(), commonBuildVersion);
   }
 
+  public void testTestVersionCurrent() {
+    assertEquals(TEST_VERSION_CURRENT, Version.LATEST);
+  }
+
   public void testEqualsHashCode() throws Exception {
     Random random = random();
     String version = "" + (4 + random.nextInt(1)) + "."  + random.nextInt(10) + "." + random.nextInt(10);
