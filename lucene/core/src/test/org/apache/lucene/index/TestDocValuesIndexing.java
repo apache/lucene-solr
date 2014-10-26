@@ -490,6 +490,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testMixedTypesAfterReopenAppend2() throws IOException {
+    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
     Document doc = new Document();
@@ -516,6 +517,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testMixedTypesAfterReopenAppend3() throws IOException {
+    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
     Document doc = new Document();
