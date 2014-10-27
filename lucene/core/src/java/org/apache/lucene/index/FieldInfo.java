@@ -165,9 +165,6 @@ public final class FieldInfo {
       if (omitNorms) {
         throw new IllegalStateException("non-indexed field '" + name + "' cannot omit norms");
       }
-      if (indexOptions != null) {
-        throw new IllegalStateException("non-indexed field '" + name + "' cannot have index options");
-      }
     }
     
     if (dvGen != -1 && docValueType == null) {
