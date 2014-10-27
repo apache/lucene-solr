@@ -140,7 +140,7 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
       // don't initialize the class (pass false as 2nd parameter):
       return Class.forName(c, false, loader).asSubclass(clazz);
     } catch (ClassNotFoundException cnfe) {
-      throw new ServiceConfigurationError(String.format(Locale.ROOT, "A SPI class of type %s with classname %s does not exist, "+
+      throw new ServiceConfigurationError(String.format(Locale.ROOT, "An SPI class of type %s with classname %s does not exist, "+
         "please fix the file '%s%1$s' in your classpath.", clazz.getName(), c, META_INF_SERVICES));
     }
   }
