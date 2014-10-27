@@ -258,6 +258,7 @@ public class Overseer implements Closeable {
       }
       
       log.info("Starting to work on the main queue");
+      int lastStateFormat = -1; // sentinel
       try {
         while (!this.isClosed) {
           isLeader = amILeader();
@@ -293,6 +294,23 @@ public class Overseer implements Closeable {
               while (head != null) {
                 final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
                 final String operation = message.getStr(QUEUE_OPERATION);
+
+                // we batch updates for the main cluster state together (stateFormat=1)
+                // but if we encounter a message for a collection with a stateFormat different than the last
+                // then we stop batching at that point
+                String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+                if (collection == null) collection = message.getStr("name");
+                if (collection != null) {
+                  DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+                  if (lastStateFormat != -1 && docCollection != null && docCollection.getStateFormat() != lastStateFormat)  {
+                    lastStateFormat = docCollection.getStateFormat();
+                    break;
+                  }
+                  if (docCollection != null)  {
+                    lastStateFormat = docCollection.getStateFormat();
+                  }
+                }
+
                 final TimerContext timerContext = stats.time(operation);
                 try {
                   clusterState = processMessage(clusterState, message, operation);
