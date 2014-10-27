@@ -448,20 +448,25 @@ public class ZkStateReader implements Closeable {
                                                     // collections in
                                                     // clusterstate.json
     for (String s : getIndividualColls()) {
-      DocCollection watched = watchedCollectionStates.get(s);
-      if (watched != null) {
-        // if it is a watched collection, add too
-        result.put(s, new ClusterState.CollectionRef(watched));
-      } else {
-        // if it is not collection, then just create a reference which can fetch 
-        // the collection object just in time from ZK
-        final String collName = s;
-        result.put(s, new ClusterState.CollectionRef(null) {
-          @Override
-          public DocCollection get() {
-            return getCollectionLive(ZkStateReader.this, collName);
-          }
-        });
+      synchronized (this) {
+        if (watchedCollections.contains(s)) {
+          DocCollection live = getCollectionLive(this, s);
+          watchedCollectionStates.put(s, live);
+          // if it is a watched collection, add too
+          result.put(s, new ClusterState.CollectionRef(live));
+        } else {
+          // if it is not collection, then just create a reference which can fetch
+          // the collection object just in time from ZK
+          // this is also cheap (lazy loaded) so we put it inside the synchronized
+          // block although it is not required
+          final String collName = s;
+          result.put(s, new ClusterState.CollectionRef(null) {
+            @Override
+            public DocCollection get() {
+              return getCollectionLive(ZkStateReader.this, collName);
+            }
+          });
+        }
       }
     }
     return new ClusterState(ln, result, stat.getVersion());
