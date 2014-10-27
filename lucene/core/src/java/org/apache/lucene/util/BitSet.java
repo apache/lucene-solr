@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -58,37 +59,90 @@ public abstract class BitSet implements MutableBits, Accountable {
    */
   public abstract int nextSetBit(int i);
 
-  /** Does in-place OR of the bits provided by the
-   *  iterator. */
+  /** Assert that the current doc is -1. */
+  protected final void assertUnpositioned(DocIdSetIterator iter) {
+    if (iter.docID() != -1) {
+      throw new IllegalStateException("This operation only works with an unpositioned iterator, got current position = " + iter.docID());
+    }
+  }
+
+  /** Does in-place OR of the bits provided by the iterator. The state of the
+   *  iterator after this operation terminates is undefined. */
   public void or(DocIdSetIterator iter) throws IOException {
+    assertUnpositioned(iter);
     for (int doc = iter.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iter.nextDoc()) {
       set(doc);
     }
   }
 
-  /** Does in-place AND of the bits provided by the
-   *  iterator. */
-  public void and(DocIdSetIterator iter) throws IOException {
+  private static abstract class LeapFrogCallBack {
+    abstract void onMatch(int doc);
+    void finish() {}
+  }
+
+  /** Performs a leap frog between this and the provided iterator in order to find common documents. */
+  private void leapFrog(DocIdSetIterator iter, LeapFrogCallBack callback) throws IOException {
     final int length = length();
-    if (length == 0) {
-      return;
-    }
-    int disiDoc, bitSetDoc = nextSetBit(0);
-    while (bitSetDoc != DocIdSetIterator.NO_MORE_DOCS && (disiDoc = iter.advance(bitSetDoc)) < length) {
-      clear(bitSetDoc, disiDoc);
-      disiDoc++;
-      bitSetDoc = (disiDoc < length) ? nextSetBit(disiDoc) : DocIdSetIterator.NO_MORE_DOCS;
-    }
-    if (bitSetDoc != DocIdSetIterator.NO_MORE_DOCS) {
-      clear(bitSetDoc, length);
+    int bitSetDoc = -1;
+    int disiDoc = iter.nextDoc();
+    while (true) {
+      // invariant: bitSetDoc <= disiDoc
+      assert bitSetDoc <= disiDoc;
+      if (disiDoc >= length) {
+        callback.finish();
+        return;
+      }
+      if (bitSetDoc < disiDoc) {
+        bitSetDoc = nextSetBit(disiDoc);
+      }
+      if (bitSetDoc == disiDoc) {
+        callback.onMatch(bitSetDoc);
+        disiDoc = iter.nextDoc();
+      } else {
+        disiDoc = iter.advance(bitSetDoc);
+      }
     }
   }
 
-  /** this = this AND NOT other */
+  /** Does in-place AND of the bits provided by the iterator. The state of the
+   *  iterator after this operation terminates is undefined. */
+  public void and(DocIdSetIterator iter) throws IOException {
+    assertUnpositioned(iter);
+    leapFrog(iter, new LeapFrogCallBack() {
+      int previous = -1;
+
+      @Override
+      public void onMatch(int doc) {
+        clear(previous + 1, doc);
+        previous = doc;
+      }
+
+      @Override
+      public void finish() {
+        if (previous + 1 < length()) {
+          clear(previous + 1, length());
+        }
+      }
+
+    });
+  }
+
+  /** this = this AND NOT other. The state of the iterator after this operation
+   *  terminates is undefined. */
   public void andNot(DocIdSetIterator iter) throws IOException {
-    for (int doc = iter.nextDoc(), len = length(); doc < len; doc = iter.nextDoc()) {
-      clear(doc);
-    }
+    assertUnpositioned(iter);
+    leapFrog(iter, new LeapFrogCallBack() {
+
+      @Override
+      public void onMatch(int doc) {
+        clear(doc);
+      }
+
+    });
   }
 
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
 }

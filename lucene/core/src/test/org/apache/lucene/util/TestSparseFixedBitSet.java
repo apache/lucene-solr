@@ -32,6 +32,23 @@ public class TestSparseFixedBitSet extends BaseBitSetTestCase<SparseFixedBitSet>
     return set;
   }
 
+  @Override
+  protected void assertEquals(BitSet set1, SparseFixedBitSet set2, int maxDoc) {
+    super.assertEquals(set1, set2, maxDoc);
+    // check invariants of the sparse set
+    int nonZeroLongCount = 0;
+    for (int i = 0; i < set2.indices.length; ++i) {
+      final int n = Long.bitCount(set2.indices[i]);
+      if (n != 0) {
+        nonZeroLongCount += n;
+        for (int j = n; j < set2.bits[i].length; ++j) {
+          assertEquals(0, set2.bits[i][j]);
+        }
+      }
+    }
+    assertEquals(nonZeroLongCount, set2.nonZeroLongCount);
+  }
+
   public void testApproximateCardinality() {
     final SparseFixedBitSet set = new SparseFixedBitSet(10000);
     final int first = random().nextInt(1000);
