@@ -746,7 +746,7 @@ public class SortingLeafReader extends FilterLeafReader {
   /** Expert: same as {@link #wrap(org.apache.lucene.index.LeafReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
   static LeafReader wrap(LeafReader reader, Sorter.DocMap docMap) {
     if (docMap == null) {
-      // the reader is already sorter
+      // the reader is already sorted
       return reader;
     }
     if (reader.maxDoc() != docMap.size()) {

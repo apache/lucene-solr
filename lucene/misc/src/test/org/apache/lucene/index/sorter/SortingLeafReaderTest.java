@@ -30,15 +30,16 @@ public class SortingLeafReaderTest extends SorterTestBase {
   
   @BeforeClass
   public static void beforeClassSortingLeafReaderTest() throws Exception {
+    // NOTE: index was created by by super's @BeforeClass
     
     // sort the index by id (as integer, in NUMERIC_DV_FIELD)
     Sort sort = new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.INT));
-    final Sorter.DocMap docMap = new Sorter(sort).sort(reader);
+    final Sorter.DocMap docMap = new Sorter(sort).sort(unsortedReader);
  
     // Sorter.compute also sorts the values
-    NumericDocValues dv = reader.getNumericDocValues(NUMERIC_DV_FIELD);
-    sortedValues = new Integer[reader.maxDoc()];
-    for (int i = 0; i < reader.maxDoc(); ++i) {
+    NumericDocValues dv = unsortedReader.getNumericDocValues(NUMERIC_DV_FIELD);
+    sortedValues = new Integer[unsortedReader.maxDoc()];
+    for (int i = 0; i < unsortedReader.maxDoc(); ++i) {
       sortedValues[docMap.oldToNew(i)] = (int)dv.get(i);
     }
     if (VERBOSE) {
@@ -47,11 +48,11 @@ public class SortingLeafReaderTest extends SorterTestBase {
     }
     
     // sort the index by id (as integer, in NUMERIC_DV_FIELD)
-    reader = SortingLeafReader.wrap(reader, sort);
+    sortedReader = SortingLeafReader.wrap(unsortedReader, sort);
     
     if (VERBOSE) {
       System.out.print("mapped-deleted-docs: ");
-      Bits mappedLiveDocs = reader.getLiveDocs();
+      Bits mappedLiveDocs = sortedReader.getLiveDocs();
       for (int i = 0; i < mappedLiveDocs.length(); i++) {
         if (!mappedLiveDocs.get(i)) {
           System.out.print(i + " ");
@@ -60,12 +61,12 @@ public class SortingLeafReaderTest extends SorterTestBase {
       System.out.println();
     }
     
-    TestUtil.checkReader(reader);
+    TestUtil.checkReader(sortedReader);
   }
   
   public void testBadSort() throws Exception {
     try {
-      SortingLeafReader.wrap(reader, Sort.RELEVANCE);
+      SortingLeafReader.wrap(sortedReader, Sort.RELEVANCE);
       fail("Didn't get expected exception");
     } catch (IllegalArgumentException e) {
       assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
