@@ -20,6 +20,9 @@ package org.apache.lucene.util.packed;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
+import java.util.Collections;
+
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -28,7 +31,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Base implementation for {@link PagedMutable} and {@link PagedGrowableWriter}.
  * @lucene.internal
  */
-abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends LongValues {
+abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends LongValues implements Accountable {
 
   static final int MIN_BLOCK_SIZE = 1 << 6;
   static final int MAX_BLOCK_SIZE = 1 << 30;
@@ -104,7 +107,7 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
         + 3 * RamUsageEstimator.NUM_BYTES_INT;
   }
 
-  /** Return the number of bytes used by this object. */
+  @Override
   public long ramBytesUsed() {
     long bytesUsed = RamUsageEstimator.alignObjectSize(baseRamBytesUsed());
     bytesUsed += RamUsageEstimator.alignObjectSize(RamUsageEstimator.shallowSizeOf(subMutables));
@@ -112,6 +115,11 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
       bytesUsed += gw.ramBytesUsed();
     }
     return bytesUsed;
+  }
+  
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
   }
 
   protected abstract T newUnfilledCopy(long newSize);
