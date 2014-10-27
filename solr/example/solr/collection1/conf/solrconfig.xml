@@ -489,12 +489,8 @@
          useful to be able to set a latency threshold above which a request
          is considered "slow" and log that request at WARN level so we can
          easily identify slow queries.
-
-         This setting only applies if the logger for the
-         org.apache.solr.core.SolrCore is set to WARN or greater.
-
     --> 
-    <slowQueryThresholdMillis>1000</slowQueryThresholdMillis>
+    <slowQueryThresholdMillis>-1</slowQueryThresholdMillis>
 
 
     <!-- Solr Internal Query Caches

@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory implements UpdateRequestProcessorFactory.RunAlways {
   
   int maxNumToLog = 10;
-  int slowUpdateThresholdMillis = 1000;
+  int slowUpdateThresholdMillis = -1;
   @Override
   public void init( final NamedList args ) {
     if( args != null ) {
@@ -186,10 +186,12 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
     if (log.isInfoEnabled()) {
       log.info(getLogStringAndClearRspToLog());
-    } else if (log.isWarnEnabled()) {
+    }
+
+    if (log.isWarnEnabled()) {
       long elapsed = rsp.getEndTime() - req.getStartTime();
-      if (elapsed >= slowUpdateThresholdMillis) {
-        log.warn(getLogStringAndClearRspToLog());
+      if (slowUpdateThresholdMillis >= 0 && elapsed >= slowUpdateThresholdMillis) {
+        log.warn("slow: " + getLogStringAndClearRspToLog());
       }
     }
   }

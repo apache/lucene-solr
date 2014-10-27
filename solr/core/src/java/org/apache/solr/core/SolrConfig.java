@@ -241,7 +241,7 @@ public class SolrConfig extends Config {
       jmxConfig = new JmxConfiguration(false, null, null, null);
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
-     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", 1000);
+     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
 
      loadPluginInfo(SolrRequestHandler.class,"requestHandler",
                     REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
