@@ -30,8 +30,8 @@ import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 
 /**
  * This class forces a composite reader (eg a {@link
- * MultiReader} or {@link DirectoryReader}) to emulate an
- * atomic reader.  This requires implementing the postings
+ * MultiReader} or {@link DirectoryReader}) to emulate a
+ * {@link LeafReader}.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
  * MultiFields}, {@link MultiDocValues}, by stepping through
  * the sub-readers to merge fields/terms, appending docs, etc.
@@ -40,7 +40,7 @@ import org.apache.lucene.index.MultiDocValues.OrdinalMap;
  * performance hit.  If this is important to your use case,
  * you'll get better performance by gathering the sub readers using
  * {@link IndexReader#getContext()} to get the
- * atomic leaves and then operate per-LeafReader,
+ * leaves and then operate per-LeafReader,
  * instead of using this class.
  */
 public final class SlowCompositeReaderWrapper extends LeafReader {

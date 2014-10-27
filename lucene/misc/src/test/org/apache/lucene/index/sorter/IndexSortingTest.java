@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.Sort;
@@ -40,13 +41,15 @@ public class IndexSortingTest extends SorterTestBase {
   
   @BeforeClass
   public static void beforeClassSorterUtilTest() throws Exception {
+    // NOTE: index was created by by super's @BeforeClass
+
     // only read the values of the undeleted documents, since after addIndexes,
     // the deleted ones will be dropped from the index.
-    Bits liveDocs = reader.getLiveDocs();
+    Bits liveDocs = unsortedReader.getLiveDocs();
     List<Integer> values = new ArrayList<>();
-    for (int i = 0; i < reader.maxDoc(); i++) {
+    for (int i = 0; i < unsortedReader.maxDoc(); i++) {
       if (liveDocs == null || liveDocs.get(i)) {
-        values.add(Integer.valueOf(reader.document(i).get(ID_FIELD)));
+        values.add(Integer.valueOf(unsortedReader.document(i).get(ID_FIELD)));
       }
     }
     int idx = random().nextInt(SORT.length);
@@ -68,9 +71,10 @@ public class IndexSortingTest extends SorterTestBase {
 
     Directory target = newDirectory();
     IndexWriter writer = new IndexWriter(target, newIndexWriterConfig(null));
-    reader = SortingLeafReader.wrap(reader, sorter);
+    IndexReader reader = SortingLeafReader.wrap(unsortedReader, sorter);
     writer.addIndexes(reader);
     writer.close();
+    // NOTE: also closes unsortedReader
     reader.close();
     dir.close();
     
@@ -79,8 +83,8 @@ public class IndexSortingTest extends SorterTestBase {
     TestUtil.checkIndex(dir);
     
     // set reader for tests
-    reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    assertFalse("index should not have deletions", reader.hasDeletions());
+    sortedReader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
+    assertFalse("index should not have deletions", sortedReader.hasDeletions());
   }
   
 }
