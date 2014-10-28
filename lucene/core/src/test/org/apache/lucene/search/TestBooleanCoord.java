@@ -48,8 +48,7 @@ public class TestBooleanCoord extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     dir = newDirectory();
-    // nocommit behavior change
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     
     // we only add two documents for testing:
     // the first document has 3 terms A,B,C (for positive matching). we test scores against this.

@@ -197,8 +197,9 @@ public class FieldTypes {
     FLOAT,
     LONG,
     DOUBLE,
-    BINARY,
+    BINARY, // nocommit rename to bytes?
     // nocommit primary_key?
+    // nocommit boolean
   }
 
   private final boolean readOnly;
@@ -1075,7 +1076,12 @@ public class FieldTypes {
     public int getPositionIncrementGap(String fieldName) {
       FieldType field = fields.get(fieldName);
       if (field == null) {
-        return defaultIndexAnalyzer.getPositionIncrementGap(fieldName);
+        if (defaultIndexAnalyzer == null) {
+          // nocommit sheisty
+          return 0;
+        } else {
+          return defaultIndexAnalyzer.getPositionIncrementGap(fieldName);
+        }
       }
       if (field.analyzerPositionGap != null) {
         return field.analyzerPositionGap.intValue();
@@ -1090,7 +1096,12 @@ public class FieldTypes {
     public int getOffsetGap(String fieldName) {
       FieldType field = fields.get(fieldName);
       if (field == null) {
-        return defaultIndexAnalyzer.getOffsetGap(fieldName);
+        if (defaultIndexAnalyzer == null) {
+          // nocommit sheisty
+          return 1;
+        } else {
+          return defaultIndexAnalyzer.getOffsetGap(fieldName);
+        }
       }
       if (field.analyzerOffsetGap != null) {
         return field.analyzerOffsetGap.intValue();

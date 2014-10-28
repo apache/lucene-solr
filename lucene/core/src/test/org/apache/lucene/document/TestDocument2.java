@@ -22,7 +22,9 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.blocktree.Stats;
+import org.apache.lucene.codecs.lucene50.Lucene50Codec;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -49,6 +51,11 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 public class TestDocument2 extends LuceneTestCase {
+
+  public void setUp() throws Exception {
+    super.setUp();
+    Codec.setDefault(new Lucene50Codec());
+  }
 
   public void testBasic() throws Exception {
     Directory dir = newDirectory();

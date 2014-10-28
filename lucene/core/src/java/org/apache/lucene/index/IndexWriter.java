@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50Codec;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
@@ -862,7 +863,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       analyzer = fieldTypes.getIndexAnalyzer();
 
       // nocommit what to do here... cannot delegate codecs
-      if (config.getCodec() != Codec.getDefault()) {
+      if ((config.getCodec() instanceof Lucene50Codec) == false) {
         codec = config.getCodec();
       } else {
         codec = fieldTypes.getCodec();
