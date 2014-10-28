@@ -22,22 +22,24 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
 public class TestMockAnalyzer extends BaseTokenStreamTestCase {
@@ -302,17 +304,21 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       }
     };
 
-    final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory());
-    final Document doc = new Document();
-    final FieldType ft = new FieldType();
-    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
-    ft.setTokenized(true);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorPositions(true);
-    ft.setStoreTermVectorOffsets(true);
-    doc.add(new Field("f", "a", ft));
-    doc.add(new Field("f", "a", ft));
-    writer.addDocument(doc, a);
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory(), a);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+
+    final Document2 doc = writer.newDocument();
+
+    fieldTypes.enableTermVectors("f");
+    fieldTypes.enableTermVectorPositions("f");
+    fieldTypes.enableTermVectorOffsets("f");
+    fieldTypes.setIndexOptions("f", IndexOptions.DOCS_ONLY);
+    fieldTypes.setMultiValued("f");
+
+    doc.addAtom("f", "a");
+    doc.addAtom("f", "a");
+    writer.addDocument(doc);
+
     final LeafReader reader = getOnlySegmentReader(writer.getReader());
     final Fields fields = reader.getTermVectors(0);
     final Terms terms = fields.terms("f");

@@ -94,8 +94,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
           //int n = random.nextInt(2);
           if (type == 0) {
             int i = seq.addAndGet(1);
-            Document doc = DocHelper.createDocument(i, "index1", 10);
-            writer.addDocument(doc);
+            writer.addDocument(DocHelper.createDocument(writer, i, "index1", 10));
             addCount++;
           } else if (type == 1) {
             // we may or may not delete because the term may not exist,

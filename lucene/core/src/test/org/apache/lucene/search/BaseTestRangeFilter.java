@@ -21,10 +21,12 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
@@ -121,40 +123,12 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   private static IndexReader build(Random random, TestIndex index) throws IOException {
     /* build an index */
     
-    Document doc = new Document();
-    Field idField = newStringField(random, "id", "", Field.Store.YES);
-    Field idDVField = new SortedDocValuesField("id", new BytesRef());
-    Field intIdField = new IntField("id_int", 0, Store.YES);
-    Field intDVField = new NumericDocValuesField("id_int", 0);
-    Field floatIdField = new FloatField("id_float", 0, Store.YES);
-    Field floatDVField = new NumericDocValuesField("id_float", 0);
-    Field longIdField = new LongField("id_long", 0, Store.YES);
-    Field longDVField = new NumericDocValuesField("id_long", 0);
-    Field doubleIdField = new DoubleField("id_double", 0, Store.YES);
-    Field doubleDVField = new NumericDocValuesField("id_double", 0);
-    Field randField = newStringField(random, "rand", "", Field.Store.YES);
-    Field randDVField = new SortedDocValuesField("rand", new BytesRef());
-    Field bodyField = newStringField(random, "body", "", Field.Store.NO);
-    Field bodyDVField = new SortedDocValuesField("body", new BytesRef());
-    doc.add(idField);
-    doc.add(idDVField);
-    doc.add(intIdField);
-    doc.add(intDVField);
-    doc.add(floatIdField);
-    doc.add(floatDVField);
-    doc.add(longIdField);
-    doc.add(longDVField);
-    doc.add(doubleIdField);
-    doc.add(doubleDVField);
-    doc.add(randField);
-    doc.add(randDVField);
-    doc.add(bodyField);
-    doc.add(bodyDVField);
-
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
                                                      newIndexWriterConfig(random, new MockAnalyzer(random))
                                                      .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newLogMergePolicy()));
     TestUtil.reduceOpenFiles(writer.w);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableSorting("id");
 
     while(true) {
 
@@ -162,18 +136,13 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       int maxCount = 0;
 
       for (int d = minId; d <= maxId; d++) {
-        idField.setStringValue(pad(d));
-        idDVField.setBytesValue(new BytesRef(pad(d)));
-        intIdField.setIntValue(d);
-        intDVField.setLongValue(d);
-        floatIdField.setFloatValue(d);
-        floatDVField.setLongValue(Float.floatToRawIntBits(d));
-        longIdField.setLongValue(d);
-        longDVField.setLongValue(d);
-        doubleIdField.setDoubleValue(d);
-        doubleDVField.setLongValue(Double.doubleToRawLongBits(d));
-        int r = index.allowNegativeRandomInts ? random.nextInt() : random
-          .nextInt(Integer.MAX_VALUE);
+        Document2 doc = writer.newDocument();
+        doc.addAtom("id", pad(d));
+        doc.addInt("id_int", d);
+        doc.addFloat("id_float", d);
+        doc.addLong("id_long", d);
+        doc.addDouble("id_double", d);
+        int r = index.allowNegativeRandomInts ? random.nextInt() : random.nextInt(Integer.MAX_VALUE);
         if (index.maxR < r) {
           index.maxR = r;
           maxCount = 1;
@@ -187,10 +156,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         } else if (r == index.minR) {
           minCount++;
         }
-        randField.setStringValue(pad(r));
-        randDVField.setBytesValue(new BytesRef(pad(r)));
-        bodyField.setStringValue("body");
-        bodyDVField.setBytesValue(new BytesRef("body"));
+        doc.addShortText("rand", pad(r));
+        doc.addShortText("body", "body");
         writer.addDocument(doc);
       }
 

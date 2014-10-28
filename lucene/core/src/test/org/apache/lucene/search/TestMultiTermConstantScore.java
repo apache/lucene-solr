@@ -17,14 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import junit.framework.Assert;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -32,10 +37,6 @@ import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-
-import junit.framework.Assert;
 
 public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
@@ -63,11 +64,11 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
     for (int i = 0; i < data.length; i++) {
-      Document doc = new Document();
-      doc.add(newField("id", String.valueOf(i), customType));// Field.Keyword("id",String.valueOf(i)));
-      doc.add(newField("all", "all", customType));// Field.Keyword("all","all"));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", String.valueOf(i));
+      doc.addAtom("all", "all");
       if (null != data[i]) {
-        doc.add(newTextField("data", data[i], Field.Store.YES));// Field.Text("data",data[i]));
+        doc.addLargeText("data", data[i]);
       }
       writer.addDocument(doc);
     }

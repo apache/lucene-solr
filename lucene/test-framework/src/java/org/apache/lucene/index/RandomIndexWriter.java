@@ -25,7 +25,9 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -94,6 +96,14 @@ public class RandomIndexWriter implements Closeable {
     // any forced merges:
     doRandomForceMerge = !(c.getMergePolicy() instanceof NoMergePolicy) && r.nextBoolean();
   } 
+
+  public FieldTypes getFieldTypes() {
+    return w.getFieldTypes();
+  }
+
+  public Document2 newDocument() {
+    return w.newDocument();
+  }
   
   /**
    * Adds a Document.

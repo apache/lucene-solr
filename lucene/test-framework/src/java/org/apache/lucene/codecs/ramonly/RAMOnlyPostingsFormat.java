@@ -209,7 +209,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
     public RAMDoc(int docID, int freq) {
       this.docID = docID;
-      positions = new int[freq];
+      if (freq >= 0) {
+        positions = new int[freq];
+      } else {
+        positions = null;
+      }
     }
 
     @Override
@@ -347,12 +351,14 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
             postingsWriter.finishDoc();
           }
-          termsConsumer.finishTerm(term, new TermStats(docFreq, totalTermFreq));
-          sumDocFreq += docFreq;
-          sumTotalTermFreq += totalTermFreq;
+          if (docFreq > 0) {
+            termsConsumer.finishTerm(term, new TermStats(docFreq, writeFreqs ? totalTermFreq : -1));
+            sumDocFreq += docFreq;
+            sumTotalTermFreq += totalTermFreq;
+          }
         }
 
-        termsConsumer.finish(sumTotalTermFreq, sumDocFreq, docsSeen.cardinality());
+        termsConsumer.finish(writeFreqs ? sumTotalTermFreq : -1, sumDocFreq, docsSeen.cardinality());
       }
     }
 
@@ -421,7 +427,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     public void finishDoc() {
-      assert posUpto == current.positions.length;
+      assert current.positions == null || posUpto == current.positions.length;
     }
   }
 
@@ -539,7 +545,12 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() throws IOException {
-      return current.positions.length;
+      if (current.positions == null) {
+        // Big fat lie:
+        return 1;
+      } else {
+        return current.positions.length;
+      }
     }
 
     @Override

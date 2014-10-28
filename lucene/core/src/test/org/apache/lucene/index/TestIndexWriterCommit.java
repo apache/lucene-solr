@@ -666,7 +666,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(dir);
     // commit(Map) never called for this index
-    assertEquals(0, r.getIndexCommit().getUserData().size());
+    assertEquals(1, r.getIndexCommit().getUserData().size());
     r.close();
 
     w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))

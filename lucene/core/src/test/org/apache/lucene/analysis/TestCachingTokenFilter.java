@@ -20,13 +20,14 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -38,7 +39,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   public void testCaching() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     TokenStream stream = new TokenStream() {
       private int index = 0;
       private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -60,7 +61,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     
     stream = new CachingTokenFilter(stream);
     
-    doc.add(new TextField("preanalyzed", stream));
+    doc.addLargeText("preanalyzed", stream);
     
     // 1) we consume all tokens twice before we add the doc to the index
     checkTokens(stream);

@@ -21,14 +21,15 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -53,19 +54,19 @@ public class TestConjunctions extends LuceneTestCase {
     IndexWriterConfig config = newIndexWriterConfig(analyzer);
     config.setMergePolicy(newLogMergePolicy()); // we will use docids to validate
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    writer.addDocument(doc("lucene", "lucene is a very popular search engine library"));
-    writer.addDocument(doc("solr", "solr is a very popular search server and is using lucene"));
-    writer.addDocument(doc("nutch", "nutch is an internet search engine with web crawler and is using lucene and hadoop"));
+    writer.addDocument(doc(writer, "lucene", "lucene is a very popular search engine library"));
+    writer.addDocument(doc(writer, "solr", "solr is a very popular search server and is using lucene"));
+    writer.addDocument(doc(writer, "nutch", "nutch is an internet search engine with web crawler and is using lucene and hadoop"));
     reader = writer.getReader();
     writer.close();
     searcher = newSearcher(reader);
     searcher.setSimilarity(new TFSimilarity());
   }
   
-  static Document doc(String v1, String v2) {
-    Document doc = new Document();
-    doc.add(new StringField(F1, v1, Store.YES));
-    doc.add(new TextField(F2, v2, Store.YES));
+  static Document2 doc(RandomIndexWriter writer, String v1, String v2) {
+    Document2 doc = writer.newDocument();
+    doc.addAtom(F1, v1);
+    doc.addLargeText(F2, v2);
     return doc;
   }
   

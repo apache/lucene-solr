@@ -42,7 +42,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -217,7 +219,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   private static final int UNBOUNDED_MAX_MERGE_SEGMENTS = -1;
-  
+
   /**
    * Name of the write lock in the index.
    */
@@ -246,6 +248,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   private final Directory directory;  // where this index resides
   private final Analyzer analyzer;    // how to analyze text
+  final FieldTypes fieldTypes; // schema
 
   private volatile long changeCount; // increments every time a change is completed
   private volatile long lastCommitChangeCount; // last changeCount that was committed
@@ -304,7 +307,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   // The instance that was passed to the constructor. It is saved only in order
   // to allow users to query an IndexWriter settings.
-  private final LiveIndexWriterConfig config;
+  final LiveIndexWriterConfig config;
 
   /** System.nanoTime() when commit started; used to write
    *  an infoStream message about how long commit took. */
@@ -745,18 +748,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     directory = d;
-    analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();
     mergeScheduler = config.getMergeScheduler();
-    codec = config.getCodec();
 
     bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
     poolReaders = config.getReaderPooling();
 
     writeLock = directory.makeLock(WRITE_LOCK_NAME);
 
-    if (!writeLock.obtain(config.getWriteLockTimeout())) // obtain write lock
+    if (!writeLock.obtain(config.getWriteLockTimeout())) { // obtain write lock
       throw new LockObtainFailedException("Index locked for write: " + writeLock);
+    }
 
     boolean success = false;
     try {
@@ -823,6 +825,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
 
+      fieldTypes = new FieldTypes(this, create, config.getAnalyzer(), config.getSimilarity());
+
       rollbackSegments = segmentInfos.createBackupSegmentInfos();
 
       // start with previous field numbers, but new FieldInfos
@@ -853,6 +857,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         messageState();
       }
 
+      analyzer = fieldTypes.getIndexAnalyzer();
+
+      // nocommit what to do here... cannot delegate codecs
+      if (config.getCodec() != Codec.getDefault()) {
+        codec = config.getCodec();
+      } else {
+        codec = fieldTypes.getCodec();
+      }
+
       success = true;
 
     } finally {
@@ -864,6 +877,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         writeLock = null;
       }
     }
+  }
+
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
+  }
+
+  public Document2 newDocument() {
+    return new Document2(fieldTypes);
   }
   
   // reads latest field infos for the commit
@@ -2405,6 +2426,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           sis.read(dir);
           totalDocCount += sis.totalDocCount();
 
+          fieldTypes.addAll(FieldTypes.getFieldTypes(sis.getUserData(), analyzer, fieldTypes.getSimilarity()));
+
           for (SegmentCommitInfo info : sis) {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
@@ -2418,6 +2441,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             FieldInfos fis = readFieldInfos(info);
             for(FieldInfo fi : fis) {
+              // nocommit how to undo this on exception?
               globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
@@ -2507,6 +2531,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException
    *           if there is a low-level IO error
    */
+  // nocommit what about FieldTypes?
   public void addIndexes(IndexReader... readers) throws IOException {
     ensureOpen();
     int numDocs = 0;
@@ -2745,6 +2770,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               // corresponding add from an updateDocument) can
               // sneak into the commit point:
               toCommit = segmentInfos.clone();
+
+              toCommit.getUserData().put(FieldTypes.FIELD_TYPES_KEY, fieldTypes.writeToString());
 
               pendingCommitChangeCount = changeCount;
 

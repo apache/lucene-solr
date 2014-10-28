@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -29,7 +30,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestSegmentTermDocs extends LuceneTestCase {
-  private Document testDoc = new Document();
   private Directory dir;
   private SegmentCommitInfo info;
 
@@ -37,8 +37,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    DocHelper.setupDoc(testDoc);
-    info = DocHelper.writeDoc(random(), dir, testDoc);
+    info = DocHelper.writeDoc(random(), dir);
   }
   
   @Override
@@ -59,12 +58,11 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator(null);
     terms.seekCeil(new BytesRef("field"));
     DocsEnum termDocs = TestUtil.docs(random(), terms, reader.getLiveDocs(), null, DocsEnum.FLAG_FREQS);
-    if (termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)    {
-      int docId = termDocs.docID();
-      assertTrue(docId == 0);
-      int freq = termDocs.freq();
-      assertTrue(freq == 3);  
-    }
+    assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    int docId = termDocs.docID();
+    assertTrue(docId == 0);
+    int freq = termDocs.freq();
+    assertTrue(freq == 3);  
     reader.close();
   }  
   
@@ -257,10 +255,9 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   }
 
 
-  private void addDoc(IndexWriter writer, String value) throws IOException
-  {
-      Document doc = new Document();
-      doc.add(newTextField("content", value, Field.Store.NO));
-      writer.addDocument(doc);
+  private void addDoc(IndexWriter writer, String value) throws IOException {
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", value);
+    writer.addDocument(doc);
   }
 }

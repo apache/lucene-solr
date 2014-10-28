@@ -46,8 +46,8 @@ public class TestSearch extends LuceneTestCase {
       
       IndexWriter writer = new IndexWriter(directory, conf);
       try {
-        Document d = new Document();
-        d.add(newTextField("foo", "bar", Field.Store.YES));
+        Document2 d = writer.newDocument();
+        d.addLargeText("foo", "bar");
         writer.addDocument(d);
       } finally {
         writer.close();
@@ -125,9 +125,9 @@ public class TestSearch extends LuceneTestCase {
         "a c e a b c"
       };
       for (int j = 0; j < docs.length; j++) {
-        Document d = new Document();
-        d.add(newTextField("contents", docs[j], Field.Store.YES));
-        d.add(new IntField("id", j, Field.Store.NO));
+        Document2 d = writer.newDocument();
+        d.addLargeText("contents", docs[j]);
+        d.addInt("id", j);
         writer.addDocument(d);
       }
       writer.close();

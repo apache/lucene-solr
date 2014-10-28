@@ -16,23 +16,24 @@ package org.apache.lucene;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergePolicy.OneMerge;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergeTrigger;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 /**
  * Holds tests cases to verify external APIs are accessible
@@ -89,18 +90,19 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.failOn(new FailOnlyOnMerge());
 
-    Document doc = new Document();
-    Field idField = newStringField("id", "", Field.Store.YES);
-    doc.add(idField);
-    
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
         .setMergeScheduler(new MyMergeScheduler())
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setMergePolicy(newLogMergePolicy()));
+
+    Document2 doc = writer.newDocument();
+    doc.addAtom("id", "");
+    
     LogMergePolicy logMP = (LogMergePolicy) writer.getConfig().getMergePolicy();
     logMP.setMergeFactor(10);
-    for(int i=0;i<20;i++)
+    for(int i=0;i<20;i++) {
       writer.addDocument(doc);
+    }
 
     ((MyMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
     writer.close();
@@ -137,9 +139,9 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setMergeScheduler(new ReportingMergeScheduler());
     IndexWriter writer = new IndexWriter(dir, conf);
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit(); // trigger flush
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit(); // trigger flush
     writer.forceMerge(1);
     writer.close();

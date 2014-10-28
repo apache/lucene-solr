@@ -33,12 +33,14 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
@@ -53,11 +55,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -95,19 +96,16 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       fieldIDs.add(i);
     }
 
-    final Map<String,Document> docs = new HashMap<>();
+    final Map<String,Document2> docs = new HashMap<>();
 
     if (VERBOSE) {
       System.out.println("TEST: build index docCount=" + docCount);
     }
 
-    FieldType customType2 = new FieldType();
-    customType2.setStored(true);
     for(int i=0;i<docCount;i++) {
-      Document doc = new Document();
-      doc.add(idField);
+      Document2 doc = w.newDocument();
       final String id = ""+i;
-      idField.setStringValue(id);
+      doc.addAtom("id", id);
       docs.put(id, doc);
       if (VERBOSE) {
         System.out.println("TEST: add doc id=" + id);
@@ -117,7 +115,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         final String s;
         if (rand.nextInt(4) != 3) {
           s = TestUtil.randomUnicodeString(rand, 1000);
-          doc.add(newField("f"+field, s, customType2));
+          doc.addStored("f"+field, s);
         } else {
           s = null;
         }
@@ -160,7 +158,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);
           StoredDocument doc = r.document(hits.scoreDocs[0].doc);
-          Document docExp = docs.get(testID);
+          Document2 docExp = docs.get(testID);
           for(int i=0;i<fieldCount;i++) {
             assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));
           }
@@ -238,86 +236,12 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     dir.close();
   }
   
-  public void testNumericField() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    final int numDocs = atLeast(500);
-    final Number[] answers = new Number[numDocs];
-    final NumericType[] typeAnswers = new NumericType[numDocs];
-    for(int id=0;id<numDocs;id++) {
-      Document doc = new Document();
-      final Field nf;
-      final Field sf;
-      final Number answer;
-      final NumericType typeAnswer;
-      if (random().nextBoolean()) {
-        // float/double
-        if (random().nextBoolean()) {
-          final float f = random().nextFloat();
-          answer = Float.valueOf(f);
-          nf = new FloatField("nf", f, Field.Store.NO);
-          sf = new StoredField("nf", f);
-          typeAnswer = NumericType.FLOAT;
-        } else {
-          final double d = random().nextDouble();
-          answer = Double.valueOf(d);
-          nf = new DoubleField("nf", d, Field.Store.NO);
-          sf = new StoredField("nf", d);
-          typeAnswer = NumericType.DOUBLE;
-        }
-      } else {
-        // int/long
-        if (random().nextBoolean()) {
-          final int i = random().nextInt();
-          answer = Integer.valueOf(i);
-          nf = new IntField("nf", i, Field.Store.NO);
-          sf = new StoredField("nf", i);
-          typeAnswer = NumericType.INT;
-        } else {
-          final long l = random().nextLong();
-          answer = Long.valueOf(l);
-          nf = new LongField("nf", l, Field.Store.NO);
-          sf = new StoredField("nf", l);
-          typeAnswer = NumericType.LONG;
-        }
-      }
-      doc.add(nf);
-      doc.add(sf);
-      answers[id] = answer;
-      typeAnswers[id] = typeAnswer;
-      FieldType ft = new FieldType(IntField.TYPE_STORED);
-      ft.setNumericPrecisionStep(Integer.MAX_VALUE);
-      doc.add(new IntField("id", id, ft));
-      doc.add(new NumericDocValuesField("id", id));
-      w.addDocument(doc);
-    }
-    final DirectoryReader r = w.getReader();
-    w.close();
-    
-    assertEquals(numDocs, r.numDocs());
-
-    for(LeafReaderContext ctx : r.leaves()) {
-      final LeafReader sub = ctx.reader();
-      final NumericDocValues ids = DocValues.getNumeric(sub, "id");
-      for(int docID=0;docID<sub.numDocs();docID++) {
-        final StoredDocument doc = sub.document(docID);
-        final Field f = (Field) doc.getField("nf");
-        assertTrue("got f=" + f, f instanceof StoredField);
-        assertEquals(answers[(int) ids.get(docID)], f.numericValue());
-      }
-    }
-    r.close();
-    dir.close();
-  }
-
   public void testIndexedBit() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType onlyStored = new FieldType();
-    onlyStored.setStored(true);
-    doc.add(new Field("field", "value", onlyStored));
-    doc.add(new StringField("field2", "value", Field.Store.YES));
+    Document2 doc = w.newDocument();
+    doc.addStored("field", "value");
+    doc.addAtom("field2", "value");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
@@ -412,12 +336,10 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
     
     // make sure the readers are properly cloned
-    final Document doc = new Document();
-    final Field field = new StringField("fld", "", Store.YES);
-    doc.add(field);
     final int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; ++i) {
-      field.setStringValue("" + i);
+      final Document2 doc = iw.newDocument();
+      doc.addAtom("fld", "" + i);
       iw.addDocument(doc);
     }
     iw.commit();
@@ -515,17 +437,11 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       }
     }
 
-    final FieldType type = new FieldType(StringField.TYPE_STORED);
-    type.setIndexOptions(null);
-    type.freeze();
-    IntField id = new IntField("id", 0, Store.YES);
     for (int i = 0; i < data.length; ++i) {
-      Document doc = new Document();
-      doc.add(id);
-      id.setIntValue(i);
+      Document2 doc = iw.newDocument();
+      doc.addInt("id", i);
       for (int j = 0; j < data[i].length; ++j) {
-        Field f = new Field("bytes" + j, data[i][j], type);
-        doc.add(f);
+        doc.addStored("bytes" + j, new BytesRef(data[i][j]));
       }
       iw.w.addDocument(doc);
       if (random().nextBoolean() && (i % (data.length / 10) == 0)) {
@@ -655,9 +571,9 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     for (int i = 0; i < numDocs; ++i) {
-      Document doc = new Document();
-      doc.add(new StringField("id", Integer.toString(i), Store.YES));
-      doc.add(new StoredField("f", TestUtil.randomSimpleString(random())));
+      Document2 doc = w.newDocument();
+      doc.addAtom("id", Integer.toString(i));
+      doc.addAtom("f", TestUtil.randomSimpleString(random()));
       w.addDocument(doc);
     }
     final int deleteCount = TestUtil.nextInt(random(), 5, numDocs);

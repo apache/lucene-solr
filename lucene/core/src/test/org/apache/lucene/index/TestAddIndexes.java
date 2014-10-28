@@ -163,15 +163,15 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory aux = newDirectory();
 
     setUpDirs(dir, aux);
-    IndexWriter writer = newWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = newWriter(dir, newIndexWriterConfig().setOpenMode(OpenMode.APPEND));
     writer.addIndexes(aux);
 
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
-      doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", "" + (i % 10));
+      doc.addLargeText("content", "bbb " + i);
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     // Deletes one of the 10 added docs, leaving 9:
@@ -204,9 +204,9 @@ public class TestAddIndexes extends LuceneTestCase {
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
-      doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", "" + (i % 10));
+      doc.addLargeText("content", "bbb " + i);
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     
@@ -242,9 +242,9 @@ public class TestAddIndexes extends LuceneTestCase {
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
-      doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", "" + (i % 10));
+      doc.addLargeText("content", "bbb " + i);
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
 
@@ -517,16 +517,16 @@ public class TestAddIndexes extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa", Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("content", "aaa");
       writer.addDocument(doc);
     }
   }
 
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("content", "bbb", Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("content", "bbb");
       writer.addDocument(doc);
     }
   }
@@ -602,21 +602,20 @@ public class TestAddIndexes extends LuceneTestCase {
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
     lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(100);
-    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
-    IndexWriter writer = new IndexWriter(dir, types.getDefaultIndexWriterConfig()
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
         .setMaxBufferedDocs(5).setMergePolicy(lmp));
-    types.setIndexWriter(writer);
 
-    Document2 doc = new Document2(types);
-    types.enableTermVectors("content");
-    types.enableTermVectorPositions("content");
-    types.enableTermVectorOffsets("content");
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    Document2 doc = writer.newDocument();
+    fieldTypes.enableTermVectors("content");
+    fieldTypes.enableTermVectorPositions("content");
+    fieldTypes.enableTermVectorOffsets("content");
     doc.addLargeText("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
     for(int i=0;i<60;i++) {
       writer.addDocument(doc);
     }
 
-    doc = new Document2(types);
+    doc = writer.newDocument();
     doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
     doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
     doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
@@ -641,11 +640,10 @@ public class TestAddIndexes extends LuceneTestCase {
 
   // TODO: these are also in TestIndexWriter... add a simple doc-writing method
   // like this to LuceneTestCase?
-  private void addDoc(IndexWriter writer) throws IOException
-  {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa", Field.Store.NO));
-      writer.addDocument(doc);
+  private void addDoc(IndexWriter writer) throws IOException {
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "aaa");
+    writer.addDocument(doc);
   }
   
   private abstract class RunAddIndexesThreads {

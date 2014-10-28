@@ -19,9 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -51,10 +55,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     mergedDir = newDirectory();
     merge1Dir = newDirectory();
     merge2Dir = newDirectory();
-    DocHelper.setupDoc(doc1);
-    SegmentCommitInfo info1 = DocHelper.writeDoc(random(), merge1Dir, doc1);
-    DocHelper.setupDoc(doc2);
-    SegmentCommitInfo info2 = DocHelper.writeDoc(random(), merge2Dir, doc2);
+    SegmentCommitInfo info1 = DocHelper.writeDoc(random(), merge1Dir);
+    SegmentCommitInfo info2 = DocHelper.writeDoc(random(), merge2Dir);
     reader1 = new SegmentReader(info1, newIOContext(random()));
     reader2 = new SegmentReader(info2, newIOContext(random()));
   }
@@ -96,11 +98,15 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(mergedReader.numDocs() == 2);
     StoredDocument newDoc1 = mergedReader.document(0);
     assertTrue(newDoc1 != null);
+
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(merge1Dir, new MockAnalyzer(random()));
+    Set<String> unstored = DocHelper.getUnstored(fieldTypes);
+
     //There are 2 unstored fields on the document
-    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
+    assertEquals(DocHelper.numFields(newDoc1), DocHelper.numFields() - unstored.size());
     StoredDocument newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
+    assertEquals(DocHelper.numFields(newDoc2), DocHelper.numFields() - unstored.size());
 
     DocsEnum termDocs = TestUtil.docs(random(), mergedReader,
         DocHelper.TEXT_FIELD_2_KEY,
@@ -136,7 +142,7 @@ public class TestSegmentMerger extends LuceneTestCase {
       i++;
     }
 
-    TestSegmentReader.checkNorms(mergedReader);
+    TestSegmentReader.checkNorms(fieldTypes, mergedReader);
     mergedReader.close();
   }
 

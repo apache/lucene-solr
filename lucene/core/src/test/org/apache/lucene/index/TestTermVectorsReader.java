@@ -195,7 +195,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = seg.info.getCodec().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);

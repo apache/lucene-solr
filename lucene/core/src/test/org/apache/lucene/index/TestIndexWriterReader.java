@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -76,7 +77,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     for (int i = 0; i < 97 ; i++) {
       DirectoryReader reader = writer.getReader();
       if (i == 0) {
-        writer.addDocument(DocHelper.createDocument(i, "x", 1 + random().nextInt(5)));
+        writer.addDocument(DocHelper.createDocument(writer, i, "x", 1 + random().nextInt(5)));
       } else {
         int previous = random().nextInt(i);
         // a check if the reader is current here could fail since there might be
@@ -85,10 +86,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
         case 0:
         case 1:
         case 2:
-          writer.addDocument(DocHelper.createDocument(i, "x", 1 + random().nextInt(5)));
+          writer.addDocument(DocHelper.createDocument(writer, i, "x", 1 + random().nextInt(5)));
           break;
         case 3:
-          writer.updateDocument(new Term("id", "" + previous), DocHelper.createDocument(
+          writer.updateDocument(new Term("id", "" + previous), DocHelper.createDocument(writer,
               previous, "x", 1 + random().nextInt(5)));
           break;
         case 4:
@@ -107,7 +108,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir1, iwc);
     assertTrue(reader.isCurrent());
-    writer.addDocument(DocHelper.createDocument(1, "x", 1+random().nextInt(5)));
+    writer.addDocument(DocHelper.createDocument(writer, 1, "x", 1+random().nextInt(5)));
     assertTrue(reader.isCurrent()); // segments in ram but IW is different to the readers one
     writer.close();
     assertFalse(reader.isCurrent()); // segments written
@@ -133,17 +134,17 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // create the index
     createIndexNoClose(!doFullMerge, "index1", writer);
 
-    // writer.flush(false, true, true);
-
     // get a reader
     DirectoryReader r1 = writer.getReader();
     assertTrue(r1.isCurrent());
 
     String id10 = r1.document(10).getField("id").stringValue();
     
-    Document newDoc = new Document(r1.document(10));
+    Document2 newDoc = writer.newDocument();
+    newDoc.addAll(r1.document(10));
+      
     newDoc.removeField("id");
-    newDoc.add(newStringField("id", Integer.toString(8000), Field.Store.YES));
+    newDoc.addAtom("id", Integer.toString(8000));
     writer.updateDocument(new Term("id", id10), newDoc);
     assertFalse(r1.isCurrent());
 
@@ -167,8 +168,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r3));
 
     writer = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "a b c");
     writer.addDocument(doc);
     assertTrue(r2.isCurrent());
     assertTrue(r3.isCurrent());
@@ -189,15 +190,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     
     IndexWriter writer = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "a b c");
     writer.addDocument(doc);
     writer.close();
     
     iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir, iwc);
-    doc = new Document();
-    doc.add(newTextField("field", "a b c", Field.Store.NO));
+    doc = writer.newDocument();
+    doc.addLargeText("field", "a b c");
     DirectoryReader nrtReader = writer.getReader();
     assertTrue(nrtReader.isCurrent());
     writer.addDocument(doc);
@@ -409,15 +410,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
                                                      .setMaxBufferedDocs(2));
       TestUtil.reduceOpenFiles(writer);
       for (int i = 0; i < NUM_INIT_DOCS; i++) {
-        Document doc = DocHelper.createDocument(i, "addindex", 4);
-        writer.addDocument(doc);
+        writer.addDocument(DocHelper.createDocument(writer, i, "addindex", 4));
       }
         
       writer.close();
       
       readers = new IndexReader[numDirs];
-      for (int i = 0; i < numDirs; i++)
+      for (int i = 0; i < numDirs; i++) {
         readers[i] = DirectoryReader.open(addDir);
+      }
     }
     
     void joinThreads() {
@@ -440,8 +441,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
 
     void closeDir() throws Throwable {
-      for (int i = 0; i < numDirs; i++)
+      for (int i = 0; i < numDirs; i++) {
         readers[i].close();
+      }
       addDir.close();
     }
     
@@ -459,8 +461,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
           public void run() {
             try {
               final Directory[] dirs = new Directory[numDirs];
-              for (int k = 0; k < numDirs; k++)
+              for (int k = 0; k < numDirs; k++) {
                 dirs[k] = new MockDirectoryWrapper(random(), new RAMDirectory(addDir, newIOContext(random())));
+              }
               //int j = 0;
               //while (true) {
                 // System.out.println(Thread.currentThread().getName() + ": iter
@@ -480,8 +483,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
           }
         };
       }
-      for (int i = 0; i < numThreads; i++)
+      for (int i = 0; i < numThreads; i++) {
         threads[i].start();
+      }
     }
     
     void doBody(int j, Directory[] dirs) throws Throwable {
@@ -531,8 +535,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(r2.maxDoc(), 100);
     // add 100 documents
     for (int x = 10000; x < 10000 + 100; x++) {
-      Document d = DocHelper.createDocument(x, "index1", 5);
-      writer.addDocument(d);
+      writer.addDocument(DocHelper.createDocument(writer, x, "index1", 5));
     }
     writer.flush(false, true);
     // verify the reader was reopened internally
@@ -578,7 +581,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir1, LuceneTestCase.newIndexWriterConfig(random, new MockAnalyzer(random))
         .setMergePolicy(new LogDocMergePolicy()));
     for (int i = 0; i < 100; i++) {
-      w.addDocument(DocHelper.createDocument(i, indexName, 4));
+      w.addDocument(DocHelper.createDocument(w, i, indexName, 4));
     }
     if (!multiSegment) {
       w.forceMerge(1);
@@ -589,7 +592,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public static void createIndexNoClose(boolean multiSegment, String indexName,
       IndexWriter w) throws IOException {
     for (int i = 0; i < 100; i++) {
-      w.addDocument(DocHelper.createDocument(i, indexName, 4));
+      w.addDocument(DocHelper.createDocument(w, i, indexName, 4));
     }
     if (!multiSegment) {
       w.forceMerge(1);
@@ -628,14 +631,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      writer.addDocument(DocHelper.createDocument(i, "test", 4));
+      writer.addDocument(DocHelper.createDocument(writer, i, "test", 4));
     }
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
 
     assertTrue(warmer.warmCount > 0);
     final int count = warmer.warmCount;
 
-    writer.addDocument(DocHelper.createDocument(17, "test", 4));
+    writer.addDocument(DocHelper.createDocument(writer, 17, "test", 4));
     writer.forceMerge(1);
     assertTrue(warmer.warmCount > count);
     
@@ -661,7 +664,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, r1.numDocs());
 
     for (int i = 0; i < 10; i++) {
-      writer.addDocument(DocHelper.createDocument(i, "test", 4));
+      writer.addDocument(DocHelper.createDocument(writer, i, "test", 4));
     }
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
 
@@ -829,7 +832,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             do {
               try {
                 for(int docUpto=0;docUpto<10;docUpto++) {
-                  writer.addDocument(DocHelper.createDocument(10*count+docUpto, "test", 4));
+                  writer.addDocument(DocHelper.createDocument(writer, 10*count+docUpto, "test", 4));
                 }
                 count++;
                 final int limit = count*10;
@@ -885,13 +888,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                  .setMergePolicy(newLogMergePolicy()));
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c", Field.Store.NO));
-    Field id = newStringField("id", "", Field.Store.NO);
-    doc.add(id);
-    id.setStringValue("0");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "a b c");
+    doc.addAtom("id", "0");
     w.addDocument(doc);
-    id.setStringValue("1");
+
+    doc = w.newDocument();
+    doc.addLargeText("field", "a b c");
+    doc.addAtom("id", "1");
     w.addDocument(doc);
     w.deleteDocuments(new Term("id", "0"));
 
@@ -909,14 +913,16 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testDeletesNumDocs() throws Throwable {
     Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c", Field.Store.NO));
-    Field id = newStringField("id", "", Field.Store.NO);
-    doc.add(id);
-    id.setStringValue("0");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "a b c");
+    doc.addAtom("id", "0");
     w.addDocument(doc);
-    id.setStringValue("1");
+
+    doc = w.newDocument();
+    doc.addLargeText("field", "a b c");
+    doc.addAtom("id", "1");
     w.addDocument(doc);
+
     IndexReader r = w.getReader();
     assertEquals(2, r.numDocs());
     r.close();
@@ -966,8 +972,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
 
-    Document doc = new Document();
-    doc.add(newStringField("foo", "bar", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addAtom("foo", "bar");
     for(int i=0;i<20;i++) {
       w.addDocument(doc);
     }
@@ -977,7 +983,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(didWarm.get());
   }
   
-  public void testSimpleMergedSegmentWramer() throws Exception {
+  public void testSimpleMergedSegmentWarmer() throws Exception {
     Directory dir = newDirectory();
     final AtomicBoolean didWarm = new AtomicBoolean();
     InfoStream infoStream = new InfoStream() {
@@ -1006,8 +1012,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
            .setMergePolicy(newLogMergePolicy(10))
     );
 
-    Document doc = new Document();
-    doc.add(newStringField("foo", "bar", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addAtom("foo", "bar");
     for(int i=0;i<20;i++) {
       w.addDocument(doc);
     }
@@ -1028,7 +1034,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNull(r2);
     
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     DirectoryReader r3 = DirectoryReader.openIfChanged(r);
     assertNotNull(r3);
     assertTrue(r3.getVersion() != r.getVersion());
@@ -1083,11 +1089,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // create a segment and open an NRT reader
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.getReader().close();
     
     // add a new document so a new NRT reader is required
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
 
     // try to obtain an NRT reader twice: first time it fails and closes all the
     // other NRT readers. second time it fails, but also fails to close the
@@ -1118,8 +1124,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     // Create 500 segments:
     for(int i=0;i<500;i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("id", ""+i);
       w.addDocument(doc);
       IndexReader r = DirectoryReader.open(w, true);
       // Make sure segment count never exceeds 100:
@@ -1135,12 +1141,12 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
 
     // Pull NRT reader; it has 1 segment:
     DirectoryReader r1 = DirectoryReader.open(w, true);
     assertEquals(1, r1.leaves().size());
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     w.commit();
 
     List<IndexCommit> commits = DirectoryReader.listCommits(dir);

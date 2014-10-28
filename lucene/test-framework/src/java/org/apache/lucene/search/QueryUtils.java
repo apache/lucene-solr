@@ -202,7 +202,7 @@ public class QueryUtils {
     }
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random)));
     for (int i = 0; i < numDocs; i++) {
-      w.addDocument(new Document());
+      w.addDocument(w.newDocument());
     }
     w.forceMerge(1);
     w.close();

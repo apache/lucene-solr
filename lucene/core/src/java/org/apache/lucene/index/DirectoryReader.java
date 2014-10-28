@@ -390,5 +390,4 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @lucene.experimental
    */
   public abstract IndexCommit getIndexCommit() throws IOException;
-
 }

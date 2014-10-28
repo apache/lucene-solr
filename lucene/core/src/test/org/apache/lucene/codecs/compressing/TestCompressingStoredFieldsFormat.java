@@ -21,9 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
@@ -32,7 +33,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Test;
-
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -61,25 +61,14 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     // Cannot use RIW because this test wants CFS to stay off:
     IndexWriter iw = new IndexWriter(dir, iwConf);
 
-    final Document validDoc = new Document();
-    validDoc.add(new IntField("id", 0, Store.YES));
+    Document2 validDoc = iw.newDocument();
+    validDoc.addInt("id", 0);
     iw.addDocument(validDoc);
     iw.commit();
     
     // make sure that #writeField will fail to trigger an abort
-    final Document invalidDoc = new Document();
-    FieldType fieldType = new FieldType();
-    fieldType.setStored(true);
-    invalidDoc.add(new Field("invalid", fieldType) {
-      
-      @Override
-      public String stringValue() {
-        // TODO: really bad & scary that this causes IW to
-        // abort the segment!!  We should fix this.
-        return null;
-      }
-      
-    });
+    Document2 invalidDoc = iw.newDocument();
+    invalidDoc.addStored("invalid", (String) null);
     
     try {
       iw.addDocument(invalidDoc);

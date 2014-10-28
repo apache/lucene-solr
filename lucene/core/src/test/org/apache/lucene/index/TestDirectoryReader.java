@@ -30,12 +30,9 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -52,22 +49,19 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testDocument() throws IOException {
     SegmentReader [] readers = new SegmentReader[2];
     Directory dir = newDirectory();
-    Document doc1 = new Document();
-    Document doc2 = new Document();
-    DocHelper.setupDoc(doc1);
-    DocHelper.setupDoc(doc2);
-    DocHelper.writeDoc(random(), dir, doc1);
-    DocHelper.writeDoc(random(), dir, doc2);
+    DocHelper.writeDoc(random(), dir);
+    DocHelper.writeDoc(random(), dir);
     DirectoryReader reader = DirectoryReader.open(dir);
     assertTrue(reader != null);
     assertTrue(reader instanceof StandardDirectoryReader);
-    
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(reader.getIndexCommit(), new MockAnalyzer(random()));
+    Set<String> unstored = DocHelper.getUnstored(fieldTypes);
     StoredDocument newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);
-    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
+    assertEquals(DocHelper.numFields() - unstored.size(), DocHelper.numFields(newDoc1));
     StoredDocument newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
+    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields() - unstored.size());
     Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
 
@@ -128,8 +122,8 @@ public class TestDirectoryReader extends LuceneTestCase {
   private void addDoc(Random random, Directory ramDir1, String s, boolean create) throws IOException {
     IndexWriter iw = new IndexWriter(ramDir1, newIndexWriterConfig(new MockAnalyzer(random))
                                                 .setOpenMode(create ? OpenMode.CREATE : OpenMode.APPEND));
-    Document doc = new Document();
-    doc.add(newTextField("body", s, Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("body", s);
     iw.addDocument(doc);
     iw.close();
   }
@@ -170,15 +164,12 @@ public class TestDirectoryReader extends LuceneTestCase {
                                          newIndexWriterConfig(new MockAnalyzer(random()))
                                          );
 
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
 
-    FieldType customType3 = new FieldType();
-    customType3.setStored(true);
-      
-    doc.add(new StringField("keyword", "test1", Field.Store.YES));
-    doc.add(new TextField("text", "test1", Field.Store.YES));
-    doc.add(new Field("unindexed", "test1", customType3));
-    doc.add(new TextField("unstored","test1", Field.Store.NO));
+    doc.addAtom("keyword", "test1");
+    doc.addLargeText("text", "test1");
+    doc.addStored("unindexed", "test1");
+    doc.addLargeText("unstored", "test1");
     writer.addDocument(doc);
 
     writer.close();
@@ -200,44 +191,44 @@ public class TestDirectoryReader extends LuceneTestCase {
     // want to get some more segments here
     int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
     for (int i = 0; i < 5*mergeFactor; i++) {
-      doc = new Document();
-      doc.add(new StringField("keyword", "test1", Field.Store.YES));
-      doc.add(new TextField("text", "test1", Field.Store.YES));
-      doc.add(new Field("unindexed", "test1", customType3));
-      doc.add(new TextField("unstored","test1", Field.Store.NO));
+      doc = writer.newDocument();
+      doc.addAtom("keyword", "test1");
+      doc.addLargeText("text", "test1");
+      doc.addStored("unindexed", "test1");
+      doc.addLargeText("unstored", "test1");
       writer.addDocument(doc);
     }
     // new fields are in some different segments (we hope)
     for (int i = 0; i < 5*mergeFactor; i++) {
-      doc = new Document();
-      doc.add(new StringField("keyword2", "test1", Field.Store.YES));
-      doc.add(new TextField("text2", "test1", Field.Store.YES));
-      doc.add(new Field("unindexed2", "test1", customType3));
-      doc.add(new TextField("unstored2","test1", Field.Store.NO));
+      doc = writer.newDocument();
+      doc.addAtom("keyword2", "test1");
+      doc.addLargeText("text2", "test1");
+      doc.addStored("unindexed2", "test1");
+      doc.addLargeText("unstored2", "test1");
       writer.addDocument(doc);
     }
     // new termvector fields
 
-    FieldType customType5 = new FieldType(TextField.TYPE_STORED);
-    customType5.setStoreTermVectors(true);
-    FieldType customType6 = new FieldType(TextField.TYPE_STORED);
-    customType6.setStoreTermVectors(true);
-    customType6.setStoreTermVectorOffsets(true);
-    FieldType customType7 = new FieldType(TextField.TYPE_STORED);
-    customType7.setStoreTermVectors(true);
-    customType7.setStoreTermVectorPositions(true);
-    FieldType customType8 = new FieldType(TextField.TYPE_STORED);
-    customType8.setStoreTermVectors(true);
-    customType8.setStoreTermVectorOffsets(true);
-    customType8.setStoreTermVectorPositions(true);
-      
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("termvector");
+
+    fieldTypes.enableTermVectors("tvoffset");
+    fieldTypes.enableTermVectorOffsets("tvoffset");
+
+    fieldTypes.enableTermVectors("tvposition");
+    fieldTypes.enableTermVectorPositions("tvposition");
+
+    fieldTypes.enableTermVectors("tvpositionoffset");
+    fieldTypes.enableTermVectorOffsets("tvpositionoffset");
+    fieldTypes.enableTermVectorPositions("tvpositionoffset");
+
     for (int i = 0; i < 5*mergeFactor; i++) {
-      doc = new Document();
-      doc.add(new TextField("tvnot", "tvnot", Field.Store.YES));
-      doc.add(new Field("termvector", "termvector", customType5));
-      doc.add(new Field("tvoffset", "tvoffset", customType6));
-      doc.add(new Field("tvposition", "tvposition", customType7));
-      doc.add(new Field("tvpositionoffset", "tvpositionoffset", customType8));
+      doc = writer.newDocument();
+      doc.addLargeText("tvnot", "tvnot");
+      doc.addLargeText("termvector", "termvector");
+      doc.addLargeText("tvoffset", "tvoffset");
+      doc.addLargeText("tvposition", "tvposition");
+      doc.addLargeText("tvpositionoffset", "tvpositionoffset");
       writer.addDocument(doc);
     }
       
@@ -317,26 +308,22 @@ public class TestDirectoryReader extends LuceneTestCase {
     // want to get some more segments here
     // new termvector fields
     int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
-    FieldType customType5 = new FieldType(TextField.TYPE_STORED);
-    customType5.setStoreTermVectors(true);
-    FieldType customType6 = new FieldType(TextField.TYPE_STORED);
-    customType6.setStoreTermVectors(true);
-    customType6.setStoreTermVectorOffsets(true);
-    FieldType customType7 = new FieldType(TextField.TYPE_STORED);
-    customType7.setStoreTermVectors(true);
-    customType7.setStoreTermVectorPositions(true);
-    FieldType customType8 = new FieldType(TextField.TYPE_STORED);
-    customType8.setStoreTermVectors(true);
-    customType8.setStoreTermVectorOffsets(true);
-    customType8.setStoreTermVectorPositions(true);
+
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("tvoffset");
+    fieldTypes.enableTermVectorOffsets("tvoffset");
+    fieldTypes.enableTermVectors("tvposition");
+    fieldTypes.enableTermVectorPositions("tvposition");
+    fieldTypes.enableTermVectors("tvpositionoffset");
+    fieldTypes.enableTermVectorPositions("tvpositionoffset");
+    fieldTypes.enableTermVectorOffsets("tvpositionoffset");
     for (int i = 0; i < 5 * mergeFactor; i++) {
-      Document doc = new Document();
-      doc.add(new TextField("tvnot", "one two two three three three", Field.Store.YES));
-      doc.add(new Field("termvector", "one two two three three three", customType5));
-      doc.add(new Field("tvoffset", "one two two three three three", customType6));
-      doc.add(new Field("tvposition", "one two two three three three", customType7));
-      doc.add(new Field("tvpositionoffset", "one two two three three three", customType8));
-      
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("tvnot", "one two two three three three");
+      doc.addStored("termvector", "one two two three three three");
+      doc.addLargeText("tvoffset", "one two two three three three");
+      doc.addLargeText("tvposition", "one two two three three three");
+      doc.addLargeText("tvpositionoffset", "one two two three three three");
       writer.addDocument(doc);
     }
     writer.close();
@@ -380,9 +367,9 @@ public class TestDirectoryReader extends LuceneTestCase {
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                     .setOpenMode(OpenMode.APPEND)
                                     .setMergePolicy(newLogMergePolicy()));
-    Document doc = new Document();
-    doc.add(new StoredField("bin1", bin));
-    doc.add(new TextField("junk", "junk text", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addStored("bin1", new BytesRef(bin));
+    doc.addLargeText("junk", "junk text");
     writer.addDocument(doc);
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
@@ -495,55 +482,52 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   static void addDocumentWithFields(IndexWriter writer) throws IOException {
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
       
-    FieldType customType3 = new FieldType();
-    customType3.setStored(true);
-    doc.add(newStringField("keyword", "test1", Field.Store.YES));
-    doc.add(newTextField("text", "test1", Field.Store.YES));
-    doc.add(newField("unindexed", "test1", customType3));
-    doc.add(new TextField("unstored","test1", Field.Store.NO));
+    doc.addAtom("keyword", "test1");
+    doc.addLargeText("text", "test1");
+    doc.addStored("unindexed", "test1");
+    doc.addLargeText("unstored","test1");
     writer.addDocument(doc);
   }
 
   static void addDocumentWithDifferentFields(IndexWriter writer) throws IOException {
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     
-    FieldType customType3 = new FieldType();
-    customType3.setStored(true);
-    doc.add(newStringField("keyword2", "test1", Field.Store.YES));
-    doc.add(newTextField("text2", "test1", Field.Store.YES));
-    doc.add(newField("unindexed2", "test1", customType3));
-    doc.add(new TextField("unstored2","test1", Field.Store.NO));
+    doc.addAtom("keyword2", "test1");
+    doc.addLargeText("text2", "test1");
+    doc.addStored("unindexed2", "test1");
+    doc.addLargeText("unstored2","test1");
     writer.addDocument(doc);
   }
 
   static void addDocumentWithTermVectorFields(IndexWriter writer) throws IOException {
-    Document doc = new Document();
-    FieldType customType5 = new FieldType(TextField.TYPE_STORED);
-    customType5.setStoreTermVectors(true);
-    FieldType customType6 = new FieldType(TextField.TYPE_STORED);
-    customType6.setStoreTermVectors(true);
-    customType6.setStoreTermVectorOffsets(true);
-    FieldType customType7 = new FieldType(TextField.TYPE_STORED);
-    customType7.setStoreTermVectors(true);
-    customType7.setStoreTermVectorPositions(true);
-    FieldType customType8 = new FieldType(TextField.TYPE_STORED);
-    customType8.setStoreTermVectors(true);
-    customType8.setStoreTermVectorOffsets(true);
-    customType8.setStoreTermVectorPositions(true);
-    doc.add(newTextField("tvnot", "tvnot", Field.Store.YES));
-    doc.add(newField("termvector","termvector",customType5));
-    doc.add(newField("tvoffset","tvoffset", customType6));
-    doc.add(newField("tvposition","tvposition", customType7));
-    doc.add(newField("tvpositionoffset","tvpositionoffset", customType8));
-      
+    Document2 doc = writer.newDocument();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("termvector");
+
+    fieldTypes.enableTermVectors("tvoffset");
+    fieldTypes.enableTermVectorOffsets("tvoffset");
+
+    fieldTypes.enableTermVectors("tvposition");
+    fieldTypes.enableTermVectorOffsets("tvposition");
+
+    fieldTypes.enableTermVectors("tvpositionoffset");
+    fieldTypes.enableTermVectorOffsets("tvpositionoffset");
+    fieldTypes.enableTermVectorPositions("tvpositionoffset");
+
+    doc.addLargeText("tvnot", "tvnot");
+    doc.addLargeText("termvector", "termvector");
+    doc.addLargeText("tvoffset", "tvoffset");
+    doc.addLargeText("tvposition", "tvposition");
+    doc.addLargeText("tvpositionoffset", "tvpositionoffset");
+
     writer.addDocument(doc);
   }
   
   static void addDoc(IndexWriter writer, String value) throws IOException {
-    Document doc = new Document();
-    doc.add(newTextField("content", value, Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", value);
     writer.addDocument(doc);
   }
 
@@ -702,16 +686,6 @@ public class TestDirectoryReader extends LuceneTestCase {
     d.close();
   }      
 
-  static Document createDocument(String id) {
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
-    customType.setOmitNorms(true);
-    
-    doc.add(newField("id", id, customType));
-    return doc;
-  }
-  
   // LUCENE-1468 -- make sure on attempting to open an
   // DirectoryReader on a non-existent directory, you get a
   // good exception
@@ -735,9 +709,11 @@ public class TestDirectoryReader extends LuceneTestCase {
     
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMaxBufferedDocs(2));
-    writer.addDocument(createDocument("a"));
-    writer.addDocument(createDocument("a"));
-    writer.addDocument(createDocument("a"));
+    Document2 doc = writer.newDocument();
+    doc.addAtom("id", "a");
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.addDocument(doc);
     writer.close();
     
     Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
@@ -757,9 +733,9 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testUniqueTermCount() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO));
-    doc.add(newTextField("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z");
+    doc.addLargeText("number", "0 1 2 3 4 5 6 7 8 9");
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.commit();
@@ -788,7 +764,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     writer.commit();
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     writer.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
     assertTrue(r.isCurrent());
@@ -810,13 +786,13 @@ public class TestDirectoryReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(null)
         .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     sdp.snapshot();
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     sdp.snapshot();
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     sdp.snapshot();
     writer.close();
@@ -833,8 +809,8 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testTotalTermFreqCached() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document d = new Document();
-    d.add(newTextField("f", "a a b", Field.Store.NO));
+    Document2 d = writer.newDocument();
+    d.addLargeText("f", "a a b");
     writer.addDocument(d);
     DirectoryReader r = writer.getReader();
     writer.close();
@@ -853,11 +829,11 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testGetSumDocFreq() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document d = new Document();
-    d.add(newTextField("f", "a", Field.Store.NO));
+    Document2 d = writer.newDocument();
+    d.addLargeText("f", "a");
     writer.addDocument(d);
-    d = new Document();
-    d.add(newTextField("f", "b", Field.Store.NO));
+    d = writer.newDocument();
+    d.addLargeText("f", "b");
     writer.addDocument(d);
     DirectoryReader r = writer.getReader();
     writer.close();
@@ -874,11 +850,11 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testGetDocCount() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document d = new Document();
-    d.add(newTextField("f", "a", Field.Store.NO));
+    Document2 d = writer.newDocument();
+    d.addLargeText("f", "a");
     writer.addDocument(d);
-    d = new Document();
-    d.add(newTextField("f", "a", Field.Store.NO));
+    d = writer.newDocument();
+    d.addLargeText("f", "a");
     writer.addDocument(d);
     DirectoryReader r = writer.getReader();
     writer.close();
@@ -895,11 +871,11 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testGetSumTotalTermFreq() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document d = new Document();
-    d.add(newTextField("f", "a b b", Field.Store.NO));
+    Document2 d = writer.newDocument();
+    d.addLargeText("f", "a b b");
     writer.addDocument(d);
-    d = new Document();
-    d.add(newTextField("f", "a a b", Field.Store.NO));
+    d = writer.newDocument();
+    d.addLargeText("f", "a a b");
     writer.addDocument(d);
     DirectoryReader r = writer.getReader();
     writer.close();
@@ -919,9 +895,9 @@ public class TestDirectoryReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMergePolicy(newLogMergePolicy()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     final DirectoryReader reader = writer.getReader();
     final int[] closeCount = new int[1];
@@ -952,7 +928,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testOOBDocID() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     DirectoryReader r = writer.getReader();
     writer.close();
     r.document(0);
@@ -969,7 +945,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testTryIncRef() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     DirectoryReader r = DirectoryReader.open(dir);
     assertTrue(r.tryIncRef());
@@ -983,7 +959,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testStressTryIncRef() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     DirectoryReader r = DirectoryReader.open(dir);
     int numThreads = atLeast(2);
@@ -1035,9 +1011,9 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testLoadCertainFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("field1", "foobar", Field.Store.YES));
-    doc.add(newStringField("field2", "foobaz", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addAtom("field1", "foobar");
+    doc.addAtom("field2", "foobaz");
     writer.addDocument(doc);
     DirectoryReader r = writer.getReader();
     writer.close();

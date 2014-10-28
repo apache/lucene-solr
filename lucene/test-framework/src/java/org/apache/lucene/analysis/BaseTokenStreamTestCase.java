@@ -30,9 +30,11 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -550,36 +552,52 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) throws IOException {
 
     final LineFileDocs docs = new LineFileDocs(random);
-    Document doc = null;
-    Field field = null, currentField = null;
     StringReader bogus = new StringReader("");
+    Document2 doc = null;
     if (iw != null) {
-      doc = new Document();
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      FieldTypes fieldTypes = iw.getFieldTypes();
+      doc = iw.newDocument();
+
+      // Randomize how we index the field:
       if (random.nextBoolean()) {
-        ft.setStoreTermVectors(true);
-        ft.setStoreTermVectorOffsets(random.nextBoolean());
-        ft.setStoreTermVectorPositions(random.nextBoolean());
-        if (ft.storeTermVectorPositions()) {
-          ft.setStoreTermVectorPayloads(random.nextBoolean());
+        fieldTypes.enableTermVectors("dummy");
+        if (random().nextBoolean()) {
+          fieldTypes.enableTermVectorOffsets("dummy");
+        }
+        if (random().nextBoolean()) {
+          fieldTypes.enableTermVectorPositions("dummy");
+          if (random().nextBoolean()) {
+            fieldTypes.enableTermVectorPayloads("dummy");
+          }
         }
       }
+
       if (random.nextBoolean()) {
-        ft.setOmitNorms(true);
+        fieldTypes.disableNorms("dummy");
       }
+
+      IndexOptions indexOptions;
+
       switch(random.nextInt(4)) {
-        case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
-        case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
-        case 2: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break;
+        case 0:
+          indexOptions = IndexOptions.DOCS_ONLY;
+          break;
+        case 1:
+          indexOptions = IndexOptions.DOCS_AND_FREQS;
+          break;
+        case 2:
+          indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+          break;
         default:
-                if (offsetsAreCorrect) {
-                  ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-                } else {
-                  ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-                }
+          if (offsetsAreCorrect) {
+            indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+          } else {
+            indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+          }
       }
-      currentField = field = new Field("dummy", bogus, ft);
-      doc.add(currentField);
+      fieldTypes.disableHighlighting("dummy");
+      fieldTypes.disableStored("dummy");
+      fieldTypes.setIndexOptions("dummy", indexOptions);
     }
     
     try {
@@ -611,22 +629,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         }
         
         try {
-          checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect, currentField);
-          if (iw != null) {
-            if (random.nextInt(7) == 0) {
-              // pile up a multivalued field
-              FieldType ft = field.fieldType();
-              currentField = new Field("dummy", bogus, ft);
-              doc.add(currentField);
-            } else {
-              iw.addDocument(doc);
-              if (doc.getFields().size() > 1) {
-                // back to 1 field
-                currentField = field;
-                doc.removeFields("dummy");
-                doc.add(currentField);
-              }
-            }
+          checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect, doc);
+          // We randomly accumulate multiple values for this field:
+          if (iw != null && random.nextInt(7) != 0) {
+            iw.addDocument(doc);
+            doc = iw.newDocument();
           }
         } catch (Throwable t) {
           // TODO: really we should pass a random seed to
@@ -677,7 +684,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect, null);
   }
   
-  private static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text, boolean offsetsAreCorrect, Field field) throws IOException {
+  private static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text, boolean offsetsAreCorrect, Document2 doc) throws IOException {
 
     if (VERBOSE) {
       System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
@@ -871,7 +878,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
                                 tokens.toArray(new String[tokens.size()]));
     }
     
-    if (field != null) {
+    if (doc != null) {
       reader = new StringReader(text);
       random = new Random(seed);
       if (random.nextInt(30) == 7) {
@@ -881,8 +888,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
         reader = new MockReaderWrapper(random, reader);
       }
-
-      field.setReaderValue(useCharFilter ? new MockCharFilter(reader, remainder) : reader);
+      doc.addLargeText("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
     }
   }
 

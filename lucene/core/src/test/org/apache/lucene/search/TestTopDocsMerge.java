@@ -17,25 +17,26 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class TestTopDocsMerge extends LuceneTestCase {
 
@@ -102,10 +103,10 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       for(int docIDX=0;docIDX<numDocs;docIDX++) {
-        final Document doc = new Document();
-        doc.add(newStringField("string", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
-        doc.add(newTextField("text", content[random().nextInt(content.length)], Field.Store.NO));
-        doc.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
+        final Document2 doc = w.newDocument();
+        doc.addAtom("string", TestUtil.randomRealisticUnicodeString(random()));
+        doc.addLargeText("text", content[random().nextInt(content.length)]);
+        doc.addFloat("float", random().nextFloat());
         final int intValue;
         if (random().nextInt(100) == 17) {
           intValue = Integer.MIN_VALUE;
@@ -114,7 +115,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         } else {
           intValue = random().nextInt();
         }
-        doc.add(new IntField("int", intValue, Field.Store.NO));
+        doc.addInt("int", intValue);
         if (VERBOSE) {
           System.out.println("  doc=" + doc);
         }

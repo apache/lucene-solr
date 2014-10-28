@@ -23,9 +23,11 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -55,13 +57,8 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testAddDocument() throws Exception {
-    Document testDoc = new Document();
-    DocHelper.setupDoc(testDoc);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    writer.addDocument(testDoc);
-    writer.commit();
-    SegmentCommitInfo info = writer.newestSegment();
-    writer.close();
+    SegmentCommitInfo info = DocHelper.writeDoc(random(), dir);
+
     //After adding the document, we should be able to read it back in
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
     assertTrue(reader != null);
@@ -116,9 +113,9 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
 
-    Document doc = new Document();
-    doc.add(newTextField("repeated", "repeated one", Field.Store.YES));
-    doc.add(newTextField("repeated", "repeated two", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("repeated", "repeated one");
+    doc.addLargeText("repeated", "repeated two");
 
     writer.addDocument(doc);
     writer.commit();
@@ -189,8 +186,8 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
 
-    Document doc = new Document();
-    doc.add(newTextField("f1", "a 5 a a", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("f1", "a 5 a a");
 
     writer.addDocument(doc);
     writer.commit();
@@ -214,9 +211,9 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testPreAnalyzedField() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
 
-    doc.add(new TextField("preanalyzed", new TokenStream() {
+    doc.addLargeText("preanalyzed", new TokenStream() {
       private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
       private int index = 0;
       
@@ -232,7 +229,7 @@ public class TestDocumentWriter extends LuceneTestCase {
           return true;
         }        
       }
-      }));
+      });
     
     writer.addDocument(doc);
     writer.commit();
@@ -264,22 +261,23 @@ public class TestDocumentWriter extends LuceneTestCase {
    * of the stored field should not affect the indexed one (LUCENE-1590)
    */
   public void testLUCENE_1590() throws Exception {
-    Document doc = new Document();
-    // f1 has no norms
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setOmitNorms(true);
-    FieldType customType2 = new FieldType();
-    customType2.setStored(true);
-    doc.add(newField("f1", "v1", customType));
-    doc.add(newField("f1", "v2", customType2));
-    // f2 has no TF
-    FieldType customType3 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType3.setIndexOptions(IndexOptions.DOCS_ONLY);
-    Field f = newField("f2", "v1", customType3);
-    doc.add(f);
-    doc.add(newField("f2", "v2", customType2));
-
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document2 doc = writer.newDocument();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+
+    // f1 has no norms
+    fieldTypes.disableNorms("f1");
+    fieldTypes.disableHighlighting("f1");
+    fieldTypes.setIndexOptions("f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    doc.addLargeText("f1", "v1");
+    doc.addStored("f1", "v2");
+
+    // f2 has no TF
+    fieldTypes.disableHighlighting("f2");
+    fieldTypes.setIndexOptions("f2", IndexOptions.DOCS_ONLY);
+    doc.addLargeText("f2", "v1");
+    doc.addStored("f2", "v2");
+
     writer.addDocument(doc);
     writer.forceMerge(1); // be sure to have a single segment
     writer.close();

@@ -20,8 +20,10 @@ package org.apache.lucene;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -38,24 +40,6 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestExternalCodecs extends LuceneTestCase {
 
-  private static final class CustomPerFieldCodec extends AssertingCodec {
-    
-    private final PostingsFormat ramFormat = PostingsFormat.forName("RAMOnly");
-    private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
-    private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
-
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      if (field.equals("field2") || field.equals("id")) {
-        return memoryFormat;
-      } else if (field.equals("field1")) {
-        return defaultFormat;
-      } else {
-        return ramFormat;
-      }
-    }
-  }
-
   // tests storing "id" and "field2" fields as pulsing codec,
   // whose term sort is backwards unicode code point, and
   // storing "field1" as a custom entirely-in-RAM codec
@@ -70,22 +54,21 @@ public class TestExternalCodecs extends LuceneTestCase {
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).
-        setCodec(new CustomPerFieldCodec()).
-            setMergePolicy(newLogMergePolicy(3))
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(3))
     );
-    Document doc = new Document();
-    // uses default codec:
-    doc.add(newTextField("field1", "this field uses the standard codec as the test", Field.Store.NO));
-    // uses memory codec:
-    Field field2 = newTextField("field2", "this field uses the memory codec as the test", Field.Store.NO);
-    doc.add(field2);
-    
-    Field idField = newStringField("id", "", Field.Store.NO);
 
-    doc.add(idField);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setPostingsFormat("id", "RAMOnly");
+    fieldTypes.setPostingsFormat("field1", TestUtil.getDefaultPostingsFormat().getName());
+    fieldTypes.setPostingsFormat("field2", "Memory");
+    
     for(int i=0;i<NUM_DOCS;i++) {
-      idField.setStringValue(""+i);
+      Document2 doc = w.newDocument();
+      // uses default codec:
+      doc.addLargeText("field1", "this field uses the standard codec as the test");
+      // uses memory codec:
+      doc.addLargeText("field2", "this field uses the memory codec as the test");
+      doc.addAtom("id", ""+i);
       w.addDocument(doc);
       if ((i+1)%10 == 0) {
         w.commit();

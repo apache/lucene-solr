@@ -32,8 +32,11 @@ import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FilterIterator;
+
+// nocommit clearly spell out which field defaults to what settings, e.g. that atom is not sorted by default
 
 /** A simpler API for building a document for indexing,
  *  that also tracks field properties implied by the
@@ -83,7 +86,7 @@ public class Document2 implements IndexDocument {
       Analyzer analyzer = fieldTypes.getIndexAnalyzer();
       if (analyzerIn != analyzer) {
         // TODO: remove analyzer from IW APIs
-        throw new IllegalArgumentException("analyzer must be the instance from FieldTypes");
+        throw new IllegalArgumentException("analyzer must be the instance from FieldTypes: got " + analyzerIn + " vs " + analyzer);
       }
 
       FieldTypes.FieldType fieldType = fieldTypes.getFieldType(fieldName);
@@ -138,7 +141,7 @@ public class Document2 implements IndexDocument {
           sts.setValue((String) value);
           return sts;
         } else {
-          assert value instanceof byte[];
+          assert value instanceof BytesRef;
           BinaryTokenStream bts;
           if (reuse != null) {
             if (reuse instanceof BinaryTokenStream == false) {
@@ -148,12 +151,12 @@ public class Document2 implements IndexDocument {
           } else {
             bts = new BinaryTokenStream();
           }
-          bts.setValue(new BytesRef((byte[]) value));
+          bts.setValue((BytesRef) value);
           return bts;
         }
 
       case BINARY:
-        assert value instanceof byte[];
+        assert value instanceof BytesRef;
         BinaryTokenStream bts;
         if (reuse != null) {
           if (reuse instanceof BinaryTokenStream == false) {
@@ -163,7 +166,7 @@ public class Document2 implements IndexDocument {
         } else {
           bts = new BinaryTokenStream();
         }
-        bts.setValue(new BytesRef((byte[]) value));
+        bts.setValue((BytesRef) value);
         return bts;
 
       case SHORT_TEXT:
@@ -218,7 +221,11 @@ public class Document2 implements IndexDocument {
       switch (fieldType.valueType) {
       case SHORT_TEXT:
       case TEXT:
-        return (String) value;
+        if (value instanceof String) {
+          return (String) value;
+        } else {
+          return null;
+        }
       case ATOM:
         if (value instanceof String) {
           return (String) value;
@@ -232,8 +239,8 @@ public class Document2 implements IndexDocument {
 
     @Override
     public BytesRef binaryValue() {
-      if (value instanceof byte[]) {
-        return new BytesRef((byte[]) value);
+      if (value instanceof BytesRef) {
+        return (BytesRef) value;
       } else {
         return null;
       }
@@ -241,8 +248,8 @@ public class Document2 implements IndexDocument {
 
     @Override
     public BytesRef binaryDocValue() {
-      if (value instanceof byte[]) {
-        return new BytesRef((byte[]) value);
+      if (value instanceof BytesRef) {
+        return (BytesRef) value;
       } else if (value instanceof String && (fieldType.docValuesType == DocValuesType.BINARY || fieldType.docValuesType == DocValuesType.SORTED || fieldType.docValuesType == DocValuesType.SORTED_SET)) {
         // nocommit somewhat evil we utf8-encode your string?
         return new BytesRef((String) value);
@@ -301,7 +308,7 @@ public class Document2 implements IndexDocument {
   }
 
   /** E.g. an "id" (primary key) field.  Default: indexes this value as a single token, and disables norms and freqs. */
-  public void addAtom(String fieldName, byte[] value) {
+  public void addAtom(String fieldName, BytesRef value) {
     fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM);
     fields.add(new FieldValue(fieldName, value));
   }
@@ -314,8 +321,14 @@ public class Document2 implements IndexDocument {
   }
 
   /** Default: store this value. */
-  public void addStored(String fieldName, byte[] value) {
+  public void addStored(String fieldName, BytesRef value) {
     // nocommit akward we inferred binary here?
+    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BINARY);
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  /** Default: store this value. */
+  public void addBinary(String fieldName, BytesRef value) {
     fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BINARY);
     fields.add(new FieldValue(fieldName, value));
   }
@@ -323,7 +336,7 @@ public class Document2 implements IndexDocument {
   /** Default: store this value. */
   public void addStored(String fieldName, String value) {
     // nocommit akward we inferred large_text here?
-    fieldTypes.recordLargeTextType(fieldName, true);
+    fieldTypes.recordLargeTextType(fieldName, true, false);
     fields.add(new FieldValue(fieldName, value));
   }
 
@@ -334,7 +347,7 @@ public class Document2 implements IndexDocument {
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer and stores the value. */
   public void addLargeText(String fieldName, String value, float boost) {
-    fieldTypes.recordLargeTextType(fieldName, true);
+    fieldTypes.recordLargeTextType(fieldName, true, true);
     fields.add(new FieldValue(fieldName, value, boost));
   }
 
@@ -345,7 +358,7 @@ public class Document2 implements IndexDocument {
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer. */
   public void addLargeText(String fieldName, TokenStream value, float boost) {
-    fieldTypes.recordLargeTextType(fieldName, false);
+    fieldTypes.recordLargeTextType(fieldName, false, true);
     fields.add(new FieldValue(fieldName, value, boost));
   }
 
@@ -356,7 +369,7 @@ public class Document2 implements IndexDocument {
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer. */
   public void addLargeText(String fieldName, Reader value, float boost) {
-    fieldTypes.recordLargeTextType(fieldName, false);
+    fieldTypes.recordLargeTextType(fieldName, false, true);
     fields.add(new FieldValue(fieldName, value, boost));
   }
 
@@ -384,5 +397,60 @@ public class Document2 implements IndexDocument {
   public void addDouble(String fieldName, double value) {
     fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.DOUBLE);
     fields.add(new FieldValue(fieldName, Double.valueOf(value)));
+  }
+
+  public Object get(String fieldName) {
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
+  /** Note: this FieldTypes must already know about all the fields in the incoming doc. */
+  public void addAll(StoredDocument storedDoc) {
+    for (StorableField field : storedDoc.getFields()) {
+      String fieldName = field.name();
+      FieldType fieldType = fieldTypes.getFieldType(fieldName);
+      // nocommit need more checking here ... but then, we should somehow remove StoredDocument, sicne w/ FieldTypes we can now fully
+      // reconstruct (as long as all fields were stored) what was indexed:
+      switch (fieldType.valueType) {
+      case INT:
+        addInt(fieldName, field.numericValue().intValue());
+        break;
+      case FLOAT:
+        addFloat(fieldName, field.numericValue().floatValue());
+        break;
+      case LONG:
+        addLong(fieldName, field.numericValue().longValue());
+        break;
+      case DOUBLE:
+        addDouble(fieldName, field.numericValue().doubleValue());
+        break;
+      case TEXT:
+        addLargeText(fieldName, field.stringValue());
+        break;
+      case SHORT_TEXT:
+        addShortText(fieldName, field.stringValue());
+        break;
+      case BINARY:
+        addStored(fieldName, field.binaryValue());
+        break;
+      }
+    }
+  }
+
+  // nocommit i don't like that we have this ... it's linear cost, and this class is not supposed to be a generic container
+  public void removeField(String name) {
+    Iterator<FieldValue> it = fields.iterator();
+    while (it.hasNext()) {
+      FieldValue field = it.next();
+      if (field.name().equals(name)) {
+        it.remove();
+        return;
+      }
+    }
   }
 }

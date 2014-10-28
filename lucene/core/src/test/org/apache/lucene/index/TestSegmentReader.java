@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -32,16 +35,16 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
-  private Document testDoc = new Document();
   private SegmentReader reader = null;
-  
+  private FieldTypes fieldTypes;
+
   //TODO: Setup the reader w/ multiple documents
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    DocHelper.setupDoc(testDoc);
-    SegmentCommitInfo info = DocHelper.writeDoc(random(), dir, testDoc);
+    SegmentCommitInfo info = DocHelper.writeDoc(random(), dir);
+    fieldTypes = FieldTypes.getFieldTypes(dir, new MockAnalyzer(random()));
     reader = new SegmentReader(info, IOContext.READ);
   }
   
@@ -55,8 +58,7 @@ public class TestSegmentReader extends LuceneTestCase {
   public void test() {
     assertTrue(dir != null);
     assertTrue(reader != null);
-    assertTrue(DocHelper.nameValues.size() > 0);
-    assertTrue(DocHelper.numFields(testDoc) == DocHelper.all.size());
+    assertTrue(DocHelper.numFields() == DocHelper.getAll(fieldTypes).size());
   }
   
   public void testDocument() throws IOException {
@@ -65,12 +67,13 @@ public class TestSegmentReader extends LuceneTestCase {
     StoredDocument result = reader.document(0);
     assertTrue(result != null);
     //There are 2 unstored fields on the document that are not preserved across writing
-    assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
+    assertTrue(DocHelper.numFields(result) == DocHelper.numFields() - DocHelper.getUnstored(fieldTypes).size());
     
     List<StorableField> fields = result.getFields();
+    Set<String> allFieldNames = DocHelper.getAll(fieldTypes);
     for (final StorableField field : fields ) { 
       assertTrue(field != null);
-      assertTrue(DocHelper.nameValues.containsKey(field.name()));
+      assertTrue(allFieldNames.contains(field.name()));
     }
   }
   
@@ -96,21 +99,11 @@ public class TestSegmentReader extends LuceneTestCase {
       }
     }
 
-    assertTrue(allFieldNames.size() == DocHelper.all.size());
-    for (String s : allFieldNames) {
-      assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
-    }                                                                               
-
-    assertTrue(indexedFieldNames.size() == DocHelper.indexed.size());
-    for (String s : indexedFieldNames) {
-      assertTrue(DocHelper.indexed.containsKey(s) == true || s.equals(""));
-    }
-    
-    assertTrue(notIndexedFieldNames.size() == DocHelper.unindexed.size());
-    //Get all indexed fields that are storing term vectors
-    assertTrue(tvFieldNames.size() == DocHelper.termvector.size());
-
-    assertTrue(noTVFieldNames.size() == DocHelper.notermvector.size());
+    assertEquals(allFieldNames, DocHelper.getAll(fieldTypes));
+    assertEquals(indexedFieldNames, DocHelper.getIndexed(fieldTypes));
+    assertEquals(notIndexedFieldNames, DocHelper.getNotIndexed(fieldTypes));
+    assertEquals(tvFieldNames, DocHelper.getTermVectorFields(fieldTypes));
+    assertEquals(noTVFieldNames, DocHelper.getNoTermVectorFields(fieldTypes));
   } 
   
   public void testTerms() throws IOException {
@@ -169,19 +162,17 @@ public class TestSegmentReader extends LuceneTestCase {
     }
 */
 
-    checkNorms(reader);
+    checkNorms(fieldTypes, reader);
   }
 
-  public static void checkNorms(LeafReader reader) throws IOException {
+  public static void checkNorms(FieldTypes fieldTypes, LeafReader reader) throws IOException {
     // test omit norms
-    for (int i=0; i<DocHelper.fields.length; i++) {
-      IndexableField f = DocHelper.fields[i];
-      if (f.fieldType().indexOptions() != null) {
-        assertEquals(reader.getNormValues(f.name()) != null, !f.fieldType().omitNorms());
-        assertEquals(reader.getNormValues(f.name()) != null, !DocHelper.noNorms.containsKey(f.name()));
-        if (reader.getNormValues(f.name()) == null) {
+    for (String fieldName : fieldTypes.getFieldNames()) {
+      if (fieldTypes.getIndexOptions(fieldName) != null) {
+        assertEquals("field " + fieldName, reader.getNormValues(fieldName) != null, fieldTypes.getNorms(fieldName));
+        if (reader.getNormValues(fieldName) == null) {
           // test for norms of null
-          NumericDocValues norms = MultiDocValues.getNormValues(reader, f.name());
+          NumericDocValues norms = MultiDocValues.getNormValues(reader, fieldName);
           assertNull(norms);
         }
       }

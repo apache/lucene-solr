@@ -159,16 +159,17 @@ class DocumentsWriterPerThread {
   private final AtomicLong pendingNumDocs;
   private final LiveIndexWriterConfig indexWriterConfig;
   
-  public DocumentsWriterPerThread(String segmentName, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
+  public DocumentsWriterPerThread(String segmentName, IndexWriter writer, Directory directory,
+                                  InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs) throws IOException {
     this.directoryOrig = directory;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
-    this.indexWriterConfig = indexWriterConfig;
+    this.indexWriterConfig = writer.config;
     this.infoStream = infoStream;
-    this.codec = indexWriterConfig.getCodec();
+    this.codec = writer.codec;
     this.docState = new DocState(this, infoStream);
-    this.docState.similarity = indexWriterConfig.getSimilarity();
+    this.docState.similarity = writer.fieldTypes.getSimilarity();
     this.pendingNumDocs = pendingNumDocs;
     bytesUsed = Counter.newCounter();
     byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);

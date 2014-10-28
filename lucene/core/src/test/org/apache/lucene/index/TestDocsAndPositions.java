@@ -44,15 +44,14 @@ public class TestDocsAndPositions extends LuceneTestCase {
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
-    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-                                                     types.getDefaultIndexWriterConfig());
-    types.setIndexWriter(writer.w);
-    types.disableNorms(fieldName);
-    types.disableStored(fieldName);
+                                                     newIndexWriterConfig());
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableNorms(fieldName);
+    fieldTypes.disableStored(fieldName);
 
     for (int i = 0; i < 39; i++) {
-      Document2 doc = new Document2(types);
+      Document2 doc = writer.newDocument();
       doc.addLargeText(fieldName, "1 2 3 4 5 6 7 8 9 10 "
           + "1 2 3 4 5 6 7 8 9 10 " + "1 2 3 4 5 6 7 8 9 10 "
           + "1 2 3 4 5 6 7 8 9 10");
@@ -111,18 +110,17 @@ public class TestDocsAndPositions extends LuceneTestCase {
    */
   public void testRandomPositions() throws IOException {
     Directory dir = newDirectory();
-    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-                                                     types.getDefaultIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+                                                     newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+    FieldTypes fieldTypes = writer.getFieldTypes();
     int numDocs = atLeast(47);
     int max = 1051;
     int term = random().nextInt(max);
     Integer[][] positionsInDoc = new Integer[numDocs][];
-    types.setIndexWriter(writer.w);
-    types.disableNorms(fieldName);
-    types.disableStored(fieldName);
+    fieldTypes.disableNorms(fieldName);
+    fieldTypes.disableStored(fieldName);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = new Document2(types);
+      Document2 doc = writer.newDocument();
       ArrayList<Integer> positions = new ArrayList<>();
       StringBuilder builder = new StringBuilder();
       int num = atLeast(131);
@@ -196,19 +194,18 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
   public void testRandomDocs() throws IOException {
     Directory dir = newDirectory();
-    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-                                                     types.getDefaultIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
-    types.setIndexWriter(writer.w);
-    types.disableNorms(fieldName);
-    types.disableStored(fieldName);
+                                                     newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableNorms(fieldName);
+    fieldTypes.disableStored(fieldName);
 
     int numDocs = atLeast(49);
     int max = 15678;
     int term = random().nextInt(max);
     int[] freqInDoc = new int[numDocs];
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = new Document2(types);
+      Document2 doc = new Document2(fieldTypes);
       StringBuilder builder = new StringBuilder();
       for (int j = 0; j < 199; j++) {
         int nextInt = random().nextInt(max);
@@ -278,15 +275,14 @@ public class TestDocsAndPositions extends LuceneTestCase {
    */
   public void testLargeNumberOfPositions() throws IOException {
     Directory dir = newDirectory();
-    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-                                                     types.getDefaultIndexWriterConfig());
-    types.setIndexWriter(writer.w);
-    types.disableNorms(fieldName);
-    types.disableStored(fieldName);
+                                                     newIndexWriterConfig());
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableNorms(fieldName);
+    fieldTypes.disableStored(fieldName);
     int howMany = 1000;
     for (int i = 0; i < 39; i++) {
-      Document2 doc = new Document2(types);
+      Document2 doc = new Document2(fieldTypes);
       StringBuilder builder = new StringBuilder();
       for (int j = 0; j < howMany; j++) {
         if (j % 2 == 0) {
@@ -336,11 +332,10 @@ public class TestDocsAndPositions extends LuceneTestCase {
   
   public void testDocsEnumStart() throws Exception {
     Directory dir = newDirectory();
-    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, types.getDefaultIndexWriterConfig());
-    types.setIndexWriter(writer.w);
-    types.disableStored("foo");
-    Document2 doc = new Document2(types);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableStored("foo");
+    Document2 doc = new Document2(fieldTypes);
     doc.addAtom("foo", "bar");
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
@@ -364,11 +359,10 @@ public class TestDocsAndPositions extends LuceneTestCase {
   
   public void testDocsAndPositionsEnumStart() throws Exception {
     Directory dir = newDirectory();
-    FieldTypes types = new FieldTypes(new MockAnalyzer(random()));
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, types.getDefaultIndexWriterConfig());
-    types.setIndexWriter(writer.w);
-    types.disableStored("foo");
-    Document2 doc = new Document2(types);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableStored("foo");
+    Document2 doc = new Document2(fieldTypes);
     doc.addLargeText("foo", "bar");
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();

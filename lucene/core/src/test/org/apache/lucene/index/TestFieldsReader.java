@@ -44,36 +44,21 @@ import org.junit.BeforeClass;
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
   private static Document testDoc;
-  private static FieldInfos.Builder fieldInfos = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    testDoc = new Document();
-    fieldInfos = new FieldInfos.Builder();
-    DocHelper.setupDoc(testDoc);
-    for (IndexableField field : testDoc.getFields()) {
-      fieldInfos.addOrUpdate(field.name(), field.fieldType());
-    }
     dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()))
-                               .setMergePolicy(newLogMergePolicy());
-    conf.getMergePolicy().setNoCFSRatio(0.0);
-    IndexWriter writer = new IndexWriter(dir, conf);
-    writer.addDocument(testDoc);
-    writer.close();
+    DocHelper.writeDoc(random(), dir);
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
     dir.close();
     dir = null;
-    fieldInfos = null;
-    testDoc = null;
   }
 
   public void test() throws IOException {
     assertTrue(dir != null);
-    assertTrue(fieldInfos != null);
     IndexReader reader = DirectoryReader.open(dir);
     StoredDocument doc = reader.document(0);
     assertTrue(doc != null);
@@ -84,13 +69,13 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.fieldType().storeTermVectors());
 
     assertFalse(field.fieldType().omitNorms());
-    assertTrue(field.fieldType().indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, field.fieldType().indexOptions());
 
     field = (Field) doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
     assertFalse(field.fieldType().storeTermVectors());
     assertTrue(field.fieldType().omitNorms());
-    assertTrue(field.fieldType().indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, field.fieldType().indexOptions());
 
     field = (Field) doc.getField(DocHelper.NO_TF_KEY);
     assertTrue(field != null);
@@ -225,11 +210,11 @@ public class TestFieldsReader extends LuceneTestCase {
 
     try {
       FaultyFSDirectory dir = new FaultyFSDirectory(indexDir);
-      IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-                                .setOpenMode(OpenMode.CREATE);
+      for(int i=0;i<2;i++) {
+        DocHelper.writeDoc(random(), dir);
+      }
+      IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       IndexWriter writer = new IndexWriter(dir, iwc);
-      for(int i=0;i<2;i++)
-        writer.addDocument(testDoc);
       writer.forceMerge(1);
       writer.close();
 

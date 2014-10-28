@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -855,6 +856,11 @@ public abstract class LuceneTestCase extends Assert {
                                PrintStream stream) {
     Iterator<?> iter = (null == objs) ? null : Arrays.asList(objs).iterator();
     dumpIterator(label, iter, stream);
+  }
+
+  /** create a new index writer config with random defaults, using MockAnalyzer */
+  public static IndexWriterConfig newIndexWriterConfig() {
+    return newIndexWriterConfig(random(), new MockAnalyzer(random()));
   }
 
   /** create a new index writer config with random defaults */
