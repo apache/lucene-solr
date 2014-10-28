@@ -877,6 +877,7 @@ function launch_solr() {
 -DSTOP.PORT=$stop_port -DSTOP.KEY=$STOP_KEY \
 $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
 -Dsolr.solr.home=$SOLR_HOME \
+-Dsolr.install.dir=$SOLR_TIP \
 -Duser.timezone=$SOLR_TIMEZONE \
 -Djava.net.preferIPv4Stack=true -Dsolr.autoSoftCommit.maxTime=3000"
   

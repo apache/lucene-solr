@@ -192,6 +192,7 @@ New Features
 
 * SOLR-6655: SimplePostTool now features -Dhost, -Dport, and -Dc (for core/collection)
   properties to allow easier overriding of just the right piece of the Solr URL. 
+  (ehatcher)
 
 Bug Fixes
 ----------------------
@@ -373,6 +374,10 @@ Other Changes
   (Steve Rowe, Shawn Heisey)
 
 * SOLR-6651: Fix wrong timeout logged in waitForReplicasToComeUp. (shalin)
+
+* SOLR-6661: Adjust all example configurations to allow overriding error-prone 
+  relative paths for solrconfig.xml <lib> references with solr.install.dir 
+  system property; bin/solr scripts will set it appropriately. (ehatcher)
 
 ==================  4.10.1 ==================
 
