@@ -41,10 +41,11 @@ public abstract class SegmentInfoFormat {
    * Read {@link SegmentInfo} data from a directory.
    * @param directory directory to read from
    * @param segmentName name of the segment to read
+   * @param segmentID expected identifier for the segment
    * @return infos instance to be populated with data
    * @throws IOException If an I/O error occurs
    */
-  public abstract SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException;
+  public abstract SegmentInfo read(Directory directory, String segmentName, byte segmentID[], IOContext context) throws IOException;
 
   /**
    * Write {@link SegmentInfo} data. 

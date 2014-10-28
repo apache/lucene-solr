@@ -406,9 +406,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       expected.set(expectedDoc);
     }
 
-    int docId;
-    DocIdSetIterator iterator = expected.iterator();
-    while ((docId = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+    for (int docId = expected.nextSetBit(0); docId != DocIdSetIterator.NO_MORE_DOCS; docId = docId + 1 >= expected.length() ? DocIdSetIterator.NO_MORE_DOCS : expected.nextSetBit(docId + 1)) {
       if (!actual.get(docId)) {
         return false;
       }

@@ -28,6 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.lucene.util.packed.BlockPackedWriter;
+import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -50,6 +51,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>Indirect: when norms are extremely sparse, missing values are omitted.
  *        Access to an individual value is slower, but missing norm values are never accessed
  *        by search code.
+ *    <li>Patched: when a single norm value dominates, a sparse bitset encodes docs with exceptions,
+ *        so that access to the common value is still very fast. outliers fall thru to an exception 
+ *        handling mechanism (Indirect or Constant).
  * </ul>
  * <p>
  * Files:
@@ -64,7 +68,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *      Norms data (.nvd)</p>
  *   <p>Norms metadata (.dvm) --&gt; Header,&lt;Entry&gt;<sup>NumFields</sup>,Footer</p>
  *   <ul>
- *     <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *     <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *     <li>Entry --&gt; FieldNumber,Type,Offset</li>
  *     <li>FieldNumber --&gt; {@link DataOutput#writeVInt vInt}</li>
  *     <li>Type --&gt; {@link DataOutput#writeByte Byte}</li>
@@ -81,20 +85,24 @@ import org.apache.lucene.util.packed.PackedInts;
  *             a lookup table of unique values is written, followed by the ordinal for each document.
  *         <li>2 --&gt; constant. When there is a single value for the entire field.
  *         <li>3 --&gt; uncompressed: Values written as a simple byte[].
- *         <li>4 --&gt; indirect. Only documents with a value are written with a sparse encoding.
+ *         <li>4 --&gt; indirect. Only documents with a value are written with monotonic compression. a nested
+ *             entry for the same field will follow for the exception handler.
+ *         <li>5 --&gt; patched. Encoded the same as indirect.
  *      </ul>
  *   <li><a name="nvd" id="nvd"></a>
  *   <p>The Norms data or .nvd file.</p>
  *   <p>For each Norms field, this stores the actual per-document data (the heavy-lifting)</p>
- *   <p>Norms data (.nvd) --&gt; Header,&lt;Uncompressed | TableCompressed | DeltaCompressed&gt;<sup>NumFields</sup>,Footer</p>
+ *   <p>Norms data (.nvd) --&gt; Header,&lt;Uncompressed | TableCompressed | DeltaCompressed | MonotonicCompressed &gt;<sup>NumFields</sup>,Footer</p>
  *   <ul>
- *     <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *     <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *     <li>Uncompressed --&gt;  {@link DataOutput#writeByte Byte}<sup>maxDoc</sup></li>
  *     <li>TableCompressed --&gt; PackedIntsVersion,Table,BitPackedData</li>
  *     <li>Table --&gt; TableSize, {@link DataOutput#writeLong int64}<sup>TableSize</sup></li>
  *     <li>BitpackedData --&gt; {@link PackedInts}</li>
  *     <li>DeltaCompressed --&gt; PackedIntsVersion,BlockSize,DeltaCompressedData</li>
  *     <li>DeltaCompressedData --&gt; {@link BlockPackedWriter BlockPackedWriter(blockSize=16k)}</li>
+ *     <li>MonotonicCompressed --&gt; PackedIntsVersion,BlockSize,MonotonicCompressedData</li>
+ *     <li>MonotonicCompressedData --&gt; {@link MonotonicBlockPackedWriter MonotonicBlockPackedWriter(blockSize=16k)}</li>
  *     <li>PackedIntsVersion,BlockSize,TableSize --&gt; {@link DataOutput#writeVInt vInt}</li>
  *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  *   </ul>

@@ -19,11 +19,13 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
@@ -71,7 +73,7 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
 
       @Override
       protected DocIdSet finish() {
-        return results;
+        return new BitDocIdSet(results);
       }
 
       @Override

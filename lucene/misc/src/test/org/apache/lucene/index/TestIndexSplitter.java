@@ -46,18 +46,15 @@ public class TestIndexSplitter extends LuceneTestCase {
             setMergePolicy(mergePolicy)
     );
     for (int x=0; x < 100; x++) {
-      Document doc = DocHelper.createDocument(x, "index", 5);
-      iw.addDocument(doc);
+      iw.addDocument(DocHelper.createDocument(iw, x, "index", 5));
     }
     iw.commit();
     for (int x=100; x < 150; x++) {
-      Document doc = DocHelper.createDocument(x, "index2", 5);
-      iw.addDocument(doc);
+      iw.addDocument(DocHelper.createDocument(iw, x, "index2", 5));
     }
     iw.commit();
     for (int x=150; x < 200; x++) {
-      Document doc = DocHelper.createDocument(x, "index3", 5);
-      iw.addDocument(doc);
+      iw.addDocument(DocHelper.createDocument(iw, x, "index3", 5));
     }
     iw.commit();
     DirectoryReader iwReader = iw.getReader();
@@ -78,8 +75,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     Path destDir2 = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     IndexSplitter.main(new String[] {dir.toAbsolutePath().toString(), destDir2.toAbsolutePath().toString(), splitSegName});
     Directory fsDirDest2 = newFSDirectory(destDir2);
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(fsDirDest2);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(fsDirDest2);
     assertEquals(1, sis.size());
     r = DirectoryReader.open(fsDirDest2);
     assertEquals(50, r.maxDoc());

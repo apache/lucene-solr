@@ -37,10 +37,6 @@ import org.apache.lucene.analysis.util.CharacterUtils;
  * <li>sorts n-grams by their offset in the original token first, then
  * increasing length (meaning that "abc" will give "a", "ab", "abc", "b", "bc",
  * "c").</li></ul>
- * <p>You can make this filter use the old behavior by using
- * {@link org.apache.lucene.analysis.ngram.Lucene43NGramTokenFilter} but this is not recommended as
- * it will lead to broken {@link TokenStream}s that will cause highlighting
- * bugs.
  * <p>If you were using this {@link TokenFilter} to perform partial highlighting,
  * this won't work anymore since this filter doesn't update offsets. You should
  * modify your analysis chain to use {@link NGramTokenizer}, and potentially

@@ -100,7 +100,7 @@ public final class SegmentInfo {
     this.codec = codec;
     this.diagnostics = diagnostics;
     this.id = id;
-    if (id != null && id.length != StringHelper.ID_LENGTH) {
+    if (id.length != StringHelper.ID_LENGTH) {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
     }
   }
@@ -223,7 +223,7 @@ public final class SegmentInfo {
 
   /** Return the id that uniquely identifies this segment. */
   public byte[] getId() {
-    return id == null ? null : id.clone();
+    return id.clone();
   }
 
   private Set<String> setFiles;

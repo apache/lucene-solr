@@ -72,17 +72,17 @@
        The examples below can be used to load some solr-contribs along 
        with their external dependencies.
     -->
-  <lib dir="../../../contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="../../../dist/" regex="solr-cell-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/contrib/extraction/lib" regex=".*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-cell-\d.*\.jar" />
 
-  <lib dir="../../../contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="../../../dist/" regex="solr-clustering-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/contrib/clustering/lib/" regex=".*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
 
-  <lib dir="../../../contrib/langid/lib/" regex=".*\.jar" />
-  <lib dir="../../../dist/" regex="solr-langid-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/contrib/langid/lib/" regex=".*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-langid-\d.*\.jar" />
 
-  <lib dir="../../../contrib/velocity/lib" regex=".*\.jar" />
-  <lib dir="../../../dist/" regex="solr-velocity-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/contrib/velocity/lib" regex=".*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-velocity-\d.*\.jar" />
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a 
        specific jar file.  This will cause a serious error to be logged 
@@ -480,6 +480,17 @@
          
       -->
     <maxBooleanClauses>1024</maxBooleanClauses>
+
+ 
+    <!-- Slow Query Threshold (in millis)
+    
+         At high request rates, logging all requests can become a bottleneck 
+         and therefore INFO logging is often turned off. However, it is still
+         useful to be able to set a latency threshold above which a request
+         is considered "slow" and log that request at WARN level so we can
+         easily identify slow queries.
+    --> 
+    <slowQueryThresholdMillis>-1</slowQueryThresholdMillis>
 
 
     <!-- Solr Internal Query Caches
@@ -1057,6 +1068,19 @@
       <str name="df">text</str>
     </lst>
   </initParams>
+
+  <initParams path="/update/json/docs">
+    <lst name="defaults">
+      <!--this ensures that the entire json doc will be stored verbatim into one field-->
+      <str name="srcField">_src</str>
+      <!--This means a the uniqueKeyField will be extracted from the fields and
+       all fields go into the 'df' field. In this config df is already configured to be 'text'
+        -->
+      <str name="mapUniqueKeyOnly">true</str>
+    </lst>
+
+  </initParams>
+
   <!-- The following are implicitly added
   <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
         <lst name="defaults">

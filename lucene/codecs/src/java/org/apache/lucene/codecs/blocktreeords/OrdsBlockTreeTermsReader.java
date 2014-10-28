@@ -73,7 +73,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
     IndexInput indexIn = null;
 
     try {
-      int version = CodecUtil.checkSegmentHeader(in, OrdsBlockTreeTermsWriter.TERMS_CODEC_NAME,
+      int version = CodecUtil.checkIndexHeader(in, OrdsBlockTreeTermsWriter.TERMS_CODEC_NAME,
                                                      OrdsBlockTreeTermsWriter.VERSION_START,
                                                      OrdsBlockTreeTermsWriter.VERSION_CURRENT,
                                                      state.segmentInfo.getId(), state.segmentSuffix);
@@ -82,7 +82,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
                                                         state.segmentSuffix, 
                                                         OrdsBlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
       indexIn = state.directory.openInput(indexFile, state.context);
-      int indexVersion = CodecUtil.checkSegmentHeader(indexIn, OrdsBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+      int indexVersion = CodecUtil.checkIndexHeader(indexIn, OrdsBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
                                                                OrdsBlockTreeTermsWriter.VERSION_START,
                                                                OrdsBlockTreeTermsWriter.VERSION_CURRENT,
                                                                state.segmentInfo.getId(), state.segmentSuffix);
@@ -94,7 +94,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
       CodecUtil.checksumEntireFile(indexIn);
 
       // Have PostingsReader init itself
-      postingsReader.init(in);
+      postingsReader.init(in, state);
       
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,

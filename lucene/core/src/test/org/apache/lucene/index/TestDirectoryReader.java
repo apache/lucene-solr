@@ -644,8 +644,7 @@ public class TestDirectoryReader extends LuceneTestCase {
       addDocumentWithFields(writer);
     writer.close();
 
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(d);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(d);
     DirectoryReader r = DirectoryReader.open(d);
     IndexCommit c = r.getIndexCommit();
 

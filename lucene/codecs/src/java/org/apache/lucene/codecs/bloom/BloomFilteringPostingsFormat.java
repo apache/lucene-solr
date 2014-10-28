@@ -72,7 +72,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * NumFilteredFields, Filter<sup>NumFilteredFields</sup>, Footer</li>
  * <li>Filter --&gt; FieldNumber, FuzzySet</li>
  * <li>FuzzySet --&gt;See {@link FuzzySet#serialize(DataOutput)}</li>
- * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>DelegatePostingsFormatName --&gt; {@link DataOutput#writeString(String)
  * String} The name of a ServiceProvider registered {@link PostingsFormat}</li>
  * <li>NumFilteredFields --&gt; {@link DataOutput#writeInt Uint32}</li>
@@ -166,7 +166,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       boolean success = false;
       try {
         bloomIn = state.directory.openChecksumInput(bloomFileName, state.context);
-        CodecUtil.checkSegmentHeader(bloomIn, BLOOM_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        CodecUtil.checkIndexHeader(bloomIn, BLOOM_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         // // Load the hash function used in the BloomFilter
         // hashFunction = HashFunction.forName(bloomIn.readString());
         // Load the delegate postings format
@@ -502,7 +502,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       IndexOutput bloomOutput = null;
       try {
         bloomOutput = state.directory.createOutput(bloomFileName, state.context);
-        CodecUtil.writeSegmentHeader(bloomOutput, BLOOM_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        CodecUtil.writeIndexHeader(bloomOutput, BLOOM_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         // remember the name of the postings format we will delegate to
         bloomOutput.writeString(delegatePostingsFormat.getName());
         

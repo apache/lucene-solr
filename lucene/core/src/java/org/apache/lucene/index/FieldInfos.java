@@ -220,11 +220,17 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return fieldNumber.intValue();
     }
 
-    // used by assert
-    synchronized boolean containsConsistent(Integer number, String name, DocValuesType dvType) {
-      return name.equals(numberToName.get(number))
-          && number.equals(nameToNumber.get(name)) &&
-        (dvType == null || docValuesType.get(name) == null || dvType == docValuesType.get(name));
+    synchronized void verifyConsistent(Integer number, String name, DocValuesType dvType) {
+      if (name.equals(numberToName.get(number)) == false) {
+        throw new IllegalArgumentException("field number " + number + " is already mapped to field name \"" + numberToName.get(number) + "\", not \"" + name + "\"");
+      }
+      if (number.equals(nameToNumber.get(name)) == false) {
+        throw new IllegalArgumentException("field name \"" + name + "\" is already mapped to field number \"" + nameToNumber.get(name) + "\", not \"" + number + "\"");
+      }
+      DocValuesType currentDVType = docValuesType.get(name);
+      if (dvType != null && currentDVType != null && dvType != currentDVType) {
+        throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + name + "\"");
+      }
     }
 
     /**
@@ -248,7 +254,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
 
     synchronized void setDocValuesType(int number, String name, DocValuesType dvType) {
-      assert containsConsistent(number, name, dvType);
+      verifyConsistent(number, name, dvType);
       docValuesType.put(name, dvType);
     }
   }
@@ -302,20 +308,22 @@ public class FieldInfos implements Iterable<FieldInfo> {
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
         fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, null);
         assert !byName.containsKey(fi.name);
-        assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
+        globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
       } else {
         fi.update(storeTermVector, omitNorms, storePayloads, indexOptions);
 
         if (docValues != null) {
-          // only pay the synchronization cost if fi does not already have a DVType
+          // Only pay the synchronization cost if fi does not already have a DVType
           boolean updateGlobal = !fi.hasDocValues();
-          fi.setDocValuesType(docValues); // this will also perform the consistency check.
           if (updateGlobal) {
-            // must also update docValuesType map so it's
-            // aware of this field's DocValueType 
+            // Must also update docValuesType map so it's
+            // aware of this field's DocValueType.  This will throw IllegalArgumentException if
+            // an illegal type change was attempted.
             globalFieldNumbers.setDocValuesType(fi.number, name, docValues);
           }
+
+          fi.setDocValuesType(docValues); // this will also perform the consistency check.
         }
       }
       return fi;

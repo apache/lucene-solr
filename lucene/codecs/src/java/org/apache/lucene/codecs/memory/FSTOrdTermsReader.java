@@ -88,11 +88,11 @@ public class FSTOrdTermsReader extends FieldsProducer {
     try {
       indexIn = state.directory.openChecksumInput(termsIndexFileName, state.context);
       blockIn = state.directory.openInput(termsBlockFileName, state.context);
-      int version = CodecUtil.checkSegmentHeader(indexIn, FSTOrdTermsWriter.TERMS_INDEX_CODEC_NAME, 
+      int version = CodecUtil.checkIndexHeader(indexIn, FSTOrdTermsWriter.TERMS_INDEX_CODEC_NAME, 
                                                           FSTOrdTermsWriter.VERSION_START, 
                                                           FSTOrdTermsWriter.VERSION_CURRENT, 
                                                           state.segmentInfo.getId(), state.segmentSuffix);
-      int version2 = CodecUtil.checkSegmentHeader(blockIn, FSTOrdTermsWriter.TERMS_CODEC_NAME, 
+      int version2 = CodecUtil.checkIndexHeader(blockIn, FSTOrdTermsWriter.TERMS_CODEC_NAME, 
                                                            FSTOrdTermsWriter.VERSION_START, 
                                                            FSTOrdTermsWriter.VERSION_CURRENT, 
                                                            state.segmentInfo.getId(), state.segmentSuffix);
@@ -103,7 +103,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       CodecUtil.checksumEntireFile(blockIn);
       
-      this.postingsReader.init(blockIn);
+      this.postingsReader.init(blockIn, state);
       seekDir(blockIn);
 
       final FieldInfos fieldInfos = state.fieldInfos;

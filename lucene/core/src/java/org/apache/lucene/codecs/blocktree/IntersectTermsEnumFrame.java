@@ -145,7 +145,7 @@ final class IntersectTermsEnumFrame {
       // Skip first long -- has redundant fp, hasTerms
       // flag, isFloor flag
       final long code = floorDataReader.readVLong();
-      if ((code & BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0) {
+      if ((code & BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0) {
         numFollowFloorBlocks = floorDataReader.readVInt();
         nextFloorLabel = floorDataReader.readByte() & 0xff;
         // if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);

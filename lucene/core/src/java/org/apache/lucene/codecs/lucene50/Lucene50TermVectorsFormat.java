@@ -59,7 +59,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>Here is a more detailed description of the field data file format:</p>
  * <ul>
  * <li>VectorData (.tvd) --&gt; &lt;Header&gt;, PackedIntsVersion, ChunkSize, &lt;Chunk&gt;<sup>ChunkCount</sup>, Footer</li>
- * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkSize is the number of bytes of terms to accumulate before flushing, as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkCount is not known in advance and is the number of chunks necessary to store all document of the segment</li>
@@ -113,7 +113,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>An index file (extension <tt>.tvx</tt>).</p>
  * <ul>
  * <li>VectorIndex (.tvx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer</li>
- * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>

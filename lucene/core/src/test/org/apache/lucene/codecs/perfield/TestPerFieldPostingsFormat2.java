@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval;
+import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.document.Document;
@@ -287,9 +287,9 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
-          return new Lucene41VarGapFixedInterval(1);
+          return new LuceneVarGapFixedInterval(1);
         } else if ("date".equals(field)) {
-          return new Lucene41VarGapFixedInterval(2);
+          return new LuceneVarGapFixedInterval(2);
         } else {
           return super.getPostingsFormatForField(field);
         }

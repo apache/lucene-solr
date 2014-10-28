@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -26,8 +27,7 @@ import org.apache.lucene.util.FixedBitSet;
  * of its iterator is very stupid and slow if the implementation of the
  * {@link #matchDoc} method is not optimized, as iterators simply increment
  * the document id until {@code matchDoc(int)} returns true. Because of this
- * {@code matchDoc(int)} must be as fast as possible and in no case do any
- * I/O.
+ * {@code matchDoc(int)} must be as fast as possible.
  * @lucene.internal
  */
 public abstract class DocValuesDocIdSet extends DocIdSet {
@@ -65,7 +65,7 @@ public abstract class DocValuesDocIdSet extends DocIdSet {
     } : new Bits() {
       @Override
       public boolean get(int docid) {
-        return matchDoc(docid) && acceptDocs.get(docid);
+        return acceptDocs.get(docid) && matchDoc(docid);
       }
 
       @Override
@@ -116,7 +116,7 @@ public abstract class DocValuesDocIdSet extends DocIdSet {
     } else if (acceptDocs instanceof FixedBitSet) {
       // special case for FixedBitSet: use the iterator and filter it
       // (used e.g. when Filters are chained by FilteredQuery)
-      return new FilteredDocIdSetIterator(((DocIdSet) acceptDocs).iterator()) {
+      return new FilteredDocIdSetIterator(new BitDocIdSet((FixedBitSet) acceptDocs).iterator()) {
         @Override
         protected boolean match(int doc) {
           return DocValuesDocIdSet.this.matchDoc(doc);
@@ -134,19 +134,13 @@ public abstract class DocValuesDocIdSet extends DocIdSet {
       
         @Override
         public int nextDoc() {
-          do {
-            doc++;
-            if (doc >= maxDoc) {
-              return doc = NO_MORE_DOCS;
-            }
-          } while (!(matchDoc(doc) && acceptDocs.get(doc)));
-          return doc;
+          return advance(doc + 1);
         }
       
         @Override
         public int advance(int target) {
           for(doc=target; doc<maxDoc; doc++) {
-            if (matchDoc(doc) && acceptDocs.get(doc)) {
+            if (acceptDocs.get(doc) && matchDoc(doc)) {
               return doc;
             }
           }

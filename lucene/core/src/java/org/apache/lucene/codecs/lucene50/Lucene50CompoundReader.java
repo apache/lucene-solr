@@ -71,7 +71,7 @@ final class Lucene50CompoundReader extends BaseDirectory {
     boolean success = false;
     handle = directory.openInput(dataFileName, context);
     try {
-      CodecUtil.checkSegmentHeader(handle, Lucene50CompoundFormat.DATA_CODEC, version, version, si.getId(), "");
+      CodecUtil.checkIndexHeader(handle, Lucene50CompoundFormat.DATA_CODEC, version, version, si.getId(), "");
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
@@ -93,7 +93,7 @@ final class Lucene50CompoundReader extends BaseDirectory {
     try (ChecksumIndexInput entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE)) {
       Throwable priorE = null;
       try {
-        version = CodecUtil.checkSegmentHeader(entriesStream, Lucene50CompoundFormat.ENTRY_CODEC, 
+        version = CodecUtil.checkIndexHeader(entriesStream, Lucene50CompoundFormat.ENTRY_CODEC, 
                                                               Lucene50CompoundFormat.VERSION_START, 
                                                               Lucene50CompoundFormat.VERSION_CURRENT, segmentID, "");
         final int numEntries = entriesStream.readVInt();

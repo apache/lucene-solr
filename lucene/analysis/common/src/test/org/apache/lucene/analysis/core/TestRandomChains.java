@@ -63,7 +63,7 @@ import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
-import org.apache.lucene.analysis.compound.Lucene43HyphenationCompoundWordTokenFilter;
+import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.Dictionary;
@@ -434,7 +434,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // TODO: make nastier
         try {
           InputSource is = new InputSource(TestCompoundWordTokenFilter.class.getResource("da_UTF8.xml").toExternalForm());
-          HyphenationTree hyphenator = Lucene43HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
+          HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
           return hyphenator;
         } catch (Exception ex) {
           Rethrow.rethrow(ex);

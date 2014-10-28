@@ -53,10 +53,12 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     assertEquals("wrong factory at front of chain",
                  LogUpdateProcessorFactory.class, first.getClass());
     LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)first;
-    assertEquals("wrong config for LogUpdateProcessorFactory",
+    assertEquals("wrong config for LogUpdateProcessorFactory.maxNumToLog",
                  100, log.maxNumToLog );
-    
-    
+    assertEquals("wrong config for LogUpdateProcessorFactory.slowUpdateThresholdMillis",
+                 2000, log.slowUpdateThresholdMillis);
+
+
     UpdateRequestProcessorChain custom = core.getUpdateProcessingChain( null );
     CustomUpdateRequestProcessorFactory link = (CustomUpdateRequestProcessorFactory) custom.getFactories()[0];
     

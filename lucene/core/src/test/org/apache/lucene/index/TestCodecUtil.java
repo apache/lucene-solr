@@ -199,12 +199,12 @@ public class TestCodecUtil extends LuceneTestCase {
   public void testSegmentHeaderLength() throws Exception {
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
-    CodecUtil.writeSegmentHeader(output, "FooBar", 5, StringHelper.randomId(), "xyz");
+    CodecUtil.writeIndexHeader(output, "FooBar", 5, StringHelper.randomId(), "xyz");
     output.writeString("this is the data");
     output.close();
     
     IndexInput input = new RAMInputStream("file", file);
-    input.seek(CodecUtil.segmentHeaderLength("FooBar", "xyz"));
+    input.seek(CodecUtil.indexHeaderLength("FooBar", "xyz"));
     assertEquals("this is the data", input.readString());
     input.close();
   }
@@ -217,7 +217,7 @@ public class TestCodecUtil extends LuceneTestCase {
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
     try {
-      CodecUtil.writeSegmentHeader(output, "foobar", 5, StringHelper.randomId(), tooLong.toString());
+      CodecUtil.writeIndexHeader(output, "foobar", 5, StringHelper.randomId(), tooLong.toString());
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
       // expected
@@ -232,13 +232,13 @@ public class TestCodecUtil extends LuceneTestCase {
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
     byte[] id = StringHelper.randomId();
-    CodecUtil.writeSegmentHeader(output, "foobar", 5, id, justLongEnough.toString());
+    CodecUtil.writeIndexHeader(output, "foobar", 5, id, justLongEnough.toString());
     output.close();
     
     IndexInput input = new RAMInputStream("file", file);
-    CodecUtil.checkSegmentHeader(input, "foobar", 5, 5, id, justLongEnough.toString());
+    CodecUtil.checkIndexHeader(input, "foobar", 5, 5, id, justLongEnough.toString());
     assertEquals(input.getFilePointer(), input.length());
-    assertEquals(input.getFilePointer(), CodecUtil.segmentHeaderLength("foobar", justLongEnough.toString()));
+    assertEquals(input.getFilePointer(), CodecUtil.indexHeaderLength("foobar", justLongEnough.toString()));
     input.close();
   }
   
@@ -246,7 +246,7 @@ public class TestCodecUtil extends LuceneTestCase {
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
     try {
-      CodecUtil.writeSegmentHeader(output, "foobar", 5, StringHelper.randomId(), "\u1234");
+      CodecUtil.writeIndexHeader(output, "foobar", 5, StringHelper.randomId(), "\u1234");
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
       // expected

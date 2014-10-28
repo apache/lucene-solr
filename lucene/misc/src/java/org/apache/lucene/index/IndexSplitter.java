@@ -90,8 +90,7 @@ public class IndexSplitter {
   public IndexSplitter(Path dir) throws IOException {
     this.dir = dir;
     fsDir = FSDirectory.open(dir);
-    infos = new SegmentInfos();
-    infos.read(fsDir);
+    infos = SegmentInfos.readLatestCommit(fsDir);
   }
 
   public void listSegments() throws IOException {

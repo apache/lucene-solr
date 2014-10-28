@@ -193,4 +193,18 @@ public abstract class Terms {
       scratch.grow(scratch.length());
     }
   }
+  
+  /** 
+   * Expert: returns additional information about this Terms instance
+   * for debugging purposes.
+   */
+  public Object getStats() throws IOException {
+    StringBuilder sb = new StringBuilder();
+    sb.append("impl=" + getClass().getSimpleName());
+    sb.append(",size=" + size());
+    sb.append(",docCount=" + getDocCount());
+    sb.append(",sumTotalTermFreq=" + getSumTotalTermFreq());
+    sb.append(",sumDocFreq=" + getSumDocFreq());
+    return sb.toString();
+  }
 }

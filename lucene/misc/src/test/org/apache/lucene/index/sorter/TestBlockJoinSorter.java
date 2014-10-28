@@ -41,6 +41,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -57,7 +58,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
         throws IOException {
       final FixedBitSet cached = new FixedBitSet(reader.maxDoc());
       cached.or(iterator);
-      return cached;
+      return new BitDocIdSet(cached);
     }
 
   }
@@ -90,7 +91,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
 
     final LeafReader reader = getOnlySegmentReader(indexReader);
     final Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
-    final FixedBitSet parentBits = (FixedBitSet) parentsFilter.getDocIdSet(reader.getContext(), null);
+    final FixedBitSet parentBits = (FixedBitSet) parentsFilter.getDocIdSet(reader.getContext(), null).bits();
     final NumericDocValues parentValues = reader.getNumericDocValues("parent_val");
     final NumericDocValues childValues = reader.getNumericDocValues("child_val");
 

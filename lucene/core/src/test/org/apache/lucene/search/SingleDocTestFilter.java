@@ -17,11 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
 
 public class SingleDocTestFilter extends Filter {
   private int doc;
@@ -35,6 +36,6 @@ public class SingleDocTestFilter extends Filter {
     FixedBitSet bits = new FixedBitSet(context.reader().maxDoc());
     bits.set(doc);
     if (acceptDocs != null && !acceptDocs.get(doc)) bits.clear(doc);
-    return bits;
+    return new BitDocIdSet(bits);
   }
 }

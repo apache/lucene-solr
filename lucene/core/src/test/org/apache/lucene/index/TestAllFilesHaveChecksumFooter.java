@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -36,10 +35,6 @@ import org.apache.lucene.util.TestUtil;
 public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // Else we might remove .cfe but not the corresponding .cfs, causing false exc when trying to verify headers:
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(TestUtil.getDefaultCodec());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
@@ -68,8 +63,7 @@ public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
   }
   
   private void checkFooters(Directory dir) throws IOException {
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     checkFooter(dir, sis.getSegmentsFileName());
     
     for (SegmentCommitInfo si : sis) {

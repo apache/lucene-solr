@@ -775,7 +775,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       // If index is too old, reading the segments will throw
       // IndexFormatTooOldException.
-      segmentInfos = new SegmentInfos();
 
       boolean initialIndexExists = true;
 
@@ -784,13 +783,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // against an index that's currently open for
         // searching.  In this case we write the next
         // segments_N file with no segments:
+        SegmentInfos sis = null;
         try {
-          segmentInfos.read(directory);
-          segmentInfos.clear();
+          sis = SegmentInfos.readLatestCommit(directory);
+          sis.clear();
         } catch (IOException e) {
           // Likely this means it's a fresh directory
           initialIndexExists = false;
+          sis = new SegmentInfos();
         }
+        
+        segmentInfos = sis;
 
         // Record that we have a change (zero out all
         // segments) pending:
@@ -804,7 +807,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         // Do not use SegmentInfos.read(Directory) since the spooky
         // retrying it does is not necessary here (we hold the write lock):
-        segmentInfos.read(directory, lastSegmentsFile);
+        segmentInfos = SegmentInfos.readCommit(directory, lastSegmentsFile);
 
         IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
@@ -815,8 +818,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // points.
           if (commit.getDirectory() != directory)
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
-          SegmentInfos oldInfos = new SegmentInfos();
-          oldInfos.read(directory, commit.getSegmentsFileName());
+          SegmentInfos oldInfos = SegmentInfos.readCommit(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changed();
           if (infoStream.isEnabled("IW")) {
@@ -2034,7 +2036,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
         }
 
-        assert testPoint("rollback before checkpoint");
+        testPoint("rollback before checkpoint");
 
         // Ask deleter to locate unreferenced files & remove
         // them:
@@ -2422,8 +2424,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "addIndexes: process directory " + dir);
           }
-          SegmentInfos sis = new SegmentInfos(); // read infos from dir
-          sis.read(dir);
+          SegmentInfos sis = SegmentInfos.readLatestCommit(dir); // read infos from dir
           totalDocCount += sis.totalDocCount();
 
           fieldTypes.addAll(FieldTypes.getFieldTypes(sis.getUserData(), analyzer, fieldTypes.getSimilarity()));
@@ -2736,7 +2737,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       doBeforeFlush();
-      assert testPoint("startDoFlush");
+      testPoint("startDoFlush");
       SegmentInfos toCommit = null;
       boolean anySegmentsFlushed = false;
 
@@ -3024,7 +3025,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
 
     doBeforeFlush();
-    assert testPoint("startDoFlush");
+    testPoint("startDoFlush");
     boolean success = false;
     try {
 
@@ -3107,9 +3108,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   // for testing only
   DocumentsWriter getDocsWriter() {
-    boolean test = false;
-    assert test = true;
-    return test ? docWriter : null;
+    return docWriter;
   }
 
   /** Expert:  Return the number of documents currently
@@ -3194,7 +3193,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   synchronized private ReadersAndUpdates commitMergedDeletesAndUpdates(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
-    assert testPoint("startCommitMergeDeletes");
+    testPoint("startCommitMergeDeletes");
 
     final List<SegmentCommitInfo> sourceSegments = merge.segments;
 
@@ -3379,7 +3378,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   synchronized private boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
-    assert testPoint("startCommitMerge");
+    testPoint("startCommitMerge");
 
     if (tragedy != null) {
       throw new IllegalStateException("this writer hit an unrecoverable error; cannot complete merge", tragedy);
@@ -3723,7 +3722,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   synchronized private void _mergeInit(MergePolicy.OneMerge merge) throws IOException {
 
-    assert testPoint("startMergeInit");
+    testPoint("startMergeInit");
 
     assert merge.registerDone;
     assert merge.maxNumSegments == -1 || merge.maxNumSegments > 0;
@@ -3960,8 +3959,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // we pass merge.getMergeReaders() instead of merge.readers to allow the
       // OneMerge to return a view over the actual segments to merge
       final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
-          merge.info.info, infoStream, dirWrapper,
-          checkAbort, globalFieldNumberMap, 
+                                                     merge.info.info, infoStream, dirWrapper,
+                                                     checkAbort, globalFieldNumberMap, 
                                                      context);
 
       merge.checkAborted(directory);
@@ -4261,7 +4260,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  it. */
   private void startCommit(final SegmentInfos toSync) throws IOException {
 
-    assert testPoint("startStartCommit");
+    testPoint("startStartCommit");
     assert pendingCommit == null;
 
     if (tragedy != null) {
@@ -4297,13 +4296,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         assert filesExist(toSync);
       }
 
-      assert testPoint("midStartCommit");
+      testPoint("midStartCommit");
 
       boolean pendingCommitSet = false;
 
       try {
 
-        assert testPoint("midStartCommit2");
+        testPoint("midStartCommit2");
 
         synchronized(this) {
 
@@ -4341,7 +4340,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           infoStream.message("IW", "done all syncs: " + filesToSync);
         }
 
-        assert testPoint("midStartCommitSuccess");
+        testPoint("midStartCommitSuccess");
 
       } finally {
         synchronized(this) {
@@ -4365,7 +4364,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     } catch (OutOfMemoryError oom) {
       tragicEvent(oom, "startCommit");
     }
-    assert testPoint("finishStartCommit");
+    testPoint("finishStartCommit");
   }
 
   /**
@@ -4442,7 +4441,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     IOUtils.reThrowUnchecked(tragedy);
   }
 
-  // Used only by assert for testing.  Current points:
+  // Used for testing.  Current points:
   //   startDoFlush
   //   startCommitMerge
   //   startStartCommit
@@ -4453,11 +4452,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   //   startCommitMergeDeletes
   //   startMergeInit
   //   DocumentsWriter.ThreadState.init start
-  private final boolean testPoint(String message) {
+  private final void testPoint(String message) {
     if (infoStream.isEnabled("TP")) {
       infoStream.message("TP", message);
     }
-    return true;
   }
 
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {

@@ -146,7 +146,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     boolean success = false;
     try {
-      version = CodecUtil.checkSegmentHeader(in, metaCodec, VERSION_START, VERSION_CURRENT,
+      version = CodecUtil.checkIndexHeader(in, metaCodec, VERSION_START, VERSION_CURRENT,
                                                  state.segmentInfo.getId(), state.segmentSuffix);
       numEntries = readFields(in, state.fieldInfos);
       CodecUtil.checkFooter(in);
@@ -164,7 +164,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     this.data = state.directory.openInput(dataName, state.context);
     success = false;
     try {
-      final int version2 = CodecUtil.checkSegmentHeader(data, dataCodec, VERSION_START, VERSION_CURRENT,
+      final int version2 = CodecUtil.checkIndexHeader(data, dataCodec, VERSION_START, VERSION_CURRENT,
                                                               state.segmentInfo.getId(), state.segmentSuffix);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch: meta=" + version + ", data=" + version2, data);

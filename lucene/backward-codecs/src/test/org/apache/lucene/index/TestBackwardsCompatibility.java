@@ -76,6 +76,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /*
   Verify we can read the pre-5.0 file format, do searches
@@ -158,8 +159,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private void updateBinary(IndexWriter writer, String id, String f, String cf, long value) throws IOException {
-    writer.updateBinaryDocValue(new Term("id", id), f, TestDocValuesUpdatesOnOldSegments.toBytes(value));
-    writer.updateBinaryDocValue(new Term("id", id), cf, TestDocValuesUpdatesOnOldSegments.toBytes(value*2));
+    writer.updateBinaryDocValue(new Term("id", id), f, toBytes(value));
+    writer.updateBinaryDocValue(new Term("id", id), cf, toBytes(value*2));
   }
 
   // Creates an index with DocValues updates
@@ -179,10 +180,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       doc.add(new NumericDocValuesField("ndv1_c", i*2));
       doc.add(new NumericDocValuesField("ndv2", i*3));
       doc.add(new NumericDocValuesField("ndv2_c", i*6));
-      doc.add(new BinaryDocValuesField("bdv1", TestDocValuesUpdatesOnOldSegments.toBytes(i)));
-      doc.add(new BinaryDocValuesField("bdv1_c", TestDocValuesUpdatesOnOldSegments.toBytes(i*2)));
-      doc.add(new BinaryDocValuesField("bdv2", TestDocValuesUpdatesOnOldSegments.toBytes(i*3)));
-      doc.add(new BinaryDocValuesField("bdv2_c", TestDocValuesUpdatesOnOldSegments.toBytes(i*6)));
+      doc.add(new BinaryDocValuesField("bdv1", toBytes(i)));
+      doc.add(new BinaryDocValuesField("bdv1_c", toBytes(i*2)));
+      doc.add(new BinaryDocValuesField("bdv2", toBytes(i*3)));
+      doc.add(new BinaryDocValuesField("bdv2_c", toBytes(i*6)));
       writer.addDocument(doc);
       if ((i+1) % 10 == 0) {
         writer.commit(); // flush every 10 docs
@@ -208,50 +209,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   final static String[] oldNames = {
-      "4.0.0-cfs",
-      "4.0.0-nocfs",
-      "4.0.0.1-cfs",
-      "4.0.0.1-nocfs",
-      "4.0.0.2-cfs",
-      "4.0.0.2-nocfs",
-      "4.1.0-cfs",
-      "4.1.0-nocfs",
-      "4.2.0-cfs",
-      "4.2.0-nocfs",
-      "4.2.1-cfs",
-      "4.2.1-nocfs",
-      "4.3.0-cfs",
-      "4.3.0-nocfs",
-      "4.3.1-cfs",
-      "4.3.1-nocfs",
-      "4.4.0-cfs",
-      "4.4.0-nocfs",
-      "4.5.0-cfs",
-      "4.5.0-nocfs",
-      "4.5.1-cfs",
-      "4.5.1-nocfs",
-      "4.6.0-cfs",
-      "4.6.0-nocfs",
-      "4.6.1-cfs",
-      "4.6.1-nocfs",
-      "4.7.0-cfs",
-      "4.7.0-nocfs",
-      "4.7.1-cfs",
-      "4.7.1-nocfs",
-      "4.7.2-cfs",
-      "4.7.2-nocfs",
-      "4.8.0-cfs",
-      "4.8.0-nocfs",
-      "4.8.1-cfs",
-      "4.8.1-nocfs",
-      "4.9.0-cfs",
-      "4.9.0-nocfs",
-      "4.9.1-cfs",
-      "4.9.1-nocfs",
-      "4.10.0-cfs",
-      "4.10.0-nocfs",
-      "4.10.1-cfs",
-      "4.10.1-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -302,11 +259,54 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "3.6.1-cfs",
       "3.6.1-nocfs",
       "3.6.2-cfs",
-      "3.6.2-nocfs"
+      "3.6.2-nocfs",
+      "4.0.0-cfs",
+      "4.0.0-nocfs",
+      "4.0.0.1-cfs",
+      "4.0.0.1-nocfs",
+      "4.0.0.2-cfs",
+      "4.0.0.2-nocfs",
+      "4.1.0-cfs",
+      "4.1.0-nocfs",
+      "4.2.0-cfs",
+      "4.2.0-nocfs",
+      "4.2.1-cfs",
+      "4.2.1-nocfs",
+      "4.3.0-cfs",
+      "4.3.0-nocfs",
+      "4.3.1-cfs",
+      "4.3.1-nocfs",
+      "4.4.0-cfs",
+      "4.4.0-nocfs",
+      "4.5.0-cfs",
+      "4.5.0-nocfs",
+      "4.5.1-cfs",
+      "4.5.1-nocfs",
+      "4.6.0-cfs",
+      "4.6.0-nocfs",
+      "4.6.1-cfs",
+      "4.6.1-nocfs",
+      "4.7.0-cfs",
+      "4.7.0-nocfs",
+      "4.7.1-cfs",
+      "4.7.1-nocfs",
+      "4.7.2-cfs",
+      "4.7.2-nocfs",
+      "4.8.0-cfs",
+      "4.8.0-nocfs",
+      "4.8.1-cfs",
+      "4.8.1-nocfs",
+      "4.9.0-cfs",
+      "4.9.0-nocfs",
+      "4.9.1-cfs",
+      "4.9.1-nocfs",
+      "4.10.0-cfs",
+      "4.10.0-nocfs",
+      "4.10.1-cfs",
+      "4.10.1-nocfs"
   };
   
-  final static String[] oldSingleSegmentNames = {"4.0.0-optimized-cfs",
-                                                 "4.0.0-optimized-nocfs",
+  final static String[] oldSingleSegmentNames = {
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -1075,8 +1075,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private int checkAllSegmentsUpgraded(Directory dir) throws IOException {
-    final SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
+    final SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     if (VERBOSE) {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
     }
@@ -1087,8 +1086,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private int getNumberOfSegments(Directory dir) throws IOException {
-    final SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
+    final SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     return infos.size();
   }
 
@@ -1223,8 +1221,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String moreTermsIndex = "moreterms.4.0.0.zip";
+  public static final String moreTermsIndex = "moreterms.5.0.0.zip";
 
+  @Ignore("needs a 5.0 index once released")
   public void testMoreTerms() throws Exception {
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
@@ -1235,7 +1234,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String dvUpdatesIndex = "dvupdates.4.8.0.zip";
+  public static final String dvUpdatesIndex = "dvupdates.5.0.0.zip";
 
   private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);
@@ -1249,7 +1248,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     BinaryDocValues bdvf = r.getBinaryDocValues(f);
     BinaryDocValues bdvcf = r.getBinaryDocValues(cf);
     for (int i = 0; i < r.maxDoc(); i++) {
-      assertEquals(TestDocValuesUpdatesOnOldSegments.getValue(bdvcf, i), TestDocValuesUpdatesOnOldSegments.getValue(bdvf, i)*2);
+      assertEquals(getValue(bdvcf, i), getValue(bdvf, i)*2);
     }
   }
   
@@ -1265,6 +1264,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader.close();
   }
   
+  @Ignore("needs a 5.0 index once released")
   public void testDocValuesUpdates() throws Exception {
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
@@ -1306,7 +1306,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer.forceMerge(1);
       writer.commit();
       writer.rollback();
-      new SegmentInfos().read(dir);
+      SegmentInfos.readLatestCommit(dir);
       dir.close();
     }
   }
@@ -1325,5 +1325,28 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer.close();
       dir.close();
     }
+  }
+  
+  static long getValue(BinaryDocValues bdv, int idx) {
+    BytesRef term = bdv.get(idx);
+    idx = term.offset;
+    byte b = term.bytes[idx++];
+    long value = b & 0x7FL;
+    for (int shift = 7; (b & 0x80L) != 0; shift += 7) {
+      b = term.bytes[idx++];
+      value |= (b & 0x7FL) << shift;
+    }
+    return value;
+  }
+
+  // encodes a long into a BytesRef as VLong so that we get varying number of bytes when we update
+  static BytesRef toBytes(long value) {
+    BytesRef bytes = new BytesRef(10); // negative longs may take 10 bytes
+    while ((value & ~0x7FL) != 0L) {
+      bytes.bytes[bytes.length++] = (byte) ((value & 0x7FL) | 0x80L);
+      value >>>= 7;
+    }
+    bytes.bytes[bytes.length++] = (byte) value;
+    return bytes;
   }
 }

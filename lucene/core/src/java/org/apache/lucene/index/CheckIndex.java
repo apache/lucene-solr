@@ -32,8 +32,6 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.blocktree.FieldReader;
-import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -278,7 +276,7 @@ public class CheckIndex implements Closeable {
        *  tree terms dictionary (this is only set if the
        *  {@link PostingsFormat} for this segment uses block
        *  tree. */
-      public Map<String,Stats> blockTreeStats = null;
+      public Map<String,Object> blockTreeStats = null;
     }
 
     /**
@@ -453,7 +451,7 @@ public class CheckIndex implements Closeable {
   public Status checkIndex(List<String> onlySegments) throws IOException {
     ensureOpen();
     NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = null;
     Status result = new Status();
     result.dir = dir;
     String[] files = dir.listAll();
@@ -464,7 +462,7 @@ public class CheckIndex implements Closeable {
     try {
       // Do not use SegmentInfos.read(Directory) since the spooky
       // retrying it does is not necessary here (we hold the write lock):
-      sis.read(dir, lastSegmentsFile);
+      sis = SegmentInfos.readCommit(dir, lastSegmentsFile);
     } catch (Throwable t) {
       if (failFast) {
         IOUtils.reThrow(t);
@@ -594,7 +592,7 @@ public class CheckIndex implements Closeable {
       segInfoStat.docCount = info.info.getDocCount();
       
       final Version version = info.info.getVersion();
-      if (info.info.getDocCount() <= 0 && version != null && version.onOrAfter(Version.LUCENE_4_5_0)) {
+      if (info.info.getDocCount() <= 0) {
         throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.getDocCount());
       }
 
@@ -1289,14 +1287,12 @@ public class CheckIndex implements Closeable {
         // docs got deleted and then merged away):
         
       } else {
-        if (fieldTerms instanceof FieldReader) {
-          final Stats stats = ((FieldReader) fieldTerms).computeStats();
-          assert stats != null;
-          if (status.blockTreeStats == null) {
-            status.blockTreeStats = new HashMap<>();
-          }
-          status.blockTreeStats.put(field, stats);
+        final Object stats = fieldTerms.getStats();
+        assert stats != null;
+        if (status.blockTreeStats == null) {
+          status.blockTreeStats = new HashMap<>();
         }
+        status.blockTreeStats.put(field, stats);
         
         if (sumTotalTermFreq != 0) {
           final long v = fields.terms(field).getSumTotalTermFreq();
@@ -1423,7 +1419,7 @@ public class CheckIndex implements Closeable {
     }
     
     if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
-      for(Map.Entry<String,Stats> ent : status.blockTreeStats.entrySet()) {
+      for(Map.Entry<String, Object> ent : status.blockTreeStats.entrySet()) {
         infoStream.println("      field \"" + ent.getKey() + "\":");
         infoStream.println("      " + ent.getValue().toString().replace("\n", "\n      "));
       }

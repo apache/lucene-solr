@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Explanation;
@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -144,11 +145,11 @@ public class ToChildBlockJoinQuery extends Query {
         // No matches
         return null;
       }
-      if (!(parents instanceof FixedBitSet)) {
-        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);
+      if (!(parents.bits() instanceof FixedBitSet)) {
+        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents.bits());
       }
 
-      return new ToChildBlockJoinScorer(this, parentScorer, (FixedBitSet) parents, doScores, acceptDocs);
+      return new ToChildBlockJoinScorer(this, parentScorer, (FixedBitSet) parents.bits(), doScores, acceptDocs);
     }
 
     @Override

@@ -30,7 +30,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * A container Filter that allows Boolean composition of Filters.
@@ -51,7 +51,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
    */
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    FixedBitSet res = null;
+    DocIdSetBuilder res = null;
     final LeafReader reader = context.reader();
     
     boolean hasShouldClauses = false;
@@ -61,7 +61,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
         final DocIdSetIterator disi = getDISI(fc.getFilter(), context);
         if (disi == null) continue;
         if (res == null) {
-          res = new FixedBitSet(reader.maxDoc());
+          res = new DocIdSetBuilder(reader.maxDoc());
         }
         res.or(disi);
       }
@@ -73,8 +73,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       if (fc.getOccur() == Occur.MUST_NOT) {
         if (res == null) {
           assert !hasShouldClauses;
-          res = new FixedBitSet(reader.maxDoc());
-          res.set(0, reader.maxDoc()); // NOTE: may set bits on deleted docs
+          res = new DocIdSetBuilder(reader.maxDoc(), true); // NOTE: may set bits on deleted docs
         }
         final DocIdSetIterator disi = getDISI(fc.getFilter(), context);
         if (disi != null) {
@@ -90,7 +89,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
           return null; // no documents can match
         }
         if (res == null) {
-          res = new FixedBitSet(reader.maxDoc());
+          res = new DocIdSetBuilder(reader.maxDoc());
           res.or(disi);
         } else {
           res.and(disi);
@@ -98,7 +97,10 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       }
     }
 
-    return BitsFilteredDocIdSet.wrap(res, acceptDocs);
+    if (res == null) {
+      return null;
+    }
+    return BitsFilteredDocIdSet.wrap(res.build(), acceptDocs);
   }
 
   private static DocIdSetIterator getDISI(Filter filter, LeafReaderContext context)

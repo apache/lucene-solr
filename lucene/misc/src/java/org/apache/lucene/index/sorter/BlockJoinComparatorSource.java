@@ -30,6 +30,7 @@ import org.apache.lucene.search.ScoreDoc; // javadocs
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -148,10 +149,10 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
         if (parents == null) {
           throw new IllegalStateException("LeafReader " + context.reader() + " contains no parents!");
         }
-        if (!(parents instanceof FixedBitSet)) {
+        if (!(parents instanceof BitDocIdSet)) {
           throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);
         }
-        parentBits = (FixedBitSet) parents;
+        parentBits = (FixedBitSet) parents.bits();
         for (int i = 0; i < parentComparators.length; i++) {
           parentComparators[i] = parentComparators[i].setNextReader(context);
         }

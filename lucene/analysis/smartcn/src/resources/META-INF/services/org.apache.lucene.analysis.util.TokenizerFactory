@@ -14,4 +14,3 @@
 #  limitations under the License.
 
 org.apache.lucene.analysis.cn.smart.HMMChineseTokenizerFactory
-org.apache.lucene.analysis.cn.smart.SmartChineseSentenceTokenizerFactory

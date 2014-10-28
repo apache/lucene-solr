@@ -31,6 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -99,7 +100,7 @@ public class TestFilteredSearch extends LuceneTestCase {
           set.set(docId-docBase);
         }
       }
-      return set.cardinality() == 0 ? null:set;
+      return set.cardinality() == 0 ? null : new BitDocIdSet(set);
     }
   }
 

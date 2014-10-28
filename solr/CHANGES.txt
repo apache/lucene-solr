@@ -184,6 +184,16 @@ New Features
 * SOLR-5992: add "removeregex" as an atomic update operation
   (Vitaliy Zhovtyuk via Erick Erickson)
 
+* SOLR-6633: /update/json/docs path can now save the underlying json doc asa string field
+  and better support added to the default example (Noble Paul)
+
+* SOLR-6650: Add optional slow request logging at WARN level
+  (Jessica Cheng Mallet via Timothy Potter)
+
+* SOLR-6655: SimplePostTool now features -Dhost, -Dport, and -Dc (for core/collection)
+  properties to allow easier overriding of just the right piece of the Solr URL. 
+  (ehatcher)
+
 Bug Fixes
 ----------------------
 
@@ -249,6 +259,20 @@ Bug Fixes
   (Anurag Sharma , noble)
 
 * SOLR-6573: QueryElevationComponent now works with localParams in the query (janhoy)
+
+* SOLR-6524: Collections left in recovery state after node restart because recovery sleep time
+  increases exponentially between retries. (Mark Miller, shalin)
+
+* SOLR-6224: Post soft-commit callbacks are called before soft commit actually happens.
+  (shalin)
+
+* SOLR-6646: bin/solr start script fails to detect solr on non-default port and then after
+  30s tails wrong log file (janhoy)
+
+* SOLR-6647: Bad error message when missing resource from ZK when parsing Schema (janhoy)
+
+* SOLR-6591: Overseer can use stale cluster state and lose updates for collections
+  with stateFormat > 1. (shalin)
 
 Optimizations
 ----------------------
@@ -340,6 +364,21 @@ Other Changes
 * SOLR-6592: Avoid waiting for the leader to see the down state if that leader is not live.
   (Timothy Potter)
 
+* SOLR-6641: SystemInfoHandler should include the zkHost the node is using (when running in solrcloud mode)
+  (Timothy Potter)
+
+* SOLR-6295: Fix child filter query creation to never match parent docs in SolrExampleTests.
+  (Varun Thacker, Mikhail Khludnev via shalin)
+
+* SOLR-6578: Update commons-io dependency to the latest 2.4 version
+  (Steve Rowe, Shawn Heisey)
+
+* SOLR-6651: Fix wrong timeout logged in waitForReplicasToComeUp. (shalin)
+
+* SOLR-6661: Adjust all example configurations to allow overriding error-prone 
+  relative paths for solrconfig.xml <lib> references with solr.install.dir 
+  system property; bin/solr scripts will set it appropriately. (ehatcher)
+
 ==================  4.10.1 ==================
 
 Bug Fixes
@@ -348,7 +387,7 @@ Bug Fixes
 * SOLR-6425: If using the new global hdfs block cache option, you can end up
   reading corrupt files on file name reuse. (Mark Miller, Gregory Chanan)
 
-* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
+* SOLR-5814: CoreContainer reports incorrect & misleading path for solrconfig.xml
   when there are loading problems (Pradeep via hossman)
 
 * SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"

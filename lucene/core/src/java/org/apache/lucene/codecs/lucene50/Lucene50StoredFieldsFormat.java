@@ -52,7 +52,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>Here is a more detailed description of the field data file format:</p>
  * <ul>
  * <li>FieldData (.fdt) --&gt; &lt;Header&gt;, PackedIntsVersion, &lt;Chunk&gt;<sup>ChunkCount</sup></li>
- * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
  * <li>ChunkCount is not known in advance and is the number of chunks necessary to store all document of the segment</li>
  * <li>Chunk --&gt; DocBase, ChunkDocs, DocFieldCounts, DocLengths, &lt;CompressedDocs&gt;</li>
@@ -104,7 +104,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>A fields index file (extension <tt>.fdx</tt>).</p>
  * <ul>
  * <li>FieldsIndex (.fdx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;</li>
- * <li>Header --&gt; {@link CodecUtil#writeSegmentHeader SegmentHeader}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
  * </ul>
  * </li>

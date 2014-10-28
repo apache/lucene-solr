@@ -1,17 +1,5 @@
 package org.apache.lucene.index;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.RefCount;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,6 +16,18 @@ import org.apache.lucene.util.RefCount;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RefCount;
 
 /**
  * Manages the {@link DocValuesProducer} held by {@link SegmentReader} and

@@ -41,6 +41,6 @@ class BitSetSlice {
 
   public int nextSetBit(int pos) {
     int result = fbs.nextSetBit(pos + off) - off;
-    return (result < 0 || result >= len) ? -1 : result;
+    return (result >= len) ? -1 : result;
   }
 }

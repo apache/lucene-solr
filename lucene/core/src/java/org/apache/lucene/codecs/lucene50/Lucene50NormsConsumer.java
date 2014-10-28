@@ -47,6 +47,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
   static final byte CONST_COMPRESSED = 2;
   static final byte UNCOMPRESSED = 3;
   static final byte INDIRECT = 4;
+  static final byte PATCHED = 5;
   static final int BLOCK_SIZE = 1 << 14;
   
   // threshold for indirect encoding, computed as 1 - 1/log2(maxint)
@@ -61,10 +62,10 @@ class Lucene50NormsConsumer extends NormsConsumer {
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeSegmentHeader(data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeSegmentHeader(meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       success = true;
     } finally {
       if (!success) {
@@ -82,6 +83,11 @@ class Lucene50NormsConsumer extends NormsConsumer {
 
   @Override
   public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
+    writeNormsField(field, values, 0);
+  }
+  
+  private void writeNormsField(FieldInfo field, Iterable<Number> values, int level) throws IOException {
+    assert level <= 1; // we only "recurse" once in the indirect case
     meta.writeVInt(field.number);
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
@@ -89,16 +95,12 @@ class Lucene50NormsConsumer extends NormsConsumer {
     NormMap uniqueValues = new NormMap();
     
     int count = 0;
-    int missingCount = 0;
     
     for (Number nv : values) {
       if (nv == null) {
         throw new IllegalStateException("illegal norms data for field " + field.name + ", got null for value: " + count);
       }
       final long v = nv.longValue();
-      if (v == 0) {
-        missingCount++;
-      }
       
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
@@ -115,9 +117,15 @@ class Lucene50NormsConsumer extends NormsConsumer {
     if (uniqueValues != null && uniqueValues.size == 1) {
       // 0 bpv
       addConstant(minValue);
-    } else if (count > 256 && missingCount > count * INDIRECT_THRESHOLD) {
-      // sparse encoding
-      addIndirect(field, values, count, missingCount);
+    } else if (level == 0 && count > 256 && uniqueValues != null && uniqueValues.maxFreq() > count * INDIRECT_THRESHOLD) {
+      long commonValue = uniqueValues.getDecodeTable()[uniqueValues.maxOrd()];
+      if (commonValue == 0) {
+        // if the common value is missing, don't waste RAM on a bitset, since we won't be searching those docs
+        addIndirect(field, values, count, uniqueValues);
+      } else {
+        // otherwise, write a sparse bitset, where 1 indicates 'uncommon value'.
+        addPatched(field, values, count, uniqueValues);
+      }
     } else if (uniqueValues != null) {
       // small number of unique values: this is the typical case:
       FormatAndBits compression = fastestFormatAndBits(uniqueValues.size-1);
@@ -200,10 +208,65 @@ class Lucene50NormsConsumer extends NormsConsumer {
     writer.finish();
   }
   
-  private void addIndirect(FieldInfo field, final Iterable<Number> values, int count, int missingCount) throws IOException {
-    meta.writeVInt(count - missingCount);
+  // encodes only uncommon values in a sparse bitset
+  // access is constant time, and the common case is predictable
+  // exceptions nest either to CONST (if there are only 2 values), or INDIRECT (if there are > 2 values)
+  private void addPatched(FieldInfo field, final Iterable<Number> values, int count, NormMap uniqueValues) throws IOException {
+    final long decodeTable[] = uniqueValues.getDecodeTable();
+    int commonCount = uniqueValues.maxFreq();
+    final long commonValue = decodeTable[uniqueValues.maxOrd()];
+    
+    meta.writeVInt(count - commonCount);
+    meta.writeByte(PATCHED);
+    meta.writeLong(data.getFilePointer());
+    
+    // write docs with value
+    writeDocsWithValue(values, commonValue);
+    
+    // write exceptions: only two cases make sense
+    // bpv = 1 (folded into sparse bitset already)
+    // bpv > 1 (add indirect exception table)
+    meta.writeVInt(field.number);
+    if (uniqueValues.size == 2) {
+      // special case: implicit in bitset
+      int otherOrd = uniqueValues.maxOrd() == 0 ? 1 : 0;
+      addConstant(decodeTable[otherOrd]);
+    } else {
+      // exception table
+      addIndirect(field, values, count, uniqueValues);
+    }
+  }
+  
+  // encodes values as sparse array: keys[] and values[]
+  // access is log(N) where N = keys.length (slow!)
+  // so this is only appropriate as an exception table for patched, or when common value is 0 (wont be accessed by searching) 
+  private void addIndirect(FieldInfo field, final Iterable<Number> values, int count, NormMap uniqueValues) throws IOException {
+    int commonCount = uniqueValues.maxFreq();
+    final long commonValue = uniqueValues.getDecodeTable()[uniqueValues.maxOrd()];
+    
+    meta.writeVInt(count - commonCount);
     meta.writeByte(INDIRECT);
     meta.writeLong(data.getFilePointer());
+    
+    // write docs with value
+    writeDocsWithValue(values, commonValue);
+    
+    // write actual values
+    writeNormsField(field, new Iterable<Number>() {
+      @Override
+      public Iterator<Number> iterator() {
+        return new FilterIterator<Number,Number>(values.iterator()) {
+          @Override
+          protected boolean predicateFunction(Number value) {
+            return value.longValue() != commonValue;
+          }
+        };
+      }
+    }, 1);
+  }
+  
+  private void writeDocsWithValue(final Iterable<Number> values, long commonValue) throws IOException {
+    data.writeLong(commonValue);
     data.writeVInt(PackedInts.VERSION_CURRENT);
     data.writeVInt(BLOCK_SIZE);
     
@@ -212,25 +275,12 @@ class Lucene50NormsConsumer extends NormsConsumer {
     int doc = 0;
     for (Number n : values) {
       long v = n.longValue();
-      if (v != 0) {
+      if (v != commonValue) {
         writer.add(doc);
       }
       doc++;
     }
     writer.finish();
-    
-    // write actual values
-    addNormsField(field, new Iterable<Number>() {
-      @Override
-      public Iterator<Number> iterator() {
-        return new FilterIterator<Number,Number>(values.iterator()) {
-          @Override
-          protected boolean predicateFunction(Number value) {
-            return value.longValue() != 0;
-          }
-        };
-      }
-    });
   }
   
   @Override
@@ -259,6 +309,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
   static class NormMap {
     // we use short: at most we will add 257 values to this map before its rejected as too big above.
     final short[] singleByteRange = new short[256];
+    final int[] freqs = new int[257];
     final Map<Long,Short> other = new HashMap<Long,Short>();
     int size;
     
@@ -273,18 +324,24 @@ class Lucene50NormsConsumer extends NormsConsumer {
         int index = (int) (l + 128);
         short previous = singleByteRange[index];
         if (previous < 0) {
-          singleByteRange[index] = (short) size;
+          short slot = (short) size;
+          singleByteRange[index] = slot;
+          freqs[slot]++;
           size++;
           return true;
         } else {
+          freqs[previous]++;
           return false;
         }
       } else {
-        if (!other.containsKey(l)) {
+        Short previous = other.get(l);
+        if (previous == null) {
+          freqs[size]++;
           other.put(l, (short)size);
           size++;
           return true;
         } else {
+          freqs[previous]++;
           return false;
         }
       }
@@ -314,6 +371,36 @@ class Lucene50NormsConsumer extends NormsConsumer {
         decode[entry.getValue()] = entry.getKey();
       }
       return decode;
+    }
+    
+    // TODO: if we need more complicated frequency-driven optos, maybe add 'finish' to this api
+    // and sort all ords by frequency. we could then lower BPV and waste a value to represent 'patched',
+    
+    /** retrieves frequency table for items (indexed by ordinal) */
+    public int[] getFreqs() {
+      return freqs;
+    }
+    
+    /** sugar: returns max value over getFreqs() */
+    public int maxFreq() {
+      int max = 0;
+      for (int i = 0; i < size; i++) {
+        max = Math.max(max, freqs[i]);
+      }
+      return max;
+    }
+    
+    /** sugar: returns ordinal with maxFreq() */
+    public int maxOrd() {
+      long max = 0;
+      int maxOrd = 0;
+      for (int i = 0; i < size; i++) {
+        if (freqs[i] > max) {
+          max = freqs[i];
+          maxOrd = i;
+        }
+      }
+      return maxOrd;
     }
   }
 }

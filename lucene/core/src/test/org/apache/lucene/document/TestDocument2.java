@@ -706,7 +706,7 @@ public class TestDocument2 extends LuceneTestCase {
     assertEquals(1, checked.segmentInfos.size());
     CheckIndex.Status.SegmentInfoStatus segment = checked.segmentInfos.get(0);
     assertNotNull(segment.termIndexStatus.blockTreeStats);
-    Stats btStats = segment.termIndexStatus.blockTreeStats.get("id");
+    Stats btStats = (Stats) segment.termIndexStatus.blockTreeStats.get("id");
     assertNotNull(btStats);
     assertEquals(2, btStats.termsOnlyBlockCount);
     assertEquals(1, btStats.subBlocksOnlyBlockCount);
@@ -725,7 +725,7 @@ public class TestDocument2 extends LuceneTestCase {
       fail("did not hit exception");
     } catch (IllegalArgumentException iae) {
       // Expected
-      assertTrue("wrong exception message: " + iae.getMessage(), iae.getMessage().startsWith("field \"id\": A SPI class of type org.apache.lucene.codecs.DocValuesFormat with name 'foobar' does not exist"));
+      assertTrue("wrong exception message: " + iae.getMessage(), iae.getMessage().startsWith("field \"id\": An SPI class of type org.apache.lucene.codecs.DocValuesFormat with name 'foobar' does not exist"));
     }
     fieldTypes.setDocValuesFormat("id", "Memory");
     w.close();
@@ -761,7 +761,7 @@ public class TestDocument2 extends LuceneTestCase {
       fail("did not hit exception");
     } catch (IllegalArgumentException iae) {
       // Expected
-      assertTrue("wrong exception message: " + iae.getMessage(), iae.getMessage().startsWith("field \"id\": A SPI class of type org.apache.lucene.codecs.PostingsFormat with name 'foobar' does not exist"));
+      assertTrue("wrong exception message: " + iae.getMessage(), iae.getMessage().startsWith("field \"id\": An SPI class of type org.apache.lucene.codecs.PostingsFormat with name 'foobar' does not exist"));
     }
     fieldTypes.setPostingsFormat("id", "Memory");
     w.close();

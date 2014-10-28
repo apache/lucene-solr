@@ -22,14 +22,15 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Locale;
 
-import org.apache.lucene.codecs.PostingsBaseFormat;
+import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * BlockTree statistics for a single field 
- * returned by {@link FieldReader#computeStats()}.
+ * returned by {@link FieldReader#getStats()}.
+ * @lucene.internal
  */
 public class Stats {
   /** How many nodes in the index FST. */
@@ -81,11 +82,11 @@ public class Stats {
   public long totalBlockSuffixBytes;
 
   /** Total number of bytes used to store term stats (not
-   *  including what the {@link PostingsBaseFormat}
+   *  including what the {@link PostingsReaderBase}
    *  stores. */
   public long totalBlockStatsBytes;
 
-  /** Total bytes stored by the {@link PostingsBaseFormat},
+  /** Total bytes stored by the {@link PostingsReaderBase},
    *  plus the other few vInts stored in the frame. */
   public long totalBlockOtherBytes;
 

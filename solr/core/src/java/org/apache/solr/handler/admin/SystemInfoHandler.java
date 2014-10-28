@@ -92,6 +92,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
     boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
+    if (solrCloudMode) {
+      rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
+    }
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "system", getSystemInfo() );

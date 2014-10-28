@@ -31,8 +31,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -111,6 +111,22 @@ import org.apache.lucene.util.Version;
 // directly in SIS or someplace else
 
 // nocommit move to oal.index?
+
+// nocommit maxTokenLength?
+
+// nocommit per-field norms format?  then we can commit these "tradeoffs"
+
+// nocommit sortMissingFirst/Last
+
+// nocommit default value?
+
+// nocommit getTermFilter?
+
+// nocommit default qp operator
+
+// nocommit copy field?
+
+// nocommit controlling compression of stored fields, norms
 
 // nocommit back compat: how to handle pre-schema indices
 
@@ -1027,7 +1043,7 @@ public class FieldTypes {
         } else if (field.blockTreeMinItemsInBlock != null) {
           assert field.blockTreeMaxItemsInBlock != null;
           // nocommit do we now have cleaner API for this?  Ie "get me default PF, changing these settings"...
-          return new Lucene41PostingsFormat(field.blockTreeMinItemsInBlock.intValue(),
+          return new Lucene50PostingsFormat(field.blockTreeMinItemsInBlock.intValue(),
                                             field.blockTreeMaxItemsInBlock.intValue());
         }
         return super.getPostingsFormatForField(fieldName); 
@@ -2419,8 +2435,7 @@ public class FieldTypes {
 
   // nocommit somehow move this to IndexReader?
   public static FieldTypes getFieldTypes(Directory dir, Analyzer defaultQueryAnalyzer) throws IOException {
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
+    SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     return getFieldTypes(infos.getUserData(), defaultQueryAnalyzer, IndexSearcher.getDefaultSimilarity());
   }
 

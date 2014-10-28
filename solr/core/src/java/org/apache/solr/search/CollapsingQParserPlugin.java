@@ -22,8 +22,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
@@ -49,8 +50,8 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 
 import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
 
 /**
@@ -490,7 +491,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       DummyScorer dummy = new DummyScorer();
       leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = collapsedSet.iterator();
+      DocIdSetIterator it = new BitSetIterator(collapsedSet, 0L); // cost is not useful here
       int docId = -1;
       int nullScoreIndex = 0;
       while((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -603,7 +604,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       DummyScorer dummy = new DummyScorer();
       leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = fieldValueCollapse.getCollapsedSet().iterator();
+      DocIdSetIterator it = new BitSetIterator(fieldValueCollapse.getCollapsedSet(), 0); // cost is not useful here
       int docId = -1;
       int nullScoreIndex = 0;
       float[] scores = fieldValueCollapse.getScores();

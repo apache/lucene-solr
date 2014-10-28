@@ -60,7 +60,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   public static final String SI_EXTENSION = "si";
   
   @Override
-  public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
+  public SegmentInfo read(Directory directory, String segmentName, byte[] segmentID, IOContext context) throws IOException {
     BytesRefBuilder scratch = new BytesRefBuilder();
     String segFileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
     ChecksumIndexInput input = directory.openChecksumInput(segFileName, context);
@@ -114,6 +114,11 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_ID);
       final byte[] id = Arrays.copyOfRange(scratch.bytes(), SI_ID.length, scratch.length());
+      
+      if (!Arrays.equals(segmentID, id)) {
+        throw new CorruptIndexException("file mismatch, expected: " + StringHelper.idToString(segmentID)
+                                                        + ", got: " + StringHelper.idToString(id), input);
+      }
 
       SimpleTextUtil.checkFooter(input);
 

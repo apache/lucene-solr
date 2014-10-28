@@ -81,12 +81,12 @@ public class FSTTermsReader extends FieldsProducer {
 
     boolean success = false;
     try {
-      CodecUtil.checkSegmentHeader(in, FSTTermsWriter.TERMS_CODEC_NAME,
+      CodecUtil.checkIndexHeader(in, FSTTermsWriter.TERMS_CODEC_NAME,
                                        FSTTermsWriter.TERMS_VERSION_START,
                                        FSTTermsWriter.TERMS_VERSION_CURRENT,
                                        state.segmentInfo.getId(), state.segmentSuffix);
       CodecUtil.checksumEntireFile(in);
-      this.postingsReader.init(in);
+      this.postingsReader.init(in, state);
       seekDir(in);
 
       final FieldInfos fieldInfos = state.fieldInfos;

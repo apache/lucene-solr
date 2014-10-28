@@ -79,7 +79,6 @@ import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LiveIndexWriterConfig;
@@ -387,6 +386,8 @@ public abstract class LuceneTestCase extends Assert {
    * multiply it by the number of iterations to scale your tests (for nightly builds).
    */
   public static final int RANDOM_MULTIPLIER = systemPropertyAsInt("tests.multiplier", 1);
+
+  public static final boolean TEST_ASSERTS_ENABLED = systemPropertyAsBoolean("tests.asserts", true);
 
   /** TODO: javadoc? */
   public static final String DEFAULT_LINE_DOCS_FILE = "europarl.lines.txt.gz";
@@ -2466,5 +2467,14 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static Path createTempFile() throws IOException {
     return createTempFile("tempFile", ".tmp");
+  }
+
+  /** True if assertions (-ea) are enabled (at least for this class). */
+  public static final boolean assertsAreEnabled;
+
+  static {
+    boolean enabled = false;
+    assert enabled = true; // Intentional side-effect!!!
+    assertsAreEnabled = enabled;
   }
 }

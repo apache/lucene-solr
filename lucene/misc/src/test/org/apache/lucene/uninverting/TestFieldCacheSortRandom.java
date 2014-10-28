@@ -52,6 +52,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -290,7 +291,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
         }
       }
 
-      return bits;
+      return new BitDocIdSet(bits);
     }
   }
 }
