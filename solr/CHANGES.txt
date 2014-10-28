@@ -190,6 +190,9 @@ New Features
 * SOLR-6650: Add optional slow request logging at WARN level
   (Jessica Cheng Mallet via Timothy Potter)
 
+* SOLR-6655: SimplePostTool now features -Dhost, -Dport, and -Dc (for core/collection)
+  properties to allow easier overriding of just the right piece of the Solr URL. 
+
 Bug Fixes
 ----------------------
 
