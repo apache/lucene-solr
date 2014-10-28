@@ -65,7 +65,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   private final IndexInput posIn;
   private final IndexInput payIn;
 
-  private final ForUtil forUtil;
+  final ForUtil forUtil;
   private int version;
 
   /** Sole constructor. */
