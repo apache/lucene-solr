@@ -19,11 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
  * is built by QueryParser for input like <code>app*</code>.
@@ -31,13 +32,16 @@ import org.apache.lucene.util.ToStringUtils;
  * <p>This query uses the {@link
  * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}
  * rewrite method. */
+
 public class PrefixQuery extends MultiTermQuery {
-  private Term prefix;
+  private final Term prefix;
+  private final CompiledAutomaton compiled;
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
   public PrefixQuery(Term prefix) {
     super(prefix.field());
     this.prefix = prefix;
+    this.compiled = new CompiledAutomaton(prefix.bytes());
   }
 
   /** Returns the prefix of this query. */
@@ -45,13 +49,11 @@ public class PrefixQuery extends MultiTermQuery {
   
   @Override  
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    TermsEnum tenum = terms.iterator(null);
-    
     if (prefix.bytes().length == 0) {
       // no prefix -- match all terms for this field:
-      return tenum;
+      return terms.iterator(null);
     }
-    return new PrefixTermsEnum(tenum, prefix.bytes());
+    return compiled.getTermsEnum(terms);
   }
 
   /** Prints a user-readable version of this query. */

@@ -391,8 +391,10 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   final static int VERSION_START = 0;
   final static int VERSION_CURRENT = VERSION_START;
 
-  private final int minTermBlockSize;
-  private final int maxTermBlockSize;
+  private final int minTemsInBlock;
+  private final int maxItemsInBlock;
+  private final int minItemsInAutoPrefix;
+  private final int maxItemsInAutoPrefix;
 
   /**
    * Fixed packed block size, number of integers encoded in 
@@ -404,19 +406,33 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, 0, 0);
   }
 
   /** Creates {@code Lucene50PostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
-   *  maxBlockSize} passed to block terms dictionary.
+   *  maxBlockSize} and default values for {@code minItemsInAutoPrefix} and
+   *  {@code maxItemsInAutoPrefix}, passed to block tree terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+  public Lucene50PostingsFormat(int minTemsInBlock, int maxItemsInBlock) {
+    this(minTemsInBlock, maxItemsInBlock, 0, 0);
+  }
+
+  /** Creates {@code Lucene50PostingsFormat} with custom
+   *  values for {@code minBlockSize}, {@code
+   *  maxBlockSize}, {@code minItemsInAutoPrefix} and {@code maxItemsInAutoPrefix}, passed
+   *  to block tree terms dictionary.
+   *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int,int,int) */
+  public Lucene50PostingsFormat(int minTemsInBlock, int maxItemsInBlock, int minItemsInAutoPrefix, int maxItemsInAutoPrefix) {
     super("Lucene50");
-    this.minTermBlockSize = minTermBlockSize;
-    assert minTermBlockSize > 1;
-    this.maxTermBlockSize = maxTermBlockSize;
-    assert minTermBlockSize <= maxTermBlockSize;
+    BlockTreeTermsWriter.validateSettings(minTemsInBlock,
+                                          maxItemsInBlock);
+    BlockTreeTermsWriter.validateAutoPrefixSettings(minItemsInAutoPrefix,
+                                                    maxItemsInAutoPrefix);
+    this.minTemsInBlock = minTemsInBlock;
+    this.maxItemsInBlock = maxItemsInBlock;
+    this.minItemsInAutoPrefix = minItemsInAutoPrefix;
+    this.maxItemsInAutoPrefix = maxItemsInAutoPrefix;
   }
 
   @Override
@@ -432,8 +448,10 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
     try {
       FieldsConsumer ret = new BlockTreeTermsWriter(state, 
                                                     postingsWriter,
-                                                    minTermBlockSize, 
-                                                    maxTermBlockSize);
+                                                    minTemsInBlock, 
+                                                    maxItemsInBlock,
+                                                    minItemsInAutoPrefix,
+                                                    maxItemsInAutoPrefix);
       success = true;
       return ret;
     } finally {

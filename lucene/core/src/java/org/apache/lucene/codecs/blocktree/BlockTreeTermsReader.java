@@ -89,8 +89,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** Initial terms format. */
   public static final int VERSION_START = 0;
 
+  /** Auto-prefix terms. */
+  public static final int VERSION_AUTO_PREFIX_TERMS = 1;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_START;
+  public static final int VERSION_CURRENT = VERSION_AUTO_PREFIX_TERMS;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -115,7 +118,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   final String segment;
   
-  private final int version;
+  final int version;
 
   /** Sole constructor. */
   public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {

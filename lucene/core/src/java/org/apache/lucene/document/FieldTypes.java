@@ -50,6 +50,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
@@ -192,7 +193,7 @@ public class FieldTypes {
   enum ValueType {
     TEXT,
     SHORT_TEXT,
-    ATOM,
+    ATOM,  // nocommit binary sort of overlaps w/ this?
     INT,
     FLOAT,
     LONG,
@@ -216,6 +217,8 @@ public class FieldTypes {
 
   private final Similarity defaultSimilarity;
 
+  // nocommit nested docs?
+
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
   static class FieldType implements IndexableFieldType {
     private final String name;
@@ -228,17 +231,16 @@ public class FieldTypes {
     volatile DocValuesType docValuesType;
     private volatile boolean docValuesTypeSet;
 
-    // Expert: settings we pass to BlockTree to control how many terms are allowed in each block.
+    // Expert: settings we pass to BlockTree to control how many terms are allowed in each block and auto-prefix term
     volatile Integer blockTreeMinItemsInBlock;
     volatile Integer blockTreeMaxItemsInBlock;
+    volatile Integer blockTreeMinItemsInAutoPrefix;
+    volatile Integer blockTreeMaxItemsInAutoPrefix;
 
     // Gaps to add between multiple values of the same field; if these are not set, we fallback to the Analyzer for that field.
     volatile Integer analyzerPositionGap;
     volatile Integer analyzerOffsetGap;
 
-    // If the field is numeric, this is the precision step we use:
-    volatile Integer numericPrecisionStep;
-    
     // Whether this field's values are stored, or null if it's not yet set:
     private volatile Boolean stored;
 
@@ -326,10 +328,6 @@ public class FieldTypes {
           if (docValuesType != null && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
             illegalState(name, "type " + valueType + " must use BINARY docValuesType (got: " + docValuesType + ")");
           }
-          if (fastRanges == Boolean.TRUE) {
-            // TODO: auto prefix
-            illegalState(name, "type " + valueType + " cannot optimize for range queries");
-          }
           break;
         case ATOM:
           if (indexAnalyzer != null) {
@@ -342,10 +340,6 @@ public class FieldTypes {
           if (indexOptions != null && indexOptions.compareTo(IndexOptions.DOCS_ONLY) > 0) {
             // nocommit too anal?
             illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
-          }
-          if (fastRanges == Boolean.TRUE) {
-            // TODO: auto prefix
-            illegalState(name, "type " + valueType + " cannot optimize for range queries");
           }
           break;
         default:
@@ -369,11 +363,17 @@ public class FieldTypes {
         if (blockTreeMinItemsInBlock != null) {
           illegalState(name, "can only setTermsDictBlockSize if the field is indexed");
         }
+        if (blockTreeMinItemsInAutoPrefix != null) {
+          illegalState(name, "can only setTermsDictAutoPrefixSize if the field is indexed");
+        }
         if (indexAnalyzer != null) {
           illegalState(name, "can only setIndexAnalyzer if the field is indexed");
         }
         if (queryAnalyzer != null) {
           illegalState(name, "can only setQueryAnalyzer if the field is indexed");
+        }
+        if (fastRanges == Boolean.TRUE) {
+          illegalState(name, "can only enableFastRanges if the field is indexed");
         }
       } else {
         if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && indexAnalyzer != null) {
@@ -405,6 +405,10 @@ public class FieldTypes {
         illegalState(name, "cannot use both setTermsDictBlockSize and setPostingsFormat");
       }
 
+      if (postingsFormat != null && blockTreeMinItemsInAutoPrefix != null) {
+        illegalState(name, "cannot use both setTermsDictAutoPrefixSize and setPostingsFormat");
+      }
+
       if (highlighted == Boolean.TRUE) {
         if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT) {
           illegalState(name, "can only enable highlighting for TEXT or SHORT_TEXT fields; got valueType=" + valueType);
@@ -431,24 +435,18 @@ public class FieldTypes {
       }
       b.append('\n');
 
-      if (valueType == ValueType.INT ||
-          valueType == ValueType.FLOAT ||
-          valueType == ValueType.LONG ||
-          valueType == ValueType.DOUBLE) {
-        b.append("  numericPrecisionsStep: ");
-        if (numericPrecisionStep == null) {
-          b.append(numericPrecisionStep);
-        } else {
-          b.append("  unset");
-        }
-        b.append('\n');
-      }
-
       if (blockTreeMinItemsInBlock != null) {
         b.append("  term blocks: ");
         b.append(blockTreeMinItemsInBlock);
         b.append(" - ");
         b.append(blockTreeMaxItemsInBlock);
+      }
+
+      if (blockTreeMinItemsInAutoPrefix != null) {
+        b.append("  auto-prefix blocks: ");
+        b.append(blockTreeMinItemsInAutoPrefix);
+        b.append(" - ");
+        b.append(blockTreeMaxItemsInAutoPrefix);
       }
 
       if (analyzerPositionGap != null) {
@@ -646,9 +644,10 @@ public class FieldTypes {
 
       writeNullableInteger(out, blockTreeMinItemsInBlock);
       writeNullableInteger(out, blockTreeMaxItemsInBlock);
+      writeNullableInteger(out, blockTreeMinItemsInAutoPrefix);
+      writeNullableInteger(out, blockTreeMaxItemsInAutoPrefix);
       writeNullableInteger(out, analyzerPositionGap);
       writeNullableInteger(out, analyzerOffsetGap);
-      writeNullableInteger(out, numericPrecisionStep);
       writeNullableBoolean(out, stored);
       writeNullableBoolean(out, sortable);
       writeNullableBoolean(out, sortReversed);
@@ -820,9 +819,10 @@ public class FieldTypes {
 
       blockTreeMinItemsInBlock = readNullableInteger(in);
       blockTreeMaxItemsInBlock = readNullableInteger(in);
+      blockTreeMinItemsInAutoPrefix = readNullableInteger(in);
+      blockTreeMaxItemsInAutoPrefix = readNullableInteger(in);
       analyzerPositionGap = readNullableInteger(in);
       analyzerOffsetGap = readNullableInteger(in);
-      numericPrecisionStep = readNullableInteger(in);
       stored = readNullableBoolean(in);
       sortable = readNullableBoolean(in);
       sortReversed = readNullableBoolean(in);
@@ -1041,11 +1041,29 @@ public class FieldTypes {
         }
         if (field.postingsFormat != null) {
           return PostingsFormat.forName(field.postingsFormat);
-        } else if (field.blockTreeMinItemsInBlock != null) {
-          assert field.blockTreeMaxItemsInBlock != null;
+        } else if (field.blockTreeMinItemsInBlock != null || field.blockTreeMinItemsInAutoPrefix != null) {
+          int minItemsInBlock, maxItemsInBlock;
+          int minItemsInAutoPrefix, maxItemsInAutoPrefix;
+          if (field.blockTreeMinItemsInBlock != null) {
+            assert field.blockTreeMaxItemsInBlock != null;
+            minItemsInBlock = field.blockTreeMinItemsInBlock.intValue();
+            maxItemsInBlock = field.blockTreeMaxItemsInBlock.intValue();
+          } else {
+            minItemsInBlock = BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE;
+            maxItemsInBlock = BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE;
+          }
+          if (field.blockTreeMinItemsInAutoPrefix != null) {
+            assert field.blockTreeMaxItemsInAutoPrefix != null;
+            minItemsInAutoPrefix = field.blockTreeMinItemsInAutoPrefix.intValue();
+            maxItemsInAutoPrefix = field.blockTreeMaxItemsInAutoPrefix.intValue();
+          } else {
+            minItemsInAutoPrefix = BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE;
+            maxItemsInAutoPrefix = BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE;
+          }
+
           // nocommit do we now have cleaner API for this?  Ie "get me default PF, changing these settings"...
-          return new Lucene50PostingsFormat(field.blockTreeMinItemsInBlock.intValue(),
-                                            field.blockTreeMaxItemsInBlock.intValue());
+          return new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock,
+                                            minItemsInAutoPrefix, maxItemsInAutoPrefix);
         }
         return super.getPostingsFormatForField(fieldName); 
       }
@@ -1350,18 +1368,20 @@ public class FieldTypes {
   /** Sets the minimum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
    *  effect for newly written (flushed or merged) segments.  The default is 25; higher values make fewer, larger blocks, which require less
    *  heap in the IndexReader but slows down term lookups. */
-  public synchronized void setTermsDictBlockSize(String fieldName, int minItemsPerBlock) {
-    setTermsDictBlockSize(fieldName, minItemsPerBlock, 2*(minItemsPerBlock-1));
+  public synchronized void setTermsDictBlockSize(String fieldName, int minItemsInBlock) {
+    setTermsDictBlockSize(fieldName, minItemsInBlock, 2*(minItemsInBlock-1));
   }
 
   /** Sets the minimum and maximum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
    *  effect for newly written (flushed or merged) segments.  The default is 25 and 48; higher values make fewer, larger blocks, which require less
    *  heap in the IndexReader but slows down term lookups. */
-  public synchronized void setTermsDictBlockSize(String fieldName, int minItemsPerBlock, int maxItemsPerBlock) {
+  public synchronized void setTermsDictBlockSize(String fieldName, int minItemsInBlock, int maxItemsInBlock) {
     ensureWritable();
 
+    // nocommit must check that field is in fact using block tree?
+
     try {
-      BlockTreeTermsWriter.validateSettings(minItemsPerBlock, maxItemsPerBlock);
+      BlockTreeTermsWriter.validateSettings(minItemsInBlock, maxItemsInBlock);
     } catch (IllegalArgumentException iae) {
       illegalState(fieldName, iae.getMessage());
     }
@@ -1369,15 +1389,15 @@ public class FieldTypes {
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = new FieldType(fieldName);
-      current.blockTreeMinItemsInBlock = minItemsPerBlock;
-      current.blockTreeMaxItemsInBlock = maxItemsPerBlock;
+      current.blockTreeMinItemsInBlock = minItemsInBlock;
+      current.blockTreeMaxItemsInBlock = maxItemsInBlock;
       fields.put(fieldName, current);
       changed();
     } else if (current.blockTreeMinItemsInBlock == null) {
       boolean success = false;
       try {
-        current.blockTreeMinItemsInBlock = minItemsPerBlock;
-        current.blockTreeMaxItemsInBlock = maxItemsPerBlock;
+        current.blockTreeMinItemsInBlock = minItemsInBlock;
+        current.blockTreeMaxItemsInBlock = maxItemsInBlock;
         current.validate();
         success = true;
       } finally {
@@ -1388,8 +1408,56 @@ public class FieldTypes {
       }
       changed();
     } else {
-      current.blockTreeMinItemsInBlock = minItemsPerBlock;
-      current.blockTreeMaxItemsInBlock = maxItemsPerBlock;
+      current.blockTreeMinItemsInBlock = minItemsInBlock;
+      current.blockTreeMaxItemsInBlock = maxItemsInBlock;
+      assert current.validate();
+    }
+  }
+  /** Sets the minimum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
+   *  effect for newly written (flushed or merged) segments.  The default is 25; higher values make fewer, larger blocks, which require less
+   *  heap in the IndexReader but slows down term lookups. */
+  public synchronized void setTermsDictAutoPrefixSize(String fieldName, int minItemsInAutoPrefix) {
+    setTermsDictAutoPrefixSize(fieldName, minItemsInAutoPrefix, 2*(minItemsInAutoPrefix-1));
+  }
+
+  /** Sets the minimum and maximum number of terms in each term block in the terms dictionary.  These can be changed at any time, but changes only take
+   *  effect for newly written (flushed or merged) segments.  The default is 25 and 48; higher values make fewer, larger blocks, which require less
+   *  heap in the IndexReader but slows down term lookups. */
+  public synchronized void setTermsDictAutoPrefixSize(String fieldName, int minItemsInAutoPrefix, int maxItemsInAutoPrefix) {
+    ensureWritable();
+
+    // nocommit must check that field is in fact using block tree?
+
+    try {
+      BlockTreeTermsWriter.validateAutoPrefixSettings(minItemsInAutoPrefix, maxItemsInAutoPrefix);
+    } catch (IllegalArgumentException iae) {
+      illegalState(fieldName, iae.getMessage());
+    }
+
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.blockTreeMinItemsInAutoPrefix = minItemsInAutoPrefix;
+      current.blockTreeMaxItemsInAutoPrefix = maxItemsInAutoPrefix;
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.blockTreeMinItemsInAutoPrefix == null) {
+      boolean success = false;
+      try {
+        current.blockTreeMinItemsInAutoPrefix = minItemsInAutoPrefix;
+        current.blockTreeMaxItemsInAutoPrefix = maxItemsInAutoPrefix;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.blockTreeMinItemsInAutoPrefix = null;
+          current.blockTreeMaxItemsInAutoPrefix = null;
+        }
+      }
+      changed();
+    } else {
+      current.blockTreeMinItemsInAutoPrefix = minItemsInAutoPrefix;
+      current.blockTreeMaxItemsInAutoPrefix = maxItemsInAutoPrefix;
       assert current.validate();
     }
   }
@@ -1486,7 +1554,6 @@ public class FieldTypes {
       fields.put(fieldName, current);
       changed();
     } else if (current.fastRanges != Boolean.FALSE) {
-      // nocommit don't we need to ... turn off DocValues if they were only on because of sorting?
       // nocommit ok to allow this?
       // nocommit should we validate?
       current.fastRanges = Boolean.FALSE;
@@ -1630,30 +1697,6 @@ public class FieldTypes {
   }
 
   // nocommit iterator over all fields / types?
-
-  public synchronized void setNumericPrecisionStep(String fieldName, int precStep) {
-    FieldType current = fields.get(fieldName);
-    if (current == null) {
-      current = new FieldType(fieldName);
-      fields.put(fieldName, current);
-      current.numericPrecisionStep = precStep;
-      changed();
-    } else if (current.numericPrecisionStep == null) {
-      current.numericPrecisionStep = precStep;
-      changed();
-    } else if (current.numericPrecisionStep.intValue() != precStep) {
-      illegalState(fieldName, "cannot change numericPrecisionStep from " + current.numericPrecisionStep + " to " + precStep);
-    }
-  }
-
-  /** @throws IllegalStateException if this field is unknown, or is not a numeric field. */
-  public synchronized int getNumericPrecisionStep(String fieldName) {
-    FieldType current = getFieldType(fieldName);
-    if (current.numericPrecisionStep == null) { 
-      illegalState(fieldName, "no numericPrecisionStep is set");
-    }
-    return current.numericPrecisionStep;
-  }
 
   // nocommit should we make a single method to enable the different combinations...?
   public synchronized void enableTermVectors(String fieldName) {
@@ -1927,9 +1970,6 @@ public class FieldTypes {
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
       }
-      if (field.fastRanges == null) {
-        field.fastRanges = Boolean.TRUE;
-      }
       if (field.sortable == null) {
         if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.NUMERIC || field.docValuesType == DocValuesType.SORTED_NUMERIC) {
           field.sortable = Boolean.TRUE;
@@ -1958,13 +1998,11 @@ public class FieldTypes {
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
       }
-      if (field.numericPrecisionStep == null) {
-        if (field.fastRanges == false) {
-          field.numericPrecisionStep = Integer.MAX_VALUE;
-        } else if (field.valueType == ValueType.INT || field.valueType == ValueType.FLOAT) {
-          field.numericPrecisionStep = 8;
+      if (field.fastRanges == null) {
+        if (field.indexOptions != null) {
+          field.fastRanges = Boolean.TRUE;
         } else {
-          field.numericPrecisionStep = 16;
+          field.fastRanges = Boolean.FALSE;
         }
       }
       break;
@@ -2016,9 +2054,6 @@ public class FieldTypes {
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
       }
-      if (field.fastRanges == null) {
-        field.fastRanges = Boolean.FALSE;
-      }
       if (field.sortable == null) {
         if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.SORTED || field.docValuesType == DocValuesType.SORTED_SET) {
           field.sortable = Boolean.TRUE;
@@ -2048,6 +2083,13 @@ public class FieldTypes {
       }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
+      }
+      if (field.fastRanges == null) {
+        if (field.indexOptions != null) {
+          field.fastRanges = Boolean.TRUE;
+        } else {
+          field.fastRanges = Boolean.FALSE;
+        }
       }
       break;
 
@@ -2128,6 +2170,14 @@ public class FieldTypes {
       throw new AssertionError("missing value type in switch");
     }
 
+    if (field.fastRanges == Boolean.TRUE) {
+      if (field.blockTreeMinItemsInAutoPrefix == null) {
+        field.blockTreeMinItemsInAutoPrefix = BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE;
+        field.blockTreeMaxItemsInAutoPrefix = BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE;
+      }
+    }
+
+    // nocommit assert all other settings are not null
     assert field.highlighted != null;
     assert field.fastRanges != null;
     assert field.sortable != null;
@@ -2136,6 +2186,8 @@ public class FieldTypes {
     assert field.indexOptionsSet;
     assert field.docValuesTypeSet;
     assert field.indexOptions == null || field.indexNorms != null;
+
+    // nocommit not an assert?  our setDefaults should never create an invalid setting!
     assert field.validate();
   } 
 
@@ -2151,19 +2203,19 @@ public class FieldTypes {
       illegalState(fieldName, "cannot create term query: this field was not indexed");
     }
 
-    BytesRefBuilder bytesBuilder = new BytesRefBuilder();
+    BytesRef bytes;
 
     switch (fieldType.valueType) {
     case INT:
-      NumericUtils.intToPrefixCodedBytes(token, 0, bytesBuilder);
-      break;
-    case LONG:
-      NumericUtils.longToPrefixCodedBytes(token, 0, bytesBuilder);
+      bytes = Document2.intToBytes(token);
       break;
     default:
       illegalState(fieldName, "cannot create int term query when valueType=" + fieldType.valueType);
+      // Dead code but javac disagrees:
+      bytes = null;
     }
-    return new TermQuery(new Term(fieldName, bytesBuilder.get()));
+
+    return new TermQuery(new Term(fieldName, bytes));
   }
 
   /** Returns a query matching all documents that have this long term. */
@@ -2177,17 +2229,19 @@ public class FieldTypes {
       illegalState(fieldName, "cannot create term query: this field was not indexed");
     }
 
-    BytesRefBuilder bytesBuilder = new BytesRefBuilder();
+    BytesRef bytes;
 
     switch (fieldType.valueType) {
     case LONG:
-      NumericUtils.longToPrefixCodedBytes(token, 0, bytesBuilder);
+      bytes = Document2.longToBytes(token);
       break;
     default:
       illegalState(fieldName, "cannot create long term query when valueType=" + fieldType.valueType);
+      // Dead code but javac disagrees:
+      bytes = null;
     }
 
-    return new TermQuery(new Term(fieldName, bytesBuilder.get()));
+    return new TermQuery(new Term(fieldName, bytes));
   }
 
   /** Returns a query matching all documents that have this binary token. */
@@ -2226,6 +2280,7 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, token));
   }
 
+  // nocommit shouldn't this be a filter?
   public Query newRangeQuery(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
 
     // Field must exist:
@@ -2244,38 +2299,58 @@ public class FieldTypes {
     // instead make separate methods for each atomic type?  or should we "type check" the incoming Number?  taking Number is more
     // conventient for query parsers...?
 
+    BytesRef minTerm;
+    BytesRef maxTerm;
+    
     switch (fieldType.valueType) {
     case INT:
-      return NumericRangeQuery.newIntRange(fieldName,
-                                           fieldType.numericPrecisionStep.intValue(),
-                                           min == null ? null : min.intValue(),
-                                           max == null ? null : max.intValue(),
-                                           minInclusive, maxInclusive);
+      minTerm = min == null ? null : Document2.intToBytes(min.intValue());
+      maxTerm = max == null ? null : Document2.intToBytes(max.intValue());
+      break;
+
     case FLOAT:
-      return NumericRangeQuery.newFloatRange(fieldName,
-                                             fieldType.numericPrecisionStep.intValue(),
-                                             min == null ? null : min.floatValue(),
-                                             max == null ? null : max.floatValue(),
-                                             minInclusive, maxInclusive);
+      minTerm = min == null ? null : Document2.intToBytes(Float.floatToIntBits(min.floatValue()));
+      maxTerm = max == null ? null : Document2.intToBytes(Float.floatToIntBits(max.floatValue()));
+      break;
+
     case LONG:
-      return NumericRangeQuery.newLongRange(fieldName,
-                                            fieldType.numericPrecisionStep.intValue(),
-                                            min == null ? null : min.longValue(),
-                                            max == null ? null : max.longValue(),
-                                            minInclusive, maxInclusive);
+      minTerm = min == null ? null : Document2.longToBytes(min.longValue());
+      maxTerm = max == null ? null : Document2.longToBytes(max.longValue());
+      break;
+
     case DOUBLE:
-      return NumericRangeQuery.newDoubleRange(fieldName,
-                                              fieldType.numericPrecisionStep.intValue(),
-                                              min == null ? null : min.doubleValue(),
-                                              max == null ? null : max.doubleValue(),
-                                              minInclusive, maxInclusive);
-      // nocommit termRangeQuery?  but we should add enableRangeQueries and check against that?
+      minTerm = min == null ? null : Document2.longToBytes(Double.doubleToLongBits(min.doubleValue()));
+      maxTerm = max == null ? null : Document2.longToBytes(Double.doubleToLongBits(max.doubleValue()));
+      break;
+
     default:
       illegalState(fieldName, "cannot create numeric range query on non-numeric field; got valueType=" + fieldType.valueType);
 
       // Dead code but javac disagrees:
       return null;
     }
+
+    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+  }
+
+  // nocommit shouldn't this be a filter?
+  public Query newRangeQuery(String fieldName, BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
+
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == null) {
+      illegalState(fieldName, "cannot create range query: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "this field was not indexed for fast ranges");
+    }
+
+    // nocommit verify type is BINARY or ATOM?
+
+    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
   }
 
   // nocommit newPhraseQuery?

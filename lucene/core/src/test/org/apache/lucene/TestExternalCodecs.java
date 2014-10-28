@@ -59,6 +59,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setPostingsFormat("id", "RAMOnly");
+    fieldTypes.disableFastRanges("id");
     fieldTypes.setPostingsFormat("field1", TestUtil.getDefaultPostingsFormat().getName());
     fieldTypes.setPostingsFormat("field2", "Memory");
     

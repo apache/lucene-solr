@@ -163,7 +163,8 @@ final class OrdsFieldReader extends Terms implements Accountable {
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
     if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
-      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+      // Let super handle RANGE, PREFIX:
+      return super.intersect(compiled, startTerm);
     }
     return new OrdsIntersectTermsEnum(this, compiled, startTerm);
   }

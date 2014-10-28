@@ -82,14 +82,13 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoLockFactory;
 import org.junit.Assert;
-
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -699,6 +698,14 @@ public final class TestUtil {
     return new String(buffer, 0, i);
   }
 
+  /** Returns a random binary term. */
+  public static BytesRef randomBinaryTerm(Random r) {
+    int length = r.nextInt(15);
+    BytesRef b = new BytesRef(length);
+    r.nextBytes(b.bytes);
+    b.length = length;
+    return b;
+  }
   
   /** Return a Codec that can read any of the
    *  default codecs and formats, but always writes in the specified
@@ -1141,6 +1148,24 @@ public final class TestUtil {
       return mixedUp;
     } else {
       return sb.toString();
+    }
+  }
+
+  /** For debugging: tries to include br.utf8ToString(), but if that
+   *  fails (because it's not valid utf8, which is fine!), just
+   *  use ordinary toString. */
+  public static String brToString(BytesRef br) {
+    if (br == null) {
+      return "(null)";
+    } else {
+      try {
+        return br.utf8ToString() + " " + br.toString();
+      } catch (Throwable t) {
+        // If BytesRef isn't actually UTF8, or it's eg a
+        // prefix of UTF8 that ends mid-unicode-char, we
+        // fallback to hex:
+        return br.toString();
+      }
     }
   }
   

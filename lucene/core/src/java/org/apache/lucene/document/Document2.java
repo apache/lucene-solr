@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.FieldTypes.FieldType;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -81,6 +80,20 @@ public class Document2 implements IndexDocument {
       return boost;
     }
 
+    private TokenStream getReusedBinaryTokenStream(BytesRef value, TokenStream reuse) {
+      BinaryTokenStream bts;
+      if (reuse != null) {
+        if (reuse instanceof BinaryTokenStream == false) {
+          FieldTypes.illegalState(fieldName, "should have had BinaryTokenStream for reuse, but got " + reuse);
+        }
+        bts = (BinaryTokenStream) reuse;
+      } else {
+        bts = new BinaryTokenStream();
+      }
+      bts.setValue(value);
+      return bts;
+    }
+
     @Override
     public TokenStream tokenStream(Analyzer analyzerIn, TokenStream reuse) throws IOException {
       Analyzer analyzer = fieldTypes.getIndexAnalyzer();
@@ -92,41 +105,13 @@ public class Document2 implements IndexDocument {
       FieldTypes.FieldType fieldType = fieldTypes.getFieldType(fieldName);
       switch (fieldType.valueType) {
       case INT:
+        return getReusedBinaryTokenStream(intToBytes(((Number) value).intValue()), reuse);
       case FLOAT:
+        return getReusedBinaryTokenStream(intToBytes(Float.floatToIntBits(((Number) value).floatValue())), reuse);
       case LONG:
+        return getReusedBinaryTokenStream(longToBytes(((Number) value).longValue()), reuse);
       case DOUBLE:
-        NumericTokenStream nts;
-        if (reuse != null) {
-          if (reuse instanceof NumericTokenStream == false) {
-            FieldTypes.illegalState(fieldName, "should have had NumericTokenStream for reuse, but got " + reuse);
-          }
-          nts = (NumericTokenStream) reuse;
-          if (fieldType.numericPrecisionStep == null || nts.getPrecisionStep() != fieldType.numericPrecisionStep.intValue()) {
-            FieldTypes.illegalState(fieldName, "reused NumericTokenStream has precisionStep " + nts.getPrecisionStep() + ", which is different from FieldType's " + fieldType.numericPrecisionStep);
-          }
-        } else {
-          nts = new NumericTokenStream(fieldType.numericPrecisionStep);
-        }
-        // initialize value in TokenStream
-        final Number number = (Number) value;
-        switch (fieldType.valueType) {
-        case INT:
-          nts.setIntValue(number.intValue());
-          break;
-        case LONG:
-          nts.setLongValue(number.longValue());
-          break;
-        case FLOAT:
-          nts.setFloatValue(number.floatValue());
-          break;
-        case DOUBLE:
-          nts.setDoubleValue(number.doubleValue());
-          break;
-        default:
-          throw new AssertionError("Should never get here");
-        }
-        return nts;
-
+        return getReusedBinaryTokenStream(longToBytes(Double.doubleToLongBits(((Number) value).doubleValue())), reuse);
       case ATOM:
         if (value instanceof String) {
           StringTokenStream sts;
@@ -142,17 +127,7 @@ public class Document2 implements IndexDocument {
           return sts;
         } else {
           assert value instanceof BytesRef;
-          BinaryTokenStream bts;
-          if (reuse != null) {
-            if (reuse instanceof BinaryTokenStream == false) {
-              FieldTypes.illegalState(fieldName, "should have had BinaryTokenStream for reuse, but got " + reuse);
-            }
-            bts = (BinaryTokenStream) reuse;
-          } else {
-            bts = new BinaryTokenStream();
-          }
-          bts.setValue((BytesRef) value);
-          return bts;
+          return getReusedBinaryTokenStream((BytesRef) value, reuse);
         }
 
       case BINARY:
@@ -452,5 +427,31 @@ public class Document2 implements IndexDocument {
         return;
       }
     }
+  }
+
+  static BytesRef intToBytes(int v) {
+    int sortableBits = v ^ 0x80000000;
+    BytesRef token = new BytesRef(4);
+    token.length = 4;
+    int index = 3;
+    while (index >= 0) {
+      token.bytes[index] = (byte) (sortableBits & 0xff);
+      index--;
+      sortableBits >>>= 8;
+    }
+    return token;
+  }
+
+  static BytesRef longToBytes(long v) {
+    long sortableBits = v ^ 0x8000000000000000L;
+    BytesRef token = new BytesRef(8);
+    token.length = 8;
+    int index = 7;
+    while (index >= 0) {
+      token.bytes[index] = (byte) (sortableBits & 0xff);
+      index--;
+      sortableBits >>>= 8;
+    }
+    return token;
   }
 }

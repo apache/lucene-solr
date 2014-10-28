@@ -273,6 +273,10 @@ public class TestDocument2 extends LuceneTestCase {
     dir.close();
   }
 
+  // nocommit testTermRangeQuery
+  // nocommit test range exc
+  
+
   public void testIntRangeQuery() throws Exception {
     Directory dir = newDirectory();
 
@@ -558,6 +562,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setPostingsFormat("id", "Memory");
     fieldTypes.enableStored("id");
+    fieldTypes.disableFastRanges("id");
 
     Document2 doc = w.newDocument();
     doc.addAtom("id", "0");
@@ -613,24 +618,6 @@ public class TestDocument2 extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(fieldTypes.newTermQuery("id", 1), 1);
     assertEquals(1, hits.scoreDocs.length);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testNumericPrecisionStep() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    IndexWriter w = new IndexWriter(dir, iwc);
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setNumericPrecisionStep("long", 4);
-
-    Document2 doc = w.newDocument();
-    doc.addLong("long", 17);
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    assertEquals(16, MultiFields.getTerms(r, "long").size());
     r.close();
     w.close();
     dir.close();

@@ -16,6 +16,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader; // javadocs
 import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
@@ -24,6 +25,8 @@ import org.apache.lucene.index.TermState;
  * Holds all state required for {@link PostingsReaderBase}
  * to produce a {@link DocsEnum} without re-seeking the
  * terms dict.
+ *
+ * @lucene.internal
  */
 public class BlockTermState extends OrdTermState {
   /** how many docs have this term */
@@ -36,6 +39,11 @@ public class BlockTermState extends OrdTermState {
   /** fp into the terms dict primary file (_X.tim) that holds this term */
   // TODO: update BTR to nuke this
   public long blockFilePointer;
+
+  /** True if this term is "real" (e.g., not an auto-prefix term or
+   *  some other "secret" term; currently only {@link BlockTreeTermsReader}
+   *  sets this). */
+  public boolean isRealTerm;
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -51,10 +59,11 @@ public class BlockTermState extends OrdTermState {
     totalTermFreq = other.totalTermFreq;
     termBlockOrd = other.termBlockOrd;
     blockFilePointer = other.blockFilePointer;
+    isRealTerm = other.isRealTerm;
   }
 
   @Override
   public String toString() {
-    return "docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termBlockOrd=" + termBlockOrd + " blockFP=" + blockFilePointer;
+    return "docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termBlockOrd=" + termBlockOrd + " blockFP=" + blockFilePointer + " isRealTerm=" + isRealTerm;
   }
 }

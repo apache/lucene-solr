@@ -35,7 +35,7 @@ final class MappingMultiDocsEnum extends DocsEnum {
   MergeState.DocMap currentMap;
   DocsEnum current;
   int currentBase;
-  int doc = -1;
+  int doc;
   private final MergeState mergeState;
   MultiDocsEnum multiDocsEnum;
 
@@ -50,6 +50,7 @@ final class MappingMultiDocsEnum extends DocsEnum {
     this.multiDocsEnum = docsEnum;
     upto = -1;
     current = null;
+    doc = -1;
     return this;
   }
 

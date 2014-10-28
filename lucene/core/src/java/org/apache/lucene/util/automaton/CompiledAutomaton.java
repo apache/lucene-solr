@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.PrefixTermsEnum;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -49,6 +48,8 @@ public class CompiledAutomaton {
     SINGLE, 
     /** Automaton that matches all Strings with a constant prefix. */
     PREFIX, 
+    /** Automaton that matches all binary terms (BytesRef) in a range from minTerm (inclusive or not) to maxTerm (inclusive or not). */
+    RANGE, 
     /** Catch-all for any other automata. */
     NORMAL
   };
@@ -59,8 +60,24 @@ public class CompiledAutomaton {
   /** 
    * For {@link AUTOMATON_TYPE#PREFIX}, this is the prefix term; 
    * for {@link AUTOMATON_TYPE#SINGLE} this is the singleton term.
+   * for {@link AUTOMATON_TYPE#RANGE}, this is the min term; 
    */
   public final BytesRef term;
+
+  /** 
+   * Only used for {@link AUTOMATON_TYPE#RANGE}; 
+   */
+  public final BytesRef maxTerm;
+
+  /** 
+   * Only used for {@link AUTOMATON_TYPE#RANGE}: true if the min term is included in the range. 
+   */
+  public final boolean minInclusive;
+
+  /** 
+   * Only used for {@link AUTOMATON_TYPE#RANGE}: true if the max term is included in the range. 
+   */
+  public final boolean maxInclusive;
 
   /** 
    * Matcher for quickly determining if a byte[] is accepted.
@@ -90,10 +107,82 @@ public class CompiledAutomaton {
    */
   public final Boolean finite;
 
+  /** Which state accepts all suffixes; only set for RANGE and PREFIX, else -1. */
+  public final int sinkState;
+
   /** Create this, passing simplify=true and finite=null, so that we try
    *  to simplify the automaton and determine if it is finite. */
   public CompiledAutomaton(Automaton automaton) {
     this(automaton, null, true);
+  }
+
+  // TODO: we could also allow direct binary automaton here: BlockTree can optimize that case more generally too, but we start with this
+  // more restricted (single term range) API:
+
+  /** Matches a range of terms.  Some terms dict implementations (e.g. BlockTree) can optimize this case by using
+   *  pre-computed auto prefix terms stored in the index. */
+  public CompiledAutomaton(BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
+    if (minTerm == null) {
+      this.term = new BytesRef();
+      this.minInclusive = true;
+    } else {
+      this.term = minTerm;
+      this.minInclusive = minInclusive;
+    }
+    this.maxTerm = maxTerm;
+    this.maxInclusive = maxInclusive;
+    commonSuffixRef = null;
+    finite = false;
+    automaton = Automata.makeBinaryInterval(term, minInclusive, maxTerm, maxInclusive);
+
+    // Compute sinkState for this automaton, if any (it won't exist if maxTerm == minTerm):
+    int numStates = automaton.getNumStates();
+    Transition t = new Transition();
+    int foundState = -1;
+    for(int s=0;s<numStates;s++) {
+      if (automaton.isAccept(s)) {
+        int count = automaton.initTransition(s, t);
+        boolean isSinkState = false;
+        for(int i=0;i<count;i++) {
+          automaton.getNextTransition(t);
+          if (t.dest == s && t.min == 0 && t.max == 0xff) {
+            isSinkState = true;
+            break;
+          }
+        }
+        if (isSinkState) {
+          foundState = s;
+          break;
+        }
+      }
+    }
+    sinkState = foundState;
+    runAutomaton = new ByteRunAutomaton(automaton, true);
+    type = AUTOMATON_TYPE.RANGE;
+  }
+
+  /** Matches the specified prefix term.  Some terms dict implementations (e.g. BlockTree) can optimize this case by using
+   *  pre-computed auto prefix terms stored in the index. */
+  public CompiledAutomaton(BytesRef prefixTerm) {
+    this.term = prefixTerm;
+    type = AUTOMATON_TYPE.PREFIX;
+    automaton = new Automaton();
+    int lastState = automaton.createState();
+    for(int i=0;i<prefixTerm.length;i++) {
+      int state = automaton.createState();
+      automaton.addTransition(lastState, state, prefixTerm.bytes[prefixTerm.offset+i]&0xff);
+      lastState = state;
+    }
+    automaton.setAccept(lastState, true);
+    automaton.addTransition(lastState, lastState, 0, 255);
+    sinkState = lastState;
+    automaton.finishState();
+    runAutomaton = new ByteRunAutomaton(automaton, true);
+    commonSuffixRef = null;
+    finite = false;
+    minInclusive = false;
+    maxInclusive = false;
+    maxTerm = null;
   }
 
   /** Create this.  If finite is null, we use {@link Operations#isFinite}
@@ -121,6 +210,10 @@ public class CompiledAutomaton {
         runAutomaton = null;
         this.automaton = null;
         this.finite = null;
+        maxTerm = null;
+        minInclusive = false;
+        maxInclusive = false;
+        sinkState = -1;
         return;
       // NOTE: only approximate, because automaton may not be minimal:
       } else if (Operations.isTotal(automaton)) {
@@ -131,6 +224,10 @@ public class CompiledAutomaton {
         runAutomaton = null;
         this.automaton = null;
         this.finite = null;
+        maxTerm = null;
+        minInclusive = false;
+        maxInclusive = false;
+        sinkState = -1;
         return;
       } else {
 
@@ -153,6 +250,10 @@ public class CompiledAutomaton {
           runAutomaton = null;
           this.automaton = null;
           this.finite = null;
+          maxTerm = null;
+          minInclusive = false;
+          maxInclusive = false;
+          sinkState = -1;
           return;
         } else if (commonPrefix.length() > 0) {
           Automaton other = Operations.concatenate(Automata.makeString(commonPrefix), Automata.makeAnyString());
@@ -163,17 +264,36 @@ public class CompiledAutomaton {
             type = AUTOMATON_TYPE.PREFIX;
             term = new BytesRef(commonPrefix);
             commonSuffixRef = null;
-            runAutomaton = null;
-            this.automaton = null;
-            this.finite = null;
+            automaton = new Automaton();
+            int lastState = automaton.createState();
+            for(int i=0;i<term.length;i++) {
+              int state = automaton.createState();
+              automaton.addTransition(lastState, state, term.bytes[term.offset+i]&0xff);
+              lastState = state;
+            }
+            automaton.setAccept(lastState, true);
+            automaton.addTransition(lastState, lastState, 0, 255);
+            sinkState = lastState;
+            automaton.finishState();
+            this.automaton = automaton;
+            runAutomaton = new ByteRunAutomaton(automaton, true);
+            this.finite = false;
+            maxTerm = null;
+            minInclusive = false;
+            maxInclusive = false;
             return;
           }
         }
       }
     }
 
+    sinkState = -1;
+
     type = AUTOMATON_TYPE.NORMAL;
     term = null;
+    maxTerm = null;
+    minInclusive = false;
+    maxInclusive = false;
 
     if (finite == null) {
       this.finite = Operations.isFinite(automaton);
@@ -181,13 +301,13 @@ public class CompiledAutomaton {
       this.finite = finite;
     }
 
-    Automaton utf8 = new UTF32ToUTF8().convert(automaton);
+    Automaton binary = new UTF32ToUTF8().convert(automaton);
     if (this.finite) {
       commonSuffixRef = null;
     } else {
-      commonSuffixRef = Operations.getCommonSuffixBytesRef(utf8);
+      commonSuffixRef = Operations.getCommonSuffixBytesRef(binary);
     }
-    runAutomaton = new ByteRunAutomaton(utf8, true);
+    runAutomaton = new ByteRunAutomaton(binary, true);
 
     this.automaton = runAutomaton.automaton;
   }
@@ -272,10 +392,8 @@ public class CompiledAutomaton {
     case SINGLE:
       return new SingleTermsEnum(terms.iterator(null), term);
     case PREFIX:
-      // TODO: this is very likely faster than .intersect,
-      // but we should test and maybe cutover
-      return new PrefixTermsEnum(terms.iterator(null), term);
     case NORMAL:
+    case RANGE:
       return terms.intersect(this, null);
     default:
       // unreachable

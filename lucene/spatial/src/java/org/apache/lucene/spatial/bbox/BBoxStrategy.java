@@ -164,7 +164,7 @@ public class BBoxStrategy extends SpatialStrategy {
 
     //Is this a hack?  We assume that numericValue() is only called for DocValues purposes.
     @Override
-    public Number numericValue() {
+    public Number numericDocValue() {
       //Numeric DocValues only supports Long,
       final Number number = super.numericValue();
       if (number == null)

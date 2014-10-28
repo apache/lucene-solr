@@ -25,14 +25,13 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * A Query that matches documents within an range of terms.
  *
  * <p>This query matches the documents looking for terms that fall into the
- * supplied range according to {@link
- * Byte#compareTo(Byte)}. It is not intended
- * for numerical ranges; use {@link NumericRangeQuery} instead.
+ * supplied range according to {@link BytesRef#compareTo(BytesRef)}.
  *
  * <p>This query uses the {@link
  * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE}
@@ -41,10 +40,11 @@ import org.apache.lucene.util.ToStringUtils;
  */
 
 public class TermRangeQuery extends MultiTermQuery {
-  private BytesRef lowerTerm;
-  private BytesRef upperTerm;
-  private boolean includeLower;
-  private boolean includeUpper;
+  private final BytesRef lowerTerm;
+  private final BytesRef upperTerm;
+  private final boolean includeLower;
+  private final boolean includeUpper;
+  private final CompiledAutomaton compiled;
 
 
   /**
@@ -75,6 +75,7 @@ public class TermRangeQuery extends MultiTermQuery {
     this.upperTerm = upperTerm;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
+    this.compiled = new CompiledAutomaton(lowerTerm, lowerTerm == null || includeLower, upperTerm, upperTerm == null || includeUpper);
   }
 
   /**
@@ -100,17 +101,18 @@ public class TermRangeQuery extends MultiTermQuery {
   
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+
     if (lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {
+      // Matches no terms:
       return TermsEnum.EMPTY;
     }
     
-    TermsEnum tenum = terms.iterator(null);
-    
     if ((lowerTerm == null || (includeLower && lowerTerm.length == 0)) && upperTerm == null) {
-      return tenum;
+      // Matches all terms:
+      return terms.iterator(null);
     }
-    return new TermRangeTermsEnum(tenum,
-        lowerTerm, upperTerm, includeLower, includeUpper);
+
+    return compiled.getTermsEnum(terms);
   }
 
   /** Prints a user-readable version of this query. */

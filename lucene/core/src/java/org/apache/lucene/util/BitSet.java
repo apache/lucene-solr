@@ -62,7 +62,7 @@ public abstract class BitSet implements MutableBits, Accountable {
   /** Assert that the current doc is -1. */
   protected final void assertUnpositioned(DocIdSetIterator iter) {
     if (iter.docID() != -1) {
-      throw new IllegalStateException("This operation only works with an unpositioned iterator, got current position = " + iter.docID());
+      throw new IllegalStateException("This operation only works with an unpositioned iterator, got current position=" + iter.docID() + " iter=" + iter);
     }
   }
 

@@ -152,7 +152,6 @@ class FreqProxFields extends Fields {
     }
 
     public SeekStatus seekCeil(BytesRef text) {
-
       // TODO: we could instead keep the BytesRefHash
       // intact so this is a hash lookup
 
@@ -171,17 +170,19 @@ class FreqProxFields extends Fields {
         } else {
           // found:
           ord = mid;
+          assert term().compareTo(text) == 0;
           return SeekStatus.FOUND;
         }
       }
 
       // not found:
-      ord = lo + 1;
+      ord = lo;
       if (ord >= numTerms) {
         return SeekStatus.END;
       } else {
         int textStart = postingsArray.textStarts[sortedTermIDs[ord]];
         terms.bytePool.setBytesRef(scratch, textStart);
+        assert term().compareTo(text) > 0;
         return SeekStatus.NOT_FOUND;
       }
     }
@@ -329,7 +330,7 @@ class FreqProxFields extends Fields {
       this.termID = termID;
       terms.initReader(reader, termID, 0);
       ended = false;
-      docID = 0;
+      docID = -1;
     }
 
     @Override
@@ -350,6 +351,9 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextDoc() throws IOException {
+      if (docID == -1) {
+        docID = 0;
+      }
       if (reader.eof()) {
         if (ended) {
           return NO_MORE_DOCS;

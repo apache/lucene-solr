@@ -82,8 +82,9 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   protected IndexWriterConfig newIndexWriterConfig(Random random) {
     final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, new MockAnalyzer(random));
     //TODO can we randomly choose a doc-values supported format?
-    if (needsDocValues())
-      indexWriterConfig.setCodec( TestUtil.getDefaultCodec());
+    if (needsDocValues()) {
+      indexWriterConfig.setCodec(TestUtil.getDefaultCodec());
+    }
     return indexWriterConfig;
   }
 

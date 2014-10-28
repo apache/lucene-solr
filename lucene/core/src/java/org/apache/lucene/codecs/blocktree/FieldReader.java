@@ -20,8 +20,8 @@ package org.apache.lucene.codecs.blocktree;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -39,6 +39,8 @@ import org.apache.lucene.util.fst.FST;
  * @lucene.internal
  */
 public final class FieldReader extends Terms implements Accountable {
+
+  // private final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   private static final long BASE_RAM_BYTES_USED =
       RamUsageEstimator.shallowSizeOfInstance(FieldReader.class)
@@ -124,6 +126,7 @@ public final class FieldReader extends Terms implements Accountable {
   /** For debugging -- used by CheckIndex too*/
   @Override
   public Stats getStats() throws IOException {
+    // TODO: add auto-prefix terms into stats
     return new SegmentTermsEnum(this).computeBlockStats();
   }
 
@@ -174,10 +177,11 @@ public final class FieldReader extends Terms implements Accountable {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-    if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
-      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
-    }
-    return new IntersectTermsEnum(this, compiled, startTerm);
+    // if (DEBUG) System.out.println("  FieldReader.intersect startTerm=" + BlockTreeTermsWriter.brToString(startTerm));
+    //System.out.println("intersect: " + compiled.type + " a=" + compiled.automaton);
+    // TODO: we could push "it's a range" or "it's a prefix" down into IntersectTermsEnum?
+    // can we optimize knowing that...?
+    return new IntersectTermsEnum(this, compiled.automaton, compiled.runAutomaton, compiled.commonSuffixRef, startTerm, compiled.sinkState);
   }
     
   @Override

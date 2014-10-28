@@ -271,6 +271,10 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+      if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+        // Let super handle RANGE, PREFIX:
+        return super.intersect(compiled, startTerm);
+      }
       return new IntersectTermsEnum(compiled, startTerm);
     }
 
