@@ -382,7 +382,7 @@ Bug Fixes
 * SOLR-6425: If using the new global hdfs block cache option, you can end up
   reading corrupt files on file name reuse. (Mark Miller, Gregory Chanan)
 
-* SOLR-5814: CoreContainer reports incorrect & missleading path for solrconfig.xml 
+* SOLR-5814: CoreContainer reports incorrect & misleading path for solrconfig.xml
   when there are loading problems (Pradeep via hossman)
 
 * SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
