@@ -73,7 +73,9 @@ import org.xml.sax.SAXException;
  * jar dependencies.
  */
 public class SimplePostTool {
-  private static final String DEFAULT_POST_URL = "http://localhost:8983/solr/update";
+  private static final String DEFAULT_POST_HOST = "localhost";
+  private static final String DEFAULT_POST_PORT = "8983";
+  private static final String DEFAULT_POST_CORE = "collection1";
   private static final String VERSION_OF_THIS_TOOL = "1.5";
 
   private static final String DEFAULT_COMMIT = "yes";
@@ -214,7 +216,12 @@ public class SimplePostTool {
         fatal("System Property 'data' is not valid for this tool: " + mode);
       }
       String params = System.getProperty("params", "");
-      urlStr = System.getProperty("url", DEFAULT_POST_URL);
+
+      String host = System.getProperty("host", DEFAULT_POST_HOST);
+      String port = System.getProperty("port", DEFAULT_POST_PORT);
+      String core = System.getProperty("c", DEFAULT_POST_CORE);
+
+      urlStr = System.getProperty("url", String.format("http://%s:%s/solr/%s/update", host, port, core));
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
@@ -365,7 +372,10 @@ public class SimplePostTool {
      "Supported System Properties and their defaults:\n"+
      "  -Ddata=files|web|args|stdin (default=" + DEFAULT_DATA_MODE + ")\n"+
      "  -Dtype=<content-type> (default=" + DEFAULT_CONTENT_TYPE + ")\n"+
-     "  -Durl=<solr-update-url> (default=" + DEFAULT_POST_URL + ")\n"+
+     "  -Durl=<solr-update-url> (default=" + String.format("http://%s:%s/solr/%s/update", DEFAULT_POST_HOST, DEFAULT_POST_PORT, DEFAULT_POST_CORE) + ")\n"+
+     "  -Dhost=<host> (default: " + DEFAULT_POST_HOST+ ")\n"+
+     "  -Dport=<port> (default: " + DEFAULT_POST_PORT+ ")\n"+
+     "  -Dc=<core/collection> (default: " + DEFAULT_POST_CORE+ ")\n"+
      "  -Dauto=yes|no (default=" + DEFAULT_AUTO + ")\n"+
      "  -Drecursive=yes|no|<depth> (default=" + DEFAULT_RECURSIVE + ")\n"+
      "  -Ddelay=<seconds> (default=0 for files, 10 for web)\n"+
