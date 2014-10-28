@@ -33,10 +33,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -589,6 +587,20 @@ public final class MoreLikeThis {
   }
 
   /**
+   * 
+   * @param filteredDocument Document with field values extracted for selected fields.
+   * @return More Like This query for the passed document.
+   */
+  public Query like(Map<String, ArrayList<String>> filteredDocument) throws IOException {
+    if (fieldNames == null) {
+      // gather list of valid fields from lucene
+      Collection<String> fields = MultiFields.getIndexedFields(ir);
+      fieldNames = fields.toArray(new String[fields.size()]);
+    }
+    return createQuery(retrieveTerms(filteredDocument));
+  }
+
+  /**
    * Return a query that will return docs like the passed Readers.
    * This was added in order to treat multi-value fields.
    *
@@ -741,6 +753,24 @@ public final class MoreLikeThis {
     return createQueue(termFreqMap);
   }
 
+
+  private PriorityQueue<ScoreTerm> retrieveTerms(Map<String, ArrayList<String>> fields) throws 
+      IOException {
+    HashMap<String,Int> termFreqMap = new HashMap();
+    for (String fieldName : fieldNames) {
+
+      for (String field : fields.keySet()) {
+        ArrayList<String> fieldValues = fields.get(field);
+        for(String fieldValue:fieldValues) {
+          if (fieldValue != null) {
+            addTermFrequencies(new StringReader(fieldValue), termFreqMap,
+                fieldName);
+          }
+        }
+      }
+    }
+    return createQueue(termFreqMap);
+  }
   /**
    * Adds terms and frequencies found in vector into the Map termFreqMap
    *

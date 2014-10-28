@@ -194,6 +194,10 @@ New Features
   properties to allow easier overriding of just the right piece of the Solr URL. 
   (ehatcher)
 
+* SOLR-6248: MoreLikeThis QParser that accepts a document id and returns documents that
+  have similar content. It works in standalone/cloud mode and shares logic with the
+  Lucene MoreLikeThis class (Anshum Gupta).
+
 Bug Fixes
 ----------------------
 
