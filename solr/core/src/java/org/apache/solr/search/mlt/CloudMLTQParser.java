@@ -28,6 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryParsing;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ public class CloudMLTQParser extends QParser {
   }
 
   public Query parse() {
-    String id = localParams.get("id");
+    String id = localParams.get(QueryParsing.V);
     // Do a Real Time Get for the document
     SolrDocument doc = getDocument(id);
     
