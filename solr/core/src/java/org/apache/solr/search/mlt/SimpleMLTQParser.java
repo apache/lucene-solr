@@ -29,6 +29,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class SimpleMLTQParser extends QParser {
   public Query parse() {
 
     String defaultField = req.getSchema().getUniqueKeyField().getName();
-    String uniqueValue = localParams.get("id");
+    String uniqueValue = localParams.get(QueryParsing.V);
     String[] qf = localParams.getParams("qf");
 
     SolrIndexSearcher searcher = req.getSearcher();

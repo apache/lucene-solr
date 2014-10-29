@@ -23,7 +23,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 
 /**
- * Usage: {!mlt id=uniqueId qf=queryField1,queryField2}
+ * Usage: {!mlt qf=queryField1,queryField2}uniqueId
  */
 public class MLTQParserPlugin extends QParserPlugin {
   public static final String NAME = "mlt";

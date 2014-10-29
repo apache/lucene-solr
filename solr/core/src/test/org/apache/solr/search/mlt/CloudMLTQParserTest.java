@@ -82,7 +82,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.set(CommonParams.Q, "{!mlt id=17 qf=lowerfilt}");
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}17");
     QueryResponse queryResponse = cloudClient.query(params);
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[]{17, 13, 14, 20, 22, 15, 16, 24, 18, 23};
@@ -94,7 +94,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     assertArrayEquals(expectedIds, actualIds);
     
     params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt id=3 qf=lowerfilt}");
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}3");
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();
     expectedIds = new int[]{3, 27, 26, 28};
@@ -106,7 +106,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     assertArrayEquals(expectedIds, actualIds);
 
     params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt id=20 qf=lowerfilt}");
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}20");
     params.set("debug" , "query");
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();

@@ -67,7 +67,7 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
 
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt id=17 qf=lowerfilt}");
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}17");
     assertQ(req(params),
         "//result/doc[1]/int[@name='id'][.='17']",
         "//result/doc[2]/int[@name='id'][.='13']",

@@ -842,14 +842,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testQueryMLT() throws Exception {
     assertU(adoc("id", "1", "lowerfilt", "sample data"));
     assertU(commit());
-    SolrQueryRequest req = req("qf","lowerfilt","id","1");
     try {
-      assertQueryEquals("mlt", req,
-          "{!mlt qf=lowerfilt id=1}");
+      assertQueryEquals("mlt", "{!mlt qf=lowerfilt}1",
+          "{!mlt qf=lowerfilt v=1}");
     } finally {
       delQ("*:*");
       assertU(commit());
-      req.close();
     }
   }
 
