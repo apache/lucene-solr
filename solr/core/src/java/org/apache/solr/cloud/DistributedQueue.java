@@ -246,11 +246,14 @@ public class DistributedQueue {
     
     @Override
     public void process(WatchedEvent event) {
+      Event.EventType eventType = event.getType();
       LOG.info("LatchChildWatcher fired on path: " + event.getPath() + " state: "
-          + event.getState() + " type " + event.getType());
-      synchronized (lock) {
-        this.event = event;
-        lock.notifyAll();
+          + event.getState() + " type " + eventType);
+      if (eventType == Event.EventType.NodeChildrenChanged) {
+        synchronized (lock) {
+          this.event = event;
+          lock.notifyAll();
+        }
       }
     }
     
