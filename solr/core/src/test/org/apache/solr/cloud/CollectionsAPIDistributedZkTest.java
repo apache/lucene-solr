@@ -1032,12 +1032,14 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
               client = createCloudClient(null);
             } else if (i == 1) {
               client = createCloudClient(collectionName);
+            } else  {
+              client = createCloudClient(null);
             }
             
             createCollection(collectionInfos, collectionName,
                 numShards, replicationFactor, maxShardsPerNode, client, null,
                 "conf1");
-            
+
             // remove collection
             CollectionAdminRequest.Delete delete = new CollectionAdminRequest.Delete();
             delete.setCollectionName(collectionName);
