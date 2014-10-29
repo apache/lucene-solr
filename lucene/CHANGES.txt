@@ -183,10 +183,6 @@ Bug Fixes
 * LUCENE-5948: RateLimiter now fully inits itself on init.  (Varun
   Thacker via Mike McCandless)
 
-* LUCENE-5977: Fix tokenstream safety checks in IndexWriter to properly
-  work across multi-valued fields. Previously some cases across multi-valued
-  fields would happily create a corrupt index. (Dawid Weiss, Robert Muir)
-
 * LUCENE-5981: CheckIndex obtains write.lock, since with some parameters it
   may modify the index, and to prevent false corruption reports, as it does
   not have the regular "spinlock" of DirectoryReader.open. It now implements
@@ -197,11 +193,6 @@ Bug Fixes
 * LUCENE-5961: Fix the exists() method for FunctionValues returned by many ValueSoures to
   behave properly when wrapping other ValueSources which do not exist for the specified document
   (hossman)
-
-* LUCENE-6019: Detect when DocValuesType illegally changes for the
-  same field name.  Also added -Dtests.asserts=true|false so we can
-  run tests with and without assertions. (Simon Willnauer, Robert
-  Muir, Mike McCandless).
 
 Documentation
 
@@ -273,6 +264,19 @@ Other
   (Adrien Grand, Robert Muir)
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
+
+======================= Lucene 4.10.2 ======================
+
+Bug fixes
+
+* LUCENE-5977: Fix tokenstream safety checks in IndexWriter to properly
+  work across multi-valued fields. Previously some cases across multi-valued
+  fields would happily create a corrupt index. (Dawid Weiss, Robert Muir)
+
+* LUCENE-6019: Detect when DocValuesType illegally changes for the
+  same field name.  Also added -Dtests.asserts=true|false so we can
+  run tests with and without assertions. (Simon Willnauer, Robert
+  Muir, Mike McCandless).
 
 ======================= Lucene 4.10.1 ======================
 
