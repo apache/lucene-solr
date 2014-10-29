@@ -186,6 +186,13 @@ public final class Version {
   @Deprecated
   public static final Version LUCENE_4_10_1 = new Version(4, 10, 1);
 
+  /**
+   * Match settings and bugs in Lucene's 4.10.2 release.
+   * @deprecated (5.0) Use latest
+   */
+  @Deprecated
+  public static final Version LUCENE_4_10_2 = new Version(4, 10, 2);
+
   /** Match settings and bugs in Lucene's 5.0 release.
    *  <p>
    *  Use this to get the latest &amp; greatest settings, bug
