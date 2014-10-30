@@ -140,5 +140,11 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
     s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
     assertEquals(s, "{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":1},{\"intdv\":2}]}");
 
+    s =  h.query(req("q", "id:100000", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
+    assertEquals(s, "{\"numFound\":0, \"docs\":[]}");
+
+
+
+
   }
 }
