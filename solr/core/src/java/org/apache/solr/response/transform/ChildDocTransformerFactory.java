@@ -17,23 +17,15 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.join.FixedBitSetCachingWrapperFilter;
+import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
+import org.apache.lucene.search.join.BitDocIdSetFilter;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -83,10 +75,10 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     String childFilter = params.get( "childFilter" );
     int limit = params.getInt( "limit", 10 );
 
-    Filter parentsFilter = null;
+    BitDocIdSetFilter parentsFilter = null;
     try {
       Query parentFilterQuery = QParser.getParser( parentFilter, null, req).getQuery();
-      parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(parentFilterQuery));
+      parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(parentFilterQuery));
     } catch (SyntaxError syntaxError) {
       throw new SolrException( ErrorCode.BAD_REQUEST, "Failed to create correct parent filter query" );
     }
@@ -108,11 +100,11 @@ class ChildDocTransformer extends TransformerWithContext {
   private final String name;
   private final SchemaField idField;
   private final IndexSchema schema;
-  private Filter parentsFilter;
+  private BitDocIdSetFilter parentsFilter;
   private Query childFilterQuery;
   private int limit;
 
-  public ChildDocTransformer( String name, final Filter parentsFilter, 
+  public ChildDocTransformer( String name, final BitDocIdSetFilter parentsFilter, 
                               final SchemaField idField, IndexSchema schema,
                               final Query childFilterQuery, int limit) {
     this.name = name;

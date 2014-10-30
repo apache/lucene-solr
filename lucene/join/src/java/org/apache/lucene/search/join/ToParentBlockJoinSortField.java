@@ -18,7 +18,6 @@ package org.apache.lucene.search.join;
  */
 
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.SortField;
 
 import java.io.IOException;
@@ -32,8 +31,8 @@ import java.io.IOException;
 public class ToParentBlockJoinSortField extends SortField {
 
   private final boolean order;
-  private final Filter parentFilter;
-  private final Filter childFilter;
+  private final BitDocIdSetFilter parentFilter;
+  private final BitDocIdSetFilter childFilter;
 
   /**
    * Create ToParentBlockJoinSortField. The parent document ordering is based on child document ordering (reverse).
@@ -44,7 +43,7 @@ public class ToParentBlockJoinSortField extends SortField {
    * @param parentFilter Filter that identifies the parent documents.
    * @param childFilter Filter that defines which child documents participates in sorting.
    */
-  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, Filter parentFilter, Filter childFilter) {
+  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, BitDocIdSetFilter parentFilter, BitDocIdSetFilter childFilter) {
     super(field, type, reverse);
     this.order = reverse;
     this.parentFilter = parentFilter;
@@ -61,7 +60,7 @@ public class ToParentBlockJoinSortField extends SortField {
    * @param parentFilter Filter that identifies the parent documents.
    * @param childFilter Filter that defines which child documents participates in sorting.
    */
-  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, boolean order, Filter parentFilter, Filter childFilter) {
+  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, boolean order, BitDocIdSetFilter parentFilter, BitDocIdSetFilter childFilter) {
     super(field, type, reverse);
     this.order = order;
     this.parentFilter = parentFilter;

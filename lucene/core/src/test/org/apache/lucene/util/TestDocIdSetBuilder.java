@@ -25,7 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 public class TestDocIdSetBuilder extends LuceneTestCase {
 
   public void testEmpty() throws IOException {
-    assertEquals(null, new DocIdSetBuilder(1 + random().nextInt(1000)).build());
+    assertEquals(null, new BitDocIdSet.Builder(1 + random().nextInt(1000)).build());
   }
 
   private void assertEquals(DocIdSet d1, DocIdSet d2) throws IOException {
@@ -47,7 +47,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
 
   public void testFull() throws IOException {
     final int maxDoc = 1 + random().nextInt(1000);
-    DocIdSetBuilder builder = new DocIdSetBuilder(maxDoc, true);
+    BitDocIdSet.Builder builder = new BitDocIdSet.Builder(maxDoc, true);
     DocIdSet set = builder.build();
     DocIdSetIterator it = set.iterator();
     for (int i = 0; i < maxDoc; ++i) {
@@ -57,7 +57,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
 
   public void testSparse() throws IOException {
     final int maxDoc = 1000000 + random().nextInt(1000000);
-    DocIdSetBuilder builder = new DocIdSetBuilder(maxDoc);
+    BitDocIdSet.Builder builder = new BitDocIdSet.Builder(maxDoc);
     final int numIterators = 1 + random().nextInt(10);
     final FixedBitSet ref = new FixedBitSet(maxDoc);
     for (int i = 0; i < numIterators; ++i) {
@@ -76,7 +76,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
 
   public void testDense() throws IOException {
     final int maxDoc = 1000000 + random().nextInt(1000000);
-    DocIdSetBuilder builder = new DocIdSetBuilder(maxDoc);
+    BitDocIdSet.Builder builder = new BitDocIdSet.Builder(maxDoc);
     final int numIterators = 1 + random().nextInt(10);
     final FixedBitSet ref = new FixedBitSet(maxDoc);
     if (random().nextBoolean()) {

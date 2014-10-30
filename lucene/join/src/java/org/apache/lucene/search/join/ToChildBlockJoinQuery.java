@@ -25,16 +25,15 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.Bits;
 
 /**
  * Just like {@link ToParentBlockJoinQuery}, except this
@@ -52,7 +51,7 @@ public class ToChildBlockJoinQuery extends Query {
    *  when the parent query incorrectly returns child docs. */
   static final String INVALID_QUERY_MESSAGE = "Parent query yields document which is not matched by parents filter, docID=";
 
-  private final Filter parentsFilter;
+  private final BitDocIdSetFilter parentsFilter;
   private final Query parentQuery;
 
   // If we are rewritten, this is the original parentQuery we
@@ -67,12 +66,10 @@ public class ToChildBlockJoinQuery extends Query {
    * Create a ToChildBlockJoinQuery.
    * 
    * @param parentQuery Query that matches parent documents
-   * @param parentsFilter Filter (must produce FixedBitSet
-   * per-segment, like {@link FixedBitSetCachingWrapperFilter})
-   * identifying the parent documents.
+   * @param parentsFilter Filter identifying the parent documents.
    * @param doScores true if parent scores should be calculated
    */
-  public ToChildBlockJoinQuery(Query parentQuery, Filter parentsFilter, boolean doScores) {
+  public ToChildBlockJoinQuery(Query parentQuery, BitDocIdSetFilter parentsFilter, boolean doScores) {
     super();
     this.origParentQuery = parentQuery;
     this.parentQuery = parentQuery;
@@ -80,7 +77,7 @@ public class ToChildBlockJoinQuery extends Query {
     this.doScores = doScores;
   }
 
-  private ToChildBlockJoinQuery(Query origParentQuery, Query parentQuery, Filter parentsFilter, boolean doScores) {
+  private ToChildBlockJoinQuery(Query origParentQuery, Query parentQuery, BitDocIdSetFilter parentsFilter, boolean doScores) {
     super();
     this.origParentQuery = origParentQuery;
     this.parentQuery = parentQuery;
@@ -96,10 +93,10 @@ public class ToChildBlockJoinQuery extends Query {
   private static class ToChildBlockJoinWeight extends Weight {
     private final Query joinQuery;
     private final Weight parentWeight;
-    private final Filter parentsFilter;
+    private final BitDocIdSetFilter parentsFilter;
     private final boolean doScores;
 
-    public ToChildBlockJoinWeight(Query joinQuery, Weight parentWeight, Filter parentsFilter, boolean doScores) {
+    public ToChildBlockJoinWeight(Query joinQuery, Weight parentWeight, BitDocIdSetFilter parentsFilter, boolean doScores) {
       super();
       this.joinQuery = joinQuery;
       this.parentWeight = parentWeight;
@@ -134,22 +131,15 @@ public class ToChildBlockJoinQuery extends Query {
         return null;
       }
 
-      // NOTE: we cannot pass acceptDocs here because this
-      // will (most likely, justifiably) cause the filter to
-      // not return a FixedBitSet but rather a
-      // BitsFilteredDocIdSet.  Instead, we filter by
-      // acceptDocs when we score:
-      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, null);
-
+      // NOTE: this doesn't take acceptDocs into account, the responsibility
+      // to not match deleted docs is on the scorer
+      final BitDocIdSet parents = parentsFilter.getDocIdSet(readerContext);
       if (parents == null) {
-        // No matches
+        // No parents
         return null;
       }
-      if (!(parents.bits() instanceof FixedBitSet)) {
-        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents.bits());
-      }
 
-      return new ToChildBlockJoinScorer(this, parentScorer, (FixedBitSet) parents.bits(), doScores, acceptDocs);
+      return new ToChildBlockJoinScorer(this, parentScorer, parents.bits(), doScores, acceptDocs);
     }
 
     @Override
@@ -167,7 +157,7 @@ public class ToChildBlockJoinQuery extends Query {
 
   static class ToChildBlockJoinScorer extends Scorer {
     private final Scorer parentScorer;
-    private final FixedBitSet parentBits;
+    private final BitSet parentBits;
     private final boolean doScores;
     private final Bits acceptDocs;
 
@@ -177,7 +167,7 @@ public class ToChildBlockJoinQuery extends Query {
     private int childDoc = -1;
     private int parentDoc;
 
-    public ToChildBlockJoinScorer(Weight weight, Scorer parentScorer, FixedBitSet parentBits, boolean doScores, Bits acceptDocs) {
+    public ToChildBlockJoinScorer(Weight weight, Scorer parentScorer, BitSet parentBits, boolean doScores, Bits acceptDocs) {
       super(weight);
       this.doScores = doScores;
       this.parentBits = parentBits;

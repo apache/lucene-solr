@@ -25,8 +25,8 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * A wrapper for {@link MultiTermQuery}, that exposes its
@@ -100,7 +100,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     final TermsEnum termsEnum = query.getTermsEnum(terms);
     assert termsEnum != null;
 
-    DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc());
+    BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
     DocsEnum docs = null;
     while (termsEnum.next() != null) {
       docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE);
