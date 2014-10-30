@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -73,6 +75,115 @@ public class BitDocIdSet extends DocIdSet {
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(set=" + set + ",cost=" + cost + ")";
+  }
+
+  /**
+   * A builder of {@link DocIdSet}s that supports random access.
+   * @lucene.internal
+   */
+  public static final class Builder {
+
+    private final int maxDoc;
+    private final int threshold;
+    private SparseFixedBitSet sparseSet;
+    private FixedBitSet denseSet;
+
+    // we cache an upper bound of the cost of this builder so that we don't have
+    // to re-compute approximateCardinality on the sparse set every time 
+    private long costUpperBound;
+
+    /** Create a new instance that can hold <code>maxDoc</code> documents and is optionally <code>full</code>. */
+    public Builder(int maxDoc, boolean full) {
+      this.maxDoc = maxDoc;
+      threshold = maxDoc >>> 10;
+      if (full) {
+        denseSet = new FixedBitSet(maxDoc);
+        denseSet.set(0, maxDoc);
+      }
+    }
+
+    /** Create a new empty instance. */
+    public Builder(int maxDoc) {
+      this(maxDoc, false);
+    }
+
+    /**
+     * Add the content of the provided {@link DocIdSetIterator} to this builder.
+     */
+    public void or(DocIdSetIterator it) throws IOException {
+      if (denseSet != null) {
+        // already upgraded
+        denseSet.or(it);
+        return;
+      }
+
+      final long itCost = it.cost();
+      costUpperBound += itCost;
+      if (costUpperBound >= threshold) {
+        costUpperBound = (sparseSet == null ? 0 : sparseSet.approximateCardinality()) + itCost;
+
+        if (costUpperBound >= threshold) {
+          // upgrade
+          denseSet = new FixedBitSet(maxDoc);
+          denseSet.or(it);
+          if (sparseSet != null) {
+            denseSet.or(new BitSetIterator(sparseSet, 0L));
+          }
+          return;
+        }
+      }
+
+      // we are still sparse
+      if (sparseSet == null) {
+        sparseSet = new SparseFixedBitSet(maxDoc);
+      }
+      sparseSet.or(it);
+    }
+
+    /**
+     * Removes from this builder documents that are not contained in <code>it</code>.
+     */
+    public void and(DocIdSetIterator it) throws IOException {
+      if (denseSet != null) {
+        denseSet.and(it);
+      } else if (sparseSet != null) {
+        sparseSet.and(it);
+      }
+    }
+
+    /**
+     * Removes from this builder documents that are contained in <code>it</code>.
+     */
+    public void andNot(DocIdSetIterator it) throws IOException {
+      if (denseSet != null) {
+        denseSet.andNot(it);
+      } else if (denseSet != null) {
+        denseSet.andNot(it);
+      }
+    }
+
+    /**
+     * Build a {@link DocIdSet} that contains all doc ids that have been added.
+     * This method may return <tt>null</tt> if no documents were addded to this
+     * builder.
+     * NOTE: this is a destructive operation, the builder should not be used
+     * anymore after this method has been called.
+     */
+    public BitDocIdSet build() {
+      final BitDocIdSet result;
+      if (denseSet != null) {
+        result = new BitDocIdSet(denseSet);
+      } else if (sparseSet != null) {
+        result = new BitDocIdSet(sparseSet);
+      } else {
+        result = null;
+      }
+      denseSet = null;
+      sparseSet = null;
+      costUpperBound = 0;
+      return result;
+    }
+
   }
 
 }

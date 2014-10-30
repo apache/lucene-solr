@@ -54,10 +54,15 @@ public abstract class BitSet implements MutableBits, Accountable {
     return cardinality();
   }
 
+  /** Returns the index of the last set bit before or on the index specified.
+   *  -1 is returned if there are no more set bits.
+   */
+  public abstract int prevSetBit(int index);
+
   /** Returns the index of the first set bit starting at the index specified.
    *  {@link DocIdSetIterator#NO_MORE_DOCS} is returned if there are no more set bits.
    */
-  public abstract int nextSetBit(int i);
+  public abstract int nextSetBit(int index);
 
   /** Assert that the current doc is -1. */
   protected final void assertUnpositioned(DocIdSetIterator iter) {

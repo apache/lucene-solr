@@ -74,6 +74,30 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     }
   }
 
+  /** Test {@link BitSet#prevSetBit(int)}. */
+  public void testPrevSetBit() throws IOException {
+    final int numBits = 1 + random().nextInt(100000);
+    for (float percentSet : new float[] {0, 0.01f, 0.1f, 0.5f, 0.9f, 0.99f, 1f}) {
+      BitSet set1 = new JavaUtilBitSet(randomSet(numBits, percentSet), numBits);
+      T set2 = copyOf(set1, numBits);
+      for (int i = 0; i < numBits; ++i) {
+        assertEquals(Integer.toString(i), set1.prevSetBit(i), set2.prevSetBit(i));
+      }
+    }
+  }
+
+  /** Test {@link BitSet#nextSetBit(int)}. */
+  public void testNextSetBit() throws IOException {
+    final int numBits = 1 + random().nextInt(100000);
+    for (float percentSet : new float[] {0, 0.01f, 0.1f, 0.5f, 0.9f, 0.99f, 1f}) {
+      BitSet set1 = new JavaUtilBitSet(randomSet(numBits, percentSet), numBits);
+      T set2 = copyOf(set1, numBits);
+      for (int i = 0; i < numBits; ++i) {
+        assertEquals(set1.nextSetBit(i), set2.nextSetBit(i));
+      }
+    }
+  }
+
   /** Test the {@link BitSet#set} method. */
   public void testSet() throws IOException {
     final int numBits = 1 + random().nextInt(100000);
@@ -237,6 +261,11 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     @Override
     public int cardinality() {
       return bitSet.cardinality();
+    }
+
+    @Override
+    public int prevSetBit(int index) {
+      return bitSet.previousSetBit(index);
     }
 
     @Override

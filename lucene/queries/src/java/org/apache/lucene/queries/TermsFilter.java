@@ -34,9 +34,9 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * Constructs a filter for docs matching any of the terms added to this class.
@@ -183,7 +183,7 @@ public final class TermsFilter extends Filter {
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     final LeafReader reader = context.reader();
-    DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc());
+    BitDocIdSet.Builder builder = new BitDocIdSet.Builder(reader.maxDoc());
     final Fields fields = reader.fields();
     final BytesRef spare = new BytesRef(this.termsBytes);
     if (fields == null) {

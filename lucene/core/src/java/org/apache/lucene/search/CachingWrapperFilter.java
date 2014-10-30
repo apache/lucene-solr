@@ -67,18 +67,12 @@ public class CachingWrapperFilter extends Filter implements Accountable {
    *  instance is use as a placeholder in the cache instead of the <code>null</code> value.
    */
   protected DocIdSet docIdSetToCache(DocIdSet docIdSet, LeafReader reader) throws IOException {
-    if (docIdSet == null) {
-      // this is better than returning null, as the nonnull result can be cached
-      return EMPTY;
-    } else if (docIdSet.isCacheable()) {
+    if (docIdSet == null || docIdSet.isCacheable()) {
       return docIdSet;
     } else {
       final DocIdSetIterator it = docIdSet.iterator();
-      // null is allowed to be returned by iterator(),
-      // in this case we wrap with the sentinel set,
-      // which is cacheable.
       if (it == null) {
-        return EMPTY;
+        return null;
       } else {
         return cacheImpl(it, reader);
       }
@@ -106,6 +100,10 @@ public class CachingWrapperFilter extends Filter implements Accountable {
     } else {
       missCount++;
       docIdSet = docIdSetToCache(filter.getDocIdSet(context, null), reader);
+      if (docIdSet == null) {
+        // We use EMPTY as a sentinel for the empty set, which is cacheable
+        docIdSet = EMPTY;
+      }
       assert docIdSet.isCacheable();
       cache.put(key, docIdSet);
     }

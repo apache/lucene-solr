@@ -17,6 +17,9 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -27,7 +30,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -41,9 +43,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class TestBlockJoinValidation extends LuceneTestCase {
 
   public static final int AMOUNT_OF_SEGMENTS = 5;
@@ -54,7 +53,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   private Directory directory;
   private IndexReader indexReader;
   private IndexSearcher indexSearcher;
-  private Filter parentsFilter;
+  private BitDocIdSetFilter parentsFilter;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -72,7 +71,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     indexReader = DirectoryReader.open(indexWriter, random().nextBoolean());
     indexWriter.close();
     indexSearcher = new IndexSearcher(indexReader);
-    parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new WildcardQuery(new Term("parent", "*"))));
+    parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new WildcardQuery(new Term("parent", "*"))));
   }
 
   @Test

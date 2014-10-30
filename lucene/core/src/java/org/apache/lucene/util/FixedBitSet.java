@@ -203,9 +203,7 @@ public final class FixedBitSet extends BitSet implements MutableBits, Accountabl
     return DocIdSetIterator.NO_MORE_DOCS;
   }
 
-  /** Returns the index of the last set bit before or on the index specified.
-   *  -1 is returned if there are no more set bits.
-   */
+  @Override
   public int prevSetBit(int index) {
     assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
     int i = index >> 6;

@@ -64,6 +64,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -452,7 +453,7 @@ public class TestJoinUtil extends LuceneTestCase {
         int r = random().nextInt(context.randomUniqueValues.length);
         boolean from = context.randomFrom[r];
         String randomValue = context.randomUniqueValues[r];
-        FixedBitSet expectedResult = createExpectedResult(randomValue, from, indexSearcher.getIndexReader(), context);
+        BitSet expectedResult = createExpectedResult(randomValue, from, indexSearcher.getIndexReader(), context);
 
         final Query actualQuery = new TermQuery(new Term("value", randomValue));
         if (VERBOSE) {
@@ -474,7 +475,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         // Need to know all documents that have matches. TopDocs doesn't give me that and then I'd be also testing TopDocsCollector...
-        final FixedBitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
+        final BitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
         final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10, false);
         indexSearcher.search(joinQuery, new SimpleCollector() {
 
@@ -859,7 +860,7 @@ public class TestJoinUtil extends LuceneTestCase {
     return new TopDocs(hits.size(), scoreDocs, hits.isEmpty() ? Float.NaN : hits.get(0).getValue().score(scoreMode));
   }
 
-  private FixedBitSet createExpectedResult(String queryValue, boolean from, IndexReader topLevelReader, IndexIterationContext context) throws IOException {
+  private BitSet createExpectedResult(String queryValue, boolean from, IndexReader topLevelReader, IndexIterationContext context) throws IOException {
     final Map<String, List<RandomDoc>> randomValueDocs;
     final Map<String, List<RandomDoc>> linkValueDocuments;
     if (from) {
@@ -870,7 +871,7 @@ public class TestJoinUtil extends LuceneTestCase {
       linkValueDocuments = context.fromDocuments;
     }
 
-    FixedBitSet expectedResult = new FixedBitSet(topLevelReader.maxDoc());
+    BitSet expectedResult = new FixedBitSet(topLevelReader.maxDoc());
     List<RandomDoc> matchingDocs = randomValueDocs.get(queryValue);
     if (matchingDocs == null) {
       return new FixedBitSet(topLevelReader.maxDoc());
