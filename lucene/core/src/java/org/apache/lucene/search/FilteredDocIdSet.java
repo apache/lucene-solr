@@ -52,7 +52,12 @@ public abstract class FilteredDocIdSet extends DocIdSet {
   public FilteredDocIdSet(DocIdSet innerSet) {
     _innerSet = innerSet;
   }
-  
+
+  /** Return the wrapped {@link DocIdSet}. */
+  public DocIdSet getDelegate() {
+    return _innerSet;
+  }
+
   /** This DocIdSet implementation is cacheable if the inner set is cacheable. */
   @Override
   public boolean isCacheable() {
