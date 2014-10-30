@@ -303,7 +303,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "4.10.0-cfs",
       "4.10.0-nocfs",
       "4.10.1-cfs",
-      "4.10.1-nocfs"
+      "4.10.1-nocfs",
+      "4.10.2-cfs",
+      "4.10.2-nocfs",
   };
   
   final static String[] oldSingleSegmentNames = {
