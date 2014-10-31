@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -61,7 +61,7 @@ public final class Lucene40RWFieldInfosFormat extends Lucene40FieldInfosFormat {
         if (fi.isIndexed()) {
           bits |= Lucene40FieldInfosFormat.IS_INDEXED;
           assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
-          if (indexOptions == IndexOptions.DOCS_ONLY) {
+          if (indexOptions == IndexOptions.DOCS) {
             bits |= Lucene40FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS;
           } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
             bits |= Lucene40FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS;
@@ -75,7 +75,7 @@ public final class Lucene40RWFieldInfosFormat extends Lucene40FieldInfosFormat {
 
         // pack the DV types in one byte
         final byte dv = docValuesByte(fi.getDocValuesType(), fi.getAttribute(LEGACY_DV_TYPE_KEY));
-        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : null, fi.getAttribute(LEGACY_NORM_TYPE_KEY));
+        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : DocValuesType.NO, fi.getAttribute(LEGACY_NORM_TYPE_KEY));
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
@@ -93,7 +93,7 @@ public final class Lucene40RWFieldInfosFormat extends Lucene40FieldInfosFormat {
   
   /** 4.0-style docvalues byte */
   public byte docValuesByte(DocValuesType type, String legacyTypeAtt) {
-    if (type == null) {
+    if (type == DocValuesType.NO) {
       assert legacyTypeAtt == null;
       return 0;
     } else {

@@ -17,10 +17,6 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
-import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,11 +27,11 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -46,6 +42,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
+
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
+import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
 
 /**
  * Lucene 4.1 postings format.

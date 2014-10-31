@@ -29,7 +29,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -149,7 +149,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
   @Override
   protected FieldType getTextFieldType() {
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorPositions(true);
     ft.setOmitNorms(true);

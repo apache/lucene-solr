@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
 import org.apache.lucene.util.AttributeSource; // javadocs
 import org.apache.lucene.util.Bits;

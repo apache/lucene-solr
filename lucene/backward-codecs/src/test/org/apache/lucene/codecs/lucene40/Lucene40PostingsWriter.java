@@ -27,9 +27,9 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;  // javadocs
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -196,7 +196,7 @@ final class Lucene40PostingsWriter extends PushPostingsWriterBase {
     assert docID < totalNumDocs: "docID=" + docID + " totalNumDocs=" + totalNumDocs;
 
     lastDocID = docID;
-    if (indexOptions == IndexOptions.DOCS_ONLY) {
+    if (indexOptions == IndexOptions.DOCS) {
       freqOut.writeVInt(delta);
     } else if (1 == termDocFreq) {
       freqOut.writeVInt((delta<<1) | 1);

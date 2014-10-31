@@ -20,8 +20,8 @@ package org.apache.lucene.codecs.lucene42;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -62,7 +62,7 @@ public final class Lucene42RWFieldInfosFormat extends Lucene42FieldInfosFormat {
         if (fi.isIndexed()) {
           bits |= Lucene42FieldInfosFormat.IS_INDEXED;
           assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
-          if (indexOptions == IndexOptions.DOCS_ONLY) {
+          if (indexOptions == IndexOptions.DOCS) {
             bits |= Lucene42FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS;
           } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
             bits |= Lucene42FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS;
@@ -76,7 +76,7 @@ public final class Lucene42RWFieldInfosFormat extends Lucene42FieldInfosFormat {
 
         // pack the DV types in one byte
         final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : null);
+        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : DocValuesType.NO);
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
@@ -93,7 +93,7 @@ public final class Lucene42RWFieldInfosFormat extends Lucene42FieldInfosFormat {
   }
   
   private static byte docValuesByte(DocValuesType type) {
-    if (type == null) {
+    if (type == DocValuesType.NO) {
       return 0;
     } else if (type == DocValuesType.NUMERIC) {
       return 1;

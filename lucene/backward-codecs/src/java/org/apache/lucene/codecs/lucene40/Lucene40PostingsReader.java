@@ -26,10 +26,10 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
@@ -309,7 +309,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     
     
     DocsEnum reset(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
-      indexOmitsTF = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY;
+      indexOmitsTF = fieldInfo.getIndexOptions() == IndexOptions.DOCS;
       storePayloads = fieldInfo.hasPayloads();
       storeOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       freqOffset = termState.freqOffset;

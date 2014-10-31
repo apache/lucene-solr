@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInvertState; // javadocs
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -121,7 +121,7 @@ public class Field implements IndexableField {
     if (type.stored()) {
       throw new IllegalArgumentException("fields with a Reader value cannot be stored");
     }
-    if (type.indexOptions() != null && !type.tokenized()) {
+    if (type.indexOptions() != IndexOptions.NO && !type.tokenized()) {
       throw new IllegalArgumentException("non-tokenized fields must use String values");
     }
     
@@ -147,7 +147,7 @@ public class Field implements IndexableField {
     if (tokenStream == null) {
       throw new NullPointerException("tokenStream cannot be null");
     }
-    if (type.indexOptions() == null || !type.tokenized()) {
+    if (type.indexOptions() == IndexOptions.NO || !type.tokenized()) {
       throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
     }
     if (type.stored()) {
@@ -213,7 +213,7 @@ public class Field implements IndexableField {
     if (bytes == null) {
       throw new IllegalArgumentException("bytes cannot be null");
     }
-    if (type.indexOptions() != null) {
+    if (type.indexOptions() != IndexOptions.NO) {
       throw new IllegalArgumentException("Fields with BytesRef values cannot be indexed");
     }
     this.fieldsData = bytes;
@@ -240,7 +240,7 @@ public class Field implements IndexableField {
     if (value == null) {
       throw new IllegalArgumentException("value cannot be null");
     }
-    if (!type.stored() && type.indexOptions() == null) {
+    if (!type.stored() && type.indexOptions() == IndexOptions.NO) {
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
         + "is neither indexed nor stored");
     }
@@ -337,7 +337,7 @@ public class Field implements IndexableField {
     if (!(fieldsData instanceof BytesRef)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to BytesRef");
     }
-    if (type.indexOptions() != null) {
+    if (type.indexOptions() != IndexOptions.NO) {
       throw new IllegalArgumentException("cannot set a BytesRef value on an indexed field");
     }
     if (value == null) {
@@ -418,7 +418,7 @@ public class Field implements IndexableField {
    * values from stringValue() or getBinaryValue()
    */
   public void setTokenStream(TokenStream tokenStream) {
-    if (type.indexOptions() == null || !type.tokenized()) {
+    if (type.indexOptions() == IndexOptions.NO || !type.tokenized()) {
       throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
     }
     if (type.numericType() != null) {
@@ -451,7 +451,7 @@ public class Field implements IndexableField {
    */
   public void setBoost(float boost) {
     if (boost != 1.0f) {
-      if (type.indexOptions() == null || type.omitNorms()) {
+      if (type.indexOptions() == IndexOptions.NO || type.omitNorms()) {
         throw new IllegalArgumentException("You cannot set an index-time boost on an unindexed field, or one that omits norms");
       }
     }
@@ -501,7 +501,7 @@ public class Field implements IndexableField {
 
   @Override
   public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
-    if (fieldType().indexOptions() == null) {
+    if (fieldType().indexOptions() == IndexOptions.NO) {
       // Not indexed
       return null;
     }

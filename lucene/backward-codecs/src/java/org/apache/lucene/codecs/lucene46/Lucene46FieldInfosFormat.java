@@ -25,8 +25,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -72,9 +72,9 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
         boolean storePayloads = (bits & Lucene46FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
-          indexOptions = null;
+          indexOptions = IndexOptions.NO;
         } else if ((bits & Lucene46FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
-          indexOptions = IndexOptions.DOCS_ONLY;
+          indexOptions = IndexOptions.DOCS;
         } else if ((bits & Lucene46FieldInfosFormat.OMIT_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
         } else if ((bits & Lucene46FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS) != 0) {
@@ -90,7 +90,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
         final long dvGen = input.readLong();
         final Map<String,String> attributes = input.readStringStringMap();
 
-        if (isIndexed && omitNorms == false && normsType == null) {
+        if (isIndexed && omitNorms == false && normsType == DocValuesType.NO) {
           // Undead norms!  Lucene42NormsProducer will check this and bring norms back from the dead:
           UndeadNormsProducer.setUndead(attributes);
         }
@@ -110,7 +110,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
   
   private static DocValuesType getDocValuesType(IndexInput input, byte b) throws IOException {
     if (b == 0) {
-      return null;
+      return DocValuesType.NO;
     } else if (b == 1) {
       return DocValuesType.NUMERIC;
     } else if (b == 2) {
@@ -141,7 +141,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
         if (fi.isIndexed()) {
           bits |= Lucene46FieldInfosFormat.IS_INDEXED;
           assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
-          if (indexOptions == IndexOptions.DOCS_ONLY) {
+          if (indexOptions == IndexOptions.DOCS) {
             bits |= Lucene46FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS;
           } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
             bits |= Lucene46FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS;
@@ -155,7 +155,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
 
         // pack the DV types in one byte
         final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : null);
+        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : DocValuesType.NO);
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
@@ -167,7 +167,8 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
   }
   
   private static byte docValuesByte(DocValuesType type) {
-    if (type == null) {
+    assert type != null;
+    if (type == DocValuesType.NO) {
       return 0;
     } else if (type == DocValuesType.NUMERIC) {
       return 1;

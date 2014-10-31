@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.lucene42;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseFieldInfoFormatTestCase;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.DocValuesType;
 
 /** Test Lucene 4.2 FieldInfos Format */
 public class TestLucene42FieldInfoFormat extends BaseFieldInfoFormatTestCase {

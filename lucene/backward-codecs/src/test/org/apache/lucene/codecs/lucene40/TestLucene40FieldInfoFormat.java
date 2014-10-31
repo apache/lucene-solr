@@ -20,8 +20,8 @@ package org.apache.lucene.codecs.lucene40;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat.LegacyDocValuesType;
 import org.apache.lucene.index.BaseFieldInfoFormatTestCase;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 
 /** Test Lucene 4.0 FieldInfos Format */
 public class TestLucene40FieldInfoFormat extends BaseFieldInfoFormatTestCase {
@@ -48,7 +48,7 @@ public class TestLucene40FieldInfoFormat extends BaseFieldInfoFormatTestCase {
   @Override
   protected void addAttributes(FieldInfo fi) {
     DocValuesType dvType = fi.getDocValuesType();
-    if (dvType != null) {
+    if (dvType != DocValuesType.NO) {
       switch (dvType) {
         case BINARY: 
           fi.putAttribute(Lucene40FieldInfosFormat.LEGACY_DV_TYPE_KEY, LegacyDocValuesType.BYTES_FIXED_STRAIGHT.name());

@@ -25,7 +25,7 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -204,7 +204,7 @@ public class FSTTermsWriter extends FieldsConsumer {
         for (FieldMetaData field : fields) {
           out.writeVInt(field.fieldInfo.number);
           out.writeVLong(field.numTerms);
-          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
             out.writeVLong(field.sumTotalTermFreq);
           }
           out.writeVLong(field.sumDocFreq);

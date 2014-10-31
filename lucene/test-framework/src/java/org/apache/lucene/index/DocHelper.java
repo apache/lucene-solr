@@ -32,7 +32,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -97,7 +96,7 @@ class DocHelper {
   public static Field noTFField;
   static {
     customType6 = new FieldType(TextField.TYPE_STORED);
-    customType6.setIndexOptions(IndexOptions.DOCS_ONLY);
+    customType6.setIndexOptions(IndexOptions.DOCS);
     noTFField = new Field(NO_TF_KEY, NO_TF_TEXT, customType6);
   }
 
@@ -204,15 +203,15 @@ class DocHelper {
     for (int i=0; i<fields.length; i++) {
       IndexableField f = fields[i];
       add(all,f);
-      if (f.fieldType().indexOptions() != null) add(indexed,f);
+      if (f.fieldType().indexOptions() != IndexOptions.NO) add(indexed,f);
       else add(unindexed,f);
       if (f.fieldType().storeTermVectors()) add(termvector,f);
-      if (f.fieldType().indexOptions() != null && !f.fieldType().storeTermVectors()) add(notermvector,f);
+      if (f.fieldType().indexOptions() != IndexOptions.NO && !f.fieldType().storeTermVectors()) add(notermvector,f);
       if (f.fieldType().stored()) add(stored,f);
       else add(unstored,f);
-      if (f.fieldType().indexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
+      if (f.fieldType().indexOptions() == IndexOptions.DOCS) add(noTf,f);
       if (f.fieldType().omitNorms()) add(noNorms,f);
-      if (f.fieldType().indexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
+      if (f.fieldType().indexOptions() == IndexOptions.DOCS) add(noTf,f);
       //if (f.isLazy()) add(lazy, f);
     }
   }

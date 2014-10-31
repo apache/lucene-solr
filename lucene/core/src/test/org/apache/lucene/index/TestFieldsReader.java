@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -27,7 +26,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -96,7 +94,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field != null);
     assertFalse(field.fieldType().storeTermVectors());
     assertFalse(field.fieldType().omitNorms());
-    assertTrue(field.fieldType().indexOptions() == IndexOptions.DOCS_ONLY);
+    assertTrue(field.fieldType().indexOptions() == IndexOptions.DOCS);
 
     DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
     reader.document(0, visitor);

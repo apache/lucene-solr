@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocValuesType;
 
 /**
  * <p>
@@ -40,7 +40,7 @@ public class NumericDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(FieldInfo.DocValuesType.NUMERIC);
+    TYPE.setDocValueType(DocValuesType.NUMERIC);
     TYPE.freeze();
   }
 

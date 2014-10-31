@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -268,7 +268,7 @@ public abstract class FieldType extends FieldProperties {
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : null);
+    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : IndexOptions.NO);
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
@@ -316,7 +316,7 @@ public abstract class FieldType extends FieldProperties {
 
     IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     if (field.omitTermFreqAndPositions()) {
-      options = IndexOptions.DOCS_ONLY;
+      options = IndexOptions.DOCS;
     } else if (field.omitPositions()) {
       options = IndexOptions.DOCS_AND_FREQS;
     } else if (field.storeOffsetsWithPositions()) {

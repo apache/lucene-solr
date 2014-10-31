@@ -25,19 +25,19 @@ import java.util.Random;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
 public class TestMockAnalyzer extends BaseTokenStreamTestCase {
@@ -305,7 +305,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory());
     final Document doc = new Document();
     final FieldType ft = new FieldType();
-    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    ft.setIndexOptions(IndexOptions.DOCS);
     ft.setTokenized(true);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorPositions(true);

@@ -25,11 +25,11 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.UndeadNormsProducer;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -71,9 +71,9 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
         boolean storePayloads = (bits & Lucene40FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
-          indexOptions = null;
+          indexOptions = IndexOptions.NO;
         } else if ((bits & Lucene40FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
-          indexOptions = IndexOptions.DOCS_ONLY;
+          indexOptions = IndexOptions.DOCS;
         } else if ((bits & Lucene40FieldInfosFormat.OMIT_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
         } else if ((bits & Lucene40FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS) != 0) {
@@ -93,16 +93,16 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
         final LegacyDocValuesType oldValuesType = getDocValuesType((byte) (val & 0x0F));
         final LegacyDocValuesType oldNormsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
         final Map<String,String> attributes = input.readStringStringMap();
-        if (oldValuesType.mapping != null) {
+        if (oldValuesType.mapping != DocValuesType.NO) {
           attributes.put(LEGACY_DV_TYPE_KEY, oldValuesType.name());
         }
-        if (oldNormsType.mapping != null) {
+        if (oldNormsType.mapping != DocValuesType.NO) {
           if (oldNormsType.mapping != DocValuesType.NUMERIC) {
             throw new CorruptIndexException("invalid norm type: " + oldNormsType, input);
           }
           attributes.put(LEGACY_NORM_TYPE_KEY, oldNormsType.name());
         }
-        if (isIndexed && omitNorms == false && oldNormsType.mapping == null) {
+        if (isIndexed && omitNorms == false && oldNormsType.mapping == DocValuesType.NO) {
           // Undead norms!  Lucene40NormsReader will check this and bring norms back from the dead:
           UndeadNormsProducer.setUndead(attributes);
         }
@@ -128,7 +128,7 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
   
   // mapping of 4.0 types -> 4.2 types
   static enum LegacyDocValuesType {
-    NONE(null),
+    NONE(DocValuesType.NO),
     VAR_INTS(DocValuesType.NUMERIC),
     FLOAT_32(DocValuesType.NUMERIC),
     FLOAT_64(DocValuesType.NUMERIC),

@@ -41,7 +41,7 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 
 /** Minimal port of benchmark's LneDocSource +
  * DocMaker, so tests can enum docs from a line file created

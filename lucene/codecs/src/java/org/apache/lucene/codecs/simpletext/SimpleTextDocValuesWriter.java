@@ -30,7 +30,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -71,8 +71,8 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
     assert fieldSeen(field.name);
-    assert field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC || field.hasNorms();
-    writeFieldEntry(field, FieldInfo.DocValuesType.NUMERIC);
+    assert field.getDocValuesType() == DocValuesType.NUMERIC || field.hasNorms();
+    writeFieldEntry(field, DocValuesType.NUMERIC);
 
     // first pass to find min/max
     long minValue = Long.MAX_VALUE;
@@ -145,7 +145,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
       final int length = value == null ? 0 : value.length;
       maxLength = Math.max(maxLength, length);
     }
-    writeFieldEntry(field, FieldInfo.DocValuesType.BINARY);
+    writeFieldEntry(field, DocValuesType.BINARY);
 
     // write maxLength
     SimpleTextUtil.write(data, MAXLENGTH);
@@ -198,7 +198,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED;
-    writeFieldEntry(field, FieldInfo.DocValuesType.SORTED);
+    writeFieldEntry(field, DocValuesType.SORTED);
 
     int valueCount = 0;
     int maxLength = -1;
@@ -317,7 +317,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED_SET;
-    writeFieldEntry(field, FieldInfo.DocValuesType.SORTED_SET);
+    writeFieldEntry(field, DocValuesType.SORTED_SET);
 
     long valueCount = 0;
     int maxLength = 0;
@@ -423,7 +423,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   /** write the header for this field */
-  private void writeFieldEntry(FieldInfo field, FieldInfo.DocValuesType type) throws IOException {
+  private void writeFieldEntry(FieldInfo field, DocValuesType type) throws IOException {
     SimpleTextUtil.write(data, FIELD);
     SimpleTextUtil.write(data, field.name, scratch);
     SimpleTextUtil.writeNewline(data);

@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -54,11 +55,11 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
-import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.BlockPackedReader;
@@ -573,7 +574,7 @@ final class Lucene42DocValuesProducer extends DocValuesProducer {
   
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
-    if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
+    if (field.getDocValuesType() == DocValuesType.SORTED_SET) {
       return DocValues.docsWithValue(getSortedSet(field), maxDoc);
     } else {
       return new Bits.MatchAllBits(maxDoc);

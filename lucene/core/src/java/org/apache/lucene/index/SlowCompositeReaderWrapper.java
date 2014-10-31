@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.util.Bits;
 
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;

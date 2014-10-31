@@ -17,22 +17,23 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * An abstract SpatialStrategy based on {@link SpatialPrefixTree}. The two
@@ -144,7 +145,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   static {
     FIELD_TYPE.setTokenized(true);
     FIELD_TYPE.setOmitNorms(true);
-    FIELD_TYPE.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
+    FIELD_TYPE.setIndexOptions(IndexOptions.DOCS);
     FIELD_TYPE.freeze();
   }
 

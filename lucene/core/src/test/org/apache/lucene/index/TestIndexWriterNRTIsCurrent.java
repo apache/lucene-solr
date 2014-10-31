@@ -190,7 +190,6 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
               if (failed == null) {
                 failed = e;
               }
-              return;
             }
           }
         }

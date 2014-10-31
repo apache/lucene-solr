@@ -37,6 +37,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -432,7 +433,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
       for (IndexableField field : nextDoc.getFields()) {
-        if (field.fieldType().indexOptions() != null) {
+        if (field.fieldType().indexOptions() != IndexOptions.NO) {
           doc.add(field);
           if (random().nextInt(3) == 0) {
             doc.add(field);  // randomly add the same field twice

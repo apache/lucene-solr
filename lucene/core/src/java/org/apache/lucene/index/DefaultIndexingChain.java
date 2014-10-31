@@ -29,8 +29,6 @@ import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -341,8 +339,12 @@ final class DefaultIndexingChain extends DocConsumer {
 
     PerField fp = null;
 
+    if (fieldType.indexOptions() == null) {
+      throw new NullPointerException("IndexOptions must not be null (field: \"" + field.name() + "\")");
+    }
+
     // Invert indexed fields:
-    if (fieldType.indexOptions() != null) {
+    if (fieldType.indexOptions() != IndexOptions.NO) {
       
       // if the field omits norms, the boost cannot be indexed.
       if (fieldType.omitNorms() && field.boost() != 1.0f) {
@@ -380,7 +382,10 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     DocValuesType dvType = fieldType.docValueType();
-    if (dvType != null) {
+    if (dvType == null) {
+      throw new NullPointerException("docValueType cannot be null (field: \"" + fieldName + "\")");
+    }
+    if (dvType != DocValuesType.NO) {
       if (fp == null) {
         fp = getOrAddField(fieldName, fieldType, false);
       }

@@ -42,14 +42,14 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
@@ -383,7 +383,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    */
   protected FieldType getTextFieldType(){
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    ft.setIndexOptions(IndexOptions.DOCS);
     ft.setOmitNorms(true);
 
     return ft;

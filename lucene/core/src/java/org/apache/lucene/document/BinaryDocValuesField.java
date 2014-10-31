@@ -18,7 +18,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -46,7 +46,7 @@ public class BinaryDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(FieldInfo.DocValuesType.BINARY);
+    TYPE.setDocValueType(DocValuesType.BINARY);
     TYPE.freeze();
   }
   

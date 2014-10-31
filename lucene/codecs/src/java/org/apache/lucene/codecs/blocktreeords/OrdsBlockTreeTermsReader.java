@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -125,7 +125,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
         final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         assert fieldInfo != null: "field=" + field;
         assert numTerms <= Integer.MAX_VALUE;
-        final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
+        final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
         final int longsSize = in.readVInt();

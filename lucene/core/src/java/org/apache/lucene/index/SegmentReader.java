@@ -32,7 +32,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
@@ -340,7 +339,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
       // Field does not exist
       return null;
     }
-    if (fi.getDocValuesType() == null) {
+    if (fi.getDocValuesType() == DocValuesType.NO) {
       // Field was not indexed with doc values
       return null;
     }
@@ -385,7 +384,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
         // Field does not exist
         return null;
       }
-      if (fi.getDocValuesType() == null) {
+      if (fi.getDocValuesType() == DocValuesType.NO) {
         // Field was not indexed with doc values
         return null;
       }

@@ -62,17 +62,17 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
@@ -82,14 +82,13 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoLockFactory;
 import org.junit.Assert;
-
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -890,14 +889,14 @@ public final class TestUtil {
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValueType();
       final NumericType numType = field1.fieldType().numericType();
-      if (dvType != null) {
+      if (dvType != DocValuesType.NO) {
         switch(dvType) {
           case NUMERIC:
             field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());
             break;
           case BINARY:
             field2 = new BinaryDocValuesField(field1.name(), field1.binaryValue());
-          break;
+            break;
           case SORTED:
             field2 = new SortedDocValuesField(field1.name(), field1.binaryValue());
             break;

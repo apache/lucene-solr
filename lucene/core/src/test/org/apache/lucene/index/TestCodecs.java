@@ -30,8 +30,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -114,10 +112,10 @@ public class TestCodecs extends LuceneTestCase {
         public boolean omitNorms() { return false; }
 
         @Override
-        public IndexOptions indexOptions() { return omitTF ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS; }
+        public IndexOptions indexOptions() { return omitTF ? IndexOptions.DOCS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS; }
 
         @Override
-        public DocValuesType docValueType() { return null; }
+        public DocValuesType docValueType() { return DocValuesType.NO; }
       });
       if (storePayloads) {
         fieldInfo.setStorePayloads();

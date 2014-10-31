@@ -25,11 +25,11 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -695,7 +695,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
           // Write term stats, to separate byte[] blob:
           statsWriter.writeVInt(state.docFreq);
-          if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
             assert state.totalTermFreq >= state.docFreq: state.totalTermFreq + " vs " + state.docFreq;
             statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
           }
@@ -736,7 +736,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
             // Write term stats, to separate byte[] blob:
             statsWriter.writeVInt(state.docFreq);
-            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
               assert state.totalTermFreq >= state.docFreq;
               statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
             }
@@ -824,6 +824,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
     TermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
+      assert fieldInfo.getIndexOptions() != IndexOptions.NO;
       docsSeen = new FixedBitSet(maxDoc);
 
       this.longsSize = postingsWriter.setField(fieldInfo);
@@ -843,7 +844,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
       if (state != null) {
         assert state.docFreq != 0;
-        assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY || state.totalTermFreq >= state.docFreq: "postingsWriter=" + postingsWriter;
+        assert fieldInfo.getIndexOptions() == IndexOptions.DOCS || state.totalTermFreq >= state.docFreq: "postingsWriter=" + postingsWriter;
         sumDocFreq += state.docFreq;
         sumTotalTermFreq += state.totalTermFreq;
         pushTerm(text);
@@ -944,7 +945,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
                                      longsSize,
                                      minTerm, maxTerm));
       } else {
-        assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
+        assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
         assert docsSeen.cardinality() == 0;
       }
@@ -974,7 +975,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         termsOut.writeVLong(field.numTerms);
         termsOut.writeVInt(field.rootCode.length);
         termsOut.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
-        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        assert field.fieldInfo.getIndexOptions() != IndexOptions.NO;
+        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
           termsOut.writeVLong(field.sumTotalTermFreq);
         }
         termsOut.writeVLong(field.sumDocFreq);

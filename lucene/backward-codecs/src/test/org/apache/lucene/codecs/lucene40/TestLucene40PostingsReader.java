@@ -26,7 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -97,7 +97,7 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
   
   IndexOptions indexOptions() {
     switch(random().nextInt(4)) {
-      case 0: return IndexOptions.DOCS_ONLY;
+      case 0: return IndexOptions.DOCS;
       case 1: return IndexOptions.DOCS_AND_FREQS;
       case 2: return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       default: return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
