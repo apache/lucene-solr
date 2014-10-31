@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -43,6 +44,7 @@ import org.apache.lucene.util.TestUtil;
  * test passes, then all Lucene/Solr tests should also pass.  Ie,
  * if there is some bug in a given NormsFormat that this
  * test fails to catch then this test needs to be improved! */
+@Seed(value = "AD2222476BCB8800")
 public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCase {
   
   public void testByteRange() throws Exception {
@@ -182,6 +184,32 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
   }
   
+  public void testNCommon() throws Exception {
+    final int iterations = atLeast(1);
+    final Random r = random();
+    for (int i = 0; i < iterations; ++i) {
+      // 16 is 4 bpv, the max before we jump to 8bpv
+      for (int n = 2; n < 16; ++n) {
+        final int N = n;
+        final long[] commonValues = new long[N];
+        for (int j = 0; j < N; ++j) {
+          commonValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
+        }
+        final int numOtherValues = TestUtil.nextInt(r, 2, 256 - N);
+        final long[] otherValues = new long[numOtherValues];
+        for (int j = 0; j < numOtherValues; ++j) {
+          otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
+        }
+        doTestNormsVersusStoredFields(new LongProducer() {
+          @Override
+          long next() {
+            return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
+          }
+        });
+      }
+    }
+  }
+  
   private void doTestNormsVersusStoredFields(LongProducer longs) throws Exception {
     int numDocs = atLeast(500);
     long norms[] = new long[numDocs];
@@ -226,7 +254,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       NumericDocValues docValues = r.getNormValues("stored");
       for (int i = 0; i < r.maxDoc(); i++) {
         long storedValue = Long.parseLong(r.document(i).get("stored"));
-        assertEquals(storedValue, docValues.get(i));
+        assertEquals("doc " + i, storedValue, docValues.get(i));
       }
     }
     ir.close();

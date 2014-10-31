@@ -51,9 +51,12 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>Indirect: when norms are extremely sparse, missing values are omitted.
  *        Access to an individual value is slower, but missing norm values are never accessed
  *        by search code.
- *    <li>Patched: when a single norm value dominates, a sparse bitset encodes docs with exceptions,
- *        so that access to the common value is still very fast. outliers fall thru to an exception 
- *        handling mechanism (Indirect or Constant).
+ *    <li>Patched bitset: when a single norm value dominates, a sparse bitset encodes docs
+ *        with exceptions, so that access to the common value is still very fast. outliers
+ *        fall through to an exception handling mechanism (Indirect or Constant).
+ *    <li>Patched table: when a small number of norm values dominate, a table is used for the
+ *        common values to allow fast access. less common values fall through to an exception
+ *        handling mechanism (Indirect).
  * </ul>
  * <p>
  * Files:
@@ -87,7 +90,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *         <li>3 --&gt; uncompressed: Values written as a simple byte[].
  *         <li>4 --&gt; indirect. Only documents with a value are written with monotonic compression. a nested
  *             entry for the same field will follow for the exception handler.
- *         <li>5 --&gt; patched. Encoded the same as indirect.
+ *         <li>5 --&gt; patched bitset. Encoded the same as indirect.
+ *         <li>6 --&gt; patched table. Documents with very common values are written with a lookup table.
+ *             Other values are written using a nested indirect.
  *      </ul>
  *   <li><a name="nvd" id="nvd"></a>
  *   <p>The Norms data or .nvd file.</p>

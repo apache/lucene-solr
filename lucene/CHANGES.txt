@@ -250,6 +250,9 @@ Optimizations
 * LUCENE-6022: DocValuesDocIdSet checks live docs before doc values.
   (Adrien Grand)
 
+* LUCENE-6030: Add norms patched compression for a small number of common values
+  (Ryan Ernst)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
