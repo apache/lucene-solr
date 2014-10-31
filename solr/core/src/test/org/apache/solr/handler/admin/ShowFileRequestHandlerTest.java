@@ -43,7 +43,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
+    createJetty(legacyExampleCollection1SolrHome(), null, null);
   }
 
   public void test404ViaHttp() throws SolrServerException {

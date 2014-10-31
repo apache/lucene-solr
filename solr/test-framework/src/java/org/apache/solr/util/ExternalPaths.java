@@ -18,6 +18,11 @@ package org.apache.solr.util;
  */
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Properties;
+
+import org.apache.commons.io.*;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example configuration).
@@ -37,20 +42,20 @@ public class ExternalPaths {
    * home, and if it is null, those paths will just be relative to 'null' and may not be 
    * meaningful.
    */
-  private static final String SOURCE_HOME = determineSourceHome();
+  public static final String SOURCE_HOME = determineSourceHome();
   /* @see #SOURCE_HOME */
   public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
   /* @see #SOURCE_HOME */
-  public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
-  /* @see #SOURCE_HOME */
-  public static String EXAMPLE_SCHEMALESS_HOME = new File(SOURCE_HOME, "example/example-schemaless/solr").getAbsolutePath();
+  public static String SCHEMALESS_CONFIGSET =
+      new File(SOURCE_HOME, "server/solr/configsets/data_driven_schema_configs/conf").getAbsolutePath();
+  public static String TECHPRODUCTS_CONFIGSET =
+      new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf").getAbsolutePath();
+
   /* @see #SOURCE_HOME */
   public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
-  /* @see #SOURCE_HOME */
-  public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/collection1/conf/schema.xml";
-  /* @see #SOURCE_HOME */
-  public static String EXAMPLE_CONFIG=EXAMPLE_HOME+"/collection1/conf/solrconfig.xml";
-  
+
+  public static String SERVER_HOME = new File(SOURCE_HOME, "server/solr").getAbsolutePath();
+
   /**
    * Ugly, ugly hack to determine the example home without depending on the CWD
    * this is needed for example/multicore tests which reside outside the classpath.

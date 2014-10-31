@@ -124,7 +124,7 @@ function print_usage() {
   if [ "$CMD" == "" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, healthcheck"
+    echo "       where COMMAND is one of: start, stop, restart, healthcheck, create_core, create_collection"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -168,10 +168,9 @@ function print_usage() {
     echo ""
     echo "  -e <example>  Name of the example to run; available examples:"
     echo "      cloud:         SolrCloud example"
-    echo "      default:       Solr default example"
+    echo "      techproducts:  Comprehensive example illustrating many of Solr's core capabilities"
     echo "      dih:           Data Import Handler"
     echo "      schemaless:    Schema-less example"
-    echo "      multicore:     Multicore"
     echo ""
     echo "  -a            Additional parameters to pass to the JVM when starting Solr, such as to setup"
     echo "                Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
@@ -203,6 +202,37 @@ function print_usage() {
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
     echo "  -z <zkHost>      ZooKeeper connection string; default is localhost:9983"
+    echo ""
+  elif [ "$CMD" == "create_core" ]; then
+    echo ""
+    echo "Usage: solr create_core [-n name] [-c configset]"
+    echo ""
+    echo "  -n <name>       Name of core to create"
+    echo ""
+    echo "  -c <configset>  Name of configuration directory to use, valid options are:"
+    echo "      basic_configs: Minimal Solr configuration"
+    echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
+    echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
+    echo "         demonstrate the full power of Solr"
+    echo "      If not specified, default is: data_driven_schema_configs"
+    echo ""
+  elif [ "$CMD" == "create_collection" ]; then
+    echo ""
+    echo "Usage: solr create_collection [-n name] [-c configset] [-shards #] [-replicationFactor #]"
+    echo ""
+    echo "  -n <name>               Name of collection to create"
+    echo ""
+    echo "  -c <configset>          Name of configuration directory to use, valid options are:"
+    echo "      basic_configs: Minimal Solr configuration"
+    echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
+    echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
+    echo "         demonstrate the full power of Solr"
+    echo "      If not specified, default is: data_driven_schema_configs"
+    echo ""
+    echo "  -shards <#>             Number of shards to split the collection into"
+    echo ""
+    echo "  -replicationFactor <#>  Number of copies of each document in the collection"
+    echo ""
     echo ""
   fi
 } # end print_usage
@@ -428,6 +458,123 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
   exit $?
 fi
 
+# create a core or collection
+if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
+
+  CREATE_TYPE=collection
+  CREATE_NUM_SHARDS=1
+  CREATE_REPFACT=1
+  if [ "$SCRIPT_CMD" == "create_core" ]; then
+    CREATE_TYPE=core
+  fi
+
+  if [ $# -gt 0 ]; then
+    while true; do
+      case $1 in
+          -n|-name)
+              if [ "${2:0:1}" == "-" ]; then
+                print_usage "$SCRIPT_CMD" "Expected $CREATE_TYPE name but found $2 instead!"
+                exit 1
+              fi
+              CREATE_NAME=$2
+              shift 2
+          ;;
+          -c|-configset)
+              if [ "${2:0:1}" == "-" ]; then
+                print_usage "$SCRIPT_CMD" "Expected configset name but found $2 instead!"
+                exit 1
+              fi
+              CREATE_CONFIGSET="$2"
+              shift 2
+          ;;
+          -shards)
+              if [ "${2:0:1}" == "-" ]; then
+                print_usage "$SCRIPT_CMD" "Expected shard count but found $2 instead!"
+                exit 1
+              fi
+              CREATE_NUM_SHARDS="$2"
+              shift 2
+          ;;
+          -replicationFactor)
+              if [ "${2:0:1}" == "-" ]; then
+                print_usage "$SCRIPT_CMD" "Expected replication factor but found $2 instead!"
+                exit 1
+              fi
+              CREATE_REPFACT="$2"
+              shift 2
+          ;;
+          -help|-usage)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              if [ "$1" != "" ]; then
+                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
+                exit 1
+              else
+                break # out-of-args, stop looping
+              fi
+          ;;
+      esac
+    done
+  fi
+
+  if [ "$CREATE_CONFIGSET" == "" ]; then
+    CREATE_CONFIGSET=data_driven_schema_configs
+  fi
+
+  if [ "$CREATE_NAME" == "" ]; then
+    echo "$CREATE_TYPE name is required!"
+    print_usage "$SCRIPT_CMD"
+    exit 1
+  fi
+
+  for ID in `ps waux | grep java | grep start.jar | awk '{print $2}' | sort -r`
+    do
+      port=`jetty_port "$ID"`
+      if [ "$port" != "" ]; then
+        CREATE_PORT=$port
+        break
+      fi
+  done
+
+  if [ "$CREATE_PORT" == "" ]; then
+    echo "Failed to determine the port of a local Solr instance, cannot create $CREATE_TYPE!"
+    exit 1
+  fi
+
+  STATUS_INFO=`run_tool status -solr http://localhost:$CREATE_PORT/solr | tr -d ' '`
+  IS_CLOUD=`echo $STATUS_INFO | grep $'"cloud":' | tr -d ' '`
+  echo $IS_CLOUD
+  if [ "$IS_CLOUD" != "" ]; then
+    if [ "$SCRIPT_CMD" == "create_core" ]; then
+      echo -e "\nERROR: Solr running on port $CREATE_PORT is running in SolrCloud mode, please use create_collection command instead.\n"
+      exit 1
+    fi
+  else
+    if [ "$SCRIPT_CMD" == "create_collection" ]; then
+      echo -e "\nERROR: Solr running on port $CREATE_PORT is running in standalone server mode, please use the create_core command instead\ncreate_collection can only be used when running in SolrCloud mode.\n"
+      exit 1
+    fi
+  fi
+
+  if [ "$SCRIPT_CMD" == "create_collection" ]; then
+    run_tool create_collection -name $CREATE_NAME -shards $CREATE_NUM_SHARDS -replicationFactor $CREATE_REPFACT \
+      -config $CREATE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$CREATE_PORT/solr
+  else
+    CREATE_URL="http://localhost:$CREATE_PORT/solr/admin/cores?action=CREATE&name=$CREATE_NAME&configSet=$CREATE_CONFIGSET"
+    echo -e "Creating new core using command:\n$CREATE_URL\n"
+    run_tool api -get $CREATE_URL
+  fi
+
+  exit $?
+fi
+
+
 # verify the command given is supported
 if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   print_usage "" "$SCRIPT_CMD not supported!"
@@ -652,8 +799,9 @@ if [ "$EXAMPLE" != "" ]; then
             SOLR_PORT=${CLOUD_PORTS[0]}
             shift
         ;;
-        default)
-            SOLR_HOME="$SOLR_TIP/example/solr"
+        techproducts)
+            SOLR_HOME="$SOLR_TIP/server/solr"
+            EXAMPLE_CONFIGSET=sample_techproducts_configs
             shift
         ;;
         dih)
@@ -661,15 +809,12 @@ if [ "$EXAMPLE" != "" ]; then
             shift
         ;;
         schemaless)
-            SOLR_HOME="$SOLR_TIP/example/example-schemaless/solr"
-            shift
-        ;;
-        multicore)
-            SOLR_HOME="$SOLR_TIP/example/multicore"
+            SOLR_HOME="$SOLR_TIP/server/solr"
+            EXAMPLE_CONFIGSET=data_driven_schema_configs
             shift
         ;;
         *)
-            print_usage "start" "Unsupported example $EXAMPLE! Please choose one of: cloud, dih, schemaless, multicore, or default"
+            print_usage "start" "Unsupported example $EXAMPLE! Please choose one of: cloud, dih, schemaless, or techproducts"
             exit 1
         ;;
     esac
@@ -926,6 +1071,25 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
 
 if [ "$EXAMPLE" != "cloud" ]; then
   launch_solr "$FG" "$ADDITIONAL_CMD_OPTS"
+
+  # create the core/collection for the requested example after launching Solr
+  if [[ "$EXAMPLE" == "schemaless" || "$EXAMPLE" == "techproducts" ]]; then
+    if [ "$SOLR_MODE" == "solrcloud" ]; then
+      run_tool create_collection -name $EXAMPLE -shards 1 -replicationFactor 1 \
+        -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
+    else
+      CREATE_URL="http://localhost:$SOLR_PORT/solr/admin/cores?action=CREATE&name=$EXAMPLE&configSet=$EXAMPLE_CONFIGSET"
+      echo -e "Creating new core using command:\n$CREATE_URL\n"
+      run_tool api -get $CREATE_URL
+    fi
+
+    if [ "$EXAMPLE" == "techproducts" ]; then
+      echo "Indexing tech product example docs from $SOLR_TIP/example/exampledocs"
+      "$JAVA" -Durl=http://localhost:$SOLR_PORT/solr/$EXAMPLE/update -jar $SOLR_TIP/example/exampledocs/post.jar $SOLR_TIP/example/exampledocs/*.xml
+    fi
+
+    echo -e "\nSolr $EXAMPLE launched successfully. Direct your Web browser to http://localhost:$SOLR_PORT/solr to visit the Solr Admin UI\n"
+  fi
 else
   #
   # SolrCloud example is a bit involved so needs special handling here
@@ -952,8 +1116,6 @@ else
   # can't launch this node in the foreground else we can't run anymore commands
   launch_solr "false" "$ADDITIONAL_CMD_OPTS"
 
-  sleep 5
-
   # if user did not define a specific -z parameter, assume embedded in first cloud node we launched above
   zk_host=$ZK_HOST
   if [ "$zk_host" == "" ]; then
@@ -977,16 +1139,7 @@ else
   if $noprompt ; then
     CLOUD_NUM_SHARDS=2
     CLOUD_REPFACT=2
-    # if the new default config directory is available, then use it, 
-    # otherwise, use the legacy collection1 example
-    # TODO: this will need to change when SOLR-3619 is resolved
-    if [ -d "$SOLR_TIP/server/solr/configsets/schemaless" ]; then
-      CLOUD_CONFIG_DIR=$SOLR_TIP/server/solr/configsets/schemaless
-      CLOUD_CONFIG=schemaless
-    else
-      CLOUD_CONFIG_DIR=$SOLR_TIP/example/solr/collection1/conf
-      CLOUD_CONFIG=default
-    fi        
+    CLOUD_CONFIG=data_driven_schema_configs
   else
     echo -e "\nNow let's create a new collection for indexing documents in your $CLOUD_NUM_NODES-node cluster.\n"
     read -e -p "Please provide a name for your new collection: [gettingstarted] " USER_INPUT
@@ -1020,49 +1173,20 @@ else
       CLOUD_REPFACT=2
     fi                    
     echo $CLOUD_REPFACT
-    
+
     USER_INPUT=
-    read -e -p "Please choose a configuration for the $CLOUD_COLLECTION collection, available options are: default or schemaless [default] " USER_INPUT
+    read -e -p "Please choose a configuration for the $CLOUD_COLLECTION collection, available options are:\nbasic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
     # trim whitespace out of the user input
     CLOUD_CONFIG=`echo $USER_INPUT | tr -d ' '`
 
     # handle the default selection or empty input
     if [ "$CLOUD_CONFIG" == "" ]; then
-      CLOUD_CONFIG=default
+      CLOUD_CONFIG=data_driven_schema_configs
     fi                    
-    echo $CLOUD_CONFIG
-    
-    if [ "$CLOUD_CONFIG" == "schemaless" ]; then
-      if [ -d "$SOLR_TIP/server/solr/configsets/schemaless" ]; then
-        CLOUD_CONFIG_DIR=$SOLR_TIP/server/solr/configsets/schemaless
-      else
-        CLOUD_CONFIG_DIR=$SOLR_TIP/example/example-schemaless/solr/collection1/conf
-      fi        
-    else
-      CLOUD_CONFIG_DIR=$SOLR_TIP/example/solr/collection1/conf
-    fi    
   fi
    
-  echo -e "\nDeploying default Solr configuration files to embedded ZooKeeper using command:\n" 
-  echo -e "$DEFAULT_SERVER_DIR/scripts/cloud-scripts/zkcli.sh -zkhost $zk_host -cmd upconfig -confdir $CLOUD_CONFIG_DIR -confname $CLOUD_CONFIG\n"
-  # upload the config directory to ZooKeeper
-  # Extract the solr.war if it hasn't been done already (so we can access the SolrCLI class)
-  if [ ! -d "$DEFAULT_SERVER_DIR/solr-webapp/webapp" ]; then
-    (mkdir -p $DEFAULT_SERVER_DIR/solr-webapp/webapp && cd $DEFAULT_SERVER_DIR/solr-webapp/webapp && jar xf $DEFAULT_SERVER_DIR/webapps/solr.war)    
-  fi
-  $JAVA -Dlog4j.configuration=file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties \
-    -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
-    org.apache.solr.cloud.ZkCLI -zkhost $zk_host -cmd upconfig -confdir $CLOUD_CONFIG_DIR -confname $CLOUD_CONFIG > /dev/null 2>&1
-  echo -e "Successfully deployed the $CLOUD_CONFIG_DIR configuration directory to ZooKeeper as $CLOUD_CONFIG\n"
-
-  # note use of ceiling logic in case of remainder
-  MAX_SHARDS_PER_NODE=$((($CLOUD_NUM_SHARDS*$CLOUD_REPFACT+$CLOUD_NUM_NODES-1)/$CLOUD_NUM_NODES))
-  
-  COLLECTIONS_API=http://localhost:$SOLR_PORT/solr/admin/collections
-  
-  CLOUD_CREATE_COLLECTION_CMD="$COLLECTIONS_API?action=CREATE&name=$CLOUD_COLLECTION&replicationFactor=$CLOUD_REPFACT&numShards=$CLOUD_NUM_SHARDS&collection.configName=$CLOUD_CONFIG&maxShardsPerNode=$MAX_SHARDS_PER_NODE&wt=json&indent=2"
-  echo -e "\n\nCreating new collection $CLOUD_COLLECTION with $CLOUD_NUM_SHARDS shards and replication factor $CLOUD_REPFACT using Collections API command:\n\n$CLOUD_CREATE_COLLECTION_CMD\n\nFor more information about the Collections API, please see: https://cwiki.apache.org/confluence/display/solr/Collections+API\n"
-  curl "$CLOUD_CREATE_COLLECTION_CMD"    
+  run_tool create_collection -name $CLOUD_COLLECTION -shards $CLOUD_NUM_SHARDS -replicationFactor $CLOUD_REPFACT \
+    -config $CLOUD_CONFIG -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
   echo -e "\n\nSolrCloud example running, please visit http://localhost:$SOLR_PORT/solr \n\n"
 fi
 

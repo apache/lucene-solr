@@ -1020,7 +1020,7 @@
     
     <!-- Thai -->
     <fieldType name="text_th" class="solr.TextField" positionIncrementGap="100">
-      <analyzer> 
+      <analyzer>
         <tokenizer class="solr.ThaiTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_th.txt" />
