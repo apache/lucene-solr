@@ -76,7 +76,7 @@ public final class Lucene42RWFieldInfosFormat extends Lucene42FieldInfosFormat {
 
         // pack the DV types in one byte
         final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : DocValuesType.NO);
+        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : DocValuesType.NONE);
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
@@ -93,7 +93,7 @@ public final class Lucene42RWFieldInfosFormat extends Lucene42FieldInfosFormat {
   }
   
   private static byte docValuesByte(DocValuesType type) {
-    if (type == DocValuesType.NO) {
+    if (type == DocValuesType.NONE) {
       return 0;
     } else if (type == DocValuesType.NUMERIC) {
       return 1;

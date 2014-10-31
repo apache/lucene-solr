@@ -344,7 +344,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     // Invert indexed fields:
-    if (fieldType.indexOptions() != IndexOptions.NO) {
+    if (fieldType.indexOptions() != IndexOptions.NONE) {
       
       // if the field omits norms, the boost cannot be indexed.
       if (fieldType.omitNorms() && field.boost() != 1.0f) {
@@ -385,7 +385,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (dvType == null) {
       throw new NullPointerException("docValueType cannot be null (field: \"" + fieldName + "\")");
     }
-    if (dvType != DocValuesType.NO) {
+    if (dvType != DocValuesType.NONE) {
       if (fp == null) {
         fp = getOrAddField(fieldName, fieldType, false);
       }

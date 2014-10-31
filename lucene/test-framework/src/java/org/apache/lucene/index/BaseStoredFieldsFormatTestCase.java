@@ -320,7 +320,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
-    assertEquals(IndexOptions.NO, r.document(0).getField("field").fieldType().indexOptions());
+    assertEquals(IndexOptions.NONE, r.document(0).getField("field").fieldType().indexOptions());
     assertNotNull(r.document(0).getField("field2").fieldType().indexOptions());
     r.close();
     dir.close();
@@ -515,7 +515,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
 
     final FieldType type = new FieldType(StringField.TYPE_STORED);
-    type.setIndexOptions(IndexOptions.NO);
+    type.setIndexOptions(IndexOptions.NONE);
     type.freeze();
     IntField id = new IntField("id", 0, Store.YES);
     for (int i = 0; i < data.length; ++i) {
@@ -605,7 +605,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     bigDoc2.add(idField);
 
     final FieldType onlyStored = new FieldType(StringField.TYPE_STORED);
-    onlyStored.setIndexOptions(IndexOptions.NO);
+    onlyStored.setIndexOptions(IndexOptions.NONE);
 
     final Field smallField = new Field("fld", randomByteArray(random().nextInt(10), 256), onlyStored);
     final int numFields = RandomInts.randomIntBetween(random(), 500000, 1000000);

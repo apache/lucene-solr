@@ -27,6 +27,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * Read-Write version of 4.10 docvalues format for testing
  * @deprecated for test purposes only
  */
+@Deprecated
 class Lucene410RWDocValuesFormat extends Lucene410DocValuesFormat {
 
   @Override

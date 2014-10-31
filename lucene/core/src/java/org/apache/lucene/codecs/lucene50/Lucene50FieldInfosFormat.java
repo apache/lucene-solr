@@ -164,7 +164,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
 
   private static byte docValuesByte(DocValuesType type) {
     switch(type) {
-    case NO:
+    case NONE:
       return 0;
     case NUMERIC:
       return 1;
@@ -185,7 +185,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
   private static DocValuesType getDocValuesType(IndexInput input, byte b) throws IOException {
     switch(b) {
     case 0:
-      return DocValuesType.NO;
+      return DocValuesType.NONE;
     case 1:
       return DocValuesType.NUMERIC;
     case 2:
@@ -209,7 +209,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
 
   private static byte indexOptionsByte(IndexOptions indexOptions) {
     switch (indexOptions) {
-    case NO:
+    case NONE:
       return 0;
     case DOCS:
       return 1;
@@ -228,7 +228,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
   private static IndexOptions getIndexOptions(IndexInput input, byte b) throws IOException {
     switch (b) {
     case 0:
-      return IndexOptions.NO;
+      return IndexOptions.NONE;
     case 1:
       return IndexOptions.DOCS;
     case 2:

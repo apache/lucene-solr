@@ -71,7 +71,7 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
         boolean storePayloads = (bits & Lucene40FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
-          indexOptions = IndexOptions.NO;
+          indexOptions = IndexOptions.NONE;
         } else if ((bits & Lucene40FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS;
         } else if ((bits & Lucene40FieldInfosFormat.OMIT_POSITIONS) != 0) {
@@ -93,16 +93,16 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
         final LegacyDocValuesType oldValuesType = getDocValuesType((byte) (val & 0x0F));
         final LegacyDocValuesType oldNormsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
         final Map<String,String> attributes = input.readStringStringMap();
-        if (oldValuesType.mapping != DocValuesType.NO) {
+        if (oldValuesType.mapping != DocValuesType.NONE) {
           attributes.put(LEGACY_DV_TYPE_KEY, oldValuesType.name());
         }
-        if (oldNormsType.mapping != DocValuesType.NO) {
+        if (oldNormsType.mapping != DocValuesType.NONE) {
           if (oldNormsType.mapping != DocValuesType.NUMERIC) {
             throw new CorruptIndexException("invalid norm type: " + oldNormsType, input);
           }
           attributes.put(LEGACY_NORM_TYPE_KEY, oldNormsType.name());
         }
-        if (isIndexed && omitNorms == false && oldNormsType.mapping == DocValuesType.NO) {
+        if (isIndexed && omitNorms == false && oldNormsType.mapping == DocValuesType.NONE) {
           // Undead norms!  Lucene40NormsReader will check this and bring norms back from the dead:
           UndeadNormsProducer.setUndead(attributes);
         }
@@ -128,7 +128,7 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
   
   // mapping of 4.0 types -> 4.2 types
   static enum LegacyDocValuesType {
-    NONE(DocValuesType.NO),
+    NONE(DocValuesType.NONE),
     VAR_INTS(DocValuesType.NUMERIC),
     FLOAT_32(DocValuesType.NUMERIC),
     FLOAT_64(DocValuesType.NUMERIC),

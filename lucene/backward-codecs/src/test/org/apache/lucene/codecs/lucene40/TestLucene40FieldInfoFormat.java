@@ -48,7 +48,7 @@ public class TestLucene40FieldInfoFormat extends BaseFieldInfoFormatTestCase {
   @Override
   protected void addAttributes(FieldInfo fi) {
     DocValuesType dvType = fi.getDocValuesType();
-    if (dvType != DocValuesType.NO) {
+    if (dvType != DocValuesType.NONE) {
       switch (dvType) {
         case BINARY: 
           fi.putAttribute(Lucene40FieldInfosFormat.LEGACY_DV_TYPE_KEY, LegacyDocValuesType.BYTES_FIXED_STRAIGHT.name());

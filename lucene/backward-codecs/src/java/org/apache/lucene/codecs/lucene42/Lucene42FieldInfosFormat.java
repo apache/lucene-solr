@@ -71,7 +71,7 @@ public class Lucene42FieldInfosFormat extends FieldInfosFormat {
         boolean storePayloads = (bits & Lucene42FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
-          indexOptions = IndexOptions.NO;
+          indexOptions = IndexOptions.NONE;
         } else if ((bits & Lucene42FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS;
         } else if ((bits & Lucene42FieldInfosFormat.OMIT_POSITIONS) != 0) {
@@ -88,7 +88,7 @@ public class Lucene42FieldInfosFormat extends FieldInfosFormat {
         final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
         final Map<String,String> attributes = input.readStringStringMap();
 
-        if (isIndexed && omitNorms == false && normsType == DocValuesType.NO) {
+        if (isIndexed && omitNorms == false && normsType == DocValuesType.NONE) {
           // Undead norms!  Lucene42NormsProducer will check this and bring norms back from the dead:
           UndeadNormsProducer.setUndead(attributes);
         }
@@ -112,7 +112,7 @@ public class Lucene42FieldInfosFormat extends FieldInfosFormat {
   
   private static DocValuesType getDocValuesType(IndexInput input, byte b) throws IOException {
     if (b == 0) {
-      return DocValuesType.NO;
+      return DocValuesType.NONE;
     } else if (b == 1) {
       return DocValuesType.NUMERIC;
     } else if (b == 2) {

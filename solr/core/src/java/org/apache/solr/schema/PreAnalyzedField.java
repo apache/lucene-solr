@@ -250,7 +250,7 @@ public class PreAnalyzedField extends FieldType {
         }
       } else {
         if (f != null) {
-          f.fieldType().setIndexOptions(IndexOptions.NO);
+          f.fieldType().setIndexOptions(IndexOptions.NONE);
           f.fieldType().setTokenized(false);
         }
       }

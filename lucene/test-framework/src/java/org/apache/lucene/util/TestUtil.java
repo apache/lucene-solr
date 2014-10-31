@@ -889,7 +889,7 @@ public final class TestUtil {
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValueType();
       final NumericType numType = field1.fieldType().numericType();
-      if (dvType != DocValuesType.NO) {
+      if (dvType != DocValuesType.NONE) {
         switch(dvType) {
           case NUMERIC:
             field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());

@@ -371,7 +371,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
       fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                DocValuesType.NO, -1, null);
+                                                DocValuesType.NONE, -1, null);
       fieldUpto++;
 
       SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
@@ -698,7 +698,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                                                    false,
                                                    doPayloads,
                                                    indexOptions,
-                                                   DocValuesType.NO,
+                                                   DocValuesType.NONE,
                                                    -1,
                                                    null);
     }
@@ -1735,7 +1735,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   @Override
   protected void addRandomFields(Document doc) {
     for (IndexOptions opts : IndexOptions.values()) {
-      if (opts == IndexOptions.NO) {
+      if (opts == IndexOptions.NONE) {
         continue;
       }
       FieldType ft = new FieldType();

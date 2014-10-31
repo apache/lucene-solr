@@ -72,7 +72,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
         boolean storePayloads = (bits & Lucene46FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
-          indexOptions = IndexOptions.NO;
+          indexOptions = IndexOptions.NONE;
         } else if ((bits & Lucene46FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS;
         } else if ((bits & Lucene46FieldInfosFormat.OMIT_POSITIONS) != 0) {
@@ -90,7 +90,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
         final long dvGen = input.readLong();
         final Map<String,String> attributes = input.readStringStringMap();
 
-        if (isIndexed && omitNorms == false && normsType == DocValuesType.NO) {
+        if (isIndexed && omitNorms == false && normsType == DocValuesType.NONE) {
           // Undead norms!  Lucene42NormsProducer will check this and bring norms back from the dead:
           UndeadNormsProducer.setUndead(attributes);
         }
@@ -110,7 +110,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
   
   private static DocValuesType getDocValuesType(IndexInput input, byte b) throws IOException {
     if (b == 0) {
-      return DocValuesType.NO;
+      return DocValuesType.NONE;
     } else if (b == 1) {
       return DocValuesType.NUMERIC;
     } else if (b == 2) {
@@ -155,7 +155,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
 
         // pack the DV types in one byte
         final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : DocValuesType.NO);
+        final byte nrm = docValuesByte(fi.hasNorms() ? DocValuesType.NUMERIC : DocValuesType.NONE);
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
@@ -168,7 +168,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
   
   private static byte docValuesByte(DocValuesType type) {
     assert type != null;
-    if (type == DocValuesType.NO) {
+    if (type == DocValuesType.NONE) {
       return 0;
     } else if (type == DocValuesType.NUMERIC) {
       return 1;

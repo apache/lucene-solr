@@ -33,7 +33,7 @@ public interface IndexableFieldType {
    * {@link Analyzer}.
    * <p>
    * This has no effect if {@link #indexOptions()} returns
-   * IndexOptions.NO.
+   * IndexOptions.NONE.
    */
   // TODO: shouldn't we remove this?  Whether/how a field is
   // tokenized is an impl detail under Field?
@@ -48,7 +48,7 @@ public interface IndexableFieldType {
    * {@link IndexReader#getTermVector(int,String)}.
    * <p>
    * This option is illegal if {@link #indexOptions()} returns
-   * IndexOptions.NO.
+   * IndexOptions.NONE.
    */
   public boolean storeTermVectors();
 

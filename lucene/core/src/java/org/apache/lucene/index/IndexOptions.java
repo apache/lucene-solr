@@ -27,7 +27,7 @@ public enum IndexOptions {
   // order to merge two conflicting IndexOptions (always
   // "downgrades" by picking the lowest).
   /** Not indexed */
-  NO,
+  NONE,
   /** 
    * Only documents are indexed: term frequencies and positions are omitted.
    * Phrase and other positional queries on the field will throw an exception, and scoring

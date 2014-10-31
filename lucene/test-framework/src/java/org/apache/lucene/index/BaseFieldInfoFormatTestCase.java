@@ -82,7 +82,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     for (String field : fieldNames) {
       IndexableFieldType fieldType = randomFieldType(random());
       FieldInfo fi = builder.addOrUpdate(field, fieldType);
-      if (fieldType.indexOptions() != IndexOptions.NO && fieldType.indexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+      if (fieldType.indexOptions() != IndexOptions.NONE && fieldType.indexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         if (random().nextBoolean()) {
           fi.setStorePayloads();
         }

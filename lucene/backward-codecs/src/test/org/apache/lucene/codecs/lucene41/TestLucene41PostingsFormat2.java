@@ -68,7 +68,7 @@ public class TestLucene41PostingsFormat2 extends LuceneTestCase {
   private Document newDocument() {
     Document doc = new Document();
     for (IndexOptions option : IndexOptions.values()) {
-      if (option == IndexOptions.NO) {
+      if (option == IndexOptions.NONE) {
         continue;
       }
       FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);

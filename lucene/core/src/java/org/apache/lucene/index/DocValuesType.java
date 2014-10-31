@@ -26,7 +26,7 @@ public enum DocValuesType {
   /**
    * No doc values for this field.
    */
-  NO,
+  NONE,
   /** 
    * A per-document Number
    */

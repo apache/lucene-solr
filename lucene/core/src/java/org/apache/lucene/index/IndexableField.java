@@ -56,7 +56,7 @@ public interface IndexableField {
    * the range of that encoding.
    * <p>
    * It is illegal to return a boost other than 1.0f for a field that is not
-   * indexed ({@link IndexableFieldType#indexOptions()} is IndexOptions.NO) or
+   * indexed ({@link IndexableFieldType#indexOptions()} is IndexOptions.NONE) or
    * omits normalization values ({@link IndexableFieldType#omitNorms()} returns true).
    *
    * @see Similarity#computeNorm(FieldInvertState)
