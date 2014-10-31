@@ -194,7 +194,7 @@ Bug Fixes
   behave properly when wrapping other ValueSources which do not exist for the specified document
   (hossman)
 
-* LUCENE-6039: Add IndexOptions.NO and DocValuesType.NO instead of
+* LUCENE-6039: Add IndexOptions.NONE and DocValuesType.NONE instead of
   using null to mean not index and no doc values, renamed
   IndexOptions.DOCS_ONLY to DOCS, and pulled IndexOptions and
   DocValues out of FieldInfo into their own classes in

@@ -312,7 +312,7 @@ public final class Document implements IndexDocument {
     return new FilterIterator<StorableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
-        return field.type.stored() || field.type.docValueType() != DocValuesType.NO;
+        return field.type.stored() || field.type.docValueType() != DocValuesType.NONE;
       }
     };
   }
@@ -321,7 +321,7 @@ public final class Document implements IndexDocument {
     return new FilterIterator<IndexableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
-        return field.type.indexOptions() != IndexOptions.NO;
+        return field.type.indexOptions() != IndexOptions.NONE;
       }
     };
   }

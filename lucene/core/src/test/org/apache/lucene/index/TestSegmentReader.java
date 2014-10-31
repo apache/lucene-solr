@@ -176,7 +176,7 @@ public class TestSegmentReader extends LuceneTestCase {
     // test omit norms
     for (int i=0; i<DocHelper.fields.length; i++) {
       IndexableField f = DocHelper.fields[i];
-      if (f.fieldType().indexOptions() != IndexOptions.NO) {
+      if (f.fieldType().indexOptions() != IndexOptions.NONE) {
         assertEquals(reader.getNormValues(f.name()) != null, !f.fieldType().omitNorms());
         assertEquals(reader.getNormValues(f.name()) != null, !DocHelper.noNorms.containsKey(f.name()));
         if (reader.getNormValues(f.name()) == null) {

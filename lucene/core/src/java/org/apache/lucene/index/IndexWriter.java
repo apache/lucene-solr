@@ -1500,7 +1500,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (dvType == null) {
         throw new NullPointerException("DocValuesType cannot be null (field: \"" + f.name() + "\")");
       }
-      if (dvType == DocValuesType.NO) {
+      if (dvType == DocValuesType.NONE) {
         throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());
       }
       if (!globalFieldNumberMap.contains(f.name(), dvType)) {

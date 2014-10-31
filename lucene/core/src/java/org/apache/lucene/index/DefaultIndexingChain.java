@@ -365,7 +365,7 @@ final class DefaultIndexingChain extends DocConsumer {
         if (dvType == null) {
           throw new NullPointerException("docValueType cannot be null (field: \"" + fieldName + "\")");
         }
-        if (dvType != DocValuesType.NO) {
+        if (dvType != DocValuesType.NONE) {
           indexDocValue(fp, dvType, field);
         }
       }
@@ -382,7 +382,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (ft.indexOptions() == null) {
       throw new NullPointerException("IndexOptions must not be null (field: \"" + name + "\")");
     }
-    if (ft.indexOptions() == IndexOptions.NO) {
+    if (ft.indexOptions() == IndexOptions.NONE) {
       if (ft.storeTermVectors()) {
         throw new IllegalArgumentException("cannot store term vectors "
                                            + "for a field that is not indexed (field=\"" + name + "\")");

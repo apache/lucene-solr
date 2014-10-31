@@ -339,7 +339,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
       // Field does not exist
       return null;
     }
-    if (fi.getDocValuesType() == DocValuesType.NO) {
+    if (fi.getDocValuesType() == DocValuesType.NONE) {
       // Field was not indexed with doc values
       return null;
     }
@@ -384,7 +384,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
         // Field does not exist
         return null;
       }
-      if (fi.getDocValuesType() == DocValuesType.NO) {
+      if (fi.getDocValuesType() == DocValuesType.NONE) {
         // Field was not indexed with doc values
         return null;
       }

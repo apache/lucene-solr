@@ -450,7 +450,7 @@ public class MemoryIndex {
         fieldInfos.put(fieldName, 
             new FieldInfo(fieldName, fieldInfos.size(), false, false, false,
                           this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
-                          DocValuesType.NO, -1, null));
+                          DocValuesType.NONE, -1, null));
       }
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);

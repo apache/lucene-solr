@@ -50,11 +50,11 @@ public class FieldType implements IndexableFieldType  {
   private boolean storeTermVectorPositions;
   private boolean storeTermVectorPayloads;
   private boolean omitNorms;
-  private IndexOptions indexOptions = IndexOptions.NO;
+  private IndexOptions indexOptions = IndexOptions.NONE;
   private NumericType numericType;
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
-  private DocValuesType docValueType = DocValuesType.NO;
+  private DocValuesType docValueType = DocValuesType.NONE;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -344,7 +344,7 @@ public class FieldType implements IndexableFieldType  {
     if (stored()) {
       result.append("stored");
     }
-    if (indexOptions != IndexOptions.NO) {
+    if (indexOptions != IndexOptions.NONE) {
       if (result.length() > 0)
         result.append(",");
       result.append("indexed");
@@ -377,7 +377,7 @@ public class FieldType implements IndexableFieldType  {
         result.append(numericPrecisionStep);
       }
     }
-    if (docValueType != DocValuesType.NO) {
+    if (docValueType != DocValuesType.NONE) {
       if (result.length() > 0) {
         result.append(",");
       }

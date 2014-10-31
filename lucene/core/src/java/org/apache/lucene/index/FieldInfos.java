@@ -187,11 +187,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * is used as the field number.
      */
     synchronized int addOrGet(String fieldName, int preferredFieldNumber, DocValuesType dvType) {
-      if (dvType != DocValuesType.NO) {
+      if (dvType != DocValuesType.NONE) {
         DocValuesType currentDVType = docValuesType.get(fieldName);
         if (currentDVType == null) {
           docValuesType.put(fieldName, dvType);
-        } else if (currentDVType != DocValuesType.NO && currentDVType != dvType) {
+        } else if (currentDVType != DocValuesType.NONE && currentDVType != dvType) {
           throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldName + "\"");
         }
       }
@@ -224,7 +224,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         throw new IllegalArgumentException("field name \"" + name + "\" is already mapped to field number \"" + nameToNumber.get(name) + "\", not \"" + number + "\"");
       }
       DocValuesType currentDVType = docValuesType.get(name);
-      if (dvType != DocValuesType.NO && currentDVType != null && currentDVType != DocValuesType.NO && dvType != currentDVType) {
+      if (dvType != DocValuesType.NONE && currentDVType != null && currentDVType != DocValuesType.NONE && dvType != currentDVType) {
         throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + name + "\"");
       }
     }
@@ -312,7 +312,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       } else {
         fi.update(storeTermVector, omitNorms, storePayloads, indexOptions);
 
-        if (docValues != DocValuesType.NO) {
+        if (docValues != DocValuesType.NONE) {
           // Only pay the synchronization cost if fi does not already have a DVType
           boolean updateGlobal = !fi.hasDocValues();
           if (updateGlobal) {

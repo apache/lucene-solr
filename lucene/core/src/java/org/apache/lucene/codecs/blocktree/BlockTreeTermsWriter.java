@@ -824,7 +824,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
     TermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
-      assert fieldInfo.getIndexOptions() != IndexOptions.NO;
+      assert fieldInfo.getIndexOptions() != IndexOptions.NONE;
       docsSeen = new FixedBitSet(maxDoc);
 
       this.longsSize = postingsWriter.setField(fieldInfo);
@@ -975,7 +975,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         termsOut.writeVLong(field.numTerms);
         termsOut.writeVInt(field.rootCode.length);
         termsOut.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
-        assert field.fieldInfo.getIndexOptions() != IndexOptions.NO;
+        assert field.fieldInfo.getIndexOptions() != IndexOptions.NONE;
         if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
           termsOut.writeVLong(field.sumTotalTermFreq);
         }

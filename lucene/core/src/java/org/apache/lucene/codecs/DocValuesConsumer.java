@@ -138,7 +138,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
     for (FieldInfo mergeFieldInfo : mergeState.mergeFieldInfos) {
       DocValuesType type = mergeFieldInfo.getDocValuesType();
-      if (type != DocValuesType.NO) {
+      if (type != DocValuesType.NONE) {
         if (type == DocValuesType.NUMERIC) {
           List<NumericDocValues> toMerge = new ArrayList<>();
           List<Bits> docsWithField = new ArrayList<>();

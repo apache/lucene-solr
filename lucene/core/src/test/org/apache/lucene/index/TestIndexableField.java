@@ -57,7 +57,7 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public boolean storeTermVectors() {
-        return indexOptions() != IndexOptions.NO && counter % 2 == 1 && counter % 10 != 9;
+        return indexOptions() != IndexOptions.NONE && counter % 2 == 1 && counter % 10 != 9;
       }
 
       @Override
@@ -82,12 +82,12 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public IndexOptions indexOptions() {
-        return counter%10 == 3 ? IndexOptions.NO : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        return counter%10 == 3 ? IndexOptions.NONE : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       }
 
       @Override
       public DocValuesType docValueType() {
-        return DocValuesType.NO;
+        return DocValuesType.NONE;
       }
     };
 
@@ -202,7 +202,7 @@ public class TestIndexableField extends LuceneTestCase {
                     next = new MyField(finalBaseCount + (fieldUpto++-1));
                   }
                   
-                  if (next != null && next.fieldType().indexOptions() != IndexOptions.NO) return true;
+                  if (next != null && next.fieldType().indexOptions() != IndexOptions.NONE) return true;
                   else return this.hasNext();
                 }
 

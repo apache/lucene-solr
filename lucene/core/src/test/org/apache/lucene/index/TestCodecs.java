@@ -115,7 +115,7 @@ public class TestCodecs extends LuceneTestCase {
         public IndexOptions indexOptions() { return omitTF ? IndexOptions.DOCS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS; }
 
         @Override
-        public DocValuesType docValueType() { return DocValuesType.NO; }
+        public DocValuesType docValueType() { return DocValuesType.NONE; }
       });
       if (storePayloads) {
         fieldInfo.setStorePayloads();

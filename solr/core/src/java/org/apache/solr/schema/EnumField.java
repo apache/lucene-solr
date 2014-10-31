@@ -385,7 +385,7 @@ public class EnumField extends PrimitiveFieldType {
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, intAsString) : IndexOptions.NO);
+    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, intAsString) : IndexOptions.NONE);
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());

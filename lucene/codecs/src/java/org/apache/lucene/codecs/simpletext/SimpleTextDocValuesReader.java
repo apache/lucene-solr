@@ -104,7 +104,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       assert startsWith(TYPE) : scratch.get().utf8ToString();
 
       DocValuesType dvType = DocValuesType.valueOf(stripPrefix(TYPE));
-      assert dvType != DocValuesType.NO;
+      assert dvType != DocValuesType.NONE;
       if (dvType == DocValuesType.NUMERIC) {
         readLine();
         assert startsWith(MINVALUE): "got " + scratch.get().utf8ToString() + " field=" + fieldName + " ext=" + ext;

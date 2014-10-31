@@ -433,7 +433,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
       for (Field field : nextDoc.getFields()) {
-        if (field.fieldType().indexOptions() != IndexOptions.NO) {
+        if (field.fieldType().indexOptions() != IndexOptions.NONE) {
           doc.add(field);
           if (random().nextInt(3) == 0) {
             doc.add(field);  // randomly add the same field twice
