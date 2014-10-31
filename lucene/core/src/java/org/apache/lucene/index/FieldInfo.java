@@ -34,7 +34,7 @@ public final class FieldInfo {
   /** Internal field number */
   public final int number;
 
-  private DocValuesType docValueType = DocValuesType.NO;
+  private DocValuesType docValuesType = DocValuesType.NO;
 
   // True if any document indexed term vectors
   private boolean storeTermVector;
@@ -56,14 +56,14 @@ public final class FieldInfo {
       boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
       long dvGen, Map<String,String> attributes) {
     if (docValues == null) {
-      throw new NullPointerException("DocValuesType cannot be null");
+      throw new NullPointerException("DocValuesType cannot be null (field: \"" + name + "\")");
     }
     if (indexOptions == null) {
-      throw new NullPointerException("IndexOptions cannot be null");
+      throw new NullPointerException("IndexOptions cannot be null (field: \"" + name + "\")");
     }
     this.name = name;
     this.number = number;
-    this.docValueType = docValues;
+    this.docValuesType = docValues;
     this.indexOptions = indexOptions;
     if (indexOptions != IndexOptions.NO) {
       this.storeTermVector = storeTermVector;
@@ -101,7 +101,7 @@ public final class FieldInfo {
       }
     }
     
-    if (dvGen != -1 && docValueType == null) {
+    if (dvGen != -1 && docValuesType == DocValuesType.NO) {
       throw new IllegalStateException("field '" + name + "' cannot have a docvalues update generation without having docvalues");
     }
 
@@ -115,7 +115,7 @@ public final class FieldInfo {
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     if (indexOptions == null) {
-      throw new NullPointerException("IndexOptions cannot be null");
+      throw new NullPointerException("IndexOptions cannot be null (field: \"" + name + "\")");
     }
     //System.out.println("FI.update field=" + name + " indexed=" + indexed + " omitNorms=" + omitNorms + " this.omitNorms=" + this.omitNorms);
     if (this.indexOptions != indexOptions) {
@@ -144,10 +144,13 @@ public final class FieldInfo {
   }
 
   void setDocValuesType(DocValuesType type) {
-    if (docValueType != DocValuesType.NO && docValueType != type) {
-      throw new IllegalArgumentException("cannot change DocValues type from " + docValueType + " to " + type + " for field \"" + name + "\"");
+    if (type == null) {
+      throw new NullPointerException("DocValuesType cannot be null (field: \"" + name + "\")");
     }
-    docValueType = type;
+    if (docValuesType != DocValuesType.NO && docValuesType != type) {
+      throw new IllegalArgumentException("cannot change DocValues type from " + docValuesType + " to " + type + " for field \"" + name + "\"");
+    }
+    docValuesType = type;
     assert checkConsistency();
   }
   
@@ -160,7 +163,7 @@ public final class FieldInfo {
    * Returns true if this field has any docValues.
    */
   public boolean hasDocValues() {
-    return docValueType != DocValuesType.NO;
+    return docValuesType != DocValuesType.NO;
   }
 
   /**
@@ -168,7 +171,7 @@ public final class FieldInfo {
    * {@code DocValuesType.NO} if the field has no docvalues.
    */
   public DocValuesType getDocValuesType() {
-    return docValueType;
+    return docValuesType;
   }
   
   /** Sets the docValues generation of this field. */

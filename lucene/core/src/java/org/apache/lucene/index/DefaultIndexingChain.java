@@ -379,6 +379,9 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   private static void verifyFieldType(String name, IndexableFieldType ft) {
+    if (ft.indexOptions() == null) {
+      throw new NullPointerException("IndexOptions must not be null (field: \"" + name + "\")");
+    }
     if (ft.indexOptions() == IndexOptions.NO) {
       if (ft.storeTermVectors()) {
         throw new IllegalArgumentException("cannot store term vectors "
