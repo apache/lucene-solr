@@ -33,7 +33,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
@@ -145,7 +145,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         lastDocID = docID;
         docCount++;
 
-        if (field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
+        if (field.getIndexOptions() == IndexOptions.DOCS) {
           buffer.writeVInt(delta);
         } else if (termDocFreq == 1) {
           buffer.writeVInt((delta<<1) | 1);
@@ -232,7 +232,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       assert buffer2.getFilePointer() == 0;
 
       buffer2.writeVInt(stats.docFreq);
-      if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+      if (field.getIndexOptions() != IndexOptions.DOCS) {
         buffer2.writeVLong(stats.totalTermFreq-stats.docFreq);
       }
       int pos = (int) buffer2.getFilePointer();
@@ -262,7 +262,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       if (termCount > 0) {
         out.writeVInt(termCount);
         out.writeVInt(field.number);
-        if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        if (field.getIndexOptions() != IndexOptions.DOCS) {
           out.writeVLong(sumTotalTermFreq);
         }
         out.writeVLong(sumDocFreq);
@@ -470,7 +470,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
           return docID = NO_MORE_DOCS;
         }
         docUpto++;
-        if (indexOptions == IndexOptions.DOCS_ONLY) {
+        if (indexOptions == IndexOptions.DOCS) {
           accum += in.readVInt();
         } else {
           final int code = in.readVInt();
@@ -754,7 +754,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       if (!didDecode) {
         buffer.reset(current.output.bytes, current.output.offset, current.output.length);
         docFreq = buffer.readVInt();
-        if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        if (field.getIndexOptions() != IndexOptions.DOCS) {
           totalTermFreq = docFreq + buffer.readVLong();
         } else {
           totalTermFreq = -1;
@@ -896,7 +896,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       field = fieldInfos.fieldInfo(fieldNumber);
       if (field == null) {
         throw new CorruptIndexException("invalid field number: " + fieldNumber, in);
-      } else if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+      } else if (field.getIndexOptions() != IndexOptions.DOCS) {
         sumTotalTermFreq = in.readVLong();
       } else {
         sumTotalTermFreq = -1;

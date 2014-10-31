@@ -34,7 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
@@ -568,15 +568,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         ft.setOmitNorms(true);
       }
       switch(random.nextInt(4)) {
-        case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
+        case 0: ft.setIndexOptions(IndexOptions.DOCS); break;
         case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
         case 2: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break;
         default:
-                if (offsetsAreCorrect) {
-                  ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-                } else {
-                  ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-                }
+          if (offsetsAreCorrect) {
+            ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+          } else {
+            ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+          }
       }
       currentField = field = new Field("dummy", bogus, ft);
       doc.add(currentField);

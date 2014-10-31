@@ -1,15 +1,5 @@
 package org.apache.lucene.index;
 
-import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
-import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_CHAR;
-import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_INT;
-import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
-import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
-
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,6 +17,16 @@ import org.apache.lucene.util.RamUsageEstimator;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_CHAR;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_INT;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
+
 /** An in-place update to a DocValues field. */
 abstract class DocValuesUpdate {
   
@@ -39,7 +39,7 @@ abstract class DocValuesUpdate {
    */
   private static final int RAW_SIZE_IN_BYTES = 8*NUM_BYTES_OBJECT_HEADER + 8*NUM_BYTES_OBJECT_REF + 8*NUM_BYTES_INT;
   
-  final FieldInfo.DocValuesType type;
+  final DocValuesType type;
   final Term term;
   final String field;
   final Object value;
@@ -52,7 +52,7 @@ abstract class DocValuesUpdate {
    * @param field the {@link NumericDocValuesField} to update
    * @param value the updated value
    */
-  protected DocValuesUpdate(FieldInfo.DocValuesType type, Term term, String field, Object value) {
+  protected DocValuesUpdate(DocValuesType type, Term term, String field, Object value) {
     this.type = type;
     this.term = term;
     this.field = field;
@@ -82,7 +82,7 @@ abstract class DocValuesUpdate {
     private static final long RAW_VALUE_SIZE_IN_BYTES = NUM_BYTES_ARRAY_HEADER + 2*NUM_BYTES_INT + NUM_BYTES_OBJECT_REF;
     
     BinaryDocValuesUpdate(Term term, String field, BytesRef value) {
-      super(FieldInfo.DocValuesType.BINARY, term, field, value);
+      super(DocValuesType.BINARY, term, field, value);
     }
 
     @Override
@@ -96,7 +96,7 @@ abstract class DocValuesUpdate {
   static final class NumericDocValuesUpdate extends DocValuesUpdate {
 
     NumericDocValuesUpdate(Term term, String field, Long value) {
-      super(FieldInfo.DocValuesType.NUMERIC, term, field, value);
+      super(DocValuesType.NUMERIC, term, field, value);
     }
 
     @Override

@@ -17,14 +17,11 @@ package org.apache.lucene.spatial.bbox;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.impl.RectangleImpl;
+import java.io.IOException;
+
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
@@ -33,8 +30,13 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.IOException;
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.impl.RectangleImpl;
 
 public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
@@ -110,7 +112,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     if (random().nextBoolean()) {
       BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
       FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setDocValueType(null);
+      fieldType.setDocValueType(DocValuesType.NO);
       bboxStrategy.setFieldType(fieldType);
     }
     for (SpatialOperation operation : SpatialOperation.values()) {
@@ -292,7 +294,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
     if (random().nextBoolean()) {
       FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setIndexOptions(null);
+      fieldType.setIndexOptions(IndexOptions.NO);
       bboxStrategy.setFieldType(fieldType);
     }
 

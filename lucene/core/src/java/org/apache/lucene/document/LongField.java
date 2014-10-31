@@ -18,7 +18,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // javadocs
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
@@ -131,7 +131,7 @@ public final class LongField extends Field {
   static {
     TYPE_NOT_STORED.setTokenized(true);
     TYPE_NOT_STORED.setOmitNorms(true);
-    TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
+    TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
     TYPE_NOT_STORED.setNumericType(FieldType.NumericType.LONG);
     TYPE_NOT_STORED.freeze();
   }
@@ -144,7 +144,7 @@ public final class LongField extends Field {
   static {
     TYPE_STORED.setTokenized(true);
     TYPE_STORED.setOmitNorms(true);
-    TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
+    TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
     TYPE_STORED.setNumericType(FieldType.NumericType.LONG);
     TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();

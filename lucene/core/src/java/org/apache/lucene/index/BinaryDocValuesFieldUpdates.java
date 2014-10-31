@@ -1,15 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.packed.PackedInts;
-import org.apache.lucene.util.packed.PagedGrowableWriter;
-import org.apache.lucene.util.packed.PagedMutable;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +16,15 @@ import org.apache.lucene.util.packed.PagedMutable;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PagedGrowableWriter;
+import org.apache.lucene.util.packed.PagedMutable;
 
 /**
  * A {@link DocValuesFieldUpdates} which holds updates of documents, of a single
@@ -102,7 +101,7 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   private final int bitsPerValue;
   
   public BinaryDocValuesFieldUpdates(String field, int maxDoc) {
-    super(field, FieldInfo.DocValuesType.BINARY);
+    super(field, DocValuesType.BINARY);
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
     docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
     offsets = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);

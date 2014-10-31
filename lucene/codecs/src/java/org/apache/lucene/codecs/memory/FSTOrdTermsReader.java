@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -110,7 +110,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       final int numFields = blockIn.readVInt();
       for (int i = 0; i < numFields; i++) {
         FieldInfo fieldInfo = fieldInfos.fieldInfo(blockIn.readVInt());
-        boolean hasFreq = fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY;
+        boolean hasFreq = fieldInfo.getIndexOptions() != IndexOptions.DOCS;
         long numTerms = blockIn.readVLong();
         long sumTotalTermFreq = hasFreq ? blockIn.readVLong() : -1;
         long sumDocFreq = blockIn.readVLong();

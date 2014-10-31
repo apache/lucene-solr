@@ -17,15 +17,11 @@ package org.apache.lucene.spatial.bbox;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
-
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -44,6 +40,10 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 
 
 /**
@@ -106,7 +106,7 @@ public class BBoxStrategy extends SpatialStrategy {
 
     FieldType fieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
     fieldType.setNumericPrecisionStep(8);//Solr's default
-    fieldType.setDocValueType(FieldInfo.DocValuesType.NUMERIC);
+    fieldType.setDocValueType(DocValuesType.NUMERIC);
     setFieldType(fieldType);
   }
 

@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -88,15 +88,10 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         assert StringHelper.startsWith(scratch.get(), NUMBER);
         int fieldNumber = Integer.parseInt(readString(NUMBER.length, scratch));
 
-        final IndexOptions indexOptions;
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), INDEXOPTIONS);
         String s = readString(INDEXOPTIONS.length, scratch);
-        if ("null".equals(s)) {
-          indexOptions = null;
-        } else {
-          indexOptions = IndexOptions.valueOf(s);
-        }
+        final IndexOptions indexOptions = IndexOptions.valueOf(s);
 
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch.get(), STORETV);
@@ -154,11 +149,7 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   }
 
   public DocValuesType docValuesType(String dvType) {
-    if ("false".equals(dvType)) {
-      return null;
-    } else {
-      return DocValuesType.valueOf(dvType);
-    }
+    return DocValuesType.valueOf(dvType);
   }
   
   private String readString(int offset, BytesRefBuilder scratch) {
@@ -187,12 +178,8 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         
         SimpleTextUtil.write(out, INDEXOPTIONS);
         IndexOptions indexOptions = fi.getIndexOptions();
-        if (indexOptions != null) {
-          assert fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
-          SimpleTextUtil.write(out, fi.getIndexOptions().toString(), scratch);
-        } else {
-          SimpleTextUtil.write(out, "null", scratch);
-        }
+        assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
+        SimpleTextUtil.write(out, indexOptions.toString(), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, STORETV);
@@ -245,6 +232,6 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   }
   
   private static String getDocValuesType(DocValuesType type) {
-    return type == null ? "false" : type.toString();
+    return type.toString();
   }
 }

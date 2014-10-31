@@ -161,7 +161,7 @@ while ((docid = docsAndPositionsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS
            of occurrences of this term across all documents. Note that this statistic 
            is unavailable (returns <code>-1</code>) if term frequencies were omitted 
            from the index 
-           ({@link org.apache.lucene.index.FieldInfo.IndexOptions#DOCS_ONLY DOCS_ONLY}) 
+           ({@link org.apache.lucene.index.IndexOptions#DOCS DOCS}) 
            for the field. Like docFreq(), it will also count occurrences that appear in 
            deleted documents.
     </ul>
@@ -194,7 +194,7 @@ while ((docid = docsAndPositionsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS
            field, and like totalTermFreq() it will also count occurrences that appear in
            deleted documents, and will be unavailable (returns <code>-1</code>) if term 
            frequencies were omitted from the index 
-           ({@link org.apache.lucene.index.FieldInfo.IndexOptions#DOCS_ONLY DOCS_ONLY}) 
+           ({@link org.apache.lucene.index.IndexOptions#DOCS DOCS}) 
            for the field.
     </ul>
 </p>

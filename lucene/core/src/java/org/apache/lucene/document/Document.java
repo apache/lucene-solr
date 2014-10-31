@@ -19,7 +19,9 @@ package org.apache.lucene.document;
 
 import java.util.*;
 
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexDocument;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;  // for javadoc
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
@@ -310,7 +312,7 @@ public final class Document implements IndexDocument {
     return new FilterIterator<StorableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
-        return field.type.stored() || field.type.docValueType() != null;
+        return field.type.stored() || field.type.docValueType() != DocValuesType.NO;
       }
     };
   }
@@ -319,7 +321,7 @@ public final class Document implements IndexDocument {
     return new FilterIterator<IndexableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
-        return field.type.indexOptions() != null;
+        return field.type.indexOptions() != IndexOptions.NO;
       }
     };
   }

@@ -18,7 +18,7 @@ package org.apache.solr.schema;
  */
 
 import com.spatial4j.core.shape.Rectangle;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.bbox.BBoxOverlapRatioValueSource;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
@@ -103,7 +103,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     //and annoyingly this field isn't going to have a docValues format because Solr uses a separate Field for that
     if (field.hasDocValues()) {
       luceneType = new org.apache.lucene.document.FieldType(luceneType);
-      luceneType.setDocValueType(FieldInfo.DocValuesType.NUMERIC);
+      luceneType.setDocValueType(DocValuesType.NUMERIC);
     }
     strategy.setFieldType(luceneType);
     return strategy;

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits; // javadocs
@@ -50,7 +49,7 @@ public abstract class DocsEnum extends DocIdSetIterator {
 
   /**
    * Returns term frequency in the current document, or 1 if the field was
-   * indexed with {@link IndexOptions#DOCS_ONLY}. Do not call this before
+   * indexed with {@link IndexOptions#DOCS}. Do not call this before
    * {@link #nextDoc} is first called, nor after {@link #nextDoc} returns
    * {@link DocIdSetIterator#NO_MORE_DOCS}.
    * 

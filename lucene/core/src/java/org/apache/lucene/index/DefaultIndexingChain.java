@@ -29,8 +29,6 @@ import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -364,7 +362,10 @@ final class DefaultIndexingChain extends DocConsumer {
         }
 
         DocValuesType dvType = fieldType.docValueType();
-        if (dvType != null) {
+        if (dvType == null) {
+          throw new NullPointerException("docValueType cannot be null (field: \"" + fieldName + "\")");
+        }
+        if (dvType != DocValuesType.NO) {
           indexDocValue(fp, dvType, field);
         }
       }
@@ -378,7 +379,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   private static void verifyFieldType(String name, IndexableFieldType ft) {
-    if (ft.indexOptions() == null) {
+    if (ft.indexOptions() == IndexOptions.NO) {
       if (ft.storeTermVectors()) {
         throw new IllegalArgumentException("cannot store term vectors "
                                            + "for a field that is not indexed (field=\"" + name + "\")");

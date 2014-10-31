@@ -18,7 +18,7 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.solr.SolrTestCaseJ4;

@@ -28,7 +28,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -56,9 +57,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_AND_FREQS;
-import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_ONLY;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
+import static org.apache.lucene.index.IndexOptions.DOCS;
 
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
@@ -176,17 +177,17 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     StringBuilder flags = new StringBuilder();
 
-    flags.append( (f != null && f.fieldType().indexOptions() != null)                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.fieldType().indexOptions() != IndexOptions.NO)                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().tokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().stored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.fieldType().docValueType() != null)        ? FieldFlag.DOC_VALUES.getAbbreviation() : "-" );
+    flags.append( (f != null && f.fieldType().docValueType() != DocValuesType.NO)        ? FieldFlag.DOC_VALUES.getAbbreviation() : "-" );
     flags.append( (false)                                          ? FieldFlag.MULTI_VALUED.getAbbreviation() : '-' ); // SchemaField Specific
     flags.append( (f != null && f.fieldType().storeTermVectors())            ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().storeTermVectorOffsets())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().storeTermVectorPositions()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().omitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
 
-    flags.append( (f != null && DOCS_ONLY == opts ) ?
+    flags.append( (f != null && DOCS == opts ) ?
         FieldFlag.OMIT_TF.getAbbreviation() : '-' );
 
     flags.append((f != null && DOCS_AND_FREQS == opts) ?

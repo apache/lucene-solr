@@ -74,6 +74,7 @@ import org.apache.lucene.index.FieldFilterLeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -1339,7 +1340,7 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns a FieldType derived from newType but whose
    *  term vector options match the old type */
   private static FieldType mergeTermVectorOptions(FieldType newType, FieldType oldType) {
-    if (newType.indexOptions() != null && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
+    if (newType.indexOptions() != IndexOptions.NO && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
       newType = new FieldType(newType);
       newType.setStoreTermVectors(oldType.storeTermVectors());
       newType.setStoreTermVectorPositions(oldType.storeTermVectorPositions());
@@ -1364,7 +1365,7 @@ public abstract class LuceneTestCase extends Assert {
 
     FieldType prevType = fieldToType.get(name);
 
-    if (usually(random) || type.indexOptions() == null || prevType != null) {
+    if (usually(random) || type.indexOptions() == IndexOptions.NO || prevType != null) {
       // most of the time, don't modify the params
       if (prevType == null) {
         fieldToType.put(name, new FieldType(type));

@@ -45,7 +45,6 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergeState.CheckAbort;
@@ -1499,6 +1498,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       final Field f = updates[i];
       final DocValuesType dvType = f.fieldType().docValueType();
       if (dvType == null) {
+        throw new NullPointerException("DocValuesType cannot be null (field: \"" + f.name() + "\")");
+      }
+      if (dvType == DocValuesType.NO) {
         throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());
       }
       if (!globalFieldNumberMap.contains(f.name(), dvType)) {

@@ -31,7 +31,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -42,7 +41,6 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
@@ -197,7 +195,7 @@ public class Test2BTerms extends LuceneTestCase {
       final MyTokenStream ts = new MyTokenStream(random(), TERMS_PER_DOC);
 
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setIndexOptions(IndexOptions.DOCS_ONLY);
+      customType.setIndexOptions(IndexOptions.DOCS);
       customType.setOmitNorms(true);
       Field field = new Field("field", ts, customType);
       doc.add(field);

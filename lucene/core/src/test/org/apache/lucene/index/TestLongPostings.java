@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -25,14 +26,13 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -267,7 +267,7 @@ public class TestLongPostings extends LuceneTestCase {
   
   // a weaker form of testLongPostings, that doesnt check positions
   public void testLongPostingsNoPositions() throws Exception {
-    doTestLongPostingsNoPositions(IndexOptions.DOCS_ONLY);
+    doTestLongPostingsNoPositions(IndexOptions.DOCS);
     doTestLongPostingsNoPositions(IndexOptions.DOCS_AND_FREQS);
   }
   
@@ -373,7 +373,7 @@ public class TestLongPostings extends LuceneTestCase {
       final DocsEnum docs;
       final DocsEnum postings;
 
-      if (options == IndexOptions.DOCS_ONLY) {
+      if (options == IndexOptions.DOCS) {
         docs = TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, DocsEnum.FLAG_NONE);
         postings = null;
       } else {

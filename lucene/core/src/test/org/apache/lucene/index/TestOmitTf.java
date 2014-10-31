@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
@@ -66,7 +65,7 @@ public class TestOmitTf extends LuceneTestCase {
   private static final FieldType normalType = new FieldType(TextField.TYPE_NOT_STORED);
   
   static {
-    omitType.setIndexOptions(IndexOptions.DOCS_ONLY);
+    omitType.setIndexOptions(IndexOptions.DOCS);
   }
 
   // Tests whether the DocumentWriter correctly enable the
@@ -107,8 +106,8 @@ public class TestOmitTf extends LuceneTestCase {
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").getIndexOptions());
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").getIndexOptions());
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f1").getIndexOptions());
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
         
     reader.close();
     ram.close();
@@ -159,8 +158,8 @@ public class TestOmitTf extends LuceneTestCase {
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").getIndexOptions());
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").getIndexOptions());
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f1").getIndexOptions());
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
         
     reader.close();
     ram.close();
@@ -203,7 +202,7 @@ public class TestOmitTf extends LuceneTestCase {
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
     assertEquals("OmitTermFreqAndPositions field bit should not be set.", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").getIndexOptions());
-    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").getIndexOptions());
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
         
     reader.close();
     ram.close();
@@ -451,7 +450,7 @@ public class TestOmitTf extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    ft.setIndexOptions(IndexOptions.DOCS);
     ft.freeze();
     Field f = newField("foo", "bar", ft);
     doc.add(f);

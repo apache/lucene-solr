@@ -18,8 +18,8 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
@@ -50,11 +50,11 @@ public class FieldType implements IndexableFieldType  {
   private boolean storeTermVectorPositions;
   private boolean storeTermVectorPayloads;
   private boolean omitNorms;
-  private IndexOptions indexOptions;
+  private IndexOptions indexOptions = IndexOptions.NO;
   private NumericType numericType;
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
-  private DocValuesType docValueType;
+  private DocValuesType docValueType = DocValuesType.NO;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -263,7 +263,7 @@ public class FieldType implements IndexableFieldType  {
    * {@inheritDoc}
    * <p>
    * The default is {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS}.
-   * @see #setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions)
+   * @see #setIndexOptions(IndexOptions)
    */
   @Override
   public IndexOptions indexOptions() {
@@ -279,6 +279,9 @@ public class FieldType implements IndexableFieldType  {
    */
   public void setIndexOptions(IndexOptions value) {
     checkIfFrozen();
+    if (value == null) {
+      throw new NullPointerException("IndexOptions cannot be null");
+    }
     this.indexOptions = value;
   }
 
@@ -341,7 +344,7 @@ public class FieldType implements IndexableFieldType  {
     if (stored()) {
       result.append("stored");
     }
-    if (indexOptions != null) {
+    if (indexOptions != IndexOptions.NO) {
       if (result.length() > 0)
         result.append(",");
       result.append("indexed");
@@ -374,9 +377,10 @@ public class FieldType implements IndexableFieldType  {
         result.append(numericPrecisionStep);
       }
     }
-    if (docValueType != null) {
-      if (result.length() > 0)
+    if (docValueType != DocValuesType.NO) {
+      if (result.length() > 0) {
         result.append(",");
+      }
       result.append("docValueType=");
       result.append(docValueType);
     }
@@ -390,7 +394,7 @@ public class FieldType implements IndexableFieldType  {
    * {@inheritDoc}
    * <p>
    * The default is <code>null</code> (no docValues) 
-   * @see #setDocValueType(org.apache.lucene.index.FieldInfo.DocValuesType)
+   * @see #setDocValueType(DocValuesType)
    */
   @Override
   public DocValuesType docValueType() {
@@ -406,6 +410,9 @@ public class FieldType implements IndexableFieldType  {
    */
   public void setDocValueType(DocValuesType type) {
     checkIfFrozen();
+    if (type == null) {
+      throw new NullPointerException("DocValuesType cannot be null");
+    }
     docValueType = type;
   }
 
@@ -414,7 +421,7 @@ public class FieldType implements IndexableFieldType  {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((docValueType == null) ? 0 : docValueType.hashCode());
-    result = prime * result + ((indexOptions == null) ? 0 : indexOptions.hashCode());
+    result = prime * result + indexOptions.hashCode();
     result = prime * result + numericPrecisionStep;
     result = prime * result + ((numericType == null) ? 0 : numericType.hashCode());
     result = prime * result + (omitNorms ? 1231 : 1237);

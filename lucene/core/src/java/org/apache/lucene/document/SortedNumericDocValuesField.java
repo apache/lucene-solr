@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -50,7 +50,7 @@ public class SortedNumericDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(FieldInfo.DocValuesType.SORTED_NUMERIC);
+    TYPE.setDocValueType(DocValuesType.SORTED_NUMERIC);
     TYPE.freeze();
   }
 

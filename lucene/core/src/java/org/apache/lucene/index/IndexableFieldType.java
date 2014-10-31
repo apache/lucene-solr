@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 /** 
  * Describes the properties of a field.
@@ -34,7 +32,8 @@ public interface IndexableFieldType {
    * True if this field's value should be analyzed by the
    * {@link Analyzer}.
    * <p>
-   * This has no effect if {@link #indexOptions()} returns null.
+   * This has no effect if {@link #indexOptions()} returns
+   * IndexOptions.NO.
    */
   // TODO: shouldn't we remove this?  Whether/how a field is
   // tokenized is an impl detail under Field?
@@ -48,7 +47,8 @@ public interface IndexableFieldType {
    * can be accessed in a document-oriented way from 
    * {@link IndexReader#getTermVector(int,String)}.
    * <p>
-   * This option is illegal if {@link #indexOptions()} returns null.
+   * This option is illegal if {@link #indexOptions()} returns
+   * IndexOptions.NO.
    */
   public boolean storeTermVectors();
 
@@ -88,13 +88,12 @@ public interface IndexableFieldType {
   public boolean omitNorms();
 
   /** {@link IndexOptions}, describing what should be
-   *  recorded into the inverted index, or null if this field
-   *  is not indexed */
+   *  recorded into the inverted index */
   public IndexOptions indexOptions();
 
   /** 
-   * DocValues {@link DocValuesType}: if non-null then the field's value
-   * will be indexed into docValues.
+   * DocValues {@link DocValuesType}: how the field's value will be indexed
+   * into docValues.
    */
   public DocValuesType docValueType();  
 }

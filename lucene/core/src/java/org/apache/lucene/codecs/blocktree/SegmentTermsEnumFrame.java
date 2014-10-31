@@ -20,7 +20,7 @@ package org.apache.lucene.codecs.blocktree;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -403,7 +403,7 @@ final class SegmentTermsEnumFrame {
       // stats
       state.docFreq = statsReader.readVInt();
       //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-      if (ste.fr.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+      if (ste.fr.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
         state.totalTermFreq = state.docFreq + statsReader.readVLong();
         //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
       }
