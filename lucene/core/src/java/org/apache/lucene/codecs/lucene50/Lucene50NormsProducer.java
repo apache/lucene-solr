@@ -49,7 +49,8 @@ import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.DELTA_COMP
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.TABLE_COMPRESSED;
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.INDIRECT;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_BITSET;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_TABLE;
 
 /**
  * Reader for {@link Lucene50NormsFormat}
@@ -151,7 +152,8 @@ class Lucene50NormsProducer extends NormsProducer {
       case TABLE_COMPRESSED:
       case DELTA_COMPRESSED:
         break;
-      case PATCHED:
+      case PATCHED_BITSET:
+      case PATCHED_TABLE:
       case INDIRECT:
         if (meta.readVInt() != info.number) {
           throw new CorruptIndexException("indirect norms entry for field: " + info.name + " is corrupt", meta);
@@ -237,16 +239,22 @@ class Lucene50NormsProducer extends NormsProducer {
       case TABLE_COMPRESSED: {
         data.seek(entry.offset);
         int packedIntsVersion = data.readVInt();
-        int size = data.readVInt();
-        if (size > 256) {
-          throw new CorruptIndexException("TABLE_COMPRESSED cannot have more than 256 distinct values, got=" + size, data);
-        }
-        final long decode[] = new long[size];
-        for (int i = 0; i < decode.length; i++) {
-          decode[i] = data.readLong();
-        }
         final int formatID = data.readVInt();
         final int bitsPerValue = data.readVInt();
+        
+        if (bitsPerValue != 1 && bitsPerValue != 2 && bitsPerValue != 4) {
+          throw new CorruptIndexException("TABLE_COMPRESSED only supports bpv=1, bpv=2 and bpv=4, got=" + bitsPerValue, data);
+        }
+        int size = 1 << bitsPerValue;
+        final byte decode[] = new byte[size];
+        final int ordsSize = data.readVInt();
+        for (int i = 0; i < ordsSize; ++i) {
+          decode[i] = data.readByte();
+        }
+        for (int i = ordsSize; i < size; ++i) {
+          decode[i] = 0;
+        }
+
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), packedIntsVersion, entry.count, bitsPerValue);
         instance.info = Accountables.namedAccountable("table compressed", ordsReader);
         instance.ramBytesUsed = RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed();
@@ -291,7 +299,7 @@ class Lucene50NormsProducer extends NormsProducer {
         };
         break;
       }
-      case PATCHED: {
+      case PATCHED_BITSET: {
         data.seek(entry.offset);
         final long common = data.readLong();
         int packedIntsVersion = data.readVInt();
@@ -304,7 +312,7 @@ class Lucene50NormsProducer extends NormsProducer {
         }
         LoadedNorms nestedInstance = loadNorms(entry.nested);
         instance.ramBytesUsed = set.ramBytesUsed() + nestedInstance.ramBytesUsed;
-        instance.info = Accountables.namedAccountable("patched -> " + nestedInstance.info, instance.ramBytesUsed);
+        instance.info = Accountables.namedAccountable("patched bitset -> " + nestedInstance.info, instance.ramBytesUsed);
         final NumericDocValues values = nestedInstance.norms;
         instance.norms = new NumericDocValues() {
           @Override
@@ -313,6 +321,42 @@ class Lucene50NormsProducer extends NormsProducer {
               return values.get(docID);
             } else {
               return common;
+            }
+          }
+        };
+        break;
+      }
+      case PATCHED_TABLE: {
+        data.seek(entry.offset);
+        int packedIntsVersion = data.readVInt();
+        final int formatID = data.readVInt();
+        final int bitsPerValue = data.readVInt();
+
+        if (bitsPerValue != 2 && bitsPerValue != 4) {
+          throw new CorruptIndexException("PATCHED_TABLE only supports bpv=2 and bpv=4, got=" + bitsPerValue, data);
+        }
+        final int size = 1 << bitsPerValue;
+        final int ordsSize = data.readVInt();
+        final byte decode[] = new byte[ordsSize];
+        assert ordsSize + 1 == size;
+        for (int i = 0; i < ordsSize; ++i) {
+          decode[i] = data.readByte();
+        }
+        
+        final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), packedIntsVersion, entry.count, bitsPerValue);
+        final LoadedNorms nestedInstance = loadNorms(entry.nested);
+        instance.ramBytesUsed = RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed() + nestedInstance.ramBytesUsed;
+        instance.info = Accountables.namedAccountable("patched table -> " + nestedInstance.info, instance.ramBytesUsed);
+        final NumericDocValues values = nestedInstance.norms;
+        instance.norms = new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            int ord = (int)ordsReader.get(docID);
+            try {
+              // doing a try/catch here eliminates a seemingly unavoidable branch in hotspot...
+              return decode[ord];
+            } catch (IndexOutOfBoundsException e) {
+              return values.get(docID);
             }
           }
         };

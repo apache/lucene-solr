@@ -290,59 +290,70 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     assert i < length;
     final int i4096 = i >>> 12;
     final long index = indices[i4096];
+    final long[] bitArray = this.bits[i4096];
     int i64 = i >>> 6;
-    long indexBits = index >>> i64;
-    if (indexBits == 0) {
-      // if the index is zero, it means that there is no value in the
-      // current block, so return the first document of the next block
-      // or
-      // if neither the i64-th bit or any other bit on its left is set then
-      // it means that there are no more documents in this block, go to the
-      // next one
-      return firstDoc(i4096 + 1);
-    } else {
-      // We know we still have some 64-bits blocks that have bits set, let's
-      // advance to the next one by skipping trailing zeros of the index
-      int i1 = i & 0x3F;
-      int trailingZeros = Long.numberOfTrailingZeros(indexBits);
-      if (trailingZeros != 0) {
-        // no bits in the current long, go to the next one
-        i64 += trailingZeros;
-        i1 = 0;
+    int o = Long.bitCount(index & ((1L << i64) - 1));
+    if ((index & (1L << i64)) != 0) {
+      // There is at least one bit that is set in the current long, check if
+      // one of them is after i
+      final long bits = bitArray[o] >>> i; // shifts are mod 64
+      if (bits != 0) {
+        return i + Long.numberOfTrailingZeros(bits);
       }
-
-      // So now we are on a sub 64-bits block that has values
-      assert (index & (1L << i64)) != 0;
-      // we count the number of ones on the left of i64 to figure out the
-      // index of the long that contains the bits we are interested in
-      int longIndex = Long.bitCount(index & ((1L << i64) - 1)); // shifts are mod 64 in java
-      final long[] longArray = bits[i4096];
-      assert longArray[longIndex] != 0;
-      long bits = longArray[longIndex] >>> i1; // shifts are mod 64 in java
-      if (bits != 0L) {
-        // hurray, we found some non-zero bits, this gives us the next document:
-        i1 += Long.numberOfTrailingZeros(bits);
-        return (i4096 << 12) | ((i64 & 0x3F) << 6) | i1;
-      }
-
-      // otherwise it means that although we were on a sub-64 block that contains
-      // documents, all documents of this sub-block have already been consumed
-      // so two cases:
-      indexBits = index >>> i64 >>> 1; // we don't shift by (i64+1) otherwise we might shift by a multiple of 64 which is a no-op
-      if (indexBits == 0) {
-        // Case 1: this was the last long of the block of 4096 bits, then go
-        // to the next block
-        return firstDoc(i4096 + 1);
-      }
-      // Case 2: go to the next sub 64-bits block in the current block of 4096 bits
-      // by skipping trailing zeros of the index
-      trailingZeros = Long.numberOfTrailingZeros(indexBits);
-      i64 += 1 + trailingZeros;
-      bits = longArray[longIndex + 1];
-      assert bits != 0;
-      i1 = Long.numberOfTrailingZeros(bits);
-      return (i4096 << 12) | ((i64 & 0x3F) << 6) | i1;
+      o += 1;
     }
+    final long indexBits = index >>> i64 >>> 1;
+    if (indexBits == 0) {
+      // no more bits are set in the current block of 4096 bits, go to the next one
+      return firstDoc(i4096 + 1);
+    }
+    // there are still set bits
+    i64 += 1 + Long.numberOfTrailingZeros(indexBits);
+    final long bits = bitArray[o];
+    return (i64 << 6) | Long.numberOfTrailingZeros(bits);
+  }
+
+  /** Return the last document that occurs on or before the provided block index. */
+  private int lastDoc(int i4096) {
+    long index;
+    while (i4096 >= 0) {
+      index = indices[i4096];
+      if (index != 0) {
+        final int i64 = 63 - Long.numberOfLeadingZeros(index);
+        final long bits = this.bits[i4096][Long.bitCount(index) - 1];
+        return (i4096 << 12) | (i64 << 6) | (63 - Long.numberOfLeadingZeros(bits));
+      }
+      i4096 -= 1;
+    }
+    return -1;
+  }
+
+  @Override
+  public int prevSetBit(int i) {
+    assert i >= 0;
+    final int i4096 = i >>> 12;
+    final long index = indices[i4096];
+    final long[] bitArray = this.bits[i4096];
+    int i64 = i >>> 6;
+    final long indexBits = index & ((1L << i64) - 1);
+    final int o = Long.bitCount(indexBits);
+    if ((index & (1L << i64)) != 0) {
+      // There is at least one bit that is set in the same long, check if there
+      // is one bit that is set that is lower than i
+      final long bits = bitArray[o] & ((1L << i << 1) - 1);
+      if (bits != 0) {
+        return (i64 << 6) | (63 - Long.numberOfLeadingZeros(bits));
+      }
+    }
+    if (indexBits == 0) {
+      // no more bits are set in this block, go find the last bit in the
+      // previous block
+      return lastDoc(i4096 - 1);
+    }
+    // go to the previous long
+    i64 = 63 - Long.numberOfLeadingZeros(indexBits);
+    final long bits = bitArray[o - 1];
+    return (i4096 << 12) | (i64 << 6) | (63 - Long.numberOfLeadingZeros(bits));
   }
 
   /** Return the long bits at the given <code>i64</code> index. */

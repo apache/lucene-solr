@@ -25,9 +25,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-
 /** 
  * Collection of {@link FieldInfo}s (accessible by number or by name).
  *  @lucene.experimental
@@ -72,7 +69,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       
       hasVectors |= info.hasVectors();
       hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-      hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS_ONLY;
+      hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS;
       hasOffsets |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       hasNorms |= info.hasNorms();
       hasDocValues |= info.hasDocValues();
@@ -190,18 +187,17 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * is used as the field number.
      */
     synchronized int addOrGet(String fieldName, int preferredFieldNumber, DocValuesType dvType) {
-      if (dvType != null) {
+      if (dvType != DocValuesType.NONE) {
         DocValuesType currentDVType = docValuesType.get(fieldName);
         if (currentDVType == null) {
           docValuesType.put(fieldName, dvType);
-        } else if (currentDVType != null && currentDVType != dvType) {
+        } else if (currentDVType != DocValuesType.NONE && currentDVType != dvType) {
           throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldName + "\"");
         }
       }
       Integer fieldNumber = nameToNumber.get(fieldName);
       if (fieldNumber == null) {
         final Integer preferredBoxed = Integer.valueOf(preferredFieldNumber);
-
         if (preferredFieldNumber != -1 && !numberToName.containsKey(preferredBoxed)) {
           // cool - we can use this number globally
           fieldNumber = preferredBoxed;
@@ -212,7 +208,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
           }
           fieldNumber = lowestUnassignedFieldNumber;
         }
-        
+        assert fieldNumber >= 0;
         numberToName.put(fieldNumber, fieldName);
         nameToNumber.put(fieldName, fieldNumber);
       }
@@ -228,7 +224,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         throw new IllegalArgumentException("field name \"" + name + "\" is already mapped to field number \"" + nameToNumber.get(name) + "\", not \"" + number + "\"");
       }
       DocValuesType currentDVType = docValuesType.get(name);
-      if (dvType != null && currentDVType != null && dvType != currentDVType) {
+      if (dvType != DocValuesType.NONE && currentDVType != null && currentDVType != DocValuesType.NONE && dvType != currentDVType) {
         throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + name + "\"");
       }
     }
@@ -298,6 +294,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber,
         boolean storeTermVector,
         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues) {
+      if (docValues == null) {
+        throw new NullPointerException("DocValuesType cannot be null");
+      }
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
         // This field wasn't yet added to this in-RAM
@@ -313,7 +312,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       } else {
         fi.update(storeTermVector, omitNorms, storePayloads, indexOptions);
 
-        if (docValues != null) {
+        if (docValues != DocValuesType.NONE) {
           // Only pay the synchronization cost if fi does not already have a DVType
           boolean updateGlobal = !fi.hasDocValues();
           if (updateGlobal) {

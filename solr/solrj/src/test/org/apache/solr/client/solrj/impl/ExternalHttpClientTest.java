@@ -34,7 +34,7 @@ import org.junit.Test;
 public class ExternalHttpClientTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
+    createJetty(legacyExampleCollection1SolrHome(), null, null);
     jetty.getDispatchFilter().getServletHandler()
         .addServletWithMapping(BasicHttpSolrServerTest.SlowServlet.class, "/slow/*");
   }

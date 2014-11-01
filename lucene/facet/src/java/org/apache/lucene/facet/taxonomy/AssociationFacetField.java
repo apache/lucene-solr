@@ -24,7 +24,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.Facets;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 
 /** Add an instance of this to your {@link Document} to add

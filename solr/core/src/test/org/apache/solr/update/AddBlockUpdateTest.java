@@ -1,11 +1,31 @@
 package org.apache.solr.update;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.join.FixedBitSetCachingWrapperFilter;
+import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -26,34 +46,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXException;
-
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-
-
-
-
-
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -568,7 +560,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   protected ToParentBlockJoinQuery join(final String childTerm) {
     return new ToParentBlockJoinQuery(
-        new TermQuery(new Term(child, childTerm)), new FixedBitSetCachingWrapperFilter(new TermRangeFilter(parent,
+        new TermQuery(new Term(child, childTerm)), new BitDocIdSetCachingWrapperFilter(new TermRangeFilter(parent,
             null, null, false, false)), ScoreMode.None);
   }
   

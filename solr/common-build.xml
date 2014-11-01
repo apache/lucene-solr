@@ -37,6 +37,7 @@
   <property name="maven.dist.dir" location="${package.dir}/maven"/>
   <property name="lucene-libs" location="${dest}/lucene-libs" />
   <property name="tests.userdir" location="src/test-files"/>
+  <property name="server.dir" location="${common-solr.dir}/server" />
   <property name="example" location="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${dest}/docs"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
@@ -70,7 +71,7 @@
   <path id="additional.dependencies">
   	<fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
   	<fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
-  	<fileset dir="${common-solr.dir}/example/lib" excludes="${common.classpath.excludes}"/>
+  	<fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
   	<fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>  	
   	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
@@ -224,7 +225,7 @@
     <solr-jarify/>
   </target>
 
-  <target name="compile-core" depends="prep-lucene-jars,resolve-example,common.compile-core"/>
+  <target name="compile-core" depends="prep-lucene-jars,resolve-example,resolve-server,common.compile-core"/>
   <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
@@ -424,13 +425,18 @@
 
   <!-- resolve dependencies in the example (relied upon by compile/tests) -->
   <target name="resolve-example" unless="example.libs.uptodate">
-    <ant dir="${common-solr.dir}/example" target="resolve" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
     <ant dir="${common-solr.dir}/example/example-DIH" target="resolve" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="example.libs.uptodate" value="true"/>
+  </target>
+
+  <!-- resolve dependencies in the server directory (relied upon by compile/tests) -->
+  <target name="resolve-server" unless="server.libs.uptodate">
+    <ant dir="${common-solr.dir}/server" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="server.libs.uptodate" value="true"/>
   </target>
 
   <macrodef name="contrib-crawl">

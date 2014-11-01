@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -43,7 +43,7 @@ public class SortedDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(FieldInfo.DocValuesType.SORTED);
+    TYPE.setDocValueType(DocValuesType.SORTED);
     TYPE.freeze();
   }
 

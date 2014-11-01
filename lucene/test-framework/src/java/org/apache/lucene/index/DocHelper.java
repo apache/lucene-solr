@@ -38,7 +38,6 @@ import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -148,7 +147,7 @@ class DocHelper {
 
     // Otherwise large text:
     fieldTypes.disableHighlighting(NO_TF_KEY);
-    fieldTypes.setIndexOptions(NO_TF_KEY, IndexOptions.DOCS_ONLY);
+    fieldTypes.setIndexOptions(NO_TF_KEY, IndexOptions.DOCS);
 
     // Otherwise large text:
     fieldTypes.disableStored(UNSTORED_FIELD_1_KEY);
@@ -186,7 +185,7 @@ class DocHelper {
   public static Set<String> getIndexed(FieldTypes fieldTypes) {
     Set<String> indexed = new HashSet<>();
     for(String fieldName : fieldTypes.getFieldNames()) {
-      if (fieldTypes.getIndexOptions(fieldName) != null) {
+      if (fieldTypes.getIndexOptions(fieldName) != IndexOptions.NONE) {
         indexed.add(fieldName);
       }
     }
@@ -196,7 +195,7 @@ class DocHelper {
   public static Set<String> getNotIndexed(FieldTypes fieldTypes) {
     Set<String> notIndexed = new HashSet<>();
     for(String fieldName : fieldTypes.getFieldNames()) {
-      if (fieldTypes.getIndexOptions(fieldName) == null) {
+      if (fieldTypes.getIndexOptions(fieldName) == IndexOptions.NONE) {
         notIndexed.add(fieldName);
       }
     }
@@ -216,7 +215,7 @@ class DocHelper {
   public static Set<String> getNoTermVectorFields(FieldTypes fieldTypes) {
     Set<String> noTVFields = new HashSet<>();
     for(String fieldName : fieldTypes.getFieldNames()) {
-      if (fieldTypes.getIndexOptions(fieldName) != null && fieldTypes.getTermVectors(fieldName) == false) {
+      if (fieldTypes.getIndexOptions(fieldName) != IndexOptions.NONE && fieldTypes.getTermVectors(fieldName) == false) {
         noTVFields.add(fieldName);
       }
     }

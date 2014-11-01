@@ -37,7 +37,6 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -65,7 +64,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     Document doc = new Document();
 
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     if (random().nextBoolean()) {
       ft.setStoreTermVectors(true);
       ft.setStoreTermVectorPositions(random().nextBoolean());
@@ -133,7 +132,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     
     FieldType ft = new FieldType(TextField.TYPE_STORED);
-    ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     if (random().nextBoolean()) {
       ft.setStoreTermVectors(true);
       ft.setStoreTermVectorOffsets(random().nextBoolean());
@@ -231,7 +230,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     // TODO: randomize what IndexOptions we use; also test
     // changing this up in one IW buffered segment...:
-    ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     if (random().nextBoolean()) {
       ft.setStoreTermVectors(true);
       ft.setStoreTermVectorOffsets(random().nextBoolean());

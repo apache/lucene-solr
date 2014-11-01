@@ -17,21 +17,31 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SortedDocValues;
@@ -51,24 +61,15 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
 
 
 /**
@@ -447,7 +448,9 @@ public class MemoryIndex {
 
       if (!fieldInfos.containsKey(fieldName)) {
         fieldInfos.put(fieldName, 
-            new FieldInfo(fieldName, fieldInfos.size(), false, false, false, this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, -1, null));
+            new FieldInfo(fieldName, fieldInfos.size(), false, false, false,
+                          this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
+                          DocValuesType.NONE, -1, null));
       }
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);

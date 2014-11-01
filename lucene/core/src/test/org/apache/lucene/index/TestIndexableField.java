@@ -29,8 +29,7 @@ import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -55,7 +54,7 @@ public class TestIndexableField extends LuceneTestCase {
 
       @Override
       public boolean storeTermVectors() {
-        return indexOptions() != null && counter % 2 == 1 && counter % 10 != 9;
+        return indexOptions() != IndexOptions.NONE && counter % 2 == 1 && counter % 10 != 9;
       }
 
       @Override
@@ -79,17 +78,17 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public FieldInfo.IndexOptions indexOptions() {
+      public IndexOptions indexOptions() {
         if ((counter % 10) != 3) {
-          return FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+          return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
         } else {
-          return null;
+          return IndexOptions.NONE;
         }
       }
 
       @Override
       public DocValuesType docValueType() {
-        return null;
+        return DocValuesType.NONE;
       }
     };
 

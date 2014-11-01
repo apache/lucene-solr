@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.OutputStreamWriter;
+import java.util.Properties;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   private static Logger log = LoggerFactory.getLogger(SolrSchemalessExampleTest.class);
@@ -42,8 +46,24 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     File tempSolrHome = createTempDir().toFile();
     // Schemaless renames schema.xml -> schema.xml.bak, and creates + modifies conf/managed-schema,
     // which violates the test security manager's rules, which disallow writes outside the build dir,
-    // so we copy the example/example-schemaless/solr/ directory to a new temp dir where writes are allowed. 
-    FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_SCHEMALESS_HOME), tempSolrHome);
+    // so we copy the example/example-schemaless/solr/ directory to a new temp dir where writes are allowed.
+    FileUtils.copyFileToDirectory(new File(ExternalPaths.SERVER_HOME, "solr.xml"), tempSolrHome);
+    File collection1Dir = new File(tempSolrHome, "collection1");
+    FileUtils.forceMkdir(collection1Dir);
+    FileUtils.copyDirectoryToDirectory(new File(ExternalPaths.SCHEMALESS_CONFIGSET), collection1Dir);
+    Properties props = new Properties();
+    props.setProperty("name","collection1");
+    OutputStreamWriter writer = null;
+    try {
+      writer = new OutputStreamWriter(FileUtils.openOutputStream(new File(collection1Dir, "core.properties")), "UTF-8");
+      props.store(writer, null);
+    } finally {
+      if (writer != null) {
+        try {
+          writer.close();
+        } catch (Exception ignore){}
+      }
+    }
     createJetty(tempSolrHome.getAbsolutePath(), null, null);
   }
   @Test

@@ -221,7 +221,7 @@ public class SimplePostTool {
       String port = System.getProperty("port", DEFAULT_POST_PORT);
       String core = System.getProperty("c", DEFAULT_POST_CORE);
 
-      urlStr = System.getProperty("url", String.format("http://%s:%s/solr/%s/update", host, port, core));
+      urlStr = System.getProperty("url", String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core));
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
@@ -372,7 +372,7 @@ public class SimplePostTool {
      "Supported System Properties and their defaults:\n"+
      "  -Ddata=files|web|args|stdin (default=" + DEFAULT_DATA_MODE + ")\n"+
      "  -Dtype=<content-type> (default=" + DEFAULT_CONTENT_TYPE + ")\n"+
-     "  -Durl=<solr-update-url> (default=" + String.format("http://%s:%s/solr/%s/update", DEFAULT_POST_HOST, DEFAULT_POST_PORT, DEFAULT_POST_CORE) + ")\n"+
+     "  -Durl=<solr-update-url> (default=" + String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", DEFAULT_POST_HOST, DEFAULT_POST_PORT, DEFAULT_POST_CORE) + ")\n"+
      "  -Dhost=<host> (default: " + DEFAULT_POST_HOST+ ")\n"+
      "  -Dport=<port> (default: " + DEFAULT_POST_PORT+ ")\n"+
      "  -Dc=<core/collection> (default: " + DEFAULT_POST_CORE+ ")\n"+

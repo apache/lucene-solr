@@ -679,10 +679,10 @@ public class AssertingLeafReader extends FilterLeafReader {
     FieldInfo fi = getFieldInfos().fieldInfo(field);
     if (dv != null) {
       assert fi != null;
-      assert fi.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC;
+      assert fi.getDocValuesType() == DocValuesType.NUMERIC;
       return new AssertingNumericDocValues(dv, maxDoc());
     } else {
-      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.NUMERIC;
+      assert fi == null || fi.getDocValuesType() != DocValuesType.NUMERIC;
       return null;
     }
   }
@@ -693,10 +693,10 @@ public class AssertingLeafReader extends FilterLeafReader {
     FieldInfo fi = getFieldInfos().fieldInfo(field);
     if (dv != null) {
       assert fi != null;
-      assert fi.getDocValuesType() == FieldInfo.DocValuesType.BINARY;
+      assert fi.getDocValuesType() == DocValuesType.BINARY;
       return new AssertingBinaryDocValues(dv, maxDoc());
     } else {
-      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.BINARY;
+      assert fi == null || fi.getDocValuesType() != DocValuesType.BINARY;
       return null;
     }
   }
@@ -707,10 +707,10 @@ public class AssertingLeafReader extends FilterLeafReader {
     FieldInfo fi = getFieldInfos().fieldInfo(field);
     if (dv != null) {
       assert fi != null;
-      assert fi.getDocValuesType() == FieldInfo.DocValuesType.SORTED;
+      assert fi.getDocValuesType() == DocValuesType.SORTED;
       return new AssertingSortedDocValues(dv, maxDoc());
     } else {
-      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED;
+      assert fi == null || fi.getDocValuesType() != DocValuesType.SORTED;
       return null;
     }
   }
@@ -721,10 +721,10 @@ public class AssertingLeafReader extends FilterLeafReader {
     FieldInfo fi = getFieldInfos().fieldInfo(field);
     if (dv != null) {
       assert fi != null;
-      assert fi.getDocValuesType() == FieldInfo.DocValuesType.SORTED_NUMERIC;
+      assert fi.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
       return new AssertingSortedNumericDocValues(dv, maxDoc());
     } else {
-      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED_NUMERIC;
+      assert fi == null || fi.getDocValuesType() != DocValuesType.SORTED_NUMERIC;
       return null;
     }
   }
@@ -735,14 +735,14 @@ public class AssertingLeafReader extends FilterLeafReader {
     FieldInfo fi = getFieldInfos().fieldInfo(field);
     if (dv != null) {
       assert fi != null;
-      assert fi.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET;
+      assert fi.getDocValuesType() == DocValuesType.SORTED_SET;
       if (dv instanceof RandomAccessOrds) {
         return new AssertingRandomAccessOrds((RandomAccessOrds) dv, maxDoc());
       } else {
         return new AssertingSortedSetDocValues(dv, maxDoc());
       }
     } else {
-      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED_SET;
+      assert fi == null || fi.getDocValuesType() != DocValuesType.SORTED_SET;
       return null;
     }
   }

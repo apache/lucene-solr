@@ -34,9 +34,9 @@ import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableFieldType;
@@ -128,6 +128,8 @@ import org.apache.lucene.util.Version;
 
 // nocommit default value?
 
+// nocommit can we have test infra that randomly reopens writer?
+
 // nocommit getTermFilter?
 
 // nocommit default qp operator
@@ -135,6 +137,8 @@ import org.apache.lucene.util.Version;
 // nocommit copy field?
 
 // nocommit controlling compression of stored fields, norms
+
+// nocommit can we somehow detect at search time if the field types you are using doesn't match the searcher you are now searching against?
 
 // nocommit back compat: how to handle pre-schema indices
 
@@ -237,7 +241,7 @@ public class FieldTypes {
     }
 
     volatile ValueType valueType;
-    volatile DocValuesType docValuesType;
+    volatile DocValuesType docValuesType = DocValuesType.NONE;
     private volatile boolean docValuesTypeSet;
 
     // Expert: settings we pass to BlockTree to control how many terms are allowed in each block and auto-prefix term
@@ -272,7 +276,7 @@ public class FieldTypes {
     private volatile Boolean storeTermVectorPayloads;
 
     // Field is indexed if this != null:
-    private volatile IndexOptions indexOptions;
+    private volatile IndexOptions indexOptions = IndexOptions.NONE;
     private volatile boolean indexOptionsSet;
 
     // nocommit: not great that we can't also set other formats... but we need per-field wrappers to do this, or we need to move
@@ -304,11 +308,11 @@ public class FieldTypes {
           if (queryAnalyzer != null) {
             illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
           }
-          if (docValuesType != null && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
+          if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
             illegalState(name, "type " + valueType + " must use NUMERIC docValuesType (got: " + docValuesType + ")");
           }
-          if (indexOptions != null && indexOptions.compareTo(IndexOptions.DOCS_ONLY) > 0) {
-            illegalState(name, "type " + valueType + " cannot use indexOptions > DOCS_ONLY (got indexOptions " + indexOptions + ")");
+          if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
+            illegalState(name, "type " + valueType + " cannot use indexOptions > DOCS (got indexOptions " + indexOptions + ")");
           }
           if (indexNorms == Boolean.TRUE) {
             illegalState(name, "type " + valueType + " cannot index norms");
@@ -321,12 +325,12 @@ public class FieldTypes {
           if (fastRanges == Boolean.TRUE) {
             illegalState(name, "type " + valueType + " cannot optimize for range queries");
           }
-          if (docValuesType != null) {
+          if (docValuesType != DocValuesType.NONE) {
             illegalState(name, "type " + valueType + " cannot use docValuesType " + docValuesType);
           }
           break;
         case SHORT_TEXT:
-          if (docValuesType != null && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
+          if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
             illegalState(name, "type " + valueType + " cannot use docValuesType " + docValuesType);
           }
           if (fastRanges == Boolean.TRUE) {
@@ -343,7 +347,7 @@ public class FieldTypes {
           if (queryAnalyzer != null) {
             illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
           }
-          if (docValuesType != null && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
+          if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
             illegalState(name, "type " + valueType + " must use BINARY, SORTED or SORTED_SET docValuesType (got: " + docValuesType + ")");
           }
           break;
@@ -357,7 +361,7 @@ public class FieldTypes {
           if (indexNorms == Boolean.TRUE) {
             illegalState(name, "type " + valueType + " cannot index norms");
           }
-          if (indexOptions != null && indexOptions.compareTo(IndexOptions.DOCS_ONLY) > 0) {
+          if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
             // nocommit too anal?
             illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
           }
@@ -369,7 +373,7 @@ public class FieldTypes {
           if (indexNorms == Boolean.TRUE) {
             illegalState(name, "type " + valueType + " cannot index norms");
           }
-          if (docValuesType != null && docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC) {
+          if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC) {
             illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType (got: " + docValuesType + ")");
           }
           break;
@@ -386,11 +390,11 @@ public class FieldTypes {
         illegalState(name, "DocValuesType=" + docValuesType + " cannot be multi-valued");
       }
 
-      if (sortable == Boolean.TRUE && (docValuesTypeSet && (docValuesType == null || docValuesType == DocValuesType.BINARY))) {
+      if (sortable == Boolean.TRUE && (docValuesTypeSet && (docValuesType == DocValuesType.NONE || docValuesType == DocValuesType.BINARY))) {
         illegalState(name, "cannot sort when DocValuesType=" + docValuesType);
       }
 
-      if (indexOptions == null) {
+      if (indexOptions == IndexOptions.NONE) {
         if (blockTreeMinItemsInBlock != null) {
           illegalState(name, "can only setTermsDictBlockSize if the field is indexed");
         }
@@ -415,8 +419,10 @@ public class FieldTypes {
         }
       }
 
+      // nocommit must check that if fastRanges is on, you have a PF that supports it
+
       if (analyzerPositionGap != null) {
-        if (indexOptions == null) {
+        if (indexOptions == IndexOptions.NONE) {
           illegalState(name, "can only setAnalyzerPositionGap if the field is indexed");
         }
         if (multiValued != Boolean.TRUE) {
@@ -424,7 +430,7 @@ public class FieldTypes {
         }
       }
       if (analyzerOffsetGap != null) {
-        if (indexOptions == null) {
+        if (indexOptions == IndexOptions.NONE) {
           illegalState(name, "can only setAnalyzerOffsetGap if the field is indexed");
         }
         if (multiValued != Boolean.TRUE) {
@@ -444,7 +450,7 @@ public class FieldTypes {
         if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT) {
           illegalState(name, "can only enable highlighting for TEXT or SHORT_TEXT fields; got valueType=" + valueType);
         }
-        if (indexOptions != null && indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
+        if (indexOptions != IndexOptions.NONE && indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
           illegalState(name, "must index with IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS when highlighting is enabled");
         }
       }
@@ -533,7 +539,7 @@ public class FieldTypes {
       b.append("  docValuesType: ");
       if (docValuesTypeSet == false) {
         b.append("unset");
-      } else if (docValuesType == null) {
+      } else if (docValuesType == DocValuesType.NONE) {
         b.append("disabled");
       } else {
         b.append(docValuesType);
@@ -543,7 +549,7 @@ public class FieldTypes {
       b.append("  indexOptions: ");
       if (indexOptionsSet == false) {
         b.append("unset");
-      } else if (indexOptions == null) {
+      } else if (indexOptions == IndexOptions.NONE) {
         b.append("disabled");
       } else {
         b.append(indexOptions);
@@ -650,12 +656,13 @@ public class FieldTypes {
       }
 
       if (docValuesTypeSet == false) {
-        assert docValuesType == null;
+        assert docValuesType == DocValuesType.NONE;
         out.writeByte((byte) 0);
-      } else if (docValuesType == null) {
-        out.writeByte((byte) 1);
       } else {
         switch (docValuesType) {
+        case NONE:
+          out.writeByte((byte) 1);
+          break;
         case NUMERIC:
           out.writeByte((byte) 2);
           break;
@@ -694,13 +701,14 @@ public class FieldTypes {
       writeNullableBoolean(out, storeTermVectorPayloads);
 
       if (indexOptionsSet == false) {
-        assert indexOptions == null;
+        assert indexOptions == IndexOptions.NONE;
         out.writeByte((byte) 0);
-      } else if (indexOptions == null) {
-        out.writeByte((byte) 1);
       } else {
         switch(indexOptions) {
-        case DOCS_ONLY:
+        case NONE:
+          out.writeByte((byte) 1);
+          break;
+        case DOCS:
           out.writeByte((byte) 2);
           break;
         case DOCS_AND_FREQS:
@@ -825,11 +833,11 @@ public class FieldTypes {
       switch (b) {
       case 0:
         docValuesTypeSet = false;
-        docValuesType = null;
+        docValuesType = DocValuesType.NONE;
         break;
       case 1:
         docValuesTypeSet = true;
-        docValuesType = null;
+        docValuesType = DocValuesType.NONE;
         break;
       case 2:
         docValuesTypeSet = true;
@@ -876,15 +884,15 @@ public class FieldTypes {
       switch (b) {
       case 0:
         indexOptionsSet = false;
-        indexOptions = null;
+        indexOptions = IndexOptions.NONE;
         break;
       case 1:
         indexOptionsSet = true;
-        indexOptions = null;
+        indexOptions = IndexOptions.NONE;
         break;
       case 2:
         indexOptionsSet = true;
-        indexOptions = IndexOptions.DOCS_ONLY;
+        indexOptions = IndexOptions.DOCS;
         break;
       case 3:
         indexOptionsSet = true;
@@ -1565,7 +1573,7 @@ public class FieldTypes {
     return getFieldType(fieldName).sortable == Boolean.TRUE;
   }
 
-  /** Enables sorting for this field, using doc values of the appropriate type. */
+  /** Enables fast range filters for this field, using auto-prefix terms. */
   public synchronized void enableFastRanges(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
@@ -1707,7 +1715,7 @@ public class FieldTypes {
   }
 
   /** Store values for this field.  This can be changed at any time. */
-  public void enableStored(String fieldName) {
+  public synchronized void enableStored(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = new FieldType(fieldName);
@@ -1776,7 +1784,7 @@ public class FieldTypes {
     return getFieldType(fieldName).storeTermVectors == Boolean.TRUE;
   }
 
-  public void enableTermVectorOffsets(String fieldName) {
+  public synchronized void enableTermVectorOffsets(String fieldName) {
     FieldType current = getFieldType(fieldName);
     if (current.storeTermVectors != Boolean.TRUE) {
       // nocommit we could enable term vectors for you?
@@ -1789,7 +1797,7 @@ public class FieldTypes {
     }
   }
 
-  public void disableTermVectorOffsets(String fieldName) {
+  public synchronized void disableTermVectorOffsets(String fieldName) {
     FieldType current = getFieldType(fieldName);
     if (current.storeTermVectorOffsets == Boolean.TRUE) {
       // nocommit should this change not be allowed...
@@ -1798,11 +1806,11 @@ public class FieldTypes {
     }
   }
 
-  public boolean getTermVectorOffsets(String fieldName) {
+  public synchronized boolean getTermVectorOffsets(String fieldName) {
     return getFieldType(fieldName).storeTermVectorOffsets == Boolean.TRUE;
   }
 
-  public void enableTermVectorPositions(String fieldName) {
+  public synchronized void enableTermVectorPositions(String fieldName) {
     FieldType current = getFieldType(fieldName);
     if (current.storeTermVectors != Boolean.TRUE) {
       // nocommit we could enable term vectors for you?
@@ -1815,7 +1823,7 @@ public class FieldTypes {
     }
   }
 
-  public void disableTermVectorPositions(String fieldName) {
+  public synchronized void disableTermVectorPositions(String fieldName) {
     FieldType current = getFieldType(fieldName);
     if (current.storeTermVectorPositions == Boolean.TRUE) {
       // nocommit should this change not be allowed...
@@ -1824,11 +1832,11 @@ public class FieldTypes {
     }
   }
 
-  public boolean getTermVectorPositions(String fieldName) {
+  public synchronized boolean getTermVectorPositions(String fieldName) {
     return getFieldType(fieldName).storeTermVectorPositions == Boolean.TRUE;
   }
 
-  public void enableTermVectorPayloads(String fieldName) {
+  public synchronized void enableTermVectorPayloads(String fieldName) {
     FieldType current = getFieldType(fieldName);
     if (current.storeTermVectors != Boolean.TRUE) {
       // nocommit we could enable term vectors / positions for you?
@@ -1841,7 +1849,7 @@ public class FieldTypes {
     }
   }
 
-  public void disableTermVectorPayloads(String fieldName) {
+  public synchronized void disableTermVectorPayloads(String fieldName) {
     FieldType current = getFieldType(fieldName);
     if (current.storeTermVectorPayloads == Boolean.TRUE) {
       // nocommit should this change not be allowed...
@@ -1850,7 +1858,7 @@ public class FieldTypes {
     }
   }
 
-  public boolean getTermVectorPayloads(String fieldName) {
+  public synchronized boolean getTermVectorPayloads(String fieldName) {
     return getFieldType(fieldName).storeTermVectorPayloads == Boolean.TRUE;
   }
 
@@ -1858,8 +1866,11 @@ public class FieldTypes {
    *  value if it's not already set for the provided field; otherwise
    *  it can only be downgraded as low as DOCS_ONLY but never unset
    *  entirely (once indexed, always indexed). */
-  public void setIndexOptions(String fieldName, IndexOptions indexOptions) {
+  public synchronized void setIndexOptions(String fieldName, IndexOptions indexOptions) {
     ensureWritable();
+    if (indexOptions == null) {
+      throw new NullPointerException("IndexOptions must not be null (field: \"" + fieldName + "\")");
+    }
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = new FieldType(fieldName);
@@ -1868,7 +1879,7 @@ public class FieldTypes {
       fields.put(fieldName, current);
       changed();
     } else if (current.indexOptionsSet == false) {
-      assert current.indexOptions == null;
+      assert current.indexOptions == IndexOptions.NONE;
       boolean success = false;
       try {
         current.indexOptions = indexOptions;
@@ -1877,12 +1888,12 @@ public class FieldTypes {
         success = true;
       } finally {
         if (success == false) {
-          current.indexOptions = null;
+          current.indexOptions = IndexOptions.NONE;
           current.indexOptionsSet = false;
         }
       }
       changed();
-    } else if (current.indexOptions != null && current.indexOptions != indexOptions) {
+    } else if (current.indexOptions != IndexOptions.NONE && current.indexOptions != indexOptions) {
       assert current.indexOptionsSet;
       // Only allow downgrading IndexOptions:
       if (current.indexOptions.compareTo(indexOptions) < 0) {
@@ -1893,9 +1904,11 @@ public class FieldTypes {
     }
   }
 
-  public IndexOptions getIndexOptions(String fieldName) {
+  public synchronized IndexOptions getIndexOptions(String fieldName) {
+    // nocommit throw exc if field doesn't exist?
     FieldType current = fields.get(fieldName);
     if (current == null) {
+      // nocommit IO.NONE?
       return null;
     } else {
       return current.indexOptions;
@@ -1904,6 +1917,9 @@ public class FieldTypes {
 
   public synchronized void setDocValuesType(String fieldName, DocValuesType dvType) {
     ensureWritable();
+    if (dvType == null) {
+      throw new NullPointerException("docValueType cannot be null (field: \"" + fieldName + "\")");
+    }
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = new FieldType(fieldName);
@@ -1913,7 +1929,7 @@ public class FieldTypes {
       changed();
     } else if (current.docValuesTypeSet == false) {
       boolean success = false;
-      assert current.docValuesType == null;
+      assert current.docValuesType == DocValuesType.NONE;
       current.docValuesTypeSet = true;
       current.docValuesType = dvType;
       try {
@@ -1921,7 +1937,7 @@ public class FieldTypes {
         success = true;
       } finally {
         if (success == false) {
-          current.docValuesType = null;
+          current.docValuesType = DocValuesType.NONE;
           current.docValuesTypeSet = false;
         }
       }
@@ -1932,8 +1948,10 @@ public class FieldTypes {
   }
 
   public synchronized DocValuesType getDocValuesType(String fieldName, DocValuesType dvType) {
+    // nocommit should we insist field exists?
     FieldType current = fields.get(fieldName);
     if (current == null) {
+      // nocommit dvt.NONE?
       return null;
     } else {
       return current.docValuesType;
@@ -1980,7 +1998,7 @@ public class FieldTypes {
         current.stored = Boolean.FALSE;
       }
       if (indexed == false) {
-        current.indexOptions = null;
+        current.indexOptions = IndexOptions.NONE;
       }
       changed();
     } else if (current.valueType == null) {
@@ -2033,7 +2051,7 @@ public class FieldTypes {
         field.stored = Boolean.TRUE;
       }
       if (field.indexOptionsSet == false) {
-        field.indexOptions = IndexOptions.DOCS_ONLY;
+        field.indexOptions = IndexOptions.DOCS;
         field.indexOptionsSet = true;
       }
       if (field.docValuesTypeSet == false) {
@@ -2047,7 +2065,7 @@ public class FieldTypes {
         field.docValuesTypeSet = true;
       }
       if (field.fastRanges == null) {
-        if (field.indexOptions != null) {
+        if (field.indexOptions != IndexOptions.NONE) {
           field.fastRanges = Boolean.TRUE;
         } else {
           field.fastRanges = Boolean.FALSE;
@@ -2125,7 +2143,7 @@ public class FieldTypes {
         field.stored = Boolean.TRUE;
       }
       if (field.indexOptionsSet == false) {
-        field.indexOptions = IndexOptions.DOCS_ONLY;
+        field.indexOptions = IndexOptions.DOCS;
         field.indexOptionsSet = true;
       }
       if (field.docValuesTypeSet == false) {
@@ -2139,7 +2157,7 @@ public class FieldTypes {
         field.docValuesTypeSet = true;
       }
       if (field.fastRanges == null) {
-        if (field.indexOptions != null) {
+        if (field.indexOptions != IndexOptions.NONE) {
           field.fastRanges = Boolean.TRUE;
         } else {
           field.fastRanges = Boolean.FALSE;
@@ -2171,7 +2189,7 @@ public class FieldTypes {
         field.stored = Boolean.TRUE;
       }
       if (field.indexOptionsSet == false) {
-        assert field.indexOptions == null;
+        assert field.indexOptions == IndexOptions.NONE;
         field.indexOptionsSet = true;
       }
       if (field.docValuesTypeSet == false) {
@@ -2218,7 +2236,7 @@ public class FieldTypes {
       }
 
       // nocommit is this always a bug if not?  validate should prevent it...
-      assert field.docValuesType == null;
+      assert field.docValuesType == DocValuesType.NONE;
       field.docValuesTypeSet = true;
 
       if (field.fastRanges == null) {
@@ -2248,7 +2266,7 @@ public class FieldTypes {
       if (field.indexOptionsSet == false) {
         // validate enforces this:
         assert field.highlighted == false;
-        field.indexOptions = IndexOptions.DOCS_ONLY;
+        field.indexOptions = IndexOptions.DOCS;
         field.indexOptionsSet = true;
       }
       if (field.docValuesTypeSet == false) {
@@ -2288,8 +2306,10 @@ public class FieldTypes {
     assert field.multiValued != null;
     assert field.stored != null;
     assert field.indexOptionsSet;
+    assert field.indexOptions != null;
     assert field.docValuesTypeSet;
-    assert field.indexOptions == null || field.indexNorms != null;
+    assert field.docValuesType != null;
+    assert field.indexOptions == IndexOptions.NONE || field.indexNorms != null;
 
     // nocommit not an assert?  our setDefaults should never create an invalid setting!
     assert field.validate();
@@ -2303,7 +2323,7 @@ public class FieldTypes {
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
-    if (fieldType.indexOptions == null) {
+    if (fieldType.indexOptions == IndexOptions.NONE) {
       illegalState(fieldName, "cannot create term query: this field was not indexed");
     }
 
@@ -2329,7 +2349,7 @@ public class FieldTypes {
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
-    if (fieldType.indexOptions == null) {
+    if (fieldType.indexOptions == IndexOptions.NONE) {
       illegalState(fieldName, "cannot create term query: this field was not indexed");
     }
 
@@ -2355,7 +2375,7 @@ public class FieldTypes {
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
-    if (fieldType.indexOptions == null) {
+    if (fieldType.indexOptions == IndexOptions.NONE) {
       illegalState(fieldName, "cannot create term query: this field was not indexed");
     }
 
@@ -2372,7 +2392,7 @@ public class FieldTypes {
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
-    if (fieldType.indexOptions == null) {
+    if (fieldType.indexOptions == IndexOptions.NONE) {
       illegalState(fieldName, "cannot create term query: this field was not indexed");
     }
 
@@ -2389,7 +2409,7 @@ public class FieldTypes {
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
-    if (fieldType.indexOptions == null) {
+    if (fieldType.indexOptions == IndexOptions.NONE) {
       illegalState(fieldName, "cannot create term query: this field was not indexed");
     }
 
@@ -2413,7 +2433,7 @@ public class FieldTypes {
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
-    if (fieldType.indexOptions == null) {
+    if (fieldType.indexOptions == IndexOptions.NONE) {
       illegalState(fieldName, "cannot create range query: this field was not indexed");
     }
 
@@ -2466,7 +2486,7 @@ public class FieldTypes {
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
-    if (fieldType.indexOptions == null) {
+    if (fieldType.indexOptions == IndexOptions.NONE) {
       illegalState(fieldName, "cannot create range query: this field was not indexed");
     }
 

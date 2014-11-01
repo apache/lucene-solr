@@ -22,7 +22,7 @@ import java.util.Arrays;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 
 /**
  * Add an instance of this to your {@link Document} for every facet label.

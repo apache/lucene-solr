@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.idversion;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;

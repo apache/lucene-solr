@@ -111,7 +111,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
   @Override
   boolean start(IndexableField field, boolean first) {
-    assert field.fieldType().indexOptions() != null;
+    assert field.fieldType().indexOptions() != IndexOptions.NONE;
 
     if (first) {
 

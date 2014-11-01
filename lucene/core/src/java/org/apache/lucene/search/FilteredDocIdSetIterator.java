@@ -41,6 +41,11 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
     doc = -1;
   }
 
+  /** Return the wrapped {@link DocIdSetIterator}. */
+  public DocIdSetIterator getDelegate() {
+    return _innerIter;
+  }
+
   /**
    * Validation method to determine whether a docid should be in the result set.
    * @param doc docid to be tested

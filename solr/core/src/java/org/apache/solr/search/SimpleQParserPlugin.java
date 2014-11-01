@@ -46,9 +46,9 @@ import java.util.Map;
  * The following options may be applied for parsing the query.
  * <ul>
  *   <li>
- *     q.operations - Used to enable specific operations for parsing.  The operations that can be enabled are
- *                    and, not, or, prefix, phrase, precedence, escape, and whitespace.  By default all operations
- *                    are enabled.  All operations can be disabled by passing in an empty string to this parameter.
+ *     q.operators - Used to enable specific operations for parsing.  The operations that can be enabled are
+ *                   and, not, or, prefix, phrase, precedence, escape, and whitespace.  By default all operations
+ *                   are enabled.  All operations can be disabled by passing in an empty string to this parameter.
  *   </li>
  *   <li>
  *     q.op - Used to specify the operator to be used if whitespace is a delimiter. Either 'AND' or 'OR'

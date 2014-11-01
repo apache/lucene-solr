@@ -34,6 +34,20 @@
     <str name="distrib">false</str>
   </lst>
 
+  <query>
+
+    <enableLazyFieldLoading>true</enableLazyFieldLoading>
+
+    <queryResultWindowSize>20</queryResultWindowSize>
+
+    <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
+
+    <documentCache class="solr.LRUCache"
+                   size="512"
+                   initialSize="512"
+                   autowarmCount="0"/>
+  </query>
+
 
   <arr name="components">
       <str>query</str>

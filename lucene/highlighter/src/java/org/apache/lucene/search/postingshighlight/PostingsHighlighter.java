@@ -31,13 +31,13 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;

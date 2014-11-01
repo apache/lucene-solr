@@ -36,7 +36,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
@@ -579,21 +579,21 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       IndexOptions indexOptions;
 
       switch(random.nextInt(4)) {
-        case 0:
-          indexOptions = IndexOptions.DOCS_ONLY;
-          break;
-        case 1:
-          indexOptions = IndexOptions.DOCS_AND_FREQS;
-          break;
-        case 2:
+      case 0:
+        indexOptions = IndexOptions.DOCS;
+        break;
+      case 1:
+        indexOptions = IndexOptions.DOCS_AND_FREQS;
+        break;
+      case 2:
+        indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        break;
+      default:
+        if (offsetsAreCorrect) {
+          indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+        } else {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-          break;
-        default:
-          if (offsetsAreCorrect) {
-            indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-          } else {
-            indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-          }
+        }
       }
       fieldTypes.disableHighlighting("dummy");
       fieldTypes.disableStored("dummy");

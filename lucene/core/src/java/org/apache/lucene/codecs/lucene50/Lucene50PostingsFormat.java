@@ -31,7 +31,7 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermState;
@@ -186,7 +186,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * <p>The .doc file contains the lists of documents which contain each term, along
  * with the frequency of the term in that document (except when frequencies are
- * omitted: {@link IndexOptions#DOCS_ONLY}). It also saves skip data to the beginning of 
+ * omitted: {@link IndexOptions#DOCS}). It also saves skip data to the beginning of 
  * each packed or VInt block, when the length of document list is larger than packed block size.</p>
  *
  * <ul>
@@ -232,7 +232,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *          and three times in document eleven, with frequencies indexed, would be the
  *          following sequence of VInts:</p>
  *       <p>15, 8, 3</p>
- *       <p>If frequencies were omitted ({@link IndexOptions#DOCS_ONLY}) it would be this
+ *       <p>If frequencies were omitted ({@link IndexOptions#DOCS}) it would be this
  *          sequence of VInts instead:</p>
  *       <p>7,4</p>
  *   </li>

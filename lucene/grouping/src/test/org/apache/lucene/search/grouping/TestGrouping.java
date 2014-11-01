@@ -17,16 +17,19 @@
 
 package org.apache.lucene.search.grouping;
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -44,9 +47,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
-
-import java.io.IOException;
-import java.util.*;
 
 // TODO
 //   - should test relevance sort too
@@ -551,7 +551,7 @@ public class TestGrouping extends LuceneTestCase {
     final List<List<Document>> updateDocs = new ArrayList<>();
 
     FieldType groupEndType = new FieldType(StringField.TYPE_NOT_STORED);
-    groupEndType.setIndexOptions(IndexOptions.DOCS_ONLY);
+    groupEndType.setIndexOptions(IndexOptions.DOCS);
     groupEndType.setOmitNorms(true);
 
     //System.out.println("TEST: index groups");

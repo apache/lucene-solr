@@ -169,7 +169,7 @@ public class TestSegmentReader extends LuceneTestCase {
   public static void checkNorms(FieldTypes fieldTypes, LeafReader reader) throws IOException {
     // test omit norms
     for (String fieldName : fieldTypes.getFieldNames()) {
-      if (fieldTypes.getIndexOptions(fieldName) != null) {
+      if (fieldTypes.getIndexOptions(fieldName) != IndexOptions.NONE) {
         assertEquals("field " + fieldName, reader.getNormValues(fieldName) != null, fieldTypes.getNorms(fieldName));
         if (reader.getNormValues(fieldName) == null) {
           // test for norms of null

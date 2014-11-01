@@ -22,8 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -67,7 +66,10 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   
   private Document newDocument() {
     Document doc = new Document();
-    for (IndexOptions option : FieldInfo.IndexOptions.values()) {
+    for (IndexOptions option : IndexOptions.values()) {
+      if (option == IndexOptions.NONE) {
+        continue;
+      }
       FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
       // turn on tvs for a cross-check, since we rely upon checkindex in this test (for now)
       ft.setStoreTermVectors(true);

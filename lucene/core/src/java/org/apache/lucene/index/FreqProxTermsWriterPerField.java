@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -50,7 +49,7 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
   public FreqProxTermsWriterPerField(FieldInvertState invertState, TermsHash termsHash, FieldInfo fieldInfo, TermsHashPerField nextPerField) {
     super(fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? 2 : 1, invertState, termsHash, nextPerField, fieldInfo);
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
-    assert indexOptions != null;
+    assert indexOptions != IndexOptions.NONE;
     hasFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     hasProx = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
@@ -196,7 +195,7 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
   @Override
   ParallelPostingsArray createPostingsArray(int size) {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
-    assert indexOptions != null;
+    assert indexOptions != IndexOptions.NONE;
     boolean hasFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     boolean hasProx = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     boolean hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;

@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
@@ -168,7 +168,7 @@ public class PreAnalyzedField extends FieldType {
     newType.setOmitNorms(field.omitNorms());
     IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     if (field.omitTermFreqAndPositions()) {
-      options = IndexOptions.DOCS_ONLY;
+      options = IndexOptions.DOCS;
     } else if (field.omitPositions()) {
       options = IndexOptions.DOCS_AND_FREQS;
     } else if (field.storeOffsetsWithPositions()) {
@@ -250,7 +250,7 @@ public class PreAnalyzedField extends FieldType {
         }
       } else {
         if (f != null) {
-          f.fieldType().setIndexOptions(null);
+          f.fieldType().setIndexOptions(IndexOptions.NONE);
           f.fieldType().setTokenized(false);
         }
       }

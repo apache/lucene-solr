@@ -27,7 +27,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
@@ -146,7 +146,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
 
   public void test() throws IOException {
     for (DocValuesType type : DocValuesType.values()) {
-      if (type != DocValuesType.SORTED_SET && type != DocValuesType.SORTED_NUMERIC) {
+      if (type != DocValuesType.SORTED_SET && type != DocValuesType.SORTED_NUMERIC && type != DocValuesType.NONE) {
         test(type);
       }
     }

@@ -17,12 +17,11 @@
 
 package org.apache.solr.search.join;
 
-import org.apache.lucene.search.CachingWrapperFilter;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.join.FixedBitSetCachingWrapperFilter;
+import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
+import org.apache.lucene.search.join.BitDocIdSetFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.common.params.SolrParams;
@@ -67,27 +66,27 @@ class BlockJoinParentQParser extends QParser {
     return new ToParentBlockJoinQuery(query, getFilter(parentList), ScoreMode.None);
   }
 
-  protected Filter getFilter(Query parentList) {
+  BitDocIdSetFilter getFilter(Query parentList) {
     SolrCache parentCache = req.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
     Filter filter = null;
     if (parentCache != null) {
       filter = (Filter) parentCache.get(parentList);
     }
-    Filter result;
-    if (filter == null) {
+    BitDocIdSetFilter result;
+    if (filter instanceof BitDocIdSetFilter) {
+      result = (BitDocIdSetFilter) filter;
+    } else {
       result = createParentFilter(parentList);
       if (parentCache != null) {
         parentCache.put(parentList, result);
       }
-    } else {
-      result = filter;
     }
     return result;
   }
 
-  protected Filter createParentFilter(Query parentQ) {
-    return new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(parentQ));
+  private BitDocIdSetFilter createParentFilter(Query parentQ) {
+    return new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(parentQ));
   }
 }
 

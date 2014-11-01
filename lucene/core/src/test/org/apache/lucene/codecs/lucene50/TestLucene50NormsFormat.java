@@ -43,85 +43,88 @@ public class TestLucene50NormsFormat extends BaseNormsFormatTestCase {
 
   public void testNormMapSimple() {
     NormMap map = new NormMap();
-    map.add(10);
-    map.add(5);
-    map.add(4);
-    map.add(10);
+    map.add((byte)4);
+    map.add((byte) 10);
+    map.add((byte) 5);
+    map.add((byte)10);
     assertEquals(3, map.size);
     
     // first come, first serve ord assignment
+    assertEquals(0, map.ord((byte) 4));
+    assertEquals(1, map.ord((byte) 10));
+    assertEquals(2, map.ord((byte) 5));
     
-    // encode
-    assertEquals(0, map.getOrd(10));
-    assertEquals(1, map.getOrd(5));
-    assertEquals(2, map.getOrd(4));
+    assertEquals(4, map.values[0]);
+    assertEquals(10, map.values[1]);
+    assertEquals(5, map.values[2]);
     
-    // decode
-    long decode[] = map.getDecodeTable();
-    assertEquals(10, decode[0]);
-    assertEquals(5, decode[1]);
-    assertEquals(4, decode[2]);
-    
-    // freqs
-    int freqs[] = map.getFreqs();
-    assertEquals(2, freqs[0]);
-    assertEquals(1, freqs[1]);
-    assertEquals(1, freqs[2]);
-    
-    assertEquals(2, map.maxFreq());
+    assertEquals(1, map.freqs[0]);
+    assertEquals(2, map.freqs[1]);
+    assertEquals(1, map.freqs[2]);
+
+    // optimizing reorders the ordinals
+    map.optimizeOrdinals();
+    assertEquals(0, map.ord((byte)10));
+    assertEquals(1, map.ord((byte)4));
+    assertEquals(2, map.ord((byte)5));
+
+    assertEquals(10, map.values[0]);
+    assertEquals(4, map.values[1]);
+    assertEquals(5, map.values[2]);
+
+    assertEquals(2, map.freqs[0]);
+    assertEquals(1, map.freqs[1]);
+    assertEquals(1, map.freqs[2]);
   }
   
   public void testNormMapRandom() {
-    Map<Long,Integer> freqs = new HashMap<>();
-    Map<Long,Integer> ords = new HashMap<>();
-    
-    Set<Long> uniqueValuesSet = new HashSet<>();
+
+    Set<Byte> uniqueValuesSet = new HashSet<>();
     int numUniqValues = TestUtil.nextInt(random(), 1, 256);
     for (int i = 0; i < numUniqValues; i++) {
-      if (random().nextBoolean()) {
-        uniqueValuesSet.add(TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE));
-      } else {
-        uniqueValuesSet.add(TestUtil.nextLong(random(), Byte.MIN_VALUE, Byte.MAX_VALUE));
-      }
+      uniqueValuesSet.add(Byte.valueOf((byte)TestUtil.nextInt(random(), Byte.MIN_VALUE, Byte.MAX_VALUE)));
     }
-    
-    Long uniqueValues[] = uniqueValuesSet.toArray(new Long[uniqueValuesSet.size()]);
-    
+    Byte uniqueValues[] = uniqueValuesSet.toArray(new Byte[uniqueValuesSet.size()]);
+
+    Map<Byte,Integer> freqs = new HashMap<>();
     NormMap map = new NormMap();
     int numdocs = TestUtil.nextInt(random(), 1, 100000);
     for (int i = 0; i < numdocs; i++) {
-      long value = uniqueValues[random().nextInt(uniqueValues.length)];
+      byte value = uniqueValues[random().nextInt(uniqueValues.length)];
       // now add to both expected and actual
       map.add(value);
-      
-      Integer ord = ords.get(value);
-      if (ord == null) {
-        ord = ords.size();
-        ords.put(value, ord);
-        freqs.put(value, 1);
+      if (freqs.containsKey(value)) {
+        freqs.put(value, freqs.get(value) + 1);
       } else {
-        freqs.put(value, freqs.get(value)+1);
+        freqs.put(value, 1);
       }
     }
-    
-    // value -> ord
-    assertEquals(ords.size(), map.size);
-    for (Map.Entry<Long,Integer> kv : ords.entrySet()) {
-      assertEquals(kv.getValue().intValue(), map.getOrd(kv.getKey()));
+
+    assertEquals(freqs.size(), map.size);
+    for (Map.Entry<Byte,Integer> kv : freqs.entrySet()) {
+      byte value = kv.getKey();
+      int freq = kv.getValue();
+      int ord = map.ord(value);
+      assertEquals(freq, map.freqs[ord]);
+      assertEquals(value, map.values[ord]);
     }
-    
-    // ord -> value
-    Map<Long,Integer> reversed = new HashMap<>();
-    long table[] = map.getDecodeTable();
-    for (int i = 0; i < map.size; i++) {
-      reversed.put(table[i], i);
+
+    // optimizing should reorder ordinals from greatest to least frequency
+    map.optimizeOrdinals();
+    // recheck consistency
+    assertEquals(freqs.size(), map.size);
+    for (Map.Entry<Byte,Integer> kv : freqs.entrySet()) {
+      byte value = kv.getKey();
+      int freq = kv.getValue();
+      int ord = map.ord(value);
+      assertEquals(freq, map.freqs[ord]);
+      assertEquals(value, map.values[ord]);
     }
-    assertEquals(ords, reversed);
-    
-    // freqs
-    int freqTable[] = map.getFreqs();
-    for (int i = 0; i < map.size; i++) {
-      assertEquals(freqs.get(table[i]).longValue(), freqTable[i]);
+    // also check descending freq
+    int prevFreq = map.freqs[0];
+    for (int i = 1; i < map.size; ++i) {
+      assertTrue(prevFreq >= map.freqs[i]);
+      prevFreq = map.freqs[i];
     }
   }
 }

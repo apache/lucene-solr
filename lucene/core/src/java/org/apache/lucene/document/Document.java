@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 
 import java.util.*;
 
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;  // for javadoc
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;  // for javadoc
@@ -267,14 +268,14 @@ public final class Document implements Iterable<IndexableField> {
   }
 
   private Iterator<IndexableField> storedFieldsIterator() {
-    return new FilterIterator<IndexableField,IndexableField>(iterator()) {
+    return new FilterIterator<IndexableField, IndexableField>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(IndexableField field) {
-        return field.fieldType().stored() || field.fieldType().docValueType() != null;
+        return field.fieldType().stored() || field.fieldType().docValueType() != DocValuesType.NONE;
       }
     };
   }
-
+  
   /** Removes all the fields from document. */
   public void clear() {
     fields.clear();

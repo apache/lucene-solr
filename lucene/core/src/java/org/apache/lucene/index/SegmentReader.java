@@ -33,7 +33,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
@@ -342,14 +342,14 @@ public final class SegmentReader extends LeafReader implements Accountable {
 
   // returns the FieldInfo that corresponds to the given field and type, or
   // null if the field does not exist, or not indexed as the requested
-  // DovDocValuesType.
+  // DOVDOCVALUESTYPE.
   private FieldInfo getDVField(String field, DocValuesType type) {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
       // Field does not exist
       return null;
     }
-    if (fi.getDocValuesType() == null) {
+    if (fi.getDocValuesType() == DocValuesType.NONE) {
       // Field was not indexed with doc values
       return null;
     }
@@ -394,7 +394,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
         // Field does not exist
         return null;
       }
-      if (fi.getDocValuesType() == null) {
+      if (fi.getDocValuesType() == DocValuesType.NONE) {
         // Field was not indexed with doc values
         return null;
       }

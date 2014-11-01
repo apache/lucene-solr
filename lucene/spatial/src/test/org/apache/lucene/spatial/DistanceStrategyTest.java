@@ -17,12 +17,13 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.annotations.Name;
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -32,11 +33,11 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import com.carrotsearch.randomizedtesting.annotations.Name;
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 public class DistanceStrategyTest extends StrategyTestCase {
 
@@ -96,7 +97,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
     if (strategy instanceof BBoxStrategy && random().nextBoolean()) {//disable indexing sometimes
       BBoxStrategy bboxStrategy = (BBoxStrategy)strategy;
       final FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setIndexOptions(null);
+      fieldType.setIndexOptions(IndexOptions.NONE);
       bboxStrategy.setFieldType(fieldType);
     }
   }

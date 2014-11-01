@@ -45,7 +45,6 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -372,7 +371,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
       fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                null, -1, null);
+                                                DocValuesType.NONE, -1, null);
       fieldUpto++;
 
       SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
@@ -414,7 +413,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
         // NOTE: sort of silly: we enum all the docs just to
         // get the maxDoc
-        DocsEnum docsEnum = getSeedPostings(term, termSeed, false, IndexOptions.DOCS_ONLY, true);
+        DocsEnum docsEnum = getSeedPostings(term, termSeed, false, IndexOptions.DOCS, true);
         int doc;
         int lastDoc = 0;
         while((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
@@ -690,7 +689,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     
       // Randomly picked the IndexOptions to index this
       // field with:
-      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? maxIndexOption : random().nextInt(1+maxIndexOption)];
+      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? maxIndexOption : TestUtil.nextInt(random(), 1, maxIndexOption)];
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
 
       newFieldInfoArray[fieldUpto] = new FieldInfo(oldFieldInfo.name,
@@ -699,7 +698,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                                                    false,
                                                    doPayloads,
                                                    indexOptions,
-                                                   null,
+                                                   DocValuesType.NONE,
                                                    -1,
                                                    null);
     }
@@ -1358,7 +1357,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
 
   public void testDocsOnly() throws Exception {
-    testFull(IndexOptions.DOCS_ONLY, false);
+    testFull(IndexOptions.DOCS, false);
   }
 
   public void testDocsAndFreqs() throws Exception {
@@ -1736,6 +1735,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   @Override
   protected void addRandomFields(Document doc) {
     for (IndexOptions opts : IndexOptions.values()) {
+      if (opts == IndexOptions.NONE) {
+        continue;
+      }
       FieldType ft = new FieldType();
       ft.setIndexOptions(opts);
       ft.freeze();

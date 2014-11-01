@@ -52,7 +52,6 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -304,7 +303,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "4.10.0-cfs",
       "4.10.0-nocfs",
       "4.10.1-cfs",
-      "4.10.1-nocfs"
+      "4.10.1-nocfs",
+      "4.10.2-cfs",
+      "4.10.2-nocfs",
   };
   
   final static String[] oldSingleSegmentNames = {
@@ -919,12 +920,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   private void addNoProxDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setIndexOptions(IndexOptions.DOCS_ONLY);
+    customType.setIndexOptions(IndexOptions.DOCS);
     Field f = new Field("content3", "aaa", customType);
     doc.add(f);
     FieldType customType2 = new FieldType();
     customType2.setStored(true);
-    customType2.setIndexOptions(IndexOptions.DOCS_ONLY);
+    customType2.setIndexOptions(IndexOptions.DOCS);
     f = new Field("content4", "aaa", customType2);
     doc.add(f);
     writer.addDocument(doc);

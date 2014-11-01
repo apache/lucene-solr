@@ -194,6 +194,10 @@ New Features
   properties to allow easier overriding of just the right piece of the Solr URL. 
   (ehatcher)
 
+* SOLR-6248: MoreLikeThis QParser that accepts a document id and returns documents that
+  have similar content. It works in standalone/cloud mode and shares logic with the
+  Lucene MoreLikeThis class (Anshum Gupta).
+
 Bug Fixes
 ----------------------
 
@@ -219,7 +223,7 @@ Bug Fixes
 
 * SOLR-6187: SOLR-6154: facet.mincount ignored in range faceting using distributed search
   NOTE: This does NOT fixed for the (deprecated) facet.date idiom, use facet.range
-  instead. (Erick Erickson, Zacchio Bagnati, Ronald Matamoros, Vamsee Yalargadda)
+  instead. (Erick Erickson, Zaccheo Bagnati, Ronald Matamoros, Vamsee Yalargadda)
 
 * SOLR-6457: LBHttpSolrServer: ArrayIndexOutOfBoundsException risk if counter overflows
   (longkey via Noble Paul)
@@ -273,6 +277,10 @@ Bug Fixes
 
 * SOLR-6591: Overseer can use stale cluster state and lose updates for collections
   with stateFormat > 1. (shalin)
+
+* SOLR-6631: DistributedQueue spinning on calling zookeeper getChildren()
+  (Jessica Cheng Mallet, Mark Miller, Timothy Potter)
+
 
 Optimizations
 ----------------------

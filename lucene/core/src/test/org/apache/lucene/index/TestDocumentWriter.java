@@ -30,7 +30,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
@@ -280,7 +279,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     // f2 has no TF
     fieldTypes.disableHighlighting("f2");
-    fieldTypes.setIndexOptions("f2", IndexOptions.DOCS_ONLY);
+    fieldTypes.setIndexOptions("f2", IndexOptions.DOCS);
     doc.addLargeText("f2", "v1");
     doc.addStored("f2", "v2");
 
@@ -297,7 +296,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").getIndexOptions());
     // f2
     assertTrue("f2 should have norms", fi.fieldInfo("f2").hasNorms());
-    assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").getIndexOptions());
+    assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
     reader.close();
   }
 }

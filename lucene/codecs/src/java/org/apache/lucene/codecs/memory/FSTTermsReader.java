@@ -32,7 +32,7 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -95,7 +95,7 @@ public class FSTTermsReader extends FieldsProducer {
         int fieldNumber = in.readVInt();
         FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
         long numTerms = in.readVLong();
-        long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
+        long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : in.readVLong();
         long sumDocFreq = in.readVLong();
         int docCount = in.readVInt();
         int longsSize = in.readVInt();

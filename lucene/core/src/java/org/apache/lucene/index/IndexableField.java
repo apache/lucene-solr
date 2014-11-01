@@ -73,8 +73,8 @@ public interface IndexableField {
    * the range of that encoding.
    * <p>
    * It is illegal to return a boost other than 1.0f for a field that is not
-   * indexed ({@link IndexableFieldType#indexOptions()} is null) or omits normalization values
-   * ({@link IndexableFieldType#omitNorms()} returns true).
+   * indexed ({@link IndexableFieldType#indexOptions()} is IndexOptions.NONE) or
+   * omits normalization values ({@link IndexableFieldType#omitNorms()} returns true).
    *
    * @see Similarity#computeNorm(FieldInvertState)
    * @see DefaultSimilarity#encodeNormValue(float)

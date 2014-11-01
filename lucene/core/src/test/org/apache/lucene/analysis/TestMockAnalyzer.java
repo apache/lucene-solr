@@ -28,8 +28,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
@@ -312,7 +312,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     fieldTypes.enableTermVectors("f");
     fieldTypes.enableTermVectorPositions("f");
     fieldTypes.enableTermVectorOffsets("f");
-    fieldTypes.setIndexOptions("f", IndexOptions.DOCS_ONLY);
+    fieldTypes.setIndexOptions("f", IndexOptions.DOCS);
     fieldTypes.setMultiValued("f");
 
     doc.addAtom("f", "a");

@@ -28,11 +28,11 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.SegmentWriteState; // javadocs
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -138,7 +138,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
     for (FieldInfo mergeFieldInfo : mergeState.mergeFieldInfos) {
       DocValuesType type = mergeFieldInfo.getDocValuesType();
-      if (type != null) {
+      if (type != DocValuesType.NONE) {
         if (type == DocValuesType.NUMERIC) {
           List<NumericDocValues> toMerge = new ArrayList<>();
           List<Bits> docsWithField = new ArrayList<>();

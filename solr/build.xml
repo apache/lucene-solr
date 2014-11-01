@@ -42,7 +42,7 @@
   <target name="example" description="Creates a runnable example configuration."
           depends="dist-contrib,dist-war">
     <copy file="${dist}/${fullnamever}.war"
-          tofile="${example}/webapps/${ant.project.name}.war"/>
+          tofile="${server.dir}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
          basedir="${dest}/solr-core/classes/java"
          includes="org/apache/solr/util/SimplePostTool*.class">
@@ -51,7 +51,7 @@
       </manifest>
     </jar>
     <delete includeemptydirs="true">
-      <fileset dir="${example}/solr-webapp" includes="**/*"/>
+      <fileset dir="${server.dir}/solr-webapp" includes="**/*"/>
     </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
@@ -66,7 +66,7 @@
     </condition>
     <property name="example.jvm.line" value=""/>
     <property name="example.heap.size" value="512M"/>
-    <java jar="${example}/start.jar" fork="true" dir="${example}" maxmemory="${example.heap.size}">
+    <java jar="${server.dir}/start.jar" fork="true" dir="${server.dir}" maxmemory="${example.heap.size}">
       <jvmarg line="${example.jvm.line}"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
       <sysproperty key="jetty.port" value="${example.jetty.port}"/>
@@ -254,9 +254,9 @@
     <license-check-macro dir="${basedir}" licensedir="${common-solr.dir}/licenses">
       <additional-excludes>
         <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
-        <exclude name="example/start.jar" />
+        <exclude name="server/start.jar" />
         <exclude name="example/exampledocs/post.jar" />
-        <exclude name="example/solr-webapp/**" />
+        <exclude name="server/solr-webapp/**" />
         <exclude name="package/**"/>
       </additional-excludes>
       <additional-filters>
@@ -295,14 +295,22 @@
     <delete dir="build" />
     <delete dir="dist" />
     <delete dir="package" />
+    <delete dir="server/solr/lib" />
     <delete dir="example/solr/lib" />
     <delete includeemptydirs="true">
       <fileset dir="example">
         <include name="**/data/**/*" />
+        <exclude name="**/.gitignore" />
+      </fileset>
+      <fileset dir="server">
+        <include name="**/data/**/*" />
+        <include name="solr/zoo_data" />
+        <include name="start.jar" />
+        <include name="logs/*" />
         <include name="webapps/**/*" />
         <include name="solr-webapp/**/*" />
         <exclude name="**/.gitignore" />
-      </fileset>
+      </fileset>    	
     </delete>
   </target>
   
@@ -416,7 +424,7 @@
       <tarfileset dir="." prefix="${fullnamever}" includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="." prefix="${fullnamever}/solr"
                   excludes="build/** ${package.dir.rel}/** ${dist.rel}/**
-                            example/webapps/*.war example/lib/**
+                            server/webapps/*.war example/lib/**
                             **/*.jar 
                             lib/README.committers.txt **/data/ **/logs/*
                             **/*.sh **/bin/ scripts/ 
@@ -443,7 +451,7 @@
     </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
-      <fileset dir="${example}/solr-webapp" includes="**/*"/>
+      <fileset dir="${server.dir}/solr-webapp" includes="**/*"/>
       <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
     </delete>
  
@@ -461,7 +469,7 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
-                            example/** contrib/**/lib/** contrib/**/README.txt 
+                            bin/** server/** example/** contrib/**/lib/** contrib/**/README.txt 
                             licenses/**"
                   excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
@@ -473,7 +481,7 @@
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"
-                  includes="bin/* example/**/*.sh example/**/bin/" />
+                  includes="bin/* server/**/*.sh example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="dist/*.jar
@@ -527,7 +535,7 @@
     <sign-artifacts-macro artifacts.dir="${package.dir}"/>
   </target>
  
-  <target name="resolve" depends="resolve-example">
+  <target name="resolve" depends="resolve-example,resolve-server">
      <sequential>
      <ant dir="core" target="resolve" inheritall="false">
          <propertyset refid="uptodate.and.compiled.properties"/>

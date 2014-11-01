@@ -1,12 +1,5 @@
 package org.apache.lucene.index;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.index.NumericDocValuesFieldUpdates;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.packed.PagedGrowableWriter;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +16,12 @@ import org.apache.lucene.util.packed.PagedGrowableWriter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.packed.PagedGrowableWriter;
 
 /**
  * Holds updates of a single DocValues field, for a set of documents.
@@ -98,7 +97,7 @@ abstract class DocValuesFieldUpdates {
       return ramBytesPerDoc;
     }
     
-    DocValuesFieldUpdates getUpdates(String field, FieldInfo.DocValuesType type) {
+    DocValuesFieldUpdates getUpdates(String field, DocValuesType type) {
       switch (type) {
         case NUMERIC:
           return numericDVUpdates.get(field);
@@ -109,7 +108,7 @@ abstract class DocValuesFieldUpdates {
       }
     }
     
-    DocValuesFieldUpdates newUpdates(String field, FieldInfo.DocValuesType type, int maxDoc) {
+    DocValuesFieldUpdates newUpdates(String field, DocValuesType type, int maxDoc) {
       switch (type) {
         case NUMERIC:
           assert numericDVUpdates.get(field) == null;
@@ -133,10 +132,13 @@ abstract class DocValuesFieldUpdates {
   }
   
   final String field;
-  final FieldInfo.DocValuesType type;
+  final DocValuesType type;
   
-  protected DocValuesFieldUpdates(String field, FieldInfo.DocValuesType type) {
+  protected DocValuesFieldUpdates(String field, DocValuesType type) {
     this.field = field;
+    if (type == null) {
+      throw new NullPointerException("DocValuesType cannot be null");
+    }
     this.type = type;
   }
   

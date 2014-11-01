@@ -29,6 +29,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -75,14 +76,16 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     log.info("####SETUP_START " + getTestName());
+
+    String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
     
     boolean useNewSolrXml = random().nextBoolean();
     File tmpDir = createTempDir().toFile();
     if (useNewSolrXml) {
-      solrHome = ExternalPaths.EXAMPLE_HOME;
+      solrHome = exampleHome;
     } else {
       File tmpSolrHome = new File(tmpDir, "tmp-solr-home");
-      FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_HOME), tmpSolrHome);
+      FileUtils.copyDirectory(new File(exampleHome), tmpSolrHome);
       FileUtils.copyFile(getFile("old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
       solrHome = tmpSolrHome.getAbsolutePath();
     }
@@ -214,8 +217,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         "-cmd",
         "upconfig",
         "-confdir",
-        ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
-            + File.separator + "conf", "-confname", confsetname};
+        ExternalPaths.TECHPRODUCTS_CONFIGSET, "-confname", confsetname};
     ZkCLI.main(args);
     
     assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/" + confsetname, true));
@@ -245,13 +247,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     List<String> zkFiles = zkClient.getChildren(ZkController.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
     
-    File sourceConfDir = new File(ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
-            + File.separator + "conf");
+    File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
     // filter out all directories starting with . (e.g. .svn)
     Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
     for (File sourceFile :sourceFiles){
-        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1" + File.separator + "conf");
-        String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
+        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
+        String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
         assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
         assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));

@@ -25,11 +25,11 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -231,7 +231,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
         for (FieldMetaData field : fields) {
           blockOut.writeVInt(field.fieldInfo.number);
           blockOut.writeVLong(field.numTerms);
-          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
             blockOut.writeVLong(field.sumTotalTermFreq);
           }
           blockOut.writeVLong(field.sumDocFreq);
@@ -335,7 +335,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
         if (delta == 0) {
           statsOut.writeVInt(state.docFreq<<1|1);
         } else {
-          statsOut.writeVInt(state.docFreq<<1|0);
+          statsOut.writeVInt(state.docFreq<<1);
           statsOut.writeVLong(state.totalTermFreq-state.docFreq);
         }
       } else {

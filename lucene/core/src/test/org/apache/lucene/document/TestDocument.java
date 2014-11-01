@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -64,7 +64,7 @@ public class TestDocument extends LuceneTestCase {
     
     assertTrue(binaryFld.binaryValue() != null);
     assertTrue(binaryFld.fieldType().stored());
-    assertNull(binaryFld.fieldType().indexOptions());
+    assertEquals(IndexOptions.NONE, binaryFld.fieldType().indexOptions());
     
     String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));

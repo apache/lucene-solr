@@ -40,9 +40,7 @@ import java.util.List;
 public class TestSpellCheckResponse extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    // createJetty(EXAMPLE_HOME, null, null);
-    initCore(ExternalPaths.EXAMPLE_CONFIG, ExternalPaths.EXAMPLE_SCHEMA, ExternalPaths.EXAMPLE_HOME);
-    // initCore("solrconfig.xml", "schema.xml", null);
+    initCore();
   }
   
   static String field = "name";

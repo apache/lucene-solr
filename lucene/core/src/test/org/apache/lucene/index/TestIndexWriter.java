@@ -55,7 +55,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -1248,7 +1247,7 @@ public class TestIndexWriter extends LuceneTestCase {
     
     Field f = new Field("binary", b, 10, 17, customType);
     // TODO: this is evil, changing the type after creating the field:
-    customType.setIndexOptions(IndexOptions.DOCS_ONLY);
+    customType.setIndexOptions(IndexOptions.DOCS);
     final MockTokenizer doc1field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     doc1field1.setReader(new StringReader("doc1field1"));
     f.setTokenStream(doc1field1);
@@ -1808,7 +1807,7 @@ public class TestIndexWriter extends LuceneTestCase {
     docsAndFreqs.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
 
     FieldType docsOnly = new FieldType(TextField.TYPE_NOT_STORED);
-    docsOnly.setIndexOptions(IndexOptions.DOCS_ONLY);
+    docsOnly.setIndexOptions(IndexOptions.DOCS);
 
     Document doc = new Document();
     doc.add(new Field("field", "a b c", docsAndFreqs));

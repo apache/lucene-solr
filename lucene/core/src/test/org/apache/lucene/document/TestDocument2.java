@@ -27,8 +27,8 @@ import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -627,7 +627,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setIndexOptions("id", IndexOptions.DOCS_ONLY);
+    fieldTypes.setIndexOptions("id", IndexOptions.DOCS);
 
     Document2 doc = w.newDocument();
     doc.addStored("id", new BytesRef(new byte[1]));
@@ -678,7 +678,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setIndexOptions("id", IndexOptions.DOCS_ONLY);
+    fieldTypes.setIndexOptions("id", IndexOptions.DOCS);
 
     fieldTypes.setTermsDictBlockSize("id", 10);
     for(int i=0;i<10;i++) {
@@ -863,7 +863,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setIndexOptions("foo", null);
+    fieldTypes.setIndexOptions("foo", IndexOptions.NONE);
 
     Document2 doc = w.newDocument();
     doc.addAtom("foo", "bar");
@@ -888,7 +888,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setDocValuesType("foo", null);
+    fieldTypes.setDocValuesType("foo", DocValuesType.NONE);
 
     Document2 doc = w.newDocument();
     doc.addInt("foo", 17);

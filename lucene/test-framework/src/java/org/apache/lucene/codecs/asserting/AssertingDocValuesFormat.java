@@ -23,8 +23,11 @@ import java.util.Iterator;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.index.AssertingLeafReader.AssertingRandomAccessOrds;
+import org.apache.lucene.index.AssertingLeafReader.AssertingSortedSetDocValues;
 import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomAccessOrds;
@@ -33,8 +36,6 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.AssertingLeafReader.AssertingRandomAccessOrds;
-import org.apache.lucene.index.AssertingLeafReader.AssertingSortedSetDocValues;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -225,7 +226,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-      assert field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC;
+      assert field.getDocValuesType() == DocValuesType.NUMERIC;
       NumericDocValues values = in.getNumeric(field);
       assert values != null;
       return new AssertingLeafReader.AssertingNumericDocValues(values, maxDoc);
@@ -233,7 +234,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-      assert field.getDocValuesType() == FieldInfo.DocValuesType.BINARY;
+      assert field.getDocValuesType() == DocValuesType.BINARY;
       BinaryDocValues values = in.getBinary(field);
       assert values != null;
       return new AssertingLeafReader.AssertingBinaryDocValues(values, maxDoc);
@@ -241,7 +242,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public SortedDocValues getSorted(FieldInfo field) throws IOException {
-      assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED;
+      assert field.getDocValuesType() == DocValuesType.SORTED;
       SortedDocValues values = in.getSorted(field);
       assert values != null;
       return new AssertingLeafReader.AssertingSortedDocValues(values, maxDoc);
@@ -249,7 +250,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     
     @Override
     public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
-      assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_NUMERIC;
+      assert field.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
       SortedNumericDocValues values = in.getSortedNumeric(field);
       assert values != null;
       return new AssertingLeafReader.AssertingSortedNumericDocValues(values, maxDoc);
@@ -257,7 +258,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     
     @Override
     public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-      assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET;
+      assert field.getDocValuesType() == DocValuesType.SORTED_SET;
       SortedSetDocValues values = in.getSortedSet(field);
       assert values != null;
       if (values instanceof RandomAccessOrds) {
@@ -269,7 +270,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     
     @Override
     public Bits getDocsWithField(FieldInfo field) throws IOException {
-      assert field.getDocValuesType() != null;
+      assert field.getDocValuesType() != DocValuesType.NONE;
       Bits bits = in.getDocsWithField(field);
       assert bits != null;
       assert bits.length() == maxDoc;

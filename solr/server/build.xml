@@ -15,8 +15,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  -->
-<project name="solr-example" default="resolve" xmlns:ivy="antlib:org.apache.ivy.ant">
-  <description>Solr Example</description>
+<project name="solr-server" default="resolve" xmlns:ivy="antlib:org.apache.ivy.ant">
+  <description>Solr Server</description>
 
   <import file="../common-build.xml"/>
 
