@@ -18,11 +18,14 @@ package org.apache.lucene.analysis.standard;
  */
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.standard.std40.UAX29URLEmailTokenizer40;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -84,15 +87,27 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
-    final UAX29URLEmailTokenizer src = new UAX29URLEmailTokenizer();
-    src.setMaxTokenLength(maxTokenLength);
+    final Tokenizer src;
+    if (getVersion().onOrAfter(Version.LUCENE_4_7_0)) {
+      src = new UAX29URLEmailTokenizer();
+      ((UAX29URLEmailTokenizer)src).setMaxTokenLength(maxTokenLength);
+    } else {
+      src = new UAX29URLEmailTokenizer40();
+      ((UAX29URLEmailTokenizer40)src).setMaxTokenLength(maxTokenLength);
+    }
+
     TokenStream tok = new StandardFilter(src);
     tok = new LowerCaseFilter(tok);
     tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
       protected void setReader(final Reader reader) throws IOException {
-        src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
+        int m = UAX29URLEmailAnalyzer.this.maxTokenLength;
+        if (src instanceof UAX29URLEmailTokenizer) {
+          ((UAX29URLEmailTokenizer)src).setMaxTokenLength(m);
+        } else {
+          ((UAX29URLEmailTokenizer40)src).setMaxTokenLength(m);
+        }
         super.setReader(reader);
       }
     };

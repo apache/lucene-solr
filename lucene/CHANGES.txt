@@ -187,6 +187,9 @@ Bug Fixes
   org.apache.lucene.index (Simon Willnauer, Robert Muir, Mike
   McCandless)
 
+* LUCENE-6043: Fix backcompat support for UAX29URLEmailTokenizer
+  (Ryan Ernst)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
