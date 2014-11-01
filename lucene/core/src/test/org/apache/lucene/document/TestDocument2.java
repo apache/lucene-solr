@@ -973,6 +973,427 @@ public class TestDocument2 extends LuceneTestCase {
     dir.close();
   }
 
+  // nocommit need to test other numeric types:
+  public void testIntSortMissingFirst() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("int");
+    fieldTypes.setSortMissingFirst("int");
+
+    Document2 doc = w.newDocument();
+    doc.addInt("int", 7);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addInt("int", -7);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other numeric types:
+  public void testIntSortMissingFirstReversed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("int", true);
+    fieldTypes.setSortMissingFirst("int");
+
+    Document2 doc = w.newDocument();
+    doc.addInt("int", 7);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addInt("int", -7);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other numeric types:
+  public void testIntSortMissingLast() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("int");
+    fieldTypes.setSortMissingLast("int");
+
+    Document2 doc = w.newDocument();
+    doc.addInt("int", 7);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addInt("int", -7);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other numeric types:
+  public void testIntSortMissingLastReversed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("int", true);
+    fieldTypes.setSortMissingLast("int");
+
+    Document2 doc = w.newDocument();
+    doc.addInt("int", 7);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addInt("int", -7);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other numeric types:
+  public void testIntSortMissingDefault() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+
+    Document2 doc = w.newDocument();
+    doc.addInt("int", 7);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addInt("int", -7);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other numeric types:
+  public void testIntSortMissingDefaultReversed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+
+    Document2 doc = w.newDocument();
+    doc.addInt("int", 7);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addInt("int", -7);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int", true));
+    assertEquals(3, hits.totalHits);
+    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+
+
+  // nocommit need to test other string sort types:
+  public void testAtomSortMissingFirst() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("atom");
+    fieldTypes.setSortMissingFirst("atom");
+
+    Document2 doc = w.newDocument();
+    doc.addAtom("atom", "z");
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("atom", "a");
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other string sort types:
+  public void testAtomSortMissingFirstReversed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("atom", true);
+    fieldTypes.setSortMissingFirst("atom");
+
+    Document2 doc = w.newDocument();
+    doc.addAtom("atom", "z");
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("atom", "a");
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other string sort types:
+  public void testAtomSortMissingLast() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("atom");
+    fieldTypes.setSortMissingLast("atom");
+
+    Document2 doc = w.newDocument();
+    doc.addAtom("atom", "z");
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("atom", "a");
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other string sort types:
+  public void testAtomSortMissingLastReversed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("atom", true);
+    fieldTypes.setSortMissingLast("atom");
+
+    Document2 doc = w.newDocument();
+    doc.addAtom("atom", "z");
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("atom", "a");
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other string sort types:
+  public void testAtomSortMissingDefault() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+
+    Document2 doc = w.newDocument();
+    doc.addAtom("atom", "z");
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("atom", "a");
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit need to test other string sort types:
+  public void testAtomSortMissingDefaultReversed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+
+    Document2 doc = w.newDocument();
+    doc.addAtom("atom", "z");
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("atom", "a");
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+    
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom", true));
+    assertEquals(3, hits.totalHits);
+    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
 
   // nocommit test per-field analyzers
 
@@ -981,4 +1402,6 @@ public class TestDocument2 extends LuceneTestCase {
   // nocommit test for pre-analyzed
 
   // nocommit test multi-valued
+
+  // nocommit multi-valued sort, w/ missings
 }

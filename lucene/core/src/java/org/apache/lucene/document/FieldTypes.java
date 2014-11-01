@@ -260,6 +260,7 @@ public class FieldTypes {
     // Whether this field's values should be indexed for sorting (using doc values):
     private volatile Boolean sortable;
     private volatile Boolean sortReversed;
+    private volatile Boolean sortMissingLast;
 
     // Whether this field's values should be indexed for fast ranges (using numeric field for now):
     private volatile Boolean fastRanges;
@@ -515,6 +516,11 @@ public class FieldTypes {
           b.append(" reversed=");
           b.append(sortReversed);
         }
+        if (sortMissingLast == Boolean.TRUE) {
+          b.append(" missing=last");
+        } else if (sortMissingLast == Boolean.FALSE) {
+          b.append(" missing=first");
+        }
       } else {
         b.append("unset");
       }
@@ -692,6 +698,7 @@ public class FieldTypes {
       writeNullableBoolean(out, stored);
       writeNullableBoolean(out, sortable);
       writeNullableBoolean(out, sortReversed);
+      writeNullableBoolean(out, sortMissingLast);
       writeNullableBoolean(out, multiValued);
       writeNullableBoolean(out, indexNorms);
       writeNullableBoolean(out, fastRanges);
@@ -872,6 +879,7 @@ public class FieldTypes {
       stored = readNullableBoolean(in);
       sortable = readNullableBoolean(in);
       sortReversed = readNullableBoolean(in);
+      sortMissingLast = readNullableBoolean(in);
       multiValued = readNullableBoolean(in);
       indexNorms = readNullableBoolean(in);
       fastRanges = readNullableBoolean(in);
@@ -1573,6 +1581,54 @@ public class FieldTypes {
     return getFieldType(fieldName).sortable == Boolean.TRUE;
   }
 
+  public synchronized void setSortMissingFirst(String fieldName) {
+    // Field must exist
+    FieldType current = getFieldType(fieldName);
+
+    if (current.sortable != Boolean.TRUE) {
+      illegalState(fieldName, "cannot setSortMissingFirst: field is not enabled for sorting");
+    }
+
+    Boolean currentValue = current.sortMissingLast;
+    if (currentValue != Boolean.FALSE) {
+      current.sortMissingLast = Boolean.FALSE;
+      boolean success = false;
+      try {
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.sortMissingLast = currentValue;
+        }
+      }
+      changed();
+    }
+  }
+
+  public synchronized void setSortMissingLast(String fieldName) {
+    // Field must exist
+    FieldType current = getFieldType(fieldName);
+
+    if (current.sortable != Boolean.TRUE) {
+      illegalState(fieldName, "cannot setSortMissingLast: field is not enabled for sorting");
+    }
+
+    Boolean currentValue = current.sortMissingLast;
+    if (currentValue != Boolean.TRUE) {
+      current.sortMissingLast = Boolean.TRUE;
+      boolean success = false;
+      try {
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.sortMissingLast = currentValue;
+        }
+      }
+      changed();
+    }
+  }
+
   /** Enables fast range filters for this field, using auto-prefix terms. */
   public synchronized void enableFastRanges(String fieldName) {
     FieldType current = fields.get(fieldName);
@@ -1598,7 +1654,7 @@ public class FieldTypes {
     }
   }
 
-  /** Disables sorting for this field. */
+  /** Disables fast range filters for this field. */
   public synchronized void disableFastRanges(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
@@ -2519,8 +2575,7 @@ public class FieldTypes {
       if (upto == fields.length || (fields[upto] instanceof Boolean) == false) {
         reversed = null;
       } else {
-        reversed = (Boolean) fields[upto+1];
-        upto++;
+        reversed = (Boolean) fields[upto++];
       }
       sortFields.add(newSortField(fieldName, reversed));
     }
@@ -2549,42 +2604,134 @@ public class FieldTypes {
     }
     switch (fieldType.valueType) {
     case INT:
-      if (fieldType.multiValued == Boolean.TRUE) {
-        return new SortedNumericSortField(fieldName, SortField.Type.INT, reverse);
-      } else {
-        return new SortField(fieldName, SortField.Type.INT, reverse);
+      {
+        SortField sortField;
+        if (fieldType.multiValued == Boolean.TRUE) {
+          // nocommit need to be able to set selector...
+          sortField = new SortedNumericSortField(fieldName, SortField.Type.INT, reverse);
+        } else {
+          sortField = new SortField(fieldName, SortField.Type.INT, reverse);
+        }
+        if (fieldType.sortMissingLast == Boolean.TRUE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Integer.MIN_VALUE);
+          } else {
+            sortField.setMissingValue(Integer.MAX_VALUE);
+          }
+        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Integer.MAX_VALUE);
+          } else {
+            sortField.setMissingValue(Integer.MIN_VALUE);
+          }
+        }
+        return sortField;
       }
+
     case FLOAT:
-      if (fieldType.multiValued == Boolean.TRUE) {
-        // nocommit need to be able to set selector...
-        return new SortedNumericSortField(fieldName, SortField.Type.FLOAT, reverse);
-      } else {
-        return new SortField(fieldName, SortField.Type.FLOAT, reverse);
+      {
+        SortField sortField;
+        if (fieldType.multiValued == Boolean.TRUE) {
+          // nocommit need to be able to set selector...
+          sortField = new SortedNumericSortField(fieldName, SortField.Type.FLOAT, reverse);
+        } else {
+          sortField = new SortField(fieldName, SortField.Type.FLOAT, reverse);
+        }
+        if (fieldType.sortMissingLast == Boolean.TRUE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Float.NEGATIVE_INFINITY);
+          } else {
+            sortField.setMissingValue(Float.POSITIVE_INFINITY);
+          }
+        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Float.POSITIVE_INFINITY);
+          } else {
+            sortField.setMissingValue(Float.NEGATIVE_INFINITY);
+          }
+        }
+        return sortField;
       }
+      
     case LONG:
-      if (fieldType.multiValued == Boolean.TRUE) {
-        // nocommit need to be able to set selector...
-        return new SortedNumericSortField(fieldName, SortField.Type.LONG, reverse);
-      } else {
-        return new SortField(fieldName, SortField.Type.LONG, reverse);
+      {
+        SortField sortField;
+        if (fieldType.multiValued == Boolean.TRUE) {
+          // nocommit need to be able to set selector...
+          sortField = new SortedNumericSortField(fieldName, SortField.Type.LONG, reverse);
+        } else {
+          sortField = new SortField(fieldName, SortField.Type.LONG, reverse);
+        }
+        if (fieldType.sortMissingLast == Boolean.TRUE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Long.MIN_VALUE);
+          } else {
+            sortField.setMissingValue(Long.MAX_VALUE);
+          }
+        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Long.MAX_VALUE);
+          } else {
+            sortField.setMissingValue(Long.MIN_VALUE);
+          }
+        }
+        return sortField;
       }
+
     case DOUBLE:
-      if (fieldType.multiValued == Boolean.TRUE) {
-        // nocommit need to be able to set selector...
-        return new SortedNumericSortField(fieldName, SortField.Type.DOUBLE, reverse);
-      } else {
-        return new SortField(fieldName, SortField.Type.DOUBLE, reverse);
+      {
+        SortField sortField;
+        if (fieldType.multiValued == Boolean.TRUE) {
+          // nocommit need to be able to set selector...
+          sortField = new SortedNumericSortField(fieldName, SortField.Type.DOUBLE, reverse);
+        } else {
+          sortField = new SortField(fieldName, SortField.Type.DOUBLE, reverse);
+        }
+        if (fieldType.sortMissingLast == Boolean.TRUE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Double.NEGATIVE_INFINITY);
+          } else {
+            sortField.setMissingValue(Double.POSITIVE_INFINITY);
+          }
+        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(Double.POSITIVE_INFINITY);
+          } else {
+            sortField.setMissingValue(Double.NEGATIVE_INFINITY);
+          }
+        }
+        return sortField;
       }
+
     case SHORT_TEXT:
     case ATOM:
     case BINARY:
     case BOOLEAN:
-      if (fieldType.multiValued == Boolean.TRUE) {
-        // nocommit need to be able to set selector...
-        return new SortedSetSortField(fieldName, reverse);
-      } else {
-        return new SortField(fieldName, SortField.Type.STRING, reverse);
+      SortField sortField;
+      {
+        if (fieldType.multiValued == Boolean.TRUE) {
+          // nocommit need to be able to set selector...
+          sortField = new SortedSetSortField(fieldName, reverse);
+        } else {
+          sortField = new SortField(fieldName, SortField.Type.STRING, reverse);
+        }
+
+        if (fieldType.sortMissingLast == Boolean.TRUE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(SortField.STRING_FIRST);
+          } else {
+            sortField.setMissingValue(SortField.STRING_LAST);
+          }
+        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+          if (reverse.booleanValue()) {
+            sortField.setMissingValue(SortField.STRING_LAST);
+          } else {
+            sortField.setMissingValue(SortField.STRING_FIRST);
+          }
+        }
+        return sortField;
       }
+
     default:
       // BUG
       illegalState(fieldName, "unhandled sort case, valueType=" + fieldType.valueType);
