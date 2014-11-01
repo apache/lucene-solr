@@ -178,7 +178,7 @@ public class PortedSolr3Test extends StrategyTestCase {
     if (assertIds != null) {
       Set<Integer> resultIds = new HashSet<>();
       for (SearchResult result : results.results) {
-        resultIds.add(Integer.valueOf(result.document.get("id")));
+        resultIds.add(Integer.valueOf(result.document.getString("id")));
       }
       for (int assertId : assertIds) {
         assertTrue("has " + assertId, resultIds.contains(assertId));

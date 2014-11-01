@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -70,7 +71,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
-    StoredDocument doc = ir.document(0);
+    Document2 doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     TermsEnum te = MultiFields.getTerms(ir, "id").iterator(null);
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef("1")));
@@ -115,8 +116,8 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    StoredDocument doc = ir.document(0);
-    assertEquals("0", doc.get("id"));
+    Document2 doc = ir.document(0);
+    assertEquals("0", doc.getString("id"));
     int start = ir.numDocs();
     ir.close();
     ir = DirectoryReader.open(dirs[1]);

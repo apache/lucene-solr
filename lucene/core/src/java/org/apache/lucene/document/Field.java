@@ -29,7 +29,6 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState; // javadocs
 
@@ -53,7 +52,7 @@ import org.apache.lucene.index.FieldInvertState; // javadocs
  * Field it is used in.  It is strongly recommended that no
  * changes be made after Field instantiation.
  */
-public class Field implements IndexableField, StorableField {
+public class Field implements IndexableField {
 
   /**
    * Field's type

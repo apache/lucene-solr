@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -32,12 +33,14 @@ import org.apache.lucene.util.TestUtil;
 public class TestSegmentTermDocs extends LuceneTestCase {
   private Directory dir;
   private SegmentCommitInfo info;
+  private FieldTypes fieldTypes;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
     info = DocHelper.writeDoc(random(), dir);
+    fieldTypes = FieldTypes.getFieldTypes(dir, null);
   }
   
   @Override
@@ -52,7 +55,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testTermDocs() throws IOException {
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(fieldTypes, info, newIOContext(random()));
     assertTrue(reader != null);
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator(null);
@@ -69,7 +72,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void testBadSeek() throws IOException {
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(info, newIOContext(random()));
+      SegmentReader reader = new SegmentReader(fieldTypes, info, newIOContext(random()));
       assertTrue(reader != null);
       DocsEnum termDocs = TestUtil.docs(random(), reader,
           "textField2",
@@ -83,7 +86,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     }
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(info, newIOContext(random()));
+      SegmentReader reader = new SegmentReader(fieldTypes, info, newIOContext(random()));
       assertTrue(reader != null);
       DocsEnum termDocs = TestUtil.docs(random(), reader,
           "junk",

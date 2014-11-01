@@ -56,10 +56,10 @@ public class TestDirectoryReader extends LuceneTestCase {
     assertTrue(reader instanceof StandardDirectoryReader);
     FieldTypes fieldTypes = FieldTypes.getFieldTypes(reader.getIndexCommit(), new MockAnalyzer(random()));
     Set<String> unstored = DocHelper.getUnstored(fieldTypes);
-    StoredDocument newDoc1 = reader.document(0);
+    Document2 newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);
     assertEquals(DocHelper.numFields() - unstored.size(), DocHelper.numFields(newDoc1));
-    StoredDocument newDoc2 = reader.document(1);
+    Document2 newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields() - unstored.size());
     Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
@@ -373,11 +373,11 @@ public class TestDirectoryReader extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    StoredDocument doc2 = reader.document(reader.maxDoc() - 1);
-    StorableField[] fields = doc2.getFields("bin1");
+    Document2 doc2 = reader.document(reader.maxDoc() - 1);
+    List<IndexableField> fields = doc2.getFields("bin1");
     assertNotNull(fields);
-    assertEquals(1, fields.length);
-    StorableField b1 = fields[0];
+    assertEquals(1, fields.size());
+    IndexableField b1 = fields.get(0);
     assertTrue(b1.binaryValue() != null);
     BytesRef bytesRef = b1.binaryValue();
     assertEquals(bin.length, bytesRef.length);
@@ -397,8 +397,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     doc2 = reader.document(reader.maxDoc() - 1);
     fields = doc2.getFields("bin1");
     assertNotNull(fields);
-    assertEquals(1, fields.length);
-    b1 = fields[0];
+    assertEquals(1, fields.size());
+    b1 = fields.get(0);
     assertTrue(b1.binaryValue() != null);
     bytesRef = b1.binaryValue();
     assertEquals(bin.length, bytesRef.length);
@@ -577,16 +577,16 @@ public class TestDirectoryReader extends LuceneTestCase {
     // check stored fields
     for (int i = 0; i < index1.maxDoc(); i++) {
       if (liveDocs1 == null || liveDocs1.get(i)) {
-        StoredDocument doc1 = index1.document(i);
-        StoredDocument doc2 = index2.document(i);
-        List<StorableField> field1 = doc1.getFields();
-        List<StorableField> field2 = doc2.getFields();
+        Document2 doc1 = index1.document(i);
+        Document2 doc2 = index2.document(i);
+        List<IndexableField> field1 = doc1.getFields();
+        List<IndexableField> field2 = doc2.getFields();
         assertEquals("Different numbers of fields for doc " + i + ".", field1.size(), field2.size());
-        Iterator<StorableField> itField1 = field1.iterator();
-        Iterator<StorableField> itField2 = field2.iterator();
+        Iterator<IndexableField> itField1 = field1.iterator();
+        Iterator<IndexableField> itField2 = field2.iterator();
         while (itField1.hasNext()) {
-          Field curField1 = (Field) itField1.next();
-          Field curField2 = (Field) itField2.next();
+          IndexableField curField1 = itField1.next();
+          IndexableField curField2 = itField2.next();
           assertEquals("Different fields names for doc " + i + ".", curField1.name(), curField2.name());
           assertEquals("Different field values for doc " + i + ".", curField1.stringValue(), curField2.stringValue());
         }          
@@ -1019,7 +1019,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     Set<String> fieldsToLoad = new HashSet<>();
     assertEquals(0, r.document(0, fieldsToLoad).getFields().size());
     fieldsToLoad.add("field1");
-    StoredDocument doc2 = r.document(0, fieldsToLoad);
+    Document2 doc2 = r.document(0, fieldsToLoad);
     assertEquals(1, doc2.getFields().size());
     assertEquals("foobar", doc2.get("field1"));
     r.close();

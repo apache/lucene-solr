@@ -1,7 +1,6 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.index.IndexReader; // javadocs
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.IndexSearcher; // javadocs
 import org.apache.lucene.util.BytesRef;
 

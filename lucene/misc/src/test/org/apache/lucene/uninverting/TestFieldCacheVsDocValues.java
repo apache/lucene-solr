@@ -17,8 +17,6 @@ package org.apache.lucene.uninverting;
  * limitations under the License.
  */
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,32 +24,34 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+
+import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
 public class TestFieldCacheVsDocValues extends LuceneTestCase {
   
@@ -195,9 +195,9 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
-      StoredDocument doc = ar.document(docID);
+      Document2 doc = ar.document(docID);
       BytesRef bytes = s.get(docID);
-      byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
+      byte[] expected = docBytes.get(Integer.parseInt(doc.getString("id")));
       assertEquals(expected.length, bytes.length);
       assertEquals(new BytesRef(expected), bytes);
     }
@@ -268,9 +268,9 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
-      StoredDocument doc = ar.document(docID);
+      Document2 doc = ar.document(docID);
       BytesRef bytes = s.get(docID);
-      byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
+      byte[] expected = docBytes.get(Integer.parseInt(doc.getString("id")));
       assertEquals(expected.length, bytes.length);
       assertEquals(new BytesRef(expected), bytes);
     }

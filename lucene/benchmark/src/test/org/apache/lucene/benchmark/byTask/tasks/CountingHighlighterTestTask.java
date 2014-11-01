@@ -17,20 +17,20 @@
 
 package org.apache.lucene.benchmark.byTask.tasks;
 
-import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.analysis.TokenStream;
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.TokenSources;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
-
-import java.io.IOException;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.highlight.TokenSources;
 
 /**
  * Test Search task which counts number of searches.
@@ -45,8 +45,8 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
   }
 
   @Override
-  protected StoredDocument retrieveDoc(IndexReader ir, int id) throws IOException {
-    StoredDocument document = ir.document(id);
+  protected Document2 retrieveDoc(IndexReader ir, int id) throws IOException {
+    Document2 document = ir.document(id);
     if (document != null) {
       numDocsRetrieved++;
     }
@@ -58,7 +58,7 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
     highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
     return new BenchmarkHighlighter() {
       @Override
-      public int doHighlight(IndexReader reader, int doc, String field, StoredDocument document, Analyzer analyzer, String text) throws Exception {
+      public int doHighlight(IndexReader reader, int doc, String field, Document2 document, Analyzer analyzer, String text) throws Exception {
         TokenStream ts = TokenSources.getAnyTokenStream(reader, doc, field, document, analyzer);
         TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFrags);
         numHighlightedResults += frag != null ? frag.length : 0;

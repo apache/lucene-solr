@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -58,35 +59,36 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testAddDocument() throws Exception {
     SegmentCommitInfo info = DocHelper.writeDoc(random(), dir);
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(dir, null);
 
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(fieldTypes, info, newIOContext(random()));
     assertTrue(reader != null);
-    StoredDocument doc = reader.document(0);
+    Document2 doc = reader.document(0);
     assertTrue(doc != null);
 
     //System.out.println("Document: " + doc);
-    StorableField[] fields = doc.getFields("textField2");
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
-    assertTrue(fields[0].fieldType().storeTermVectors());
+    List<IndexableField> fields = doc.getFields("textField2");
+    assertTrue(fields != null && fields.size() == 1);
+    assertTrue(fields.get(0).stringValue().equals(DocHelper.FIELD_2_TEXT));
+    assertTrue(fields.get(0).fieldType().storeTermVectors());
 
     fields = doc.getFields("textField1");
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_1_TEXT));
-    assertFalse(fields[0].fieldType().storeTermVectors());
+    assertTrue(fields != null && fields.size() == 1);
+    assertTrue(fields.get(0).stringValue().equals(DocHelper.FIELD_1_TEXT));
+    assertFalse(fields.get(0).fieldType().storeTermVectors());
 
     fields = doc.getFields("keyField");
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.KEYWORD_TEXT));
+    assertTrue(fields != null && fields.size() == 1);
+    assertTrue(fields.get(0).stringValue().equals(DocHelper.KEYWORD_TEXT));
 
     fields = doc.getFields(DocHelper.NO_NORMS_KEY);
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.NO_NORMS_TEXT));
+    assertTrue(fields != null && fields.size() == 1);
+    assertTrue(fields.get(0).stringValue().equals(DocHelper.NO_NORMS_TEXT));
 
     fields = doc.getFields(DocHelper.TEXT_FIELD_3_KEY);
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_3_TEXT));
+    assertTrue(fields != null && fields.size() == 1);
+    assertTrue(fields.get(0).stringValue().equals(DocHelper.FIELD_3_TEXT));
 
     // test that the norms are not present in the segment if
     // omitNorms is true
@@ -121,7 +123,9 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
+    
+    SegmentReader reader = new SegmentReader(FieldTypes.getFieldTypes(dir, analyzer),
+                                             info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
                                                                           "repeated", new BytesRef("repeated"));
@@ -193,7 +197,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(FieldTypes.getFieldTypes(dir, analyzer),
+                                             info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -235,7 +240,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(FieldTypes.getFieldTypes(dir, null),
+                                             info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = reader.termPositionsEnum(new Term("preanalyzed", "term1"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

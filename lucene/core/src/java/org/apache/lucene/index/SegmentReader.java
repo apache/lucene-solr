@@ -32,6 +32,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -65,6 +66,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
 
   final SegmentCoreReaders core;
   final SegmentDocValues segDocValues;
+  final FieldTypes fieldTypes;
   
   final CloseableThreadLocal<Map<String,Object>> docValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
     @Override
@@ -89,8 +91,9 @@ public final class SegmentReader extends LeafReader implements Accountable {
    * @throws IOException if there is a low-level IO error
    */
   // TODO: why is this public?
-  public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
+  public SegmentReader(FieldTypes fieldTypes, SegmentCommitInfo si, IOContext context) throws IOException {
     this.si = si;
+    this.fieldTypes = fieldTypes;
     core = new SegmentCoreReaders(this, si.info.dir, si, context);
     segDocValues = new SegmentDocValues();
     
@@ -125,8 +128,8 @@ public final class SegmentReader extends LeafReader implements Accountable {
   /** Create new SegmentReader sharing core from a previous
    *  SegmentReader and loading new live docs from a new
    *  deletes file.  Used by openIfChanged. */
-  SegmentReader(SegmentCommitInfo si, SegmentReader sr) throws IOException {
-    this(si, sr,
+  SegmentReader(FieldTypes fieldTypes, SegmentCommitInfo si, SegmentReader sr) throws IOException {
+    this(fieldTypes, si, sr,
          si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, IOContext.READONCE),
          si.info.getDocCount() - si.getDelCount());
   }
@@ -135,7 +138,8 @@ public final class SegmentReader extends LeafReader implements Accountable {
    *  SegmentReader and using the provided in-memory
    *  liveDocs.  Used by IndexWriter to provide a new NRT
    *  reader */
-  SegmentReader(SegmentCommitInfo si, SegmentReader sr, Bits liveDocs, int numDocs) throws IOException {
+  SegmentReader(FieldTypes fieldTypes, SegmentCommitInfo si, SegmentReader sr, Bits liveDocs, int numDocs) throws IOException {
+    this.fieldTypes = fieldTypes;
     this.si = si;
     this.liveDocs = liveDocs;
     this.numDocs = numDocs;
@@ -170,6 +174,11 @@ public final class SegmentReader extends LeafReader implements Accountable {
       // simple case, no DocValues updates
       return segDocValues.getDocValuesProducer(-1L, si, IOContext.READ, dir, dvFormat, fieldInfos);
     }
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
   }
   
   /**

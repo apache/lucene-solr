@@ -253,11 +253,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   private volatile long changeCount; // increments every time a change is completed
   private volatile long lastCommitChangeCount; // last changeCount that was committed
+  private volatile long lastCommitFieldTypesChangeCount; // last FieldTypes.getChangeCount()
 
   private List<SegmentCommitInfo> rollbackSegments;      // list of segmentInfo we will fallback to if the commit fails
 
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
+  volatile long pendingCommitFieldTypesChangeCount;
 
   private Collection<String> filesToCommit;
 
@@ -422,6 +424,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // just like we do when loading segments_N
           synchronized(this) {
             maybeApplyDeletes(applyAllDeletes);
+            // nocommit must serialize field types into index commit data here?
             r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
@@ -1137,7 +1140,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(IndexDocument doc) throws IOException {
+  public void addDocument(Iterable<? extends IndexableField> doc) throws IOException {
     addDocument(doc, analyzer);
   }
 
@@ -1152,7 +1155,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(IndexDocument doc, Analyzer analyzer) throws IOException {
+  public void addDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer) throws IOException {
     updateDocument(null, doc, analyzer);
   }
 
@@ -1177,7 +1180,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * perhaps to obtain better index compression), in which case
    * you may need to fully re-index your documents at that time.
    *
-   * <p>See {@link #addDocument(IndexDocument)} for details on
+   * <p>See {@link #addDocument(Iterable)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
@@ -1193,7 +1196,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
+  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     addDocuments(docs, analyzer);
   }
 
@@ -1208,7 +1211,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer) throws IOException {
+  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
     updateDocuments(null, docs, analyzer);
   }
 
@@ -1225,7 +1228,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs) throws IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     updateDocuments(delTerm, docs, analyzer);
   }
 
@@ -1243,7 +1246,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs, Analyzer analyzer) throws IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
@@ -1393,7 +1396,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, IndexDocument doc) throws IOException {
+  public void updateDocument(Term term, Iterable<? extends IndexableField> doc) throws IOException {
     ensureOpen();
     updateDocument(term, doc, analyzer);
   }
@@ -1412,7 +1415,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, IndexDocument doc, Analyzer analyzer)
+  public void updateDocument(Term term, Iterable<? extends IndexableField> doc, Analyzer analyzer)
       throws IOException {
     ensureOpen();
     try {
@@ -2566,7 +2569,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       SegmentInfo info = new SegmentInfo(directory, Version.LATEST, mergedName, -1,
                                          false, codec, null, StringHelper.randomId());
 
-      SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
+      SegmentMerger merger = new SegmentMerger(fieldTypes, mergeReaders, info, infoStream, trackingDir,
                                                MergeState.CheckAbort.NONE, globalFieldNumberMap, 
                                                context);
       
@@ -2776,6 +2779,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               toCommit.getUserData().put(FieldTypes.FIELD_TYPES_KEY, fieldTypes.writeToString());
 
               pendingCommitChangeCount = changeCount;
+              pendingCommitFieldTypesChangeCount = fieldTypes.getChangeCount();
 
               // This protects the segmentInfos we are now going
               // to commit.  This is important in case, eg, while
@@ -2889,7 +2893,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  merged finished, this method may return true right
    *  after you had just called {@link #commit}. */
   public final boolean hasUncommittedChanges() {
-    return changeCount != lastCommitChangeCount || docWriter.anyChanges() || bufferedUpdatesStream.any();
+    return fieldTypes.getChangeCount() != lastCommitFieldTypesChangeCount ||
+      changeCount != lastCommitChangeCount ||
+      docWriter.anyChanges() ||
+      bufferedUpdatesStream.any();
   }
 
   private final void commitInternal(MergePolicy mergePolicy) throws IOException {
@@ -2945,6 +2952,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             deleter.checkpoint(pendingCommit, true);
 
             lastCommitChangeCount = pendingCommitChangeCount;
+            lastCommitFieldTypesChangeCount = pendingCommitFieldTypesChangeCount;
             rollbackSegments = pendingCommit.createBackupSegmentInfos();
 
             finished = true;
@@ -3936,7 +3944,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // fix the reader's live docs and del count
           assert delCount > reader.numDeletedDocs(); // beware of zombies
 
-          SegmentReader newReader = new SegmentReader(info, reader, liveDocs, info.info.getDocCount() - delCount);
+          // nocommit we are passing our fieldTypes here:
+          SegmentReader newReader = new SegmentReader(fieldTypes, info, reader, liveDocs, info.info.getDocCount() - delCount);
           boolean released = false;
           try {
             rld.release(reader);
@@ -3959,7 +3968,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       
       // we pass merge.getMergeReaders() instead of merge.readers to allow the
       // OneMerge to return a view over the actual segments to merge
-      final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
+      final SegmentMerger merger = new SegmentMerger(fieldTypes, merge.getMergeReaders(),
                                                      merge.info.info, infoStream, dirWrapper,
                                                      checkAbort, globalFieldNumberMap, 
                                                      context);
@@ -4275,10 +4284,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       synchronized(this) {
+        long fieldTypesChangeCount = fieldTypes.getChangeCount();
 
         assert lastCommitChangeCount <= changeCount: "lastCommitChangeCount=" + lastCommitChangeCount + " changeCount=" + changeCount;
+        assert lastCommitFieldTypesChangeCount <= fieldTypesChangeCount: "lastCommitFieldTypesChangeCount=" + lastCommitFieldTypesChangeCount + " fieldTypesChangeCount=" + fieldTypesChangeCount;
 
-        if (pendingCommitChangeCount == lastCommitChangeCount) {
+        if (pendingCommitChangeCount == lastCommitChangeCount && pendingCommitFieldTypesChangeCount == lastCommitFieldTypesChangeCount) {
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "  skip startCommit(): no changes pending");
           }
@@ -4291,7 +4302,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
 
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "startCommit index=" + segString(toLiveInfos(toSync)) + " changeCount=" + changeCount);
+          infoStream.message("IW", "startCommit index=" + segString(toLiveInfos(toSync)) + " changeCount=" + changeCount + " fieldTypesChangeCount=" + fieldTypesChangeCount);
         }
 
         assert filesExist(toSync);

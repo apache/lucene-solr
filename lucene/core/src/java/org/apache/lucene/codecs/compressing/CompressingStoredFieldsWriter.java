@@ -24,14 +24,14 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.ChunkIterator;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.Document2StoredFieldVisitor;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -242,7 +242,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   }
 
   @Override
-  public void writeField(FieldInfo info, StorableField field)
+  public void writeField(FieldInfo info, IndexableField field)
       throws IOException {
 
     ++numStoredFieldsInDoc;
@@ -356,7 +356,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           storedFieldsReader.checkIntegrity();
         }
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
-          DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+          Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(mergeState.fieldTypes);
           storedFieldsReader.visitDocument(i, visitor);
           addDocument(visitor.getDocument(), mergeState.mergeFieldInfos);
           ++docCount;

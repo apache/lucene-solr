@@ -270,7 +270,7 @@ class DocHelper {
     return 14;
   }
 
-  public static int numFields(StoredDocument doc) {
+  public static int numFields(Document2 doc) {
     return doc.getFields().size();
   }
   

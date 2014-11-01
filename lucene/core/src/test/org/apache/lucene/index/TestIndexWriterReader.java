@@ -267,10 +267,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, index2df);
 
     // verify the docs are from different indexes
-    StoredDocument doc5 = r1.document(5);
-    assertEquals("index1", doc5.get("indexname"));
-    StoredDocument doc150 = r1.document(150);
-    assertEquals("index2", doc150.get("indexname"));
+    Document2 doc5 = r1.document(5);
+    assertEquals("index1", doc5.getString("indexname"));
+    Document2 doc150 = r1.document(150);
+    assertEquals("index2", doc150.getString("indexname"));
     r1.close();
     writer.close();
     dir1.close();

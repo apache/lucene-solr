@@ -17,20 +17,19 @@ package org.apache.lucene.document;
  */
 import java.io.IOException;
 import java.io.Reader;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.BytesRef;
 
 /** Defers actually loading a field's value until you ask
@@ -43,7 +42,7 @@ public class LazyDocument {
   private final int docID;
 
   // null until first field is loaded
-  private StoredDocument doc;
+  private Document2 doc;
 
   private Map<Integer,List<LazyField>> fields = new HashMap<>();
   private Set<String> fieldNames = new HashSet<>();
@@ -64,11 +63,11 @@ public class LazyDocument {
    * </p>
    * <p>
    * The lazy loading of field values from all instances of StorableField 
-   * objects returned by this method are all backed by a single StoredDocument 
+   * objects returned by this method are all backed by a single Document2 
    * per LazyDocument instance.
    * </p>
    */
-  public StorableField getField(FieldInfo fieldInfo) {  
+  public IndexableField getField(FieldInfo fieldInfo) {  
 
     fieldNames.add(fieldInfo.name);
     List<LazyField> values = fields.get(fieldInfo.number);
@@ -94,7 +93,7 @@ public class LazyDocument {
    * non-private for test only access
    * @lucene.internal 
    */
-  synchronized StoredDocument getDocument() {
+  synchronized Document2 getDocument() {
     if (doc == null) {
       try {
         doc = reader.document(docID, fieldNames);
@@ -107,18 +106,18 @@ public class LazyDocument {
 
   // :TODO: synchronize to prevent redundent copying? (sync per field name?)
   private void fetchRealValues(String name, int fieldNum) {
-    StoredDocument d = getDocument();
+    Document2 d = getDocument();
 
     List<LazyField> lazyValues = fields.get(fieldNum);
-    StorableField[] realValues = d.getFields(name);
+    List<IndexableField> realValues = d.getFields(name);
     
-    assert realValues.length <= lazyValues.size() 
+    assert realValues.size() <= lazyValues.size() 
       : "More lazy values then real values for field: " + name;
     
     for (int i = 0; i < lazyValues.size(); i++) {
       LazyField f = lazyValues.get(i);
       if (null != f) {
-        f.realValue = realValues[i];
+        f.realValue = realValues.get(i);
       }
     }
   }
@@ -127,10 +126,10 @@ public class LazyDocument {
   /** 
    * @lucene.internal 
    */
-  public class LazyField implements StorableField {
+  public class LazyField implements IndexableField {
     private String name;
     private int fieldNum;
-    volatile StorableField realValue = null;
+    volatile IndexableField realValue = null;
 
     private LazyField(String name, int fieldNum) {
       this.name = name;
@@ -145,7 +144,7 @@ public class LazyDocument {
       return null != realValue;
     }
 
-    private StorableField getRealValue() {
+    private IndexableField getRealValue() {
       if (null == realValue) {
         fetchRealValues(name, fieldNum);
       }
@@ -159,6 +158,16 @@ public class LazyDocument {
     @Override
     public String name() {
       return name;
+    }
+
+    @Override
+    public float boost() {
+      return 1.0f;
+    }
+
+    @Override
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
+      return null;
     }
 
     @Override

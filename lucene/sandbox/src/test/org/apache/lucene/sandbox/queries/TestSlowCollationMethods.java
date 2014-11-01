@@ -84,7 +84,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   private void doCheckSorting(TopDocs docs) throws Exception {
     String prev = "";
     for (ScoreDoc doc : docs.scoreDocs) {
-      String value = reader.document(doc.doc).get("field");
+      String value = reader.document(doc.doc).getString("field");
       assertTrue(collator.compare(value, prev) >= 0);
       prev = value;
     }
@@ -115,7 +115,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     // positive test
     TopDocs docs = searcher.search(query, numDocs);
     for (ScoreDoc doc : docs.scoreDocs) {
-      String value = reader.document(doc.doc).get("field");
+      String value = reader.document(doc.doc).getString("field");
       assertTrue(collator.compare(value, startPoint) >= 0);
       assertTrue(collator.compare(value, endPoint) <= 0);
     }
@@ -126,7 +126,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     bq.add(query, Occur.MUST_NOT);
     docs = searcher.search(bq, numDocs);
     for (ScoreDoc doc : docs.scoreDocs) {
-      String value = reader.document(doc.doc).get("field");
+      String value = reader.document(doc.doc).getString("field");
       assertTrue(collator.compare(value, startPoint) < 0 || collator.compare(value, endPoint) > 0);
     }
   }

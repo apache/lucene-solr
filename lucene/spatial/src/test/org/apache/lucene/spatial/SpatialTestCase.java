@@ -17,35 +17,35 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.TestUtil;
-import org.junit.After;
-import org.junit.Before;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
+import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.junit.After;
+import org.junit.Before;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomGaussian;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
@@ -234,15 +234,15 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   protected static class SearchResult {
 
     public float score;
-    public StoredDocument document;
+    public Document2 document;
 
-    public SearchResult(float score, StoredDocument storedDocument) {
+    public SearchResult(float score, Document2 storedDocument) {
       this.score = score;
       this.document = storedDocument;
     }
 
     public String getId() {
-      return document.get("id");
+      return document.getString("id");
     }
     
     @Override

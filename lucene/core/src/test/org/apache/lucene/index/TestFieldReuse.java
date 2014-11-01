@@ -23,14 +23,15 @@ import java.util.Collections;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.NumericTokenStream.NumericTermAttribute;
+import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** test tokenstream reuse by DefaultIndexingChain */
@@ -119,6 +120,31 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
       lastSeen = reuse;
       return lastReturned = new CannedTokenStream(new Token("unimportant", 0, 10));
     }
+
+    @Override
+    public String stringValue() {
+      return null;
+    }
+
+    @Override
+    public Number numericValue() {
+      return null;
+    }
+
+    @Override
+    public Number numericDocValue() {
+      return null;
+    }
+
+    @Override
+    public BytesRef binaryDocValue() {
+      return null;
+    }
+
+    @Override
+    public BytesRef binaryValue() {
+      return null;
+    }
     
     @Override
     public float boost() {
@@ -131,30 +157,12 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     IndexWriter iw = new IndexWriter(dir, iwc);
     final MyField field1 = new MyField();
-    iw.addDocument(new IndexDocument() {
-      @Override
-      public Iterable<? extends IndexableField> indexableFields() {
-        return Collections.singletonList(field1);
-      }
-      @Override
-      public Iterable<StorableField> storableFields() {
-        return Collections.emptyList();
-      }
-    });
+    iw.addDocument(Collections.singletonList(field1));
     TokenStream previous = field1.lastReturned;
     assertNotNull(previous);
     
     final MyField field2 = new MyField();
-    iw.addDocument(new IndexDocument() {
-      @Override
-      public Iterable<? extends IndexableField> indexableFields() {
-        return Collections.singletonList(field2);
-      }
-      @Override
-      public Iterable<StorableField> storableFields() {
-        return Collections.emptyList();
-      }
-    });
+    iw.addDocument(Collections.singletonList(field2));
     assertSame(previous, field2.lastSeen);
     iw.close();
     dir.close();

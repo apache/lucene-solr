@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
@@ -15,7 +16,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -312,8 +312,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       }
     }
     
-    StoredDocument doc = indexReader.document(ordinal);
-    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
+    Document2 doc = indexReader.document(ordinal);
+    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.getString(Consts.FULL)));
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }

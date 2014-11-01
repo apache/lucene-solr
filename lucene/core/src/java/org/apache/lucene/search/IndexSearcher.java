@@ -32,13 +32,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -47,7 +49,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.index.IndexWriter; // javadocs
 
 /** Implements search over a single IndexReader.
  *
@@ -181,10 +182,10 @@ public class IndexSearcher {
   }
 
   /** 
-   * Sugar for <code>.getIndexReader().document(docID)</code> 
-   * @see IndexReader#document(int) 
+   * Sugar for <code>.getIndexReader().document2(docID)</code> 
+   * @see IndexReader#document2(int) 
    */
-  public StoredDocument doc(int docID) throws IOException {
+  public Document2 doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
@@ -200,7 +201,7 @@ public class IndexSearcher {
    * Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code>
    * @see IndexReader#document(int, Set) 
    */
-  public StoredDocument doc(int docID, Set<String> fieldsToLoad) throws IOException {
+  public Document2 doc(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 

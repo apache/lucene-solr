@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.Document2StoredFieldVisitor; // javadocs
 
 /**
  * Expert: provides a low-level means of accessing the stored field
@@ -33,7 +33,7 @@ import org.apache.lucene.document.DocumentStoredFieldVisitor;
  * fields for most codecs is not reeentrant and you will see
  * strange exceptions as a result.
  *
- * <p>See {@link DocumentStoredFieldVisitor}, which is a
+ * <p>See {@link Document2StoredFieldVisitor}, which is a
  * <code>StoredFieldVisitor</code> that builds the
  * {@link Document} containing all stored fields.  This is
  * used by {@link IndexReader#document(int)}.

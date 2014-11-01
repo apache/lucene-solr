@@ -89,7 +89,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     assertEquals("3 documents should match", 3, hits.length);
     List<String> order = Arrays.asList("bbbbb","abbbb","aabbb");
     for (int i = 0; i < hits.length; i++) {
-      final String term = searcher.doc(hits[i].doc).get("field");
+      final String term = searcher.doc(hits[i].doc).getString("field");
       //System.out.println(hits[i].score);
       assertEquals(order.get(i), term);
     }
@@ -101,7 +101,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     assertEquals("only 2 documents should match", 2, hits.length);
     order = Arrays.asList("bbbbb","abbbb");
     for (int i = 0; i < hits.length; i++) {
-      final String term = searcher.doc(hits[i].doc).get("field");
+      final String term = searcher.doc(hits[i].doc).getString("field");
       //System.out.println(hits[i].score);
       assertEquals(order.get(i), term);
     }

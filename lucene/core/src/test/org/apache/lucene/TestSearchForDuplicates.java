@@ -47,77 +47,77 @@ public class TestSearchForDuplicates extends LuceneTestCase {
    *        validate this output and make any changes to the checkHits method.
    */
   public void testRun() throws Exception {
-      StringWriter sw = new StringWriter();
-      PrintWriter pw = new PrintWriter(sw, true);
-      final int MAX_DOCS = atLeast(225);
-      doTest(random(), pw, false, MAX_DOCS);
-      pw.close();
-      sw.close();
-      String multiFileOutput = sw.toString();
-      //System.out.println(multiFileOutput);
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw, true);
+    final int MAX_DOCS = atLeast(225);
+    doTest(random(), pw, false, MAX_DOCS);
+    pw.close();
+    sw.close();
+    String multiFileOutput = sw.toString();
+    //System.out.println(multiFileOutput);
 
-      sw = new StringWriter();
-      pw = new PrintWriter(sw, true);
-      doTest(random(), pw, true, MAX_DOCS);
-      pw.close();
-      sw.close();
-      String singleFileOutput = sw.toString();
+    sw = new StringWriter();
+    pw = new PrintWriter(sw, true);
+    doTest(random(), pw, true, MAX_DOCS);
+    pw.close();
+    sw.close();
+    String singleFileOutput = sw.toString();
 
-      assertEquals(multiFileOutput, singleFileOutput);
+    assertEquals(multiFileOutput, singleFileOutput);
   }
 
 
   private void doTest(Random random, PrintWriter out, boolean useCompoundFiles, int MAX_DOCS) throws Exception {
-      Directory directory = newDirectory();
-      Analyzer analyzer = new MockAnalyzer(random);
-      IndexWriterConfig conf = newIndexWriterConfig(analyzer);
-      final MergePolicy mp = conf.getMergePolicy();
-      mp.setNoCFSRatio(useCompoundFiles ? 1.0 : 0.0);
-      IndexWriter writer = new IndexWriter(directory, conf);
-      if (VERBOSE) {
-        System.out.println("TEST: now build index MAX_DOCS=" + MAX_DOCS);
-      }
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
+    final MergePolicy mp = conf.getMergePolicy();
+    mp.setNoCFSRatio(useCompoundFiles ? 1.0 : 0.0);
+    IndexWriter writer = new IndexWriter(directory, conf);
+    if (VERBOSE) {
+      System.out.println("TEST: now build index MAX_DOCS=" + MAX_DOCS);
+    }
 
-      for (int j = 0; j < MAX_DOCS; j++) {
-        Document2 d = writer.newDocument();
-        d.addLargeText(PRIORITY_FIELD, HIGH_PRIORITY);
-        d.addInt(ID_FIELD, j);
-        writer.addDocument(d);
-      }
-      writer.close();
+    for (int j = 0; j < MAX_DOCS; j++) {
+      Document2 d = writer.newDocument();
+      d.addLargeText(PRIORITY_FIELD, HIGH_PRIORITY);
+      d.addInt(ID_FIELD, j);
+      writer.addDocument(d);
+    }
+    writer.close();
 
-      // try a search without OR
-      IndexReader reader = DirectoryReader.open(directory);
-      IndexSearcher searcher = newSearcher(reader);
+    // try a search without OR
+    IndexReader reader = DirectoryReader.open(directory);
+    IndexSearcher searcher = newSearcher(reader);
 
-      Query query = new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY));
-      out.println("Query: " + query.toString(PRIORITY_FIELD));
-      if (VERBOSE) {
-        System.out.println("TEST: search query=" + query);
-      }
+    Query query = new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY));
+    out.println("Query: " + query.toString(PRIORITY_FIELD));
+    if (VERBOSE) {
+      System.out.println("TEST: search query=" + query);
+    }
 
-      final Sort sort = new Sort(SortField.FIELD_SCORE,
-                                 new SortField(ID_FIELD, SortField.Type.INT));
+    final Sort sort = new Sort(SortField.FIELD_SCORE,
+                               new SortField(ID_FIELD, SortField.Type.INT));
 
-      ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
-      printHits(out, hits, searcher);
-      checkHits(hits, MAX_DOCS, searcher);
+    ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
+    printHits(out, hits, searcher);
+    checkHits(hits, MAX_DOCS, searcher);
 
-      // try a new search with OR
-      searcher = newSearcher(reader);
-      hits = null;
+    // try a new search with OR
+    searcher = newSearcher(reader);
+    hits = null;
 
-      BooleanQuery booleanQuery = new BooleanQuery();
-      booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY)), BooleanClause.Occur.SHOULD);
-      booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, MED_PRIORITY)), BooleanClause.Occur.SHOULD);
-      out.println("Query: " + booleanQuery.toString(PRIORITY_FIELD));
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY)), BooleanClause.Occur.SHOULD);
+    booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, MED_PRIORITY)), BooleanClause.Occur.SHOULD);
+    out.println("Query: " + booleanQuery.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(booleanQuery, null, MAX_DOCS, sort).scoreDocs;
-      printHits(out, hits, searcher);
-      checkHits(hits, MAX_DOCS, searcher);
+    hits = searcher.search(booleanQuery, null, MAX_DOCS, sort).scoreDocs;
+    printHits(out, hits, searcher);
+    checkHits(hits, MAX_DOCS, searcher);
 
-      reader.close();
-      directory.close();
+    reader.close();
+    directory.close();
   }
 
 
@@ -125,8 +125,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
     out.println(hits.length + " total results\n");
     for (int i = 0 ; i < hits.length; i++) {
       if ( i < 10 || (i > 94 && i < 105) ) {
-        StoredDocument d = searcher.doc(hits[i].doc);
-        out.println(i + " " + d.get(ID_FIELD));
+        Document2 d = searcher.doc(hits[i].doc);
+        out.println(i + " " + d.getInt(ID_FIELD));
       }
     }
   }
@@ -135,10 +135,9 @@ public class TestSearchForDuplicates extends LuceneTestCase {
     assertEquals("total results", expectedCount, hits.length);
     for (int i = 0 ; i < hits.length; i++) {
       if (i < 10 || (i > 94 && i < 105) ) {
-        StoredDocument d = searcher.doc(hits[i].doc);
-        assertEquals("check " + i, String.valueOf(i), d.get(ID_FIELD));
+        Document2 d = searcher.doc(hits[i].doc);
+        assertEquals("check " + i, i, d.getInt(ID_FIELD).intValue());
       }
     }
   }
-
 }

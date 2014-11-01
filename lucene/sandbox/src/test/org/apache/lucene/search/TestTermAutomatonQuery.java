@@ -611,7 +611,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   private Set<String> toDocIDs(IndexSearcher s, TopDocs hits) throws IOException {
     Set<String> result = new HashSet<>();
     for(ScoreDoc hit : hits.scoreDocs) {
-      result.add(s.doc(hit.doc).get("id"));
+      result.add(s.doc(hit.doc).getString("id"));
     }
     return result;
   }

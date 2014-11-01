@@ -158,7 +158,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       DocsAndPositionsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef(term));
       int doc;
       while((doc = dp.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        String storedNumbers = reader.document(doc).get("numbers");
+        String storedNumbers = reader.document(doc).getString("numbers");
         int freq = dp.freq();
         for (int i = 0; i < freq; i++) {
           dp.nextPosition();
@@ -188,7 +188,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       assertEquals(num, doc);
       int freq = dp.freq();
       for (int i = 0; i < freq; i++) {
-        String storedNumbers = reader.document(doc).get("numbers");
+        String storedNumbers = reader.document(doc).getString("numbers");
         dp.nextPosition();
         int start = dp.startOffset();
         assert start >= 0;

@@ -16,13 +16,19 @@
  */
 package org.apache.lucene.classification;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -39,12 +45,6 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * A perceptron (see <code>http://en.wikipedia.org/wiki/Perceptron</code>) based
@@ -171,7 +171,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     // run the search and use stored field values
     for (ScoreDoc scoreDoc : indexSearcher.search(q,
         Integer.MAX_VALUE).scoreDocs) {
-      StoredDocument doc = indexSearcher.doc(scoreDoc.doc);
+      Document2 doc = indexSearcher.doc(scoreDoc.doc);
 
       // assign class to the doc
       ClassificationResult<Boolean> classificationResult = assignClass(doc
@@ -179,7 +179,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
       Boolean assignedClass = classificationResult.getAssignedClass();
       
       // get the expected result
-      StorableField field = doc.getField(classFieldName);
+      IndexableField field = doc.getField(classFieldName);
       
       Boolean correctClass = Boolean.valueOf(field.stringValue());
       long modifier = correctClass.compareTo(assignedClass);

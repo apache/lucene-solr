@@ -17,22 +17,22 @@ package org.apache.lucene.classification.utils;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
 
 /**
  * Utility class for creating training / test / cross validation indexes from the original index.
@@ -96,7 +96,7 @@ public class DatasetSplitter {
             doc.add(new Field(fieldName, originalIndex.document(scoreDoc.doc).getField(fieldName).stringValue(), ft));
           }
         } else {
-          for (StorableField storableField : originalIndex.document(scoreDoc.doc).getFields()) {
+          for (IndexableField storableField : originalIndex.document(scoreDoc.doc).getFields()) {
             if (storableField.binaryValue() != null) {
               doc.add(new Field(storableField.name(), storableField.binaryValue(), ft));
             } else if (storableField.stringValue() != null) {

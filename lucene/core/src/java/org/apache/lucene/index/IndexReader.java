@@ -26,7 +26,9 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document2StoredFieldVisitor;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits; // javadocs
 import org.apache.lucene.util.IOUtils;
@@ -102,6 +104,11 @@ public abstract class IndexReader implements Closeable {
   }
 
   // nocommit need getFieldTypes; how should MultiReader impl?
+
+  // nocommit make abstract
+  public FieldTypes getFieldTypes() {
+    return null;
+  }
 
   private final Set<ReaderClosedListener> readerClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<ReaderClosedListener>());
@@ -341,13 +348,13 @@ public abstract class IndexReader implements Closeable {
    *  custom processing/loading of each field.  If you
    *  simply want to load all fields, use {@link
    *  #document(int)}.  If you want to load a subset, use
-   *  {@link DocumentStoredFieldVisitor}.  */
+   *  {@link Document2StoredFieldVisitor}.  */
   public abstract void document(int docID, StoredFieldVisitor visitor) throws IOException;
-  
+
   /**
    * Returns the stored fields of the <code>n</code><sup>th</sup>
    * <code>Document</code> in this index.  This is just
-   * sugar for using {@link DocumentStoredFieldVisitor}.
+   * sugar for using {@link Document2StoredFieldVisitor}.
    * <p>
    * <b>NOTE:</b> for performance reasons, this method does not check if the
    * requested document is deleted, and therefore asking for a deleted document
@@ -366,8 +373,8 @@ public abstract class IndexReader implements Closeable {
   // TODO: we need a separate StoredField, so that the
   // Document returned here contains that class not
   // IndexableField
-  public final StoredDocument document(int docID) throws IOException {
-    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+  public final Document2 document(int docID) throws IOException {
+    final Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(getFieldTypes());
     document(docID, visitor);
     return visitor.getDocument();
   }
@@ -375,12 +382,11 @@ public abstract class IndexReader implements Closeable {
   /**
    * Like {@link #document(int)} but only loads the specified
    * fields.  Note that this is simply sugar for {@link
-   * DocumentStoredFieldVisitor#DocumentStoredFieldVisitor(Set)}.
+   * Document2StoredFieldVisitor#Document2StoredFieldVisitor(Set)}.
    */
-  public final StoredDocument document(int docID, Set<String> fieldsToLoad)
+  public final Document2 document(int docID, Set<String> fieldsToLoad)
       throws IOException {
-    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(
-        fieldsToLoad);
+    final Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(getFieldTypes(), fieldsToLoad);
     document(docID, visitor);
     return visitor.getDocument();
   }

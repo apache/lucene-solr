@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -337,7 +338,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
             SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
             si.setCodec(codec);
             SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
-            SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);
+            SegmentReader sr = new SegmentReader(w.getFieldTypes(),
+                                                 sci, IOContext.DEFAULT);
             try {
               thread0Count += sr.docFreq(new Term("field", "threadID0"));
               thread1Count += sr.docFreq(new Term("field", "threadID1"));

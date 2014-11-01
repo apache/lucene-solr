@@ -112,7 +112,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     if (assertIds != null) {
       Set<Integer> gotIds = new HashSet<>();
       for (SearchResult result : got.results) {
-        gotIds.add(Integer.valueOf(result.document.get("id")));
+        gotIds.add(Integer.valueOf(result.document.getString("id")));
       }
       for (int assertId : assertIds) {
         assertTrue("has "+assertId,gotIds.contains(assertId));

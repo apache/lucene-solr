@@ -18,16 +18,16 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -96,10 +96,10 @@ public class Test4GBStoredFields extends LuceneTestCase {
     }
 
     DirectoryReader rd = DirectoryReader.open(dir);
-    StoredDocument sd = rd.document(numDocs - 1);
+    Document2 sd = rd.document(numDocs - 1);
     assertNotNull(sd);
     assertEquals(1, sd.getFields().size());
-    BytesRef valueRef = sd.getBinaryValue("fld");
+    BytesRef valueRef = sd.getBinary("fld");
     assertNotNull(valueRef);
     assertEquals(new BytesRef(value), valueRef);
     rd.close();

@@ -147,7 +147,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
     if (concern.orderIsImportant) {
       Iterator<String> ids = q.ids.iterator();
       for (SearchResult r : got.results) {
-        String id = r.document.get("id");
+        String id = r.document.getString("id");
         if (!ids.hasNext()) {
           fail(msg + " :: Did not get enough results.  Expect" + q.ids + ", got: " + got.toDebugString());
         }
@@ -162,7 +162,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       if (concern.resultsAreSuperset) {
         Set<String> found = new HashSet<>();
         for (SearchResult r : got.results) {
-          found.add(r.document.get("id"));
+          found.add(r.document.getString("id"));
         }
         for (String s : q.ids) {
           if (!found.contains(s)) {
@@ -172,7 +172,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       } else {
         List<String> found = new ArrayList<>();
         for (SearchResult r : got.results) {
-          found.add(r.document.get("id"));
+          found.add(r.document.getString("id"));
         }
 
         // sort both so that the order is not important

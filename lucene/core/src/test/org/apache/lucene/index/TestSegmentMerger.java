@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -57,8 +58,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     merge2Dir = newDirectory();
     SegmentCommitInfo info1 = DocHelper.writeDoc(random(), merge1Dir);
     SegmentCommitInfo info2 = DocHelper.writeDoc(random(), merge2Dir);
-    reader1 = new SegmentReader(info1, newIOContext(random()));
-    reader2 = new SegmentReader(info2, newIOContext(random()));
+    reader1 = new SegmentReader(FieldTypes.getFieldTypes(merge1Dir, null), info1, newIOContext(random()));
+    reader2 = new SegmentReader(FieldTypes.getFieldTypes(merge2Dir, null), info2, newIOContext(random()));
   }
 
   @Override
@@ -83,28 +84,29 @@ public class TestSegmentMerger extends LuceneTestCase {
     final Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, null, StringHelper.randomId());
 
-    SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(reader1, reader2),
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(merge1Dir, new MockAnalyzer(random()));
+    SegmentMerger merger = new SegmentMerger(fieldTypes, Arrays.<LeafReader>asList(reader1, reader2),
         si, InfoStream.getDefault(), mergedDir,
         MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), newIOContext(random()));
     MergeState mergeState = merger.merge();
     int docsMerged = mergeState.segmentInfo.getDocCount();
     assertTrue(docsMerged == 2);
     //Should be able to open a new SegmentReader against the new directory
-    SegmentReader mergedReader = new SegmentReader(new SegmentCommitInfo(
+    SegmentReader mergedReader = new SegmentReader(fieldTypes,
+                                                   new SegmentCommitInfo(
                                                          mergeState.segmentInfo,
                                                          0, -1L, -1L, -1L),
                                                    newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
-    StoredDocument newDoc1 = mergedReader.document(0);
+    Document2 newDoc1 = mergedReader.document(0);
     assertTrue(newDoc1 != null);
 
-    FieldTypes fieldTypes = FieldTypes.getFieldTypes(merge1Dir, new MockAnalyzer(random()));
     Set<String> unstored = DocHelper.getUnstored(fieldTypes);
 
     //There are 2 unstored fields on the document
     assertEquals(DocHelper.numFields(newDoc1), DocHelper.numFields() - unstored.size());
-    StoredDocument newDoc2 = mergedReader.document(1);
+    Document2 newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
     assertEquals(DocHelper.numFields(newDoc2), DocHelper.numFields() - unstored.size());
 

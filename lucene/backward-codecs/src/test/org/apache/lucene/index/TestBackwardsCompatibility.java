@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
@@ -624,13 +625,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     for(int i=0;i<35;i++) {
       if (liveDocs.get(i)) {
-        StoredDocument d = reader.document(i);
-        List<StorableField> fields = d.getFields();
+        Document2 d = reader.document(i);
+        List<IndexableField> fields = d.getFields();
         boolean isProxDoc = d.getField("content3") == null;
         if (isProxDoc) {
           final int numFields = is40Index ? 7 : 5;
           assertEquals(numFields, fields.size());
-          StorableField f =  d.getField("id");
+          IndexableField f =  d.getField("id");
           assertEquals(""+i, f.stringValue());
 
           f = d.getField("utf8");
@@ -681,7 +682,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       
       for (int i=0;i<35;i++) {
-        int id = Integer.parseInt(reader.document(i).get("id"));
+        int id = Integer.parseInt(reader.document(i).getString("id"));
         assertEquals(id, dvByte.get(i));
         
         byte bytes[] = new byte[] {
@@ -726,8 +727,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term(new String("content"), "aaa")), null, 1000).scoreDocs;
 
     // First document should be #0
-    StoredDocument d = searcher.getIndexReader().document(hits[0].doc);
-    assertEquals("didn't get the right document first", "0", d.get("id"));
+    Document2 d = searcher.getIndexReader().document(hits[0].doc);
+    assertEquals("didn't get the right document first", "0", d.getString("id"));
 
     doTestHits(hits, 34, searcher.getIndexReader());
     
@@ -770,8 +771,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    StoredDocument d = searcher.getIndexReader().document(hits[0].doc);
-    assertEquals("wrong first document", "0", d.get("id"));
+    Document2 d = searcher.getIndexReader().document(hits[0].doc);
+    assertEquals("wrong first document", "0", d.getString("id"));
     doTestHits(hits, 44, searcher.getIndexReader());
     reader.close();
 
@@ -798,8 +799,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
-    StoredDocument d = searcher.doc(hits[0].doc);
-    assertEquals("wrong first document", "0", d.get("id"));
+    Document2 d = searcher.doc(hits[0].doc);
+    assertEquals("wrong first document", "0", d.getString("id"));
     reader.close();
 
     // fully merge
@@ -1039,13 +1040,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       for (int id=10; id<15; id++) {
         ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", NumericUtils.PRECISION_STEP_DEFAULT_32, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
-        StoredDocument d = searcher.doc(hits[0].doc);
-        assertEquals(String.valueOf(id), d.get("id"));
+        Document2 d = searcher.doc(hits[0].doc);
+        assertEquals(String.valueOf(id), d.getString("id"));
         
         hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", NumericUtils.PRECISION_STEP_DEFAULT, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
         d = searcher.doc(hits[0].doc);
-        assertEquals(String.valueOf(id), d.get("id"));
+        assertEquals(String.valueOf(id), d.getString("id"));
       }
       
       // check that also lower-precision fields are ok

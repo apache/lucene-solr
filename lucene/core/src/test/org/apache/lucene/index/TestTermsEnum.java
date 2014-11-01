@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
@@ -33,8 +34,8 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -934,8 +935,8 @@ public class TestTermsEnum extends LuceneTestCase {
         int docID = docsEnum.nextDoc();
         assertTrue(docID != DocsEnum.NO_MORE_DOCS);
         assertEquals(docID, pkLookup.lookup(termBytesRef));
-        StoredDocument doc = r.document(docID);
-        assertEquals(term, doc.get("id"));
+        Document2 doc = r.document(docID);
+        assertEquals(term, doc.getString("id"));
 
         if (random().nextInt(7) == 1) {
           termsEnum.next();

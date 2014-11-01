@@ -71,7 +71,7 @@ class DocumentsWriterPerThread {
     InfoStream infoStream;
     Similarity similarity;
     int docID;
-    IndexDocument doc;
+    Iterable<? extends IndexableField> doc;
 
     DocState(DocumentsWriterPerThread docWriter, InfoStream infoStream) {
       this.docWriter = docWriter;
@@ -219,7 +219,7 @@ class DocumentsWriterPerThread {
     }
   }
 
-  public void updateDocument(IndexDocument doc, Analyzer analyzer, Term delTerm) throws IOException {
+  public void updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException {
     testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
     docState.doc = doc;
@@ -257,7 +257,7 @@ class DocumentsWriterPerThread {
     finishDocument(delTerm);
   }
 
-  public int updateDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer, Term delTerm) throws IOException {
+  public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException {
     testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
@@ -268,7 +268,7 @@ class DocumentsWriterPerThread {
     boolean allDocsIndexed = false;
     try {
       
-      for(IndexDocument doc : docs) {
+      for(Iterable<? extends IndexableField> doc : docs) {
         // Even on exception, the document is still added (but marked
         // deleted), so we don't need to un-reserve at that point.
         // Aborting exceptions will actually "lose" more than one

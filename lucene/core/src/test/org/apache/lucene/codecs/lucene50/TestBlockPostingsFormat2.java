@@ -27,6 +27,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -83,8 +84,8 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   public void testDFBlockSize() throws Exception {
     Document doc = newDocument();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE; i++) {
-      for (Field f : doc.getFields()) {
-        f.setStringValue(f.name() + " " + f.name() + "_2");
+      for (IndexableField f : doc.getFields()) {
+        ((Field) f).setStringValue(f.name() + " " + f.name() + "_2");
       }
       iw.addDocument(doc);
     }
@@ -94,8 +95,8 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   public void testDFBlockSizeMultiple() throws Exception {
     Document doc = newDocument();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE * 16; i++) {
-      for (Field f : doc.getFields()) {
-        f.setStringValue(f.name() + " " + f.name() + "_2");
+      for (IndexableField f : doc.getFields()) {
+        ((Field) f).setStringValue(f.name() + " " + f.name() + "_2");
       }
       iw.addDocument(doc);
     }
@@ -105,8 +106,8 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   public void testTTFBlockSize() throws Exception {
     Document doc = newDocument();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE/2; i++) {
-      for (Field f : doc.getFields()) {
-        f.setStringValue(f.name() + " " + f.name() + " " + f.name() + "_2 " + f.name() + "_2");
+      for (IndexableField f : doc.getFields()) {
+        ((Field) f).setStringValue(f.name() + " " + f.name() + " " + f.name() + "_2 " + f.name() + "_2");
       }
       iw.addDocument(doc);
     }
@@ -116,7 +117,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   public void testTTFBlockSizeMultiple() throws Exception {
     Document doc = newDocument();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE/2; i++) {
-      for (Field f : doc.getFields()) {
+      for (IndexableField f : doc.getFields()) {
         String proto = (f.name() + " " + f.name() + " " + f.name() + " " + f.name() + " " 
                        + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2");
         StringBuilder val = new StringBuilder();
@@ -124,7 +125,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
           val.append(proto);
           val.append(" ");
         }
-        f.setStringValue(val.toString());
+        ((Field) f).setStringValue(val.toString());
       }
       iw.addDocument(doc);
     }

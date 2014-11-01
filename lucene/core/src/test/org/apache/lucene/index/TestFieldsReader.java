@@ -24,9 +24,11 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document2StoredFieldVisitor;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.BaseDirectory;
@@ -60,32 +62,33 @@ public class TestFieldsReader extends LuceneTestCase {
   public void test() throws IOException {
     assertTrue(dir != null);
     IndexReader reader = DirectoryReader.open(dir);
-    StoredDocument doc = reader.document(0);
+    Document2 doc = reader.document(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
 
-    Field field = (Field) doc.getField(DocHelper.TEXT_FIELD_2_KEY);
+    IndexableField field = doc.getField(DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(field != null);
     assertTrue(field.fieldType().storeTermVectors());
 
     assertFalse(field.fieldType().omitNorms());
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, field.fieldType().indexOptions());
 
-    field = (Field) doc.getField(DocHelper.TEXT_FIELD_3_KEY);
+    field = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
     assertFalse(field.fieldType().storeTermVectors());
     assertTrue(field.fieldType().omitNorms());
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, field.fieldType().indexOptions());
 
-    field = (Field) doc.getField(DocHelper.NO_TF_KEY);
+    field = doc.getField(DocHelper.NO_TF_KEY);
     assertTrue(field != null);
     assertFalse(field.fieldType().storeTermVectors());
     assertFalse(field.fieldType().omitNorms());
     assertTrue(field.fieldType().indexOptions() == IndexOptions.DOCS_ONLY);
 
-    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(dir, null);
+    Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(fieldTypes, DocHelper.TEXT_FIELD_3_KEY);
     reader.document(0, visitor);
-    final List<StorableField> fields = visitor.getDocument().getFields();
+    final List<IndexableField> fields = visitor.getDocument().getFields();
     assertEquals(1, fields.size());
     assertEquals(DocHelper.TEXT_FIELD_3_KEY, fields.get(0).name());
     reader.close();

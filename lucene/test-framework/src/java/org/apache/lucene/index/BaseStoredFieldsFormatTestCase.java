@@ -157,7 +157,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
           }
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);
-          StoredDocument doc = r.document(hits.scoreDocs[0].doc);
+          Document2 doc = r.document(hits.scoreDocs[0].doc);
           Document2 docExp = docs.get(testID);
           for(int i=0;i<fieldCount;i++) {
             assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));
@@ -184,20 +184,20 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     doc.add(newField("zzz", "1 2 3", customType));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    StoredDocument doc2 = r.document(0);
-    Iterator<StorableField> it = doc2.getFields().iterator();
+    Document2 doc2 = r.document(0);
+    Iterator<IndexableField> it = doc2.iterator();
     assertTrue(it.hasNext());
-    Field f = (Field) it.next();
+    IndexableField f = it.next();
     assertEquals(f.name(), "zzz");
     assertEquals(f.stringValue(), "a b c");
 
     assertTrue(it.hasNext());
-    f = (Field) it.next();
+    f = it.next();
     assertEquals(f.name(), "aaa");
     assertEquals(f.stringValue(), "a b c");
 
     assertTrue(it.hasNext());
-    f = (Field) it.next();
+    f = it.next();
     assertEquals(f.name(), "zzz");
     assertEquals(f.stringValue(), "1 2 3");
     assertFalse(it.hasNext());
@@ -226,8 +226,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    StoredDocument doc2 = ir.document(0);
-    StorableField f2 = doc2.getField("binary");
+    Document2 doc2 = ir.document(0);
+    IndexableField f2 = doc2.getField("binary");
     b = f2.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -290,8 +290,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     final int docID = random().nextInt(100);
     for (Field fld : fields) {
       String fldName = fld.name();
-      final StoredDocument sDoc = reader.document(docID, Collections.singleton(fldName));
-      final StorableField sField = sDoc.getField(fldName);
+      final Document2 sDoc = reader.document(docID, Collections.singleton(fldName));
+      final IndexableField sField = sDoc.getField(fldName);
       if (Field.class.equals(fld.getClass())) {
         assertEquals(fld.binaryValue(), sField.binaryValue());
         assertEquals(fld.stringValue(), sField.stringValue());
@@ -319,7 +319,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.commit();
     final DirectoryReader rd = DirectoryReader.open(dir);
     for (int i = 0; i < numDocs; ++i) {
-      final StoredDocument doc = rd.document(i);
+      final Document2 doc = rd.document(i);
       assertNotNull(doc);
       assertTrue(doc.getFields().isEmpty());
     }
@@ -371,7 +371,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
               if (topDocs.totalHits != 1) {
                 throw new IllegalStateException("Expected 1 hit, got " + topDocs.totalHits);
               }
-              final StoredDocument sdoc = rd.document(topDocs.scoreDocs[0].doc);
+              final Document2 sdoc = rd.document(topDocs.scoreDocs[0].doc);
               if (sdoc == null || sdoc.get("fld") == null) {
                 throw new IllegalStateException("Could not find document " + q);
               }
@@ -472,7 +472,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     assertTrue(ir.numDocs() > 0);
     int numDocs = 0;
     for (int i = 0; i < ir.maxDoc(); ++i) {
-      final StoredDocument doc = ir.document(i);
+      final Document2 doc = ir.document(i);
       if (doc == null) {
         continue;
       }
@@ -481,7 +481,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       assertEquals(data[docId].length + 1, doc.getFields().size());
       for (int j = 0; j < data[docId].length; ++j) {
         final byte[] arr = data[docId][j];
-        final BytesRef arr2Ref = doc.getBinaryValue("bytes" + j);
+        final BytesRef arr2Ref = doc.getBinary("bytes" + j);
         final byte[] arr2 = Arrays.copyOfRange(arr2Ref.bytes, arr2Ref.offset, arr2Ref.offset + arr2Ref.length);
         assertArrayEquals(arr, arr2);
       }
@@ -553,12 +553,12 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       final Query query = new TermQuery(new Term("id", "" + i));
       final TopDocs topDocs = searcher.search(query, 1);
       assertEquals("" + i, 1, topDocs.totalHits);
-      final StoredDocument doc = rd.document(topDocs.scoreDocs[0].doc);
+      final Document2 doc = rd.document(topDocs.scoreDocs[0].doc);
       assertNotNull(doc);
-      final StorableField[] fieldValues = doc.getFields("fld");
-      assertEquals(docs[i].getFields("fld").length, fieldValues.length);
-      if (fieldValues.length > 0) {
-        assertEquals(docs[i].getFields("fld")[0].binaryValue(), fieldValues[0].binaryValue());
+      final List<IndexableField> fieldValues = doc.getFields("fld");
+      assertEquals(docs[i].getFields("fld").length, fieldValues.size());
+      if (fieldValues.size() > 0) {
+        assertEquals(docs[i].getFields("fld")[0].binaryValue(), fieldValues.get(0).binaryValue());
       }
     }
     rd.close();

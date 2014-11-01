@@ -20,12 +20,12 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -143,14 +143,14 @@ public class DocumentDictionary implements Dictionary {
           continue;
         }
 
-        StoredDocument doc = reader.document(currentDocId, relevantFields);
+        Document2 doc = reader.document(currentDocId, relevantFields);
 
         BytesRef tempPayload = null;
         BytesRef tempTerm = null;
         Set<BytesRef> tempContexts = new HashSet<>();
 
         if (hasPayloads) {
-          StorableField payload = doc.getField(payloadField);
+          IndexableField payload = doc.getField(payloadField);
           if (payload == null || (payload.binaryValue() == null && payload.stringValue() == null)) {
             continue;
           }
@@ -158,8 +158,7 @@ public class DocumentDictionary implements Dictionary {
         }
 
         if (hasContexts) {
-          final StorableField[] contextFields = doc.getFields(contextsField);
-          for (StorableField contextField : contextFields) {
+          for (IndexableField contextField : doc.getFields(contextsField)) {
             if (contextField.binaryValue() == null && contextField.stringValue() == null) {
               continue;
             } else {
@@ -168,7 +167,7 @@ public class DocumentDictionary implements Dictionary {
           }
         }
 
-        StorableField fieldVal = doc.getField(field);
+        IndexableField fieldVal = doc.getField(field);
         if (fieldVal == null || (fieldVal.binaryValue() == null && fieldVal.stringValue() == null)) {
           continue;
         }
@@ -199,8 +198,8 @@ public class DocumentDictionary implements Dictionary {
      * or if its indexed as {@link NumericDocValues} (using <code>docId</code>) for the document.
      * If no value is found, then the weight is 0.
      */
-    protected long getWeight(StoredDocument doc, int docId) {
-      StorableField weight = doc.getField(weightField);
+    protected long getWeight(Document2 doc, int docId) {
+      IndexableField weight = doc.getField(weightField);
       if (weight != null) { // found weight as stored
         return (weight.numericValue() != null) ? weight.numericValue().longValue() : 0;
       } else if (weightValues != null) {  // found weight as NumericDocValue

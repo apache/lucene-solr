@@ -1207,11 +1207,11 @@ public class TestAddIndexes extends LuceneTestCase {
     w.close();
     assertEquals(2, r3.numDocs());
     for(int docID=0;docID<2;docID++) {
-      StoredDocument d = r3.document(docID);
-      if (d.get("id").equals("1")) {
-        assertEquals("doc1 field1", d.get("f1"));
+      Document2 d = r3.document(docID);
+      if (d.getString("id").equals("1")) {
+        assertEquals("doc1 field1", d.getString("f1"));
       } else {
-        assertEquals("doc2 field2", d.get("f2"));
+        assertEquals("doc2 field2", d.getString("f2"));
       }
     }
     r3.close();

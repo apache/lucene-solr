@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -45,7 +46,7 @@ public class TestSegmentReader extends LuceneTestCase {
     dir = newDirectory();
     SegmentCommitInfo info = DocHelper.writeDoc(random(), dir);
     fieldTypes = FieldTypes.getFieldTypes(dir, new MockAnalyzer(random()));
-    reader = new SegmentReader(info, IOContext.READ);
+    reader = new SegmentReader(fieldTypes, info, IOContext.READ);
   }
   
   @Override
@@ -64,14 +65,14 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testDocument() throws IOException {
     assertTrue(reader.numDocs() == 1);
     assertTrue(reader.maxDoc() >= 1);
-    StoredDocument result = reader.document(0);
+    Document2 result = reader.document(0);
     assertTrue(result != null);
     //There are 2 unstored fields on the document that are not preserved across writing
     assertTrue(DocHelper.numFields(result) == DocHelper.numFields() - DocHelper.getUnstored(fieldTypes).size());
     
-    List<StorableField> fields = result.getFields();
+    List<IndexableField> fields = result.getFields();
     Set<String> allFieldNames = DocHelper.getAll(fieldTypes);
-    for (final StorableField field : fields ) { 
+    for (final IndexableField field : fields ) { 
       assertTrue(field != null);
       assertTrue(allFieldNames.contains(field.name()));
     }

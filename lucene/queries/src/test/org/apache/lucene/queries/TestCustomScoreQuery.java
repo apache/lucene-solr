@@ -305,7 +305,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
       log("doc = "+doc);
 
-      float fieldScore = expectedFieldScore(s.getIndexReader().document(doc).get(ID_FIELD));
+      float fieldScore = expectedFieldScore(s.getIndexReader().document(doc).getString(ID_FIELD));
       log("fieldScore = " + fieldScore);
       assertTrue("fieldScore should not be 0", fieldScore > 0);
 

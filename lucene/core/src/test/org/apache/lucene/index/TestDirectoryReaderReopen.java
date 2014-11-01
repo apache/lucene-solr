@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -127,9 +128,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
           if (i>0) {
             int k = i-1;
             int n = j + k*M;
-            StoredDocument prevItereationDoc = reader.document(n);
+            Document2 prevItereationDoc = reader.document(n);
             assertNotNull(prevItereationDoc);
-            String id = prevItereationDoc.get("id");
+            String id = prevItereationDoc.getString("id");
             assertEquals(k+"_"+j, id);
           }
         }

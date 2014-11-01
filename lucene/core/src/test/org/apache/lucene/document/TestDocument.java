@@ -27,9 +27,8 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -172,7 +171,7 @@ public class TestDocument extends LuceneTestCase {
   public void testGetFieldsImmutable() {
     Document doc = makeDocumentWithFields();
     assertEquals(10, doc.getFields().size());
-    List<Field> fields = doc.getFields();
+    List<IndexableField> fields = doc.getFields();
     try {
       fields.add( new StringField("name", "value", Field.Store.NO) );
       fail("Document.getFields() should return immutable List");
@@ -279,14 +278,44 @@ public class TestDocument extends LuceneTestCase {
     return doc;
   }
   
-  private void doAssert(StoredDocument doc) {
-    doAssert(new Document(doc), true);
+  private void doAssert(Document2 doc) {
+    doAssert(doc, true);
   }
+
+  private void doAssert(Document2 doc, boolean fromIndex) {
+    List<IndexableField> keywordFieldValues = doc.getFields("keyword");
+    List<IndexableField> textFieldValues = doc.getFields("text");
+    List<IndexableField> unindexedFieldValues = doc.getFields("unindexed");
+    List<IndexableField> unstoredFieldValues = doc.getFields("unstored");
+    
+    assertTrue(keywordFieldValues.size() == 2);
+    assertTrue(textFieldValues.size() == 2);
+    assertTrue(unindexedFieldValues.size() == 2);
+    // this test cannot work for documents retrieved from the index
+    // since unstored fields will obviously not be returned
+    if (!fromIndex) {
+      assertTrue(unstoredFieldValues.size() == 2);
+    }
+    
+    assertTrue(keywordFieldValues.get(0).stringValue().equals("test1"));
+    assertTrue(keywordFieldValues.get(1).stringValue().equals("test2"));
+    assertTrue(textFieldValues.get(0).stringValue().equals("test1"));
+    assertTrue(textFieldValues.get(1).stringValue().equals("test2"));
+    assertTrue(unindexedFieldValues.get(0).stringValue().equals("test1"));
+    assertTrue(unindexedFieldValues.get(1).stringValue().equals("test2"));
+    // this test cannot work for documents retrieved from the index
+    // since unstored fields will obviously not be returned
+    if (!fromIndex) {
+      assertTrue(unstoredFieldValues.get(0).stringValue().equals("test1"));
+      assertTrue(unstoredFieldValues.get(1).stringValue().equals("test2"));
+    }
+  }
+
   private void doAssert(Document doc, boolean fromIndex) {
-    StorableField[] keywordFieldValues = doc.getFields("keyword");
-    StorableField[] textFieldValues = doc.getFields("text");
-    StorableField[] unindexedFieldValues = doc.getFields("unindexed");
-    StorableField[] unstoredFieldValues = doc.getFields("unstored");
+    IndexableField[] keywordFieldValues = doc.getFields("keyword");
+    IndexableField[] textFieldValues = doc.getFields("text");
+    IndexableField[] unindexedFieldValues = doc.getFields("unindexed");
+    IndexableField[] unstoredFieldValues = doc.getFields("unstored");
     
     assertTrue(keywordFieldValues.length == 2);
     assertTrue(textFieldValues.length == 2);
@@ -336,8 +365,8 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(3, hits.length);
     int result = 0;
     for (int i = 0; i < 3; i++) {
-      StoredDocument doc2 = searcher.doc(hits[i].doc);
-      Field f = (Field) doc2.getField("id");
+      Document2 doc2 = searcher.doc(hits[i].doc);
+      IndexableField f = doc2.getField("id");
       if (f.stringValue().equals("id1")) result |= 1;
       else if (f.stringValue().equals("id2")) result |= 2;
       else if (f.stringValue().equals("id3")) result |= 4;
@@ -375,10 +404,10 @@ public class TestDocument extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    StoredDocument sdoc = ir.document(0);
-    assertEquals("5", sdoc.get("int"));
+    Document2 sdoc = ir.document(0);
+    assertEquals("5", sdoc.getString("int"));
     assertNull(sdoc.get("somethingElse"));
-    assertArrayEquals(new String[] { "5", "4" }, sdoc.getValues("int"));
+    assertArrayEquals(new String[] { "5", "4" }, sdoc.getStrings("int"));
     ir.close();
     iw.close();
     dir.close();

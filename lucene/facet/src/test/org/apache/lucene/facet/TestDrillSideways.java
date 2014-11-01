@@ -654,7 +654,7 @@ public class TestDrillSideways extends FacetTestCase {
               final FixedBitSet bits = new FixedBitSet(maxDoc);
               for(int docID=0;docID < maxDoc;docID++) {
                 // Keeps only the even ids:
-                if ((acceptDocs == null || acceptDocs.get(docID)) && (Integer.parseInt(context.reader().document(docID).get("id")) & 1) == 0) {
+                if ((acceptDocs == null || acceptDocs.get(docID)) && (Integer.parseInt(context.reader().document(docID).getString("id")) & 1) == 0) {
                   bits.set(docID);
                 }
               }
@@ -740,7 +740,7 @@ public class TestDrillSideways extends FacetTestCase {
       TopDocs hits = s.search(baseQuery, numDocs);
       Map<String,Float> scores = new HashMap<>();
       for(ScoreDoc sd : hits.scoreDocs) {
-        scores.put(s.doc(sd.doc).get("id"), sd.score);
+        scores.put(s.doc(sd.doc).getString("id"), sd.score);
       }
       if (VERBOSE) {
         System.out.println("  verify all facets");
@@ -917,7 +917,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     Map<String,Integer> idToDocID = new HashMap<>();
     for(int i=0;i<s.getIndexReader().maxDoc();i++) {
-      idToDocID.put(s.doc(i).get("id"), i);
+      idToDocID.put(s.doc(i).getString("id"), i);
     }
 
     Collections.sort(hits);

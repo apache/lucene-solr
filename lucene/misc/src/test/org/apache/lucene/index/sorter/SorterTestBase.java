@@ -321,7 +321,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     int prev = -1;
     while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue("document " + doc + " marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(doc));
-      assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).get(ID_FIELD)));
+      assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).getString(ID_FIELD)));
       while (++prev < doc) {
         assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
       }
@@ -339,7 +339,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     prev = -1;
     while ((doc = docs.advance(doc + 1)) != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue("document " + doc + " marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(doc));
-      assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).get(ID_FIELD)));
+      assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).getString(ID_FIELD)));
       while (++prev < doc) {
         assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
       }

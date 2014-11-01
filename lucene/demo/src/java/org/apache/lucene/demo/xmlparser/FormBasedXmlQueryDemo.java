@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -35,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -43,7 +43,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queryparser.xml.CorePlusExtensionsParser;
 import org.apache.lucene.queryparser.xml.QueryTemplateManager;
 import org.apache.lucene.search.IndexSearcher;
@@ -116,7 +115,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
       //and package the results and forward to JSP
       if (topDocs != null) {
         ScoreDoc[] sd = topDocs.scoreDocs;
-        StoredDocument[] results = new StoredDocument[sd.length];
+        Document2[] results = new Document2[sd.length];
         for (int i = 0; i < results.length; i++) {
           results[i] = searcher.doc(sd[i].doc);
           request.setAttribute("results", results);

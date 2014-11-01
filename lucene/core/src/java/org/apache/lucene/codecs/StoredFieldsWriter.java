@@ -19,12 +19,12 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document2StoredFieldVisitor;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -33,7 +33,7 @@ import org.apache.lucene.util.Bits;
  * <ol>
  *   <li>For every document, {@link #startDocument()} is called,
  *       informing the Codec that a new document has started.
- *   <li>{@link #writeField(FieldInfo, StorableField)} is called for 
+ *   <li>{@link #writeField(FieldInfo, IndexableField)} is called for 
  *       each field in the document.
  *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
  *       is called for verification/sanity-checks.
@@ -59,7 +59,7 @@ public abstract class StoredFieldsWriter implements Closeable {
   public void finishDocument() throws IOException {}
 
   /** Writes a single stored field. */
-  public abstract void writeField(FieldInfo info, StorableField field) throws IOException;
+  public abstract void writeField(FieldInfo info, IndexableField field) throws IOException;
 
   /** Aborts writing entirely, implementation should remove
    *  any partially-written files, etc. */
@@ -98,9 +98,9 @@ public abstract class StoredFieldsWriter implements Closeable {
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+        Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(null);
         storedFieldsReader.visitDocument(docID, visitor);
-        StoredDocument doc = visitor.getDocument();
+        Document2 doc = visitor.getDocument();
         addDocument(doc, mergeState.mergeFieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
@@ -111,10 +111,10 @@ public abstract class StoredFieldsWriter implements Closeable {
   }
   
   /** sugar method for startDocument() + writeField() for every stored field in the document */
-  protected final void addDocument(Iterable<? extends StorableField> doc, FieldInfos fieldInfos) throws IOException {
+  protected final void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException {
     startDocument();
 
-    for (StorableField field : doc) {
+    for (IndexableField field : doc) {
       writeField(fieldInfos.fieldInfo(field.name()), field);
     }
 

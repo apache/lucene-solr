@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
@@ -43,7 +44,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
 
-  private class MyField implements IndexableField, StorableField {
+  private class MyField implements IndexableField {
 
     private final int counter;
     private final IndexableFieldType fieldType = new IndexableFieldType() {
@@ -190,10 +191,7 @@ public class TestIndexableField extends LuceneTestCase {
       final int finalBaseCount = baseCount;
       baseCount += fieldCount-1;
 
-      IndexDocument d = new IndexDocument() {
-        @Override
-        public Iterable<IndexableField> indexableFields() {
-          return new Iterable<IndexableField>() {
+      Iterable<IndexableField> d = new Iterable<IndexableField>() {
             @Override
             public Iterator<IndexableField> iterator() {
               return new Iterator<IndexableField>() {
@@ -212,8 +210,7 @@ public class TestIndexableField extends LuceneTestCase {
                     next = new MyField(finalBaseCount + (fieldUpto++-1));
                   }
                   
-                  if (next != null && next.fieldType().indexOptions() != null) return true;
-                  else return this.hasNext();
+                  return true;
                 }
 
                 @Override
@@ -234,54 +231,6 @@ public class TestIndexableField extends LuceneTestCase {
               };
             }
           };
-        }
-
-        @Override
-        public Iterable<StorableField> storableFields() {
-          return new Iterable<StorableField>() {
-            @Override
-            public Iterator<StorableField> iterator() {
-              return new Iterator<StorableField>() {
-                int fieldUpto = 0;
-                private StorableField next = null;
-
-                @Override
-                public boolean hasNext() {
-
-                  if (fieldUpto == fieldCount) return false;
-                  
-                  next = null;
-                  if (fieldUpto == 0) {
-                    fieldUpto = 1;
-                    next = newStringField("id", ""+finalDocCount, Field.Store.YES);
-                  } else {
-                    next = new MyField(finalBaseCount + (fieldUpto++-1));
-                  }
-                  
-                  if (next != null && next.fieldType().stored()) return true;
-                  else return this.hasNext();
-                }
-
-                @Override
-                public StorableField next() {
-                  assert fieldUpto <= fieldCount;
-                  if (next == null && !hasNext()) {
-                    return null;
-                  }
-                  else {
-                    return next;
-                  }
-                }
-
-                @Override
-                public void remove() {
-                  throw new UnsupportedOperationException();
-                }
-              };
-            }
-          };
-        }
-      };
       
       w.addDocument(d);
     }
@@ -299,7 +248,7 @@ public class TestIndexableField extends LuceneTestCase {
       final TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
       assertEquals(1, hits.totalHits);
       final int docID = hits.scoreDocs[0].doc;
-      final StoredDocument doc = s.doc(docID);
+      final Document2 doc = s.doc(docID);
       final int endCounter = counter + fieldsPerDoc[id];
       while(counter < endCounter) {
         final String name = "f" + counter;
@@ -318,7 +267,7 @@ public class TestIndexableField extends LuceneTestCase {
 
         // stored:
         if (stored) {
-          StorableField f = doc.getField(name);
+          IndexableField f = doc.getField(name);
           assertNotNull("doc " + id + " doesn't have field f" + counter, f);
           if (binary) {
             assertNotNull("doc " + id + " doesn't have field f" + counter, f);
@@ -386,7 +335,7 @@ public class TestIndexableField extends LuceneTestCase {
     dir.close();
   }
 
-  private static class CustomField implements StorableField {
+  private static class CustomField implements IndexableField {
     @Override
     public BytesRef binaryValue() {
       return null;
@@ -413,8 +362,18 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
+    public float boost() {
+      return 1.0f;
+    }
+
+    @Override
     public String name() {
       return "field";
+    }
+
+    @Override
+    public TokenStream tokenStream(Analyzer a, TokenStream reuse) {
+      return null;
     }
 
     @Override
@@ -431,17 +390,7 @@ public class TestIndexableField extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     try {
-      w.addDocument(
-                    new IndexDocument() {
-                      @Override
-                      public Iterable<IndexableField> indexableFields() {
-                        return Collections.emptyList();
-                      }
-                      @Override
-                      public Iterable<StorableField> storableFields() {
-                        return Collections.<StorableField>singletonList(new CustomField());
-                      }
-                    });
+      w.addDocument(Collections.<IndexableField>singletonList(new CustomField()));
       fail("didn't hit exception");
     } catch (IllegalArgumentException iae) {
       // expected

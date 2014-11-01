@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
@@ -49,7 +50,7 @@ final class SegmentMerger {
   private final FieldInfos.Builder fieldInfosBuilder;
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
-  SegmentMerger(List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
+  SegmentMerger(FieldTypes fieldTypes, List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
                 MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context) throws IOException {
     // validate incoming readers
     for (LeafReader reader : readers) {
@@ -60,7 +61,8 @@ final class SegmentMerger {
       }
     }
 
-    mergeState = new MergeState(readers, segmentInfo, infoStream, checkAbort);
+    // nocommit should we refuse to merge if fieldTypes differs from "ours" and from all our incoming readers?
+    mergeState = new MergeState(fieldTypes, readers, segmentInfo, infoStream, checkAbort);
     directory = dir;
     this.codec = segmentInfo.getCodec();
     this.context = context;

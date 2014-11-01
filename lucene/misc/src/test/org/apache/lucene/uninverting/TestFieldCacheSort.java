@@ -85,8 +85,8 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'foo'
-    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).getString("value"));
 
     TestUtil.checkReader(ir);
     ir.close();
@@ -124,9 +124,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null comes first
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -161,8 +161,8 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'foo' comes after 'bar' in reverse order
-    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -201,9 +201,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null comes first
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -241,10 +241,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).getString("value"));
     // null comes last
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -283,10 +283,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).getString("value"));
     // null comes last
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -326,9 +326,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null comes first
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("bar", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -468,9 +468,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -498,9 +498,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null is treated as a 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -530,9 +530,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null is treated as a Integer.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -561,9 +561,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // reverse numeric order
-    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -592,9 +592,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -622,9 +622,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null is treated as 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -654,9 +654,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null is treated as Long.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -685,9 +685,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // reverse numeric order
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -716,9 +716,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -746,9 +746,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null is treated as 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -778,9 +778,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // null is treated as Float.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -809,9 +809,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // reverse numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -843,10 +843,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -910,10 +910,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // null treated as a 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -946,10 +946,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // null treated as Double.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[3].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -981,10 +981,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1124,7 +1124,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(1, td.totalHits);
-    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -1182,8 +1182,8 @@ public class TestFieldCacheSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'foo'
-    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).getString("value"));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();

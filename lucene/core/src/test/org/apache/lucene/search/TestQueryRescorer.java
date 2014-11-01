@@ -383,8 +383,8 @@ public class TestQueryRescorer extends LuceneTestCase {
                   @Override
                   public int compare(Integer a, Integer b) {
                     try {
-                      int av = idToNum[Integer.parseInt(r.document(a).get("id"))];
-                      int bv = idToNum[Integer.parseInt(r.document(b).get("id"))];
+                      int av = idToNum[Integer.parseInt(r.document(a).getString("id"))];
+                      int bv = idToNum[Integer.parseInt(r.document(b).getString("id"))];
                       if (av < bv) {
                         return -reverseInt;
                       } else if (bv < av) {
@@ -480,7 +480,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
             @Override
             public float score() throws IOException {
-              int num = idToNum[Integer.parseInt(context.reader().document(docID).get("id"))];
+              int num = idToNum[Integer.parseInt(context.reader().document(docID).getString("id"))];
               if (reverse) {
                 //System.out.println("score doc=" + docID + " num=" + num);
                 return num;

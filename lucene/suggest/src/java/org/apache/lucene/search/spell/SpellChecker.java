@@ -373,7 +373,7 @@ public class SpellChecker implements java.io.Closeable {
       SuggestWord sugWord = new SuggestWord();
       for (int i = 0; i < stop; i++) {
 
-        sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD); // get orig word
+        sugWord.string = indexSearcher.doc(hits[i].doc).getString(F_WORD); // get orig word
 
         // don't suggest a word for itself, that would be silly
         if (sugWord.string.equals(word)) {

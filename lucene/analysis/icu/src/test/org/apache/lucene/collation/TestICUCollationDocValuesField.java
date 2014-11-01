@@ -123,7 +123,7 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
     // positive test
     TopDocs docs = is.search(query, is.getIndexReader().maxDoc());
     for (ScoreDoc doc : docs.scoreDocs) {
-      String value = is.doc(doc.doc).get("field");
+      String value = is.doc(doc.doc).getString("field");
       assertTrue(collator.compare(value, startPoint) >= 0);
       assertTrue(collator.compare(value, endPoint) <= 0);
     }
@@ -134,7 +134,7 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
     bq.add(query, Occur.MUST_NOT);
     docs = is.search(bq, is.getIndexReader().maxDoc());
     for (ScoreDoc doc : docs.scoreDocs) {
-      String value = is.doc(doc.doc).get("field");
+      String value = is.doc(doc.doc).getString("field");
       assertTrue(collator.compare(value, startPoint) < 0 || collator.compare(value, endPoint) > 0);
     }
   }

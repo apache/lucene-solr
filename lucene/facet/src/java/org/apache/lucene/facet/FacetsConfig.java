@@ -40,6 +40,7 @@ import org.apache.lucene.facet.taxonomy.FloatAssociationFacetField;
 import org.apache.lucene.facet.taxonomy.IntAssociationFacetField;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -209,7 +210,7 @@ public class FacetsConfig {
 
     Set<String> seenDims = new HashSet<>();
 
-    for (IndexableField field : doc.indexableFields()) {
+    for (IndexableField field : doc) {
       if (field.fieldType() == FacetField.TYPE) {
         FacetField facetField = (FacetField) field;
         FacetsConfig.DimConfig dimConfig = getDimConfig(facetField.dim);
@@ -289,8 +290,8 @@ public class FacetsConfig {
 
     //System.out.println("add stored: " + addedStoredFields);
 
-    for (Field field : doc.getFields()) {
-      FieldType ft = field.fieldType();
+    for (IndexableField field : doc.getFields()) {
+      IndexableFieldType ft = field.fieldType();
       if (ft != FacetField.TYPE && ft != SortedSetDocValuesFacetField.TYPE && ft != AssociationFacetField.TYPE) {
         result.add(field);
       }

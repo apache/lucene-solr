@@ -35,6 +35,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -161,7 +162,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       assertEquals(inputIterator.weight(), (w1 + w2 + w3));
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
       Set<BytesRef> originalCtxs = new HashSet<>();
-      for (Field ctxf: doc.getFields(CONTEXTS_FIELD_NAME)) {
+      for (IndexableField ctxf: doc.getFields(CONTEXTS_FIELD_NAME)) {
         originalCtxs.add(ctxf.binaryValue());
       }
       assertEquals(originalCtxs, inputIterator.contexts());

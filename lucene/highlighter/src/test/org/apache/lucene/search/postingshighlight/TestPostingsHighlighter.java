@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -37,7 +38,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -941,8 +941,8 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlight("body", query, searcher, hits);
     assertEquals(numDocs, snippets.length);
     for(int hit=0;hit<numDocs;hit++) {
-      StoredDocument doc = searcher.doc(hits.scoreDocs[hit].doc);
-      int id = Integer.parseInt(doc.get("id"));
+      Document2 doc = searcher.doc(hits.scoreDocs[hit].doc);
+      int id = Integer.parseInt(doc.getString("id"));
       String expected = "the <b>answer</b> is " + id;
       if ((id  & 1) == 0) {
         expected += " some more terms";

@@ -225,7 +225,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       LeafReader r = context.reader();
       NumericDocValues docValues = r.getNormValues("stored");
       for (int i = 0; i < r.maxDoc(); i++) {
-        long storedValue = Long.parseLong(r.document(i).get("stored"));
+        long storedValue = Long.parseLong(r.document(i).getString("stored"));
         assertEquals(storedValue, docValues.get(i));
       }
     }
@@ -239,7 +239,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       LeafReader r = context.reader();
       NumericDocValues docValues = r.getNormValues("stored");
       for (int i = 0; i < r.maxDoc(); i++) {
-        long storedValue = Long.parseLong(r.document(i).get("stored"));
+        long storedValue = Long.parseLong(r.document(i).getString("stored"));
         assertEquals(storedValue, docValues.get(i));
       }
     }

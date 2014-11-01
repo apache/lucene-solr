@@ -31,10 +31,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
@@ -67,7 +67,7 @@ public class TokenSources {
    */
 
   public static TokenStream getAnyTokenStream(IndexReader reader, int docId,
-      String field, StoredDocument document, Analyzer analyzer) throws IOException {
+      String field, Document2 document, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
 
     Fields vectors = reader.getTermVectors(docId);
@@ -315,13 +315,13 @@ public class TokenSources {
   // convenience method
   public static TokenStream getTokenStream(IndexReader reader, int docId,
       String field, Analyzer analyzer) throws IOException {
-    StoredDocument doc = reader.document(docId);
+    Document2 doc = reader.document(docId);
     return getTokenStream(doc, field, analyzer);
   }
   
-  public static TokenStream getTokenStream(StoredDocument doc, String field,
+  public static TokenStream getTokenStream(Document2 doc, String field,
       Analyzer analyzer) {
-    String contents = doc.get(field);
+    String contents = doc.getString(field);
     if (contents == null) {
       throw new IllegalArgumentException("Field " + field
           + " in document is not stored and cannot be analyzed");

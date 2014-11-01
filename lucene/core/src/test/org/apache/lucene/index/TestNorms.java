@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -115,8 +116,8 @@ public class TestNorms extends LuceneTestCase {
     NumericDocValues normValues = open.getNormValues(byteTestField);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
-      StoredDocument document = open.document(i);
-      int expected = Integer.parseInt(document.get(byteTestField));
+      Document2 document = open.document(i);
+      int expected = Integer.parseInt(document.getString(byteTestField));
       assertEquals(expected, normValues.get(i));
     }
     open.close();

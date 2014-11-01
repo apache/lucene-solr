@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
@@ -35,7 +36,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -67,7 +67,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
           if (hits.totalHits == 0) {
             return null;
           } else {
-            StoredDocument doc = s.doc(hits.scoreDocs[0].doc);
+            Document2 doc = s.doc(hits.scoreDocs[0].doc);
             return (Integer) doc.getField("field").numericValue();
           }
         }

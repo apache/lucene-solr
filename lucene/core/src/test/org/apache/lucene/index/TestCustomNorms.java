@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -70,8 +71,8 @@ public class TestCustomNorms extends LuceneTestCase {
     NumericDocValues norms = open.getNormValues(floatTestField);
     assertNotNull(norms);
     for (int i = 0; i < open.maxDoc(); i++) {
-      StoredDocument document = open.document(i);
-      float expected = Float.parseFloat(document.get(floatTestField));
+      Document2 document = open.document(i);
+      float expected = Float.parseFloat(document.getString(floatTestField));
       assertEquals(expected, Float.intBitsToFloat((int)norms.get(i)), 0.0f);
     }
     open.close();

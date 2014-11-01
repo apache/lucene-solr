@@ -27,6 +27,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
@@ -82,13 +83,16 @@ public class MergeState {
   /** InfoStream for debugging messages. */
   public final InfoStream infoStream;
 
+  public final FieldTypes fieldTypes;
+
   /** Counter used for periodic calls to checkAbort
    * @lucene.internal */
   public int checkAbortCount;
 
   /** Sole constructor. */
-  MergeState(List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) throws IOException {
+  MergeState(FieldTypes fieldTypes, List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) throws IOException {
 
+    this.fieldTypes = fieldTypes;
     int numReaders = readers.size();
     docMaps = new DocMap[numReaders];
     docBase = new int[numReaders];

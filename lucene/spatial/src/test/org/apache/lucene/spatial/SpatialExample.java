@@ -17,10 +17,9 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.io.IOException;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
@@ -29,7 +28,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
@@ -46,8 +44,10 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * This class serves as example code to show how to use the Lucene spatial
@@ -154,7 +154,7 @@ public class SpatialExample extends LuceneTestCase {
       assertDocMatchedIds(indexSearcher, docs, 2);
       //Now, lets get the distance for the 1st doc via computing from stored point value:
       // (this computation is usually not redundant)
-      StoredDocument doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
+      Document2 doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
       String doc1Str = doc1.getField(strategy.getFieldName()).stringValue();
       //assume doc1Str is "x y" as written in newSampleDocument()
       int spaceIdx = doc1Str.indexOf(' ');

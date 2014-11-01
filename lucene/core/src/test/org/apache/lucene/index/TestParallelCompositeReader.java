@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -407,12 +408,12 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertEquals(parallelHits.length, singleHits.length);
     for(int i = 0; i < parallelHits.length; i++) {
       assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);
-      StoredDocument docParallel = parallel.doc(parallelHits[i].doc);
-      StoredDocument docSingle = single.doc(singleHits[i].doc);
-      assertEquals(docParallel.get("f1"), docSingle.get("f1"));
-      assertEquals(docParallel.get("f2"), docSingle.get("f2"));
-      assertEquals(docParallel.get("f3"), docSingle.get("f3"));
-      assertEquals(docParallel.get("f4"), docSingle.get("f4"));
+      Document2 docParallel = parallel.doc(parallelHits[i].doc);
+      Document2 docSingle = single.doc(singleHits[i].doc);
+      assertEquals(docParallel.getString("f1"), docSingle.getString("f1"));
+      assertEquals(docParallel.getString("f2"), docSingle.getString("f2"));
+      assertEquals(docParallel.getString("f3"), docSingle.getString("f3"));
+      assertEquals(docParallel.getString("f4"), docSingle.getString("f4"));
     }
   }
 

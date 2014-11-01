@@ -17,15 +17,18 @@ package org.apache.lucene.analysis.uima;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
@@ -34,9 +37,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Testcase for {@link UIMABaseAnalyzer}
@@ -83,7 +83,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     IndexSearcher indexSearcher = newSearcher(directoryReader);
     TopDocs result = indexSearcher.search(new MatchAllDocsQuery(), 1);
     assertTrue(result.totalHits > 0);
-    StoredDocument d = indexSearcher.doc(result.scoreDocs[0].doc);
+    Document2 d = indexSearcher.doc(result.scoreDocs[0].doc);
     assertNotNull(d);
     assertNotNull(d.getField("title"));
     assertEquals(dummyTitle, d.getField("title").stringValue());
@@ -103,7 +103,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     directoryReader = DirectoryReader.open(dir);
     indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
-    StoredDocument d1 = indexSearcher.doc(result.scoreDocs[1].doc);
+    Document2 d1 = indexSearcher.doc(result.scoreDocs[1].doc);
     assertNotNull(d1);
     assertNotNull(d1.getField("title"));
     assertEquals(dogmasTitle, d1.getField("title").stringValue());

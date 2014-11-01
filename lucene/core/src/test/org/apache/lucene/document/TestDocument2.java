@@ -37,7 +37,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -84,7 +83,7 @@ public class TestDocument2 extends LuceneTestCase {
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(fieldTypes.newTermQuery("binary", new byte[5]), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newBinaryTermQuery("binary", new byte[5]), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -131,7 +130,7 @@ public class TestDocument2 extends LuceneTestCase {
     doc.addStored("binary", new BytesRef(new byte[5]));
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
-    assertEquals(new BytesRef(new byte[5]), r.document(0).getBinaryValue("binary"));
+    assertEquals(new BytesRef(new byte[5]), r.document(0).getBinary("binary"));
     r.close();
     w.close();
     dir.close();
@@ -234,18 +233,18 @@ public class TestDocument2 extends LuceneTestCase {
     NumericDocValues ndv = MultiDocValues.getNumericValues(r, "float");
     assertNotNull(ndv);
     ScoreDoc hit = hits.scoreDocs[0];
-    StoredDocument storedDoc = r.document(hit.doc);
-    assertEquals("one", storedDoc.get("id"));
+    Document2 storedDoc = r.document(hit.doc);
+    assertEquals("one", storedDoc.getString("id"));
     assertEquals(3f, Float.intBitsToFloat((int) ndv.get(hit.doc)), .001f);
 
     hit = hits.scoreDocs[1];
     storedDoc = r.document(hit.doc);
-    assertEquals("three", storedDoc.get("id"));
+    assertEquals("three", storedDoc.getString("id"));
     assertEquals(7f, Float.intBitsToFloat((int) ndv.get(hit.doc)), .001f);
 
     hit = hits.scoreDocs[2];
     storedDoc = r.document(hit.doc);
-    assertEquals("two", storedDoc.get("id"));
+    assertEquals("two", storedDoc.getString("id"));
     assertEquals(2f, Float.intBitsToFloat((int) ndv.get(hit.doc)), .001f);
 
     // Make sure we can sort by the field:
@@ -574,10 +573,10 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newTermQuery("id", "0"), 1);
+    TopDocs hits = s.search(fieldTypes.newStringTermQuery("id", "0"), 1);
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("0", r.document(hits.scoreDocs[0].doc).get("id"));
-    hits = s.search(fieldTypes.newTermQuery("id", "1"), 1);
+    hits = s.search(fieldTypes.newStringTermQuery("id", "1"), 1);
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("1", r.document(hits.scoreDocs[0].doc).get("id"));
     r.close();
@@ -597,7 +596,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newTermQuery("id", 1L), 1);
+    TopDocs hits = s.search(fieldTypes.newLongTermQuery("id", 1L), 1);
     assertEquals(1, hits.scoreDocs.length);
     r.close();
     w.close();
@@ -616,7 +615,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newTermQuery("id", 1), 1);
+    TopDocs hits = s.search(fieldTypes.newIntTermQuery("id", 1), 1);
     assertEquals(1, hits.scoreDocs.length);
     r.close();
     w.close();
@@ -636,7 +635,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newTermQuery("id", new byte[1]), 1);
+    TopDocs hits = s.search(fieldTypes.newBinaryTermQuery("id", new byte[1]), 1);
     assertEquals(1, hits.scoreDocs.length);
     r.close();
     w.close();
@@ -663,10 +662,10 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newTermQuery("id", "0"), 1, fieldTypes.newSort("id"));
+    TopDocs hits = s.search(fieldTypes.newStringTermQuery("id", "0"), 1, fieldTypes.newSort("id"));
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("0", r.document(hits.scoreDocs[0].doc).get("id"));
-    hits = s.search(fieldTypes.newTermQuery("id", "1"), 1);
+    hits = s.search(fieldTypes.newStringTermQuery("id", "1"), 1);
     assertEquals(1, hits.scoreDocs.length);
     assertEquals("1", r.document(hits.scoreDocs[0].doc).get("id"));
     r.close();
@@ -836,7 +835,7 @@ public class TestDocument2 extends LuceneTestCase {
     dir.close();
   }
 
-  public void testFieldTypesAreSaved() throws Exception {
+  public void testExcFieldTypesAreSaved() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     Document2 doc = w.newDocument();
@@ -872,7 +871,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w, true);
     try {
-      fieldTypes.newTermQuery("foo", "bar");
+      fieldTypes.newStringTermQuery("foo", "bar");
       fail("did not hit exception");
     } catch (IllegalStateException ise) {
       // Expected
@@ -930,6 +929,46 @@ public class TestDocument2 extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     assertEquals(Version.LATEST, w.getFieldTypes().getIndexCreatedVersion());
+    w.close();
+    dir.close();
+  }
+
+  public void testBooleanType() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    FieldTypes fieldTypes = w.getFieldTypes();
+
+    Document2 doc = w.newDocument();
+    doc.addBoolean("onsale", true);
+    w.addDocument(doc);
+
+    //w.close();
+    //DirectoryReader r = DirectoryReader.open(dir);
+    DirectoryReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(fieldTypes.newBooleanTermQuery("onsale", true), 1);
+    assertEquals(1, hits.totalHits);
+    doc = s.doc(hits.scoreDocs[0].doc);
+    assertEquals(true, doc.getBoolean("onsale"));
+    assertEquals(0, s.search(fieldTypes.newBooleanTermQuery("onsale", false), 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testOnlyChangeFieldTypes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableSorting("sorted");
+    w.close();
+
+    w = new IndexWriter(dir, newIndexWriterConfig());
+    fieldTypes = w.getFieldTypes();
+    assertTrue(fieldTypes.getSorted("sorted"));
     w.close();
     dir.close();
   }

@@ -131,7 +131,8 @@ class ReadersAndUpdates {
   public SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, context);
+      // nocommit clone the field types?
+      reader = new SegmentReader(writer.getFieldTypes(), info, context);
       if (liveDocs == null) {
         liveDocs = reader.getLiveDocs();
       }
@@ -189,7 +190,7 @@ class ReadersAndUpdates {
     // force new liveDocs in initWritableLiveDocs even if it's null
     liveDocsShared = true;
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
+      return new SegmentReader(writer.fieldTypes, reader.getSegmentInfo(), reader, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -477,7 +478,7 @@ class ReadersAndUpdates {
 
       // reader could be null e.g. for a just merged segment (from
       // IndexWriter.commitMergedDeletes).
-      final SegmentReader reader = this.reader == null ? new SegmentReader(info, IOContext.READONCE) : this.reader;
+      final SegmentReader reader = this.reader == null ? new SegmentReader(writer.getFieldTypes(), info, IOContext.READONCE) : this.reader;
       try {
         // clone FieldInfos so that we can update their dvGen separately from
         // the reader's infos and write them to a new fieldInfos_gen file
@@ -577,7 +578,7 @@ class ReadersAndUpdates {
 
     // if there is a reader open, reopen it to reflect the updates
     if (reader != null) {
-      SegmentReader newReader = new SegmentReader(info, reader, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
+      SegmentReader newReader = new SegmentReader(writer.fieldTypes, info, reader, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
       boolean reopened = false;
       try {
         reader.decRef();

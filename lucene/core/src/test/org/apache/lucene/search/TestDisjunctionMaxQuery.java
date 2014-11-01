@@ -17,33 +17,33 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
-import java.io.IOException;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test of the DisjunctionMaxQuery.
@@ -399,10 +399,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       float score2 = h[2].score;
       float score3 = h[3].score;
       
-      String doc0 = s.doc(h[0].doc).get("id");
-      String doc1 = s.doc(h[1].doc).get("id");
-      String doc2 = s.doc(h[2].doc).get("id");
-      String doc3 = s.doc(h[3].doc).get("id");
+      String doc0 = s.doc(h[0].doc).getString("id");
+      String doc1 = s.doc(h[1].doc).getString("id");
+      String doc2 = s.doc(h[2].doc).getString("id");
+      String doc3 = s.doc(h[3].doc).getString("id");
       
       assertTrue("doc0 should be d2 or d4: " + doc0, doc0.equals("d2")
           || doc0.equals("d4"));
@@ -453,10 +453,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       float score2 = h[2].score;
       float score3 = h[3].score;
       
-      String doc0 = s.doc(h[0].doc).get("id");
-      String doc1 = s.doc(h[1].doc).get("id");
-      String doc2 = s.doc(h[2].doc).get("id");
-      String doc3 = s.doc(h[3].doc).get("id");
+      String doc0 = s.doc(h[0].doc).getString("id");
+      String doc1 = s.doc(h[1].doc).getString("id");
+      String doc2 = s.doc(h[2].doc).getString("id");
+      String doc3 = s.doc(h[3].doc).getString("id");
       
       assertEquals("doc0 should be d4: ", "d4", doc0);
       assertEquals("doc1 should be d3: ", "d3", doc1);
@@ -529,10 +529,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     DecimalFormat f = new DecimalFormat("0.000000000", DecimalFormatSymbols.getInstance(Locale.ROOT));
     
     for (int i = 0; i < h.length; i++) {
-      StoredDocument d = searcher.doc(h[i].doc);
+      Document2 d = searcher.doc(h[i].doc);
       float score = h[i].score;
-      System.err
-          .println("#" + i + ": " + f.format(score) + " - " + d.get("id"));
+      System.err.println("#" + i + ": " + f.format(score) + " - " + d.get("id"));
     }
   }
 }

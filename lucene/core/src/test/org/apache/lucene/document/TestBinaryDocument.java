@@ -1,14 +1,5 @@
 package org.apache.lucene.document;
 
-import java.nio.charset.StandardCharsets;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +16,14 @@ import org.apache.lucene.util.LuceneTestCase;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.nio.charset.StandardCharsets;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests {@link Document} class.
@@ -58,17 +57,17 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    StoredDocument docFromReader = reader.document(0);
+    Document2 docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary stored field and compare it's content with the original one */
-    BytesRef bytes = docFromReader.getBinaryValue("binaryStored");
+    BytesRef bytes = docFromReader.getBinary("binaryStored");
     assertNotNull(bytes);
     String binaryFldStoredTest = new String(bytes.bytes, bytes.offset, bytes.length, StandardCharsets.UTF_8);
     assertTrue(binaryFldStoredTest.equals(binaryValStored));
     
     /** fetch the string field and compare it's content with the original one */
-    String stringFldStoredTest = docFromReader.get("stringStored");
+    String stringFldStoredTest = docFromReader.getString("stringStored");
     assertTrue(stringFldStoredTest.equals(binaryValStored));
     
     writer.close();
@@ -92,13 +91,13 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    StoredDocument docFromReader = reader.document(0);
+    Document2 docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary compressed field and compare it's content with the original one */
-    String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinaryValue("binaryCompressed")), StandardCharsets.UTF_8);
+    String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinary("binaryCompressed")), StandardCharsets.UTF_8);
     assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
-    assertTrue(CompressionTools.decompressString(docFromReader.getBinaryValue("stringCompressed")).equals(binaryValCompressed));
+    assertTrue(CompressionTools.decompressString(docFromReader.getBinary("stringCompressed")).equals(binaryValCompressed));
 
     writer.close();
     reader.close();

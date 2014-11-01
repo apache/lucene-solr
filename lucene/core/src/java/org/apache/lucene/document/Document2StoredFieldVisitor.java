@@ -18,13 +18,13 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.util.BytesRef;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
  *  Document} containing all stored fields, or only specific
@@ -35,20 +35,25 @@ import org.apache.lucene.index.StoredFieldVisitor;
  *
  * @lucene.experimental */
 
-public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
-  private final StoredDocument doc = new StoredDocument();
+public class Document2StoredFieldVisitor extends StoredFieldVisitor {
+  private final Document2 doc;
   private final Set<String> fieldsToAdd;
+  private final FieldTypes fieldTypes;
 
   /** 
    * Load only fields named in the provided <code>Set&lt;String&gt;</code>. 
    * @param fieldsToAdd Set of fields to load, or <code>null</code> (all fields).
    */
-  public DocumentStoredFieldVisitor(Set<String> fieldsToAdd) {
+  public Document2StoredFieldVisitor(FieldTypes fieldTypes, Set<String> fieldsToAdd) {
+    doc = new Document2(fieldTypes, false);
+    this.fieldTypes = fieldTypes;
     this.fieldsToAdd = fieldsToAdd;
   }
 
   /** Load only fields named in the provided fields. */
-  public DocumentStoredFieldVisitor(String... fields) {
+  public Document2StoredFieldVisitor(FieldTypes fieldTypes, String... fields) {
+    doc = new Document2(fieldTypes, false);
+    this.fieldTypes = fieldTypes;
     fieldsToAdd = new HashSet<>(fields.length);
     for(String field : fields) {
       fieldsToAdd.add(field);
@@ -56,42 +61,57 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   }
 
   /** Load all stored fields. */
-  public DocumentStoredFieldVisitor() {
+  public Document2StoredFieldVisitor(FieldTypes fieldTypes) {
+    doc = new Document2(fieldTypes, false);
+    this.fieldTypes = fieldTypes;
     this.fieldsToAdd = null;
+  }
+
+  private FieldTypes.FieldType getFieldType(String fieldName) {
+    if (fieldTypes != null) {
+      try {
+        return fieldTypes.getFieldType(fieldName);
+      } catch (IllegalArgumentException iae) {
+      }
+    }
+    return null;
   }
 
   @Override
   public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
-    doc.add(new StoredField(fieldInfo.name, value));
+    doc.addBinary(fieldInfo.name, new BytesRef(value));
   }
 
   @Override
   public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-    final FieldType ft = new FieldType(TextField.TYPE_STORED);
-    ft.setStoreTermVectors(fieldInfo.hasVectors());
-    ft.setOmitNorms(fieldInfo.omitsNorms());
-    ft.setIndexOptions(fieldInfo.getIndexOptions());
-    doc.add(new StoredField(fieldInfo.name, value, ft));
+    doc.addLargeText(fieldInfo.name, value);
   }
 
+  // nocommit it's odd that this API differentiates which number it was, vs doc values which always uses long:
   @Override
   public void intField(FieldInfo fieldInfo, int value) {
-    doc.add(new StoredField(fieldInfo.name, value));
+    FieldTypes.FieldType fieldType = getFieldType(fieldInfo.name);
+    if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.BOOLEAN) {
+      assert value == 0 || value == 1;
+      doc.addBoolean(fieldInfo.name, Boolean.valueOf(value == 1));
+    } else {
+      doc.addInt(fieldInfo.name, value);
+    }
   }
 
   @Override
   public void longField(FieldInfo fieldInfo, long value) {
-    doc.add(new StoredField(fieldInfo.name, value));
+    doc.addLong(fieldInfo.name, value);
   }
 
   @Override
   public void floatField(FieldInfo fieldInfo, float value) {
-    doc.add(new StoredField(fieldInfo.name, value));
+    doc.addFloat(fieldInfo.name, value);
   }
 
   @Override
   public void doubleField(FieldInfo fieldInfo, double value) {
-    doc.add(new StoredField(fieldInfo.name, value));
+    doc.addDouble(fieldInfo.name, value);
   }
 
   @Override
@@ -101,12 +121,12 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
 
   /**
    * Retrieve the visited document.
-   * @return {@link StoredDocument} populated with stored fields. Note that only
+   * @return {@link Document2} populated with stored fields. Note that only
    *         the stored information in the field instances is valid,
    *         data such as indexing options, term vector options,
    *         etc is not set.
    */
-  public StoredDocument getDocument() {
+  public Document2 getDocument() {
     return doc;
   }
 }

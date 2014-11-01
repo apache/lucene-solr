@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -35,14 +36,21 @@ final class StandardDirectoryReader extends DirectoryReader {
   private final IndexWriter writer;
   private final SegmentInfos segmentInfos;
   private final boolean applyAllDeletes;
+  private final FieldTypes fieldTypes;
   
   /** called only from static open() methods */
-  StandardDirectoryReader(Directory directory, LeafReader[] readers, IndexWriter writer,
-    SegmentInfos sis, boolean applyAllDeletes) {
+  StandardDirectoryReader(FieldTypes fieldTypes, Directory directory, LeafReader[] readers, IndexWriter writer,
+    SegmentInfos sis, boolean applyAllDeletes) throws IOException {
     super(directory, readers);
+    this.fieldTypes = fieldTypes;
     this.writer = writer;
     this.segmentInfos = sis;
     this.applyAllDeletes = applyAllDeletes;
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
   }
 
   /** called from DirectoryReader.open(...) methods */
@@ -51,11 +59,13 @@ final class StandardDirectoryReader extends DirectoryReader {
       @Override
       protected DirectoryReader doBody(String segmentFileName) throws IOException {
         SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName);
+        // nocommit fixme: can't be passing null analyzers
+        FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis.getUserData(), null, null);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
         for (int i = sis.size()-1; i >= 0; i--) {
           boolean success = false;
           try {
-            readers[i] = new SegmentReader(sis.info(i), IOContext.READ);
+            readers[i] = new SegmentReader(fieldTypes, sis.info(i), IOContext.READ);
             success = true;
           } finally {
             if (!success) {
@@ -63,7 +73,7 @@ final class StandardDirectoryReader extends DirectoryReader {
             }
           }
         }
-        return new StandardDirectoryReader(directory, readers, null, sis, false);
+        return new StandardDirectoryReader(fieldTypes, directory, readers, null, sis, false);
       }
     }.run(commit);
   }
@@ -79,6 +89,13 @@ final class StandardDirectoryReader extends DirectoryReader {
     final Directory dir = writer.getDirectory();
 
     final SegmentInfos segmentInfos = infos.clone();
+
+    // Carry over current schema:
+    segmentInfos.getUserData().put(FieldTypes.FIELD_TYPES_KEY, writer.fieldTypes.writeToString());
+
+    // nocommit fixme: can't be passing null analyzers
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(segmentInfos.getUserData(), null, null);
+
     int infosUpto = 0;
     boolean success = false;
     try {
@@ -91,6 +108,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         assert info.info.dir == dir;
         final ReadersAndUpdates rld = writer.readerPool.get(info, true);
         try {
+          // nocommit this has writer's fieldTypes, not ours:
           final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
           if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
             // Steal the ref:
@@ -107,7 +125,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       
       writer.incRefDeleter(segmentInfos);
       
-      StandardDirectoryReader result = new StandardDirectoryReader(dir,
+      StandardDirectoryReader result = new StandardDirectoryReader(fieldTypes, dir,
           readers.toArray(new SegmentReader[readers.size()]), writer,
           segmentInfos, applyAllDeletes);
       success = true;
@@ -142,7 +160,10 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
     
     SegmentReader[] newReaders = new SegmentReader[infos.size()];
-    
+
+    // nocommit fixme: can't be passing null analyzers
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(infos.getUserData(), null, null);
+
     for (int i = infos.size() - 1; i>=0; i--) {
       SegmentCommitInfo commitInfo = infos.info(i);
 
@@ -163,7 +184,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         if (oldReader == null || commitInfo.info.getUseCompoundFile() != oldReader.getSegmentInfo().info.getUseCompoundFile()) {
 
           // this is a new reader; in case we hit an exception we can decRef it safely
-          newReader = new SegmentReader(commitInfo, IOContext.READ);
+          newReader = new SegmentReader(fieldTypes, commitInfo, IOContext.READ);
           newReaders[i] = newReader;
         } else {
           if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()
@@ -191,10 +212,10 @@ final class StandardDirectoryReader extends DirectoryReader {
 
             if (oldReader.getSegmentInfo().getDelGen() == commitInfo.getDelGen()) {
               // only DV updates
-              newReaders[i] = new SegmentReader(commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs());
+              newReaders[i] = new SegmentReader(fieldTypes, commitInfo, oldReader, oldReader.getLiveDocs(), oldReader.numDocs());
             } else {
               // both DV and liveDocs have changed
-              newReaders[i] = new SegmentReader(commitInfo, oldReader);
+              newReaders[i] = new SegmentReader(fieldTypes, commitInfo, oldReader);
             }
           }
         }
@@ -205,7 +226,8 @@ final class StandardDirectoryReader extends DirectoryReader {
         }
       }
     }    
-    return new StandardDirectoryReader(directory, newReaders, null, infos, false);
+
+    return new StandardDirectoryReader(fieldTypes, directory, newReaders, null, infos, false);
   }
 
   // TODO: move somewhere shared if it's useful elsewhere

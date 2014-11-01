@@ -25,15 +25,17 @@ import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Deque;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -477,6 +479,8 @@ public class CheckIndex implements Closeable {
       return result;
     }
 
+    FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis.getUserData(), null, null);
+
     // find the oldest and newest segment versions
     Version oldest = null;
     Version newest = null;
@@ -632,7 +636,7 @@ public class CheckIndex implements Closeable {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, IOContext.DEFAULT);
+        reader = new SegmentReader(fieldTypes, info, IOContext.DEFAULT);
         msg(infoStream, "OK");
 
         segInfoStat.openReaderPassed = true;
@@ -1687,7 +1691,7 @@ public class CheckIndex implements Closeable {
       for (int j = 0; j < reader.maxDoc(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
-        StoredDocument doc = reader.document(j);
+        Document2 doc = reader.document(j);
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           status.totFields += doc.getFields().size();

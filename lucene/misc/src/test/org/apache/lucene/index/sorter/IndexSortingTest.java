@@ -49,7 +49,7 @@ public class IndexSortingTest extends SorterTestBase {
     List<Integer> values = new ArrayList<>();
     for (int i = 0; i < unsortedReader.maxDoc(); i++) {
       if (liveDocs == null || liveDocs.get(i)) {
-        values.add(Integer.valueOf(unsortedReader.document(i).get(ID_FIELD)));
+        values.add(Integer.valueOf(unsortedReader.document(i).getString(ID_FIELD)));
       }
     }
     int idx = random().nextInt(SORT.length);

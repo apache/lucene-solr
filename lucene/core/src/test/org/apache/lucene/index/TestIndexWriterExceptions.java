@@ -1759,15 +1759,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     doc.add(new StringField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc); // add an 'ok' document
     try {
-      doc = new Document();
       // try to boost with norms omitted
-      IndexDocument docList = new IndexDocument() {
+      Iterable<IndexableField> doc2 = new Iterable<IndexableField>() {
         
         List<IndexableField> list = new ArrayList<>();
-        List<StorableField> storedList = new ArrayList<>();
         
         @Override
-        public Iterable<IndexableField> indexableFields() {
+        public Iterator<IndexableField> iterator() {
           if (list.size() == 0) {
             list.add(new IndexableField() {
               @Override
@@ -1786,21 +1784,40 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
               }
 
               @Override
+              public String stringValue() {
+                return null;
+              }
+
+              @Override
+              public Number numericDocValue() {
+                return null;
+              }
+
+              @Override
+              public Number numericValue() {
+                return null;
+              }
+
+              @Override
+              public BytesRef binaryDocValue() {
+                return null;
+              }
+
+              @Override
+              public BytesRef binaryValue() {
+                return null;
+              }
+
+              @Override
               public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
                 return null;
               }
             });
           }
-          return list;
+          return list.iterator();
         }
-
-        @Override
-        public Iterable<StorableField> storableFields() {
-          return storedList;
-        }
-        
       };
-      iw.addDocument(docList);
+      iw.addDocument(doc2);
       fail("didn't get any exception, boost silently discarded");
     } catch (UnsupportedOperationException expected) {
       // expected

@@ -24,9 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -210,10 +211,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     NumericDocValues dv = slow.getNumericDocValues("dv");
     for (int i = 0; i < 50; i++) {
       assertEquals(i, dv.get(i));
-      StoredDocument d = slow.document(i);
+      Document2 d = slow.document(i);
       // cannot use d.get("dv") due to another bug!
-      assertNull(d.getField("dv"));
-      assertEquals(Integer.toString(i), d.get("docId"));
+      assertNull(d.getString("dv"));
+      assertEquals(Integer.toString(i), d.getString("docId"));
     }
     slow.close();
     writer.close();

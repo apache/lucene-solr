@@ -97,6 +97,7 @@ import org.apache.lucene.util.Version;
 //   - no more field reuse right?
 
 // Lucene's secret schemas
+//   StoredFieldsVisitor
 //   FieldInfos/GlobalFieldNumbers
 //   SortField.type
 //   DocValuesType
@@ -105,6 +106,12 @@ import org.apache.lucene.util.Version;
 //   PerFieldSimilarityWrapper
 //   PerFieldAnalyzerWrapper
 //   oal.document
+
+// nocommit optimize term range query when it's really "matches all docs"
+
+// nocommit add test: make sure you can suddenly turn on DV if they were off at first
+
+// nocommit each field type should record Version when it was added
 
 // nocommit but how can we randomized IWC for tests?
 
@@ -167,19 +174,15 @@ import org.apache.lucene.util.Version;
 
 // nocommit how to randomize IWC?  RIW?
 
-// nocommit maybe we need change IW's setCommitData API to be "add/remove key/value from commit data"?
-
 // nocommit unique/primary key ?
 
 // nocommit must document / make sugar for creating IndexSearcher w/ sim from this class
 
 // nocommit fix all change methods to call validate / rollback
 
-// nocommit boolean, float16?
+// nocommit float16?
 
 // nocommit can we move multi-field-ness out of IW?  so IW only gets a single instance of each field
-
-// nocommit if you open a writer, just set up schema, close it, it won't save?
 
 /** Records how each field is indexed, stored, etc.  This class persists
  *  its state using {@link IndexWriter#setCommitData}, using the
@@ -199,8 +202,9 @@ public class FieldTypes {
     LONG,
     DOUBLE,
     BINARY, // nocommit rename to bytes?
+    BOOLEAN,
     // nocommit primary_key?
-    // nocommit boolean
+    // nocommit inet addr?
   }
 
   private final boolean readOnly;
@@ -217,7 +221,12 @@ public class FieldTypes {
 
   private final Similarity defaultSimilarity;
 
+  /** Used only in memory to record when something changed. */
+  private long changeCount;
+
   // nocommit nested docs?
+
+  // nocommit required?
 
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
   static class FieldType implements IndexableFieldType {
@@ -286,6 +295,9 @@ public class FieldTypes {
         case FLOAT:
         case LONG:
         case DOUBLE:
+          if (highlighted == Boolean.TRUE) {
+            illegalState(name, "type " + valueType + " cannot highlight");
+          }
           if (indexAnalyzer != null) {
             illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
           }
@@ -297,6 +309,9 @@ public class FieldTypes {
           }
           if (indexOptions != null && indexOptions.compareTo(IndexOptions.DOCS_ONLY) > 0) {
             illegalState(name, "type " + valueType + " cannot use indexOptions > DOCS_ONLY (got indexOptions " + indexOptions + ")");
+          }
+          if (indexNorms == Boolean.TRUE) {
+            illegalState(name, "type " + valueType + " cannot index norms");
           }
           break;
         case TEXT:
@@ -319,6 +334,9 @@ public class FieldTypes {
           }
           break;
         case BINARY:
+          if (highlighted == Boolean.TRUE) {
+            illegalState(name, "type " + valueType + " cannot highlight");
+          }
           if (indexAnalyzer != null) {
             illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
           }
@@ -326,7 +344,7 @@ public class FieldTypes {
             illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
           }
           if (docValuesType != null && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
-            illegalState(name, "type " + valueType + " must use BINARY docValuesType (got: " + docValuesType + ")");
+            illegalState(name, "type " + valueType + " must use BINARY, SORTED or SORTED_SET docValuesType (got: " + docValuesType + ")");
           }
           break;
         case ATOM:
@@ -336,10 +354,23 @@ public class FieldTypes {
           if (queryAnalyzer != null) {
             illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
           }
-          // nocommit make sure norms are disabled?
+          if (indexNorms == Boolean.TRUE) {
+            illegalState(name, "type " + valueType + " cannot index norms");
+          }
           if (indexOptions != null && indexOptions.compareTo(IndexOptions.DOCS_ONLY) > 0) {
             // nocommit too anal?
             illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
+          }
+          break;
+        case BOOLEAN:
+          if (highlighted == Boolean.TRUE) {
+            illegalState(name, "type " + valueType + " cannot highlight");
+          }
+          if (indexNorms == Boolean.TRUE) {
+            illegalState(name, "type " + valueType + " cannot index norms");
+          }
+          if (docValuesType != null && docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC) {
+            illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType (got: " + docValuesType + ")");
           }
           break;
         default:
@@ -610,6 +641,9 @@ public class FieldTypes {
         case BINARY:
           out.writeByte((byte) 8);
           break;
+        case BOOLEAN:
+          out.writeByte((byte) 9);
+          break;
         default:
           throw new AssertionError("missing ValueType in switch");
         }
@@ -653,6 +687,7 @@ public class FieldTypes {
       writeNullableBoolean(out, sortReversed);
       writeNullableBoolean(out, multiValued);
       writeNullableBoolean(out, indexNorms);
+      writeNullableBoolean(out, fastRanges);
       writeNullableBoolean(out, storeTermVectors);
       writeNullableBoolean(out, storeTermVectorPositions);
       writeNullableBoolean(out, storeTermVectorOffsets);
@@ -779,6 +814,9 @@ public class FieldTypes {
       case 8:
         valueType = ValueType.BINARY;
         break;
+      case 9:
+        valueType = ValueType.BOOLEAN;
+        break;
       default:
         throw new CorruptIndexException("invalid byte for ValueType: " + b, in);
       }
@@ -828,6 +866,7 @@ public class FieldTypes {
       sortReversed = readNullableBoolean(in);
       multiValued = readNullableBoolean(in);
       indexNorms = readNullableBoolean(in);
+      fastRanges = readNullableBoolean(in);
       storeTermVectors = readNullableBoolean(in);
       storeTermVectorPositions = readNullableBoolean(in);
       storeTermVectorOffsets = readNullableBoolean(in);
@@ -901,7 +940,9 @@ public class FieldTypes {
     if (currentFieldTypes != null) {
       return readFromString(currentFieldTypes);
     } else if (isNewIndex == false) {
-      throw new CorruptIndexException("FieldTyps is missing from index", "CommitUserData");
+      // nocommit must handle back compat here :)
+      // throw new CorruptIndexException("FieldTypes is missing from this index", "CommitUserData");
+      return Version.LATEST;
     } else {
       return Version.LATEST;
     }
@@ -977,6 +1018,10 @@ public class FieldTypes {
       current.postingsFormat = postingsFormat;
       changed();
     }
+  }
+
+  public String getFieldTypeString(String fieldName) {
+    return getFieldType(fieldName).toString();
   }
 
   synchronized FieldType getFieldType(String fieldName) {
@@ -1960,6 +2005,7 @@ public class FieldTypes {
     }
   }
 
+  // ncommit move this method inside FildType:
   private void setDefaults(FieldType field) {
     switch (field.valueType) {
 
@@ -1969,6 +2015,9 @@ public class FieldTypes {
     case DOUBLE:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
+      }
+      if (field.storeTermVectors == null) {
+        field.storeTermVectors = Boolean.FALSE;
       }
       if (field.sortable == null) {
         if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.NUMERIC || field.docValuesType == DocValuesType.SORTED_NUMERIC) {
@@ -1983,20 +2032,19 @@ public class FieldTypes {
       if (field.stored == null) {
         field.stored = Boolean.TRUE;
       }
-      if (field.sortable == Boolean.TRUE && field.docValuesTypeSet == false) {
-        if (field.multiValued == Boolean.TRUE) {
-          field.docValuesType = DocValuesType.SORTED_NUMERIC;
-        } else {
-          field.docValuesType = DocValuesType.NUMERIC;
-        }
-        field.docValuesTypeSet = true;
-      }
       if (field.indexOptionsSet == false) {
         field.indexOptions = IndexOptions.DOCS_ONLY;
         field.indexOptionsSet = true;
       }
-      if (field.indexNorms == null) {
-        field.indexNorms = Boolean.FALSE;
+      if (field.docValuesTypeSet == false) {
+        if (field.sortable == Boolean.TRUE) {
+          if (field.multiValued == Boolean.TRUE) {
+            field.docValuesType = DocValuesType.SORTED_NUMERIC;
+          } else {
+            field.docValuesType = DocValuesType.NUMERIC;
+          }
+        }
+        field.docValuesTypeSet = true;
       }
       if (field.fastRanges == null) {
         if (field.indexOptions != null) {
@@ -2005,14 +2053,17 @@ public class FieldTypes {
           field.fastRanges = Boolean.FALSE;
         }
       }
+      if (field.indexNorms == null) {
+        field.indexNorms = Boolean.FALSE;
+      }
       break;
 
     case SHORT_TEXT:
       if (field.highlighted == null) {
         field.highlighted = Boolean.TRUE;
       }
-      if (field.fastRanges == null) {
-        field.fastRanges = Boolean.FALSE;
+      if (field.storeTermVectors == null) {
+        field.storeTermVectors = Boolean.FALSE;
       }
       if (field.sortable == null) {
         if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.SORTED || field.docValuesType == DocValuesType.SORTED_SET) {
@@ -2045,6 +2096,9 @@ public class FieldTypes {
         }
         field.indexOptionsSet = true;
       }
+      if (field.fastRanges == null) {
+        field.fastRanges = Boolean.FALSE;
+      }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
       }
@@ -2053,6 +2107,9 @@ public class FieldTypes {
     case ATOM:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
+      }
+      if (field.storeTermVectors == null) {
+        field.storeTermVectors = Boolean.FALSE;
       }
       if (field.sortable == null) {
         if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.SORTED || field.docValuesType == DocValuesType.SORTED_SET) {
@@ -2081,9 +2138,6 @@ public class FieldTypes {
         }
         field.docValuesTypeSet = true;
       }
-      if (field.indexNorms == null) {
-        field.indexNorms = Boolean.FALSE;
-      }
       if (field.fastRanges == null) {
         if (field.indexOptions != null) {
           field.fastRanges = Boolean.TRUE;
@@ -2091,14 +2145,17 @@ public class FieldTypes {
           field.fastRanges = Boolean.FALSE;
         }
       }
+      if (field.indexNorms == null) {
+        field.indexNorms = Boolean.FALSE;
+      }
       break;
 
     case BINARY:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
       }
-      if (field.fastRanges == null) {
-        field.fastRanges = Boolean.FALSE;
+      if (field.storeTermVectors == null) {
+        field.storeTermVectors = Boolean.FALSE;
       }
       if (field.sortable == null) {
         if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.SORTED || field.docValuesType == DocValuesType.SORTED_SET) {
@@ -2112,9 +2169,6 @@ public class FieldTypes {
       }
       if (field.stored == null) {
         field.stored = Boolean.TRUE;
-      }
-      if (field.indexNorms == null) {
-        field.indexNorms = Boolean.FALSE;
       }
       if (field.indexOptionsSet == false) {
         assert field.indexOptions == null;
@@ -2130,14 +2184,20 @@ public class FieldTypes {
         }
         field.docValuesTypeSet = true;
       }
+      if (field.fastRanges == null) {
+        field.fastRanges = Boolean.FALSE;
+      }
+      if (field.indexNorms == null) {
+        field.indexNorms = Boolean.FALSE;
+      }
       break;
 
     case TEXT:
       if (field.highlighted == null) {
         field.highlighted = Boolean.TRUE;
       }
-      if (field.fastRanges == null) {
-        field.fastRanges = Boolean.FALSE;
+      if (field.storeTermVectors == null) {
+        field.storeTermVectors = Boolean.FALSE;
       }
       if (field.sortable == null) {
         field.sortable = Boolean.FALSE;
@@ -2161,8 +2221,51 @@ public class FieldTypes {
       assert field.docValuesType == null;
       field.docValuesTypeSet = true;
 
+      if (field.fastRanges == null) {
+        field.fastRanges = Boolean.FALSE;
+      }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.TRUE;
+      }
+      break;
+    
+    case BOOLEAN:
+      if (field.highlighted == null) {
+        field.highlighted = Boolean.FALSE;
+      }
+      if (field.storeTermVectors == null) {
+        field.storeTermVectors = Boolean.FALSE;
+      }
+      if (field.sortable == null) {
+        field.sortable = Boolean.TRUE;
+      }
+      if (field.multiValued == null) {
+        field.multiValued = Boolean.FALSE;
+      }
+      if (field.stored == null) {
+        field.stored = Boolean.TRUE;
+      }
+      if (field.indexOptionsSet == false) {
+        // validate enforces this:
+        assert field.highlighted == false;
+        field.indexOptions = IndexOptions.DOCS_ONLY;
+        field.indexOptionsSet = true;
+      }
+      if (field.docValuesTypeSet == false) {
+        if (field.sortable == Boolean.TRUE) {
+          if (field.multiValued == Boolean.TRUE) {
+            field.docValuesType = DocValuesType.SORTED_NUMERIC;
+          } else {
+            field.docValuesType = DocValuesType.NUMERIC;
+          }
+        }
+        field.docValuesTypeSet = true;
+      }
+      if (field.fastRanges == null) {
+        field.fastRanges = Boolean.FALSE;
+      }
+      if (field.indexNorms == null) {
+        field.indexNorms = Boolean.FALSE;
       }
       break;
 
@@ -2179,6 +2282,7 @@ public class FieldTypes {
 
     // nocommit assert all other settings are not null
     assert field.highlighted != null;
+    assert field.storeTermVectors != null;
     assert field.fastRanges != null;
     assert field.sortable != null;
     assert field.multiValued != null;
@@ -2192,7 +2296,7 @@ public class FieldTypes {
   } 
 
   /** Returns a query matching all documents that have this int term. */
-  public Query newTermQuery(String fieldName, int token) {
+  public Query newIntTermQuery(String fieldName, int token) {
     // nocommit should we take Number?
 
     // Field must exist:
@@ -2219,7 +2323,7 @@ public class FieldTypes {
   }
 
   /** Returns a query matching all documents that have this long term. */
-  public Query newTermQuery(String fieldName, long token) {
+  public Query newLongTermQuery(String fieldName, long token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2245,7 +2349,7 @@ public class FieldTypes {
   }
 
   /** Returns a query matching all documents that have this binary token. */
-  public Query newTermQuery(String fieldName, byte[] token) {
+  public Query newBinaryTermQuery(String fieldName, byte[] token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2263,7 +2367,7 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, new BytesRef(token)));
   }
 
-  public Query newTermQuery(String fieldName, String token) {
+  public Query newStringTermQuery(String fieldName, String token) {
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
 
@@ -2274,10 +2378,32 @@ public class FieldTypes {
 
     // Field must be text:
     if (fieldType.valueType != ValueType.TEXT && fieldType.valueType != ValueType.SHORT_TEXT && fieldType.valueType != ValueType.ATOM) {
-      illegalState(fieldName, "text term query have valueType TEXT, SHORT_TEXT or ATOM; got " + fieldType.valueType);
+      illegalState(fieldName, "string term query must have valueType TEXT, SHORT_TEXT or ATOM; got " + fieldType.valueType);
     }
 
     return new TermQuery(new Term(fieldName, token));
+  }
+
+  public Query newBooleanTermQuery(String fieldName, boolean token) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == null) {
+      illegalState(fieldName, "cannot create term query: this field was not indexed");
+    }
+
+    // Field must be boolean:
+    if (fieldType.valueType != ValueType.BOOLEAN) {
+      illegalState(fieldName, "boolean term query must have valueType BOOLEAN; got " + fieldType.valueType);
+    }
+
+    byte[] value = new byte[1];
+    if (token) {
+      value[0] = 1;
+    }
+
+    return new TermQuery(new Term(fieldName, new BytesRef(value)));
   }
 
   // nocommit shouldn't this be a filter?
@@ -2432,6 +2558,7 @@ public class FieldTypes {
     case SHORT_TEXT:
     case ATOM:
     case BINARY:
+    case BOOLEAN:
       if (fieldType.multiValued == Boolean.TRUE) {
         // nocommit need to be able to set selector...
         return new SortedSetSortField(fieldName, reverse);
@@ -2450,6 +2577,11 @@ public class FieldTypes {
   private synchronized void changed() {
     ensureWritable();
     // Push to IW's commit data
+    changeCount++;
+  }
+
+  public synchronized long getChangeCount() {
+    return changeCount;
   }
 
   private synchronized void ensureWritable() {

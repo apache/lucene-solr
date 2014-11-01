@@ -17,18 +17,25 @@ package org.apache.lucene.queryparser.xml;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -39,13 +46,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 
 public class TestParser extends LuceneTestCase {
@@ -233,8 +233,8 @@ public class TestParser extends LuceneTestCase {
       System.out.println("=========" + qType + "============");
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for (int i = 0; i < Math.min(numDocs, hits.totalHits); i++) {
-        StoredDocument ldoc = searcher.doc(scoreDocs[i].doc);
-        System.out.println("[" + ldoc.get("date") + "]" + ldoc.get("contents"));
+        Document2 ldoc = searcher.doc(scoreDocs[i].doc);
+        System.out.println("[" + ldoc.getString("date") + "]" + ldoc.getString("contents"));
       }
       System.out.println();
     }

@@ -27,11 +27,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.FieldTypes.FieldType;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FilterIterator;
 
@@ -41,14 +38,16 @@ import org.apache.lucene.util.FilterIterator;
  *  that also tracks field properties implied by the
  *  fields being added. */
 
-public class Document2 implements IndexDocument {
+public class Document2 implements Iterable<IndexableField> {
 
   private static final float DEFAULT_BOOST = 1.0f;
 
   private final FieldTypes fieldTypes;
   private final List<FieldValue> fields = new ArrayList<>();
+  private final boolean changeSchema;
 
-  private class FieldValue implements IndexableField, StorableField {
+  // nocommit make private again and somehow deal w/ generics
+  public class FieldValue implements IndexableField {
     final String fieldName;
     final Object value;
     final float boost;
@@ -62,7 +61,21 @@ public class Document2 implements IndexDocument {
       this.fieldName = fieldName;
       this.value = value;
       this.boost = boost;
-      this.fieldType = fieldTypes.getFieldType(fieldName);
+      FieldType curFieldType;
+      if (changeSchema == false) {
+        if (fieldTypes != null) {
+          try {
+            curFieldType = fieldTypes.getFieldType(fieldName);
+          } catch (IllegalArgumentException iae) {
+            curFieldType = null;
+          }
+        } else {
+          curFieldType = null;
+        }
+      } else {
+        curFieldType = fieldTypes.getFieldType(fieldName);
+      }
+      this.fieldType = curFieldType;
     }
     
     @Override
@@ -84,7 +97,8 @@ public class Document2 implements IndexDocument {
       BinaryTokenStream bts;
       if (reuse != null) {
         if (reuse instanceof BinaryTokenStream == false) {
-          FieldTypes.illegalState(fieldName, "should have had BinaryTokenStream for reuse, but got " + reuse);
+          // BUG
+          FieldTypes.illegalState(fieldName, "should have received BinaryTokenStream for reuse, but got " + reuse);
         }
         bts = (BinaryTokenStream) reuse;
       } else {
@@ -92,6 +106,21 @@ public class Document2 implements IndexDocument {
       }
       bts.setValue(value);
       return bts;
+    }
+
+    private TokenStream getReusedStringTokenStream(String value, TokenStream reuse) {
+      StringTokenStream sts;
+      if (reuse != null) {
+        if (reuse instanceof StringTokenStream == false) {
+          // BUG
+          FieldTypes.illegalState(fieldName, "should have received StringTokenStream for reuse, but got " + reuse);
+        }
+        sts = (StringTokenStream) reuse;
+      } else {
+        sts = new StringTokenStream();
+      }
+      sts.setValue(value);
+      return sts;
     }
 
     @Override
@@ -114,17 +143,7 @@ public class Document2 implements IndexDocument {
         return getReusedBinaryTokenStream(longToBytes(Double.doubleToLongBits(((Number) value).doubleValue())), reuse);
       case ATOM:
         if (value instanceof String) {
-          StringTokenStream sts;
-          if (reuse != null) {
-            if (reuse instanceof StringTokenStream == false) {
-              FieldTypes.illegalState(fieldName, "should have had StringTokenStream for reuse, but got " + reuse);
-            }
-            sts = (StringTokenStream) reuse;
-          } else {
-            sts = new StringTokenStream();
-          }
-          sts.setValue((String) value);
-          return sts;
+          return getReusedStringTokenStream((String) value, reuse);
         } else {
           assert value instanceof BytesRef;
           return getReusedBinaryTokenStream((BytesRef) value, reuse);
@@ -154,6 +173,13 @@ public class Document2 implements IndexDocument {
           return analyzer.tokenStream(name(), (String) value);
         }
 
+      case BOOLEAN:
+        byte[] token = new byte[1];
+        if (value == Boolean.TRUE) {
+          token[0] = 1;
+        }
+        return getReusedBinaryTokenStream(new BytesRef(token), reuse);
+
       default:
         FieldTypes.illegalState(fieldName, "valueType=" + fieldType.valueType + " cannot be indexed");
 
@@ -164,12 +190,25 @@ public class Document2 implements IndexDocument {
 
     @Override
     public Number numericValue() {
+      if (fieldType == null) {
+        if (value instanceof Number) {
+          return (Number) value;
+        } else {
+          return null;
+        }
+      }
       switch (fieldType.valueType) {
       case INT:
       case LONG:
       case FLOAT:
       case DOUBLE:
         return (Number) value;
+      case BOOLEAN:
+        if (value == Boolean.TRUE) {
+          return Integer.valueOf(1);
+        } else {
+          return Integer.valueOf(0);
+        }
       default:
         return null;
       }
@@ -177,6 +216,9 @@ public class Document2 implements IndexDocument {
 
     @Override
     public Number numericDocValue() {
+      if (fieldType == null) {
+        return null;
+      }
       switch (fieldType.valueType) {
       case INT:
         return (Number) value;
@@ -186,6 +228,12 @@ public class Document2 implements IndexDocument {
         return Integer.valueOf(Float.floatToIntBits((Float) value));
       case DOUBLE:
         return Long.valueOf(Double.doubleToLongBits((Double) value));
+      case BOOLEAN:
+        if (value == Boolean.TRUE) {
+          return Integer.valueOf(1);
+        } else {
+          return Integer.valueOf(0);
+        }
       default:
         return null;
       }
@@ -193,6 +241,14 @@ public class Document2 implements IndexDocument {
 
     @Override
     public String stringValue() {
+      if (fieldType == null) {
+        if (value instanceof String) {
+          return (String) value;
+        } else {
+          return null;
+        }
+      }
+
       switch (fieldType.valueType) {
       case SHORT_TEXT:
       case TEXT:
@@ -214,7 +270,21 @@ public class Document2 implements IndexDocument {
 
     @Override
     public BytesRef binaryValue() {
-      if (value instanceof BytesRef) {
+      if (fieldType == null) {
+        if (value instanceof BytesRef) {
+          return (BytesRef) value;
+        } else {
+          return null;
+        }
+      }
+
+      if (fieldType.valueType == FieldTypes.ValueType.BOOLEAN) {
+        byte[] bytes = new byte[1];
+        if (value == Boolean.TRUE) {
+          bytes[0] = 1;
+        }
+        return new BytesRef(bytes);
+      } else if (value instanceof BytesRef) {
         return (BytesRef) value;
       } else {
         return null;
@@ -235,83 +305,102 @@ public class Document2 implements IndexDocument {
   }
 
   public Document2(FieldTypes fieldTypes) {
+    this(fieldTypes, true);
+  }
+
+  Document2(FieldTypes fieldTypes, boolean changeSchema) {
     this.fieldTypes = fieldTypes;
+    this.changeSchema = changeSchema;
   }
 
   @Override
-  public Iterable<IndexableField> indexableFields() {
-    return new Iterable<IndexableField>() {
-      @Override
-      public Iterator<IndexableField> iterator() {
-        return Document2.this.indexedFieldsIterator();
-      }
-    };
+  public Iterator<IndexableField> iterator() {
+    // nocommit how to fix generics here so I can just return fields.iterator?
+    //return fields.iterator();
+    ArrayList<IndexableField> l = new ArrayList<>();
+    l.addAll(fields);
+    return l.iterator();
   }
 
-  @Override
-  public Iterable<StorableField> storableFields() {
-    return new Iterable<StorableField>() {
-      @Override
-      public Iterator<StorableField> iterator() {
-        return Document2.this.storedFieldsIterator();
-      }
-    };
+  public List<FieldValue> getFieldValues() {
+    return fields;
   }
 
-  private Iterator<StorableField> storedFieldsIterator() {
-    return new FilterIterator<StorableField,FieldValue>(fields.iterator()) {
-      @Override
-      protected boolean predicateFunction(FieldValue field) {
-        return field.fieldType.stored() || field.fieldType.docValueType() != null;
-      }
-    };
+  public List<IndexableField> getFields() {
+    List<IndexableField> result = new ArrayList<>();
+    result.addAll(fields);
+    return result;
   }
-  
-  private Iterator<IndexableField> indexedFieldsIterator() {
-    return new FilterIterator<IndexableField,FieldValue>(fields.iterator()) {
-      @Override
-      protected boolean predicateFunction(FieldValue field) {
-        return field.fieldType.indexOptions() != null;
+
+  public IndexableField getField(String name) {
+    List<IndexableField> result = new ArrayList<>();
+    for (FieldValue field : fields) {
+      if (field.name().equals(name)) {
+        return field;
       }
-    };
+    }
+    return null;
+  }
+
+  public List<IndexableField> getFields(String name) {
+    List<IndexableField> result = new ArrayList<>();
+    for (FieldValue field : fields) {
+      if (field.name().equals(name)) {
+        result.add(field);
+      }
+    }
+
+    return result;
   }
 
   /** E.g. a "country" field.  Default: indexes this value as a single token, and disables norms and freqs, and also enables sorting (indexes doc values) and stores it. */
   public void addAtom(String fieldName, String value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM);
+    }
     fields.add(new FieldValue(fieldName, value));
   }
 
   /** E.g. an "id" (primary key) field.  Default: indexes this value as a single token, and disables norms and freqs. */
   public void addAtom(String fieldName, BytesRef value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM);
+    }
     fields.add(new FieldValue(fieldName, value));
   }
 
   /** E.g. a "title" field.  Default: indexes this value as multiple tokens from analyzer, and disables norms and freqs, and also enables
    *  sorting (indexes sorted doc values). */
   public void addShortText(String fieldName, String value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.SHORT_TEXT);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.SHORT_TEXT);
+    }
     fields.add(new FieldValue(fieldName, value));
   }
 
   /** Default: store this value. */
   public void addStored(String fieldName, BytesRef value) {
     // nocommit akward we inferred binary here?
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BINARY);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BINARY);
+    }
     fields.add(new FieldValue(fieldName, value));
   }
 
   /** Default: store this value. */
   public void addBinary(String fieldName, BytesRef value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BINARY);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BINARY);
+    }
     fields.add(new FieldValue(fieldName, value));
   }
 
   /** Default: store this value. */
   public void addStored(String fieldName, String value) {
     // nocommit akward we inferred large_text here?
-    fieldTypes.recordLargeTextType(fieldName, true, false);
+    if (changeSchema) {
+      fieldTypes.recordLargeTextType(fieldName, true, false);
+    }
     fields.add(new FieldValue(fieldName, value));
   }
 
@@ -322,7 +411,9 @@ public class Document2 implements IndexDocument {
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer and stores the value. */
   public void addLargeText(String fieldName, String value, float boost) {
-    fieldTypes.recordLargeTextType(fieldName, true, true);
+    if (changeSchema) {
+      fieldTypes.recordLargeTextType(fieldName, true, true);
+    }
     fields.add(new FieldValue(fieldName, value, boost));
   }
 
@@ -333,7 +424,9 @@ public class Document2 implements IndexDocument {
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer. */
   public void addLargeText(String fieldName, TokenStream value, float boost) {
-    fieldTypes.recordLargeTextType(fieldName, false, true);
+    if (changeSchema) {
+      fieldTypes.recordLargeTextType(fieldName, false, true);
+    }
     fields.add(new FieldValue(fieldName, value, boost));
   }
 
@@ -344,7 +437,9 @@ public class Document2 implements IndexDocument {
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer. */
   public void addLargeText(String fieldName, Reader value, float boost) {
-    fieldTypes.recordLargeTextType(fieldName, false, true);
+    if (changeSchema) {
+      fieldTypes.recordLargeTextType(fieldName, false, true);
+    }
     fields.add(new FieldValue(fieldName, value, boost));
   }
 
@@ -352,46 +447,70 @@ public class Document2 implements IndexDocument {
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
   public void addInt(String fieldName, int value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.INT);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.INT);
+    }
     fields.add(new FieldValue(fieldName, Integer.valueOf(value)));
   }
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
   public void addFloat(String fieldName, float value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.FLOAT);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.FLOAT);
+    }
     fields.add(new FieldValue(fieldName, Float.valueOf(value)));
   }
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
   public void addLong(String fieldName, long value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.LONG);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.LONG);
+    }
     fields.add(new FieldValue(fieldName, Long.valueOf(value)));
   }
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
   public void addDouble(String fieldName, double value) {
-    fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.DOUBLE);
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.DOUBLE);
+    }
     fields.add(new FieldValue(fieldName, Double.valueOf(value)));
   }
 
-  public Object get(String fieldName) {
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return fieldValue.value;
-      }
+  public void addBoolean(String fieldName, boolean value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BOOLEAN);
     }
+    fields.add(new FieldValue(fieldName, Boolean.valueOf(value)));
+  }
 
-    return null;
+  static {
+    // nocommit is there a cleaner/general way to detect missing enum value in case switch statically?  must we use ecj?
+    assert FieldTypes.ValueType.values().length == 9: "missing case for switch statement below";
   }
 
   /** Note: this FieldTypes must already know about all the fields in the incoming doc. */
-  public void addAll(StoredDocument storedDoc) {
-    for (StorableField field : storedDoc.getFields()) {
+  public void addAll(Document2 other) {
+    // nocommit should we insist other.fieldTypes == this.fieldTypes?  or, that they are "congruent"?
+    for (FieldValue field : other.fields) {
       String fieldName = field.name();
       FieldType fieldType = fieldTypes.getFieldType(fieldName);
       // nocommit need more checking here ... but then, we should somehow remove StoredDocument, sicne w/ FieldTypes we can now fully
       // reconstruct (as long as all fields were stored) what was indexed:
       switch (fieldType.valueType) {
+      case TEXT:
+        addLargeText(fieldName, field.stringValue());
+        break;
+      case SHORT_TEXT:
+        addShortText(fieldName, field.stringValue());
+        break;
+      case ATOM:
+        if (field.value instanceof BytesRef) {
+          addAtom(fieldName, (BytesRef) field.value);
+        } else {
+          addAtom(fieldName, (String) field.value);
+        }
+        break;
       case INT:
         addInt(fieldName, field.numericValue().intValue());
         break;
@@ -404,15 +523,15 @@ public class Document2 implements IndexDocument {
       case DOUBLE:
         addDouble(fieldName, field.numericValue().doubleValue());
         break;
-      case TEXT:
-        addLargeText(fieldName, field.stringValue());
-        break;
-      case SHORT_TEXT:
-        addShortText(fieldName, field.stringValue());
-        break;
       case BINARY:
         addStored(fieldName, field.binaryValue());
         break;
+      case BOOLEAN:
+        addBoolean(fieldName, ((Boolean) field.value).booleanValue());
+        break;
+      default:
+        // BUG:
+        throw new AssertionError("missing valueType=" + fieldType.valueType + " in switch");
       }
     }
   }
@@ -453,5 +572,89 @@ public class Document2 implements IndexDocument {
       sortableBits >>>= 8;
     }
     return token;
+  }
+
+  public Boolean getBoolean(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is boolean...?
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return (Boolean) fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
+  public String getString(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return fieldValue.value.toString();
+      }
+    }
+
+    return null;
+  }
+
+  public String[] getStrings(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    List<String> values = new ArrayList<>();
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        values.add(fieldValue.value.toString());
+      }
+    }
+
+    return values.toArray(new String[values.size()]);
+  }
+
+  public BytesRef getBinary(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return (BytesRef) fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
+  public Integer getInt(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return (Integer) fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
+  public Object get(String fieldName) {
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder b = new StringBuilder();
+    for(FieldValue fieldValue : fields) {
+      b.append("\n  ");
+      b.append(fieldValue.fieldName);
+      b.append(": ");
+      String s = fieldValue.value.toString();
+      if (s.length() > 20) {
+        b.append(s.substring(0, 20));
+        b.append("...");
+      } else {
+        b.append(s);
+      }
+    }
+    return b.toString();
   }
 }

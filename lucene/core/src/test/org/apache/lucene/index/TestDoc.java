@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -198,53 +199,52 @@ public class TestDoc extends LuceneTestCase {
    }
 
    private SegmentCommitInfo indexDoc(IndexWriter writer, String fileName)
-   throws Exception
-   {
-      Path path = workDir.resolve(fileName);
-      Document doc = new Document();
-      InputStreamReader is = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8);
-      doc.add(new TextField("contents", is));
-      writer.addDocument(doc);
-      writer.commit();
-      is.close();
-      return writer.newestSegment();
+     throws Exception {
+     Path path = workDir.resolve(fileName);
+     Document doc = new Document();
+     InputStreamReader is = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8);
+     doc.add(new TextField("contents", is));
+     writer.addDocument(doc);
+     writer.commit();
+     is.close();
+     return writer.newestSegment();
    }
 
-
    private SegmentCommitInfo merge(Directory dir, SegmentCommitInfo si1, SegmentCommitInfo si2, String merged, boolean useCompoundFile)
-   throws Exception {
-      IOContext context = newIOContext(random());
-      SegmentReader r1 = new SegmentReader(si1, context);
-      SegmentReader r2 = new SegmentReader(si2, context);
+     throws Exception {
+     FieldTypes fieldTypes = FieldTypes.getFieldTypes(dir, null);
+     IOContext context = newIOContext(random());
+     SegmentReader r1 = new SegmentReader(fieldTypes, si1, context);
+     SegmentReader r2 = new SegmentReader(fieldTypes, si2, context);
 
-      final Codec codec = Codec.getDefault();
-      TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
-      final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null, StringHelper.randomId());
+     final Codec codec = Codec.getDefault();
+     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
+     final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null, StringHelper.randomId());
 
-      SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(r1, r2),
-          si, InfoStream.getDefault(), trackingDir,
-          MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context);
+     SegmentMerger merger = new SegmentMerger(fieldTypes, Arrays.<LeafReader>asList(r1, r2),
+                                              si, InfoStream.getDefault(), trackingDir,
+                                              MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), context);
 
-      MergeState mergeState = merger.merge();
-      r1.close();
-      r2.close();;
-      si.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
+     MergeState mergeState = merger.merge();
+     r1.close();
+     r2.close();;
+     si.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       
-      if (useCompoundFile) {
-        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, si, newIOContext(random()));
-        si.setUseCompoundFile(true);
-        for (final String fileToDelete : filesToDelete) {
-          si1.info.dir.deleteFile(fileToDelete);
-        }
-      }
+     if (useCompoundFile) {
+       Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, si, newIOContext(random()));
+       si.setUseCompoundFile(true);
+       for (final String fileToDelete : filesToDelete) {
+         si1.info.dir.deleteFile(fileToDelete);
+       }
+     }
 
-      return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);
+     return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);
    }
 
 
    private void printSegment(PrintWriter out, SegmentCommitInfo si)
    throws Exception {
-      SegmentReader reader = new SegmentReader(si, newIOContext(random()));
+      SegmentReader reader = new SegmentReader(null, si, newIOContext(random()));
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

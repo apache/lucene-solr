@@ -305,29 +305,20 @@ final class DefaultIndexingChain extends DocConsumer {
 
     termsHash.startDocument();
 
-    // Invert indexed fields:
-    try {
-      for (IndexableField field : docState.doc.indexableFields()) {
-        IndexableFieldType fieldType = field.fieldType();
-        
-        // if the field omits norms, the boost cannot be indexed.
-        if (fieldType.omitNorms() && field.boost() != 1.0f) {
-          throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
-        }
-        
-        PerField fp = getOrAddField(field.name(), fieldType, true);
-        boolean first = fp.fieldGen != fieldGen;
-        fp.invert(field, first);
+    fillStoredFields(docState.docID);
+    startStoredFields();
 
-        if (first) {
-          fields[fieldCount++] = fp;
-          fp.fieldGen = fieldGen;
-        }
+    try {
+      for (IndexableField field : docState.doc) {
+        fieldCount = processField(field, fieldGen, fieldCount);
       }
     } finally {
-      // Finish each field name seen in the document:
-      for (int i=0;i<fieldCount;i++) {
-        fields[i].finish();
+      if (docWriter.aborting == false) {
+        // Finish each indexed field name seen in the document:
+        for (int i=0;i<fieldCount;i++) {
+          fields[i].finish();
+        }
+        finishStoredFields();
       }
     }
 
@@ -342,65 +333,85 @@ final class DefaultIndexingChain extends DocConsumer {
         docWriter.setAborting();
       }
     }
-
-    // Add stored fields:
-    fillStoredFields(docState.docID);
-    startStoredFields();
-
-    // TODO: clean up this loop, it's bogus that docvalues are treated as stored fields...
-    boolean abort = false;
-    try {
-      for (StorableField field : docState.doc.storableFields()) {
-        String fieldName = field.name();
-        IndexableFieldType fieldType = field.fieldType();
-      
-        verifyFieldType(fieldName, fieldType);
-        
-        PerField fp = getOrAddField(fieldName, fieldType, false);
-        if (fieldType.stored()) {
-          abort = true;
-          storedFieldsWriter.writeField(fp.fieldInfo, field);
-          abort = false;
-        }
-
-        DocValuesType dvType = fieldType.docValueType();
-        if (dvType != null) {
-          indexDocValue(fp, dvType, field);
-        }
-      }
-    } finally {
-      if (abort) {
-        docWriter.setAborting();
-      } else {
-        finishStoredFields();
-      }
-    }
   }
 
-  private static void verifyFieldType(String name, IndexableFieldType ft) {
-    if (ft.indexOptions() == null) {
-      if (ft.storeTermVectors()) {
-        throw new IllegalArgumentException("cannot store term vectors "
-                                           + "for a field that is not indexed (field=\"" + name + "\")");
+  private int processField(IndexableField field, long fieldGen, int fieldCount) throws IOException {
+    String fieldName = field.name();
+    IndexableFieldType fieldType = field.fieldType();
+
+    PerField fp = null;
+
+    // Invert indexed fields:
+    if (fieldType.indexOptions() != null) {
+      
+      // if the field omits norms, the boost cannot be indexed.
+      if (fieldType.omitNorms() && field.boost() != 1.0f) {
+        throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
       }
-      if (ft.storeTermVectorPositions()) {
-        throw new IllegalArgumentException("cannot store term vector positions "
-                                           + "for a field that is not indexed (field=\"" + name + "\")");
+      
+      fp = getOrAddField(fieldName, fieldType, true);
+      boolean first = fp.fieldGen != fieldGen;
+      fp.invert(field, first);
+
+      if (first) {
+        fields[fieldCount++] = fp;
+        fp.fieldGen = fieldGen;
       }
-      if (ft.storeTermVectorOffsets()) {
-        throw new IllegalArgumentException("cannot store term vector offsets "
-                                           + "for a field that is not indexed (field=\"" + name + "\")");
+    } else {
+      verifyUnIndexedFieldType(fieldName, fieldType);
+    }
+
+    // Add stored fields:
+    if (fieldType.stored()) {
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
       }
-      if (ft.storeTermVectorPayloads()) {
-        throw new IllegalArgumentException("cannot store term vector payloads "
-                                           + "for a field that is not indexed (field=\"" + name + "\")");
+      if (fieldType.stored()) {
+        boolean success = false;
+        try {
+          storedFieldsWriter.writeField(fp.fieldInfo, field);
+          success = true;
+        } finally {
+          if (!success) {
+            docWriter.setAborting();
+          }
+        }
       }
+    }
+
+    DocValuesType dvType = fieldType.docValueType();
+    if (dvType != null) {
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
+      }
+      indexDocValue(fp, dvType, field);
+    }
+    
+    return fieldCount;
+  }
+
+  private static void verifyUnIndexedFieldType(String name, IndexableFieldType ft) {
+    if (ft.storeTermVectors()) {
+      throw new IllegalArgumentException("cannot store term vectors "
+                                         + "for a field that is not indexed (field=\"" + name + "\")");
+    }
+    if (ft.storeTermVectorPositions()) {
+      throw new IllegalArgumentException("cannot store term vector positions "
+                                         + "for a field that is not indexed (field=\"" + name + "\")");
+    }
+    if (ft.storeTermVectorOffsets()) {
+      throw new IllegalArgumentException("cannot store term vector offsets "
+                                         + "for a field that is not indexed (field=\"" + name + "\")");
+    }
+    if (ft.storeTermVectorPayloads()) {
+      throw new IllegalArgumentException("cannot store term vector payloads "
+                                         + "for a field that is not indexed (field=\"" + name + "\")");
     }
   }
 
   /** Called from processDocument to index one field's doc
    *  value */
-  private void indexDocValue(PerField fp, DocValuesType dvType, StorableField field) throws IOException {
+  private void indexDocValue(PerField fp, DocValuesType dvType, IndexableField field) throws IOException {
 
     boolean hasDocValues = fp.fieldInfo.hasDocValues();
 
