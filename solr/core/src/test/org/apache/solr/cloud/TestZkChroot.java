@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -46,7 +47,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
-    home = ExternalPaths.EXAMPLE_HOME;
+    home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
     
   }
   

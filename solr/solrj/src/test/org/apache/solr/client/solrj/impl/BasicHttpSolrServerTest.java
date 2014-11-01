@@ -151,7 +151,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
+    createJetty(legacyExampleCollection1SolrHome(), null, null);
     jetty.getDispatchFilter().getServletHandler()
         .addServletWithMapping(RedirectServlet.class, "/redirect/*");
     jetty.getDispatchFilter().getServletHandler()

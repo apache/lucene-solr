@@ -18,13 +18,19 @@ package org.apache.solr;
  */
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.OutputStreamWriter;
+import java.util.Properties;
 import java.util.SortedMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -130,6 +136,52 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     if (solrHome.exists()) {
       FileUtils.deleteDirectory(solrHome);
     }
+  }
+
+  public static void initCore() throws Exception {
+    String exampleHome = legacyExampleCollection1SolrHome();
+    String exampleConfig = exampleHome+"/collection1/conf/solrconfig.xml";
+    String exampleSchema = exampleHome+"/collection1/conf/schema.xml";
+    initCore(exampleConfig, exampleSchema, exampleHome);
+  }
+
+  public static String legacyExampleCollection1SolrHome() {
+    String sourceHome = ExternalPaths.SOURCE_HOME;
+    if (sourceHome == null)
+      throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");
+
+    String legacyExampleSolrHome = null;
+    try {
+      File tempSolrHome = LuceneTestCase.createTempDir().toFile();
+      org.apache.commons.io.FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
+      File collection1Dir = new File(tempSolrHome, "collection1");
+      org.apache.commons.io.FileUtils.forceMkdir(collection1Dir);
+
+      File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
+      org.apache.commons.io.FileUtils.copyDirectoryToDirectory(configSetDir, collection1Dir);
+      Properties props = new Properties();
+      props.setProperty("name", "collection1");
+      OutputStreamWriter writer = null;
+      try {
+        writer = new OutputStreamWriter(FileUtils.openOutputStream(new File(collection1Dir, "core.properties")), "UTF-8");
+        props.store(writer, null);
+      } finally {
+        if (writer != null) {
+          try {
+            writer.close();
+          } catch (Exception ignore){}
+        }
+      }
+      legacyExampleSolrHome = tempSolrHome.getAbsolutePath();
+    } catch (Exception exc) {
+      if (exc instanceof RuntimeException) {
+        throw (RuntimeException)exc;
+      } else {
+        throw new RuntimeException(exc);
+      }
+    }
+
+    return legacyExampleSolrHome;
   }
 
 

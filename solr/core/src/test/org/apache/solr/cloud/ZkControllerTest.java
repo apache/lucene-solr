@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -232,11 +233,13 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             }
           });
 
-      zkController.uploadToZK(new File(ExternalPaths.EXAMPLE_HOME + "/collection1/conf"),
+      String solrHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+
+      zkController.uploadToZK(new File(solrHome + "/collection1/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");
       
       // uploading again should overwrite, not error...
-      zkController.uploadToZK(new File(ExternalPaths.EXAMPLE_HOME + "/collection1/conf"),
+      zkController.uploadToZK(new File(solrHome + "/collection1/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");
 
       if (DEBUG) {

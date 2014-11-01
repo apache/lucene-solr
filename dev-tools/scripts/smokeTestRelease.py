@@ -238,7 +238,7 @@ def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
 
     normRoot = normSlashes(root)
 
-    if project == 'solr' and normRoot.endswith('/example/lib'):
+    if project == 'solr' and normRoot.endswith('/server/lib'):
       # Solr's example intentionally ships servlet JAR:
       continue
     
@@ -771,7 +771,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       checkJavadocpath('%s/docs' % unpackPath)
 
     else:
-      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
+      checkSolrWAR('%s/server/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
 
       print('    copying unpacked distribution for Java 7 ...')
       java7UnpackPath = '%s-java7' % unpackPath
@@ -848,13 +848,18 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
     
 def testSolrExample(unpackPath, javaPath, isSrc):
   logFile = '%s/solr-example.log' % unpackPath
-  os.chdir('example')
+  if isSrc:
+    os.chdir(unpackPath+'/solr')
+    subprocess.call(['chmod','+x',unpackPath+'/solr/bin/solr'])
+  else:
+    os.chdir(unpackPath)
+
   print('      start Solr instance (log=%s)...' % logFile)
   env = {}
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
-  server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
+  server = subprocess.Popen(['bin/solr', '-f'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
 
   startupEvent = threading.Event()
   failureEvent = threading.Event()
@@ -876,20 +881,29 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       raise RuntimeError('failure on startup; see log %s' % logFile)
 
     print('      startup done')
-
+    # Create the techproducts config (used to be collection1)
+    subprocess.call(['bin/solr','create_core','-n','techproducts','-c','sample_techproducts_configs'])
+    os.chdir('example')
     print('      test utf8...')
-    run('sh ./exampledocs/test_utf8.sh', 'utf8.log')
+    run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      index example docs...')
-    run('sh ./exampledocs/post.sh ./exampledocs/*.xml', 'post-example-docs.log')
+    # "$JAVA" -Durl=http://localhost:$SOLR_PORT/solr/$EXAMPLE/update -jar $SOLR_TIP/example/exampledocs/post.jar $SOLR_TIP/example/exampledocs/*.xml
+    run('java -Durl=http://localhost:8983/solr/techproducts/update -jar ./exampledocs/post.jar ./exampledocs/*.xml', 'post-example-docs.log')
+    #run('sh ./exampledocs/post.sh ./exampledocs/*.xml', 'post-example-docs.log')
     print('      run query...')
-    s = urllib.request.urlopen('http://localhost:8983/solr/select/?q=video').read().decode('UTF-8')
+    s = urllib.request.urlopen('http://localhost:8983/solr/techproducts/select/?q=video').read().decode('UTF-8')
     if s.find('<result name="response" numFound="3" start="0">') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
   finally:
     # Stop server:
-    print('      stop server (SIGINT)...')
-    os.kill(server.pid, signal.SIGINT)
+    print('      stop server using: bin/solr stop -p 8983')
+    #os.kill(server.pid, signal.SIGINT)
+    if isSrc:
+      os.chdir(unpackPath+'/solr')
+    else:
+      os.chdir(unpackPath)
+    subprocess.call(['bin/solr','stop','-p','8983'])
 
     # Give it 10 seconds to gracefully shut down
     serverThread.join(10.0)
@@ -907,8 +921,11 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
   if failureEvent.isSet():
     raise RuntimeError('exception while reading Solr output')
-    
-  os.chdir('..')
+
+  if isSrc:
+    os.chdir(unpackPath+'/solr')
+  else:
+    os.chdir(unpackPath)
     
 # the weaker check: we can use this on java6 for some checks,
 # but its generated HTML is hopelessly broken so we cannot run

@@ -24,6 +24,7 @@ import java.util.Random;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
@@ -56,7 +57,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
   public void setUp() throws Exception 
   {
     super.setUp();
-    System.setProperty("solr.solr.home", ExternalPaths.EXAMPLE_HOME);
+    System.setProperty("solr.solr.home", SolrJettyTestBase.legacyExampleCollection1SolrHome());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
 
     File dataDir = createTempDir().toFile();

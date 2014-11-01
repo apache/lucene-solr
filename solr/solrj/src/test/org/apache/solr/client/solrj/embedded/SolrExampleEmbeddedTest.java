@@ -31,6 +31,6 @@ public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    initCore(ExternalPaths.EXAMPLE_CONFIG, ExternalPaths.EXAMPLE_SCHEMA, ExternalPaths.EXAMPLE_HOME);
+    initCore();
   }
 }
