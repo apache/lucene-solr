@@ -206,7 +206,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     LeafReader slow = SlowCompositeReaderWrapper.wrap(r);
     FieldInfos fi = slow.getFieldInfos();
     FieldInfo dvInfo = fi.fieldInfo("dv");
-    assertTrue(dvInfo.hasDocValues());
+    assertTrue(dvInfo.getDocValuesType() != DocValuesType.NONE);
     NumericDocValues dv = slow.getNumericDocValues("dv");
     for (int i = 0; i < 50; i++) {
       assertEquals(i, dv.get(i));

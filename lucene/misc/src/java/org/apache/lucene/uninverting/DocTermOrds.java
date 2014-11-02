@@ -24,12 +24,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -282,7 +283,7 @@ public class DocTermOrds implements Accountable {
   /** Call this only once (if you subclass!) */
   protected void uninvert(final LeafReader reader, Bits liveDocs, final BytesRef termPrefix) throws IOException {
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-    if (info != null && info.hasDocValues()) {
+    if (info != null && info.getDocValuesType() != DocValuesType.NONE) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     }
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);

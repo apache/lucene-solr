@@ -56,7 +56,7 @@ class SegmentDocValuesProducer extends DocValuesProducer {
       if (ver != null && ver.onOrAfter(Version.LUCENE_4_9_0)) {
         DocValuesProducer baseProducer = null;
         for (FieldInfo fi : fieldInfos) {
-          if (!fi.hasDocValues()) {
+          if (fi.getDocValuesType() == DocValuesType.NONE) {
             continue;
           }
           long docValuesGen = fi.getDocValuesGen();
@@ -82,7 +82,7 @@ class SegmentDocValuesProducer extends DocValuesProducer {
         // we initialize each DocValuesProducer once per gen.
         Map<Long,List<FieldInfo>> genInfos = new HashMap<>();
         for (FieldInfo fi : fieldInfos) {
-          if (!fi.hasDocValues()) {
+          if (fi.getDocValuesType() == DocValuesType.NONE) {
             continue;
           }
           List<FieldInfo> genFieldInfos = genInfos.get(fi.getDocValuesGen());

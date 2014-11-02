@@ -84,14 +84,14 @@ public class TestSegmentReader extends LuceneTestCase {
     for(FieldInfo fieldInfo : reader.getFieldInfos()) {
       final String name = fieldInfo.name;
       allFieldNames.add(name);
-      if (fieldInfo.isIndexed()) {
+      if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
         indexedFieldNames.add(name);
       } else {
         notIndexedFieldNames.add(name);
       }
       if (fieldInfo.hasVectors()) {
         tvFieldNames.add(name);
-      } else if (fieldInfo.isIndexed()) {
+      } else if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
         noTVFieldNames.add(name);
       }
     }

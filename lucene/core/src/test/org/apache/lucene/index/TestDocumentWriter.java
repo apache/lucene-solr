@@ -93,7 +93,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     // test that the norms are not present in the segment if
     // omitNorms is true
     for (FieldInfo fi : reader.getFieldInfos()) {
-      if (fi.isIndexed()) {
+      if (fi.getIndexOptions() != IndexOptions.NONE) {
         assertTrue(fi.omitsNorms() == (reader.getNormValues(fi.name) == null));
       }
     }

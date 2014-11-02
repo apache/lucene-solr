@@ -800,11 +800,11 @@ public class AssertingLeafReader extends FilterLeafReader {
     FieldInfo fi = getFieldInfos().fieldInfo(field);
     if (docsWithField != null) {
       assert fi != null;
-      assert fi.hasDocValues();
+      assert fi.getDocValuesType() != DocValuesType.NONE;
       assert maxDoc() == docsWithField.length();
       docsWithField = new AssertingBits(docsWithField);
     } else {
-      assert fi == null || fi.hasDocValues() == false;
+      assert fi == null || fi.getDocValuesType() == DocValuesType.NONE;
     }
     return docsWithField;
   }

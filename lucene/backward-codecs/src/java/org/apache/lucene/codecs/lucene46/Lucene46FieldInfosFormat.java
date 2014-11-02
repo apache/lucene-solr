@@ -138,7 +138,7 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
         if (fi.hasVectors()) bits |= Lucene46FieldInfosFormat.STORE_TERMVECTOR;
         if (fi.omitsNorms()) bits |= Lucene46FieldInfosFormat.OMIT_NORMS;
         if (fi.hasPayloads()) bits |= Lucene46FieldInfosFormat.STORE_PAYLOADS;
-        if (fi.isIndexed()) {
+        if (fi.getIndexOptions() != IndexOptions.NONE) {
           bits |= Lucene46FieldInfosFormat.IS_INDEXED;
           assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
           if (indexOptions == IndexOptions.DOCS) {

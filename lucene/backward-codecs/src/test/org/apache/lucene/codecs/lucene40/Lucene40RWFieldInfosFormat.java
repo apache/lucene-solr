@@ -58,7 +58,7 @@ public final class Lucene40RWFieldInfosFormat extends Lucene40FieldInfosFormat {
         if (fi.hasVectors()) bits |= Lucene40FieldInfosFormat.STORE_TERMVECTOR;
         if (fi.omitsNorms()) bits |= Lucene40FieldInfosFormat.OMIT_NORMS;
         if (fi.hasPayloads()) bits |= Lucene40FieldInfosFormat.STORE_PAYLOADS;
-        if (fi.isIndexed()) {
+        if (fi.getIndexOptions() != IndexOptions.NONE) {
           bits |= Lucene40FieldInfosFormat.IS_INDEXED;
           assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
           if (indexOptions == IndexOptions.DOCS) {

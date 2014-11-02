@@ -36,6 +36,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
@@ -242,7 +243,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       try {
         // Read field name -> format name
         for (FieldInfo fi : readState.fieldInfos) {
-          if (fi.isIndexed()) {
+          if (fi.getIndexOptions() != IndexOptions.NONE) {
             final String fieldName = fi.name;
             final String formatName = fi.getAttribute(PER_FIELD_FORMAT_KEY);
             if (formatName != null) {
