@@ -144,9 +144,6 @@ public final class FieldInfo {
   }
 
   void setDocValuesType(DocValuesType type) {
-    if (type == null) {
-      throw new NullPointerException("DocValuesType cannot be null (field: \"" + name + "\")");
-    }
     if (docValuesType != DocValuesType.NONE && docValuesType != type) {
       throw new IllegalArgumentException("cannot change DocValues type from " + docValuesType + " to " + type + " for field \"" + name + "\"");
     }
@@ -159,13 +156,6 @@ public final class FieldInfo {
     return indexOptions;
   }
   
-  /**
-   * Returns true if this field has any docValues.
-   */
-  public boolean hasDocValues() {
-    return docValuesType != DocValuesType.NONE;
-  }
-
   /**
    * Returns {@link DocValuesType} of the docValues; this is
    * {@code DocValuesType.NONE} if the field has no docvalues.
@@ -211,14 +201,7 @@ public final class FieldInfo {
    * Returns true if this field actually has any norms.
    */
   public boolean hasNorms() {
-    return isIndexed() && omitNorms == false;
-  }
-  
-  /**
-   * Returns true if this field is indexed ({@link #getIndexOptions} is not IndexOptions.NONE).
-   */
-  public boolean isIndexed() {
-    return indexOptions != IndexOptions.NONE;
+    return indexOptions != IndexOptions.NONE && omitNorms == false;
   }
   
   /**

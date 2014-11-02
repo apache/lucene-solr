@@ -128,7 +128,7 @@ final class DefaultIndexingChain extends DocConsumer {
         PerField perField = fieldHash[i];
         while (perField != null) {
           if (perField.docValuesWriter != null) {
-            if (perField.fieldInfo.hasDocValues() == false) {
+            if (perField.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
               // BUG
               throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no docValues but wrote them");
             }
@@ -141,7 +141,7 @@ final class DefaultIndexingChain extends DocConsumer {
             perField.docValuesWriter.finish(docCount);
             perField.docValuesWriter.flush(state, dvConsumer);
             perField.docValuesWriter = null;
-          } else if (perField.fieldInfo.hasDocValues()) {
+          } else if (perField.fieldInfo.getDocValuesType() != DocValuesType.NONE) {
             // BUG
             throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has docValues but did not write them");
           }
@@ -198,7 +198,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
           // we must check the final value of omitNorms for the fieldinfo: it could have 
           // changed for this field since the first time we added it.
-          if (fi.omitsNorms() == false && fi.isIndexed()) {
+          if (fi.omitsNorms() == false && fi.getIndexOptions() != IndexOptions.NONE) {
             assert perField.norms != null: "field=" + fi.name;
             perField.norms.finish(state.segmentInfo.getDocCount());
             perField.norms.flush(state, normsConsumer);
@@ -406,9 +406,7 @@ final class DefaultIndexingChain extends DocConsumer {
    *  value */
   private void indexDocValue(PerField fp, DocValuesType dvType, StorableField field) throws IOException {
 
-    boolean hasDocValues = fp.fieldInfo.hasDocValues();
-
-    if (hasDocValues == false) {
+    if (fp.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
       // This will throw an exc if the caller tried to
       // change the DV type for the field:
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);

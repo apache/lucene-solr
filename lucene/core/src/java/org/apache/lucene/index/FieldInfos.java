@@ -68,11 +68,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
       
       hasVectors |= info.hasVectors();
-      hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-      hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS;
-      hasOffsets |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      hasProx |= info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      hasFreq |= info.getIndexOptions() != IndexOptions.DOCS;
+      hasOffsets |= info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       hasNorms |= info.hasNorms();
-      hasDocValues |= info.hasDocValues();
+      hasDocValues |= info.getDocValuesType() != DocValuesType.NONE;
       hasPayloads |= info.hasPayloads();
     }
     
@@ -314,7 +314,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
 
         if (docValues != DocValuesType.NONE) {
           // Only pay the synchronization cost if fi does not already have a DVType
-          boolean updateGlobal = !fi.hasDocValues();
+          boolean updateGlobal = fi.getDocValuesType() == DocValuesType.NONE;
           if (updateGlobal) {
             // Must also update docValuesType map so it's
             // aware of this field's DocValueType.  This will throw IllegalArgumentException if

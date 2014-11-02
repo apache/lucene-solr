@@ -255,7 +255,7 @@ public class TestDirectoryReader extends LuceneTestCase {
       for(FieldInfo fieldInfo : fieldInfos) {
         final String name = fieldInfo.name;
         allFieldNames.add(name);
-        if (fieldInfo.isIndexed()) {
+        if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
           indexedFieldNames.add(name);
         } else {
           notIndexedFieldNames.add(name);

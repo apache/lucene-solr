@@ -56,8 +56,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     FieldInfos infos2 = codec.fieldInfosFormat().read(dir, segmentInfo, "", IOContext.DEFAULT);
     assertEquals(1, infos2.size());
     assertNotNull(infos2.fieldInfo("field"));
-    assertTrue(infos2.fieldInfo("field").isIndexed());
-    assertFalse(infos2.fieldInfo("field").hasDocValues());
+    assertTrue(infos2.fieldInfo("field").getIndexOptions() != IndexOptions.NONE);
+    assertFalse(infos2.fieldInfo("field").getDocValuesType() != DocValuesType.NONE);
     assertFalse(infos2.fieldInfo("field").omitsNorms());
     assertFalse(infos2.fieldInfo("field").hasPayloads());
     assertFalse(infos2.fieldInfo("field").hasVectors());
@@ -157,11 +157,9 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(expected.name, actual.name);
     assertEquals(expected.getDocValuesType(), actual.getDocValuesType());
     assertEquals(expected.getIndexOptions(), actual.getIndexOptions());
-    assertEquals(expected.hasDocValues(), actual.hasDocValues());
     assertEquals(expected.hasNorms(), actual.hasNorms());
     assertEquals(expected.hasPayloads(), actual.hasPayloads());
     assertEquals(expected.hasVectors(), actual.hasVectors());
-    assertEquals(expected.isIndexed(), actual.isIndexed());
     assertEquals(expected.omitsNorms(), actual.omitsNorms());
     assertEquals(expected.getDocValuesGen(), actual.getDocValuesGen());
   }

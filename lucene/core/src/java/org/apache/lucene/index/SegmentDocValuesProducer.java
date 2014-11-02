@@ -53,7 +53,7 @@ class SegmentDocValuesProducer extends DocValuesProducer {
     try {
       DocValuesProducer baseProducer = null;
       for (FieldInfo fi : fieldInfos) {
-        if (!fi.hasDocValues()) {
+        if (fi.getDocValuesType() == DocValuesType.NONE) {
           continue;
         }
         long docValuesGen = fi.getDocValuesGen();
