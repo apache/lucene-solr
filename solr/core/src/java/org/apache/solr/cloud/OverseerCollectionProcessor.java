@@ -28,7 +28,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESLICEUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
@@ -155,7 +155,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
   public static final String ONLY_IF_DOWN = "onlyIfDown";
 
-  public static final String SLICE_UNIQUE = "sliceUnique";
+  public static final String SHARD_UNIQUE = "shardUnique";
 
   public static final String ONLY_ACTIVE_NODES = "onlyactivenodes";
 
@@ -650,7 +650,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           case DELETEREPLICAPROP:
             processReplicaDeletePropertyCommand(message);
             break;
-          case BALANCESLICEUNIQUE:
+          case BALANCESHARDUNIQUE:
             balanceProperty(message);
             break;
           case REBALANCELEADERS:
@@ -749,12 +749,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
-              "' parameters are required for the BALANCESLICEUNIQUE operation, no action taken");
+              "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
     }
     SolrZkClient zkClient = zkStateReader.getZkClient();
     DistributedQueue inQueue = Overseer.getInQueue(zkClient);
     Map<String, Object> propMap = new HashMap<>();
-    propMap.put(Overseer.QUEUE_OPERATION, BALANCESLICEUNIQUE.toLower());
+    propMap.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     propMap.putAll(message.getProperties());
     inQueue.offer(ZkStateReader.toJSON(new ZkNodeProps(propMap)));
   }

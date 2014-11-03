@@ -35,7 +35,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SLICE_UNIQUE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -429,7 +429,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           "replica", c1_s1_r1,
           "property", "testprop",
           "property.value", "nonsense",
-          SLICE_UNIQUE, "true");
+          SHARD_UNIQUE, "true");
 
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
@@ -446,7 +446,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           "replica", c1_s1_r1,
           "property", "property.testprop",
           "property.value", "true",
-          SLICE_UNIQUE, "false");
+          SHARD_UNIQUE, "false");
 
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "property.preferredleader", "true");
@@ -477,11 +477,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
             "replica", c1_s1_r1,
             "property", "preferredLeader",
             "property.value", "true",
-            SLICE_UNIQUE, "false");
-        fail("Should have thrown an exception, setting sliceUnique=false is not allowed for 'preferredLeader'.");
+            SHARD_UNIQUE, "false");
+        fail("Should have thrown an exception, setting shardUnique=false is not allowed for 'preferredLeader'.");
       } catch (SolrException se) {
         assertTrue("Should have received a specific error message",
-            se.getMessage().contains("with the sliceUnique parameter set to something other than 'true'"));
+            se.getMessage().contains("with the shardUnique parameter set to something other than 'true'"));
       }
 
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.preferredleader", "true");

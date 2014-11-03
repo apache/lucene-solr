@@ -49,7 +49,7 @@ public interface CollectionParams
     CLUSTERSTATUS,
     ADDREPLICAPROP,
     DELETEREPLICAPROP,
-    BALANCESLICEUNIQUE,
+    BALANCESHARDUNIQUE,
     REBALANCELEADERS;
     
     public static CollectionAction get( String p )
