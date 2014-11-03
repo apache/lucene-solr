@@ -382,6 +382,20 @@ public class Overseer implements Closeable {
                 zkClient.setData(e.getKey(), data, true);
               } else {
                 log.info("going to create_collection {}", e.getKey());
+                String parentPath = e.getKey().substring(0, e.getKey().lastIndexOf('/'));
+                if (!zkClient.exists(parentPath, true)) {
+                  // if the /collections/collection_name path doesn't exist then it means that
+                  // 1) the user invoked a DELETE collection API and the OverseerCollectionProcessor has deleted
+                  // this zk path.
+                  // 2) these are most likely old "state" messages which are only being processed now because
+                  // if they were new "state" messages then in legacy mode, a new collection would have been
+                  // created with stateFormat = 1 (which is the default state format)
+                  // 3) these can't be new "state" messages created for a new collection because
+                  // otherwise the OverseerCollectionProcessor would have already created this path
+                  // as part of the create collection API call -- which is the only way in which a collection
+                  // with stateFormat > 1 can possibly be created
+                  continue;
+                }
                 zkClient.create(e.getKey(), data, CreateMode.PERSISTENT, true);
               }
             }
