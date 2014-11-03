@@ -199,7 +199,7 @@ New Features
   Lucene MoreLikeThis class (Anshum Gupta).
 
 * SOLR-6670: change BALANCESLICEUNIQUE to BALANCESHARDUNIQUE. Also, the parameter
-  for ADDREPLICAPROP that used to be sliceUnique is not shardUnique. (Erick Erickson)
+  for ADDREPLICAPROP that used to be sliceUnique is now shardUnique. (Erick Erickson)
 
 Bug Fixes
 ----------------------
