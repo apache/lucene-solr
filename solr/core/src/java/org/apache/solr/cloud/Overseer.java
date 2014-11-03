@@ -18,11 +18,11 @@ package org.apache.solr.cloud;
  */
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SLICE_UNIQUE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESLICEUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -475,7 +475,7 @@ public class Overseer implements Closeable {
           case DELETEREPLICAPROP:
             clusterState = deleteReplicaProp(clusterState, message);
             break;
-          case BALANCESLICEUNIQUE:
+          case BALANCESHARDUNIQUE:
             ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(this, clusterState, message);
             if (dProp.balanceProperty()) {
               String collName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -571,19 +571,19 @@ public class Overseer implements Closeable {
       }
       property = property.toLowerCase(Locale.ROOT);
       String propVal = message.getStr(ZkStateReader.PROPERTY_VALUE_PROP);
-      String sliceUnique = message.getStr(OverseerCollectionProcessor.SLICE_UNIQUE);
+      String shardUnique = message.getStr(OverseerCollectionProcessor.SHARD_UNIQUE);
 
       boolean isUnique = false;
 
       if (sliceUniqueBooleanProperties.contains(property)) {
-        if (StringUtils.isNotBlank(sliceUnique) && Boolean.parseBoolean(sliceUnique) == false) {
+        if (StringUtils.isNotBlank(shardUnique) && Boolean.parseBoolean(shardUnique) == false) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Overseer SETREPLICAPROPERTY for " +
-              property + " cannot have " + OverseerCollectionProcessor.SLICE_UNIQUE + " set to anything other than" +
+              property + " cannot have " + OverseerCollectionProcessor.SHARD_UNIQUE + " set to anything other than" +
               "'true'. No action taken");
         }
         isUnique = true;
       } else {
-        isUnique = Boolean.parseBoolean(sliceUnique);
+        isUnique = Boolean.parseBoolean(shardUnique);
       }
 
       Replica replica = clusterState.getReplica(collectionName, replicaName);
@@ -1456,12 +1456,12 @@ public class Overseer implements Closeable {
                 ZkStateReader.PROPERTY_PROP + "' parameters. No action taken ");
       }
 
-      Boolean sliceUnique = Boolean.parseBoolean(message.getStr(SLICE_UNIQUE));
-      if (sliceUnique == false &&
+      Boolean shardUnique = Boolean.parseBoolean(message.getStr(SHARD_UNIQUE));
+      if (shardUnique == false &&
           Overseer.sliceUniqueBooleanProperties.contains(this.property) == false) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Balancing properties amongst replicas in a slice requires that"
-            + " the property be a pre-defined property (e.g. 'preferredLeader') or that 'sliceUnique' be set to 'true' " +
-            " Property: " + this.property + " sliceUnique: " + Boolean.toString(sliceUnique));
+            + " the property be a pre-defined property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true' " +
+            " Property: " + this.property + " shardUnique: " + Boolean.toString(shardUnique));
       }
 
       collection = clusterState.getCollection(collectionName);
@@ -1508,7 +1508,7 @@ public class Overseer implements Closeable {
           if (StringUtils.isNotBlank(replica.getStr(property))) {
             if (sliceHasProp) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                  "'" + BALANCESLICEUNIQUE + "' should only be called for properties that have at most one member " +
+                  "'" + BALANCESHARDUNIQUE + "' should only be called for properties that have at most one member " +
                       "in any slice with the property set. No action taken.");
             }
             if (nodesHostingProp.containsKey(nodeName) == false) {

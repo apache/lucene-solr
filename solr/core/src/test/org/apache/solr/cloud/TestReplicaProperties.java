@@ -106,7 +106,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       client.connect();
       try {
         doPropertyAction(client,
-            "action", CollectionParams.CollectionAction.BALANCESLICEUNIQUE.toString(),
+            "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
             "property", "preferredLeader");
       } catch (SolrException se) {
         assertTrue("Should have seen missing required parameter 'collection' error",
@@ -114,30 +114,30 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       }
 
       doPropertyAction(client,
-          "action", CollectionParams.CollectionAction.BALANCESLICEUNIQUE.toString(),
+          "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
           "collection", COLLECTION_NAME,
           "property", "preferredLeader");
 
       verifyUniqueAcrossCollection(client, COLLECTION_NAME, "property.preferredleader");
 
       doPropertyAction(client,
-          "action", CollectionParams.CollectionAction.BALANCESLICEUNIQUE.toString(),
+          "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
           "collection", COLLECTION_NAME,
           "property", "property.newunique",
-          "sliceUnique", "true");
+          "shardUnique", "true");
       verifyUniqueAcrossCollection(client, COLLECTION_NAME, "property.newunique");
 
       try {
         doPropertyAction(client,
-            "action", CollectionParams.CollectionAction.BALANCESLICEUNIQUE.toString(),
+            "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
             "collection", COLLECTION_NAME,
             "property", "whatever",
-            "sliceUnique", "false");
+            "shardUnique", "false");
         fail("Should have thrown an exception here.");
       } catch (SolrException se) {
         assertTrue("Should have gotten a specific error message here",
             se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the " +
-                "property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'sliceUnique' be set to 'true'"));
+                "property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
       }
       // Should be able to set non-unique-per-slice values in several places.
       Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
@@ -165,24 +165,24 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
       try {
         doPropertyAction(client,
-            "action", CollectionParams.CollectionAction.BALANCESLICEUNIQUE.toString(),
+            "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
             "collection", COLLECTION_NAME,
             "property", "bogus1",
-            "sliceUnique", "false");
+            "shardUnique", "false");
         fail("Should have thrown parameter error here");
       } catch (SolrException se) {
         assertTrue("Should have caught specific exception ",
             se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the property be " +
-                "pre-defined as a unique property (e.g. 'preferredLeader') or that 'sliceUnique' be set to 'true'"));
+                "pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
       }
 
-      // Should have no effect despite the "sliceUnique" param being set.
+      // Should have no effect despite the "shardUnique" param being set.
 
       doPropertyAction(client,
-          "action", CollectionParams.CollectionAction.BALANCESLICEUNIQUE.toString(),
+          "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
           "collection", COLLECTION_NAME,
           "property", "property.bogus1",
-          "sliceUnique", "true");
+          "shardUnique", "true");
 
       verifyPropertyVal(client, COLLECTION_NAME,
           c1_s1_r1, "property.bogus1", "true");

@@ -198,6 +198,9 @@ New Features
   have similar content. It works in standalone/cloud mode and shares logic with the
   Lucene MoreLikeThis class (Anshum Gupta).
 
+* SOLR-6670: change BALANCESLICEUNIQUE to BALANCESHARDUNIQUE. Also, the parameter
+  for ADDREPLICAPROP that used to be sliceUnique is not shardUnique. (Erick Erickson)
+
 Bug Fixes
 ----------------------
 
