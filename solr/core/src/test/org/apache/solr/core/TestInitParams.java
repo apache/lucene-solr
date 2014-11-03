@@ -32,7 +32,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
     initCore("solrconfig-paramset.xml","schema.xml");
   }
   @Test
-  public void testComponentWithParamSet(){
+  public void testComponentWithInitParams(){
 
     for (String s : Arrays.asList("/dump1", "/dump3","/root/dump5" , "/root1/anotherlevel/dump6")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
@@ -49,7 +49,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultiParamSet(){
+  public void testMultiInitParams(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump6");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
@@ -65,7 +65,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testComponentWithParamSetRequestParam(){
+  public void testComponentWithInitParamAndRequestParam(){
     for (String s : Arrays.asList("/dump4")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -77,13 +77,13 @@ public class TestInitParams extends SolrTestCaseJ4 {
     }
   }
   @Test
-  public void testComponentWithConflictingParamSet(){
+  public void testComponentWithConflictingInitParams(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
     NamedList nl = (NamedList) rsp.getValues().get("initArgs");
     NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
-    assertEquals("A" ,def.get("a"));
+    assertEquals("A1" ,def.get("a"));
     def = (NamedList) nl.get(PluginInfo.INVARIANTS);
     assertEquals("B1" ,def.get("b"));
     def = (NamedList) nl.get(PluginInfo.APPENDS);

@@ -79,7 +79,7 @@ public class InitParams {
   }
 
   public void apply(NamedList initArgs) {
-    merge(defaults, (NamedList) initArgs.get(PluginInfo.DEFAULTS), initArgs, PluginInfo.DEFAULTS, false);
+    merge( (NamedList) initArgs.get(PluginInfo.DEFAULTS), defaults,initArgs, PluginInfo.DEFAULTS, false);
     merge((NamedList) initArgs.get(PluginInfo.INVARIANTS), invariants, initArgs, PluginInfo.INVARIANTS, false);
     merge((NamedList) initArgs.get(PluginInfo.APPENDS), appends, initArgs, PluginInfo.APPENDS, true);
   }
