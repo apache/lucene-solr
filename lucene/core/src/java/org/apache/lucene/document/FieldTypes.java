@@ -18,14 +18,18 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -43,7 +47,6 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -62,16 +65,12 @@ import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMInputStream;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 // TODO
 //   - explore what it'd be like to add other higher level types?
 //     - BigInt, BigDecimal, IPV6
-//   - setters for posinc/offset gaps?
-//     - can we remove analyzer from IW?
 //   - what about sparse fields... anything for us to do...
 //   - payloads just stay write once in their own way?
 //   - how to handle old indices w/ no field types yet?
@@ -84,17 +83,10 @@ import org.apache.lucene.util.Version;
 //     - query parsers
 //       - exc if invalid field name asked for
 //       - numeric range queries "just work"
-//     - creating SortField
 //     - creating queries, catching invalid field names, no positions indexed, etc.
-//     - SortField should verify FieldTypes.sortable is set for that field
 //     - prox queries can verify field was indexed w/ positions
-//     - normal queries can verify field was even indexed
 //   - move analyzer out of IW/IWC into Field/FieldType/s only?
-//   - we could go back to allowing pulling the Document from a reader, updating, re-indexing?  e.g. we can know all fields were stored, and
-//     throw exc if not
-//   - get save/load working
 //   - why does STS fill offset...
-//   - no more field reuse right?
 
 // Lucene's secret schemas
 //   StoredFieldsVisitor
@@ -107,11 +99,11 @@ import org.apache.lucene.util.Version;
 //   PerFieldAnalyzerWrapper
 //   oal.document
 
-// nocommit optimize term range query when it's really "matches all docs"
+// nocommit not null?
 
-// nocommit add test: make sure you can suddenly turn on DV if they were off at first
+// nocommit fix simple qp to optionally take this?
 
-// nocommit each field type should record Version when it was added
+// nocommit optimize term range query when it's really "matches all docs"?
 
 // nocommit but how can we randomized IWC for tests?
 
@@ -120,11 +112,7 @@ import org.apache.lucene.util.Version;
 
 // nocommit move to oal.index?
 
-// nocommit maxTokenLength?
-
 // nocommit per-field norms format?  then we can commit these "tradeoffs"
-
-// nocommit sortMissingFirst/Last
 
 // nocommit default value?
 
@@ -141,8 +129,6 @@ import org.apache.lucene.util.Version;
 // nocommit can we somehow detect at search time if the field types you are using doesn't match the searcher you are now searching against?
 
 // nocommit back compat: how to handle pre-schema indices
-
-// nocommit should we try to have "garbage collection" here?
 
 // nocommit maybe have a settable global default for "stored"?
 
@@ -162,25 +148,19 @@ import org.apache.lucene.util.Version;
 
 // nocommit index-time sorting should be here too
 
-// nocommit sort by languages
-
 // nocommit can we require use of analyzer factories?
 
-// nocommit what schema options does solr offer
+// nocommit what schema options does solr/ES offer
 
 // nocommit accent removal and lowercasing for wildcards should just work
 
 // separate analyzer for phrase queries in suggesters
-
-// go through the process of adding a "new high schema type"
 
 // nocommit Index class?  enforcing unique id, xlog?
 
 // nocommit how to randomize IWC?  RIW?
 
 // nocommit unique/primary key ?
-
-// nocommit must document / make sugar for creating IndexSearcher w/ sim from this class
 
 // nocommit fix all change methods to call validate / rollback
 
@@ -198,6 +178,7 @@ public class FieldTypes {
   public static final String FIELD_PROPERTIES_KEY = "field_properties";
 
   enum ValueType {
+    NONE,
     TEXT,
     SHORT_TEXT,
     ATOM,  // nocommit binary sort of overlaps w/ this?
@@ -207,8 +188,9 @@ public class FieldTypes {
     DOUBLE,
     BINARY, // nocommit rename to bytes?
     BOOLEAN,
+    DATE,
+    INET_ADDRESS,
     // nocommit primary_key?
-    // nocommit inet addr?
   }
 
   private final boolean readOnly;
@@ -236,11 +218,20 @@ public class FieldTypes {
   static class FieldType implements IndexableFieldType {
     private final String name;
 
+    // Lucene version when we were created:
+    private final Version createdVersion;
+
     public FieldType(String name) {
-      this.name = name;
+      this(name, Version.LATEST);
     }
 
-    volatile ValueType valueType;
+    public FieldType(String name, Version version) {
+      this.name = name;
+      this.createdVersion = version;
+    }
+
+    // nocommit don't use null here:
+    volatile ValueType valueType = ValueType.NONE;
     volatile DocValuesType docValuesType = DocValuesType.NONE;
     private volatile boolean docValuesTypeSet;
 
@@ -254,13 +245,21 @@ public class FieldTypes {
     volatile Integer analyzerPositionGap;
     volatile Integer analyzerOffsetGap;
 
+    // Min/max token length, or null if there are no limits:
+    volatile Integer minTokenLength;
+    volatile Integer maxTokenLength;
+
+    // Limit on number of tokens to index for this field
+    volatile Integer maxTokenCount;
+    volatile Boolean consumeAllTokens;
+
     // Whether this field's values are stored, or null if it's not yet set:
     private volatile Boolean stored;
 
     // Whether this field's values should be indexed for sorting (using doc values):
     private volatile Boolean sortable;
     private volatile Boolean sortReversed;
-    private volatile Boolean sortMissingLast;
+    private volatile Boolean sortMissingLast = Boolean.TRUE;
 
     // Whether this field's values should be indexed for fast ranges (using numeric field for now):
     private volatile Boolean fastRanges;
@@ -293,96 +292,127 @@ public class FieldTypes {
     private volatile Analyzer indexAnalyzer;
     private volatile Similarity similarity;
 
+    private volatile Analyzer wrappedIndexAnalyzer;
+    private volatile Analyzer wrappedQueryAnalyzer;
+
     boolean validate() {
-      if (valueType != null) {
-        switch (valueType) {
-        case INT:
-        case FLOAT:
-        case LONG:
-        case DOUBLE:
-          if (highlighted == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot highlight");
-          }
-          if (indexAnalyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
-          }
-          if (queryAnalyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
-          }
-          if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
-            illegalState(name, "type " + valueType + " must use NUMERIC docValuesType (got: " + docValuesType + ")");
-          }
-          if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
-            illegalState(name, "type " + valueType + " cannot use indexOptions > DOCS (got indexOptions " + indexOptions + ")");
-          }
-          if (indexNorms == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot index norms");
-          }
-          break;
-        case TEXT:
-          if (sortable == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot sort");
-          }
-          if (fastRanges == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot optimize for range queries");
-          }
-          if (docValuesType != DocValuesType.NONE) {
-            illegalState(name, "type " + valueType + " cannot use docValuesType " + docValuesType);
-          }
-          break;
-        case SHORT_TEXT:
-          if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
-            illegalState(name, "type " + valueType + " cannot use docValuesType " + docValuesType);
-          }
-          if (fastRanges == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot optimize for range queries");
-          }
-          break;
-        case BINARY:
-          if (highlighted == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot highlight");
-          }
-          if (indexAnalyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
-          }
-          if (queryAnalyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
-          }
-          if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
-            illegalState(name, "type " + valueType + " must use BINARY, SORTED or SORTED_SET docValuesType (got: " + docValuesType + ")");
-          }
-          break;
-        case ATOM:
-          if (indexAnalyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
-          }
-          if (queryAnalyzer != null) {
-            illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
-          }
-          if (indexNorms == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot index norms");
-          }
-          if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
-            // nocommit too anal?
-            illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
-          }
-          break;
-        case BOOLEAN:
-          if (highlighted == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot highlight");
-          }
-          if (indexNorms == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot index norms");
-          }
-          if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC) {
-            illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType (got: " + docValuesType + ")");
-          }
-          break;
-        default:
-          throw new AssertionError("missing value type in switch");
+      switch (valueType) {
+      case NONE:
+        break;
+      case INT:
+      case FLOAT:
+      case LONG:
+      case DOUBLE:
+      case DATE:
+        if (highlighted == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot highlight");
         }
-        // nocommit more checks
+        if (indexAnalyzer != null) {
+          illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
+        }
+        if (queryAnalyzer != null) {
+          illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
+        }
+        if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
+          illegalState(name, "type " + valueType + " must use NUMERIC docValuesType (got: " + docValuesType + ")");
+        }
+        if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
+          illegalState(name, "type " + valueType + " cannot use indexOptions > DOCS (got indexOptions " + indexOptions + ")");
+        }
+        if (indexNorms == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot index norms");
+        }
+        if (minTokenLength != null) {
+          illegalState(name, "type " + valueType + " cannot set min/max token length");
+        }
+        if (maxTokenCount != null) {
+          illegalState(name, "type " + valueType + " cannot set max token count");
+        }
+        break;
+      case TEXT:
+        if (sortable == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot sort");
+        }
+        if (fastRanges == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot optimize for range queries");
+        }
+        if (docValuesType != DocValuesType.NONE) {
+          illegalState(name, "type " + valueType + " cannot use docValuesType " + docValuesType);
+        }
+        break;
+      case SHORT_TEXT:
+        if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
+          illegalState(name, "type " + valueType + " cannot use docValuesType " + docValuesType);
+        }
+        if (fastRanges == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot optimize for range queries");
+        }
+        break;
+      case BINARY:
+      case INET_ADDRESS:
+        if (highlighted == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot highlight");
+        }
+        if (indexAnalyzer != null) {
+          illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
+        }
+        if (queryAnalyzer != null) {
+          illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
+        }
+        if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
+          illegalState(name, "type " + valueType + " must use BINARY, SORTED or SORTED_SET docValuesType (got: " + docValuesType + ")");
+        }
+        if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
+          // nocommit too anal?
+          illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
+        }
+        if (minTokenLength != null) {
+          illegalState(name, "type " + valueType + " cannot set min/max token length");
+        }
+        if (maxTokenCount != null) {
+          illegalState(name, "type " + valueType + " cannot set max token count");
+        }
+        break;
+      case ATOM:
+        if (indexAnalyzer != null) {
+          illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
+        }
+        if (queryAnalyzer != null) {
+          illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
+        }
+        if (indexNorms == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot index norms");
+        }
+        if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
+          // nocommit too anal?
+          illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
+        }
+        if (maxTokenCount != null) {
+          illegalState(name, "type " + valueType + " cannot set max token count");
+        }
+        break;
+      case BOOLEAN:
+        if (highlighted == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot highlight");
+        }
+        if (indexNorms == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot index norms");
+        }
+        if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC) {
+          illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType (got: " + docValuesType + ")");
+        }
+        if (minTokenLength != null) {
+          illegalState(name, "type " + valueType + " cannot set min/max token length");
+        }
+        if (maxTokenCount != null) {
+          illegalState(name, "type " + valueType + " cannot set max token count");
+        }
+        break;
+      default:
+        throw new AssertionError("missing value type in switch");
       }
+
+      // nocommit more checks
 
       if (multiValued == Boolean.TRUE &&
           (docValuesType == DocValuesType.NUMERIC ||
@@ -459,6 +489,57 @@ public class FieldTypes {
       return true;
     }
 
+    private boolean needsWrapping() {
+      return minTokenLength != null || maxTokenCount != null;
+    }
+
+    void reWrapAnalyzers(Analyzer defaultIndexAnalyzer, Analyzer defaultQueryAnalyzer) {
+      // nocommit need test to verify wrapping for ATOM fields works correctly
+      if (needsWrapping()) {
+        if (indexAnalyzer != null) {
+          wrappedIndexAnalyzer = wrapAnalyzer(indexAnalyzer);
+        } else if (defaultIndexAnalyzer != null) {
+          wrappedIndexAnalyzer = wrapAnalyzer(defaultIndexAnalyzer);
+        } else {
+          wrappedIndexAnalyzer = null;
+        }
+        if (queryAnalyzer != null) {
+          wrappedQueryAnalyzer = wrapAnalyzer(queryAnalyzer);
+        } else if (defaultQueryAnalyzer != null) {
+          wrappedQueryAnalyzer = wrapAnalyzer(defaultQueryAnalyzer);
+        } else {
+          wrappedQueryAnalyzer = null;
+        }
+      } else {
+        wrappedIndexAnalyzer = null;
+        wrappedQueryAnalyzer = null;
+      }
+    }
+
+    private Analyzer wrapAnalyzer(final Analyzer in) {
+      return new AnalyzerWrapper(in.getReuseStrategy()) {
+        @Override
+        protected Analyzer getWrappedAnalyzer(String fieldName) {
+          return in;
+        }
+
+        @Override
+        protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+          TokenStream end = components.getTokenStream();
+          if (minTokenLength != null) {
+            end = new LengthFilter(end,
+                                   minTokenLength.intValue(),
+                                   maxTokenLength.intValue());
+          }
+          if (maxTokenCount != null) {
+            end = new LimitTokenCountFilter(end, maxTokenCount.intValue(), consumeAllTokens.booleanValue());
+          }
+
+          return new TokenStreamComponents(components.getTokenizer(), end);
+        }
+      };
+    }
+
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
@@ -466,11 +547,7 @@ public class FieldTypes {
       b.append(name);
       b.append("\":\n");
       b.append("  valueType: ");
-      if (valueType != null) {
-        b.append(valueType);
-      } else {
-        b.append("unset");
-      }
+      b.append(valueType);
       b.append('\n');
 
       if (blockTreeMinItemsInBlock != null) {
@@ -478,13 +555,6 @@ public class FieldTypes {
         b.append(blockTreeMinItemsInBlock);
         b.append(" - ");
         b.append(blockTreeMaxItemsInBlock);
-      }
-
-      if (blockTreeMinItemsInAutoPrefix != null) {
-        b.append("  auto-prefix blocks: ");
-        b.append(blockTreeMinItemsInAutoPrefix);
-        b.append(" - ");
-        b.append(blockTreeMaxItemsInAutoPrefix);
       }
 
       if (analyzerPositionGap != null) {
@@ -517,9 +587,9 @@ public class FieldTypes {
           b.append(sortReversed);
         }
         if (sortMissingLast == Boolean.TRUE) {
-          b.append(" missing=last");
+          b.append(" (missing: last)");
         } else if (sortMissingLast == Boolean.FALSE) {
-          b.append(" missing=first");
+          b.append(" (missing: first)");
         }
       } else {
         b.append("unset");
@@ -529,6 +599,15 @@ public class FieldTypes {
       b.append("  fastRanges: ");
       if (fastRanges != null) {
         b.append(fastRanges);
+        if (fastRanges == Boolean.TRUE) {
+          if (blockTreeMinItemsInAutoPrefix != null) {
+            b.append("  auto-prefix blocks: ");
+            b.append(blockTreeMinItemsInAutoPrefix);
+            b.append(" - ");
+            b.append(blockTreeMaxItemsInAutoPrefix);
+            b.append("\n");
+          }
+        }
       } else {
         b.append("unset");
       }
@@ -574,6 +653,18 @@ public class FieldTypes {
           b.append("\n  termVectors: no");
         } else {
           b.append("\n  termVectors: unset");
+        }
+        if (minTokenLength != null) {
+          b.append("\n  token length limit min=");
+          b.append(minTokenLength);
+          b.append(" max");
+          b.append(maxTokenLength);
+        }
+        if (maxTokenCount != null) {
+          b.append("\n  token count limit=");
+          b.append(maxTokenCount);
+          b.append(" consumeAllTokens=");
+          b.append(consumeAllTokens);
         }
       }
       b.append('\n');
@@ -625,40 +716,49 @@ public class FieldTypes {
       // nocommit under codec control instead?
       out.writeString(name);
 
-      if (valueType == null) {
+      out.writeVInt(createdVersion.major);
+      out.writeVInt(createdVersion.minor);
+      out.writeVInt(createdVersion.bugfix);
+
+      switch (valueType) {
+      case NONE:
         out.writeByte((byte) 0);
-      } else {
-        switch (valueType) {
-        case TEXT:
-          out.writeByte((byte) 1);
-          break;
-        case SHORT_TEXT:
-          out.writeByte((byte) 2);
-          break;
-        case ATOM:
-          out.writeByte((byte) 3);
-          break;
-        case INT:
-          out.writeByte((byte) 4);
-          break;
-        case FLOAT:
-          out.writeByte((byte) 5);
-          break;
-        case LONG:
-          out.writeByte((byte) 6);
-          break;
-        case DOUBLE:
-          out.writeByte((byte) 7);
-          break;
-        case BINARY:
-          out.writeByte((byte) 8);
-          break;
-        case BOOLEAN:
-          out.writeByte((byte) 9);
-          break;
-        default:
-          throw new AssertionError("missing ValueType in switch");
-        }
+        break;
+      case TEXT:
+        out.writeByte((byte) 1);
+        break;
+      case SHORT_TEXT:
+        out.writeByte((byte) 2);
+        break;
+      case ATOM:
+        out.writeByte((byte) 3);
+        break;
+      case INT:
+        out.writeByte((byte) 4);
+        break;
+      case FLOAT:
+        out.writeByte((byte) 5);
+        break;
+      case LONG:
+        out.writeByte((byte) 6);
+        break;
+      case DOUBLE:
+        out.writeByte((byte) 7);
+        break;
+      case BINARY:
+        out.writeByte((byte) 8);
+        break;
+      case BOOLEAN:
+        out.writeByte((byte) 9);
+        break;
+      case DATE:
+        out.writeByte((byte) 10);
+        break;
+      case INET_ADDRESS:
+        out.writeByte((byte) 11);
+        break;
+      default:
+        throw new AssertionError("missing ValueType in switch");
       }
 
       if (docValuesTypeSet == false) {
@@ -695,6 +795,10 @@ public class FieldTypes {
       writeNullableInteger(out, blockTreeMaxItemsInAutoPrefix);
       writeNullableInteger(out, analyzerPositionGap);
       writeNullableInteger(out, analyzerOffsetGap);
+      writeNullableInteger(out, minTokenLength);
+      writeNullableInteger(out, maxTokenLength);
+      writeNullableInteger(out, maxTokenCount);
+      writeNullableBoolean(out, consumeAllTokens);
       writeNullableBoolean(out, stored);
       writeNullableBoolean(out, sortable);
       writeNullableBoolean(out, sortReversed);
@@ -800,10 +904,12 @@ public class FieldTypes {
     public FieldType(DataInput in) throws IOException {
       // nocommit under codec control instead?
       name = in.readString();
+      createdVersion = Version.fromBits(in.readVInt(), in.readVInt(), in.readVInt());
+
       byte b = in.readByte();
       switch (b) {
       case 0:
-        valueType = null;
+        valueType = ValueType.NONE;
         break;
       case 1:
         valueType = ValueType.TEXT;
@@ -831,6 +937,12 @@ public class FieldTypes {
         break;
       case 9:
         valueType = ValueType.BOOLEAN;
+        break;
+      case 10:
+        valueType = ValueType.DATE;
+        break;
+      case 11:
+        valueType = ValueType.INET_ADDRESS;
         break;
       default:
         throw new CorruptIndexException("invalid byte for ValueType: " + b, in);
@@ -876,6 +988,10 @@ public class FieldTypes {
       blockTreeMaxItemsInAutoPrefix = readNullableInteger(in);
       analyzerPositionGap = readNullableInteger(in);
       analyzerOffsetGap = readNullableInteger(in);
+      minTokenLength = readNullableInteger(in);
+      maxTokenLength = readNullableInteger(in);
+      maxTokenCount = readNullableInteger(in);
+      consumeAllTokens = readNullableBoolean(in);
       stored = readNullableBoolean(in);
       sortable = readNullableBoolean(in);
       sortReversed = readNullableBoolean(in);
@@ -1199,10 +1315,11 @@ public class FieldTypes {
       protected Analyzer getWrappedAnalyzer(String fieldName) {
         FieldType field = fields.get(fieldName);
         if (field == null) {
+          // Must be lenient in case app is using low-schema API during indexing:
           return defaultIndexAnalyzer;
         }
-        if (field.indexAnalyzer != null) {
-          return field.indexAnalyzer;
+        if (field.wrappedIndexAnalyzer != null) {
+          return field.wrappedIndexAnalyzer;
         } else if (field.valueType == ValueType.ATOM) {
           // BUG
           illegalState(fieldName, "ATOM fields should not be analyzed during indexing");
@@ -1216,10 +1333,11 @@ public class FieldTypes {
       protected Analyzer getWrappedAnalyzer(String fieldName) {
         FieldType field = fields.get(fieldName);
         if (field == null) {
+          // Must be lenient in case app used low-schema API during indexing:
           return defaultQueryAnalyzer;
         }
-        if (field.queryAnalyzer != null) {
-          return field.queryAnalyzer;
+        if (field.wrappedQueryAnalyzer != null) {
+          return field.wrappedQueryAnalyzer;
         } else if (field.valueType == ValueType.ATOM) {
           return KEYWORD_ANALYZER;
         }
@@ -1284,6 +1402,7 @@ public class FieldTypes {
           current.indexAnalyzer = null;
         }
       }
+      current.reWrapAnalyzers(defaultIndexAnalyzer, defaultQueryAnalyzer);
       changed();
     } else {
       illegalState(fieldName, "analyzer was already set");
@@ -1314,6 +1433,7 @@ public class FieldTypes {
           current.queryAnalyzer = null;
         }
       }
+      current.reWrapAnalyzers(defaultIndexAnalyzer, defaultQueryAnalyzer);
       changed();
     } else {
       illegalState(fieldName, "analyzer was already set");
@@ -1372,6 +1492,95 @@ public class FieldTypes {
   /** Returns true if this field may have more than one value per document. */
   public synchronized boolean getMultiValued(String fieldName) {
     return getFieldType(fieldName).multiValued == Boolean.TRUE;
+  }
+  
+  /** Require that all tokens indexed for this field fall between the min and max
+   *  length, inclusive.  Any too-short or too-long tokens are silently discarded. */
+  public synchronized void setMinMaxTokenLength(String fieldName, int minTokenLength, int maxTokenLength) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.minTokenLength = minTokenLength;
+      current.maxTokenLength = maxTokenLength;
+      fields.put(fieldName, current);
+      current.reWrapAnalyzers(defaultIndexAnalyzer, defaultQueryAnalyzer);
+      changed();
+    } else if (current.minTokenLength == null ||
+               current.minTokenLength.intValue() != minTokenLength ||
+               current.maxTokenLength.intValue() != maxTokenLength) {
+      Integer oldMin = current.minTokenLength;
+      Integer oldMax = current.maxTokenLength;
+      boolean success = false;
+      try {
+        current.minTokenLength = minTokenLength;
+        current.maxTokenLength = maxTokenLength;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.minTokenLength = oldMin;
+          current.maxTokenLength = oldMax;
+        }
+      }
+      current.reWrapAnalyzers(defaultIndexAnalyzer, defaultQueryAnalyzer);
+      changed();
+    }
+  }
+
+  // nocommit clearMinMaxTokenLength
+
+  public synchronized Integer getMinTokenLength(String fieldName) {
+    return getFieldType(fieldName).minTokenLength;
+  }
+
+  public synchronized Integer getMaxTokenLength(String fieldName) {
+    return getFieldType(fieldName).maxTokenLength;
+  }
+
+  public synchronized void setMaxTokenCount(String fieldName, int maxTokenCount) {
+    setMaxTokenCount(fieldName, maxTokenCount, false);
+  }
+
+  // nocommit clearMaxTokenCount
+
+  /** Only index up to maxTokenCount tokens for this field. */
+  public synchronized void setMaxTokenCount(String fieldName, int maxTokenCount, boolean consumeAllTokens) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = new FieldType(fieldName);
+      current.maxTokenCount = maxTokenCount;
+      current.consumeAllTokens = consumeAllTokens;
+      fields.put(fieldName, current);
+      current.reWrapAnalyzers(defaultIndexAnalyzer, defaultQueryAnalyzer);
+      changed();
+    } else if (current.maxTokenCount == null ||
+               current.maxTokenCount.intValue() != maxTokenCount ||
+               current.consumeAllTokens.booleanValue() != consumeAllTokens) {
+      Integer oldMax = current.maxTokenCount;
+      Boolean oldConsume = current.consumeAllTokens;
+      boolean success = false;
+      try {
+        current.maxTokenCount = maxTokenCount;
+        current.consumeAllTokens = consumeAllTokens;
+        current.validate();
+        success = true;
+      } finally {
+        if (success == false) {
+          current.maxTokenCount = maxTokenCount;
+          current.consumeAllTokens = consumeAllTokens;
+        }
+      }
+      current.reWrapAnalyzers(defaultIndexAnalyzer, defaultQueryAnalyzer);
+      changed();
+    }
+  }
+
+  public synchronized Integer getMaxTokenCount(String fieldName) {
+    return getFieldType(fieldName).maxTokenCount;
+  }
+
+  public synchronized Boolean getMaxTokenCountConsumeAllTokens(String fieldName) {
+    return getFieldType(fieldName).consumeAllTokens;
   }
 
   /** The gap that should be added to token positions between each multi-valued field. */
@@ -1553,7 +1762,7 @@ public class FieldTypes {
       changed();
     } else if (current.sortable == Boolean.FALSE) {
       illegalState(fieldName, "sorting was already disabled");
-    } else if (current.sortReversed != reversed) {
+    } else if (current.sortReversed == null || current.sortReversed.booleanValue() != reversed) {
       current.sortReversed = reversed;
       changed();
     }
@@ -1920,7 +2129,7 @@ public class FieldTypes {
 
   /** Changes index options for this field.  This can be set to any
    *  value if it's not already set for the provided field; otherwise
-   *  it can only be downgraded as low as DOCS_ONLY but never unset
+   *  it can only be downgraded as low as DOCS but never unset
    *  entirely (once indexed, always indexed). */
   public synchronized void setIndexOptions(String fieldName, IndexOptions indexOptions) {
     ensureWritable();
@@ -1999,7 +2208,7 @@ public class FieldTypes {
       }
       changed();
     } else if (current.docValuesType != dvType) {
-      illegalState(fieldName, "cannot change from docValuesType " + current.docValuesType + " to docValutesType " + dvType);
+      illegalState(fieldName, "cannot change docValuesType from " + current.docValuesType + " to " + dvType);
     }
   }
 
@@ -2023,7 +2232,7 @@ public class FieldTypes {
       fields.put(fieldName, current);
       setDefaults(current);
       changed();
-    } else if (current.valueType == null) {
+    } else if (current.valueType == ValueType.NONE) {
       // This can happen if e.g. the app first calls FieldTypes.setStored(...)
       boolean success = false;
       try {
@@ -2032,7 +2241,7 @@ public class FieldTypes {
         success = true;
       } finally {
         if (success == false) {
-          current.valueType = null;
+          current.valueType = ValueType.NONE;
         }
       }
       setDefaults(current);
@@ -2057,7 +2266,7 @@ public class FieldTypes {
         current.indexOptions = IndexOptions.NONE;
       }
       changed();
-    } else if (current.valueType == null) {
+    } else if (current.valueType == ValueType.NONE) {
       // This can happen if e.g. the app first calls FieldTypes.setStored(...)
       boolean success = false;
       try {
@@ -2069,7 +2278,7 @@ public class FieldTypes {
         success = true;
       } finally {
         if (success == false) {
-          current.valueType = null;
+          current.valueType = ValueType.NONE;
         }
       }
       setDefaults(current);
@@ -2082,11 +2291,14 @@ public class FieldTypes {
   // ncommit move this method inside FildType:
   private void setDefaults(FieldType field) {
     switch (field.valueType) {
-
+    case NONE:
+      // bug
+      throw new AssertionError("valueType should not be NONE");
     case INT:
     case FLOAT:
     case LONG:
     case DOUBLE:
+    case DATE:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
       }
@@ -2179,6 +2391,7 @@ public class FieldTypes {
       break;
 
     case ATOM:
+    case INET_ADDRESS:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
       }
@@ -2482,6 +2695,23 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, new BytesRef(value)));
   }
 
+  public Query newInetAddressTermQuery(String fieldName, InetAddress token) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create term query: this field was not indexed");
+    }
+
+    // Field must be InetAddress:
+    if (fieldType.valueType != ValueType.INET_ADDRESS) {
+      illegalState(fieldName, "inet address term query must have valueType INET_ADDRESS; got " + fieldType.valueType);
+    }
+
+    return new TermQuery(new Term(fieldName, new BytesRef(token.getAddress())));
+  }
+
   // nocommit shouldn't this be a filter?
   public Query newRangeQuery(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
 
@@ -2551,6 +2781,59 @@ public class FieldTypes {
     }
 
     // nocommit verify type is BINARY or ATOM?
+
+    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+  }
+
+  // nocommit Date sugar for a range query matching a specific hour/day/month/year/etc.?  need locale/timezone... should we use DateTools?
+
+  // nocommit shouldn't this be a filter?
+  public Query newRangeQuery(String fieldName, Date min, boolean minInclusive, Date max, boolean maxInclusive) {
+
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range query: this field was not indexed");
+    }
+
+    if (fieldType.valueType != ValueType.DATE) {
+      illegalState(fieldName, "cannot create range query: expected valueType=DATE but got: " + fieldType.valueType);
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "this field was not indexed for fast ranges");
+    }
+
+    BytesRef minTerm = min == null ? null : Document2.longToBytes(min.getTime());
+    BytesRef maxTerm = max == null ? null : Document2.longToBytes(max.getTime());
+
+    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+  }
+
+  // nocommit shouldn't this be a filter?
+  // nocommit also add "range filter using net mask" sugar version
+  public Query newRangeQuery(String fieldName, InetAddress min, boolean minInclusive, InetAddress max, boolean maxInclusive) {
+
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range query: this field was not indexed");
+    }
+
+    if (fieldType.valueType != ValueType.INET_ADDRESS) {
+      illegalState(fieldName, "cannot create range query: expected valueType=INET_ADDRESS but got: " + fieldType.valueType);
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "this field was not indexed for fast ranges");
+    }
+
+    BytesRef minTerm = min == null ? null : new BytesRef(min.getAddress());
+    BytesRef maxTerm = max == null ? null : new BytesRef(max.getAddress());
 
     return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
   }
@@ -2652,8 +2935,9 @@ public class FieldTypes {
         }
         return sortField;
       }
-      
+
     case LONG:
+    case DATE:
       {
         SortField sortField;
         if (fieldType.multiValued == Boolean.TRUE) {
@@ -2707,6 +2991,7 @@ public class FieldTypes {
     case ATOM:
     case BINARY:
     case BOOLEAN:
+    case INET_ADDRESS:
       SortField sortField;
       {
         if (fieldType.multiValued == Boolean.TRUE) {
@@ -2771,9 +3056,9 @@ public class FieldTypes {
     RAMOutputStream out = new RAMOutputStream(file, true);
     CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
     
-    out.writeInt(indexCreatedVersion.major);
-    out.writeInt(indexCreatedVersion.minor);
-    out.writeInt(indexCreatedVersion.bugfix);
+    out.writeVInt(indexCreatedVersion.major);
+    out.writeVInt(indexCreatedVersion.minor);
+    out.writeVInt(indexCreatedVersion.bugfix);
 
     out.writeVInt(fields.size());
     for(FieldType fieldType : fields.values()) {
@@ -2801,7 +3086,7 @@ public class FieldTypes {
 
     CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
 
-    Version indexCreatedVersion = Version.fromBits(in.readInt(), in.readInt(), in.readInt());
+    Version indexCreatedVersion = Version.fromBits(in.readVInt(), in.readVInt(), in.readVInt());
 
     int count = in.readVInt();
     for(int i=0;i<count;i++) {

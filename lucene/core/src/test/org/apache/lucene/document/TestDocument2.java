@@ -18,6 +18,11 @@ package org.apache.lucene.document;
  */
 
 import java.io.StringReader;
+import java.net.InetAddress;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
@@ -1143,8 +1148,8 @@ public class TestDocument2 extends LuceneTestCase {
     TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
     assertEquals(3, hits.totalHits);
     assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
     r.close();
     w.close();
     dir.close();
@@ -1176,8 +1181,8 @@ public class TestDocument2 extends LuceneTestCase {
     TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int", true));
     assertEquals(3, hits.totalHits);
     assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
     r.close();
     w.close();
     dir.close();
@@ -1354,9 +1359,9 @@ public class TestDocument2 extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
     assertEquals(3, hits.totalHits);
-    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
     r.close();
     w.close();
     dir.close();
@@ -1390,6 +1395,234 @@ public class TestDocument2 extends LuceneTestCase {
     assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
     assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
     assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testMinMaxTokenLength() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.getFieldTypes().setMinMaxTokenLength("field", 2, 7);
+    w.commit();
+
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "hello a toobigterm");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+    assertEquals(2, fieldTypes.getMinTokenLength("field").intValue());
+    assertEquals(7, fieldTypes.getMaxTokenLength("field").intValue());
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "hello"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "a"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "toobigterm"),1 ).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testMaxTokenCount() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    // MockAnalyzer is angry that we don't consume all tokens:
+    a.setEnableChecks(false);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMaxTokenCount("field", 3);
+    w.commit();
+
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "hello a toobigterm goodbye");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    assertEquals(3, fieldTypes.getMaxTokenCount("field").intValue());
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "hello"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "a"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "toobigterm"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "goodbye"), 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testMaxTokenCountConsumeAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMaxTokenCount("field", 3, true);
+
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "hello a toobigterm goodbye");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    assertEquals(3, fieldTypes.getMaxTokenCount("field").intValue());
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "hello"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "a"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("field", "toobigterm"), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newStringTermQuery("field", "goodbye"), 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testExcSuddenlyEnableDocValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setDocValuesType("field", DocValuesType.NONE);
+
+    Document2 doc = w.newDocument();
+    doc.addInt("field", 17);
+    w.addDocument(doc);
+
+    try {
+      fieldTypes.setDocValuesType("field", DocValuesType.NUMERIC);
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      assertEquals("field \"field\": cannot change docValuesType from NONE to NUMERIC", ise.getMessage());
+    }
+    w.close();
+    dir.close();
+  }
+
+  public void testDateSort() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+
+    SimpleDateFormat parser = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
+    parser.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+    Document2 doc = w.newDocument();
+    Date date0 = parser.parse("10/22/2014");
+    doc.addDate("date", date0);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    Date date1 = parser.parse("10/21/2015");
+    doc.addDate("date", date1);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    w.getFieldTypes().enableSorting("date", true);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("date"));
+    assertEquals(2, hits.totalHits);
+    Document2 hit = s.doc(hits.scoreDocs[0].doc);
+    assertEquals("1", hit.getString("id"));
+    assertEquals(date1, hit.getDate("date"));
+    hit = s.doc(hits.scoreDocs[1].doc);
+    assertEquals("0", hit.getString("id"));
+    assertEquals(date0, hit.getDate("date"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testDateRangeFilter() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+
+    SimpleDateFormat parser = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
+    parser.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+    Document2 doc = w.newDocument();
+    Date date0 = parser.parse("10/22/2014");
+    doc.addDate("date", date0);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    Date date1 = parser.parse("10/21/2015");
+    doc.addDate("date", date1);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(2, s.search(fieldTypes.newRangeQuery("date", date0, true, date1, true), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newRangeQuery("date", date0, true, date1, false), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newRangeQuery("date", date0, false, date1, false), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newRangeQuery("date", parser.parse("10/21/2014"), false, parser.parse("10/23/2014"), false), 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testInetAddressSort() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+
+    Document2 doc = w.newDocument();
+    InetAddress inet0 = InetAddress.getByName("10.17.4.10");
+    doc.addInetAddress("inet", inet0);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    InetAddress inet1 = InetAddress.getByName("10.17.4.22");
+    doc.addInetAddress("inet", inet1);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("inet"));
+    assertEquals(2, hits.totalHits);
+    Document2 hit = s.doc(hits.scoreDocs[0].doc);
+    assertEquals("0", hit.getString("id"));
+    assertEquals(inet0, hit.getInetAddress("inet"));
+    hit = s.doc(hits.scoreDocs[1].doc);
+    assertEquals("1", hit.getString("id"));
+    assertEquals(inet1, hit.getInetAddress("inet"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testInetAddressRangeFilter() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+
+    Document2 doc = w.newDocument();
+    InetAddress inet0 = InetAddress.getByName("10.17.4.10");
+    doc.addInetAddress("inet", inet0);
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    InetAddress inet1 = InetAddress.getByName("10.17.4.22");
+    doc.addInetAddress("inet", inet1);
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(2, s.search(fieldTypes.newRangeQuery("inet", inet0, true, inet1, true), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newRangeQuery("inet", inet0, true, inet1, false), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newRangeQuery("inet", inet0, false, inet1, false), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newRangeQuery("inet", InetAddress.getByName("10.17.0.0"), true, InetAddress.getByName("10.17.4.20"), false), 1).totalHits);
     r.close();
     w.close();
     dir.close();

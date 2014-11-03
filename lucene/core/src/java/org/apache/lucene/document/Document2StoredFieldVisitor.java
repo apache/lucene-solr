@@ -18,6 +18,8 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -79,7 +81,12 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
 
   @Override
   public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
-    doc.addBinary(fieldInfo.name, new BytesRef(value));
+    FieldTypes.FieldType fieldType = getFieldType(fieldInfo.name);
+    if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.INET_ADDRESS) {
+      doc.addInetAddress(fieldInfo.name, InetAddress.getByAddress(value));
+    } else {
+      doc.addBinary(fieldInfo.name, new BytesRef(value));
+    }
   }
 
   @Override
@@ -101,7 +108,12 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
 
   @Override
   public void longField(FieldInfo fieldInfo, long value) {
-    doc.addLong(fieldInfo.name, value);
+    FieldTypes.FieldType fieldType = getFieldType(fieldInfo.name);
+    if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.DATE) {
+      doc.addDate(fieldInfo.name, new Date(value));
+    } else {
+      doc.addLong(fieldInfo.name, value);
+    }
   }
 
   @Override

@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.Bits;
-
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.util.Bits;
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -47,6 +47,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   private final CompositeReader in;
   private final Fields fields;
   private final Bits liveDocs;
+  private final FieldTypes fieldTypes;
   
   /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
@@ -67,6 +68,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     fields = MultiFields.getFields(in);
     liveDocs = MultiFields.getLiveDocs(in);
     in.registerParentReader(this);
+    fieldTypes = in.getFieldTypes();
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
   }
 
   @Override

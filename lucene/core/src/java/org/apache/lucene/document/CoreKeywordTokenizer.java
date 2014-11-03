@@ -23,7 +23,9 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
-// nocommit ... this is fork of KeywordTokenizer ... what to do ... must Document2 live outside Lucene core ...
+// nocommit ... this is privte fork of KeywordTokenizer ... should we move it to ../analysis and make it public?  same deal with
+// LengthFilter and LimitTokenCountFilter:
+
 final class CoreKeywordTokenizer extends Tokenizer {
   /** Default read buffer size */ 
   public static final int DEFAULT_BUFFER_SIZE = 256;
@@ -45,7 +47,7 @@ final class CoreKeywordTokenizer extends Tokenizer {
   }
 
   @Override
-  public final boolean incrementToken() throws IOException {
+  public boolean incrementToken() throws IOException {
     if (!done) {
       clearAttributes();
       done = true;
@@ -67,7 +69,7 @@ final class CoreKeywordTokenizer extends Tokenizer {
   }
   
   @Override
-  public final void end() throws IOException {
+  public void end() throws IOException {
     super.end();
     // set final offset 
     offsetAtt.setOffset(finalOffset, finalOffset);

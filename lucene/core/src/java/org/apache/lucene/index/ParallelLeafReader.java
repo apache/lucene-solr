@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.util.Bits;
 
 
@@ -58,7 +59,8 @@ public class ParallelLeafReader extends LeafReader {
   private final boolean hasDeletions;
   private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();
   private final SortedMap<String,LeafReader> tvFieldToReader = new TreeMap<>();
-  
+  private final FieldTypes fieldTypes;
+
   /** Create a ParallelLeafReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
   public ParallelLeafReader(LeafReader... readers) throws IOException {
@@ -85,9 +87,12 @@ public class ParallelLeafReader extends LeafReader {
       this.maxDoc = first.maxDoc();
       this.numDocs = first.numDocs();
       this.hasDeletions = first.hasDeletions();
+      // nocommit must verify field types are congruent and take union?
+      this.fieldTypes = first.getFieldTypes();
     } else {
       this.maxDoc = this.numDocs = 0;
       this.hasDeletions = false;
+      this.fieldTypes = null;
     }
     Collections.addAll(completeReaderSet, this.parallelReaders);
     Collections.addAll(completeReaderSet, this.storedFieldsReaders);
@@ -137,6 +142,11 @@ public class ParallelLeafReader extends LeafReader {
       }
       reader.registerParentReader(this);
     }
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
   }
 
   @Override

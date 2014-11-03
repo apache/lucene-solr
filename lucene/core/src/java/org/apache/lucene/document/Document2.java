@@ -19,7 +19,9 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,10 +29,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.FieldTypes.FieldType;
 import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FilterIterator;
 
 // nocommit clearly spell out which field defaults to what settings, e.g. that atom is not sorted by default
 
@@ -131,7 +133,10 @@ public class Document2 implements Iterable<IndexableField> {
         throw new IllegalArgumentException("analyzer must be the instance from FieldTypes: got " + analyzerIn + " vs " + analyzer);
       }
 
+      assert fieldTypes.getIndexOptions(fieldName) != IndexOptions.NONE;
+
       FieldTypes.FieldType fieldType = fieldTypes.getFieldType(fieldName);
+
       switch (fieldType.valueType) {
       case INT:
         return getReusedBinaryTokenStream(intToBytes(((Number) value).intValue()), reuse);
@@ -141,6 +146,8 @@ public class Document2 implements Iterable<IndexableField> {
         return getReusedBinaryTokenStream(longToBytes(((Number) value).longValue()), reuse);
       case DOUBLE:
         return getReusedBinaryTokenStream(longToBytes(Double.doubleToLongBits(((Number) value).doubleValue())), reuse);
+      case DATE:
+        return getReusedBinaryTokenStream(longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
         if (value instanceof String) {
           return getReusedStringTokenStream((String) value, reuse);
@@ -150,18 +157,36 @@ public class Document2 implements Iterable<IndexableField> {
         }
 
       case BINARY:
-        assert value instanceof BytesRef;
-        BinaryTokenStream bts;
-        if (reuse != null) {
-          if (reuse instanceof BinaryTokenStream == false) {
-            FieldTypes.illegalState(fieldName, "should have had BinaryTokenStream for reuse, but got " + reuse);
+        {
+          assert value instanceof BytesRef;
+          BinaryTokenStream bts;
+          if (reuse != null) {
+            if (reuse instanceof BinaryTokenStream == false) {
+              FieldTypes.illegalState(fieldName, "should have had BinaryTokenStream for reuse, but got " + reuse);
+            }
+            bts = (BinaryTokenStream) reuse;
+          } else {
+            bts = new BinaryTokenStream();
           }
-          bts = (BinaryTokenStream) reuse;
-        } else {
-          bts = new BinaryTokenStream();
+          bts.setValue((BytesRef) value);
+          return bts;
         }
-        bts.setValue((BytesRef) value);
-        return bts;
+
+      case INET_ADDRESS:
+        {
+          assert value instanceof InetAddress;
+          BinaryTokenStream bts;
+          if (reuse != null) {
+            if (reuse instanceof BinaryTokenStream == false) {
+              FieldTypes.illegalState(fieldName, "should have had BinaryTokenStream for reuse, but got " + reuse);
+            }
+            bts = (BinaryTokenStream) reuse;
+          } else {
+            bts = new BinaryTokenStream();
+          }
+          bts.setValue(new BytesRef(((InetAddress) value).getAddress()));
+          return bts;
+        }
 
       case SHORT_TEXT:
       case TEXT:
@@ -203,6 +228,8 @@ public class Document2 implements Iterable<IndexableField> {
       case FLOAT:
       case DOUBLE:
         return (Number) value;
+      case DATE:
+        return ((Date) value).getTime();
       case BOOLEAN:
         if (value == Boolean.TRUE) {
           return Integer.valueOf(1);
@@ -228,6 +255,8 @@ public class Document2 implements Iterable<IndexableField> {
         return Integer.valueOf(Float.floatToIntBits((Float) value));
       case DOUBLE:
         return Long.valueOf(Double.doubleToLongBits((Double) value));
+      case DATE:
+        return Long.valueOf(((Date) value).getTime());
       case BOOLEAN:
         if (value == Boolean.TRUE) {
           return Integer.valueOf(1);
@@ -284,6 +313,8 @@ public class Document2 implements Iterable<IndexableField> {
           bytes[0] = 1;
         }
         return new BytesRef(bytes);
+      } else if (fieldType.valueType == FieldTypes.ValueType.INET_ADDRESS) {
+        return new BytesRef(((InetAddress) value).getAddress());
       } else if (value instanceof BytesRef) {
         return (BytesRef) value;
       } else {
@@ -295,9 +326,13 @@ public class Document2 implements Iterable<IndexableField> {
     public BytesRef binaryDocValue() {
       if (value instanceof BytesRef) {
         return (BytesRef) value;
-      } else if (value instanceof String && (fieldType.docValuesType == DocValuesType.BINARY || fieldType.docValuesType == DocValuesType.SORTED || fieldType.docValuesType == DocValuesType.SORTED_SET)) {
-        // nocommit somewhat evil we utf8-encode your string?
-        return new BytesRef((String) value);
+      } else if (fieldType.docValuesType == DocValuesType.BINARY || fieldType.docValuesType == DocValuesType.SORTED || fieldType.docValuesType == DocValuesType.SORTED_SET) {
+        if (fieldType.valueType == FieldTypes.ValueType.INET_ADDRESS) {
+          return new BytesRef(((InetAddress) value).getAddress());
+        } else if (value instanceof String) {
+          // nocommit somewhat evil we utf8-encode your string?
+          return new BytesRef((String) value);
+        }
       }
 
       return null;
@@ -333,7 +368,6 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public IndexableField getField(String name) {
-    List<IndexableField> result = new ArrayList<>();
     for (FieldValue field : fields) {
       if (field.name().equals(name)) {
         return field;
@@ -484,9 +518,25 @@ public class Document2 implements Iterable<IndexableField> {
     fields.add(new FieldValue(fieldName, Boolean.valueOf(value)));
   }
 
+  public void addDate(String fieldName, Date value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.DATE);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  /** Add an {@code InetAddress} field.  This is indexed as a binary atom under the hood, for sorting,
+   *  range filtering and stored. */
+  public void addInetAddress(String fieldName, InetAddress value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.INET_ADDRESS);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
   static {
     // nocommit is there a cleaner/general way to detect missing enum value in case switch statically?  must we use ecj?
-    assert FieldTypes.ValueType.values().length == 9: "missing case for switch statement below";
+    assert FieldTypes.ValueType.values().length == 12: "missing case for switch statement below";
   }
 
   /** Note: this FieldTypes must already know about all the fields in the incoming doc. */
@@ -528,6 +578,12 @@ public class Document2 implements Iterable<IndexableField> {
         break;
       case BOOLEAN:
         addBoolean(fieldName, ((Boolean) field.value).booleanValue());
+        break;
+      case DATE:
+        addDate(fieldName, (Date) field.value);
+        break;
+      case INET_ADDRESS:
+        addInetAddress(fieldName, (InetAddress) field.value);
         break;
       default:
         // BUG:
@@ -579,6 +635,28 @@ public class Document2 implements Iterable<IndexableField> {
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
         return (Boolean) fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
+  public Date getDate(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is date...?
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return (Date) fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
+  public InetAddress getInetAddress(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is inet address...?
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return (InetAddress) fieldValue.value;
       }
     }
 
