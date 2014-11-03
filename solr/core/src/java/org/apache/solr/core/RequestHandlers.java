@@ -184,7 +184,7 @@ public final class RequestHandlers {
     for (Map.Entry<PluginInfo,SolrRequestHandler> entry : handlers.entrySet()) {
       PluginInfo info = entry.getKey();
       SolrRequestHandler requestHandler = entry.getValue();
-      info = applyParamSet(config, info);
+      info = applyInitParams(config, info);
       if (requestHandler instanceof PluginInfoInitialized) {
        ((PluginInfoInitialized) requestHandler).init(info);
       } else{
@@ -198,7 +198,7 @@ public final class RequestHandlers {
       log.warn("no default request handler is registered (either '/select' or 'standard')");
   }
 
-  private PluginInfo applyParamSet(SolrConfig config, PluginInfo info) {
+  private PluginInfo applyInitParams(SolrConfig config, PluginInfo info) {
     List<InitParams> ags = new ArrayList<>();
     String p = info.attributes.get(InitParams.TYPE);
     if(p!=null) {
@@ -207,13 +207,12 @@ public final class RequestHandlers {
         else log.warn("INVALID paramSet {} in requestHandler {}", arg, info.toString());
       }
     }
-    for (InitParams args : config.getInitParams().values()) {
+    for (InitParams args : config.getInitParams().values())
       if(args.matchPath(info.name)) ags.add(args);
-    }
     if(!ags.isEmpty()){
       info = new PluginInfo(info.type, info.attributes, info.initArgs.clone(), info.children);
-      for (InitParams args : ags) {
-        args.apply(info.initArgs);
+      for (InitParams initParam : ags) {
+        initParam.apply(info.initArgs);
       }
     }
     return info;
