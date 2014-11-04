@@ -105,8 +105,9 @@ public class RegexpQuery extends AutomatonQuery {
    */
   public RegexpQuery(Term term, int flags, AutomatonProvider provider,
       int maxDeterminizedStates) {
-    super(term, new RegExp(term.text(), flags).toAutomaton(
-      provider, maxDeterminizedStates));
+    super(term,
+          new RegExp(term.text(), flags).toAutomaton(
+                       provider, maxDeterminizedStates), maxDeterminizedStates);
   }
   
   /** Prints a user-readable version of this query. */
