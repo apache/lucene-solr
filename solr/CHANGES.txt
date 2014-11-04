@@ -356,6 +356,10 @@ Other Changes
 
 ==================  4.10.3 ==================
 
+Bug Fixes
+----------------------
+
+* SOLR-6696: bin/solr start script should not enable autoSoftCommit by default (janhoy)
 
 ==================  4.10.2 ==================
 

@@ -1023,7 +1023,7 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
 -Dsolr.solr.home=$SOLR_HOME \
 -Dsolr.install.dir=$SOLR_TIP \
 -Duser.timezone=$SOLR_TIMEZONE \
--Djava.net.preferIPv4Stack=true -Dsolr.autoSoftCommit.maxTime=3000"
+-Djava.net.preferIPv4Stack=true"
   
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"
