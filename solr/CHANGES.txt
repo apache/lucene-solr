@@ -19,6 +19,11 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 ==================  4.10.3 ==================
 
+Bug Fixes
+----------------------
+
+* SOLR-6696: bin/solr start script should not enable autoSoftCommit by default (janhoy)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
