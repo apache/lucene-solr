@@ -38,6 +38,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.*;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+
 public class TestTermsEnum2 extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;
@@ -86,7 +88,8 @@ public class TestTermsEnum2 extends LuceneTestCase {
 
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton());
+      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton(),
+        DEFAULT_MAX_DETERMINIZED_STATES);
       final List<BytesRef> matchedTerms = new ArrayList<>();
       for(BytesRef t : terms) {
         if (Operations.run(automaton, t.utf8ToString())) {
@@ -111,7 +114,8 @@ public class TestTermsEnum2 extends LuceneTestCase {
   public void testSeeking() throws Exception {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton());
+      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton(),
+        DEFAULT_MAX_DETERMINIZED_STATES);
       TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
       ArrayList<BytesRef> unsortedTerms = new ArrayList<>(terms);
       Collections.shuffle(unsortedTerms, random());
@@ -158,13 +162,15 @@ public class TestTermsEnum2 extends LuceneTestCase {
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
       CompiledAutomaton ca = new CompiledAutomaton(automaton, Operations.isFinite(automaton), false);
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
-      Automaton expected = Operations.determinize(Operations.intersection(termsAutomaton, automaton));
+      Automaton expected = Operations.determinize(Operations.intersection(termsAutomaton, automaton),
+        DEFAULT_MAX_DETERMINIZED_STATES);
       TreeSet<BytesRef> found = new TreeSet<>();
       while (te.next() != null) {
         found.add(BytesRef.deepCopyOf(te.term()));
       }
       
-      Automaton actual = Operations.determinize(Automata.makeStringUnion(found));
+      Automaton actual = Operations.determinize(Automata.makeStringUnion(found),
+        DEFAULT_MAX_DETERMINIZED_STATES);
       assertTrue(Operations.sameLanguage(expected, actual));
     }
   }

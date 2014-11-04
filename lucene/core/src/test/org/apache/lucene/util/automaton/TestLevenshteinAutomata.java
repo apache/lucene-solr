@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+
 public class TestLevenshteinAutomata extends LuceneTestCase {
  
   public void testLev0() throws Exception {
@@ -121,11 +123,11 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   private Automaton naiveLev1(String s) {
     Automaton a = Automata.makeString(s);
     a = Operations.union(a, insertionsOf(s));
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     a = Operations.union(a, deletionsOf(s));
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     a = Operations.union(a, substitutionsOf(s));
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     
     return a;
   }
@@ -137,7 +139,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   private Automaton naiveLev1T(String s) {
     Automaton a = naiveLev1(s);
     a = Operations.union(a, transpositionsOf(s));
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
   
@@ -156,7 +158,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     }
     
     Automaton a = Operations.union(list);
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
   
@@ -174,7 +176,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     }
     
     Automaton a = Operations.union(list);
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
   
@@ -193,7 +195,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     }
     
     Automaton a = Operations.union(list);
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
   
@@ -218,7 +220,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       }
     }
     Automaton a = Operations.union(list);
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
   

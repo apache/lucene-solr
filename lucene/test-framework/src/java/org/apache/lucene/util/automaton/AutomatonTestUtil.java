@@ -40,6 +40,11 @@ import org.apache.lucene.util.UnicodeUtil;
  * basic unoptimized implementations (*slow) for testing.
  */
 public class AutomatonTestUtil {
+  /**
+   * Default maximum number of states that {@link Operations#determinize} should create.
+   */
+  public static final int DEFAULT_MAX_DETERMINIZED_STATES = 1000000;
+
   /** Returns random string, including full unicode range. */
   public static String randomRegexp(Random r) {
     while (true) {
@@ -257,12 +262,12 @@ public class AutomatonTestUtil {
     // get two random Automata from regexps
     Automaton a1 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
     if (random.nextBoolean()) {
-      a1 = Operations.complement(a1);
+      a1 = Operations.complement(a1, DEFAULT_MAX_DETERMINIZED_STATES);
     }
     
     Automaton a2 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
     if (random.nextBoolean()) {
-      a2 = Operations.complement(a2);
+      a2 = Operations.complement(a2, DEFAULT_MAX_DETERMINIZED_STATES);
     }
 
     // combine them in random ways
@@ -270,7 +275,7 @@ public class AutomatonTestUtil {
       case 0: return Operations.concatenate(a1, a2);
       case 1: return Operations.union(a1, a2);
       case 2: return Operations.intersection(a1, a2);
-      default: return Operations.minus(a1, a2);
+      default: return Operations.minus(a1, a2, DEFAULT_MAX_DETERMINIZED_STATES);
     }
   }
   

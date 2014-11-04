@@ -41,8 +41,8 @@ import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -788,7 +788,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             Automata.makeChar(factory.getMarkerChar()),
             Automata.makeAnyString());
         // subtract these away
-        automaton = Operations.minus(automaton, falsePositives);
+        automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
       }
       return new AutomatonQuery(term, automaton) {
         // override toString so its completely transparent

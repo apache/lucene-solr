@@ -121,8 +121,21 @@ public abstract class RunAutomaton {
    * @param a an automaton
    */
   public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
+    this(a, maxInterval, tableize, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+  }
+
+  /**
+   * Constructs a new <code>RunAutomaton</code> from a deterministic
+   * <code>Automaton</code>.
+   * 
+   * @param a an automaton
+   * @param maxDeterminizedStates maximum number of states that can be created
+   *   while determinizing a
+   */
+  public RunAutomaton(Automaton a, int maxInterval, boolean tableize,
+      int maxDeterminizedStates) {
     this.maxInterval = maxInterval;
-    a = Operations.determinize(a);
+    a = Operations.determinize(a, maxDeterminizedStates);
     this.automaton = a;
     points = a.getStartPoints();
     initial = 0;

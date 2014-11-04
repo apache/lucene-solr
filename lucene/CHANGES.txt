@@ -207,6 +207,11 @@ Bug Fixes
 * LUCENE-6042: CustomScoreQuery explain was incorrect in some cases,
   such as when nested inside a boolean query. (Denis Lantsman via Robert Muir)
 
+* LUCENE-6046: Add maxDeterminizedStates safety to determinize (which has
+  an exponential worst case) so that if it would create too many states, it
+  now throws an exception instead of exhausting CPU/RAM.  (Nik
+  Everett via Mike McCandless)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
