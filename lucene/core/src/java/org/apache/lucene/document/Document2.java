@@ -97,11 +97,8 @@ public class Document2 implements Iterable<IndexableField> {
 
     private TokenStream getReusedBinaryTokenStream(BytesRef value, TokenStream reuse) {
       BinaryTokenStream bts;
-      if (reuse != null) {
-        if (reuse instanceof BinaryTokenStream == false) {
-          // BUG
-          FieldTypes.illegalState(fieldName, "should have received BinaryTokenStream for reuse, but got " + reuse);
-        }
+      // It might be non-null and not a BinaryTokenStream if this is an atom field that just add a too small or too big term:
+      if (reuse != null && reuse instanceof BinaryTokenStream) {
         bts = (BinaryTokenStream) reuse;
       } else {
         bts = new BinaryTokenStream();
@@ -112,11 +109,8 @@ public class Document2 implements Iterable<IndexableField> {
 
     private TokenStream getReusedStringTokenStream(String value, TokenStream reuse) {
       StringTokenStream sts;
-      if (reuse != null) {
-        if (reuse instanceof StringTokenStream == false) {
-          // BUG
-          FieldTypes.illegalState(fieldName, "should have received StringTokenStream for reuse, but got " + reuse);
-        }
+      // It might be non-null and not a StringTokenStream if this is an atom field that just add a too small or too big term:
+      if (reuse != null && reuse instanceof StringTokenStream) {
         sts = (StringTokenStream) reuse;
       } else {
         sts = new StringTokenStream();
@@ -149,6 +143,21 @@ public class Document2 implements Iterable<IndexableField> {
       case DATE:
         return getReusedBinaryTokenStream(longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
+        if (fieldType.minTokenLength != null) {
+          if (value instanceof String) {
+            String s = (String) value;
+            if (s.length() < fieldType.minTokenLength.intValue() ||
+                s.length() > fieldType.maxTokenLength.intValue()) {
+              return EMPTY_TOKEN_STREAM;
+            }
+          } else if (value instanceof BytesRef) {
+            BytesRef b = (BytesRef) value;
+            if (b.length < fieldType.minTokenLength.intValue() ||
+                b.length > fieldType.maxTokenLength.intValue()) {
+              return EMPTY_TOKEN_STREAM;
+            }
+          }
+        }
         if (value instanceof String) {
           return getReusedStringTokenStream((String) value, reuse);
         } else {
@@ -735,4 +744,11 @@ public class Document2 implements Iterable<IndexableField> {
     }
     return b.toString();
   }
+
+  private static final TokenStream EMPTY_TOKEN_STREAM = new TokenStream() {
+      @Override
+      public final boolean incrementToken() {
+        return false;
+      }
+    };
 }

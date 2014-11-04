@@ -21,9 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -40,7 +40,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
 
 public class TestOmitTf extends LuceneTestCase {
   
@@ -74,29 +73,28 @@ public class TestOmitTf extends LuceneTestCase {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
-    Document d = new Document();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    Document2 d = writer.newDocument();
         
     // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", normalType);
-    d.add(f1);
+    d.addLargeText("f1", "This field has term freqs");
        
     // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
-    d.add(f2);
+    fieldTypes.setIndexOptions("f2", IndexOptions.DOCS);
+    fieldTypes.disableHighlighting("f2");
+    d.addLargeText("f2", "This field has NO Tf in all docs");
         
     writer.addDocument(d);
     writer.forceMerge(1);
     // now we add another document which has term freq for field f2 and not for f1 and verify if the SegmentMerger
     // keep things constant
-    d = new Document();
+    d = writer.newDocument();
         
     // Reverse
-    f1 = newField("f1", "This field has term freqs", omitType);
-    d.add(f1);
-        
-    f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
-    d.add(f2);
-        
+    fieldTypes.setIndexOptions("f1", IndexOptions.DOCS);
+    fieldTypes.disableHighlighting("f1");
+    d.addLargeText("f1", "This field has term freqs");
+    d.addLargeText("f2", "This field has NO Tf in all docs");
     writer.addDocument(d);
 
     // force merge
@@ -124,32 +122,36 @@ public class TestOmitTf extends LuceneTestCase {
             setMaxBufferedDocs(3).
             setMergePolicy(newLogMergePolicy(2))
     );
-    Document d = new Document();
+
+    FieldTypes fieldTypes = writer.getFieldTypes();
+
+    Document2 d = writer.newDocument();
         
     // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", normalType);
-    d.add(f1);
+    d.addLargeText("f1", "This field has term freqs");
        
     // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
-    d.add(f2);
+    fieldTypes.disableHighlighting("f2");
+    fieldTypes.setIndexOptions("f2", IndexOptions.DOCS);
+    d.addLargeText("f2", "This field has NO Tf in all docs");
 
-    for(int i=0;i<30;i++)
+    for(int i=0;i<30;i++) {
       writer.addDocument(d);
+    }
         
     // now we add another document which has term freq for field f2 and not for f1 and verify if the SegmentMerger
     // keep things constant
-    d = new Document();
+    d = writer.newDocument();
         
-    // Reverese
-    f1 = newField("f1", "This field has term freqs", omitType);
-    d.add(f1);
+    // Reverse
+    fieldTypes.disableHighlighting("f1");
+    fieldTypes.setIndexOptions("f1", IndexOptions.DOCS);
+    d.addLargeText("f1", "This field has term freqs");
+    d.addLargeText("f2", "This field has NO Tf in all docs");
         
-    f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
-    d.add(f2);
-        
-    for(int i=0;i<30;i++)
+    for(int i=0;i<30;i++) {
       writer.addDocument(d);
+    }
         
     // force merge
     writer.forceMerge(1);
@@ -177,21 +179,25 @@ public class TestOmitTf extends LuceneTestCase {
             setMaxBufferedDocs(10).
             setMergePolicy(newLogMergePolicy(2))
     );
-    Document d = new Document();
+    Document2 d = writer.newDocument();
+    FieldTypes fieldTypes = writer.getFieldTypes();
         
     // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", normalType);
-    d.add(f1);
+    fieldTypes.disableHighlighting("f1");
+    d.addLargeText("f1", "This field has term freqs");
        
     // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
-    d.add(f2);
+    fieldTypes.disableHighlighting("f2");
+    fieldTypes.setIndexOptions("f2", IndexOptions.DOCS);
+    d.addLargeText("f2", "This field has NO Tf in all docs");
 
-    for(int i=0;i<5;i++)
+    for(int i=0;i<5;i++) {
       writer.addDocument(d);
+    }     
 
-    for(int i=0;i<20;i++)
+    for(int i=0;i<20;i++) {
       writer.addDocument(d);
+    }
 
     // force merge
     writer.forceMerge(1);
@@ -225,18 +231,20 @@ public class TestOmitTf extends LuceneTestCase {
     }
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
-                                                .setMaxBufferedDocs(3)
-                                                .setMergePolicy(newLogMergePolicy()));
+                                         .setMaxBufferedDocs(3)
+                                         .setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setNoCFSRatio(0.0);
-    Document d = new Document();
-        
-    Field f1 = newField("f1", "This field has term freqs", omitType);
-    d.add(f1);
+    Document2 d = writer.newDocument();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableHighlighting("f1");
+    fieldTypes.setIndexOptions("f1", IndexOptions.DOCS);
+    d.addLargeText("f1", "This field has term freqs");
 
-    for(int i=0;i<30;i++)
+    for(int i=0;i<30;i++) {
       writer.addDocument(d);
+    }
 
     writer.commit();
 
@@ -244,12 +252,12 @@ public class TestOmitTf extends LuceneTestCase {
     
     // now add some documents with positions, and check
     // there is no prox after full merge
-    d = new Document();
-    f1 = newTextField("f1", "This field has positions", Field.Store.NO);
-    d.add(f1);
+    d = writer.newDocument();
+    d.addLargeText("f1", "This field has positions");
     
-    for(int i=0;i<30;i++)
+    for(int i=0;i<30;i++) {
       writer.addDocument(d);
+    }
  
     // force merge
     writer.forceMerge(1);
@@ -273,16 +281,16 @@ public class TestOmitTf extends LuceneTestCase {
     );
         
     StringBuilder sb = new StringBuilder(265);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableHighlighting("noTf");
+    fieldTypes.setIndexOptions("noTf", IndexOptions.DOCS);
     String term = "term";
     for(int i = 0; i<30; i++){
-      Document d = new Document();
+      Document2 d = writer.newDocument();
       sb.append(term).append(" ");
       String content  = sb.toString();
-      Field noTf = newField("noTf", content + (i%2==0 ? "" : " notf"), omitType);
-      d.add(noTf);
-          
-      Field tf = newField("tf", content + (i%2==0 ? " tf" : ""), normalType);
-      d.add(tf);
+      d.addLargeText("noTf", content + (i%2==0 ? "" : " notf"));
+      d.addLargeText("tf", content + (i%2==0 ? " tf" : ""));
           
       writer.addDocument(d);
       //System.out.println(d);
@@ -448,12 +456,8 @@ public class TestOmitTf extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS);
-    ft.freeze();
-    Field f = newField("foo", "bar", ft);
-    doc.add(f);
+    Document2 doc = iw.newDocument();
+    doc.addAtom("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();

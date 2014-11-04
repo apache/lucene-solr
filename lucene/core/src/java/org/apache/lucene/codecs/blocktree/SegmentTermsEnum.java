@@ -52,7 +52,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
   private int targetBeforeCurrentLength;
 
-  //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  // static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   private final ByteArrayDataInput scratchReader = new ByteArrayDataInput();
 
@@ -258,6 +258,7 @@ final class SegmentTermsEnum extends TermsEnum {
   // Pushes next'd frame or seek'd frame; we later
   // lazy-load the frame only when needed
   SegmentTermsEnumFrame pushFrame(FST.Arc<BytesRef> arc, long fp, int length) throws IOException {
+    //if (DEBUG) System.out.println("pushFrame length=" + length + " fp=" + fp);
     final SegmentTermsEnumFrame f = getFrame(1+currentFrame.ord);
     f.arc = arc;
     if (f.fpOrig == fp && f.nextEnt != -1) {
@@ -300,7 +301,6 @@ final class SegmentTermsEnum extends TermsEnum {
     return true;
   }
 
-  /*
   // for debugging
   @SuppressWarnings("unused")
   static String brToString(BytesRef b) {
@@ -319,7 +319,6 @@ final class SegmentTermsEnum extends TermsEnum {
   static String brToString(BytesRefBuilder b) {
     return brToString(b.get());
   }
-  */
 
   @Override
   public boolean seekExact(BytesRef target) throws IOException {
@@ -902,10 +901,10 @@ final class SegmentTermsEnum extends TermsEnum {
     targetBeforeCurrentLength = currentFrame.ord;
 
     assert !eof;
-    // if (DEBUG) {
-    //   System.out.println("\nBTTR.next seg=" + fr.parent.segment + " term=" + brToString(term) + " termExists?=" + termExists + " field=" + fr.fieldInfo.name + " termBlockOrd=" + currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
-    //   printSeekState(System.out);
-    // }
+    //if (DEBUG) {
+    //  System.out.println("\nBTTR.next seg=" + fr.parent.segment + " term=" + brToString(term) + " termExists?=" + termExists + " field=" + fr.fieldInfo.name + " termBlockOrd=" + currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
+    //  printSeekState(System.out);
+    //}
 
     if (currentFrame == staticFrame) {
       // If seek was previously called and the term was
@@ -914,7 +913,7 @@ final class SegmentTermsEnum extends TermsEnum {
       // docFreq, etc.  But, if they then call next(),
       // this method catches up all internal state so next()
       // works properly:
-      //if (DEBUG) System.out.println("  re-seek to pending term=" + term.utf8ToString() + " " + term);
+      //if (DEBUG) System.out.println("  re-seek to pending term=" + brToString(term) + " " + term);
       final boolean result = seekExact(term.get());
       assert result;
     }
@@ -950,9 +949,7 @@ final class SegmentTermsEnum extends TermsEnum {
         // Note that the seek state (last seek) has been
         // invalidated beyond this depth
         validIndexPrefix = Math.min(validIndexPrefix, currentFrame.prefix);
-        //if (DEBUG) {
-        //System.out.println("  reset validIndexPrefix=" + validIndexPrefix);
-        //}
+        //if (DEBUG) System.out.println("  reset validIndexPrefix=" + validIndexPrefix);
       }
     }
 

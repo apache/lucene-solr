@@ -1,12 +1,9 @@
 package org.apache.lucene.codecs.compressing;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -45,10 +42,9 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
   public void testNoOrds() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(true);
-    doc.add(new Field("foo", "this is a test", ft));
+    Document2 doc = iw.newDocument();
+    iw.getFieldTypes().enableTermVectors("foo");
+    doc.addLargeText("foo", "this is a test");
     iw.addDocument(doc);
     LeafReader ir = getOnlySegmentReader(iw.getReader());
     Terms terms = ir.getTermVector(0, "foo");

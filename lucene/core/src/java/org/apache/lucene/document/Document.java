@@ -46,7 +46,6 @@ public final class Document implements Iterable<IndexableField> {
 
   /** Constructs a new document with no fields. */
   public Document() {}
-  
 
   /**
    * <p>Adds a field to a document.  Several fields may be added with

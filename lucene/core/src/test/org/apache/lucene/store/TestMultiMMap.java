@@ -22,8 +22,7 @@ import java.nio.file.Path;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -341,16 +340,12 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       mmapDir.setUseUnmap(true);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random, mmapDir);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    Document doc = new Document();
-    Field docid = newStringField("docid", "0", Field.Store.YES);
-    Field junk = newStringField("junk", "", Field.Store.YES);
-    doc.add(docid);
-    doc.add(junk);
     
     int numDocs = 100;
     for (int i = 0; i < numDocs; i++) {
-      docid.setStringValue("" + i);
-      junk.setStringValue(TestUtil.randomUnicodeString(random));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("docid", "" + i);
+      doc.addAtom("junk", TestUtil.randomUnicodeString(random));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();

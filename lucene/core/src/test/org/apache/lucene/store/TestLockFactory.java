@@ -25,14 +25,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -392,8 +391,8 @@ public class TestLockFactory extends LuceneTestCase {
     }
 
     private void addDoc(IndexWriter writer) throws IOException {
-        Document doc = new Document();
-        doc.add(newTextField("content", "aaa", Field.Store.NO));
+        Document2 doc = writer.newDocument();
+        doc.addLargeText("content", "aaa");
         writer.addDocument(doc);
     }
 }

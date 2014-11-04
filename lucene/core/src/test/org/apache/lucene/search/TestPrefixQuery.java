@@ -26,9 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
@@ -54,8 +52,8 @@ public class TestPrefixQuery extends LuceneTestCase {
                                         "/Computers/Windows"};
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     for (int i = 0; i < categories.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("category", categories[i], Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("category", categories[i]);
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -120,8 +118,8 @@ public class TestPrefixQuery extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     for (String term : randomTerms) {
-      Document doc = new Document();
-      doc.add(new StringField("field", term, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", term);
       w.addDocument(doc);
     }
 

@@ -18,15 +18,12 @@ package org.apache.lucene.codecs.lucene50;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -64,72 +61,58 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     super.tearDown();
   }
   
-  private Document newDocument() {
-    Document doc = new Document();
+  private Document2 newDocument(String contents) {
+    Document2 doc = iw.newDocument();
+    FieldTypes fieldTypes = iw.getFieldTypes();
     for (IndexOptions option : IndexOptions.values()) {
       if (option == IndexOptions.NONE) {
         continue;
       }
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      String fieldName = option.toString();
       // turn on tvs for a cross-check, since we rely upon checkindex in this test (for now)
-      ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorOffsets(true);
-      ft.setStoreTermVectorPositions(true);
-      ft.setStoreTermVectorPayloads(true);
-      ft.setIndexOptions(option);
-      doc.add(new Field(option.toString(), "", ft));
+      fieldTypes.disableHighlighting(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorPayloads(fieldName);
+      fieldTypes.setIndexOptions(fieldName, option);
+      doc.addLargeText(fieldName, contents.replaceAll("name", fieldName));
     }
     return doc;
   }
 
   /** tests terms with df = blocksize */
   public void testDFBlockSize() throws Exception {
-    Document doc = newDocument();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE; i++) {
-      for (IndexableField f : doc.getFields()) {
-        ((Field) f).setStringValue(f.name() + " " + f.name() + "_2");
-      }
-      iw.addDocument(doc);
+      iw.addDocument(newDocument("name name_2"));
     }
   }
 
   /** tests terms with df % blocksize = 0 */
   public void testDFBlockSizeMultiple() throws Exception {
-    Document doc = newDocument();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE * 16; i++) {
-      for (IndexableField f : doc.getFields()) {
-        ((Field) f).setStringValue(f.name() + " " + f.name() + "_2");
-      }
-      iw.addDocument(doc);
+      iw.addDocument(newDocument("name name_2"));
     }
   }
   
   /** tests terms with ttf = blocksize */
   public void testTTFBlockSize() throws Exception {
-    Document doc = newDocument();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE/2; i++) {
-      for (IndexableField f : doc.getFields()) {
-        ((Field) f).setStringValue(f.name() + " " + f.name() + " " + f.name() + "_2 " + f.name() + "_2");
-      }
-      iw.addDocument(doc);
+      iw.addDocument(newDocument("name name name_2 name_2"));
     }
   }
   
   /** tests terms with ttf % blocksize = 0 */
   public void testTTFBlockSizeMultiple() throws Exception {
-    Document doc = newDocument();
+    String proto = "name name name name name_2 name_2 name_2 name_2";
+    StringBuilder val = new StringBuilder();
+    for (int j = 0; j < 16; j++) {
+      val.append(proto);
+      val.append(" ");
+    }
+    String pattern = val.toString();
     for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE/2; i++) {
-      for (IndexableField f : doc.getFields()) {
-        String proto = (f.name() + " " + f.name() + " " + f.name() + " " + f.name() + " " 
-                       + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2");
-        StringBuilder val = new StringBuilder();
-        for (int j = 0; j < 16; j++) {
-          val.append(proto);
-          val.append(" ");
-        }
-        ((Field) f).setStringValue(val.toString());
-      }
-      iw.addDocument(doc);
+      iw.addDocument(newDocument(pattern));
     }
   }
 }

@@ -30,14 +30,13 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -89,9 +88,9 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     }
 
     for(String term : terms) {
-      Document doc = new Document();
-      doc.add(new StringField("field", term, Field.Store.NO));
-      doc.add(new NumericDocValuesField("field", Long.parseLong(term)));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", term);
+      doc.addLong("long", Long.parseLong(term));
       w.addDocument(doc);
     }
 
@@ -143,7 +142,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
                                                    maxTerm, maxInclusive);
 
       TermsEnum te = ca.getTermsEnum(MultiFields.getTerms(r, "field"));
-      NumericDocValues docValues = MultiDocValues.getNumericValues(r, "field");
+      NumericDocValues docValues = MultiDocValues.getNumericValues(r, "long");
       DocsEnum docsEnum = null;
 
       VerifyAutoPrefixTerms verifier = new VerifyAutoPrefixTerms(r.maxDoc(), minTerm, maxTerm);
@@ -201,9 +200,18 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
 
   // Numbers are encoded in full binary (4 byte ints):
   public void testBinaryNumericRanges() throws Exception {
+
+    if (VERBOSE) {
+      System.out.println("TEST: minItemsPerBlock=" + minItemsPerBlock);
+      System.out.println("TEST: maxItemsPerBlock=" + maxItemsPerBlock);
+      System.out.println("TEST: minTermsAutoPrefix=" + minTermsAutoPrefix);
+      System.out.println("TEST: maxTermsAutoPrefix=" + maxTermsAutoPrefix);
+    }
+
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(codec);
+    iwc.setMergeScheduler(new SerialMergeScheduler());
     IndexWriter w = new IndexWriter(dir, iwc);
     int numTerms = TestUtil.nextInt(random(), 3000, 50000);
     Set<Integer> terms = new HashSet<>();
@@ -212,13 +220,14 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     }
 
     for(Integer term : terms) {
-      Document doc = new Document();
-      doc.add(new BinaryField("field", intToBytes(term)));
-      doc.add(new NumericDocValuesField("field", term));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", intToBytes(term));
+      doc.addInt("int", term.intValue());
       w.addDocument(doc);
     }
 
     if (random().nextBoolean()) {
+      if (VERBOSE) System.out.println("TEST: now force merge");
       w.forceMerge(1);
     }
 
@@ -265,7 +274,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
                                                    maxTerm, maxInclusive);
 
       TermsEnum te = ca.getTermsEnum(MultiFields.getTerms(r, "field"));
-      NumericDocValues docValues = MultiDocValues.getNumericValues(r, "field");
+      NumericDocValues docValues = MultiDocValues.getNumericValues(r, "int");
       DocsEnum docsEnum = null;
       VerifyAutoPrefixTerms verifier = new VerifyAutoPrefixTerms(r.maxDoc(), minTerm, maxTerm);
       while (te.next() != null) {
@@ -330,11 +339,12 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     while (terms.size() < numTerms) {
       terms.add(TestUtil.randomSimpleString(random()));
     }
+    w.getFieldTypes().setDocValuesType("binary", DocValuesType.BINARY);
 
     for(String term : terms) {
-      Document doc = new Document();
-      doc.add(new StringField("field", term, Field.Store.NO));
-      doc.add(new BinaryDocValuesField("field", new BytesRef(term)));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", term);
+      doc.addBinary("binary", new BytesRef(term));
       w.addDocument(doc);
     }
 
@@ -379,7 +389,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
 
       CompiledAutomaton ca = new CompiledAutomaton(prefixBR);
       TermsEnum te = ca.getTermsEnum(MultiFields.getTerms(r, "field"));
-      BinaryDocValues docValues = MultiDocValues.getBinaryValues(r, "field");
+      BinaryDocValues docValues = MultiDocValues.getBinaryValues(r, "binary");
       DocsEnum docsEnum = null;
 
       VerifyAutoPrefixTerms verifier = new VerifyAutoPrefixTerms(r.maxDoc(), prefixBR);
@@ -436,11 +446,11 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     int numDocs = 30;
 
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
-      doc.add(new StringField("field", "" + (char) (97+i), Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", "" + (char) (97+i));
       w.addDocument(doc);
-      doc = new Document();
-      doc.add(new StringField("field", "a" + (char) (97+i), Field.Store.NO));
+      doc = w.newDocument();
+      doc.addAtom("field", "a" + (char) (97+i));
       w.addDocument(doc);
     }
 

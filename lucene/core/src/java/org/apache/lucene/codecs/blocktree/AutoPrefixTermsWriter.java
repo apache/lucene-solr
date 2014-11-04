@@ -45,8 +45,8 @@ import org.apache.lucene.util.StringHelper;
 class AutoPrefixTermsWriter {
 
   //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
-  //static boolean DEBUG = false;
   //static boolean DEBUG2 = BlockTreeTermsWriter.DEBUG2;
+  //static boolean DEBUG = true;
   //static boolean DEBUG2 = true;
 
   /** Describes a range of term-space to match, either a simple prefix
@@ -80,7 +80,6 @@ class AutoPrefixTermsWriter {
       assert prefix.length > 0 || floorLeadStart != -2 || floorLeadEnd != 0xff;
     }
 
-    /*
     @Override
     public String toString() {
       String s = brToString(new BytesRef(prefix));
@@ -91,7 +90,6 @@ class AutoPrefixTermsWriter {
       }
       return s;
     }
-    */
 
     @Override
     public int compareTo(PrefixTerm other) {
@@ -157,10 +155,9 @@ class AutoPrefixTermsWriter {
   }
 
   // for debugging
-  /*
   static String brToString(BytesRef b) {
     try {
-      return b.utf8ToString() + " " + b;
+      return b.utf8ToString() + " " + b + " len=" + b.length;
     } catch (Throwable t) {
       // If BytesRef isn't actually UTF8, or it's eg a
       // prefix of UTF8 that ends mid-unicode-char, we
@@ -168,7 +165,6 @@ class AutoPrefixTermsWriter {
       return b.toString();
     }
   }
-  */
 
   final List<PrefixTerm> prefixes = new ArrayList<>();
   private final int minItemsInPrefix;
@@ -183,13 +179,13 @@ class AutoPrefixTermsWriter {
   private int[] prefixStarts = new int[8];
   private List<Object> pending = new ArrayList<>();
 
-  //private final String segment;
+  private final String segment;
 
-  public AutoPrefixTermsWriter(Terms terms, int minItemsInPrefix, int maxItemsInPrefix) throws IOException {
+  public AutoPrefixTermsWriter(String segment, Terms terms, int minItemsInPrefix, int maxItemsInPrefix) throws IOException {
     this.minItemsInPrefix = minItemsInPrefix;
     this.maxItemsInPrefix = maxItemsInPrefix;
-    //this.segment = segment;
-
+    this.segment = segment;
+    //if (DEBUG) System.out.println("autoprefix terms=" + terms);
     TermsEnum termsEnum = terms.iterator(null);
     while (true) {
       BytesRef term = termsEnum.next();
@@ -199,6 +195,7 @@ class AutoPrefixTermsWriter {
       //if (DEBUG) System.out.println("pushTerm: " + brToString(term));
       pushTerm(term);
     }
+    //if (DEBUG) System.out.println("done push terms");
 
     if (pending.size() > 1) {
       pushTerm(BlockTreeTermsWriter.EMPTY_BYTES_REF);
@@ -306,7 +303,7 @@ class AutoPrefixTermsWriter {
       }
       pendingCount++;
 
-      //if (DEBUG) System.out.println("    check term=" + brToString(new BytesRef(termBytes)));
+      //if (DEBUG) System.out.println("    check term=" + brToString(new BytesRef(termBytes)) + " pt=" + ptEntry);
 
       int suffixLeadLabel;
 
@@ -413,7 +410,7 @@ class AutoPrefixTermsWriter {
     assert floorLeadEnd != -1;
 
     PrefixTerm pt = new PrefixTerm(prefix, floorLeadStart, floorLeadEnd); 
-    //if (DEBUG2) System.out.println("    savePrefix: seg=" + segment + " " + pt + " count=" + count);
+    //if (DEBUG2) System.out.println("    savePrefix: seg=" + segment + " " + pt);
     prefixes.add(pt);
   }
 }

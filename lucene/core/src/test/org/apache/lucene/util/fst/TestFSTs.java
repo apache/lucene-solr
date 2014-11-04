@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -64,12 +64,12 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
@@ -853,10 +853,6 @@ public class TestFSTs extends LuceneTestCase {
       }
       RandomIndexWriter w = new RandomIndexWriter(random(), dir,
                                                   newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
-      Document doc = new Document();
-      Field idField = newStringField("id", "", Field.Store.NO);
-      doc.add(idField);
-
       final int NUM_IDS = atLeast(200);
       //final int NUM_IDS = (int) (377 * (1.0+random.nextDouble()));
       if (VERBOSE) {
@@ -878,7 +874,8 @@ public class TestFSTs extends LuceneTestCase {
           }
         }
         allIDs.add(idString);
-        idField.setStringValue(idString);
+        Document2 doc = w.newDocument();
+        doc.addAtom("id", idString);
         w.addDocument(doc);
       }
 
@@ -983,10 +980,6 @@ public class TestFSTs extends LuceneTestCase {
 
     RandomIndexWriter w = new RandomIndexWriter(random(), dir,
                                                 newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
-    Document doc = new Document();
-    Field f = newStringField("field", "", Field.Store.NO);
-    doc.add(f);
-
     final int NUM_TERMS = (int) (1000*RANDOM_MULTIPLIER * (1+random().nextDouble()));
     if (VERBOSE) {
       System.out.println("TEST: NUM_TERMS=" + NUM_TERMS);
@@ -998,7 +991,8 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     for(String term : allTerms) {
-      f.setStringValue(term);
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", term);
       w.addDocument(doc);
     }
 

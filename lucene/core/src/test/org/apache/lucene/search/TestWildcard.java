@@ -17,19 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-
-import java.io.IOException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * TestWildcard tests the '*' and '?' wildcard characters.
@@ -244,8 +241,8 @@ public class TestWildcard
     Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for (int i = 0; i < contents.length; ++i) {
-      Document doc = new Document();
-      doc.add(newTextField(field, contents[i], Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText(field, contents[i]);
       writer.addDocument(doc);
     }
     writer.close();
@@ -343,8 +340,8 @@ public class TestWildcard
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
-      Document doc = new Document();
-      doc.add(newTextField(field, docs[i], Field.Store.NO));
+      Document2 doc = iw.newDocument();
+      doc.addLargeText(field, docs[i]);
       iw.addDocument(doc);
     }
     iw.close();

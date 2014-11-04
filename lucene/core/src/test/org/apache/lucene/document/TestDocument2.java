@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
@@ -46,6 +47,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -1626,6 +1628,59 @@ public class TestDocument2 extends LuceneTestCase {
     r.close();
     w.close();
     dir.close();
+  }
+
+  public void testMinMaxAtom() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMinMaxTokenLength("field", 2, 7);
+    fieldTypes.setMultiValued("field");
+    Document2 doc = w.newDocument();
+    doc.addAtom("field", "a");
+    doc.addAtom("field", "ab");
+    doc.addAtom("field", "goodbyeyou");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, hitCount(s, fieldTypes.newStringTermQuery("field", "a")));
+    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "ab")));
+    assertEquals(0, hitCount(s, fieldTypes.newStringTermQuery("field", "goodbyeyou")));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testMinMaxBinaryAtom() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMinMaxTokenLength("field", 2, 7);
+    fieldTypes.setMultiValued("field");
+    Document2 doc = w.newDocument();
+    doc.addAtom("field", new BytesRef(new byte[1]));
+    doc.addAtom("field", new BytesRef(new byte[2]));
+    doc.addAtom("field", new BytesRef(new byte[10]));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[1])));
+    assertEquals(1, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[2])));
+    assertEquals(0, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[10])));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  private static int hitCount(IndexSearcher s, Query q) throws IOException {
+    // TODO: use TotalHitCountCollector sometimes
+    return s.search(q, 1).totalHits;
   }
 
   // nocommit test per-field analyzers

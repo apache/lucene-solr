@@ -25,21 +25,19 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.ArrayUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
   
@@ -221,9 +219,9 @@ public class TestBufferedIndexInput extends LuceneTestCase {
                 setMergePolicy(newLogMergePolicy(false))
         );
         for(int i=0;i<37;i++) {
-          Document doc = new Document();
-          doc.add(newTextField("content", "aaa bbb ccc ddd" + i, Field.Store.YES));
-          doc.add(newTextField("id", "" + i, Field.Store.YES));
+          Document2 doc = writer.newDocument();
+          doc.addLargeText("content", "aaa bbb ccc ddd" + i);
+          doc.addAtom("id", "" + i);
           writer.addDocument(doc);
         }
 

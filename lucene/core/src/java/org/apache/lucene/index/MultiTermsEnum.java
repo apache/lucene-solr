@@ -17,13 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
-
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Exposes {@link TermsEnum} API, merged from {@link TermsEnum} API of sub-segments.
@@ -304,7 +304,6 @@ public final class MultiTermsEnum extends TermsEnum {
     } else {
       current = null;
     }
-
     return current;
   }
 

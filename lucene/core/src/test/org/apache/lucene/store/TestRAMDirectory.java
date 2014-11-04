@@ -23,13 +23,11 @@ import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
@@ -55,10 +53,9 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     // add some documents
-    Document doc = null;
     for (int i = 0; i < docsToAdd; i++) {
-      doc = new Document();
-      doc.add(newStringField("content", English.intToEnglish(i).trim(), Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("content", English.intToEnglish(i).trim());
       writer.addDocument(doc);
     }
     assertEquals(docsToAdd, writer.maxDoc());
@@ -135,8 +132,8 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
         @Override
         public void run() {
           for (int j=1; j<docsPerThread; j++) {
-            Document doc = new Document();
-            doc.add(newStringField("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), Field.Store.YES));
+            Document2 doc = writer.newDocument();
+            doc.addAtom("sizeContent", English.intToEnglish(num*docsPerThread+j).trim());
             try {
               writer.addDocument(doc);
             } catch (IOException e) {

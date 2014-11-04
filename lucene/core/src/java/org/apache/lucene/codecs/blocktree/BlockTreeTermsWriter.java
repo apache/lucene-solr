@@ -26,13 +26,12 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blocktree.AutoPrefixTermsWriter.PrefixTerm;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -213,8 +212,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
    *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
-  //public static boolean DEBUG = false;
-  //public static boolean DEBUG2 = false;
+  //public static boolean DEBUG = true;
+  //public static boolean DEBUG2 = true;
 
   //private final static boolean SAVE_DOT_FILES = false;
 
@@ -260,7 +259,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   private final List<FieldMetaData> fields = new ArrayList<>();
 
-  // private final String segment;
+  private final String segment;
 
   final FixedBitSet prefixDocs;
 
@@ -310,6 +309,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
     this.maxDoc = state.segmentInfo.getDocCount();
     this.fieldInfos = state.fieldInfos;
+    this.segment = state.segmentInfo.name;
 
     if (minItemsInAutoPrefix != 0) {
       // TODO: can we used compressed bitset instead?  that auto-upgrades if it's dense enough...
@@ -412,10 +412,12 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       // First pass to find all prefix terms we should compile into the index:
       List<PrefixTerm> prefixTerms;
       if (minItemsInAutoPrefix != 0) {
+        //if (DEBUG) System.out.println("now write auto-prefix terms field=" + fieldInfo.name);
+
         if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
           throw new IllegalStateException("ranges can only be indexed with IndexOptions.DOCS (field: " + fieldInfo.name + ")");
         }
-        prefixTerms = new AutoPrefixTermsWriter(terms, minItemsInAutoPrefix, maxItemsInAutoPrefix).prefixes;
+        prefixTerms = new AutoPrefixTermsWriter(segment, terms, minItemsInAutoPrefix, maxItemsInAutoPrefix).prefixes;
         //if (DEBUG) {
         //  for(PrefixTerm term : prefixTerms) {
         //    System.out.println("field=" + fieldInfo.name + " PREFIX TERM: " + term);
@@ -795,7 +797,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       System.arraycopy(lastTerm.get().bytes, 0, prefix.bytes, 0, prefixLength);
       prefix.length = prefixLength;
 
-      //if (DEBUG2) System.out.println("    writeBlock field=" + fieldInfo.name + " prefix=" + brToString(prefix) + " fp=" + startFP + " isFloor=" + isFloor + " isLastInFloor=" + (end == pending.size()) + " floorLeadLabel=" + floorLeadLabel + " start=" + start + " end=" + end + " hasTerms=" + hasTerms + " hasSubBlocks=" + hasSubBlocks);
+      //if (DEBUG2) System.out.println("  writeBlock seg=" + segment + " prefixLength=" + prefixLength + " entCount=" + (end-start) + " field=" + fieldInfo.name + " prefix=" + brToString(prefix) + " fp=" + startFP + " isFloor=" + isFloor + " isLastInFloor=" + (end == pending.size()) + " floorLeadLabel=" + floorLeadLabel + " start=" + start + " end=" + end + " hasTerms=" + hasTerms + " hasSubBlocks=" + hasSubBlocks + " hasPrefixTerms=" + hasPrefixTerms + " pending.size()=" + pending.size());
 
       // Write block header:
       int numEntries = end - start;
@@ -805,12 +807,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         code |= 1;
       }
       termsOut.writeVInt(code);
-
-      /*
-      if (DEBUG) {
-        System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + brToString(prefix) + " entCount=" + (end-start+1) + " startFP=" + startFP + (isFloor ? (" floorLeadLabel=" + Integer.toHexString(floorLeadLabel)) : ""));
-      }
-      */
 
       // 1st pass: pack term suffix bytes into byte[] blob
       // TODO: cutover to bulk int codec... simple64?
@@ -908,6 +904,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
                 code |= 3;
               }
             }
+            //if (DEBUG) System.out.println("    write suffix @ pos=" + suffixWriter.getFilePointer());
             suffixWriter.writeVInt(code);
             suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
             if (floorLeadEnd != -1) {

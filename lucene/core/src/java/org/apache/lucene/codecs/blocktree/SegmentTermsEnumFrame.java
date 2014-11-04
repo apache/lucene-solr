@@ -101,6 +101,7 @@ final class SegmentTermsEnumFrame {
     this.state.totalTermFreq = -1;
     this.longs = new long[ste.fr.longsSize];
     this.versionAutoPrefix = ste.fr.parent.version >= BlockTreeTermsReader.VERSION_AUTO_PREFIX_TERMS;
+    //System.out.println("STE.init seg=" + ste.fr.parent.segment + " versionAutoPrefix=" + versionAutoPrefix);
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -122,9 +123,7 @@ final class SegmentTermsEnumFrame {
   }
 
   void loadNextFloorBlock() throws IOException {
-    //if (DEBUG) {
-    //System.out.println("    loadNextFloorBlock fp=" + fp + " fpEnd=" + fpEnd);
-    //}
+    //if (DEBUG) System.out.println("    loadNextFloorBlock fp=" + fp + " fpEnd=" + fpEnd);
     assert arc == null || isFloor: "arc=" + arc + " isFloor=" + isFloor;
     fp = fpEnd;
     nextEnt = -1;
@@ -141,6 +140,8 @@ final class SegmentTermsEnumFrame {
      not pay the price of decoding metadata they won't
      use. */
   void loadBlock() throws IOException {
+
+    //if (DEBUG) System.out.println("loadBlock fp=" + fp);
 
     // Clone the IndexInput lazily, so that consumers
     // that just pull a TermsEnum to
@@ -169,6 +170,7 @@ final class SegmentTermsEnumFrame {
     // term suffixes:
     code = ste.in.readVInt();
     isLeafBlock = (code & 1) != 0;
+    //if (DEBUG) System.out.println("  isLeafBlock=" + isLeafBlock);
     int numBytes = code >>> 1;
     if (suffixBytes.length < numBytes) {
       suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
@@ -176,13 +178,13 @@ final class SegmentTermsEnumFrame {
     ste.in.readBytes(suffixBytes, 0, numBytes);
     suffixesReader.reset(suffixBytes, 0, numBytes);
 
-    /*if (DEBUG) {
-      if (arc == null) {
-      System.out.println("    loadBlock (next) fp=" + fp + " entCount=" + entCount + " prefixLen=" + prefix + " isLastInFloor=" + isLastInFloor + " leaf?=" + isLeafBlock);
-      } else {
-      System.out.println("    loadBlock (seek) fp=" + fp + " entCount=" + entCount + " prefixLen=" + prefix + " hasTerms?=" + hasTerms + " isFloor?=" + isFloor + " isLastInFloor=" + isLastInFloor + " leaf?=" + isLeafBlock);
-      }
-      }*/
+    //if (DEBUG) {
+    //  if (arc == null) {
+    //    System.out.println("    loadBlock (next) fp=" + fp + " entCount=" + entCount + " prefixLen=" + prefix + " isLastInFloor=" + isLastInFloor + " leaf?=" + isLeafBlock);
+    //  } else {
+    //    System.out.println("    loadBlock (seek) fp=" + fp + " entCount=" + entCount + " prefixLen=" + prefix + " hasTerms?=" + hasTerms + " isFloor?=" + isFloor + " isLastInFloor=" + isLastInFloor + " leaf?=" + isLeafBlock);
+    //  }
+    //}
 
     // stats
     numBytes = ste.in.readVInt();
@@ -209,7 +211,6 @@ final class SegmentTermsEnumFrame {
     }
     ste.in.readBytes(bytes, 0, numBytes);
     bytesReader.reset(bytes, 0, numBytes);
-
 
     // Sub-blocks of a single floor block are always
     // written one after another -- tail recurse:
@@ -278,10 +279,11 @@ final class SegmentTermsEnumFrame {
   }
 
   public void nextLeaf() {
-    //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
+    //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp);
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     suffix = suffixesReader.readVInt();
+    //if (DEBUG) System.out.println("    suffix=" + suffix + " prefix=" + prefix);
     startBytePos = suffixesReader.getPosition();
     ste.term.setLength(prefix + suffix);
     ste.term.grow(ste.term.length());
@@ -294,18 +296,26 @@ final class SegmentTermsEnumFrame {
     while (true) {
       if (nextEnt == entCount) {
         assert arc == null || (isFloor && isLastInFloor == false): "isFloor=" + isFloor + " isLastInFloor=" + isLastInFloor;
+        //if (DEBUG) System.out.println("    stef: loadNextFloorBlock");
         loadNextFloorBlock();
-        continue;
+        if (isLeafBlock) {
+          nextLeaf();
+          return false;
+        } else {
+          continue;
+        }
       }
         
       assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
       nextEnt++;
+      //System.out.println("    stef: readSuffix @ fp=" + suffixesReader.getPosition());
       final int code = suffixesReader.readVInt();
       if (versionAutoPrefix == false) {
         suffix = code >>> 1;
       } else {
         suffix = code >>> 2;
       }
+      //System.out.println("  next suffix=" + suffix + " versionAutoPrefix=" + versionAutoPrefix);
       startBytePos = suffixesReader.getPosition();
       ste.term.setLength(prefix + suffix);
       ste.term.grow(ste.term.length());

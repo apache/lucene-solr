@@ -27,14 +27,12 @@ import java.util.Set;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
@@ -44,7 +42,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
 
 public class TestTermRangeQuery extends LuceneTestCase {
 
@@ -271,10 +268,10 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void insertDoc(IndexWriter writer, String content) throws IOException {
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
 
-    doc.add(newStringField("id", "id" + docCount, Field.Store.YES));
-    doc.add(newTextField("content", content, Field.Store.NO));
+    doc.addAtom("id", "id" + docCount);
+    doc.addLargeText("content", content);
 
     writer.addDocument(doc);
     docCount++;
@@ -421,8 +418,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     for (String term : randomTerms) {
-      Document doc = new Document();
-      doc.add(new StringField("field", term, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", term);
       w.addDocument(doc);
     }
 

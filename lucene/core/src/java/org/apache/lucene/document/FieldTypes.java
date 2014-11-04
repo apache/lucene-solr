@@ -99,7 +99,7 @@ import org.apache.lucene.util.Version;
 //   PerFieldAnalyzerWrapper
 //   oal.document
 
-// nocommit not null?
+// nocommit index field names the doc has?
 
 // nocommit fix simple qp to optionally take this?
 
@@ -120,9 +120,17 @@ import org.apache.lucene.util.Version;
 
 // nocommit getTermFilter?
 
+// nocommit facets?
+
+// nocommit live values?
+
+// nocommit expr fields?
+
 // nocommit default qp operator
 
 // nocommit copy field?
+
+// nocommit sort proxy field?
 
 // nocommit controlling compression of stored fields, norms
 
@@ -212,7 +220,7 @@ public class FieldTypes {
 
   // nocommit nested docs?
 
-  // nocommit required?
+  // nocommit required?  not null?
 
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
   static class FieldType implements IndexableFieldType {
@@ -374,6 +382,9 @@ public class FieldTypes {
         }
         break;
       case ATOM:
+        if (highlighted == Boolean.TRUE) {
+          illegalState(name, "type " + valueType + " cannot highlight");
+        }
         if (indexAnalyzer != null) {
           illegalState(name, "type " + valueType + " cannot have an indexAnalyzer");
         }
@@ -384,8 +395,7 @@ public class FieldTypes {
           illegalState(name, "type " + valueType + " cannot index norms");
         }
         if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
-          // nocommit too anal?
-          illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
+          illegalState(name, "type " + valueType + " can only be indexed as DOCS; got " + indexOptions);
         }
         if (maxTokenCount != null) {
           illegalState(name, "type " + valueType + " cannot set max token count");
@@ -601,11 +611,11 @@ public class FieldTypes {
         b.append(fastRanges);
         if (fastRanges == Boolean.TRUE) {
           if (blockTreeMinItemsInAutoPrefix != null) {
-            b.append("  auto-prefix blocks: ");
+            b.append(" (auto-prefix blocks: ");
             b.append(blockTreeMinItemsInAutoPrefix);
             b.append(" - ");
             b.append(blockTreeMaxItemsInAutoPrefix);
-            b.append("\n");
+            b.append(")");
           }
         }
       } else {
@@ -3140,4 +3150,11 @@ public class FieldTypes {
       }
     }
   }
+
+  /** Defines a dynamic field, computed by a Javascript expression referring
+   *  to other field values, to be used for sorting. */
+  public void addIntExpressionField(String fieldName, String expression) {
+    // nocommit how to do this?  must we make a FieldTypes subclass in expressions module = pita?
+  }
+  // nocommit also long, float, double
 }

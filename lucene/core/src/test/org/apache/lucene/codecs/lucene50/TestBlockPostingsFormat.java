@@ -21,8 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -45,10 +44,11 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
   public void testFinalBlock() throws Exception {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
+    w.getFieldTypes().disableSorting("field");
     for(int i=0;i<25;i++) {
-      Document doc = new Document();
-      doc.add(newStringField("field", Character.toString((char) (97+i)), Field.Store.NO));
-      doc.add(newStringField("field", "z" + Character.toString((char) (97+i)), Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", Character.toString((char) (97+i)));
+      doc.addAtom("field", "z" + Character.toString((char) (97+i)));
       w.addDocument(doc);
     }
     w.forceMerge(1);
