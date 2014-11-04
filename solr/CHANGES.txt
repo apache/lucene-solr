@@ -201,6 +201,10 @@ New Features
 * SOLR-6670: change BALANCESLICEUNIQUE to BALANCESHARDUNIQUE. Also, the parameter
   for ADDREPLICAPROP that used to be sliceUnique is now shardUnique. (Erick Erickson)
 
+* SOLR-6351: Stats can now be nested under pivot values by adding a 'stats' local param to 
+  facet.pivot which refers to a 'tag' local param in one or more stats.field params.
+  (hossman, Vitaliy Zhovtyuk)
+
 Bug Fixes
 ----------------------
 
