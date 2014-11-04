@@ -24,6 +24,8 @@ import org.apache.lucene.util.fst.Util;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+
 public class TestOperations extends LuceneTestCase {
   /** Test string union. */
   public void testStringUnion() {
@@ -51,7 +53,8 @@ public class TestOperations extends LuceneTestCase {
     for (BytesRef bref : strings) {
       eachIndividual[i++] = Automata.makeString(bref.utf8ToString());
     }
-    return Operations.determinize(Operations.union(Arrays.asList(eachIndividual)));
+    return Operations.determinize(Operations.union(Arrays.asList(eachIndividual)),
+      DEFAULT_MAX_DETERMINIZED_STATES);
   }
 
   /** Test concatenation with empty language returns empty */
@@ -71,12 +74,12 @@ public class TestOperations extends LuceneTestCase {
     Automaton concat1 = Operations.concatenate(expandedSingleton, nfa);
     Automaton concat2 = Operations.concatenate(singleton, nfa);
     assertFalse(concat2.isDeterministic());
-    assertTrue(Operations.sameLanguage(Operations.determinize(concat1),
-                                       Operations.determinize(concat2)));
-    assertTrue(Operations.sameLanguage(Operations.determinize(nfa),
-                                       Operations.determinize(concat1)));
-    assertTrue(Operations.sameLanguage(Operations.determinize(nfa),
-                                       Operations.determinize(concat2)));
+    assertTrue(Operations.sameLanguage(Operations.determinize(concat1, 100),
+                                       Operations.determinize(concat2, 100)));
+    assertTrue(Operations.sameLanguage(Operations.determinize(nfa, 100),
+                                       Operations.determinize(concat1, 100)));
+    assertTrue(Operations.sameLanguage(Operations.determinize(nfa, 100),
+                                       Operations.determinize(concat2, 100)));
   }
 
   public void testGetRandomAcceptedString() throws Throwable {
@@ -86,7 +89,7 @@ public class TestOperations extends LuceneTestCase {
 
       final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE);
       //System.out.println("TEST i=" + i + " re=" + re);
-      final Automaton a = Operations.determinize(re.toAutomaton());
+      final Automaton a = Operations.determinize(re.toAutomaton(), DEFAULT_MAX_DETERMINIZED_STATES);
       assertFalse(Operations.isEmpty(a));
 
       final AutomatonTestUtil.RandomAcceptedStrings rx = new AutomatonTestUtil.RandomAcceptedStrings(a);
@@ -137,7 +140,7 @@ public class TestOperations extends LuceneTestCase {
    */
   public void testFiniteStringsBasic() {
     Automaton a = Operations.union(Automata.makeString("dog"), Automata.makeString("duck"));
-    a = MinimizationOperations.minimize(a);
+    a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     Set<IntsRef> strings = getFiniteStrings(a, -1, true);
     assertEquals(2, strings.size());
     IntsRefBuilder dog = new IntsRefBuilder();
@@ -190,7 +193,7 @@ public class TestOperations extends LuceneTestCase {
     // TODO: what other random things can we do here...
     Automaton a = Operations.union(automata);
     if (random().nextBoolean()) {
-      a = MinimizationOperations.minimize(a);
+      a = MinimizationOperations.minimize(a, 1000000);
       if (VERBOSE) {
         System.out.println("TEST: a.minimize numStates=" + a.getNumStates());
       }
@@ -198,7 +201,7 @@ public class TestOperations extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: a.determinize");
       }
-      a = Operations.determinize(a);
+      a = Operations.determinize(a, 1000000);
     } else if (random().nextBoolean()) {
       if (VERBOSE) {
         System.out.println("TEST: a.removeDeadStates");

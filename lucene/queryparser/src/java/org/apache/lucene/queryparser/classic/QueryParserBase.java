@@ -35,6 +35,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.automaton.RegExp;
+
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file. 
@@ -83,6 +86,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   boolean analyzeRangeTerms = false;
 
   boolean autoGeneratePhraseQueries;
+  int maxDeterminizedStates = DEFAULT_MAX_DETERMINIZED_STATES;
 
   // So the generated QueryParser(CharStream) won't error out
   protected QueryParserBase() {
@@ -408,6 +412,24 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return analyzeRangeTerms;
   }
 
+  /**
+   * @param maxDeterminizedStates the maximum number of states that
+   *   determinizing a regexp query can result in.  If the query results in any
+   *   more states a TooComplexToDeterminizeException is thrown.
+   */
+  public void setMaxDeterminizedStates(int maxDeterminizedStates) {
+    this.maxDeterminizedStates = maxDeterminizedStates;
+  }
+
+  /**
+   * @return the maximum number of states that determinizing a regexp query
+   *   can result in.  If the query results in any more states a
+   *   TooComplexToDeterminizeException is thrown.
+   */
+  public int getMaxDeterminizedStates() {
+    return maxDeterminizedStates;
+  }
+
   protected void addClause(List<BooleanClause> clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
@@ -563,7 +585,8 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    * @return new RegexpQuery instance
    */
   protected Query newRegexpQuery(Term regexp) {
-    RegexpQuery query = new RegexpQuery(regexp);
+    RegexpQuery query = new RegexpQuery(regexp, RegExp.ALL,
+      maxDeterminizedStates);
     query.setRewriteMethod(multiTermRewriteMethod);
     return query;
   }

@@ -36,12 +36,13 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
@@ -169,7 +170,8 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       new CharacterRunAutomaton(
           Operations.complement(
               Operations.union(
-                  Arrays.asList(Automata.makeString("foo"), Automata.makeString("bar")))));
+                  Arrays.asList(Automata.makeString("foo"), Automata.makeString("bar"))),
+              DEFAULT_MAX_DETERMINIZED_STATES));
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, keepWords);
     assertAnalyzesTo(a, "quick foo brown bar bar fox foo",
         new String[] { "foo", "bar", "bar", "foo" },

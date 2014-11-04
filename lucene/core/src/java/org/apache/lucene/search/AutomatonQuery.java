@@ -26,6 +26,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.Operations;
 
 /**
  * A {@link Query} that will match terms against a finite-state machine.
@@ -61,10 +62,26 @@ public class AutomatonQuery extends MultiTermQuery {
    *        match.
    */
   public AutomatonQuery(final Term term, Automaton automaton) {
+    this(term, automaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+  }
+
+  /**
+   * Create a new AutomatonQuery from an {@link Automaton}.
+   * 
+   * @param term Term containing field and possibly some pattern structure. The
+   *        term text is ignored.
+   * @param automaton Automaton to run, terms that are accepted are considered a
+   *        match.
+   * @param maxDeterminizedStates maximum number of states in the resulting
+   *   automata.  If the automata would need more than this many states
+   *   TooComplextToDeterminizeException is thrown.  Higher number require more
+   *   space but can process more complex automata.
+   */
+  public AutomatonQuery(final Term term, Automaton automaton, int maxDeterminizedStates) {
     super(term.field());
     this.term = term;
     this.automaton = automaton;
-    this.compiled = new CompiledAutomaton(automaton);
+    this.compiled = new CompiledAutomaton(automaton, null, true, maxDeterminizedStates);
   }
 
   @Override

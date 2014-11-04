@@ -16,7 +16,6 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Field;
@@ -28,8 +27,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -163,7 +162,8 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
       return false;
     }
     Automaton automaton = ((AutomatonQuery) q).getAutomaton();
-    String prefix = Operations.getCommonPrefix(Operations.determinize(automaton));
+    String prefix = Operations.getCommonPrefix(Operations.determinize(automaton,
+      Operations.DEFAULT_MAX_DETERMINIZED_STATES));
     return prefix.length() > 0 && prefix.charAt(0) == '\u0001';
   }
 

@@ -5,6 +5,13 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.10.3 ======================
 
+Bug fixes
+
+* LUCENE-6046: Add maxDeterminizedStates safety to determinize (which has
+  an exponential worst case) so that if it would create too many states, it
+  now throws an exception instead of exhausting CPU/RAM.  (Nik
+  Everett via Mike McCandless)
+
 ======================= Lucene 4.10.2 ======================
 
 Bug fixes

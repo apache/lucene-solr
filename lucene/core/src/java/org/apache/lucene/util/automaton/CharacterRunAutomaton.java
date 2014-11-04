@@ -21,10 +21,22 @@ package org.apache.lucene.util.automaton;
  * Automaton representation for matching char[].
  */
 public class CharacterRunAutomaton extends RunAutomaton {
-
-  /** Sole constructor. */
+  /**
+   * Construct with a default number of maxDeterminizedStates.
+   */
   public CharacterRunAutomaton(Automaton a) {
-    super(a, Character.MAX_CODE_POINT, false);
+    this(a, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+  }
+
+  /**
+   * Construct specifying maxDeterminizedStates.
+   * @param a Automaton to match
+   * @param maxDeterminizedStates maximum number of states that the automataon
+   *   can have once determinized.  If more states are required to determinize
+   *   it then a TooComplexToDeterminizeException is thrown.
+   */ 
+  public CharacterRunAutomaton(Automaton a, int maxDeterminizedStates) {
+    super(a, Character.MAX_CODE_POINT, false, maxDeterminizedStates);
   }
 
   /**

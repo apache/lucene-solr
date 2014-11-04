@@ -60,6 +60,8 @@ import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.fst.Util.TopResults;
 import org.apache.lucene.util.fst.Util;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+
 /**
  * Suggester that first analyzes the surface form, adds the
  * analyzed form to a weighted FST, and then does the same
@@ -899,7 +901,7 @@ public class AnalyzingSuggester extends Lookup {
 
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
-    automaton = Operations.determinize(automaton);
+    automaton = Operations.determinize(automaton, DEFAULT_MAX_DETERMINIZED_STATES);
     return automaton;
   }
 

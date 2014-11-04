@@ -23,8 +23,8 @@ import java.util.List;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.Operations;
 
 /** Implements the wildcard search query. Supported wildcards are <code>*</code>, which
  * matches any character sequence (including the empty one), and <code>?</code>,
@@ -57,6 +57,17 @@ public class WildcardQuery extends AutomatonQuery {
     super(term, toAutomaton(term));
   }
   
+  /**
+   * Constructs a query for terms matching <code>term</code>.
+   * @param maxDeterminizedStates maximum number of states in the resulting
+   *   automata.  If the automata would need more than this many states
+   *   TooComplextToDeterminizeException is thrown.  Higher number require more
+   *   space but can process more complex automata.
+   */
+  public WildcardQuery(Term term, int maxDeterminizedStates) {
+    super(term, toAutomaton(term), maxDeterminizedStates);
+  }
+
   /**
    * Convert Lucene wildcard syntax into an automaton.
    * @lucene.internal

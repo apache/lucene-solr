@@ -644,6 +644,20 @@ public class Automaton {
       transitions[nextTransition++] = max;
     }
 
+    /** Add a [virtual] epsilon transition between source and dest.
+     *  Dest state must already have all transitions added because this
+     *  method simply copies those same transitions over to source. */
+    public void addEpsilon(int source, int dest) {
+      for (int upto = 0; upto < nextTransition; upto += 4) {
+         if (transitions[upto] == dest) {
+            addTransition(source, transitions[upto + 1], transitions[upto + 2], transitions[upto + 3]);
+         }
+      }
+      if (isAccept(dest)) {
+        setAccept(source, true);
+      }
+    }
+
     /** Sorts transitions first then min label ascending, then
      *  max label ascending, then dest ascending */
     private final Sorter sorter = new InPlaceMergeSorter() {
