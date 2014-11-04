@@ -29,12 +29,12 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -182,7 +182,6 @@ public class TestTermsEnum extends LuceneTestCase {
 
   // Tests Terms.intersect
   public void testIntersectRandom() throws IOException {
-
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
@@ -261,7 +260,7 @@ public class TestTermsEnum extends LuceneTestCase {
         a = Automata.makeStringUnion(sortedAcceptTerms);
       }
       
-      final CompiledAutomaton c = new CompiledAutomaton(a, true, false);
+      final CompiledAutomaton c = new CompiledAutomaton(a, true, false, 1000000);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];
       final Set<BytesRef> acceptTermsSet = new HashSet<>();

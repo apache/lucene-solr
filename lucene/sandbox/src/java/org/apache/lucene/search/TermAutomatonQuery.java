@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -39,6 +39,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
+
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 // TODO
 //    - compare perf to PhraseQuery exact and sloppy
@@ -108,6 +110,16 @@ public class TermAutomatonQuery extends Query {
 
   /** Call this once you are done adding states/transitions. */
   public void finish() {
+    finish(DEFAULT_MAX_DETERMINIZED_STATES);
+  }
+
+  /**
+   * Call this once you are done adding states/transitions.
+   * @param maxDeterminizedStates Maximum number of states created when
+   *   determinizing the automaton.  Higher numbers allow this operation to
+   *   consume more memory but allow more complex automatons.
+   */
+  public void finish(int maxDeterminizedStates) {
     Automaton automaton = builder.finish();
 
     // System.out.println("before det:\n" + automaton.toDot());
@@ -171,7 +183,8 @@ public class TermAutomatonQuery extends Query {
       automaton = newAutomaton;
     }
 
-    det = Operations.removeDeadStates(Operations.determinize(automaton));
+    det = Operations.removeDeadStates(Operations.determinize(automaton,
+      maxDeterminizedStates));
   }
 
   @Override

@@ -50,12 +50,12 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
   public void assertLexicon() throws Exception {
     Collections.shuffle(automata, random());
     Automaton lex = Operations.union(automata);
-    lex = Operations.determinize(lex);
+    lex = Operations.determinize(lex, 1000000);
     assertTrue(Operations.isFinite(lex));
     for (String s : terms) {
       assertTrue(Operations.run(lex, s));
     }
-    final ByteRunAutomaton lexByte = new ByteRunAutomaton(lex);
+    final ByteRunAutomaton lexByte = new ByteRunAutomaton(lex, false, 1000000);
     for (String s : terms) {
       byte bytes[] = s.getBytes(StandardCharsets.UTF_8);
       assertTrue(lexByte.run(bytes, 0, bytes.length));
