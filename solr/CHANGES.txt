@@ -284,6 +284,8 @@ Bug Fixes
 * SOLR-6631: DistributedQueue spinning on calling zookeeper getChildren()
   (Jessica Cheng Mallet, Mark Miller, Timothy Potter)
 
+* SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
+  causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
 
 Optimizations
 ----------------------

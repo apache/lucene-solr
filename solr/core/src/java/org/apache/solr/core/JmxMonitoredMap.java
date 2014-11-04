@@ -112,8 +112,16 @@ public class JmxMonitoredMap<K, V> extends
   @Override
   public void clear() {
     if (server != null) {
-      for (Map.Entry<String, SolrInfoMBean> entry : entrySet()) {
-        unregister(entry.getKey(), entry.getValue());
+      QueryExp exp = Query.eq(Query.attr("coreHashCode"), Query.value(coreHashCode));
+      Set<ObjectName> objectNames = server.queryNames(null, exp);
+      if (objectNames != null)  {
+        for (ObjectName name : objectNames) {
+          try {
+            server.unregisterMBean(name);
+          } catch (Exception e) {
+            LOG.error("Exception un-registering mbean {}", name, e);
+          }
+        }
       }
     }
 
