@@ -22,7 +22,7 @@ import org.apache.lucene.index.Term;
 /**
  * TestExplanations subclass focusing on basic query types
  */
-public class TestSimpleExplanations extends TestExplanations {
+public class TestSimpleExplanations extends BaseExplanationTestCase {
 
   // we focus on queries that don't rewrite to other queries.
   // if we get those covered well, then the ones that rewrite should

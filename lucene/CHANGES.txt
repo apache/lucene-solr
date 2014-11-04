@@ -204,6 +204,9 @@ Bug Fixes
 * LUCENE-6041: Remove sugar methods FieldInfo.isIndexed and
   FieldInfo.hasDocValues.  (Robert Muir, Mike McCandless)
 
+* LUCENE-6042: CustomScoreQuery explain was incorrect in some cases,
+  such as when nested inside a boolean query. (Denis Lantsman via Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

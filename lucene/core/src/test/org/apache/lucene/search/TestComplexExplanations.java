@@ -27,7 +27,7 @@ import org.apache.lucene.search.spans.*;
  * on the assumption that if the explanations work out right for them,
  * they should work for anything.
  */
-public class TestComplexExplanations extends TestExplanations {
+public class TestComplexExplanations extends BaseExplanationTestCase {
 
   /**
    * Override the Similarity used in our searcher with one that plays

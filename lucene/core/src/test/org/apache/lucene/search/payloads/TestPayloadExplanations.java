@@ -20,14 +20,14 @@ package org.apache.lucene.search.payloads;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.TestExplanations;
+import org.apache.lucene.search.BaseExplanationTestCase;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * TestExplanations subclass focusing on payload queries
  */
-public class TestPayloadExplanations extends TestExplanations {
+public class TestPayloadExplanations extends BaseExplanationTestCase {
   private PayloadFunction functions[] = new PayloadFunction[] { 
       new AveragePayloadFunction(),
       new MinPayloadFunction(),
