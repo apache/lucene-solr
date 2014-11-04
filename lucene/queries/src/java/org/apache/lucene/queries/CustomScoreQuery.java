@@ -263,11 +263,11 @@ public class CustomScoreQuery extends Query {
         valSrcExpls[i] = valSrcWeights[i].explain(info, doc);
       }
       Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(info).customExplain(doc,subQueryExpl,valSrcExpls);
-      float sc = getBoost() * customExp.getValue();
+      float sc = queryWeight * customExp.getValue();
       Explanation res = new ComplexExplanation(
         true, sc, CustomScoreQuery.this.toString() + ", product of:");
       res.addDetail(customExp);
-      res.addDetail(new Explanation(getBoost(), "queryBoost")); // actually using the q boost as q weight (== weight value)
+      res.addDetail(new Explanation(queryWeight, "queryWeight"));
       return res;
     }
 

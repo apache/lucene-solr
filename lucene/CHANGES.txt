@@ -198,6 +198,9 @@ Bug Fixes
   are supported with a match version before 4.4, and no longer valid at all with 5.0.
   (Ryan Ernst) 
 
+* LUCENE-6042: CustomScoreQuery explain was incorrect in some cases,
+  such as when nested inside a boolean query. (Denis Lantsman via Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

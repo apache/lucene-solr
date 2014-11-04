@@ -48,7 +48,7 @@ import org.junit.BeforeClass;
  *
  * @see "Subclasses for actual tests"
  */
-public class TestExplanations extends LuceneTestCase {
+public abstract class BaseExplanationTestCase extends LuceneTestCase {
   protected static IndexSearcher searcher;
   protected static IndexReader reader;
   protected static Directory directory;
@@ -210,13 +210,5 @@ public class TestExplanations extends LuceneTestCase {
     bq.add(q, BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term(FIELD,"w1")), BooleanClause.Occur.SHOULD);
     return bq;
-  }
-  
-  /**
-   * Placeholder: JUnit freaks if you don't have one test ... making
-   * class abstract doesn't help
-   */
-  public void testNoop() {
-    /* NOOP */
   }
 }

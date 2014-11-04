@@ -23,7 +23,7 @@ import org.apache.lucene.search.*;
 /**
  * TestExplanations subclass focusing on span queries
  */
-public class TestSpanExplanations extends TestExplanations {
+public class TestSpanExplanations extends BaseExplanationTestCase {
 
   /* simple SpanTermQueries */
   
