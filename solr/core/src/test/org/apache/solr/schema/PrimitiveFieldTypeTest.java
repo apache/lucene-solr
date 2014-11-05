@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -152,5 +153,23 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     bin = new BinaryField();
     bin.init(schema, initMap);
     assertFalse(bin.hasProperty(FieldType.OMIT_NORMS));
+  }
+  
+  public void testTrieDateField() {
+    schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
+    TrieDateField tdt = new TrieDateField();
+    Map<String, String> args = new HashMap<>();
+    args.put("sortMissingLast", "true");
+    args.put("indexed", "true");
+    args.put("stored", "false");
+    args.put("docValues", "true");
+    args.put("precisionStep", "16");
+    tdt.setArgs(schema, args);
+    assertTrue(tdt.hasProperty(FieldType.OMIT_NORMS));
+    assertTrue(tdt.hasProperty(FieldType.SORT_MISSING_LAST));
+    assertTrue(tdt.hasProperty(FieldType.INDEXED));
+    assertFalse(tdt.hasProperty(FieldType.STORED));
+    assertTrue(tdt.hasProperty(FieldType.DOC_VALUES));
+    assertEquals(16, tdt.getPrecisionStep());
   }
 }
