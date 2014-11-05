@@ -269,6 +269,9 @@ Bug Fixes
 
 * SOLR-6685: ConcurrentModificationException in Overseer Status API. (shalin)
 
+* SOLR-6706: /update/json/docs throws RuntimeException if a nested structure
+  contains a non-leaf float field (Noble Paul, shalin)
+
 Optimizations
 ----------------------
 
