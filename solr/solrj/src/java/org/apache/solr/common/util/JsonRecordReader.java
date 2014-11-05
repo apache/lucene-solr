@@ -394,6 +394,7 @@ public class JsonRecordReader {
             event = parser.nextEvent();
             if (event == STRING ||
                 event == LONG ||
+                event == NUMBER ||
                 event == BIGNUMBER ||
                 event == BOOLEAN ||
                 event == NULL) {
