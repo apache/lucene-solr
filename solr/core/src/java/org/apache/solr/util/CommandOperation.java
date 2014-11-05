@@ -56,13 +56,13 @@ public  class CommandOperation {
     if (commandData instanceof Map) {
       return (Map) commandData;
     }
-    addError(MessageFormat.format("The command {0} should have the values as a json object {key:val} format", name));
+    addError(MessageFormat.format("The command ''{0}'' should have the values as a json object {key:val} format", name));
     return Collections.EMPTY_MAP;
   }
 
   private Object getRootPrimitive(){
     if (commandData instanceof Map) {
-      errors.add(MessageFormat.format("The value has to be a string for command : {1}",name));
+      errors.add(MessageFormat.format("The value has to be a string for command : ''{0}'' ",name));
       return null;
     }
     return commandData;
@@ -99,7 +99,12 @@ public  class CommandOperation {
    * single value collection is returned
    */
   public List<String> getStrs(String key, List<String> def){
-    Object v = getMapVal(key);
+    Object v = null;
+    if(ROOT_OBJ.equals(key)) {
+      v = getRootPrimitive();
+    } else {
+      v = getMapVal(key);
+    }
     if(v == null){
       return def;
     } else {

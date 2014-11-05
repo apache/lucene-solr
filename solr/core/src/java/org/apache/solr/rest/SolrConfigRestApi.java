@@ -58,7 +58,7 @@ public class SolrConfigRestApi extends Application {
    */
   @Override
   public synchronized Restlet createInboundRoot() {
-
+/*
     log.info("createInboundRoot started for /config");
     
     router.attachDefault(RestManager.ManagedEndpoint.class);
@@ -70,6 +70,7 @@ public class SolrConfigRestApi extends Application {
 
     log.info("createInboundRoot complete for /config");
 
-    return router;
+    return router;*/
+    return null;
   }  
 }

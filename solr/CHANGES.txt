@@ -205,6 +205,8 @@ New Features
   facet.pivot which refers to a 'tag' local param in one or more stats.field params.
   (hossman, Vitaliy Zhovtyuk)
 
+SOLR-6533: Support editing common solrconfig.xml values (Noble Paul)
+
 Bug Fixes
 ----------------------
 

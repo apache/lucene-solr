@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 /**
  * ResourceLoader that works with ZooKeeper.
@@ -46,6 +47,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     super(instanceDir);
     this.zkController = zooKeeperController;
     collectionZkPath = ZkController.CONFIGS_ZKNODE + "/" + collection;
+    zkController.watchZKConfDir(collectionZkPath);
   }
 
   /**
@@ -61,6 +63,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     super(instanceDir, parent, coreProperties);
     this.zkController = zooKeeperController;
     collectionZkPath = ZkController.CONFIGS_ZKNODE + "/" + collection;
+    zkController.watchZKConfDir(collectionZkPath);
   }
 
   /**
@@ -78,8 +81,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     String file = collectionZkPath + "/" + resource;
     try {
       if (zkController.pathExists(file)) {
-        byte[] bytes = zkController.getZkClient().getData(file, null, null, true);
-        return new ByteArrayInputStream(bytes);
+        Stat stat = new Stat();
+        byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
+        return new ZkByteArrayInputStream(bytes, stat);
       }
     } catch (Exception e) {
       throw new IOException("Error opening " + file, e);
@@ -96,6 +100,24 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
           + System.getProperty("user.dir"));
     }
     return is;
+  }
+
+  public static class ZkByteArrayInputStream extends ByteArrayInputStream{
+
+    private final Stat stat;
+    public ZkByteArrayInputStream(byte[] buf, Stat stat) {
+      super(buf);
+      this.stat = stat;
+
+    }
+
+    public ZkByteArrayInputStream(byte[] buf, int offset, int length, Stat stat) {
+      super(buf, offset, length);
+      this.stat = stat;
+    }
+    public Stat getStat(){
+      return stat;
+    }
   }
 
   @Override

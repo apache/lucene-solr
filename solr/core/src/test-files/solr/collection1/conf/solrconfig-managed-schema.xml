@@ -48,4 +48,11 @@
   <requestHandler name="/update" class="solr.UpdateRequestHandler"/>
   <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
 
+  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a">
+    <lst name="defaults">
+      <str name="a">${my.custom.variable.a:A}</str>
+      <str name="b">${my.custom.variable.b:B}</str>
+    </lst>
+  </requestHandler>
+
 </config>

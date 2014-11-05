@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -683,6 +684,7 @@ public class CoreContainer {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
     }
+    String collectionZkPath =  core.getResourceLoader() instanceof ZkSolrResourceLoader ?  ((ZkSolrResourceLoader)core.getResourceLoader()).getCollectionZkPath() : null;
 
     core.unloadOnClose(deleteIndexDir, deleteDataDir, deleteInstanceDir);
     if (close)
@@ -690,7 +692,7 @@ public class CoreContainer {
 
     if (zkSys.getZkController() != null) {
       try {
-        zkSys.getZkController().unregister(name, cd);
+        zkSys.getZkController().unregister(name, cd, collectionZkPath);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
