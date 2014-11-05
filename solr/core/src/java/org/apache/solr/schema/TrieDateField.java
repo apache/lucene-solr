@@ -32,7 +32,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
+import org.apache.solr.update.processor.TimestampUpdateProcessorFactory;
+//jdoc
 
 /**
  * <p>
@@ -42,11 +43,11 @@ import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
  * {@link DateField} for more details of the supported usage.
  * </p>
  * <p>
- * <b>NOTE:</b> Allthough it is possible to configure a <code>TrieDateField</code> 
+ * <b>NOTE:</b> Although it is possible to configure a <code>TrieDateField</code> 
  * instance with a default value of "<code>NOW</code>" to compute a timestamp 
  * of when the document was indexed, this is not advisable when using SolrCloud 
  * since each replica of the document may compute a slightly different value. 
- * {@link TimestampUpdateProcessorFactory} is recomended instead.
+ * {@link TimestampUpdateProcessorFactory} is recommended instead.
  * </p>
  *
  * @see DateField
@@ -60,6 +61,7 @@ public class TrieDateField extends DateField implements DateValueFieldType {
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
     wrappedField.init(schema, args);
   }
 
@@ -113,16 +115,6 @@ public class TrieDateField extends DateField implements DateValueFieldType {
   @Override
   public boolean isTokenized() {
     return wrappedField.isTokenized();
-  }
-  
-  @Override
-  protected boolean hasProperty(int p) {
-    return wrappedField.hasProperty(p);
-  }
-  
-  @Override
-  public boolean isMultiValued() {
-    return wrappedField.isMultiValued();
   }
 
   @Override
@@ -192,5 +184,5 @@ public class TrieDateField extends DateField implements DateValueFieldType {
   public void checkSchemaField(SchemaField field) {
     wrappedField.checkSchemaField(field);
   }
-
+  
 }

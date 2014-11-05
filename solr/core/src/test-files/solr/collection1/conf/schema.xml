@@ -122,7 +122,7 @@
     <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
     <fieldtype name="tdate" class="solr.TrieDateField" precisionStep="6"/>
     <fieldtype name="pdate" class="solr.DateField" sortMissingLast="true"/>
-
+    <fieldtype name="tdatedv" class="solr.TrieDateField" precisionStep="6" docValues="true" multiValued="true"/>
 
     <!-- solr.TextField allows the specification of custom
          text analyzers specified as a tokenizer and a list
@@ -630,6 +630,7 @@
    <dynamicField name="*_tds" type="tdouble" indexed="true" stored="true" multiValued="false"/>
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
    <dynamicField name="*_tdt1" type="tdate"  indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="*_tdtdv" type="tdatedv"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_sl"  type="slong"  indexed="true"  stored="true"/>
