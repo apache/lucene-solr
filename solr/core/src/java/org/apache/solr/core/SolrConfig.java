@@ -60,6 +60,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -341,7 +342,7 @@ public class SolrConfig extends Config implements MapSerializable{
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
       }
-      Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in)));
+      Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
       return new ConfigOverlay(m,version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading config overlay",e);
