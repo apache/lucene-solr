@@ -597,7 +597,7 @@ public class TestAutomaton extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  randomNoOp: determinize");
       }
-      return Operations.determinize(a, DEFAULT_MAX_DETERMINIZED_STATES);
+      return Operations.determinize(a, Integer.MAX_VALUE);
     case 1:
       if (a.getNumStates() < 100) {
         if (VERBOSE) {
@@ -744,7 +744,7 @@ public class TestAutomaton extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  op=determinize");
         }
-        a = Operations.determinize(a, DEFAULT_MAX_DETERMINIZED_STATES);
+        a = Operations.determinize(a, Integer.MAX_VALUE);
         assertTrue(a.isDeterministic());
         break;
 
@@ -1078,9 +1078,9 @@ public class TestAutomaton extends LuceneTestCase {
 
       // Use sameLanguage:
       Automaton a2 = Operations.removeDeadStates(Operations.determinize(unionTerms(terms),
-        DEFAULT_MAX_DETERMINIZED_STATES));
+        Integer.MAX_VALUE));
       assertTrue(Operations.sameLanguage(a2, Operations.removeDeadStates(Operations.determinize(a,
-        DEFAULT_MAX_DETERMINIZED_STATES))));
+        Integer.MAX_VALUE))));
 
       // Do same check, in UTF8 space
       Automaton utf8 = randomNoOp(new UTF32ToUTF8().convert(a));
