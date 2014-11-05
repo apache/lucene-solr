@@ -591,7 +591,7 @@ public final class MoreLikeThis {
    * @param filteredDocument Document with field values extracted for selected fields.
    * @return More Like This query for the passed document.
    */
-  public Query like(Map<String, ArrayList<String>> filteredDocument) throws IOException {
+  public Query like(Map<String, Collection<Object>> filteredDocument) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
       Collection<String> fields = MultiFields.getIndexedFields(ir);
@@ -754,16 +754,16 @@ public final class MoreLikeThis {
   }
 
 
-  private PriorityQueue<ScoreTerm> retrieveTerms(Map<String, ArrayList<String>> fields) throws 
+  private PriorityQueue<ScoreTerm> retrieveTerms(Map<String, Collection<Object>> fields) throws 
       IOException {
     HashMap<String,Int> termFreqMap = new HashMap();
     for (String fieldName : fieldNames) {
 
       for (String field : fields.keySet()) {
-        ArrayList<String> fieldValues = fields.get(field);
-        for(String fieldValue:fieldValues) {
+        Collection<Object> fieldValues = fields.get(field);
+        for(Object fieldValue:fieldValues) {
           if (fieldValue != null) {
-            addTermFrequencies(new StringReader(fieldValue), termFreqMap,
+            addTermFrequencies(new StringReader(String.valueOf(fieldValue)), termFreqMap,
                 fieldName);
           }
         }

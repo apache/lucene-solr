@@ -27,11 +27,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +46,8 @@ public class CloudMLTQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
+  private static Logger log = LoggerFactory
+      .getLogger(CloudMLTQParser.class);
   public Query parse() {
     String id = localParams.get(QueryParsing.V);
     // Do a Real Time Get for the document
@@ -61,17 +67,27 @@ public class CloudMLTQParser extends QParser {
     mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
     String[] qf = localParams.getParams("qf");
-    Map<String, ArrayList<String>> filteredDocument = new HashMap();
+    Map<String, Collection<Object>> filteredDocument = new HashMap();
 
     if (qf != null) {
       mlt.setFieldNames(qf);
       for (String field : qf) {
-        filteredDocument.put(field, (ArrayList<String>) doc.get(field));
+        filteredDocument.put(field, doc.getFieldValues(field));
       }
     } else {
+      Map<String, SchemaField> fields = req.getSchema().getFields();
+      ArrayList<String> fieldNames = new ArrayList();
       for (String field : doc.getFieldNames()) {
-        filteredDocument.put(field, (ArrayList<String>) doc.get(field));
+        // Only use fields that are stored and have an explicit analyzer.
+        // This makes sense as the query uses tf/idf/.. for query construction.
+        // We might want to relook and change this in the future though.
+        if(fields.get(field).stored() 
+            && fields.get(field).getType().isExplicitAnalyzer()) {
+          fieldNames.add(field);
+          filteredDocument.put(field, doc.getFieldValues(field));
+        }
       }
+      mlt.setFieldNames(fieldNames.toArray(new String[fieldNames.size()]));
     }
 
     try {
