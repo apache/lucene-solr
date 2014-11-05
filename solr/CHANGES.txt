@@ -267,6 +267,8 @@ Bug Fixes
 * SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
   causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
 
+* SOLR-6685: ConcurrentModificationException in Overseer Status API. (shalin)
+
 Optimizations
 ----------------------
 
