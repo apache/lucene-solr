@@ -180,7 +180,7 @@ public class TestJsonRecordReader  extends SolrTestCaseJ4 {
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
     for (Map<String, Object> record : records) {
-      assertEquals(6,record.size());
+      assertEquals(6, record.size());
       assertTrue(record.containsKey("subject"));
       assertTrue(record.containsKey("test"));
       assertTrue(record.containsKey("marks"));
@@ -203,4 +203,24 @@ public class TestJsonRecordReader  extends SolrTestCaseJ4 {
 
   }
 
+  public void testNestedJsonWithFloats() throws Exception {
+
+    String json = "{\n" +
+        "        \"a_string\" : \"abc\",\n" +
+        "        \"a_num\" : 2.0,\n" +
+        "        \"a\" : {\n" +
+        "                        \"b\" : [\n" +
+        "                                {\"id\":\"1\", \"title\" : \"test1\"},\n" +
+        "                                {\"id\":\"2\", \"title\" : \"test2\"}\n" +
+        "                        ]\n" +
+        "                }\n" +
+        "}\n";
+
+    JsonRecordReader streamer;
+    List<Map<String, Object>> records;
+
+    streamer = JsonRecordReader.getInst("/a/b", Collections.singletonList("title_s:/a/b/title"));
+    records = streamer.getAllRecords(new StringReader(json));
+    assertEquals(2, records.size());
+  }
 }
