@@ -129,6 +129,20 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
           compareParsedQueryStrings(expectedQueryString,
           actualParsedQueries.get(counter)));
     }
+
+    // Assert that {!mlt}id does not throw an exception i.e. implicitly, only fields that are stored + have explicit
+    // analyzer are used for MLT Query construction.
+    params = new ModifiableSolrParams();
+    params.set(CommonParams.Q, "{!mlt}20");
+
+    queryResponse = queryServer(params);
+    solrDocuments = queryResponse.getResults();
+    expectedIds = new int[]{18, 23, 13, 14, 20, 22, 19, 21, 15, 16};
+    i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+    assertArrayEquals(expectedIds, actualIds);
   }
   
   private boolean compareParsedQueryStrings(String expected, String actual) {
