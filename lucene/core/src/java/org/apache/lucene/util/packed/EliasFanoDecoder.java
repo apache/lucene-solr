@@ -17,7 +17,7 @@
 
 package org.apache.lucene.util.packed;
 
-import org.apache.lucene.util.BroadWord; // bit selection in long
+import org.apache.lucene.util.BitUtil; // bit selection in long
 
 
 /** A decoder for an {@link EliasFanoEncoder}.
@@ -312,9 +312,10 @@ public class EliasFanoDecoder {
     if (rank >= 1) {
       long invCurHighLong = ~curHighLong;
       int clearBitForValue = (rank <= 8)
-                              ? BroadWord.selectNaive(invCurHighLong, rank)
-                              : BroadWord.select(invCurHighLong, rank);
-      assert clearBitForValue <= (Long.SIZE-1);
+                              ? BitUtil.selectNaive(invCurHighLong, rank)
+                              : BitUtil.select(invCurHighLong, rank);
+      assert clearBitForValue >= 0;
+      assert clearBitForValue <= Long.SIZE-1;
       setBitForIndex += clearBitForValue + 1; // the high bit just before setBitForIndex is zero
       int oneBitsBeforeClearBit = clearBitForValue - rank + 1;
       efIndex += oneBitsBeforeClearBit; // the high bit at setBitForIndex and belongs to the unary code for efIndex

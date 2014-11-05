@@ -264,6 +264,9 @@ Optimizations
 * LUCENE-6030: Add norms patched compression for a small number of common values
   (Ryan Ernst)
 
+* LUCENE-6040: Speed up EliasFanoDocIdSet through broadword bit selection.
+  (Paul Elschot)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
