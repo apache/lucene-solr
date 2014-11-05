@@ -372,6 +372,8 @@ Bug Fixes
 
 * SOLR-6696: bin/solr start script should not enable autoSoftCommit by default (janhoy)
 
+* SOLR-6704: TrieDateField type drops schema properties in branch 4.10 (Tomás Fernández Löbbe)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
