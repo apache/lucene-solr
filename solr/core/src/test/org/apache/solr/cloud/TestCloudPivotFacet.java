@@ -16,17 +16,22 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.TrieDateField;
 
+import org.apache.solr.common.params.FacetParams; // jdoc lint
 import static org.apache.solr.common.params.FacetParams.*;
 
 import org.apache.commons.lang.StringUtils;
@@ -92,6 +97,9 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   @Override
   public void doTest() throws Exception {
+
+    sanityCheckAssertDoubles();
+
     waitForThingsToLevelOut(30000); // TODO: why whould we have to wait?
     // 
     handle.clear();
@@ -107,7 +115,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     for (int i = 1; i <= numDocs; i++) {
       SolrInputDocument doc = buildRandomDocument(i);
 
-      // not efficient, but it garuntees that even if people change buildRandomDocument
+      // not efficient, but it guarantees that even if people change buildRandomDocument
       // we'll always have the full list of fields w/o needing to keep code in sync
       fieldNameSet.addAll(doc.getFieldNames());
 
@@ -119,7 +127,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     assertTrue("WTF, bogus field exists?", fieldNameSet.add("bogus_not_in_any_doc_s"));
 
     final String[] fieldNames = fieldNameSet.toArray(new String[fieldNameSet.size()]);
-    Arrays.sort(fieldNames); // need determinism for buildRandomPivot calls
+    Arrays.sort(fieldNames); // need determinism when picking random fields
 
 
     for (int i = 0; i < 5; i++) {
@@ -134,10 +142,28 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
         baseP.add("fq", "id:[* TO " + TestUtil.nextInt(random(),200,numDocs) + "]");
       }
 
-      ModifiableSolrParams pivotP = params(FACET,"true",
-                                           FACET_PIVOT, buildRandomPivot(fieldNames));
+      final boolean stats = random().nextBoolean();
+      if (stats) {
+        baseP.add(StatsParams.STATS, "true");
+        
+        // if we are doing stats, then always generated the same # of STATS_FIELD
+        // params, using multiple tags from a fixed set, but with diff fieldName values.
+        // later, each pivot will randomly pick a tag.
+        baseP.add(StatsParams.STATS_FIELD, "{!key=sk1 tag=st1,st2}" +
+                  pickRandomStatsFields(fieldNames));
+        baseP.add(StatsParams.STATS_FIELD, "{!key=sk2 tag=st2,st3}" +
+                  pickRandomStatsFields(fieldNames));
+        baseP.add(StatsParams.STATS_FIELD, "{!key=sk3 tag=st3,st4}" +
+                  pickRandomStatsFields(fieldNames));
+        // NOTE: there's a chance that some of those stats field names
+        // will be the same, but if so, all the better to test that edge case
+      }
+      
+      ModifiableSolrParams pivotP = params(FACET,"true");
+      pivotP.add(FACET_PIVOT, buildPivotParamValue(buildRandomPivot(fieldNames)));
+                 
       if (random().nextBoolean()) {
-        pivotP.add(FACET_PIVOT, buildRandomPivot(fieldNames));
+        pivotP.add(FACET_PIVOT, buildPivotParamValue(buildRandomPivot(fieldNames)));
       }
 
       // keep limit low - lots of unique values, and lots of depth in pivots
@@ -268,7 +294,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
                                            params("fq", buildFilter(constraint)));
     List<PivotField> subPivots = null;
     try {
-      assertNumFound(pivotName, constraint.getCount(), p);
+      assertPivotData(pivotName, constraint, p); 
       subPivots = constraint.getPivot();
     } catch (Exception e) {
       throw new RuntimeException(pivotName + ": count query failed: " + p + ": " + 
@@ -283,6 +309,97 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       }
     }
     return depth + 1;
+  }
+
+  /**
+   * Executes a query and compares the results with the data available in the 
+   * {@link PivotField} constraint -- this method is not recursive, and doesn't 
+   * check anything about the sub-pivots (if any).
+   *
+   * @param pivotName pivot name
+   * @param constraint filters on pivot
+   * @param params base solr parameters
+   */
+  private void assertPivotData(String pivotName, PivotField constraint, SolrParams params) 
+    throws SolrServerException {
+    
+    SolrParams p = SolrParams.wrapDefaults(params("rows","0"), params);
+    QueryResponse res = cloudClient.query(p);
+    String msg = pivotName + ": " + p;
+
+    assertNumFound(msg, constraint.getCount(), res);
+
+    if ( p.getBool(StatsParams.STATS, false) ) {
+      // only check stats if stats expected
+      assertPivotStats(msg, constraint, res);
+    }
+  }
+
+  /**
+   * Compare top level stats in response with stats from pivot constraint
+   */
+  private void assertPivotStats(String message, PivotField constraint, QueryResponse response) throws SolrServerException {
+
+    if (null == constraint.getFieldStatsInfo()) {
+      // no stats for this pivot, nothing to check
+
+      // TODO: use a trace param to know if/how-many to expect ?
+      log.info("No stats to check for => " + message);
+      return;
+    }
+    
+    Map<String, FieldStatsInfo> actualFieldStatsInfoMap = response.getFieldStatsInfo();
+
+    for (FieldStatsInfo pivotStats : constraint.getFieldStatsInfo().values()) {
+      String statsKey = pivotStats.getName();
+
+      FieldStatsInfo actualStats = actualFieldStatsInfoMap.get(statsKey);
+
+      if (actualStats == null) {
+        // handle case for not found stats (using stats query)
+        //
+        // these has to be a special case check due to the legacy behavior of "top level" 
+        // StatsComponent results being "null" (and not even included in the 
+        // getFieldStatsInfo() Map due to specila SolrJ logic) 
+
+        log.info("Requested stats missing in verification query, pivot stats: " + pivotStats);
+        assertEquals("Special Count", 0L, pivotStats.getCount().longValue());
+        assertEquals("Special Missing", 
+                     constraint.getCount(), pivotStats.getMissing().longValue());
+
+      } else {
+        // regular stats, compare everything...
+
+        assert actualStats != null;
+        String msg = " of " + statsKey + " => " + message;
+        
+        assertEquals("Min" + msg, pivotStats.getMin(), actualStats.getMin());
+        assertEquals("Max" + msg, pivotStats.getMax(), actualStats.getMax());
+        assertEquals("Mean" + msg, pivotStats.getMean(), actualStats.getMean());
+        assertEquals("Sum" + msg, pivotStats.getSum(), actualStats.getSum());
+        assertEquals("Count" + msg, pivotStats.getCount(), actualStats.getCount());
+        assertEquals("Missing" + msg, pivotStats.getMissing(), actualStats.getMissing());
+        
+        assertDoubles("Stddev" + msg, pivotStats.getStddev(), actualStats.getStddev());
+        assertDoubles("SumOfSquares" + msg, 
+                      pivotStats.getSumOfSquares(), actualStats.getSumOfSquares());
+      }
+    }
+
+    if (constraint.getFieldStatsInfo().containsKey("sk2")) { // cheeseball hack
+      // if "sk2" was one of hte stats we computed, then we must have also seen
+      // sk1 or sk3 because of the way the tags are fixed
+      assertEquals("had stats sk2, but not another stat?", 
+                   2, constraint.getFieldStatsInfo().size());
+    } else {
+      // if we did not see "sk2", then 1 of the others must be alone
+      assertEquals("only expected 1 stat",
+                   1, constraint.getFieldStatsInfo().size());
+      assertTrue("not sk1 or sk3", 
+                 constraint.getFieldStatsInfo().containsKey("sk1") ||
+                 constraint.getFieldStatsInfo().containsKey("sk3"));
+    }
+
   }
 
   /**
@@ -364,6 +481,39 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     return StringUtils.join(fields, ",");
   }
 
+  /**
+   * Picks a random field to use for Stats
+   */
+  private static String pickRandomStatsFields(String[] fieldNames) {
+    // we need to skip boolean fields when computing stats
+    String fieldName;
+    do {
+      fieldName = fieldNames[TestUtil.nextInt(random(),0,fieldNames.length-1)];
+    }
+    while(fieldName.endsWith("_b") || fieldName.endsWith("_b1")) ;
+          
+    return fieldName;
+  }
+
+  /**
+   * Generates a random {@link FacetParams#FACET_PIVOT} value w/ local params 
+   * using the specified pivotValue.
+   */
+  private static String buildPivotParamValue(String pivotValue) {
+    // randomly decide which stat tag to use
+
+    // if this is 0, or stats aren't enabled, we'll be asking for a tag that doesn't exist
+    // ...which should be fine (just like excluding a taged fq that doesn't exist)
+    final int statTag = TestUtil.nextInt(random(), -1, 4);
+      
+    if (0 <= statTag) {
+      // only use 1 tag name in the 'stats' localparam - see SOLR-6663
+      return "{!stats=st"+statTag+"}" + pivotValue;
+    } else {
+      // statTag < 0 == sanity check the case of a pivot w/o any stats
+      return pivotValue;
+    }
+  }
 
   /**
    * Creates a document with randomized field values, some of which be missing values, 
@@ -512,16 +662,80 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
   
   /**
-   * Asserts the number of docs matching the SolrParams aganst the cloudClient
+   * Asserts the number of docs found in the response
    */
-  private void assertNumFound(String msg, int expected, SolrParams p) 
+  private void assertNumFound(String msg, int expected, QueryResponse response) 
     throws SolrServerException {
 
     countNumFoundChecks++;
 
-    SolrParams params = SolrParams.wrapDefaults(params("rows","0"), p);
-    assertEquals(msg + ": " + params, 
-                 expected, cloudClient.query(params).getResults().getNumFound());
+    assertEquals(msg, expected, response.getResults().getNumFound());
+  }
+
+  /**
+   * Given two objects, asserts that they are either both null, or both Numbers
+   * with double values that are equally-ish with a "small" epsilon (relative to the 
+   * scale of the expected value)
+   *
+   * @see Number#doubleValue
+   */
+  private void assertDoubles(String msg, Object expected, Object actual) {
+    if (null == expected || null == actual) {
+      assertEquals(msg, expected, actual);
+    } else {
+      assertTrue(msg + " ... expected not a double: " + 
+                 expected + "=>" + expected.getClass(),
+                 expected instanceof Number);
+      assertTrue(msg + " ... actual not a double: " + 
+                 actual + "=>" + actual.getClass(),
+                 actual instanceof Number);
+
+      // compute an epsilon relative to the size of the expected value
+      double expect = ((Number)expected).doubleValue();
+      double epsilon = expect * 0.1E-7D;
+
+      assertEquals(msg, expect, ((Number)actual).doubleValue(), epsilon);
+                   
+    }
+  }
+
+  /**
+   * test the test
+   */
+  private void sanityCheckAssertDoubles() {
+    assertDoubles("Null?", null, null);
+    assertDoubles("big", 
+                  new Double(2.3005390038169265E9), 
+                  new Double(2.300539003816927E9));
+    assertDoubles("small", 
+                  new Double(2.3005390038169265E-9), 
+                  new Double(2.300539003816927E-9));
+    try {
+      assertDoubles("non-null", null, 42);
+      fail("expected was null");
+    } catch (AssertionError e) {}
+    try {
+      assertDoubles("non-null", 42, null);
+      fail("actual was null");
+    } catch (AssertionError e) {}
+    try {
+      assertDoubles("non-number", 42, "foo");
+      fail("actual was non-number");
+    } catch (AssertionError e) {}
+    try {
+      assertDoubles("diff", 
+                    new Double(2.3005390038169265E9), 
+                    new Double(2.267272520100462E9));
+      fail("big & diff");
+    } catch (AssertionError e) {}
+    try {
+      assertDoubles("diff", 
+                    new Double(2.3005390038169265E-9), 
+                    new Double(2.267272520100462E-9));
+      fail("small & diff");
+    } catch (AssertionError e) {}
+
+
   }
 
   /**
@@ -529,4 +743,5 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * @see #assertPivotCountsAreCorrect(SolrParams,SolrParams)
    */
   private int countNumFoundChecks = 0;
+
 }

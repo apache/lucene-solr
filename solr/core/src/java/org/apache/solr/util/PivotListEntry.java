@@ -17,6 +17,10 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.NamedList;
+
 import java.util.Locale;
 
 /**
@@ -24,16 +28,28 @@ import java.util.Locale;
  */
 public enum PivotListEntry {
   
-  FIELD(0), 
+  // mandatory entries with exact indexes
+  FIELD(0),
   VALUE(1),
   COUNT(2),
-  PIVOT(3);
+  // optional entries
+  PIVOT,
+  STATS;
   
-  // we could just use the ordinal(), but safer to be very explicit
-  private final int index;
+  private static final int MIN_INDEX_OF_OPTIONAL = 3;
+
+  /** 
+   * Given a NamedList representing a Pivot Value, this is Minimum Index at 
+   * which this PivotListEntry may exist 
+   */
+  private final int minIndex;
   
-  private PivotListEntry(int index) {
-    this.index = index;
+  private PivotListEntry() {
+    this.minIndex = MIN_INDEX_OF_OPTIONAL;
+  }
+  private PivotListEntry(int minIndex) {
+    assert minIndex < MIN_INDEX_OF_OPTIONAL;
+    this.minIndex = minIndex;
   }
   
   /**
@@ -53,10 +69,19 @@ public enum PivotListEntry {
   }
   
   /**
-   * Indec of this entry when used in response
+   * Given a {@link NamedList} representing a Pivot Value, extracts the Object 
+   * which corrisponds to this {@link PivotListEntry}, or returns null if not found.
    */
-  public int getIndex() {
-    return index;
+  public Object extract(NamedList<Object> pivotList) {
+    if (this.minIndex < MIN_INDEX_OF_OPTIONAL) {
+      // a mandatory entry at an exact index.
+      assert this.getName().equals(pivotList.getName(this.minIndex));
+      assert this.minIndex < pivotList.size();
+      return pivotList.getVal(this.minIndex);
+    }
+    // otherweise...
+    // scan starting at the min/optional index
+    return pivotList.get(this.getName(), this.minIndex);
   }
 
 }

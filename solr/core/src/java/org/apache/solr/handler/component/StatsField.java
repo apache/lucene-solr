@@ -70,6 +70,7 @@ public class StatsField {
   private final String key;
   private final boolean calcDistinct; // TODO: put this inside localParams ? SOLR-6349 ?
   private final String[] facets;
+  private final List<String> tagList;
   private final List<String> excludeTagList;
 
   /**
@@ -147,6 +148,10 @@ public class StatsField {
 
     String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
     this.facets = (null == facets) ? new String[0] : facets;
+    String tagStr = localParams.get(CommonParams.TAG);
+    this.tagList = (null == tagStr)
+        ? Collections.<String>emptyList()
+        : StrUtils.splitSmart(tagStr,',');
 
     // figure out if we need a special base DocSet
     String excludeStr = localParams.get(CommonParams.EXCLUDE);
@@ -361,6 +366,11 @@ public class StatsField {
    */
   public boolean getCalcDistinct() {
     return calcDistinct;
+  }
+
+
+  public List<String> getTagList() {
+    return tagList;
   }
 
   public String toString() {

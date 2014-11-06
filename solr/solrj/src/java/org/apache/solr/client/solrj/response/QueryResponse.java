@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
@@ -163,19 +164,25 @@ public class QueryResponse extends SolrResponseBase
   }
   
   private void extractStatsInfo(NamedList<Object> info) {
+    _fieldStatsInfo = extractFieldStatsInfo(info);
+  }
+
+  private Map<String, FieldStatsInfo> extractFieldStatsInfo(NamedList<Object> info) {
     if( info != null ) {
-      _fieldStatsInfo = new HashMap<>();
+       Map<String, FieldStatsInfo> fieldStatsInfoMap = new TreeMap<>();
       NamedList<NamedList<Object>> ff = (NamedList<NamedList<Object>>) info.get( "stats_fields" );
       if( ff != null ) {
         for( Map.Entry<String,NamedList<Object>> entry : ff ) {
           NamedList<Object> v = entry.getValue();
           if( v != null ) {
-            _fieldStatsInfo.put( entry.getKey(), 
+             fieldStatsInfoMap.put( entry.getKey(),
                 new FieldStatsInfo( v, entry.getKey() ) );
           }
         }
       }
+       return fieldStatsInfoMap;
     }
+    return null;
   }
 
   private void extractDebugInfo( NamedList<Object> debug )
@@ -396,14 +403,38 @@ public class QueryResponse extends SolrResponseBase
       Object v = nl.getVal( 1 );
       assert "count".equals(nl.getName(2));
       int cnt = ((Integer)nl.getVal( 2 )).intValue();
-      List<PivotField> p = null;
+
+      List<PivotField> subPivots = null;
+      Map<String,FieldStatsInfo> fieldStatsInfos = null;
+
       if (4 <= nl.size()) {
-        assert "pivot".equals(nl.getName(3));
-        Object subPiv = nl.getVal(3);
-        assert null != subPiv : "Server sent back 'null' for sub pivots?";
-        p = readPivots( (List<NamedList>) subPiv );
+        for(int index = 3; index < nl.size(); index++) {
+          final String key = nl.getName(index);
+          final Object val = nl.getVal(index);
+          switch (key) {
+
+          case "pivot": {
+            assert null != val : "Server sent back 'null' for sub pivots?";
+            assert val instanceof List : "Server sent non-List for sub pivots?";
+
+            subPivots = readPivots( (List<NamedList>) val );
+            break;
+          }
+          case "stats": {
+            assert null != val : "Server sent back 'null' for stats?";
+            assert val instanceof NamedList : "Server sent non-NamedList for stats?";
+
+            fieldStatsInfos = extractFieldStatsInfo((NamedList<Object>) val);
+            break;
+          }
+          default: 
+            throw new RuntimeException( "unknown key in pivot: "+ key+ " ["+val+"]");
+
+          }
+        }
       }
-      values.add( new PivotField( f, v, cnt, p ) );
+
+      values.add( new PivotField( f, v, cnt, subPivots, fieldStatsInfos ) );
     }
     return values;
   }

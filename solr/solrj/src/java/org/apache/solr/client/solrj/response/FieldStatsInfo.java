@@ -180,6 +180,10 @@ public class FieldStatsInfo implements Serializable {
     return stddev;
   }
 
+  public Double getSumOfSquares() {
+    return sumOfSquares;
+  }
+
   public Map<String, List<FieldStatsInfo>> getFacets() {
     return facets;
   }
