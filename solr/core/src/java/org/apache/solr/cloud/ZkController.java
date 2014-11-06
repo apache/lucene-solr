@@ -235,10 +235,10 @@ public final class ZkController {
     } else {
       zkACLProvider = new DefaultZkACLProvider();
     }
-    
-    String zkCredentialProviderClass = cc.getConfig().getZkCredentialProviderClass();
-    if (zkCredentialProviderClass != null && zkCredentialProviderClass.trim().length() > 0) {
-      strat.setZkCredentialsToAddAutomatically(cc.getResourceLoader().newInstance(zkCredentialProviderClass, ZkCredentialsProvider.class));
+
+    String zkCredentialsProviderClass = cc.getConfig().getZkCredentialsProviderClass();
+    if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {
+      strat.setZkCredentialsToAddAutomatically(cc.getResourceLoader().newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class));
     } else {
       strat.setZkCredentialsToAddAutomatically(new DefaultZkCredentialsProvider());
     }

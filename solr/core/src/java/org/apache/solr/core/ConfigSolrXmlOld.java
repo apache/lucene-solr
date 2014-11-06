@@ -146,7 +146,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     storeConfigPropertyAsBoolean(CfgProp.SOLR_AUTOREPLICAFAILOVERWAITAFTEREXPIRATION, "solr/cores/@autoReplicaFailoverWaitAfterExpiration");
     storeConfigPropertyAsBoolean(CfgProp.SOLR_AUTOREPLICAFAILOVERWORKLOOPDELAY, "solr/cores/@autoReplicaFailoverWorkLoopDelay");
     storeConfigPropertyAsString(CfgProp.SOLR_ZKACLPROVIDER, "solr/cores/@zkACLProvider");
-    storeConfigPropertyAsString(CfgProp.SOLR_ZKCREDENTIALPROVIDER, "solr/cores/@zkCredentialProvider");
+    storeConfigPropertyAsString(CfgProp.SOLR_ZKCREDENTIALSPROVIDER, "solr/cores/@zkCredentialsProvider");
     storeConfigPropertyAsString(CfgProp.SOLR_MANAGEMENTPATH, "solr/cores/@managementPath");
     storeConfigPropertyAsBoolean(CfgProp.SOLR_SHARESCHEMA, "solr/cores/@shareSchema");
     storeConfigPropertyAsInt(CfgProp.SOLR_TRANSIENTCACHESIZE, "solr/cores/@transientCacheSize");
