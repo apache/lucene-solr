@@ -365,6 +365,10 @@ Other Changes
   relative paths for solrconfig.xml <lib> references with solr.install.dir 
   system property; bin/solr scripts will set it appropriately. (ehatcher)
 
+* SOLR-6698: Solr is not consistent wrt ZkCredentialsProvider / ZkCredentialProvider.
+  References to zkCredentialProvider in System properties or configurations should be
+  changed to zkCredentialsProvider.  (Gregory Chanan)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
