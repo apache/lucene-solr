@@ -203,7 +203,7 @@ New Features
 
 * SOLR-6351: Stats can now be nested under pivot values by adding a 'stats' local param to 
   facet.pivot which refers to a 'tag' local param in one or more stats.field params.
-  (hossman, Vitaliy Zhovtyuk)
+  (hossman, Vitaliy Zhovtyuk, Steve Molloy)
 
 SOLR-6533: Support editing common solrconfig.xml values (Noble Paul)
 
