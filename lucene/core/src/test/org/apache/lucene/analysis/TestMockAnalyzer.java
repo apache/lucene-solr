@@ -232,7 +232,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   public void testRandomRegexps() throws Exception {
     int iters = atLeast(30);
     for (int i = 0; i < iters; i++) {
-      final CharacterRunAutomaton dfa = new CharacterRunAutomaton(AutomatonTestUtil.randomAutomaton(random()));
+      final CharacterRunAutomaton dfa = new CharacterRunAutomaton(AutomatonTestUtil.randomAutomaton(random()), Integer.MAX_VALUE);
       final boolean lowercase = random().nextBoolean();
       final int limit = TestUtil.nextInt(random(), 0, 500);
       Analyzer a = new Analyzer() {
