@@ -214,7 +214,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
   public void testHashCodeWithThreads() throws Exception {
     final AutomatonQuery queries[] = new AutomatonQuery[1000];
     for (int i = 0; i < queries.length; i++) {
-      queries[i] = new AutomatonQuery(new Term("bogus", "bogus"), AutomatonTestUtil.randomAutomaton(random()));
+      queries[i] = new AutomatonQuery(new Term("bogus", "bogus"), AutomatonTestUtil.randomAutomaton(random()), Integer.MAX_VALUE);
     }
     final CountDownLatch startingGun = new CountDownLatch(1);
     int numThreads = TestUtil.nextInt(random(), 2, 5);
