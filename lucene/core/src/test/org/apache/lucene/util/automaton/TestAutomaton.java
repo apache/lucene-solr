@@ -260,8 +260,8 @@ public class TestAutomaton extends LuceneTestCase {
       Automaton ra = Operations.reverse(a);
       Automaton rra = Operations.reverse(ra);
       assertTrue(Operations.sameLanguage(
-        Operations.determinize(Operations.removeDeadStates(a), DEFAULT_MAX_DETERMINIZED_STATES),
-        Operations.determinize(Operations.removeDeadStates(rra), DEFAULT_MAX_DETERMINIZED_STATES)));
+        Operations.determinize(Operations.removeDeadStates(a), Integer.MAX_VALUE),
+        Operations.determinize(Operations.removeDeadStates(rra), Integer.MAX_VALUE)));
     }
   }
 
@@ -274,7 +274,7 @@ public class TestAutomaton extends LuceneTestCase {
         a = Operations.removeDeadStates(a);
       }
       Automaton ra = Operations.reverse(a);
-      Automaton rda = Operations.determinize(ra, DEFAULT_MAX_DETERMINIZED_STATES);
+      Automaton rda = Operations.determinize(ra, Integer.MAX_VALUE);
 
       if (Operations.isEmpty(a)) {
         assertTrue(Operations.isEmpty(rda));
@@ -362,9 +362,9 @@ public class TestAutomaton extends LuceneTestCase {
       }
 
       assertTrue(Operations.sameLanguage(
-        Operations.determinize(Operations.removeDeadStates(a), DEFAULT_MAX_DETERMINIZED_STATES),
+        Operations.determinize(Operations.removeDeadStates(a), Integer.MAX_VALUE),
         Operations.determinize(Operations.removeDeadStates(builder.finish()),
-          DEFAULT_MAX_DETERMINIZED_STATES)));
+          Integer.MAX_VALUE)));
     }
   }
 
