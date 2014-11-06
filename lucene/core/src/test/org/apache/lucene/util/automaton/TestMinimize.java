@@ -19,8 +19,6 @@ package org.apache.lucene.util.automaton;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-
 /** 
  * This test builds some randomish NFA/DFA and minimizes them.
  */
@@ -31,9 +29,9 @@ public class TestMinimize extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random());
       Automaton la = Operations.determinize(Operations.removeDeadStates(a),
-        DEFAULT_MAX_DETERMINIZED_STATES);
+        Integer.MAX_VALUE);
       Automaton lb = MinimizationOperations.minimize(a,
-        DEFAULT_MAX_DETERMINIZED_STATES);
+        Integer.MAX_VALUE);
       assertTrue(Operations.sameLanguage(la, lb));
     }
   }
@@ -47,7 +45,7 @@ public class TestMinimize extends LuceneTestCase {
       Automaton a = AutomatonTestUtil.randomAutomaton(random());
       a = AutomatonTestUtil.minimizeSimple(a);
       Automaton b = MinimizationOperations.minimize(a,
-        DEFAULT_MAX_DETERMINIZED_STATES);
+        Integer.MAX_VALUE);
       assertTrue(Operations.sameLanguage(a, b));
       assertEquals(a.getNumStates(), b.getNumStates());
       int numStates = a.getNumStates();
