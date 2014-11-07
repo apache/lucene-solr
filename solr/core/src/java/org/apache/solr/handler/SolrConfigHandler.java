@@ -100,7 +100,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         public void run() {
           try {
             if(core.isClosed()) return;
-            Stat stat = zkSolrResourceLoader.getZkController().getZkClient().exists((zkSolrResourceLoader).getCollectionZkPath() + "/" + ConfigOverlay.RESOURCE_NAME, null, true);
+            Stat stat = zkSolrResourceLoader.getZkController().getZkClient().exists((zkSolrResourceLoader).getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME, null, true);
             if(stat == null) return;
             if (stat.getVersion() >  core.getSolrConfig().getOverlay().getZnodeVersion()) {
               core.getCoreDescriptor().getCoreContainer().reload(core.getName());
@@ -115,7 +115,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         }
       };
 
-      zkSolrResourceLoader.getZkController().registerConfListenerForCore(zkSolrResourceLoader.getCollectionZkPath(), core,listener);
+      zkSolrResourceLoader.getZkController().registerConfListenerForCore(zkSolrResourceLoader.getConfigSetZkPath(), core,listener);
     }
 
   }

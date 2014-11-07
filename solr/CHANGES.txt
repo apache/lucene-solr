@@ -369,6 +369,9 @@ Other Changes
   References to zkCredentialProvider in System properties or configurations should be
   changed to zkCredentialsProvider.  (Gregory Chanan)
 
+* SOLR-6715: ZkSolrResourceLoader constructors accept a parameter called 'collection'
+  but it should be 'configName'. (shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

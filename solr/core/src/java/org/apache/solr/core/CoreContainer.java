@@ -684,7 +684,7 @@ public class CoreContainer {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
     }
-    String collectionZkPath =  core.getResourceLoader() instanceof ZkSolrResourceLoader ?  ((ZkSolrResourceLoader)core.getResourceLoader()).getCollectionZkPath() : null;
+    String configSetZkPath =  core.getResourceLoader() instanceof ZkSolrResourceLoader ?  ((ZkSolrResourceLoader)core.getResourceLoader()).getConfigSetZkPath() : null;
 
     core.unloadOnClose(deleteIndexDir, deleteDataDir, deleteInstanceDir);
     if (close)
@@ -692,7 +692,7 @@ public class CoreContainer {
 
     if (zkSys.getZkController() != null) {
       try {
-        zkSys.getZkController().unregister(name, cd, collectionZkPath);
+        zkSys.getZkController().unregister(name, cd, configSetZkPath);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");

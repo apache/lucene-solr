@@ -1200,7 +1200,7 @@ public final class ZkController {
     boolean removeWatch = true;
     // if there is no SolrCore which is a member of this collection, remove the watch
     for (SolrCore solrCore : cc.getCores()) {
-      if (((ZkSolrResourceLoader)solrCore.getResourceLoader()).getCollectionZkPath().equals(configLocation))
+      if (((ZkSolrResourceLoader)solrCore.getResourceLoader()).getConfigSetZkPath().equals(configLocation))
         configLocation = null; //if a core uses this config dir , then set it to null
 
 
@@ -2119,7 +2119,7 @@ public final class ZkController {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
-    final String resourceLocation = zkLoader.getCollectionZkPath() + "/" + resourceName;
+    final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
     String errMsg = "Failed to persist resource at {0} - version mismatch";
     try {
       try {

@@ -38,16 +38,16 @@ import org.apache.zookeeper.data.Stat;
  */
 public class ZkSolrResourceLoader extends SolrResourceLoader {
 
-  private final String collectionZkPath;
+  private final String configSetZkPath;
   private ZkController zkController;
   private ZkIndexSchemaReader zkIndexSchemaReader;
 
-  public ZkSolrResourceLoader(String instanceDir, String collection,
+  public ZkSolrResourceLoader(String instanceDir, String configSet,
       ZkController zooKeeperController) {
     super(instanceDir);
     this.zkController = zooKeeperController;
-    collectionZkPath = ZkController.CONFIGS_ZKNODE + "/" + collection;
-    zkController.watchZKConfDir(collectionZkPath);
+    configSetZkPath = ZkController.CONFIGS_ZKNODE + "/" + configSet;
+    zkController.watchZKConfDir(configSetZkPath);
   }
 
   /**
@@ -58,12 +58,12 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    * the "lib/" directory in the specified instance directory.
    * <p>
    */
-  public ZkSolrResourceLoader(String instanceDir, String collection, ClassLoader parent,
+  public ZkSolrResourceLoader(String instanceDir, String configSet, ClassLoader parent,
       Properties coreProperties, ZkController zooKeeperController) {
     super(instanceDir, parent, coreProperties);
     this.zkController = zooKeeperController;
-    collectionZkPath = ZkController.CONFIGS_ZKNODE + "/" + collection;
-    zkController.watchZKConfDir(collectionZkPath);
+    configSetZkPath = ZkController.CONFIGS_ZKNODE + "/" + configSet;
+    zkController.watchZKConfDir(configSetZkPath);
   }
 
   /**
@@ -78,7 +78,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   @Override
   public InputStream openResource(String resource) throws IOException {
     InputStream is = null;
-    String file = collectionZkPath + "/" + resource;
+    String file = configSetZkPath + "/" + resource;
     try {
       if (zkController.pathExists(file)) {
         Stat stat = new Stat();
@@ -96,7 +96,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     }
     if (is == null) {
       throw new IOException("Can't find resource '" + resource
-          + "' in classpath or '" + collectionZkPath + "', cwd="
+          + "' in classpath or '" + configSetZkPath + "', cwd="
           + System.getProperty("user.dir"));
     }
     return is;
@@ -131,7 +131,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   public String[] listConfigDir() {
     List<String> list;
     try {
-      list = zkController.getZkClient().getChildren(collectionZkPath, null, true);
+      list = zkController.getZkClient().getChildren(configSetZkPath, null, true);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
@@ -146,8 +146,8 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     return list.toArray(new String[0]);
   }
 
-  public String getCollectionZkPath() {
-    return collectionZkPath;
+  public String getConfigSetZkPath() {
+    return configSetZkPath;
   }
   
   public ZkController getZkController() {

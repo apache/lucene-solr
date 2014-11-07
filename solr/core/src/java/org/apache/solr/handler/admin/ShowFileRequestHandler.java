@@ -304,7 +304,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
     final ZkSolrResourceLoader loader = (ZkSolrResourceLoader) core
         .getResourceLoader();
-    String confPath = loader.getCollectionZkPath();
+    String confPath = loader.getConfigSetZkPath();
 
     String fname = req.getParams().get("file", null);
     if (fname == null) {
