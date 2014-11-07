@@ -29,6 +29,13 @@
 
 package org.apache.lucene.util.automaton;
 
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -39,13 +46,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Automata operations.
@@ -174,6 +174,10 @@ final public class Operations {
    * Complexity: linear in number of states.
    */
   static public Automaton repeat(Automaton a) {
+    if (a.getNumStates() == 0) {
+      // Repeating the empty automata will still only accept the empty automata.
+      return a;
+    }
     Automaton.Builder builder = new Automaton.Builder();
     builder.createState();
     builder.setAccept(0, true);
