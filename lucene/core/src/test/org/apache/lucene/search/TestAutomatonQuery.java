@@ -242,9 +242,9 @@ public class TestAutomatonQuery extends LuceneTestCase {
     }
   }
 
-  public void testHugeAutomaton() {
+  public void testBiggishAutomaton() {
     List<BytesRef> terms = new ArrayList<>();
-    while (terms.size() < 10000) {
+    while (terms.size() < 3000) {
       terms.add(new BytesRef(TestUtil.randomUnicodeString(random())));
     }
     Collections.sort(terms);
