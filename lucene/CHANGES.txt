@@ -12,6 +12,9 @@ Bug fixes
   now throws an exception instead of exhausting CPU/RAM.  (Nik
   Everett via Mike McCandless)
 
+* LUCENE-6054: Allow repeating the empty automaton (Nik Everett via
+  Mike McCandless)
+
 ======================= Lucene 4.10.2 ======================
 
 Bug fixes

@@ -55,4 +55,16 @@ public class TestRegExp extends LuceneTestCase {
     // paranoia:
     assertTrue(a.toString().length() > 0);
   }
+
+  public void testRepeatWithEmptyLanguage() throws Exception {
+    Automaton a = new RegExp("#*").toAutomaton(1000);
+    // paranoia:
+    assertTrue(a.toString().length() > 0);
+    a = new RegExp("#+").toAutomaton(1000);
+    assertTrue(a.toString().length() > 0);
+    a = new RegExp("#{2,10}").toAutomaton(1000);
+    assertTrue(a.toString().length() > 0);
+    a = new RegExp("#?").toAutomaton(1000);
+    assertTrue(a.toString().length() > 0);
+  }
 }
