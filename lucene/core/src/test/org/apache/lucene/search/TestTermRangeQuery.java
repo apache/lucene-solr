@@ -28,12 +28,14 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -460,6 +462,36 @@ public class TestTermRangeQuery extends LuceneTestCase {
       q = new TermRangeQuery("field", new BytesRef(term), new BytesRef(term), true, true);
       assertEquals(1, s.search(q, 1).totalHits);
     }
+
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testSkipSomeSegments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
+    iwc.setMaxBufferedDocs(2);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    
+    for(int i=0;i<26;i++) {
+      Document2 doc = w.newDocument();
+      byte[] bytes = new byte[1];
+      bytes[0] = (byte) i;
+      doc.addAtom("field", new BytesRef(bytes));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    byte[] min = new byte[1];
+    min[0] = 17;
+    byte[] max = new byte[1];
+    max[0] = 18;
+    assertEquals(2, s.search(new ConstantScoreQuery(fieldTypes.newRangeFilter("field", min, true, max, true)), 1).totalHits);
 
     r.close();
     w.close();

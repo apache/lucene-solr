@@ -105,10 +105,10 @@ public class TestSegmentMerger extends LuceneTestCase {
     Set<String> unstored = DocHelper.getUnstored(fieldTypes);
 
     //There are 2 unstored fields on the document
-    assertEquals(DocHelper.numFields(newDoc1), DocHelper.numFields() - unstored.size());
+    assertEquals(DocHelper.numFields() - unstored.size() + 1, DocHelper.numFields(newDoc1));
     Document2 newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
-    assertEquals(DocHelper.numFields(newDoc2), DocHelper.numFields() - unstored.size());
+    assertEquals(DocHelper.numFields() - unstored.size() + 1, DocHelper.numFields(newDoc2));
 
     DocsEnum termDocs = TestUtil.docs(random(), mergedReader,
         DocHelper.TEXT_FIELD_2_KEY,

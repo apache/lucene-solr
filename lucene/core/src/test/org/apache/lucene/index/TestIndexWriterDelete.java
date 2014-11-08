@@ -137,7 +137,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
-    assertEquals(3, writer.getFlushDeletesCount());
+    assertEquals(4, writer.getFlushDeletesCount());
     writer.close();
     dir.close();
   }
@@ -1039,6 +1039,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                       .setMergePolicy(NoMergePolicy.INSTANCE)
                                       .setReaderPooling(false));
     int count = 0;
+    int startDelCount = w.getFlushDeletesCount();
     while(true) {
       Document doc = new Document();
       doc.add(new StringField("id", count+"", Field.Store.NO));
@@ -1052,12 +1053,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         delTerm = new Term("id", "x" + count);
       }
       w.updateDocument(delTerm, doc);
-      // Eventually segment 0 should get a del docs:
-      // TODO: fix this test
-      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv") ) {
-        if (VERBOSE) {
-          System.out.println("TEST: deletes created @ count=" + count);
-        }
+      if (w.getFlushDeletesCount() > startDelCount) {
         break;
       }
       count++;
@@ -1089,6 +1085,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                       .setMergePolicy(NoMergePolicy.INSTANCE)
                                       .setReaderPooling(false));
     int count = 0;
+    int startDelCount = w.getFlushDeletesCount();
     while(true) {
       Document doc = new Document();
       doc.add(new StringField("id", count+"", Field.Store.NO));
@@ -1102,9 +1099,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         delTerm = new Term("id", "x" + count);
       }
       w.updateDocument(delTerm, doc);
-      // Eventually segment 0 should get a del docs:
-      // TODO: fix this test
-      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv")) {
+      if (w.getFlushDeletesCount() > startDelCount) {
         break;
       }
       count++;

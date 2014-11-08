@@ -194,6 +194,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         writer.addDocument(doc);
       }
         
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter + " now close");
+      }
       writer.close();
       TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles");
 

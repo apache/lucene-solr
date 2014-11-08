@@ -515,7 +515,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     writer.close();
     IndexReader reader = DirectoryReader.open(dir);
     final Term t = new Term("content", "aa");
-    assertEquals(3, reader.docFreq(t));
+    assertEquals(2, reader.docFreq(t));
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
@@ -657,7 +657,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       IndexReader reader = DirectoryReader.open(dir);
       if (i == 0) { 
         int expected = 5;
-        assertEquals(expected, reader.docFreq(new Term("contents", "here")));
+        assertEquals(expected-1, reader.docFreq(new Term("contents", "here")));
         assertEquals(expected, reader.maxDoc());
         int numDel = 0;
         final Bits liveDocs = MultiFields.getLiveDocs(reader);
@@ -769,8 +769,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexReader reader = DirectoryReader.open(dir);
       int expected = (3+(1-i)*2)*NUM_THREAD*NUM_ITER;
-      assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
-      assertEquals(expected, reader.maxDoc());
+      assertEquals("i=" + i, expected - NUM_THREAD*NUM_ITER, reader.docFreq(new Term("contents", "here")));
+      assertEquals("i=" + i, expected, reader.maxDoc());
       int numDel = 0;
       final Bits liveDocs = MultiFields.getLiveDocs(reader);
       assertNotNull(liveDocs);
@@ -1033,12 +1033,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final AtomicBoolean thrown = new AtomicBoolean(false);
     final Directory dir = newDirectory();
+    final AtomicBoolean doFail = new AtomicBoolean(false);
     final IndexWriter writer = new IndexWriter(dir,
         newIndexWriterConfig(new MockAnalyzer(random()))
           .setInfoStream(new InfoStream() {
         @Override
         public void message(String component, final String message) {
-          if (message.contains("startFullFlush") && thrown.compareAndSet(false, true)) {
+          if (doFail.get() && message.contains("startFullFlush") && thrown.compareAndSet(false, true)) {
             throw new OutOfMemoryError("fake OOME at " + message);
           }
         }
@@ -1051,6 +1052,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         @Override
         public void close() {}
       }));
+    doFail.set(true);
     writer.addDocument(new Document());
 
     try {

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -33,8 +34,6 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
 
     Directory dir = newDirectory();
 
-    final Document doc = new Document();
-    doc.add(newStringField("content", "aaa", Field.Store.NO));
     final int incrMin = TEST_NIGHTLY ? 15 : 40;
     for(int numDocs=10;numDocs<500;numDocs += TestUtil.nextInt(random(), incrMin, 5 * incrMin)) {
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
@@ -44,8 +43,11 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
                                                   .setOpenMode(OpenMode.CREATE)
                                                   .setMaxBufferedDocs(2)
                                                   .setMergePolicy(ldmp));
-      for(int j=0;j<numDocs;j++)
+      final Document2 doc = writer.newDocument();
+      doc.addAtom("content", "aaa");
+      for(int j=0;j<numDocs;j++) {
         writer.addDocument(doc);
+      }
       writer.close();
 
       SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -72,9 +74,6 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
   public void testMaxNumSegments2() throws IOException {
     Directory dir = newDirectory();
 
-    final Document doc = new Document();
-    doc.add(newStringField("content", "aaa", Field.Store.NO));
-
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMinMergeDocs(1);
     ldmp.setMergeFactor(4);
@@ -83,9 +82,13 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
                                                 .setMergePolicy(ldmp)
                                                 .setMergeScheduler(new ConcurrentMergeScheduler()));
     
+    final Document2 doc = writer.newDocument();
+    doc.addAtom("content", "aaa");
+
     for(int iter=0;iter<10;iter++) {
-      for(int i=0;i<19;i++)
+      for(int i=0;i<19;i++) {
         writer.addDocument(doc);
+      }
 
       writer.commit();
       writer.waitForMerges();
@@ -200,10 +203,11 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
               .setMaxBufferedDocs(2)
               .setMergePolicy(newLogMergePolicy(51))
       );
-      Document doc = new Document();
-      doc.add(newStringField("field", "aaa", Field.Store.NO));
-      for(int i=0;i<100;i++)
+      Document2 doc = writer.newDocument();
+      doc.addAtom("field", "aaa");
+      for(int i=0;i<100;i++) {
         writer.addDocument(doc);
+      }
       writer.forceMerge(1, false);
 
       if (0 == pass) {

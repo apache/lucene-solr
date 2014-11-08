@@ -29,6 +29,7 @@ import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
@@ -103,6 +104,10 @@ public class RandomIndexWriter implements Closeable {
 
   public Document2 newDocument() {
     return w.newDocument();
+  }
+
+  public ReferenceManager<DirectoryReader> getReaderManager() {
+    return w.getReaderManager();
   }
   
   /**

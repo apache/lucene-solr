@@ -106,6 +106,22 @@ public class TermRangeQuery extends MultiTermQuery {
       // Matches no terms:
       return TermsEnum.EMPTY;
     }
+
+    if (terms.size() == 0) {
+      // No terms
+      return TermsEnum.EMPTY;
+    }
+
+    // Optimization: if our range is outside of the range indexed in this segment, skip it:
+    if (upperTerm != null && terms.getMin().compareTo(upperTerm) > 0) {
+      return TermsEnum.EMPTY;
+    }
+
+    if (lowerTerm != null && terms.getMax().compareTo(lowerTerm) < 0) {
+      return TermsEnum.EMPTY;
+    }      
+     
+    TermsEnum tenum = terms.iterator(null);
     
     if ((lowerTerm == null || (includeLower && lowerTerm.length == 0)) && upperTerm == null) {
       // Matches all terms:

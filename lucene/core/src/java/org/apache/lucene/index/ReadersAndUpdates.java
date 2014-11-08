@@ -497,11 +497,13 @@ class ReadersAndUpdates {
         }
         // create new fields or update existing ones to have NumericDV type
         for (String f : dvUpdates.numericDVUpdates.keySet()) {
-          builder.addOrUpdate(f, NumericDocValuesField.TYPE);
+          FieldInfo fieldInfo = builder.addOrUpdate(f, NumericDocValuesField.TYPE);
+          fieldInfo.setDocValuesType(DocValuesType.NUMERIC);
         }
         // create new fields or update existing ones to have BinaryDV type
         for (String f : dvUpdates.binaryDVUpdates.keySet()) {
-          builder.addOrUpdate(f, BinaryDocValuesField.TYPE);
+          FieldInfo fieldInfo = builder.addOrUpdate(f, BinaryDocValuesField.TYPE);
+          fieldInfo.setDocValuesType(DocValuesType.BINARY);
         }
         
         fieldInfos = builder.finish();

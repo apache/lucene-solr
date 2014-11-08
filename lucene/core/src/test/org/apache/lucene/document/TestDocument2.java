@@ -22,12 +22,15 @@ import java.io.StringReader;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
@@ -40,14 +43,18 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NotUniqueException;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -230,9 +237,9 @@ public class TestDocument2 extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // Make sure range query hits the right number of hits
-    assertEquals(2, s.search(fieldTypes.newRangeQuery("float", 0f, true, 3f, true), 1).totalHits);
-    assertEquals(3, s.search(fieldTypes.newRangeQuery("float", 0f, true, 10f, true), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newRangeQuery("float", 1f, true,2.5f, true), 1).totalHits);
+    assertEquals(2, search(s, fieldTypes.newRangeFilter("float", 0f, true, 3f, true), 1).totalHits);
+    assertEquals(3, search(s, fieldTypes.newRangeFilter("float", 0f, true, 10f, true), 1).totalHits);
+    assertEquals(1, search(s, fieldTypes.newRangeFilter("float", 1f, true,2.5f, true), 1).totalHits);
 
     // Make sure doc values shows the correct float values:
     TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("id"));
@@ -264,6 +271,10 @@ public class TestDocument2 extends LuceneTestCase {
     w.close();
     r.close();
     dir.close();
+  }
+
+  private TopDocs search(IndexSearcher s, Filter filter, int count) throws IOException {
+    return s.search(new ConstantScoreQuery(filter), count);
   }
 
   // Cannot change a field from INT to DOUBLE
@@ -304,8 +315,8 @@ public class TestDocument2 extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(2, s.search(fieldTypes.newRangeQuery("int", 0, true, 3, true), 1).totalHits);
-    assertEquals(3, s.search(fieldTypes.newRangeQuery("int", 0, true, 10, true), 1).totalHits);
+    assertEquals(2, search(s, fieldTypes.newRangeFilter("int", 0, true, 3, true), 1).totalHits);
+    assertEquals(3, search(s, fieldTypes.newRangeFilter("int", 0, true, 10, true), 1).totalHits);
     w.close();
     r.close();
     dir.close();
@@ -923,7 +934,7 @@ public class TestDocument2 extends LuceneTestCase {
     doc.addInt("int", 17);
     w.addDocument(doc);
     try {
-      fieldTypes.newRangeQuery("int", 0, true, 7, true);
+      fieldTypes.newRangeFilter("int", 0, true, 7, true);
       fail("did not hit exception");
     } catch (IllegalStateException ise) {
       assertEquals("field \"int\": this field was not indexed for fast ranges", ise.getMessage());
@@ -1559,10 +1570,10 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(2, s.search(fieldTypes.newRangeQuery("date", date0, true, date1, true), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newRangeQuery("date", date0, true, date1, false), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newRangeQuery("date", date0, false, date1, false), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newRangeQuery("date", parser.parse("10/21/2014"), false, parser.parse("10/23/2014"), false), 1).totalHits);
+    assertEquals(2, search(s, fieldTypes.newRangeFilter("date", date0, true, date1, true), 1).totalHits);
+    assertEquals(1, search(s, fieldTypes.newRangeFilter("date", date0, true, date1, false), 1).totalHits);
+    assertEquals(0, search(s, fieldTypes.newRangeFilter("date", date0, false, date1, false), 1).totalHits);
+    assertEquals(1, search(s, fieldTypes.newRangeFilter("date", parser.parse("10/21/2014"), false, parser.parse("10/23/2014"), false), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -1621,10 +1632,10 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(2, s.search(fieldTypes.newRangeQuery("inet", inet0, true, inet1, true), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newRangeQuery("inet", inet0, true, inet1, false), 1).totalHits);
-    assertEquals(0, s.search(fieldTypes.newRangeQuery("inet", inet0, false, inet1, false), 1).totalHits);
-    assertEquals(1, s.search(fieldTypes.newRangeQuery("inet", InetAddress.getByName("10.17.0.0"), true, InetAddress.getByName("10.17.4.20"), false), 1).totalHits);
+    assertEquals(2, search(s, fieldTypes.newRangeFilter("inet", inet0, true, inet1, true), 1).totalHits);
+    assertEquals(1, search(s, fieldTypes.newRangeFilter("inet", inet0, true, inet1, false), 1).totalHits);
+    assertEquals(0, search(s, fieldTypes.newRangeFilter("inet", inet0, false, inet1, false), 1).totalHits);
+    assertEquals(1, search(s, fieldTypes.newRangeFilter("inet", InetAddress.getByName("10.17.0.0"), true, InetAddress.getByName("10.17.4.20"), false), 1).totalHits);
     r.close();
     w.close();
     dir.close();
@@ -1676,6 +1687,80 @@ public class TestDocument2 extends LuceneTestCase {
     r.close();
     w.close();
     dir.close();
+  }
+
+  public void testExcCannotStoreTokenStream() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableNorms("field");
+    fieldTypes.enableStored("field");
+
+    Document2 doc = w.newDocument();
+    try {
+      doc.addLargeText("field", new TokenStream() {
+          @Override
+          public boolean incrementToken() {
+            return false;
+          }
+        });
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      assertEquals("field \"field\": can only store String large text fields", ise.getMessage());
+    }
+    w.close();
+    dir.close();
+  }
+
+  public void testFieldExistsFilter() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    Document2 doc = w.newDocument();
+    doc.addAtom("field1", "field");
+    doc.addAtom("field2", "field");
+    doc.addAtom("id", "0");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("field1", "field");
+    doc.addAtom("id", "1");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("field2", "field");
+    doc.addAtom("id", "2");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    FieldTypes fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+    TopDocs hits = s.search(new MatchAllDocsQuery(),
+                            fieldTypes.newFieldExistsFilter("field1"), 2);
+    assertEquals(2, hits.totalHits);
+    Set<String> ids = getIDs(r, hits);
+    assertTrue(ids.contains("0"));
+    assertTrue(ids.contains("1"));
+
+    hits = s.search(new MatchAllDocsQuery(),
+                    fieldTypes.newFieldExistsFilter("field2"), 2);
+    assertEquals(2, hits.totalHits);
+    ids = getIDs(r, hits);
+    assertTrue(ids.contains("0"));
+    assertTrue(ids.contains("2"));
+    assertEquals(0, s.search(new MatchAllDocsQuery(),
+                             fieldTypes.newFieldExistsFilter("field3"), 1).totalHits);;
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  private Set<String> getIDs(IndexReader r, TopDocs hits) throws IOException {
+    Set<String> ids = new HashSet<>();
+    for(ScoreDoc scoreDoc : hits.scoreDocs) {
+      ids.add(r.document(scoreDoc.doc).getString("id"));
+    }
+    return ids;
   }
 
   private static int hitCount(IndexSearcher s, Query q) throws IOException {

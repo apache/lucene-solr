@@ -68,16 +68,16 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.addDocument(doc(1)); // val=2
     writer.addDocument(doc(3)); // val=2
     writer.commit();
-    assertEquals(1, writer.getFlushDeletesCount());
-    writer.updateNumericDocValue(new Term("id", "doc-0"), "val", 5L);
     assertEquals(2, writer.getFlushDeletesCount());
-    writer.updateNumericDocValue(new Term("id", "doc-1"), "val", 6L);
+    writer.updateNumericDocValue(new Term("id", "doc-0"), "val", 5L);
     assertEquals(3, writer.getFlushDeletesCount());
-    writer.updateNumericDocValue(new Term("id", "doc-2"), "val", 7L); 
+    writer.updateNumericDocValue(new Term("id", "doc-1"), "val", 6L);
     assertEquals(4, writer.getFlushDeletesCount());
+    writer.updateNumericDocValue(new Term("id", "doc-2"), "val", 7L); 
+    assertEquals(5, writer.getFlushDeletesCount());
     writer.getConfig().setRAMBufferSizeMB(1000d);
     writer.updateNumericDocValue(new Term("id", "doc-2"), "val", 7L);
-    assertEquals(4, writer.getFlushDeletesCount());
+    assertEquals(5, writer.getFlushDeletesCount());
     writer.close();
     dir.close();
   }

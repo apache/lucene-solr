@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -819,8 +820,8 @@ public class TestCodecs extends LuceneTestCase {
     // we don't need many documents to assert this, but don't use one document either
     int numDocs = atLeast(random, 50);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("f", "doc", Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("f", "doc");
       writer.addDocument(doc);
     }
     writer.close();

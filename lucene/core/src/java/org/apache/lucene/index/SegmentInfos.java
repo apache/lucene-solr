@@ -823,6 +823,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** Clear all {@link SegmentCommitInfo}s. */
   public void clear() {
     segments.clear();
+    userData.clear();
   }
 
   /** Remove the provided {@link SegmentCommitInfo}.

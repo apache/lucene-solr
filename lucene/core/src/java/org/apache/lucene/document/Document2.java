@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -118,6 +119,11 @@ public class Document2 implements Iterable<IndexableField> {
       sts.setValue(value);
       return sts;
     }
+    
+    @Override
+    public String toString() {
+      return fieldName + ": " + value;
+    }
 
     @Override
     public TokenStream tokenStream(Analyzer analyzerIn, TokenStream reuse) throws IOException {
@@ -143,6 +149,7 @@ public class Document2 implements Iterable<IndexableField> {
       case DATE:
         return getReusedBinaryTokenStream(longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
+      case UNIQUE_ATOM:
         if (fieldType.minTokenLength != null) {
           if (value instanceof String) {
             String s = (String) value;
@@ -359,11 +366,34 @@ public class Document2 implements Iterable<IndexableField> {
 
   @Override
   public Iterator<IndexableField> iterator() {
-    // nocommit how to fix generics here so I can just return fields.iterator?
-    //return fields.iterator();
-    ArrayList<IndexableField> l = new ArrayList<>();
-    l.addAll(fields);
-    return l.iterator();
+    if (fieldTypes != null) {
+      assert fieldTypes.getStored(FieldTypes.FIELD_NAMES_FIELD) == false;
+    }
+
+    return new Iterator<IndexableField>() {
+      int index;
+      int fieldNamesIndex;
+
+      public boolean hasNext() {
+        return index < fields.size() || (changeSchema && fieldTypes != null && fieldTypes.enableExistsFilters && fieldNamesIndex < fields.size());
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+      public IndexableField next() {
+        if (index < fields.size()) {
+          return fields.get(index++);
+        } else if (fieldTypes != null && changeSchema && fieldTypes.enableExistsFilters && fieldNamesIndex < fields.size()) {
+          // nocommit make a more efficient version?  e.g. a single field that takes a list and iterates each via TokenStream.  maybe we
+          // should addAtom(String...)?
+          return new FieldValue(FieldTypes.FIELD_NAMES_FIELD, fields.get(fieldNamesIndex++).fieldName);
+        } else {
+          throw new NoSuchElementException();
+        }
+      }
+    };
   }
 
   public List<FieldValue> getFieldValues() {
@@ -404,10 +434,35 @@ public class Document2 implements Iterable<IndexableField> {
     fields.add(new FieldValue(fieldName, value));
   }
 
-  /** E.g. an "id" (primary key) field.  Default: indexes this value as a single token, and disables norms and freqs. */
+  /** E.g. a binary single-token field. */
+  public void addAtom(String fieldName, byte[] value) {
+    addAtom(fieldName, new BytesRef(value));
+  }
+
   public void addAtom(String fieldName, BytesRef value) {
     if (changeSchema) {
       fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  /** E.g. a primary key field. */
+  public void addUniqueAtom(String fieldName, String value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.UNIQUE_ATOM);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  /** E.g. a primary key field. */
+  public void addUniqueAtom(String fieldName, byte[] value) {
+    addUniqueAtom(fieldName, new BytesRef(value));
+  }
+
+  /** E.g. a primary key field. */
+  public void addUniqueAtom(String fieldName, BytesRef value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.UNIQUE_ATOM);
     }
     fields.add(new FieldValue(fieldName, value));
   }
@@ -545,7 +600,7 @@ public class Document2 implements Iterable<IndexableField> {
 
   static {
     // nocommit is there a cleaner/general way to detect missing enum value in case switch statically?  must we use ecj?
-    assert FieldTypes.ValueType.values().length == 12: "missing case for switch statement below";
+    assert FieldTypes.ValueType.values().length == 13: "missing case for switch statement below";
   }
 
   /** Note: this FieldTypes must already know about all the fields in the incoming doc. */
@@ -568,6 +623,13 @@ public class Document2 implements Iterable<IndexableField> {
           addAtom(fieldName, (BytesRef) field.value);
         } else {
           addAtom(fieldName, (String) field.value);
+        }
+        break;
+      case UNIQUE_ATOM:
+        if (field.value instanceof BytesRef) {
+          addUniqueAtom(fieldName, (BytesRef) field.value);
+        } else {
+          addUniqueAtom(fieldName, (String) field.value);
         }
         break;
       case INT:
@@ -640,7 +702,7 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public Boolean getBoolean(String fieldName) {
-    // nocommit can we assert this is a known field and that its type is boolean...?
+    // nocommit can we assert this is a known field and that its type is correct?
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
         return (Boolean) fieldValue.value;
@@ -651,7 +713,7 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public Date getDate(String fieldName) {
-    // nocommit can we assert this is a known field and that its type is date...?
+    // nocommit can we assert this is a known field and that its type is correct?
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
         return (Date) fieldValue.value;
@@ -662,7 +724,7 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public InetAddress getInetAddress(String fieldName) {
-    // nocommit can we assert this is a known field and that its type is inet address...?
+    // nocommit can we assert this is a known field and that its type is correct?
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
         return (InetAddress) fieldValue.value;
@@ -673,7 +735,7 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public String getString(String fieldName) {
-    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    // nocommit can we assert this is a known field and that its type is correct?
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
         return fieldValue.value.toString();
@@ -684,7 +746,7 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public String[] getStrings(String fieldName) {
-    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    // nocommit can we assert this is a known field and that its type is correct?
     List<String> values = new ArrayList<>();
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
@@ -696,7 +758,7 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public BytesRef getBinary(String fieldName) {
-    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    // nocommit can we assert this is a known field and that its type is correct?
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
         return (BytesRef) fieldValue.value;
@@ -707,7 +769,7 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   public Integer getInt(String fieldName) {
-    // nocommit can we assert this is a known field and that its type is text/short_text...?
+    // nocommit can we assert this is a known field and that its type is correct?
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
         return (Integer) fieldValue.value;

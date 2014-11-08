@@ -478,7 +478,10 @@ public class CheckIndex implements Closeable {
       return result;
     }
 
+    // nocommit TestIndexWriterReader.testAddIndexesAndDoDeletesThreads one time hit EOFE in here:
     FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis.getUserData(), null, null);
+
+    // nocommit verify unique atom type is in fact unique
 
     // find the oldest and newest segment versions
     Version oldest = null;
@@ -582,6 +585,8 @@ public class CheckIndex implements Closeable {
     result.newSegments.clear();
     result.maxSegmentName = -1;
 
+    IndexReader[] segmentReaders = new IndexReader[numSegments];
+
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = sis.info(i);
       int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
@@ -637,6 +642,7 @@ public class CheckIndex implements Closeable {
           infoStream.print("    test: open reader.........");
         reader = new SegmentReader(fieldTypes, info, IOContext.DEFAULT);
         msg(infoStream, "OK");
+        segmentReaders[i] = reader;
 
         segInfoStat.openReaderPassed = true;
         
@@ -727,13 +733,45 @@ public class CheckIndex implements Closeable {
         result.totLoseDocCount += toLoseDocCount;
         result.numBadSegments++;
         continue;
-      } finally {
-        if (reader != null)
-          reader.close();
       }
 
       // Keeper
       result.newSegments.add(info.clone());
+    }
+
+    if (onlySegments == null && result.numBadSegments == 0) {
+      MultiReader topReader = new MultiReader(segmentReaders);
+      try {
+        for(String fieldName : fieldTypes.getFieldNames()) {
+          if (fieldTypes.isUniqueAtom(fieldName)) {
+            Terms terms = MultiFields.getTerms(topReader, fieldName);
+            if (terms != null) {
+              Bits liveDocs = MultiFields.getLiveDocs(topReader);
+              TermsEnum termsEnum = terms.iterator(null);
+              DocsEnum docsEnum = null;
+              while (termsEnum.next() != null) {
+                docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
+                int docID = docsEnum.nextDoc();
+                if (docID != DocsEnum.NO_MORE_DOCS) {
+                  int docID2 = docsEnum.nextDoc();
+                  if (docID2 != DocsEnum.NO_MORE_DOCS) {
+                    msg(infoStream, "FAILED");
+                    // nocommit should "isUnique" be in low schema?
+                    // nocommit have -fix delete the offenders:
+                    String comment = "UNIQUE_ATOM field=\"" + fieldName + "\" is not unique: term=" + termsEnum.term() + " matches both docID=" + docID + " and docID=" + docID2 + "; unable to fix this index";
+                    msg(infoStream, comment);
+                    if (failFast) {
+                      throw new RuntimeException(comment);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      } finally {
+        topReader.close();
+      }
     }
 
     if (0 == result.numBadSegments) {
@@ -2044,17 +2082,16 @@ public class CheckIndex implements Closeable {
           // Again, with the one doc deleted:
           checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
 
-          // Only agg stats if the doc is live:
-          final boolean doStats = liveDocs == null || liveDocs.get(j);
-
-          if (doStats) {
-            status.docCount++;
+          if (liveDocs != null && liveDocs.get(j) == false) {
+            // Only check live docs
+            continue;
           }
 
+          status.docCount++;
+
           for(String field : tfv) {
-            if (doStats) {
-              status.totVectors++;
-            }
+
+            status.totVectors++;
 
             // Make sure FieldInfo thinks this field is vector'd:
             final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
@@ -2268,7 +2305,7 @@ public class CheckIndex implements Closeable {
     segment(s).  This can be specified multiple times,
     to check more than one segment, eg <code>-segment _2
     -segment _a</code>.  You can't use this with the -exorcise
-    option.
+    option.  Note that this skips certain top-level checks.
     </ul>
 
     <p><b>WARNING</b>: <code>-exorcise</code> should only be used on an emergency basis as it will cause

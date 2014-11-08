@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -157,16 +158,20 @@ class DocumentsWriterPerThread {
   final IntBlockPool.Allocator intBlockAllocator;
   private final AtomicLong pendingNumDocs;
   private final LiveIndexWriterConfig indexWriterConfig;
-  
+  final FieldTypes fieldTypes;
+  final IndexWriter writer;
+
   public DocumentsWriterPerThread(String segmentName, IndexWriter writer, Directory directory,
                                   InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs) throws IOException {
     this.directoryOrig = directory;
+    this.writer = writer;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
     this.indexWriterConfig = writer.config;
     this.infoStream = infoStream;
     this.codec = writer.codec;
+    this.fieldTypes = writer.fieldTypes;
     this.docState = new DocState(this, infoStream);
     this.docState.similarity = writer.fieldTypes.getSimilarity();
     this.pendingNumDocs = pendingNumDocs;
@@ -238,7 +243,7 @@ class DocumentsWriterPerThread {
     boolean success = false;
     try {
       try {
-        consumer.processDocument();
+        consumer.processDocument(delTerm);
       } finally {
         docState.clear();
       }
@@ -282,7 +287,7 @@ class DocumentsWriterPerThread {
 
         boolean success = false;
         try {
-          consumer.processDocument();
+          consumer.processDocument(delTerm);
           success = true;
         } finally {
           if (!success) {

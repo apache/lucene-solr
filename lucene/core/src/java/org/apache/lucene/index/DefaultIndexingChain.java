@@ -23,12 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -89,6 +89,7 @@ final class DefaultIndexingChain extends DocConsumer {
     // aborting on any exception from this method
 
     int numDocs = state.segmentInfo.getDocCount();
+
     writeNorms(state);
     writeDocValues(state);
     
@@ -286,7 +287,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   @Override
-  public void processDocument() throws IOException {
+  public void processDocument(Term delTerm) throws IOException {
 
     // How many indexed field names we've seen (collapses
     // multiple field instances by the same name):
@@ -308,7 +309,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
     try {
       for (IndexableField field : docState.doc) {
-        fieldCount = processField(field, fieldGen, fieldCount);
+        fieldCount = processField(field, fieldGen, fieldCount, delTerm);
       }
     } finally {
       if (docWriter.aborting == false) {
@@ -333,7 +334,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  private int processField(IndexableField field, long fieldGen, int fieldCount) throws IOException {
+  private int processField(IndexableField field, long fieldGen, int fieldCount, Term delTerm) throws IOException {
     String fieldName = field.name();
     IndexableFieldType fieldType = field.fieldType();
 
@@ -353,7 +354,7 @@ final class DefaultIndexingChain extends DocConsumer {
       
       fp = getOrAddField(fieldName, fieldType, true);
       boolean first = fp.fieldGen != fieldGen;
-      fp.invert(field, first);
+      fp.invert(field, first, delTerm);
 
       if (first) {
         fields[fieldCount++] = fp;
@@ -483,7 +484,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   /** Returns a previously created {@link PerField},
-   *  absorbing the type information from {@link FieldType},
+   *  absorbing the type information from {@link IndexableFieldType},
    *  and creates a new {@link PerField} if this field name
    *  wasn't seen yet. */
   private PerField getOrAddField(String name, IndexableFieldType fieldType, boolean invert) {
@@ -519,6 +520,8 @@ final class DefaultIndexingChain extends DocConsumer {
     } else {
       fp.fieldInfo.update(fieldType);
 
+      // NOTE: messy, but we must do this in case field was first seen w/o being
+      // indexed, and now is seen again, this time being indexed:
       if (invert && fp.invertState == null) {
         fp.setInvertState();
       }
@@ -535,6 +538,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
     FieldInvertState invertState;
     TermsHashPerField termsHashPerField;
+    final LiveUniqueValues uniqueValues;
 
     // Non-null if this field ever had doc values in this
     // segment:
@@ -559,6 +563,7 @@ final class DefaultIndexingChain extends DocConsumer {
       if (invert) {
         setInvertState();
       }
+      uniqueValues = docWriter.writer.getUniqueValues(fieldInfo.name);
     }
 
     void setInvertState() {
@@ -587,7 +592,7 @@ final class DefaultIndexingChain extends DocConsumer {
     /** Inverts one field for one document; first is true
      *  if this is the first time we are seeing this field
      *  name in this document. */
-    public void invert(IndexableField field, boolean first) throws IOException {
+    public void invert(IndexableField field, boolean first, Term delTerm) throws IOException {
       if (first) {
         // First time we're seeing this field (indexed) in
         // this document:
@@ -666,6 +671,23 @@ final class DefaultIndexingChain extends DocConsumer {
           aborting = true;
           termsHashPerField.add();
           aborting = false;
+
+          // maybe low-schema should know "isUnique"?
+
+          if (uniqueValues != null) {
+            BytesRef token = BytesRef.deepCopyOf(invertState.termAttribute.getBytesRef());
+            // nocommit must force reopen if too many values added, account for RAM, etc.
+            if (uniqueValues.add(token) == false &&
+                (delTerm == null ||
+                 delTerm.field().equals(field.name()) == false ||
+                 delTerm.bytes().equals(token) == false)) {
+              // Unique constraint violated; document will be marked deleted above:
+              throw new NotUniqueException(field.name(), token);
+            }
+            if (stream.incrementToken() != false) {
+              throw new IllegalArgumentException("field \"" + field.name() + "\": unique fields must have a single token");
+            }
+          }
         }
 
         // trigger streams to perform end-of-stream operations

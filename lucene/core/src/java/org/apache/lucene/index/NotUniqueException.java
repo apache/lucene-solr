@@ -17,10 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
 
-abstract class DocConsumer {
-  abstract void processDocument(Term delTerm) throws IOException;
-  abstract void flush(final SegmentWriteState state) throws IOException;
-  abstract void abort();
+public class NotUniqueException extends IllegalArgumentException {
+  public NotUniqueException(String fieldName, BytesRef value) {
+    super("field \"" + fieldName + "\" must be unique, but value=" + value + " appears more than once");
+  }
 }

@@ -23,9 +23,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -116,12 +118,11 @@ public class TestLongPostings extends LuceneTestCase {
     final RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
 
     for(int idx=0;idx<NUM_DOCS;idx++) {
-      final Document doc = new Document();
+      final Document2 doc = riw.newDocument();
       String s = isS1.get(idx) ? s1 : s2;
-      final Field f = newTextField("field", s, Field.Store.NO);
       final int count = TestUtil.nextInt(random(), 1, 4);
       for(int ct=0;ct<count;ct++) {
-        doc.add(f);
+        doc.addLargeText("field", s);
       }
       riw.addDocument(doc);
     }
@@ -312,16 +313,15 @@ public class TestLongPostings extends LuceneTestCase {
       iwc.setRAMBufferSizeMB(16.0 + 16.0 * random().nextDouble());
       iwc.setMaxBufferedDocs(-1);
       final RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-      ft.setIndexOptions(options);
+      FieldTypes fieldTypes = riw.getFieldTypes();
+      fieldTypes.disableHighlighting("field");
+      fieldTypes.setIndexOptions("field", options);
       for(int idx=0;idx<NUM_DOCS;idx++) {
-        final Document doc = new Document();
+        final Document2 doc = riw.newDocument();
         String s = isS1.get(idx) ? s1 : s2;
-        final Field f = newField("field", s, ft);
         final int count = TestUtil.nextInt(random(), 1, 4);
         for(int ct=0;ct<count;ct++) {
-          doc.add(f);
+          doc.addLargeText("field", s);
         }
         riw.addDocument(doc);
       }

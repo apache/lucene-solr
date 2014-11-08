@@ -52,6 +52,7 @@ import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -268,6 +269,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private final DocumentsWriter docWriter;
   private final Queue<Event> eventQueue;
   final IndexFileDeleter deleter;
+  final Map<String,LiveUniqueValues> uniqueValues = new HashMap<>();
+
+  // nocommit can we change DirectoryReader API so consumers just pull our reader manager instead?  it's "better" than the low-level "open
+  // your own DR" API?
+  private final ReaderManager readerManager;
 
   // used by forceMerge to note those needing merging
   private Map<SegmentCommitInfo,Boolean> segmentsToMerge = new HashMap<>();
@@ -386,6 +392,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   DirectoryReader getReader(boolean applyAllDeletes) throws IOException {
     ensureOpen();
+
+    // nocommit fixme so it's only my readerManager that's calling this... or just make this private, so the only way for users is to use ReaderManager
 
     final long tStart = System.currentTimeMillis();
 
@@ -871,14 +879,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         codec = fieldTypes.getCodec();
       }
 
+      // nocommit can we make this lazy-open the reader?
+      readerManager = new ReaderManager(this, true);
+
       success = true;
 
     } finally {
       if (!success) {
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "init: hit exception on init; releasing write lock");
+          infoStream.message("IW", "init: hit exception on init; releasing write lock and closing");
         }
-        IOUtils.closeWhileHandlingException(writeLock);
+        IOUtils.closeWhileHandlingException(writeLock, this);
         writeLock = null;
       }
     }
@@ -2011,8 +2022,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       // Must pre-close in case it increments changeCount so that we can then
-      // set it to false before calling closeInternal
+      // set it to false before closing
       mergeScheduler.close();
+
+      readerManager.close();
 
       bufferedUpdatesStream.clear();
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
@@ -2088,7 +2101,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
           
           // close all the closeables we can (but important is readerPool and writeLock to prevent leaks)
-          IOUtils.closeWhileHandlingException(readerPool, deleter, writeLock);
+          IOUtils.closeWhileHandlingException(readerManager, readerPool, deleter, writeLock);
           writeLock = null;
         }
         closed = true;
@@ -2409,6 +2422,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public void addIndexes(Directory... dirs) throws IOException {
     ensureOpen();
 
+    // nocommit must test that unique_atom fields don't conflict:
+
     noDupDirs(dirs);
 
     List<Lock> locks = acquireWriteLocks(dirs);
@@ -2542,6 +2557,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public void addIndexes(IndexReader... readers) throws IOException {
     ensureOpen();
     int numDocs = 0;
+
+    // nocommit must test that unique_atom fields don't conflict:
 
     try {
       if (infoStream.isEnabled("IW")) {
@@ -3089,7 +3106,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "don't apply deletes now delTermCount=" + bufferedUpdatesStream.numTerms() + " bytesUsed=" + bufferedUpdatesStream.ramBytesUsed());
     }
   }
-  
+
+  // nocommit we can fix IDVPF since it will only see given ID once now?
+
   final synchronized void applyAllDeletesAndUpdates() throws IOException {
     flushDeletesCount.incrementAndGet();
     final BufferedUpdatesStream.ApplyDeletesResult result;
@@ -4597,7 +4616,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         maybeMerge(config.getMergePolicy(), MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
       }
     }
-    
   }
   
   synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
@@ -4606,7 +4624,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
   
   synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
-    ensureOpen();
+    ensureOpen(false);
     deleter.decRef(segmentInfos);
   }
   
@@ -4670,5 +4688,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       pendingNumDocs.addAndGet(-numDocs);
       throw new IllegalStateException("number of documents in the index cannot exceed " + actualMaxDocs);
     }
+  }
+
+  // nocommit cutover tests to this, remove DirectoryReader(writer) API, remove ReaderManager(writer) ctor
+
+  // nocommit must close this in close?  why are tests not failing...
+
+  /** Returns a {@link ReferenceManager} to get near-real-time readers. */
+  public ReferenceManager<DirectoryReader> getReaderManager() {
+    return readerManager;
+  }
+
+  // nocommit we could expose this to apps too?  e.g. to check if a given id exists in the index
+
+  // nocommit explore other optos once we know field is unique
+
+  synchronized LiveUniqueValues getUniqueValues(String uidFieldName) {
+    LiveUniqueValues v;
+    if (fieldTypes.isUnique(uidFieldName)) {
+      v = uniqueValues.get(uidFieldName);
+      if (v == null) {
+        v = new LiveUniqueValues(uidFieldName, readerManager);
+        uniqueValues.put(uidFieldName, v);
+      }
+    } else {
+      v = null;
+    }
+
+    return v;
   }
 }

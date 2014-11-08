@@ -23,11 +23,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -897,6 +899,33 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       writer.rollback();
     }
     
+    dir.close();
+  }
+
+  public void testExcIndexingDocBeforeDocValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setDocValueType(DocValuesType.SORTED);
+    ft.freeze();
+    Field field = new Field("test", "value", ft);
+    field.setTokenStream(new TokenStream() {
+        @Override
+        public boolean incrementToken() {
+          throw new RuntimeException("no");
+        }
+      });
+    doc.add(field);
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (RuntimeException re) {
+      // expected
+    }
+    w.addDocument(new Document());
+    w.close();
     dir.close();
   }
 }

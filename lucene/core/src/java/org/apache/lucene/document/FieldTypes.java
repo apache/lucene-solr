@@ -46,13 +46,16 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
@@ -98,6 +101,18 @@ import org.apache.lucene.util.Version;
 //   PerFieldSimilarityWrapper
 //   PerFieldAnalyzerWrapper
 //   oal.document
+
+// nocommit byte, short?
+
+// nocommit allow adding array of atom values?  fieldnamesfield would use it?
+
+// nocommit optimize field exists filter to MatchAllBits when all docs in the seg have the field; same opto as range query when min < terms.min & max > terms.max
+
+// nocommit use better pf when field is unique
+
+// nocommit filter caching?  parent docs filter?
+
+// nocommit do we allow mixing of binary and non-binary atom?
 
 // nocommit index field names the doc has?
 
@@ -182,14 +197,12 @@ import org.apache.lucene.util.Version;
 
 public class FieldTypes {
 
-  /** Key used to store the field types inside {@link IndexWriter#setCommitData}. */
-  public static final String FIELD_PROPERTIES_KEY = "field_properties";
-
   enum ValueType {
     NONE,
     TEXT,
     SHORT_TEXT,
     ATOM,  // nocommit binary sort of overlaps w/ this?
+    UNIQUE_ATOM,  // nocommit binary sort of overlaps w/ this?
     INT,
     FLOAT,
     LONG,
@@ -202,6 +215,12 @@ public class FieldTypes {
   }
 
   private final boolean readOnly;
+
+  public static final String FIELD_NAMES_FIELD = "$fieldnames";
+
+  /** So exists filters are fast */
+  boolean enableExistsFilters = true;
+  private boolean indexedDocs;
 
   private final Version indexCreatedVersion;
 
@@ -252,6 +271,8 @@ public class FieldTypes {
     // Gaps to add between multiple values of the same field; if these are not set, we fallback to the Analyzer for that field.
     volatile Integer analyzerPositionGap;
     volatile Integer analyzerOffsetGap;
+
+    // nocommit should we default max token length to ... 256?
 
     // Min/max token length, or null if there are no limits:
     volatile Integer minTokenLength;
@@ -382,6 +403,7 @@ public class FieldTypes {
         }
         break;
       case ATOM:
+      case UNIQUE_ATOM:
         if (highlighted == Boolean.TRUE) {
           illegalState(name, "type " + valueType + " cannot highlight");
         }
@@ -396,6 +418,14 @@ public class FieldTypes {
         }
         if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
           illegalState(name, "type " + valueType + " can only be indexed as DOCS; got " + indexOptions);
+        }
+        if (valueType == ValueType.UNIQUE_ATOM) {
+          if (indexOptions != IndexOptions.DOCS) {
+            illegalState(name, "type " + valueType + " must be indexed as DOCS; got " + indexOptions);
+          }
+          if (multiValued == Boolean.TRUE) {
+            illegalState(name, "type " + valueType + " cannot be multivalued");
+          }
         }
         if (maxTokenCount != null) {
           illegalState(name, "type " + valueType + " cannot set max token count");
@@ -767,6 +797,9 @@ public class FieldTypes {
       case INET_ADDRESS:
         out.writeByte((byte) 11);
         break;
+      case UNIQUE_ATOM:
+        out.writeByte((byte) 12);
+        break;
       default:
         throw new AssertionError("missing ValueType in switch");
       }
@@ -954,6 +987,9 @@ public class FieldTypes {
       case 11:
         valueType = ValueType.INET_ADDRESS;
         break;
+      case 12:
+        valueType = ValueType.UNIQUE_ATOM;
+        break;
       default:
         throw new CorruptIndexException("invalid byte for ValueType: " + b, in);
       }
@@ -1074,6 +1110,7 @@ public class FieldTypes {
   }
 
   // nocommit messy we steal this from commitdata namespace...
+  /** Key used to store the field types inside {@link IndexWriter#setCommitData}. */
   public static final String FIELD_TYPES_KEY = "FieldTypes";
   
   private Version loadFields(Map<String,String> commitUserData, boolean isNewIndex) throws IOException {
@@ -1082,12 +1119,28 @@ public class FieldTypes {
     if (currentFieldTypes != null) {
       return readFromString(currentFieldTypes);
     } else if (isNewIndex == false) {
-      // nocommit must handle back compat here :)
+      // nocommit must handle back compat here
       // throw new CorruptIndexException("FieldTypes is missing from this index", "CommitUserData");
+      enableExistsFilters = false;
       return Version.LATEST;
     } else {
+      FieldType fieldType = new FieldType(FIELD_NAMES_FIELD);
+      fields.put(FIELD_NAMES_FIELD, fieldType);
+      fieldType.multiValued = Boolean.TRUE;
+      fieldType.valueType = ValueType.ATOM;
+      fieldType.sortable = Boolean.TRUE;
+      fieldType.stored = Boolean.FALSE;
+      setDefaults(fieldType);
       return Version.LATEST;
     }
+  }
+
+  private FieldType newFieldType(String fieldName) {
+    if (fieldName.equals(FIELD_NAMES_FIELD)) {
+      throw new IllegalArgumentException("field name \"" + fieldName + "\" is reserved");
+    }
+
+    return new FieldType(fieldName);
   }
 
   /** Decodes String previously created by bytesToString. */
@@ -1152,7 +1205,7 @@ public class FieldTypes {
 
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.postingsFormat = postingsFormat;
       fields.put(fieldName, current);
       changed();
@@ -1191,7 +1244,7 @@ public class FieldTypes {
 
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.docValuesFormat = docValuesFormat;
       fields.put(fieldName, current);
       changed();
@@ -1397,7 +1450,7 @@ public class FieldTypes {
   public synchronized void setIndexAnalyzer(String fieldName, Analyzer analyzer) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.indexAnalyzer = analyzer;
       fields.put(fieldName, current);
       changed();
@@ -1428,7 +1481,7 @@ public class FieldTypes {
   public synchronized void setQueryAnalyzer(String fieldName, Analyzer analyzer) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.queryAnalyzer = analyzer;
       fields.put(fieldName, current);
       changed();
@@ -1459,7 +1512,7 @@ public class FieldTypes {
   public synchronized void setSimilarity(String fieldName, Similarity similarity) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.similarity = similarity;
       fields.put(fieldName, current);
       changed();
@@ -1478,7 +1531,7 @@ public class FieldTypes {
   public synchronized void setMultiValued(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.multiValued = Boolean.TRUE;
       fields.put(fieldName, current);
       changed();
@@ -1509,7 +1562,7 @@ public class FieldTypes {
   public synchronized void setMinMaxTokenLength(String fieldName, int minTokenLength, int maxTokenLength) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.minTokenLength = minTokenLength;
       current.maxTokenLength = maxTokenLength;
       fields.put(fieldName, current);
@@ -1557,7 +1610,7 @@ public class FieldTypes {
   public synchronized void setMaxTokenCount(String fieldName, int maxTokenCount, boolean consumeAllTokens) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.maxTokenCount = maxTokenCount;
       current.consumeAllTokens = consumeAllTokens;
       fields.put(fieldName, current);
@@ -1597,7 +1650,7 @@ public class FieldTypes {
   public synchronized void setAnalyzerPositionGap(String fieldName, int gap) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.analyzerPositionGap = gap;
       fields.put(fieldName, current);
       changed();
@@ -1623,7 +1676,7 @@ public class FieldTypes {
   public synchronized void setAnalyzerOffsetGap(String fieldName, int gap) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.analyzerOffsetGap = gap;
       fields.put(fieldName, current);
       changed();
@@ -1668,7 +1721,7 @@ public class FieldTypes {
 
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.blockTreeMinItemsInBlock = minItemsInBlock;
       current.blockTreeMaxItemsInBlock = maxItemsInBlock;
       fields.put(fieldName, current);
@@ -1716,7 +1769,7 @@ public class FieldTypes {
 
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.blockTreeMinItemsInAutoPrefix = minItemsInAutoPrefix;
       current.blockTreeMaxItemsInAutoPrefix = maxItemsInAutoPrefix;
       fields.put(fieldName, current);
@@ -1750,7 +1803,7 @@ public class FieldTypes {
   public synchronized void enableSorting(String fieldName, boolean reversed) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.sortable = Boolean.TRUE;
       current.sortReversed = reversed;
       fields.put(fieldName, current);
@@ -1782,7 +1835,7 @@ public class FieldTypes {
   public synchronized void disableSorting(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.sortable = Boolean.FALSE;
       fields.put(fieldName, current);
       changed();
@@ -1852,7 +1905,7 @@ public class FieldTypes {
   public synchronized void enableFastRanges(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.fastRanges = Boolean.TRUE;
       fields.put(fieldName, current);
       changed();
@@ -1877,7 +1930,7 @@ public class FieldTypes {
   public synchronized void disableFastRanges(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.fastRanges = Boolean.FALSE;
       fields.put(fieldName, current);
       changed();
@@ -1897,7 +1950,7 @@ public class FieldTypes {
   public synchronized void enableHighlighting(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.highlighted = Boolean.TRUE;
       fields.put(fieldName, current);
       changed();
@@ -1922,7 +1975,7 @@ public class FieldTypes {
   public synchronized void disableHighlighting(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.highlighted = Boolean.FALSE;
       fields.put(fieldName, current);
       changed();
@@ -1951,7 +2004,7 @@ public class FieldTypes {
     // throws exc if norms were already disabled
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.indexNorms = Boolean.TRUE;
       fields.put(fieldName, current);
       changed();
@@ -1975,7 +2028,7 @@ public class FieldTypes {
   public synchronized void disableNorms(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.indexNorms = Boolean.FALSE;
       fields.put(fieldName, current);
       changed();
@@ -1993,7 +2046,7 @@ public class FieldTypes {
   public synchronized void enableStored(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.stored = Boolean.TRUE;
       fields.put(fieldName, current);
       changed();
@@ -2008,7 +2061,7 @@ public class FieldTypes {
   public synchronized void disableStored(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.stored = Boolean.FALSE;
       fields.put(fieldName, current);
       changed();
@@ -2030,7 +2083,7 @@ public class FieldTypes {
   public synchronized void enableTermVectors(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.storeTermVectors = Boolean.TRUE;
       fields.put(fieldName, current);
       changed();
@@ -2044,7 +2097,7 @@ public class FieldTypes {
   public synchronized void disableTermVectors(String fieldName) {
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.storeTermVectors = Boolean.FALSE;
       fields.put(fieldName, current);
       changed();
@@ -2148,7 +2201,7 @@ public class FieldTypes {
     }
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.indexOptions = indexOptions;
       current.indexOptionsSet = true;
       fields.put(fieldName, current);
@@ -2197,7 +2250,7 @@ public class FieldTypes {
     }
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.docValuesType = dvType;
       current.docValuesTypeSet = true;
       fields.put(fieldName, current);
@@ -2235,9 +2288,10 @@ public class FieldTypes {
 
   synchronized void recordValueType(String fieldName, ValueType valueType) {
     ensureWritable();
+    indexedDocs = true;
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.valueType = valueType;
       fields.put(fieldName, current);
       setDefaults(current);
@@ -2263,9 +2317,10 @@ public class FieldTypes {
 
   synchronized void recordLargeTextType(String fieldName, boolean allowStored, boolean indexed) {
     ensureWritable();
+    indexedDocs = true;
     FieldType current = fields.get(fieldName);
     if (current == null) {
-      current = new FieldType(fieldName);
+      current = newFieldType(fieldName);
       current.valueType = ValueType.TEXT;
       fields.put(fieldName, current);
       setDefaults(current);
@@ -2278,17 +2333,23 @@ public class FieldTypes {
       changed();
     } else if (current.valueType == ValueType.NONE) {
       // This can happen if e.g. the app first calls FieldTypes.setStored(...)
+      Boolean oldStored = current.stored;
       boolean success = false;
       try {
         current.valueType = ValueType.TEXT;
-        current.validate();
-        if (allowStored == false && current.stored == Boolean.TRUE) {
-          illegalState(fieldName, "can only store String large text fields");
+        if (allowStored == false) {
+          if (current.stored == Boolean.TRUE) {
+            illegalState(fieldName, "can only store String large text fields");
+          } else if (current.stored == null) {
+            current.stored = Boolean.FALSE;
+          }
         }
+        current.validate();
         success = true;
       } finally {
         if (success == false) {
           current.valueType = ValueType.NONE;
+          current.stored = oldStored;
         }
       }
       setDefaults(current);
@@ -2401,6 +2462,7 @@ public class FieldTypes {
       break;
 
     case ATOM:
+    case UNIQUE_ATOM:
     case INET_ADDRESS:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
@@ -2722,8 +2784,7 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, new BytesRef(token.getAddress())));
   }
 
-  // nocommit shouldn't this be a filter?
-  public Query newRangeQuery(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
+  public Filter newRangeFilter(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2772,11 +2833,14 @@ public class FieldTypes {
       return null;
     }
 
-    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
   }
 
-  // nocommit shouldn't this be a filter?
-  public Query newRangeQuery(String fieldName, BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
+  public Filter newRangeFilter(String fieldName, byte[] minTerm, boolean minInclusive, byte[] maxTerm, boolean maxInclusive) {
+    return newRangeFilter(fieldName, new BytesRef(minTerm), minInclusive, new BytesRef(maxTerm), maxInclusive);
+  }
+
+  public Filter newRangeFilter(String fieldName, BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2792,13 +2856,12 @@ public class FieldTypes {
 
     // nocommit verify type is BINARY or ATOM?
 
-    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
   }
 
   // nocommit Date sugar for a range query matching a specific hour/day/month/year/etc.?  need locale/timezone... should we use DateTools?
 
-  // nocommit shouldn't this be a filter?
-  public Query newRangeQuery(String fieldName, Date min, boolean minInclusive, Date max, boolean maxInclusive) {
+  public Filter newRangeFilter(String fieldName, Date min, boolean minInclusive, Date max, boolean maxInclusive) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2819,12 +2882,11 @@ public class FieldTypes {
     BytesRef minTerm = min == null ? null : Document2.longToBytes(min.getTime());
     BytesRef maxTerm = max == null ? null : Document2.longToBytes(max.getTime());
 
-    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
   }
 
-  // nocommit shouldn't this be a filter?
   // nocommit also add "range filter using net mask" sugar version
-  public Query newRangeQuery(String fieldName, InetAddress min, boolean minInclusive, InetAddress max, boolean maxInclusive) {
+  public Filter newRangeFilter(String fieldName, InetAddress min, boolean minInclusive, InetAddress max, boolean maxInclusive) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2845,7 +2907,7 @@ public class FieldTypes {
     BytesRef minTerm = min == null ? null : new BytesRef(min.getAddress());
     BytesRef maxTerm = max == null ? null : new BytesRef(max.getAddress());
 
-    return new TermRangeQuery(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
   }
 
   // nocommit newPhraseQuery?
@@ -2999,6 +3061,7 @@ public class FieldTypes {
 
     case SHORT_TEXT:
     case ATOM:
+    case UNIQUE_ATOM:
     case BINARY:
     case BOOLEAN:
     case INET_ADDRESS:
@@ -3034,11 +3097,21 @@ public class FieldTypes {
       // Dead code but javac disagrees:
       return null;
     }
-  }     
+  }
+
+  /** Returns a {@link Filter} accepting documents that have this field. */
+  public Filter newFieldExistsFilter(String fieldName) {
+    if (enableExistsFilters == false) {
+      throw new IllegalStateException("field exists filter was disabled");
+    }
+
+    // nocommit TermFilter?
+    // nocommit optimize this filter to MatchAllDocs when Terms.getDocCount() == maxDoc
+    return new QueryWrapperFilter(new TermQuery(new Term(FIELD_NAMES_FIELD, fieldName)));
+  }
 
   private synchronized void changed() {
     ensureWritable();
-    // Push to IW's commit data
     changeCount++;
   }
 
@@ -3070,6 +3143,9 @@ public class FieldTypes {
     out.writeVInt(indexCreatedVersion.minor);
     out.writeVInt(indexCreatedVersion.bugfix);
 
+    writeBoolean(out, enableExistsFilters);
+    writeBoolean(out, indexedDocs);
+
     out.writeVInt(fields.size());
     for(FieldType fieldType : fields.values()) {
       fieldType.write(out);
@@ -3086,6 +3162,7 @@ public class FieldTypes {
 
   /** Reads FieldTypes from previously saved. */
   private synchronized Version readFromString(String stringIn) throws IOException {
+
     byte[] bytesIn = stringToBytes(stringIn);
     RAMFile file = new RAMFile();
     RAMOutputStream out = new RAMOutputStream(file, false);
@@ -3097,6 +3174,9 @@ public class FieldTypes {
     CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
 
     Version indexCreatedVersion = Version.fromBits(in.readVInt(), in.readVInt(), in.readVInt());
+
+    enableExistsFilters = readBoolean(in);
+    indexedDocs = readBoolean(in);
 
     int count = in.readVInt();
     for(int i=0;i<count;i++) {
@@ -3134,6 +3214,10 @@ public class FieldTypes {
     return new FieldTypes(commitUserData, defaultQueryAnalyzer, defaultSimilarity);
   }
 
+  public boolean isUniqueAtom(String fieldName) {
+    return getFieldType(fieldName).valueType == ValueType.UNIQUE_ATOM;
+  }
+
   public Iterable<String> getFieldNames() {
     return Collections.unmodifiableSet(fields.keySet());
   }
@@ -3151,10 +3235,50 @@ public class FieldTypes {
     }
   }
 
+  /** Returns true if values in this field must be unique across all documents in the index. */
+  public synchronized boolean isUnique(String fieldName) {   
+    FieldType current = fields.get(fieldName);
+    return current != null && current.valueType == ValueType.UNIQUE_ATOM;
+  }
+
   /** Defines a dynamic field, computed by a Javascript expression referring
    *  to other field values, to be used for sorting. */
   public void addIntExpressionField(String fieldName, String expression) {
     // nocommit how to do this?  must we make a FieldTypes subclass in expressions module = pita?
   }
+
   // nocommit also long, float, double
+
+  public synchronized void enableExistsFilters() {
+    if (enableExistsFilters == false && indexedDocs) {
+      throw new IllegalStateException("cannot enable exists filters after documents were already indexed");
+    }
+    enableExistsFilters = true;
+  }
+
+  public synchronized void disableExistsFilters() {
+    if (enableExistsFilters && indexedDocs) {
+      throw new IllegalStateException("cannot disable exists filters after documents were already indexed");
+    }
+    enableExistsFilters = false;
+  }
+
+  private static void writeBoolean(DataOutput out, boolean value) throws IOException {
+    if (value) {
+      out.writeByte((byte) 1);
+    } else {
+      out.writeByte((byte) 0);
+    }
+  }
+
+  private static boolean readBoolean(DataInput in) throws IOException {
+    byte b = in.readByte();
+    if (b == 1) {
+      return true;
+    } else if (b == 0) {
+      return false;
+    } else {
+      throw new CorruptIndexException("invalid byte for boolean: " + b, in);
+    }
+  }
 }

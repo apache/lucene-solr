@@ -174,24 +174,10 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
     
-    // compare per-segment
-    DirectoryReader ir = writer.getReader();
-    for (LeafReaderContext context : ir.leaves()) {
-      LeafReader r = context.reader();
-      Terms terms = r.terms("indexed");
-      if (terms != null) {
-        assertEquals(terms.size(), r.getSortedSetDocValues("dv").getValueCount());
-        TermsEnum expected = terms.iterator(null);
-        TermsEnum actual = r.getSortedSetDocValues("dv").termsEnum();
-        assertEquals(terms.size(), expected, actual);
-      }
-    }
-    ir.close();
-    
     writer.forceMerge(1);
     
     // now compare again after the merge
-    ir = writer.getReader();
+    DirectoryReader ir = writer.getReader();
     LeafReader ar = getOnlySegmentReader(ir);
     Terms terms = ar.terms("indexed");
     if (terms != null) {
@@ -200,6 +186,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
       TermsEnum actual = ar.getSortedSetDocValues("dv").termsEnum();
       assertEquals(terms.size(), expected, actual);
     }
+
     ir.close();
     
     writer.close();

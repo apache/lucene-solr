@@ -22,16 +22,18 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Test indexes 2B docs with 65k freqs each, 
@@ -63,13 +65,13 @@ public class Test2BPostingsBytes extends LuceneTestCase {
      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
     }
 
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-    ft.setOmitNorms(true);
+    Document2 doc = w.newDocument();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableNorms("field");
+    fieldTypes.disableHighlighting("field");
+    fieldTypes.setIndexOptions("field", IndexOptions.DOCS_AND_FREQS);
     MyTokenStream tokenStream = new MyTokenStream();
-    Field field = new Field("field", tokenStream, ft);
-    doc.add(field);
+    doc.addLargeText("field", tokenStream);
     
     final int numDocs = 1000;
     for (int i = 0; i < numDocs; i++) {

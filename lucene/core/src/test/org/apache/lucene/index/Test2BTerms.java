@@ -27,9 +27,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -191,14 +193,19 @@ public class Test2BTerms extends LuceneTestCase {
         ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
       }
 
-      Document doc = new Document();
+      FieldTypes fieldTypes = w.getFieldTypes();
+
+      Document2 doc = w.newDocument();
+
+      List<Long> savedTokens = new ArrayList<>();
+
       final MyTokenStream ts = new MyTokenStream(random(), TERMS_PER_DOC);
 
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setIndexOptions(IndexOptions.DOCS);
-      customType.setOmitNorms(true);
-      Field field = new Field("field", ts, customType);
-      doc.add(field);
+      fieldTypes.disableStored("field");
+      fieldTypes.disableHighlighting("field");
+      fieldTypes.disableNorms("field");
+      fieldTypes.setIndexOptions("field", IndexOptions.DOCS);
+      doc.addLargeText("field", ts);
       //w.setInfoStream(System.out);
       final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);
 

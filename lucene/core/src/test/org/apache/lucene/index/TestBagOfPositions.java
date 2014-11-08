@@ -25,9 +25,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -76,29 +78,30 @@ public class TestBagOfPositions extends LuceneTestCase {
       System.out.println("config: " + iw.w.getConfig());
       System.out.println("threadCount=" + threadCount);
     }
-    
+
+    FieldTypes fieldTypes = iw.getFieldTypes();
     Field prototype = newTextField("field", "", Field.Store.NO);
-    FieldType fieldType = new FieldType(prototype.fieldType());
     if (random().nextBoolean()) {
-      fieldType.setOmitNorms(true);
+      fieldTypes.disableNorms("field");
     }
     int options = random().nextInt(3);
     if (options == 0) {
-      fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS); // we dont actually need positions
-      fieldType.setStoreTermVectors(true); // but enforce term vectors when we do this so we check SOMETHING
+      fieldTypes.disableHighlighting("field");
+      fieldTypes.setIndexOptions("field", IndexOptions.DOCS_AND_FREQS); // we dont actually need positions
+      fieldTypes.enableTermVectors("field"); // but enforce term vectors when we do this so we check SOMETHING
     } else if (options == 1) {
-      fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+      fieldTypes.setIndexOptions("field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    } else {
+      // else just positions
+      fieldTypes.disableHighlighting("field");
+      fieldTypes.setIndexOptions("field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     }
-    // else just positions
 
     Thread[] threads = new Thread[threadCount];
     final CountDownLatch startingGun = new CountDownLatch(1);
 
     for(int threadID=0;threadID<threadCount;threadID++) {
       final Random threadRandom = new Random(random().nextLong());
-      final Document document = new Document();
-      final Field field = new Field("field", "", fieldType);
-      document.add(field);
       threads[threadID] = new Thread() {
           @Override
           public void run() {
@@ -115,7 +118,8 @@ public class TestBagOfPositions extends LuceneTestCase {
                   text.append(' ');
                   text.append(token);
                 }
-                field.setStringValue(text.toString());
+                Document2 document = iw.newDocument();
+                document.addLargeText("field", text.toString());
                 iw.addDocument(document);
               }
             } catch (Exception e) {

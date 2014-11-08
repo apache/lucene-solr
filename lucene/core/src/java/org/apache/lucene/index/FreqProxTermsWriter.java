@@ -97,9 +97,13 @@ final class FreqProxTermsWriter extends TermsHash {
     // Sort by field name
     CollectionUtil.introSort(allFields);
 
-    Fields fields = new FreqProxFields(allFields);
+    FreqProxFields fields = new FreqProxFields(allFields);
 
     applyDeletes(state, fields);
+
+    if (state.liveDocs != null) {
+      fields.setLiveDocs(state.liveDocs);
+    }
 
     FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
     boolean success = false;

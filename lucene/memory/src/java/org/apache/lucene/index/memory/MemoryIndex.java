@@ -980,6 +980,7 @@ public class MemoryIndex {
       public void seekExact(long ord) {
         assert ord < info.terms.size();
         termUpto = (int) ord;
+        info.terms.get(info.sortedTerms[termUpto], br);
       }
       
       @Override

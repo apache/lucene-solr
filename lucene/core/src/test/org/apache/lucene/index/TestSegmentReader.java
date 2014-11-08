@@ -59,7 +59,7 @@ public class TestSegmentReader extends LuceneTestCase {
   public void test() {
     assertTrue(dir != null);
     assertTrue(reader != null);
-    assertTrue(DocHelper.numFields() == DocHelper.getAll(fieldTypes).size());
+    assertEquals(DocHelper.getAll(fieldTypes).size(), DocHelper.numFields()+1);
   }
   
   public void testDocument() throws IOException {
@@ -68,7 +68,7 @@ public class TestSegmentReader extends LuceneTestCase {
     Document2 result = reader.document(0);
     assertTrue(result != null);
     //There are 2 unstored fields on the document that are not preserved across writing
-    assertTrue(DocHelper.numFields(result) == DocHelper.numFields() - DocHelper.getUnstored(fieldTypes).size());
+    assertEquals(DocHelper.numFields() - DocHelper.getUnstored(fieldTypes).size() + 1, DocHelper.numFields(result));
     
     List<IndexableField> fields = result.getFields();
     Set<String> allFieldNames = DocHelper.getAll(fieldTypes);
@@ -110,6 +110,9 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testTerms() throws IOException {
     Fields fields = MultiFields.getFields(reader);
     for (String field : fields) {
+      if (field.equals(FieldTypes.FIELD_NAMES_FIELD)) {
+        continue;
+      }
       Terms terms = fields.terms(field);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator(null);

@@ -279,7 +279,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
    
     /** NOTE: this method does not carry over termVector
      *  the indexer chain must set these fields when they
-     *  succeed in consuming the document */
+     *  succeed in consuming the document, nor the DocValuesType */
     public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
       // TODO: really, indexer shouldn't even call this
       // method (it's only called from DocFieldProcessor);
@@ -288,7 +288,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       // be updated by maybe FreqProxTermsWriterPerField:
       return addOrUpdateInternal(name, -1, false,
                                  fieldType.omitNorms(), false,
-                                 fieldType.indexOptions(), fieldType.docValueType());
+                                 fieldType.indexOptions(), DocValuesType.NONE);
     }
 
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber,

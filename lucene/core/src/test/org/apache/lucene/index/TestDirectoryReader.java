@@ -58,10 +58,10 @@ public class TestDirectoryReader extends LuceneTestCase {
     Set<String> unstored = DocHelper.getUnstored(fieldTypes);
     Document2 newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);
-    assertEquals(DocHelper.numFields() - unstored.size(), DocHelper.numFields(newDoc1));
+    assertEquals(DocHelper.numFields() - unstored.size() + 1, DocHelper.numFields(newDoc1));
     Document2 newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields() - unstored.size());
+    assertEquals(DocHelper.numFields() - unstored.size() + 1, DocHelper.numFields(newDoc2));
     Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
 
@@ -271,7 +271,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     assertTrue(allFieldNames.contains("tvpositionoffset"));
       
     // verify that only indexed fields were returned
-    assertEquals(11, indexedFieldNames.size());    // 6 original + the 5 termvector fields 
+    assertEquals(12, indexedFieldNames.size());    // 6 original + the 5 termvector fields + $fieldnames
     assertTrue(indexedFieldNames.contains("keyword"));
     assertTrue(indexedFieldNames.contains("text"));
     assertTrue(indexedFieldNames.contains("unstored"));

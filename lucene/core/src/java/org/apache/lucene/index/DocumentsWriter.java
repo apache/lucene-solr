@@ -19,9 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -138,6 +140,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   
   synchronized boolean deleteQueries(final Query... queries) throws IOException {
     // TODO why is this synchronized?
+    // nocommit do we disallow this when there are unique fields?
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     deleteQueue.addDelete(queries);
     flushControl.doOnDelete();
@@ -149,10 +152,18 @@ final class DocumentsWriter implements Closeable, Accountable {
   // per-DWPT map (but still must go into the global map)
   synchronized boolean deleteTerms(final Term... terms) throws IOException {
     // TODO why is this synchronized?
+    for(Term term : terms) {
+      LiveUniqueValues uniqueValues = writer.getUniqueValues(term.field());
+      if (uniqueValues != null) {
+        // We must live-delete this field:
+        uniqueValues.delete(term.bytes());
+      }
+    }
+
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     deleteQueue.addDelete(terms);
     flushControl.doOnDelete();
-    return applyAllDeletes( deleteQueue);
+    return applyAllDeletes(deleteQueue);
   }
 
   synchronized boolean updateDocValues(DocValuesUpdate... updates) throws IOException {
