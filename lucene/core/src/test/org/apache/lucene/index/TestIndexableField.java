@@ -86,7 +86,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public DocValuesType docValueType() {
+      public DocValuesType docValuesType() {
         return DocValuesType.NONE;
       }
     };
