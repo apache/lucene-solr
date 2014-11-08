@@ -20,8 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +33,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -551,11 +552,13 @@ class ReadersAndUpdates {
         }
         // create new fields or update existing ones to have NumericDV type
         for (String f : dvUpdates.numericDVUpdates.keySet()) {
-          builder.addOrUpdate(f, NumericDocValuesField.TYPE);
+          FieldInfo fieldInfo = builder.addOrUpdate(f, NumericDocValuesField.TYPE);
+          fieldInfo.setDocValuesType(DocValuesType.NUMERIC);
         }
         // create new fields or update existing ones to have BinaryDV type
         for (String f : dvUpdates.binaryDVUpdates.keySet()) {
-          builder.addOrUpdate(f, BinaryDocValuesField.TYPE);
+          FieldInfo fieldInfo = builder.addOrUpdate(f, BinaryDocValuesField.TYPE);
+          fieldInfo.setDocValuesType(DocValuesType.BINARY);
         }
         
         fieldInfos = builder.finish();

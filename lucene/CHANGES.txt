@@ -15,6 +15,10 @@ Bug fixes
 * LUCENE-6054: Allow repeating the empty automaton (Nik Everett via
   Mike McCandless)
 
+* LUCENE-6049: Don't throw cryptic exception writing a segment when
+  the only docs in it had fields that hit non-aborting exceptions
+  during indexing but also had doc values.  (Mike McCandless)
+
 ======================= Lucene 4.10.2 ======================
 
 Bug fixes

@@ -294,7 +294,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       // be updated by maybe FreqProxTermsWriterPerField:
       return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
                                  fieldType.omitNorms(), false,
-                                 fieldType.indexOptions(), fieldType.docValueType(), null);
+                                 fieldType.indexOptions(), null, null);
     }
 
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
