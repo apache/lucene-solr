@@ -303,7 +303,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
     IndexableField f = createField( field, value, boost);
-    if (field.hasDocValues() && f.fieldType().docValueType() == null) {
+    if (field.hasDocValues() && f.fieldType().docValuesType() == null) {
       // field types that support doc values should either override createField
       // to return a field with doc values or extend createFields if this can't
       // be done in a single field instance (see StrField for example)

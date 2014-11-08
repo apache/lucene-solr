@@ -43,7 +43,7 @@ public class SortedDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValuesType.SORTED);
+    TYPE.setDocValuesType(DocValuesType.SORTED);
     TYPE.freeze();
   }
 

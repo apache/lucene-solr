@@ -50,7 +50,13 @@ public class TestFieldsReader extends LuceneTestCase {
     fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
     for (IndexableField field : testDoc.getFields()) {
-      fieldInfos.addOrUpdate(field.name(), field.fieldType());
+      FieldInfo fieldInfo = fieldInfos.getOrAdd(field.name());
+      IndexableFieldType ift = field.fieldType();
+      fieldInfo.setIndexOptions(ift.indexOptions());
+      if (ift.omitNorms()) {
+        fieldInfo.setOmitsNorms();
+      }
+      fieldInfo.setDocValuesType(ift.docValuesType());
     }
     dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()))

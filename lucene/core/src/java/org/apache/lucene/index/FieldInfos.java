@@ -276,21 +276,26 @@ public class FieldInfos implements Iterable<FieldInfo> {
         add(fieldInfo);
       }
     }
-   
-    /** NOTE: this method does not carry over termVector
-     *  the indexer chain must set these fields when they
-     *  succeed in consuming the document */
-    public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
-      // TODO: really, indexer shouldn't even call this
-      // method (it's only called from DocFieldProcessor);
-      // rather, each component in the chain should update
-      // what it "owns".  EG fieldType.indexOptions() should
-      // be updated by maybe FreqProxTermsWriterPerField:
-      return addOrUpdateInternal(name, -1, false,
-                                 fieldType.omitNorms(), false,
-                                 fieldType.indexOptions(), fieldType.docValueType());
-    }
 
+    /** Create a new field, or return existing one. */
+    public FieldInfo getOrAdd(String name) {
+      FieldInfo fi = fieldInfo(name);
+      if (fi == null) {
+        // This field wasn't yet added to this in-RAM
+        // segment's FieldInfo, so now we get a global
+        // number for this field.  If the field was seen
+        // before then we'll get the same name and number,
+        // else we'll allocate a new one:
+        final int fieldNumber = globalFieldNumbers.addOrGet(name, -1, DocValuesType.NONE);
+        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, null);
+        assert !byName.containsKey(fi.name);
+        globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, DocValuesType.NONE);
+        byName.put(fi.name, fi);
+      }
+
+      return fi;
+    }
+   
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber,
         boolean storeTermVector,
         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues) {
@@ -317,7 +322,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
           boolean updateGlobal = fi.getDocValuesType() == DocValuesType.NONE;
           if (updateGlobal) {
             // Must also update docValuesType map so it's
-            // aware of this field's DocValueType.  This will throw IllegalArgumentException if
+            // aware of this field's DocValuesType.  This will throw IllegalArgumentException if
             // an illegal type change was attempted.
             globalFieldNumbers.setDocValuesType(fi.number, name, docValues);
           }

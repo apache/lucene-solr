@@ -49,7 +49,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     Codec codec = getCodec();
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
     FieldInfos.Builder builder = new FieldInfos.Builder();
-    FieldInfo fi = builder.addOrUpdate("field", TextField.TYPE_STORED);
+    FieldInfo fi = builder.getOrAdd("field");
+    fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
     addAttributes(fi);
     FieldInfos infos = builder.finish();
     codec.fieldInfosFormat().write(dir, segmentInfo, "", infos, IOContext.DEFAULT);
@@ -81,7 +82,15 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     FieldInfos.Builder builder = new FieldInfos.Builder();
     for (String field : fieldNames) {
       IndexableFieldType fieldType = randomFieldType(random());
-      FieldInfo fi = builder.addOrUpdate(field, fieldType);
+      FieldInfo fi = builder.getOrAdd(field);
+      IndexOptions indexOptions = fieldType.indexOptions();
+      if (indexOptions != IndexOptions.NONE) {
+        fi.setIndexOptions(indexOptions);
+        if (fieldType.omitNorms()) {      
+          fi.setOmitsNorms();
+        }
+      }
+      fi.setDocValuesType(fieldType.docValuesType());
       if (fieldType.indexOptions() != IndexOptions.NONE && fieldType.indexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         if (random().nextBoolean()) {
           fi.setStorePayloads();
@@ -118,7 +127,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     
     if (r.nextBoolean()) {
       DocValuesType values[] = getDocValuesTypes();
-      type.setDocValueType(values[r.nextInt(values.length)]);
+      type.setDocValuesType(values[r.nextInt(values.length)]);
     }
         
     return type;

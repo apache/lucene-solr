@@ -826,7 +826,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   @Test
   public void testUpdateNumericDVFieldWithSameNameAsPostingField() throws Exception {
     // this used to fail because FieldInfos.Builder neglected to update
-    // globalFieldMaps.docValueTypes map
+    // globalFieldMaps.docValuesTypes map
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);

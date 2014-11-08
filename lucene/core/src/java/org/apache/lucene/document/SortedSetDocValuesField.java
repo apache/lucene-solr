@@ -44,7 +44,7 @@ public class SortedSetDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValuesType.SORTED_SET);
+    TYPE.setDocValuesType(DocValuesType.SORTED_SET);
     TYPE.freeze();
   }
 
