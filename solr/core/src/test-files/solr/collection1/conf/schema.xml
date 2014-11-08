@@ -83,6 +83,7 @@
       -->
     <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
     <fieldtype name="tdate" class="solr.TrieDateField" precisionStep="6"/>
+    <fieldtype name="tdatedv" class="solr.TrieDateField" precisionStep="6" docValues="true" multiValued="true"/>
 
     <fieldtype name="dateRange" class="solr.DateRangeField" />
 
@@ -573,6 +574,7 @@
    <dynamicField name="*_tds" type="tdouble" indexed="true" stored="true" multiValued="false"/>
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
    <dynamicField name="*_tdt1" type="tdate"  indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="*_tdtdv" type="tdatedv"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>

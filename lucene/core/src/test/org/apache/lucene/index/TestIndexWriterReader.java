@@ -46,6 +46,8 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.junit.Test;
 
+// nocommit sometimes fails? ant test  -Dtestcase=TestIndexWriterReader -Dtests.method=testAddIndexesAndDoDeletesThreads -Dtests.seed=964B420DA6617A73 -Dtests.locale=fr -Dtests.timezone=Africa/Maseru -Dtests.asserts=true -Dtests.file.encoding=UTF-8
+
 public class TestIndexWriterReader extends LuceneTestCase {
   
   private final int numThreads = TEST_NIGHTLY ? 5 : 3;

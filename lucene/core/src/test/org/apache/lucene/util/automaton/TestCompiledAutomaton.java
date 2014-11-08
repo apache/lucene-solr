@@ -31,14 +31,14 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestCompiledAutomaton extends LuceneTestCase {
 
-  private CompiledAutomaton build(String... strings) {
+  private CompiledAutomaton build(int maxDeterminizedStates, String... strings) {
     final List<BytesRef> terms = new ArrayList<>();
     for(String s : strings) {
       terms.add(new BytesRef(s));
     }
     Collections.sort(terms);
     final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
-    return new CompiledAutomaton(a, true, false);
+    return new CompiledAutomaton(a, true, false, maxDeterminizedStates);
   }
 
   private void testFloor(CompiledAutomaton c, String input, String expected) {
@@ -53,8 +53,8 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     }
   }
 
-  private void testTerms(String[] terms) throws Exception {
-    final CompiledAutomaton c = build(terms);
+  private void testTerms(int maxDeterminizedStates, String[] terms) throws Exception {
+    final CompiledAutomaton c = build(maxDeterminizedStates, terms);
     final BytesRef[] termBytes = new BytesRef[terms.length];
     for(int idx=0;idx<terms.length;idx++) {
       termBytes[idx] = new BytesRef(terms[idx]);
@@ -100,7 +100,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     while(terms.size() != numTerms) {
       terms.add(randomString());
     }
-    testTerms(terms.toArray(new String[terms.size()]));
+    testTerms(numTerms * 100, terms.toArray(new String[terms.size()]));
   }
 
   private String randomString() {
@@ -109,7 +109,8 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    CompiledAutomaton c = build("fob", "foo", "goo");
+    CompiledAutomaton c = build(Operations.DEFAULT_MAX_DETERMINIZED_STATES,
+      "fob", "foo", "goo");
     testFloor(c, "goo", "goo");
     testFloor(c, "ga", "foo");
     testFloor(c, "g", "foo");

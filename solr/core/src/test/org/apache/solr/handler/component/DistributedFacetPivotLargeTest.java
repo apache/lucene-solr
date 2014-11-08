@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -665,7 +666,80 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
                 "facet.pivot","place_s,company_t",
                 FacetParams.FACET_OVERREQUEST_RATIO, "0",
                 FacetParams.FACET_OVERREQUEST_COUNT, "0");
-    
+
+    doTestDeepPivotStats();
+  }
+
+  private void doTestDeepPivotStats() throws Exception {
+
+    QueryResponse rsp = query("q", "*:*",
+                              "rows", "0",
+                              "facet", "true",
+                              "facet.pivot","{!stats=s1}place_s,company_t",
+                              "stats", "true",
+                              "stats.field", "{!key=avg_price tag=s1}pay_i");
+
+    List<PivotField> pivots = rsp.getFacetPivot().get("place_s,company_t");
+
+    PivotField cardiffPivotField = pivots.get(0);
+    assertEquals("cardiff", cardiffPivotField.getValue());
+    assertEquals(257, cardiffPivotField.getCount());
+
+    FieldStatsInfo cardiffStatsInfo = cardiffPivotField.getFieldStatsInfo().get("avg_price");
+    assertEquals("avg_price", cardiffStatsInfo.getName());
+    assertEquals(0.0, cardiffStatsInfo.getMin());
+    assertEquals(8742.0, cardiffStatsInfo.getMax());
+    assertEquals(257, (long) cardiffStatsInfo.getCount());
+    assertEquals(0, (long) cardiffStatsInfo.getMissing());
+    assertEquals(347554.0, cardiffStatsInfo.getSum());
+    assertEquals(8.20968772E8, cardiffStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(1352.35019455253, (double) cardiffStatsInfo.getMean(), 0.1E-7);
+    assertEquals(1170.86048165857, cardiffStatsInfo.getStddev(), 0.1E-7);
+
+    PivotField bbcCardifftPivotField = cardiffPivotField.getPivot().get(0);
+    assertEquals("bbc", bbcCardifftPivotField.getValue());
+    assertEquals(101, bbcCardifftPivotField.getCount());
+
+    FieldStatsInfo bbcCardifftPivotFieldStatsInfo = bbcCardifftPivotField.getFieldStatsInfo().get("avg_price");
+    assertEquals(2400.0, bbcCardifftPivotFieldStatsInfo.getMin());
+    assertEquals(8742.0, bbcCardifftPivotFieldStatsInfo.getMax());
+    assertEquals(101, (long) bbcCardifftPivotFieldStatsInfo.getCount());
+    assertEquals(0, (long) bbcCardifftPivotFieldStatsInfo.getMissing());
+    assertEquals(248742.0, bbcCardifftPivotFieldStatsInfo.getSum());
+    assertEquals(6.52422564E8, bbcCardifftPivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(2462.792079208, (double) bbcCardifftPivotFieldStatsInfo.getMean(), 0.1E-7);
+    assertEquals(631.0525860312, bbcCardifftPivotFieldStatsInfo.getStddev(), 0.1E-7);
+
+
+    PivotField placeholder0PivotField = pivots.get(2);
+    assertEquals("0placeholder", placeholder0PivotField.getValue());
+    assertEquals(6, placeholder0PivotField.getCount());
+
+    FieldStatsInfo placeholder0PivotFieldStatsInfo = placeholder0PivotField.getFieldStatsInfo().get("avg_price");
+    assertEquals("avg_price", placeholder0PivotFieldStatsInfo.getName());
+    assertEquals(2000.0, placeholder0PivotFieldStatsInfo.getMin());
+    assertEquals(6400.0, placeholder0PivotFieldStatsInfo.getMax());
+    assertEquals(6, (long) placeholder0PivotFieldStatsInfo.getCount());
+    assertEquals(0, (long) placeholder0PivotFieldStatsInfo.getMissing());
+    assertEquals(22700.0, placeholder0PivotFieldStatsInfo.getSum());
+    assertEquals(1.0105E8, placeholder0PivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(3783.333333333, (double) placeholder0PivotFieldStatsInfo.getMean(), 0.1E-7);
+    assertEquals(1741.742422595, placeholder0PivotFieldStatsInfo.getStddev(), 0.1E-7);
+
+    PivotField microsoftPlaceholder0PivotField = placeholder0PivotField.getPivot().get(1);
+    assertEquals("microsoft", microsoftPlaceholder0PivotField.getValue());
+    assertEquals(6, microsoftPlaceholder0PivotField.getCount());
+
+    FieldStatsInfo microsoftPlaceholder0PivotFieldStatsInfo = microsoftPlaceholder0PivotField.getFieldStatsInfo().get("avg_price");
+    assertEquals("avg_price", microsoftPlaceholder0PivotFieldStatsInfo.getName());
+    assertEquals(2000.0, microsoftPlaceholder0PivotFieldStatsInfo.getMin());
+    assertEquals(6400.0, microsoftPlaceholder0PivotFieldStatsInfo.getMax());
+    assertEquals(6, (long) microsoftPlaceholder0PivotFieldStatsInfo.getCount());
+    assertEquals(0, (long) microsoftPlaceholder0PivotFieldStatsInfo.getMissing());
+    assertEquals(22700.0, microsoftPlaceholder0PivotFieldStatsInfo.getSum());
+    assertEquals(1.0105E8, microsoftPlaceholder0PivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(3783.333333333, (double) microsoftPlaceholder0PivotFieldStatsInfo.getMean(), 0.1E-7);
+    assertEquals(1741.742422595, microsoftPlaceholder0PivotFieldStatsInfo.getStddev(), 0.1E-7);
   }
 
   /**

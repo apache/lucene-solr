@@ -198,6 +198,15 @@ New Features
   have similar content. It works in standalone/cloud mode and shares logic with the
   Lucene MoreLikeThis class (Anshum Gupta).
 
+* SOLR-6670: change BALANCESLICEUNIQUE to BALANCESHARDUNIQUE. Also, the parameter
+  for ADDREPLICAPROP that used to be sliceUnique is now shardUnique. (Erick Erickson)
+
+* SOLR-6351: Stats can now be nested under pivot values by adding a 'stats' local param to 
+  facet.pivot which refers to a 'tag' local param in one or more stats.field params.
+  (hossman, Vitaliy Zhovtyuk, Steve Molloy)
+
+SOLR-6533: Support editing common solrconfig.xml values (Noble Paul)
+
 Bug Fixes
 ----------------------
 
@@ -228,9 +237,6 @@ Bug Fixes
 * SOLR-6457: LBHttpSolrServer: ArrayIndexOutOfBoundsException risk if counter overflows
   (longkey via Noble Paul)
 
-* SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and
-  indexed=false (Xu Zhang via Tomás Fernández Löbbe)
-
 * SOLR-6499: Log warning about multiple update request handlers
   (Noble Paul, Andreas Hubold, hossman)
 
@@ -242,19 +248,6 @@ Bug Fixes
 * SOLR-6484: SolrCLI's healthcheck action needs to check live nodes as part of reporting
   the status of a replica (Timothy Potter)
 
-* SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
-
-* SOLR-6511: Fencepost error in LeaderInitiatedRecoveryThread (Timothy Potter)
-
-* SOLR-6530: Commits under network partitions can put any node in down state.
-  (Ramkumar Aiyengar, Alan Woodward, Mark Miller, shalin)
-
-* SOLR-6587: Misleading exception when creating collections in SolrCloud with bad configuration.
-  (Tomás Fernández Löbbe)
-
-* SOLR-6545: Query field list with wild card on dynamic field fails.
-  (Burke Webster, Xu Zhang, shalin)
-
 * SOLR-6540 Fix NPE from strdist() func when doc value source does not exist in a doc (hossman)
 
 * SOLR-6624 Spelling mistakes in the Java source (Hrishikesh Gadre)
@@ -262,18 +255,8 @@ Bug Fixes
 * SOLR-6307: Atomic update remove does not work for int array or date array
   (Anurag Sharma , noble)
 
-* SOLR-6573: QueryElevationComponent now works with localParams in the query (janhoy)
-
-* SOLR-6524: Collections left in recovery state after node restart because recovery sleep time
-  increases exponentially between retries. (Mark Miller, shalin)
-
 * SOLR-6224: Post soft-commit callbacks are called before soft commit actually happens.
   (shalin)
-
-* SOLR-6646: bin/solr start script fails to detect solr on non-default port and then after
-  30s tails wrong log file (janhoy)
-
-* SOLR-6647: Bad error message when missing resource from ZK when parsing Schema (janhoy)
 
 * SOLR-6591: Overseer can use stale cluster state and lose updates for collections
   with stateFormat > 1. (shalin)
@@ -281,6 +264,13 @@ Bug Fixes
 * SOLR-6631: DistributedQueue spinning on calling zookeeper getChildren()
   (Jessica Cheng Mallet, Mark Miller, Timothy Potter)
 
+* SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
+  causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
+
+* SOLR-6685: ConcurrentModificationException in Overseer Status API. (shalin)
+
+* SOLR-6706: /update/json/docs throws RuntimeException if a nested structure
+  contains a non-leaf float field (Noble Paul, shalin)
 
 Optimizations
 ----------------------
@@ -344,9 +334,6 @@ Other Changes
 * SOLR-6115: Cleanup enum/string action types in Overseer, OverseerCollectionProcessor and
   CollectionHandler. (Erick Erickson, shalin)
 
-* SOLR-6486: solr start script can have a debug flag option; use -a to set arbitrary options
-  (Noble Paul, Timothy Potter)
-
 * SOLR-6453: Stop throwing an error message from Overseer when node exits (Ramkumar Aiyengar, Noble Paul)
 
 * SOLR-6249: Schema API changes return success before all cores are updated; client application
@@ -354,17 +341,8 @@ Other Changes
   managed schema update to block until all replicas of the same collection have processed the
   update or until the specified timeout is reached (Timothy Potter)
 
-* SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
-   SolrException back to the client-side (Timothy Potter)
-
 * SOLR-6597: SolrIndexConfig parameter in one of the SolrIndexSearcher constructor has been removed.
   It was just passed and never used via that constructor. (Anshum Gupta)
-
-* SOLR-6549: bin/solr script should support a -s option to set the -Dsolr.solr.home property.
-  (Timothy Potter)
-
-* SOLR-6529: Stop command in the start scripts should only stop the instance that it had started.
-  (Varun Thacker, Timothy Potter)
 
 * SOLR-5852: Add CloudSolrServer helper method to connect to a ZK ensemble. (Varun Thacker, Furkan KAMACI,
   Shawn Heisey, Mark Miller, Erick Erickson via shalin)
@@ -386,6 +364,68 @@ Other Changes
 * SOLR-6661: Adjust all example configurations to allow overriding error-prone 
   relative paths for solrconfig.xml <lib> references with solr.install.dir 
   system property; bin/solr scripts will set it appropriately. (ehatcher)
+
+* SOLR-6698: Solr is not consistent wrt ZkCredentialsProvider / ZkCredentialProvider.
+  References to zkCredentialProvider in System properties or configurations should be
+  changed to zkCredentialsProvider.  (Gregory Chanan)
+
+* SOLR-6715: ZkSolrResourceLoader constructors accept a parameter called 'collection'
+  but it should be 'configName'. (shalin)
+
+==================  4.10.3 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-6696: bin/solr start script should not enable autoSoftCommit by default (janhoy)
+
+* SOLR-6704: TrieDateField type drops schema properties in branch 4.10 (Tomás Fernández Löbbe)
+
+==================  4.10.2 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
+
+* SOLR-6511: Fencepost error in LeaderInitiatedRecoveryThread (Timothy Potter)
+
+* SOLR-6530: Commits under network partitions can put any node in down state.
+  (Ramkumar Aiyengar, Alan Woodward, Mark Miller, shalin)
+
+* SOLR-6573: QueryElevationComponent now works with localParams in the query (janhoy)
+
+* SOLR-6524: Collections left in recovery state after node restart because recovery sleep time
+  increases exponentially between retries. (Mark Miller, shalin)
+
+* SOLR-6587: Misleading exception when creating collections in SolrCloud with bad configuration.
+  (Tomás Fernández Löbbe)
+
+* SOLR-6452: StatsComponent's stat 'missing' will work on fields with docValues=true and
+  indexed=false (Xu Zhang via Tomás Fernández Löbbe)
+
+* SOLR-6646: bin/solr start script fails to detect solr on non-default port and then after
+  30s tails wrong log file (janhoy)
+
+* SOLR-6647: Bad error message when missing resource from ZK when parsing Schema (janhoy)
+
+* SOLR-6545: Query field list with wild card on dynamic field fails.
+  (Burke Webster, Xu Zhang, shalin)
+
+Other Changes
+----------------------
+
+* SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
+   SolrException back to the client-side (Timothy Potter)
+
+* SOLR-6486: solr start script can have a debug flag option; use -a to set arbitrary options
+  (Noble Paul, Timothy Potter)
+
+* SOLR-6549: bin/solr script should support a -s option to set the -Dsolr.solr.home property.
+  (Timothy Potter)
+
+* SOLR-6529: Stop command in the start scripts should only stop the instance that it had started.
+  (Varun Thacker, Timothy Potter)
 
 ==================  4.10.1 ==================
 

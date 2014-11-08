@@ -26,11 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -356,9 +358,9 @@ class FieldCacheImpl implements FieldCache {
     if (fieldInfo == null) {
       // field does not exist or has no value
       return new Bits.MatchNoBits(reader.maxDoc());
-    } else if (fieldInfo.hasDocValues()) {
+    } else if (fieldInfo.getDocValuesType() != DocValuesType.NONE) {
       return reader.getDocsWithField(field);
-    } else if (!fieldInfo.isIndexed()) {
+    } else if (fieldInfo.getIndexOptions() == IndexOptions.NONE) {
       return new Bits.MatchNoBits(reader.maxDoc());
     }
     BitsEntry bitsEntry = (BitsEntry) caches.get(DocsWithFieldCache.class).get(reader, new CacheKey(field, null), false);
@@ -459,9 +461,9 @@ class FieldCacheImpl implements FieldCache {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
         return DocValues.emptyNumeric();
-      } else if (info.hasDocValues()) {
+      } else if (info.getDocValuesType() != DocValuesType.NONE) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-      } else if (!info.isIndexed()) {
+      } else if (info.getIndexOptions() == IndexOptions.NONE) {
         return DocValues.emptyNumeric();
       }
       return (NumericDocValues) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
@@ -634,11 +636,11 @@ class FieldCacheImpl implements FieldCache {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
         return DocValues.emptySorted();
-      } else if (info.hasDocValues()) {
+      } else if (info.getDocValuesType() != DocValuesType.NONE) {
         // we don't try to build a sorted instance from numeric/binary doc
         // values because dedup can be very costly
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-      } else if (!info.isIndexed()) {
+      } else if (info.getIndexOptions() == IndexOptions.NONE) {
         return DocValues.emptySorted();
       }
       SortedDocValuesImpl impl = (SortedDocValuesImpl) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
@@ -783,9 +785,9 @@ class FieldCacheImpl implements FieldCache {
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info == null) {
       return DocValues.emptyBinary();
-    } else if (info.hasDocValues()) {
+    } else if (info.getDocValuesType() != DocValuesType.NONE) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-    } else if (!info.isIndexed()) {
+    } else if (info.getIndexOptions() == IndexOptions.NONE) {
       return DocValues.emptyBinary();
     }
 
@@ -906,9 +908,9 @@ class FieldCacheImpl implements FieldCache {
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info == null) {
       return DocValues.emptySortedSet();
-    } else if (info.hasDocValues()) {
+    } else if (info.getDocValuesType() != DocValuesType.NONE) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-    } else if (!info.isIndexed()) {
+    } else if (info.getIndexOptions() == IndexOptions.NONE) {
       return DocValues.emptySortedSet();
     }
     

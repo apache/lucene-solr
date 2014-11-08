@@ -270,7 +270,7 @@ public final class Document implements Iterable<IndexableField> {
     return new FilterIterator<IndexableField, IndexableField>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(IndexableField field) {
-        return field.fieldType().stored() || field.fieldType().docValueType() != DocValuesType.NONE;
+        return field.fieldType().stored() || field.fieldType().docValuesType() != DocValuesType.NONE;
       }
     };
   }

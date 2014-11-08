@@ -112,7 +112,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     if (random().nextBoolean()) {
       BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
       FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setDocValueType(DocValuesType.NONE);
+      fieldType.setDocValuesType(DocValuesType.NONE);
       bboxStrategy.setFieldType(fieldType);
     }
     for (SpatialOperation operation : SpatialOperation.values()) {

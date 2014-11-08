@@ -806,6 +806,13 @@ public class SolrQuery extends ModifiableSolrParams
     this.add( StatsParams.STATS_FIELD, field );
   }
   
+
+  public void addGetFieldStatistics( String ... field )
+    {
+      this.set( StatsParams.STATS, true );
+      this.add( StatsParams.STATS_FIELD, field );
+    }
+  
   public void addStatsFieldFacets( String field, String ... facets )
   {
     if( field == null ) {

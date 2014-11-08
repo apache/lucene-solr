@@ -748,7 +748,7 @@ public class FieldTypes {
     }
 
     @Override
-    public DocValuesType docValueType() {
+    public DocValuesType docValuesType() {
       return docValuesType;
     }
 

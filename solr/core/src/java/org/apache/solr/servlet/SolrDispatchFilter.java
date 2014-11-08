@@ -344,7 +344,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
           // Handle /schema/* and /config/* paths via Restlet
           if( path.equals("/schema") || path.startsWith("/schema/")
-              || path.equals("/config") || path.startsWith("/config/")) {
+              /*|| path.equals("/config") || path.startsWith("/config/")*/) {
             solrReq = parser.parse(core, path, req);
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
             if( path.equals(req.getServletPath()) ) {

@@ -29,6 +29,13 @@
 
 package org.apache.lucene.util.automaton;
 
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -40,20 +47,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * Automata operations.
  * 
  * @lucene.experimental
  */
 final public class Operations {
-  
+  /**
+   * Default maximum number of states that {@link Operations#determinize} should create.
+   */
+  public static final int DEFAULT_MAX_DETERMINIZED_STATES = 10000;
+
   private Operations() {}
 
   /**
@@ -170,6 +174,10 @@ final public class Operations {
    * Complexity: linear in number of states.
    */
   static public Automaton repeat(Automaton a) {
+    if (a.getNumStates() == 0) {
+      // Repeating the empty automata will still only accept the empty automata.
+      return a;
+    }
     Automaton.Builder builder = new Automaton.Builder();
     builder.createState();
     builder.setAccept(0, true);
@@ -202,12 +210,12 @@ final public class Operations {
    * <p>
    * Complexity: linear in number of states and in <code>min</code>.
    */
-  static public Automaton repeat(Automaton a, int min) {
-    if (min == 0) {
+  static public Automaton repeat(Automaton a, int count) {
+    if (count == 0) {
       return repeat(a);
     }
     List<Automaton> as = new ArrayList<>();
-    while (min-- > 0) {
+    while (count-- > 0) {
       as.add(a);
     }
     as.add(repeat(a));
@@ -242,19 +250,18 @@ final public class Operations {
     }
 
     Set<Integer> prevAcceptStates = toSet(b, 0);
-
+    Automaton.Builder builder = new Automaton.Builder();
+    builder.copy(b);
     for(int i=min;i<max;i++) {
-      int numStates = b.getNumStates();
-      b.copy(a);
+      int numStates = builder.getNumStates();
+      builder.copy(a);
       for(int s : prevAcceptStates) {
-        b.addEpsilon(s, numStates);
+        builder.addEpsilon(s, numStates);
       }
       prevAcceptStates = toSet(a, numStates);
     }
 
-    b.finishState();
-
-    return b;
+    return builder.finish();
   }
 
   private static Set<Integer> toSet(Automaton a, int offset) {
@@ -274,10 +281,14 @@ final public class Operations {
    * Returns a (deterministic) automaton that accepts the complement of the
    * language of the given automaton.
    * <p>
-   * Complexity: linear in number of states (if already deterministic).
+   * Complexity: linear in number of states if already deterministic and
+   *  exponential otherwise.
+   * @param maxDeterminizedStates maximum number of states determinizing the
+   *  automaton can result in.  Set higher to allow more complex queries and
+   *  lower to prevent memory exhaustion.
    */
-  static public Automaton complement(Automaton a) {
-    a = totalize(determinize(a));
+  static public Automaton complement(Automaton a, int maxDeterminizedStates) {
+    a = totalize(determinize(a, maxDeterminizedStates));
     int numStates = a.getNumStates();
     for (int p=0;p<numStates;p++) {
       a.setAccept(p, !a.isAccept(p));
@@ -291,16 +302,17 @@ final public class Operations {
    * <code>a2</code>. As a side-effect, the automata may be determinized, if not
    * already deterministic.
    * <p>
-   * Complexity: quadratic in number of states (if already deterministic).
+   * Complexity: quadratic in number of states if a2 already deterministic and
+   *  exponential in number of a2's states otherwise.
    */
-  static public Automaton minus(Automaton a1, Automaton a2) {
+  static public Automaton minus(Automaton a1, Automaton a2, int maxDeterminizedStates) {
     if (Operations.isEmpty(a1) || a1 == a2) {
       return Automata.makeEmpty();
     }
     if (Operations.isEmpty(a2)) {
       return a1;
     }
-    return intersection(a1, complement(a2));
+    return intersection(a1, complement(a2, maxDeterminizedStates));
   }
   
   /**
@@ -490,7 +502,6 @@ final public class Operations {
     result.createState();
 
     // Copy over all automata
-    Transition t = new Transition();
     for(Automaton a : l) {
       result.copy(a);
     }
@@ -644,8 +655,15 @@ final public class Operations {
    * Determinizes the given automaton.
    * <p>
    * Worst case complexity: exponential in number of states.
+   * @param maxDeterminizedStates Maximum number of states created when
+   *   determinizing.  Higher numbers allow this operation to consume more
+   *   memory but allow more complex automatons.  Use
+   *   DEFAULT_MAX_DETERMINIZED_STATES as a decent default if you don't know
+   *   how many to allow.
+   * @throws TooComplexToDeterminizeException if determinizing a creates an
+   *   automaton with more than maxDeterminizedStates
    */
-  public static Automaton determinize(Automaton a) {
+  public static Automaton determinize(Automaton a, int maxDeterminizedStates) {
     if (a.isDeterministic()) {
       // Already determinized
       return a;
@@ -673,11 +691,6 @@ final public class Operations {
 
     b.setAccept(0, a.isAccept(0));
     newstate.put(initialset, 0);
-
-    int newStateUpto = 0;
-    int[] newStatesArray = new int[5];
-    newStatesArray[newStateUpto] = 0;
-    newStateUpto++;
 
     // like Set<Integer,PointTransitions>
     final PointTransitionSet points = new PointTransitionSet();
@@ -726,6 +739,9 @@ final public class Operations {
           Integer q = newstate.get(statesSet);
           if (q == null) {
             q = b.createState();
+            if (q >= maxDeterminizedStates) {
+              throw new TooComplexToDeterminizeException(a, maxDeterminizedStates);
+            }
             final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
             //System.out.println("  make new state=" + q + " -> " + p + " accCount=" + accCount);
             worklist.add(p);
@@ -1100,12 +1116,14 @@ final public class Operations {
    * Returns the longest BytesRef that is a suffix of all accepted strings.
    * Worst case complexity: exponential in number of states (this calls
    * determinize).
-   *
+   * @param maxDeterminizedStates maximum number of states determinizing the
+   *  automaton can result in.  Set higher to allow more complex queries and
+   *  lower to prevent memory exhaustion.
    * @return common suffix
    */
-  public static BytesRef getCommonSuffixBytesRef(Automaton a) {
+  public static BytesRef getCommonSuffixBytesRef(Automaton a, int maxDeterminizedStates) {
     // reverse the language of the automaton, then reverse its common prefix.
-    Automaton r = Operations.determinize(reverse(a));
+    Automaton r = Operations.determinize(reverse(a), maxDeterminizedStates);
     BytesRef ref = getCommonPrefixBytesRef(r);
     reverseBytes(ref);
     return ref;

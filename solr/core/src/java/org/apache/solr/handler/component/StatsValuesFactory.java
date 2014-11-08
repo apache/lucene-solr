@@ -316,8 +316,6 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
 
   public NumericStatsValues(StatsField statsField) {
     super(statsField);
-    min = Double.POSITIVE_INFINITY;
-    max = Double.NEGATIVE_INFINITY;
   }
 
   @Override
@@ -353,8 +351,22 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
    */
   @Override
   protected void updateMinMax(Number min, Number max) {
-    this.min = Math.min(this.min.doubleValue(), min.doubleValue());
-    this.max = Math.max(this.max.doubleValue(), max.doubleValue());
+    if (null == min) {
+      assert null == max : "min is null but max isn't ? ==> " + max;
+      return; // No-Op
+    }
+
+    assert null != max : "max is null but min isn't ? ==> " + min;
+
+    // we always use the double value, because that way the response Object class is 
+    // consistent regardless of wether we only have 1 value or many that we min/max
+    //
+    // TODO: would be nice to have subclasses for each type of Number ... breaks backcompat
+    double minD = min.doubleValue();
+    double maxD = max.doubleValue();
+
+    this.min = (null == this.min) ? minD : Math.min(this.min.doubleValue(), minD);
+    this.max = (null == this.max) ? maxD : Math.max(this.max.doubleValue(), maxD);
   }
 
   /**
@@ -594,7 +606,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
     // Add no statistics
   }
 
-  /**
+  /** 
    * Determines which of the given Strings is the maximum, as computed by {@link String#compareTo(String)}
    *
    * @param str1 String to compare against b

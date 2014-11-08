@@ -84,5 +84,5 @@ public interface IndexableFieldType {
    * DocValues {@link DocValuesType}: how the field's value will be indexed
    * into docValues.
    */
-  public DocValuesType docValueType();  
+  public DocValuesType docValuesType();  
 }

@@ -417,7 +417,9 @@ public class TestHarness extends BaseTestHarness {
       for (int i = 0; i < q.length; i += 2) {
         entries[i/2] = new NamedListEntry<>(q[i], q[i+1]);
       }
-      return new LocalSolrQueryRequest(TestHarness.this.getCore(), new NamedList(entries));
+      NamedList nl = new NamedList(entries);
+      if(nl.get("wt" ) == null) nl.add("wt","xml");
+      return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);
     }
   }
 

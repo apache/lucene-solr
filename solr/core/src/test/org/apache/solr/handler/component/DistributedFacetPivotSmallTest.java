@@ -20,9 +20,11 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.FacetParams;
@@ -46,20 +48,22 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     // NOTE: we use the literal (4 character) string "null" as a company name
     // to help ensure there isn't any bugs where the literal string is treated as if it 
     // were a true NULL value.
-    index(id, 19, "place_t", "cardiff dublin", "company_t", "microsoft polecat");
-    index(id, 20, "place_t", "dublin", "company_t", "polecat microsoft null");
+    index(id, 19, "place_t", "cardiff dublin", "company_t", "microsoft polecat", "price_ti", "15");
+    index(id, 20, "place_t", "dublin", "company_t", "polecat microsoft null", "price_ti", "19",
+          // this is the only doc to have solo_* fields, therefore only 1 shard has them
+          // TODO: add enum field - blocked by SOLR-6682
+          "solo_i", 42, "solo_s", "lonely", "solo_dt", "1976-03-06T01:23:45Z");
     index(id, 21, "place_t", "london la dublin", "company_t",
-        "microsoft fujitsu null polecat");
+        "microsoft fujitsu null polecat", "price_ti", "29");
     index(id, 22, "place_t", "krakow london cardiff", "company_t",
-        "polecat null bbc");
-    index(id, 23, "place_t", "london", "company_t", "");
+        "polecat null bbc", "price_ti", "39");
+    index(id, 23, "place_t", "london", "company_t", "", "price_ti", "29");
     index(id, 24, "place_t", "la", "company_t", "");
-    index(id, 25, "company_t", "microsoft polecat null fujitsu null bbc");
+    index(id, 25, "company_t", "microsoft polecat null fujitsu null bbc", "price_ti", "59");
     index(id, 26, "place_t", "krakow", "company_t", "null");
-    index(id, 27, "place_t", "krakow cardiff dublin london la", "company_t",
-        "null microsoft polecat bbc fujitsu");
-    index(id, 28, "place_t", "cork", "company_t",
-        "fujitsu rte");
+    index(id, 27, "place_t", "krakow cardiff dublin london la", 
+          "company_t", "null microsoft polecat bbc fujitsu");
+    index(id, 28, "place_t", "cork", "company_t", "fujitsu rte");
     commit();
     
     handle.clear();
@@ -332,6 +336,76 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
       }
     }
+
+    doTestDeepPivotStats();
+
+    doTestPivotStatsFromOneShard();
+  }
+
+  private void doTestDeepPivotStats() throws Exception {
+    SolrParams params = params("q", "*:*", "rows", "0", 
+                               "facet", "true", "stats", "true", 
+                               "facet.pivot", "{!stats=s1}place_t,company_t", 
+                               "stats.field", "{!key=avg_price tag=s1}price_ti");
+    QueryResponse rsp = query(params);
+
+    List<PivotField> placePivots = rsp.getFacetPivot().get("place_t,company_t");
+
+    PivotField dublinPivotField = placePivots.get(0);
+    assertEquals("dublin", dublinPivotField.getValue());
+    assertEquals(4, dublinPivotField.getCount());
+
+    PivotField microsoftPivotField = dublinPivotField.getPivot().get(0);
+    assertEquals("microsoft", microsoftPivotField.getValue());
+    assertEquals(4, microsoftPivotField.getCount());
+
+    FieldStatsInfo dublinMicrosoftStatsInfo = microsoftPivotField.getFieldStatsInfo().get("avg_price");
+    assertEquals(15.0, dublinMicrosoftStatsInfo.getMin());
+    assertEquals(29.0, dublinMicrosoftStatsInfo.getMax());
+    assertEquals(3, (long) dublinMicrosoftStatsInfo.getCount());
+    assertEquals(1, (long) dublinMicrosoftStatsInfo.getMissing());
+    assertEquals(63.0, dublinMicrosoftStatsInfo.getSum());
+    assertEquals(1427.0, dublinMicrosoftStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(21.0, (double) dublinMicrosoftStatsInfo.getMean(), 0.1E-7);
+    assertEquals(7.211102550927978, dublinMicrosoftStatsInfo.getStddev(), 0.1E-7);
+
+
+    PivotField cardiffPivotField = placePivots.get(2);
+    assertEquals("cardiff", cardiffPivotField.getValue());
+    assertEquals(3, cardiffPivotField.getCount());
+
+    PivotField polecatPivotField = cardiffPivotField.getPivot().get(0);
+    assertEquals("polecat", polecatPivotField.getValue());
+    assertEquals(3, polecatPivotField.getCount());
+
+    FieldStatsInfo cardiffPolecatStatsInfo = polecatPivotField.getFieldStatsInfo().get("avg_price");
+    assertEquals(15.0, cardiffPolecatStatsInfo.getMin());
+    assertEquals(39.0, cardiffPolecatStatsInfo.getMax());
+    assertEquals(2, (long) cardiffPolecatStatsInfo.getCount());
+    assertEquals(1, (long) cardiffPolecatStatsInfo.getMissing());
+    assertEquals(54.0, cardiffPolecatStatsInfo.getSum());
+    assertEquals(1746.0, cardiffPolecatStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(27.0, (double) cardiffPolecatStatsInfo.getMean(), 0.1E-7);
+    assertEquals(16.97056274847714, cardiffPolecatStatsInfo.getStddev(), 0.1E-7);
+
+
+    PivotField krakowPivotField = placePivots.get(3);
+    assertEquals("krakow", krakowPivotField.getValue());
+    assertEquals(3, krakowPivotField.getCount());
+
+    PivotField fujitsuPivotField = krakowPivotField.getPivot().get(3);
+    assertEquals("fujitsu", fujitsuPivotField.getValue());
+    assertEquals(1, fujitsuPivotField.getCount());
+
+    FieldStatsInfo krakowFujitsuStatsInfo = fujitsuPivotField.getFieldStatsInfo().get("avg_price");
+    assertEquals(null, krakowFujitsuStatsInfo.getMin());
+    assertEquals(null, krakowFujitsuStatsInfo.getMax());
+    assertEquals(0, (long) krakowFujitsuStatsInfo.getCount());
+    assertEquals(1, (long) krakowFujitsuStatsInfo.getMissing());
+    assertEquals(0.0, krakowFujitsuStatsInfo.getSum());
+    assertEquals(0.0, krakowFujitsuStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(Double.NaN, (double) krakowFujitsuStatsInfo.getMean(), 0.1E-7);
+    assertEquals(0.0, krakowFujitsuStatsInfo.getStddev(), 0.1E-7);
   }
 
   // Useful to check for errors, orders lists and does toString() equality check
@@ -351,6 +425,46 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     }
     assertEquals(expectedPlacePivots.toString(), placePivots.toString());
   }
+
+  /**
+   * sanity check the stat values nested under a pivot when at least one shard
+   * has nothing but missing values for the stat
+   */
+  private void doTestPivotStatsFromOneShard() throws Exception {
+    SolrParams params = params("q", "*:*", "rows", "0", 
+                               "facet", "true", "stats", "true", 
+                               "facet.pivot", "{!stats=s1}place_t,company_t", 
+                               "stats.field", "{!tag=s1}solo_i",
+                               "stats.field", "{!tag=s1}solo_s",
+                               "stats.field", "{!tag=s1}solo_dt");
+                               
+    QueryResponse rsp = query(params);
+
+    List<PivotField> placePivots = rsp.getFacetPivot().get("place_t,company_t");
+
+    PivotField placePivot = placePivots.get(0);
+    assertEquals("dublin", placePivot.getValue());
+    assertEquals(4, placePivot.getCount());
+
+    PivotField companyPivot = placePivot.getPivot().get(2);
+    assertEquals("null", companyPivot.getValue());
+    assertEquals(3, companyPivot.getCount());
+
+    for (PivotField pf : new PivotField[] { placePivot, companyPivot }) {
+      assertThereCanBeOnlyOne(pf, pf.getFieldStatsInfo().get("solo_s"), "lonely");
+
+      assertThereCanBeOnlyOne(pf, pf.getFieldStatsInfo().get("solo_i"), 42.0D);
+      assertEquals(pf.getField()+":"+pf.getValue()+": int mean",
+                   42.0D, pf.getFieldStatsInfo().get("solo_i").getMean());
+
+      Object expected = new Date(194923425000L); // 1976-03-06T01:23:45Z
+      assertThereCanBeOnlyOne(pf, pf.getFieldStatsInfo().get("solo_dt"), expected);
+      assertEquals(pf.getField()+":"+pf.getValue()+": date mean",
+                   expected, pf.getFieldStatsInfo().get("solo_dt").getMean());
+
+      // TODO: add enum field asserts - blocked by SOLR-6682
+    }
+  }
   
   private void testCountSorting(List<PivotField> pivots) {
     Integer lastCount = null;
@@ -365,12 +479,27 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     }
   }
   
+  /**
+   * given a PivotField, a FieldStatsInfo, and a value; asserts that:
+   * <ul>
+   *  <li>stat count == 1</li>
+   *  <li>stat missing == pivot count - 1</li>
+   *  <li>stat min == stat max == value</li>
+   * </ul>
+   */
+  private void assertThereCanBeOnlyOne(PivotField pf, FieldStatsInfo stats, Object val) {
+    String msg = pf.getField() + ":" + pf.getValue();
+    assertEquals(msg + " stats count", 1L, (long) stats.getCount());
+    assertEquals(msg + " stats missing", pf.getCount()-1L, (long) stats.getMissing());
+    assertEquals(msg + " stats min", val, stats.getMin());
+    assertEquals(msg + " stats max", val, stats.getMax());
+  }
+
   public static class ComparablePivotField extends PivotField {
     
 
-    public ComparablePivotField(String f, Object v, int count,
-        List<PivotField> pivot) {
-      super(f,v,count,pivot);
+    public ComparablePivotField(String f, Object v, int count, List<PivotField> pivot) {
+      super(f,v,count,pivot, null);
     }
 
     @Override

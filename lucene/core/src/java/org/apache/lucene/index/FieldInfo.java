@@ -108,10 +108,6 @@ public final class FieldInfo {
     return true;
   }
 
-  void update(IndexableFieldType ft) {
-    update(false, ft.omitNorms(), false, ft.indexOptions());
-  }
-
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     if (indexOptions == null) {
@@ -158,14 +154,24 @@ public final class FieldInfo {
   public IndexOptions getIndexOptions() {
     return indexOptions;
   }
-  
-  /**
-   * Returns true if this field has any docValues.
-   */
-  public boolean hasDocValues() {
-    return docValuesType != DocValuesType.NONE;
-  }
 
+  /** Record the {@link IndexOptions} to use with this field. */
+  public void setIndexOptions(IndexOptions newIndexOptions) {
+    if (indexOptions != newIndexOptions) {
+      if (indexOptions == IndexOptions.NONE) {
+        indexOptions = newIndexOptions;
+      } else if (newIndexOptions != IndexOptions.NONE) {
+        // downgrade
+        indexOptions = indexOptions.compareTo(newIndexOptions) < 0 ? indexOptions : newIndexOptions;
+      }
+    }
+
+    if (indexOptions == IndexOptions.NONE || indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+      // cannot store payloads if we don't store positions:
+      storePayloads = false;
+    }
+  }
+  
   /**
    * Returns {@link DocValuesType} of the docValues; this is
    * {@code DocValuesType.NONE} if the field has no docvalues.
@@ -206,19 +212,20 @@ public final class FieldInfo {
   public boolean omitsNorms() {
     return omitNorms;
   }
+
+  /** Omit norms for this field. */
+  public void setOmitsNorms() {
+    if (indexOptions == IndexOptions.NONE) {
+      throw new IllegalStateException("cannot omit norms: this field is not indexed");
+    }
+    omitNorms = true;
+  }
   
   /**
    * Returns true if this field actually has any norms.
    */
   public boolean hasNorms() {
-    return isIndexed() && omitNorms == false;
-  }
-  
-  /**
-   * Returns true if this field is indexed ({@link #getIndexOptions} is not IndexOptions.NONE).
-   */
-  public boolean isIndexed() {
-    return indexOptions != IndexOptions.NONE;
+    return indexOptions != IndexOptions.NONE && omitNorms == false;
   }
   
   /**

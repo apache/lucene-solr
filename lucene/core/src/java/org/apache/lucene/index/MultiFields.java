@@ -19,11 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
@@ -271,7 +271,7 @@ public final class MultiFields extends Fields {
   public static Collection<String> getIndexedFields(IndexReader reader) {
     final Collection<String> fields = new HashSet<>();
     for(final FieldInfo fieldInfo : getMergedFieldInfos(reader)) {
-      if (fieldInfo.isIndexed()) {
+      if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
         fields.add(fieldInfo.name);
       }
     }

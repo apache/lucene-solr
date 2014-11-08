@@ -106,7 +106,7 @@ public class BBoxStrategy extends SpatialStrategy {
 
     FieldType fieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
     fieldType.setNumericPrecisionStep(8);//Solr's default
-    fieldType.setDocValueType(DocValuesType.NUMERIC);
+    fieldType.setDocValuesType(DocValuesType.NUMERIC);
     setFieldType(fieldType);
   }
 

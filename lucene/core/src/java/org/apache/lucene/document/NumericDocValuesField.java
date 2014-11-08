@@ -40,7 +40,7 @@ public class NumericDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValuesType.NUMERIC);
+    TYPE.setDocValuesType(DocValuesType.NUMERIC);
     TYPE.freeze();
   }
 

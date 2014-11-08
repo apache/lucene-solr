@@ -18,11 +18,11 @@ package org.apache.solr.cloud;
  */
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SLICE_UNIQUE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESLICEUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -382,6 +383,20 @@ public class Overseer implements Closeable {
                 zkClient.setData(e.getKey(), data, true);
               } else {
                 log.info("going to create_collection {}", e.getKey());
+                String parentPath = e.getKey().substring(0, e.getKey().lastIndexOf('/'));
+                if (!zkClient.exists(parentPath, true)) {
+                  // if the /collections/collection_name path doesn't exist then it means that
+                  // 1) the user invoked a DELETE collection API and the OverseerCollectionProcessor has deleted
+                  // this zk path.
+                  // 2) these are most likely old "state" messages which are only being processed now because
+                  // if they were new "state" messages then in legacy mode, a new collection would have been
+                  // created with stateFormat = 1 (which is the default state format)
+                  // 3) these can't be new "state" messages created for a new collection because
+                  // otherwise the OverseerCollectionProcessor would have already created this path
+                  // as part of the create collection API call -- which is the only way in which a collection
+                  // with stateFormat > 1 can possibly be created
+                  continue;
+                }
                 zkClient.create(e.getKey(), data, CreateMode.PERSISTENT, true);
               }
             }
@@ -475,7 +490,7 @@ public class Overseer implements Closeable {
           case DELETEREPLICAPROP:
             clusterState = deleteReplicaProp(clusterState, message);
             break;
-          case BALANCESLICEUNIQUE:
+          case BALANCESHARDUNIQUE:
             ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(this, clusterState, message);
             if (dProp.balanceProperty()) {
               String collName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -571,19 +586,19 @@ public class Overseer implements Closeable {
       }
       property = property.toLowerCase(Locale.ROOT);
       String propVal = message.getStr(ZkStateReader.PROPERTY_VALUE_PROP);
-      String sliceUnique = message.getStr(OverseerCollectionProcessor.SLICE_UNIQUE);
+      String shardUnique = message.getStr(OverseerCollectionProcessor.SHARD_UNIQUE);
 
       boolean isUnique = false;
 
       if (sliceUniqueBooleanProperties.contains(property)) {
-        if (StringUtils.isNotBlank(sliceUnique) && Boolean.parseBoolean(sliceUnique) == false) {
+        if (StringUtils.isNotBlank(shardUnique) && Boolean.parseBoolean(shardUnique) == false) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Overseer SETREPLICAPROPERTY for " +
-              property + " cannot have " + OverseerCollectionProcessor.SLICE_UNIQUE + " set to anything other than" +
+              property + " cannot have " + OverseerCollectionProcessor.SHARD_UNIQUE + " set to anything other than" +
               "'true'. No action taken");
         }
         isUnique = true;
       } else {
-        isUnique = Boolean.parseBoolean(sliceUnique);
+        isUnique = Boolean.parseBoolean(shardUnique);
       }
 
       Replica replica = clusterState.getReplica(collectionName, replicaName);
@@ -1456,12 +1471,12 @@ public class Overseer implements Closeable {
                 ZkStateReader.PROPERTY_PROP + "' parameters. No action taken ");
       }
 
-      Boolean sliceUnique = Boolean.parseBoolean(message.getStr(SLICE_UNIQUE));
-      if (sliceUnique == false &&
+      Boolean shardUnique = Boolean.parseBoolean(message.getStr(SHARD_UNIQUE));
+      if (shardUnique == false &&
           Overseer.sliceUniqueBooleanProperties.contains(this.property) == false) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Balancing properties amongst replicas in a slice requires that"
-            + " the property be a pre-defined property (e.g. 'preferredLeader') or that 'sliceUnique' be set to 'true' " +
-            " Property: " + this.property + " sliceUnique: " + Boolean.toString(sliceUnique));
+            + " the property be a pre-defined property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true' " +
+            " Property: " + this.property + " shardUnique: " + Boolean.toString(shardUnique));
       }
 
       collection = clusterState.getCollection(collectionName);
@@ -1508,7 +1523,7 @@ public class Overseer implements Closeable {
           if (StringUtils.isNotBlank(replica.getStr(property))) {
             if (sliceHasProp) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                  "'" + BALANCESLICEUNIQUE + "' should only be called for properties that have at most one member " +
+                  "'" + BALANCESHARDUNIQUE + "' should only be called for properties that have at most one member " +
                       "in any slice with the property set. No action taken.");
             }
             if (nodesHostingProp.containsKey(nodeName) == false) {
@@ -1948,7 +1963,7 @@ public class Overseer implements Closeable {
   public static class Stats {
     static final int MAX_STORED_FAILURES = 10;
 
-    final Map<String, Stat> stats = Collections.synchronizedMap(new HashMap<String, Stat>());
+    final Map<String, Stat> stats = new ConcurrentHashMap<>();
 
     public Map<String, Stat> getStats() {
       return stats;
@@ -1966,19 +1981,16 @@ public class Overseer implements Closeable {
 
     public void success(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      synchronized (stats) {
-        Stat stat = stats.get(op);
-        if (stat == null) {
-          stat = new Stat();
-          stats.put(op, stat);
-        }
-        stat.success.incrementAndGet();
+      Stat stat = stats.get(op);
+      if (stat == null) {
+        stat = new Stat();
+        stats.put(op, stat);
       }
+      stat.success.incrementAndGet();
     }
 
     public void error(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      synchronized (stats) {
       Stat stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
@@ -1986,26 +1998,20 @@ public class Overseer implements Closeable {
       }
       stat.errors.incrementAndGet();
     }
-    }
 
     public TimerContext time(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      Stat stat;
-      synchronized (stats) {
-        stat = stats.get(op);
+      Stat stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
         stats.put(op, stat);
-      }
       }
       return stat.requestTime.time();
     }
 
     public void storeFailureDetails(String operation, ZkNodeProps request, SolrResponse resp) {
       String op = operation.toLowerCase(Locale.ROOT);
-      Stat stat ;
-      synchronized (stats) {
-        stat = stats.get(op);
+      Stat stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
         stats.put(op, stat);
@@ -2017,7 +2023,6 @@ public class Overseer implements Closeable {
         }
         failedOps.addLast(new FailedOp(request, resp));
       }
-    }
     }
 
     public List<FailedOp> getFailureDetails(String operation) {

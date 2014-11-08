@@ -180,7 +180,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.fieldType().indexOptions() != IndexOptions.NONE)                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().tokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().stored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.fieldType().docValueType() != DocValuesType.NONE)        ? FieldFlag.DOC_VALUES.getAbbreviation() : "-" );
+    flags.append( (f != null && f.fieldType().docValuesType() != DocValuesType.NONE)        ? FieldFlag.DOC_VALUES.getAbbreviation() : "-" );
     flags.append( (false)                                          ? FieldFlag.MULTI_VALUED.getAbbreviation() : '-' ); // SchemaField Specific
     flags.append( (f != null && f.fieldType().storeTermVectors())            ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().storeTermVectorOffsets())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );

@@ -209,7 +209,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     LeafReader slow = SlowCompositeReaderWrapper.wrap(r);
     FieldInfos fi = slow.getFieldInfos();
     FieldInfo dvInfo = fi.fieldInfo("dv");
-    assertTrue(dvInfo.hasDocValues());
+    assertTrue(dvInfo.getDocValuesType() != DocValuesType.NONE);
     NumericDocValues dv = slow.getNumericDocValues("dv");
     for (int i = 0; i < 50; i++) {
       assertEquals(i, dv.get(i));
@@ -902,13 +902,14 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     dir.close();
   }
 
+  // LUCENE-6049
   public void testExcIndexingDocBeforeDocValues() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setDocValueType(DocValuesType.SORTED);
+    ft.setDocValuesType(DocValuesType.SORTED);
     ft.freeze();
     Field field = new Field("test", "value", ft);
     field.setTokenStream(new TokenStream() {

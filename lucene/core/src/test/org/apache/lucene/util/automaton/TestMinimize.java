@@ -28,8 +28,10 @@ public class TestMinimize extends LuceneTestCase {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random());
-      Automaton la = Operations.determinize(Operations.removeDeadStates(a));
-      Automaton lb = MinimizationOperations.minimize(a);
+      Automaton la = Operations.determinize(Operations.removeDeadStates(a),
+        Integer.MAX_VALUE);
+      Automaton lb = MinimizationOperations.minimize(a,
+        Integer.MAX_VALUE);
       assertTrue(Operations.sameLanguage(la, lb));
     }
   }
@@ -42,7 +44,8 @@ public class TestMinimize extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random());
       a = AutomatonTestUtil.minimizeSimple(a);
-      Automaton b = MinimizationOperations.minimize(a);
+      Automaton b = MinimizationOperations.minimize(a,
+        Integer.MAX_VALUE);
       assertTrue(Operations.sameLanguage(a, b));
       assertEquals(a.getNumStates(), b.getNumStates());
       int numStates = a.getNumStates();
@@ -62,6 +65,6 @@ public class TestMinimize extends LuceneTestCase {
   
   /** n^2 space usage in Hopcroft minimization? */
   public void testMinimizeHuge() {
-    new RegExp("+-*(A|.....|BC)*]", RegExp.NONE).toAutomaton();
+    new RegExp("+-*(A|.....|BC)*]", RegExp.NONE).toAutomaton(1000000);
   }
 }

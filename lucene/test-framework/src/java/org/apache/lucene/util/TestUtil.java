@@ -895,7 +895,7 @@ public final class TestUtil {
     for(IndexableField f : doc1.getFields()) {
       final Field field1 = (Field) f;
       final Field field2;
-      final DocValuesType dvType = field1.fieldType().docValueType();
+      final DocValuesType dvType = field1.fieldType().docValuesType();
       final NumericType numType = field1.fieldType().numericType();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {

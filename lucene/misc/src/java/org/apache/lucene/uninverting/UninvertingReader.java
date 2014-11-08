@@ -37,6 +37,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -185,7 +186,7 @@ public class UninvertingReader extends FilterLeafReader {
     ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
     for (FieldInfo fi : in.getFieldInfos()) {
       DocValuesType type = fi.getDocValuesType();
-      if (fi.isIndexed() && !fi.hasDocValues()) {
+      if (fi.getIndexOptions() != IndexOptions.NONE && fi.getDocValuesType() == DocValuesType.NONE) {
         Type t = mapping.get(fi.name);
         if (t != null) {
           switch(t) {
@@ -291,7 +292,7 @@ public class UninvertingReader extends FilterLeafReader {
    */
   private Type getType(String field) {
     FieldInfo info = fieldInfos.fieldInfo(field);
-    if (info == null || info.hasDocValues() == false) {
+    if (info == null || info.getDocValuesType() == DocValuesType.NONE) {
       return null;
     }
     return mapping.get(field);

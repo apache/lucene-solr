@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
@@ -32,7 +33,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -903,7 +903,7 @@ public class FieldQueryTest extends AbstractTestCase {
   public void testRegexpQuery() throws Exception {
     makeIndexStrMV();
     Term term = new Term(F, "d[a-z].g");
-    defgMultiTermQueryTest(new RegexpQuery (term));
+    defgMultiTermQueryTest(new RegexpQuery(term));
   }
 
   public void testRangeQuery() throws Exception {

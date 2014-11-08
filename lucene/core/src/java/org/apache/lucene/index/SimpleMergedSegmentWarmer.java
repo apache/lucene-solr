@@ -44,7 +44,7 @@ public class SimpleMergedSegmentWarmer extends IndexReaderWarmer {
     int docValuesCount = 0;
     int normsCount = 0;
     for (FieldInfo info : reader.getFieldInfos()) {
-      if (info.isIndexed()) {
+      if (info.getIndexOptions() != IndexOptions.NONE) {
         reader.terms(info.name); 
         indexedCount++;
         
@@ -54,7 +54,7 @@ public class SimpleMergedSegmentWarmer extends IndexReaderWarmer {
         }
       }
       
-      if (info.hasDocValues()) {
+      if (info.getDocValuesType() != DocValuesType.NONE) {
         switch(info.getDocValuesType()) {
           case NUMERIC:
             reader.getNumericDocValues(info.name);

@@ -18,6 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.document.Document;
@@ -30,13 +33,16 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
+import org.apache.lucene.util.automaton.Operations;
+
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 public class TestAutomatonQuery extends LuceneTestCase {
   private Directory directory;
@@ -118,7 +124,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     assertAutomatonHits(0, Operations.intersection(Automata
         .makeChar('a'), Automata.makeChar('b')));
     assertAutomatonHits(1, Operations.minus(Automata.makeCharRange('a', 'b'), 
-        Automata.makeChar('a')));
+        Automata.makeChar('a'), DEFAULT_MAX_DETERMINIZED_STATES));
   }
 
   /**
@@ -209,7 +215,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
   public void testHashCodeWithThreads() throws Exception {
     final AutomatonQuery queries[] = new AutomatonQuery[1000];
     for (int i = 0; i < queries.length; i++) {
-      queries[i] = new AutomatonQuery(new Term("bogus", "bogus"), AutomatonTestUtil.randomAutomaton(random()));
+      queries[i] = new AutomatonQuery(new Term("bogus", "bogus"), AutomatonTestUtil.randomAutomaton(random()), Integer.MAX_VALUE);
     }
     final CountDownLatch startingGun = new CountDownLatch(1);
     int numThreads = TestUtil.nextInt(random(), 2, 5);
@@ -235,5 +241,14 @@ public class TestAutomatonQuery extends LuceneTestCase {
     for (Thread thread : threads) {
       thread.join();
     }
+  }
+
+  public void testBiggishAutomaton() {
+    List<BytesRef> terms = new ArrayList<>();
+    while (terms.size() < 3000) {
+      terms.add(new BytesRef(TestUtil.randomUnicodeString(random())));
+    }
+    Collections.sort(terms);
+    new AutomatonQuery(new Term("foo", "bar"), Automata.makeStringUnion(terms), Integer.MAX_VALUE);
   }
 }

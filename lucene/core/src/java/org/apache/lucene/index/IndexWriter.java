@@ -1532,7 +1532,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     DocValuesUpdate[] dvUpdates = new DocValuesUpdate[updates.length];
     for (int i = 0; i < updates.length; i++) {
       final Field f = updates[i];
-      final DocValuesType dvType = f.fieldType().docValueType();
+      final DocValuesType dvType = f.fieldType().docValuesType();
       if (dvType == null) {
         throw new NullPointerException("DocValuesType cannot be null (field: \"" + f.name() + "\")");
       }

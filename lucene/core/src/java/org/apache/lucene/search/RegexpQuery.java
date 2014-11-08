@@ -1,11 +1,5 @@
 package org.apache.lucene.search;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.AutomatonProvider;
-import org.apache.lucene.util.automaton.RegExp;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +16,13 @@ import org.apache.lucene.util.automaton.RegExp;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonProvider;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.RegExp;
 
 /**
  * A fast regular expression query based on the
@@ -75,18 +76,38 @@ public class RegexpQuery extends AutomatonQuery {
    * @param flags optional RegExp features from {@link RegExp}
    */
   public RegexpQuery(Term term, int flags) {
-    this(term, flags, defaultProvider);
+    this(term, flags, defaultProvider,
+      Operations.DEFAULT_MAX_DETERMINIZED_STATES);
   }
-  
+
+  /**
+   * Constructs a query for terms matching <code>term</code>.
+   * 
+   * @param term regular expression.
+   * @param flags optional RegExp features from {@link RegExp}
+   * @param maxDeterminizedStates maximum number of states that compiling the
+   *  automaton for the regexp can result in.  Set higher to allow more complex
+   *  queries and lower to prevent memory exhaustion.
+   */
+  public RegexpQuery(Term term, int flags, int maxDeterminizedStates) {
+    this(term, flags, defaultProvider, maxDeterminizedStates);
+  }
+
   /**
    * Constructs a query for terms matching <code>term</code>.
    * 
    * @param term regular expression.
    * @param flags optional RegExp features from {@link RegExp}
    * @param provider custom AutomatonProvider for named automata
+   * @param maxDeterminizedStates maximum number of states that compiling the
+   *  automaton for the regexp can result in.  Set higher to allow more complex
+   *  queries and lower to prevent memory exhaustion.
    */
-  public RegexpQuery(Term term, int flags, AutomatonProvider provider) {
-    super(term, new RegExp(term.text(), flags).toAutomaton(provider));
+  public RegexpQuery(Term term, int flags, AutomatonProvider provider,
+      int maxDeterminizedStates) {
+    super(term,
+          new RegExp(term.text(), flags).toAutomaton(
+                       provider, maxDeterminizedStates), maxDeterminizedStates);
   }
   
   /** Prints a user-readable version of this query. */

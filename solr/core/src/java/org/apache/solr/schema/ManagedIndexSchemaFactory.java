@@ -97,7 +97,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    * the instantiated IndexSchema is persisted to the managed schema file named in the
    * managedSchemaResourceName param, in the directory given by 
    * {@link org.apache.solr.core.SolrResourceLoader#getConfigDir()}, or if configs are
-   * in ZooKeeper, under {@link org.apache.solr.cloud.ZkSolrResourceLoader#collectionZkPath}.
+   * in ZooKeeper, under {@link org.apache.solr.cloud.ZkSolrResourceLoader#getConfigSetZkPath()}.
    *
    * After the managed schema file is persisted, the original schema file is
    * renamed by appending the extension named in {@link #UPGRADED_SCHEMA_EXTENSION}.
@@ -119,7 +119,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     } else { // ZooKeeper
       final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
       final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
-      final String managedSchemaPath = zkLoader.getCollectionZkPath() + "/" + managedSchemaResourceName;
+      final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
       Stat stat = new Stat();
       try {
         // Attempt to load the managed schema
@@ -224,7 +224,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       SolrResourceLoader loader = config.getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
         ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
-        String nonManagedSchemaPath = zkLoader.getCollectionZkPath() + "/" + resourceName;
+        String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
         try {
           exists = zkLoader.getZkController().pathExists(nonManagedSchemaPath);
         } catch (InterruptedException e) {
@@ -349,7 +349,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     } else {
       // Rename the non-managed schema znode in ZooKeeper
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
-      final String nonManagedSchemaPath = zkLoader.getCollectionZkPath() + "/" + resourceName;
+      final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
       try {
         ZkController zkController = zkLoader.getZkController();
         ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkController.getClientTimeout());

@@ -42,6 +42,8 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+
 public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test a configuration that behaves a lot like WhitespaceAnalyzer */
@@ -168,7 +170,8 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       new CharacterRunAutomaton(
           Operations.complement(
               Operations.union(
-                  Arrays.asList(Automata.makeString("foo"), Automata.makeString("bar")))));
+                  Arrays.asList(Automata.makeString("foo"), Automata.makeString("bar"))),
+              DEFAULT_MAX_DETERMINIZED_STATES));
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, keepWords);
     assertAnalyzesTo(a, "quick foo brown bar bar fox foo",
         new String[] { "foo", "bar", "bar", "foo" },
@@ -231,7 +234,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   public void testRandomRegexps() throws Exception {
     int iters = atLeast(30);
     for (int i = 0; i < iters; i++) {
-      final CharacterRunAutomaton dfa = new CharacterRunAutomaton(AutomatonTestUtil.randomAutomaton(random()));
+      final CharacterRunAutomaton dfa = new CharacterRunAutomaton(AutomatonTestUtil.randomAutomaton(random()), Integer.MAX_VALUE);
       final boolean lowercase = random().nextBoolean();
       final int limit = TestUtil.nextInt(random(), 0, 500);
       Analyzer a = new Analyzer() {

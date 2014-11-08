@@ -17,45 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.uninverting.UninvertingReader;
-import org.apache.lucene.util.Version;
-import org.apache.solr.cloud.CloudUtil;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SchemaXmlWriter;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.Config;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.search.similarities.DefaultSimilarityFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -74,6 +35,47 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.CloudUtil;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SchemaXmlWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.similarities.DefaultSimilarityFactory;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -369,7 +371,7 @@ public class IndexSchema {
   public Map<String,UninvertingReader.Type> getUninversionMap(IndexReader reader) {
     Map<String,UninvertingReader.Type> map = new HashMap<>();
     for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
-      if (f.hasDocValues() == false && f.isIndexed()) {
+      if (f.getDocValuesType() == DocValuesType.NONE && f.getIndexOptions() != IndexOptions.NONE) {
         SchemaField sf = getFieldOrNull(f.name);
         if (sf != null) {
           UninvertingReader.Type type = sf.getType().getUninversionType(sf);

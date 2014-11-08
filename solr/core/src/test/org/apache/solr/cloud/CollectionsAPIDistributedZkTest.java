@@ -356,7 +356,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     assertTrue(response.isSuccess());
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(0, (int) coresStatus.get("conf1_shard1_0_replica1").get("status"));
-    assertEquals(0, (int) coresStatus.get("conf1_shard1_0_replica1").get("status"));
+    assertEquals(0, (int) coresStatus.get("conf1_shard1_1_replica1").get("status"));
 
     deleteCollectionRequest = new CollectionAdminRequest.Delete();
     deleteCollectionRequest.setCollectionName("conf1");

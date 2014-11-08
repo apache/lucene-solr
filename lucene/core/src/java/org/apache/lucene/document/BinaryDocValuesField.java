@@ -46,7 +46,7 @@ public class BinaryDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValuesType.BINARY);
+    TYPE.setDocValuesType(DocValuesType.BINARY);
     TYPE.freeze();
   }
   

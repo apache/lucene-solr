@@ -103,7 +103,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     //and annoyingly this field isn't going to have a docValues format because Solr uses a separate Field for that
     if (field.hasDocValues()) {
       luceneType = new org.apache.lucene.document.FieldType(luceneType);
-      luceneType.setDocValueType(DocValuesType.NUMERIC);
+      luceneType.setDocValuesType(DocValuesType.NUMERIC);
     }
     strategy.setFieldType(luceneType);
     return strategy;

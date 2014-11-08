@@ -89,32 +89,12 @@ public class TestCodecs extends LuceneTestCase {
       this.omitTF = omitTF;
       this.storePayloads = storePayloads;
       // TODO: change this test to use all three
-      fieldInfo = fieldInfos.addOrUpdate(name, new IndexableFieldType() {
-
-        @Override
-        public boolean stored() { return false; }
-
-        @Override
-        public boolean storeTermVectors() { return false; }
-
-        @Override
-        public boolean storeTermVectorOffsets() { return false; }
-
-        @Override
-        public boolean storeTermVectorPositions() { return false; }
-
-        @Override
-        public boolean storeTermVectorPayloads() { return false; }
-
-        @Override
-        public boolean omitNorms() { return false; }
-
-        @Override
-        public IndexOptions indexOptions() { return omitTF ? IndexOptions.DOCS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS; }
-
-        @Override
-        public DocValuesType docValueType() { return DocValuesType.NONE; }
-      });
+      fieldInfo = fieldInfos.getOrAdd(name);
+      if (omitTF) {
+        fieldInfo.setIndexOptions(IndexOptions.DOCS);
+      } else {
+        fieldInfo.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+      }
       if (storePayloads) {
         fieldInfo.setStorePayloads();
       }

@@ -29,8 +29,8 @@
 
 package org.apache.lucene.util.automaton;
 
-import java.util.BitSet;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -45,21 +45,17 @@ final public class MinimizationOperations {
 
   /**
    * Minimizes (and determinizes if not already deterministic) the given
-   * automaton.
+   * automaton using Hopcroft's algorighm.
+   * @param maxDeterminizedStates maximum number of states determinizing the
+   *  automaton can result in.  Set higher to allow more complex queries and
+   *  lower to prevent memory exhaustion.
    */
-  public static Automaton minimize(Automaton a) {
-    return minimizeHopcroft(a);
-  }
-  
-  /**
-   * Minimizes the given automaton using Hopcroft's algorithm.
-   */
-  public static Automaton minimizeHopcroft(Automaton a) {
+  public static Automaton minimize(Automaton a, int maxDeterminizedStates) {
     if (a.getNumStates() == 0 || (a.isAccept(0) == false && a.getNumTransitions(0) == 0)) {
       // Fastmatch for common case
       return new Automaton();
     }
-    a = Operations.determinize(a);
+    a = Operations.determinize(a, maxDeterminizedStates);
     //a.writeDot("adet");
     if (a.getNumTransitions(0) == 1) {
       Transition t = new Transition();

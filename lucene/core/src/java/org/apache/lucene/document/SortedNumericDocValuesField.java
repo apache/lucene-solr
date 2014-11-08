@@ -50,7 +50,7 @@ public class SortedNumericDocValuesField extends Field {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValuesType.SORTED_NUMERIC);
+    TYPE.setDocValuesType(DocValuesType.SORTED_NUMERIC);
     TYPE.freeze();
   }
 

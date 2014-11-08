@@ -129,7 +129,7 @@ final class DefaultIndexingChain extends DocConsumer {
         PerField perField = fieldHash[i];
         while (perField != null) {
           if (perField.docValuesWriter != null) {
-            if (perField.fieldInfo.hasDocValues() == false) {
+            if (perField.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
               // BUG
               throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no docValues but wrote them");
             }
@@ -142,7 +142,7 @@ final class DefaultIndexingChain extends DocConsumer {
             perField.docValuesWriter.finish(docCount);
             perField.docValuesWriter.flush(state, dvConsumer);
             perField.docValuesWriter = null;
-          } else if (perField.fieldInfo.hasDocValues()) {
+          } else if (perField.fieldInfo.getDocValuesType() != DocValuesType.NONE) {
             // BUG
             throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has docValues but did not write them");
           }
@@ -199,7 +199,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
           // we must check the final value of omitNorms for the fieldinfo: it could have 
           // changed for this field since the first time we added it.
-          if (fi.omitsNorms() == false && fi.isIndexed()) {
+          if (fi.omitsNorms() == false && fi.getIndexOptions() != IndexOptions.NONE) {
             assert perField.norms != null: "field=" + fi.name;
             perField.norms.finish(state.segmentInfo.getDocCount());
             perField.norms.flush(state, normsConsumer);
@@ -382,7 +382,7 @@ final class DefaultIndexingChain extends DocConsumer {
       }
     }
 
-    DocValuesType dvType = fieldType.docValueType();
+    DocValuesType dvType = fieldType.docValuesType();
     if (dvType == null) {
       throw new NullPointerException("docValueType cannot be null (field: \"" + fieldName + "\")");
     }
@@ -419,9 +419,7 @@ final class DefaultIndexingChain extends DocConsumer {
    *  value */
   private void indexDocValue(PerField fp, DocValuesType dvType, IndexableField field) throws IOException {
 
-    boolean hasDocValues = fp.fieldInfo.hasDocValues();
-
-    if (hasDocValues == false) {
+    if (fp.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
       // This will throw an exc if the caller tried to
       // change the DV type for the field:
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);
@@ -499,7 +497,11 @@ final class DefaultIndexingChain extends DocConsumer {
     if (fp == null) {
       // First time we are seeing this field in this segment
 
-      FieldInfo fi = fieldInfos.addOrUpdate(name, fieldType);
+      FieldInfo fi = fieldInfos.getOrAdd(name);
+      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
+      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
+      // PerField.invert to allow for later downgrading of the index options:
+      fi.setIndexOptions(fieldType.indexOptions());
       
       fp = new PerField(fi, invert);
       fp.next = fieldHash[hashPos];
@@ -518,7 +520,10 @@ final class DefaultIndexingChain extends DocConsumer {
       }
 
     } else {
-      fp.fieldInfo.update(fieldType);
+      // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
+      // IndexOptions to decide what arrays it must create).  Then, we also must set it in
+      // PerField.invert to allow for later downgrading of the index options:
+      fp.fieldInfo.setIndexOptions(fieldType.indexOptions());
 
       // NOTE: messy, but we must do this in case field was first seen w/o being
       // indexed, and now is seen again, this time being indexed:
@@ -556,6 +561,8 @@ final class DefaultIndexingChain extends DocConsumer {
     
     // reused
     TokenStream tokenStream;
+
+    IndexOptions indexOptions;
 
     public PerField(FieldInfo fieldInfo, boolean invert) {
       this.fieldInfo = fieldInfo;
@@ -605,10 +612,17 @@ final class DefaultIndexingChain extends DocConsumer {
 
       IndexableFieldType fieldType = field.fieldType();
 
+      IndexOptions indexOptions = fieldType.indexOptions();
+      fieldInfo.setIndexOptions(indexOptions);
+
+      if (fieldType.omitNorms()) {
+        fieldInfo.setOmitsNorms();
+      }
+
       // only bother checking offsets if something will consume them.
       // nocommit can't we do this todo now?
       // TODO: after we fix analyzers, also check if termVectorOffsets will be indexed.
-      final boolean checkOffsets = fieldType.indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+      final boolean checkOffsets = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
       /*
        * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream

@@ -54,7 +54,7 @@ public class FieldType implements IndexableFieldType  {
   private NumericType numericType;
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
-  private DocValuesType docValueType = DocValuesType.NONE;
+  private DocValuesType docValuesType = DocValuesType.NONE;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -68,7 +68,7 @@ public class FieldType implements IndexableFieldType  {
     this.storeTermVectorPayloads = ref.storeTermVectorPayloads();
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
-    this.docValueType = ref.docValueType();
+    this.docValuesType = ref.docValuesType();
     this.numericType = ref.numericType();
     // Do not copy frozen!
   }
@@ -377,12 +377,12 @@ public class FieldType implements IndexableFieldType  {
         result.append(numericPrecisionStep);
       }
     }
-    if (docValueType != DocValuesType.NONE) {
+    if (docValuesType != DocValuesType.NONE) {
       if (result.length() > 0) {
         result.append(",");
       }
-      result.append("docValueType=");
-      result.append(docValueType);
+      result.append("docValuesType=");
+      result.append(docValuesType);
     }
     
     return result.toString();
@@ -394,11 +394,11 @@ public class FieldType implements IndexableFieldType  {
    * {@inheritDoc}
    * <p>
    * The default is <code>null</code> (no docValues) 
-   * @see #setDocValueType(DocValuesType)
+   * @see #setDocValuesType(DocValuesType)
    */
   @Override
-  public DocValuesType docValueType() {
-    return docValueType;
+  public DocValuesType docValuesType() {
+    return docValuesType;
   }
 
   /**
@@ -406,21 +406,21 @@ public class FieldType implements IndexableFieldType  {
    * @param type DocValues type, or null if no DocValues should be stored.
    * @throws IllegalStateException if this FieldType is frozen against
    *         future modifications.
-   * @see #docValueType()
+   * @see #docValuesType()
    */
-  public void setDocValueType(DocValuesType type) {
+  public void setDocValuesType(DocValuesType type) {
     checkIfFrozen();
     if (type == null) {
       throw new NullPointerException("DocValuesType cannot be null");
     }
-    docValueType = type;
+    docValuesType = type;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((docValueType == null) ? 0 : docValueType.hashCode());
+    result = prime * result + ((docValuesType == null) ? 0 : docValuesType.hashCode());
     result = prime * result + indexOptions.hashCode();
     result = prime * result + numericPrecisionStep;
     result = prime * result + ((numericType == null) ? 0 : numericType.hashCode());
@@ -440,7 +440,7 @@ public class FieldType implements IndexableFieldType  {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     FieldType other = (FieldType) obj;
-    if (docValueType != other.docValueType) return false;
+    if (docValuesType != other.docValuesType) return false;
     if (indexOptions != other.indexOptions) return false;
     if (numericPrecisionStep != other.numericPrecisionStep) return false;
     if (numericType != other.numericType) return false;

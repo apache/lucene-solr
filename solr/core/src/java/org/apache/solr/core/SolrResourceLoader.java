@@ -53,8 +53,10 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -818,5 +820,37 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   }
   public List<SolrInfoMBean> getInfoMBeans(){
     return Collections.unmodifiableList(infoMBeans);
+  }
+
+
+  public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
+    // Persist locally
+    File managedSchemaFile = new File(loader.getConfigDir(), resourceName);
+    OutputStreamWriter writer = null;
+    try {
+      File parentDir = managedSchemaFile.getParentFile();
+      if ( ! parentDir.isDirectory()) {
+        if ( ! parentDir.mkdirs()) {
+          final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+        }
+      }
+      final FileOutputStream out = new FileOutputStream(managedSchemaFile);
+      out.write(content);
+      log.info("Upgraded to managed schema at " + managedSchemaFile.getPath());
+    } catch (IOException e) {
+      final String msg = "Error persisting managed schema " + managedSchemaFile;
+      log.error(msg, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
+    } finally {
+      org.apache.commons.io.IOUtils.closeQuietly(writer);
+      try {
+        FileUtils.sync(managedSchemaFile);
+      } catch (IOException e) {
+        final String msg = "Error syncing the managed schema file " + managedSchemaFile;
+        log.error(msg, e);
+      }
+    }
   }
 }

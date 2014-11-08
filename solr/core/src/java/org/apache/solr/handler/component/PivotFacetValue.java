@@ -21,11 +21,13 @@ import java.util.BitSet;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.PivotListEntry;
 
 /**
@@ -45,6 +47,7 @@ public class PivotFacetValue {
   // child can't be final, circular ref on construction
   private PivotFacetField childPivot = null; 
   private int count; // mutable
+  private Map<String, StatsValues> statsValues = null;
   
   private PivotFacetValue(PivotFacetField parent, Comparable val) { 
     this.parentPivot = parent;
@@ -114,6 +117,7 @@ public class PivotFacetValue {
     Comparable pivotVal = null;
     int pivotCount = 0;
     List<NamedList<Object>> childPivotData = null;
+    NamedList<NamedList<NamedList<?>>> statsValues = null;
     
     for (int i = 0; i < pivotData.size(); i++) {
       String key = pivotData.getName(i);
@@ -135,6 +139,9 @@ public class PivotFacetValue {
       case PIVOT:
         childPivotData = (List<NamedList<Object>>)value;
         break;
+      case STATS:
+        statsValues = (NamedList<NamedList<NamedList<?>>>) value;
+        break;
       default:
         throw new RuntimeException("PivotListEntry contains unaccounted for item: " + entry);
       }
@@ -143,6 +150,9 @@ public class PivotFacetValue {
     PivotFacetValue newPivotFacet = new PivotFacetValue(parentField, pivotVal);
     newPivotFacet.count = pivotCount;
     newPivotFacet.sourceShards.set(shardNumber);
+    if(statsValues != null) {
+      newPivotFacet.statsValues = PivotFacetHelper.mergeStats(null, statsValues, rb._statsInfo);
+    }
     
     newPivotFacet.childPivot = PivotFacetField.createFromListOfNamedLists(shardNumber, rb, newPivotFacet, childPivotData);
     
@@ -171,6 +181,11 @@ public class PivotFacetValue {
     if (childPivot != null && childPivot.convertToListOfNamedLists() != null) {
       newList.add(PivotListEntry.PIVOT.getName(), childPivot.convertToListOfNamedLists());
     }
+    if (null != statsValues) {
+      newList.add(PivotListEntry.STATS.getName(), 
+                  // for pivots, we *always* include requested stats - even if 'empty'
+                  StatsComponent.convertToResponse(true, statsValues));
+    }
     return newList;
   }      
   
@@ -187,6 +202,10 @@ public class PivotFacetValue {
     if (!shardHasContributed(shardNumber)) {
       sourceShards.set(shardNumber);      
       count += PivotFacetHelper.getCount(value);
+      NamedList<NamedList<NamedList<?>>> stats = PivotFacetHelper.getStats(value);
+      if (stats != null) {
+        statsValues = PivotFacetHelper.mergeStats(statsValues, stats, rb._statsInfo);
+      }
     }
     
     List<NamedList<Object>> shardChildPivots = PivotFacetHelper.getPivots(value);
@@ -197,7 +216,7 @@ public class PivotFacetValue {
       childPivot.contributeFromShard(shardNumber, rb, shardChildPivots);
     }
   }
-  
+
   public String toString(){
     return String.format(Locale.ROOT, "F:%s V:%s Co:%d Ch?:%s", 
                          parentPivot.field, value, count, (this.childPivot !=null));

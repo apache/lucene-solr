@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.response;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 public class PivotField implements Serializable
 {
@@ -27,13 +28,23 @@ public class PivotField implements Serializable
   final Object  _value;
   final int     _count;
   final List<PivotField> _pivot;
-   
-  public PivotField( String f, Object v, int count, List<PivotField> pivot )
+  final Map<String,FieldStatsInfo> _statsInfo;
+
+  /**
+   * @deprecated Use {@link #PivotField(String,Object,int,List,Map)} with a null <code>statsInfo</code>
+   */
+  @Deprecated
+  public PivotField( String f, Object v, int count, List<PivotField> pivot) {
+    this(f, v, count, pivot, null);
+  }
+
+  public PivotField( String f, Object v, int count, List<PivotField> pivot, Map<String,FieldStatsInfo> statsInfo)
   {
     _field = f;
     _value = v;
     _count = count;
     _pivot = pivot;
+    _statsInfo = statsInfo;
   }
    
   public String getField() {
@@ -52,6 +63,10 @@ public class PivotField implements Serializable
     return _pivot;
   }
    
+  public Map<String,FieldStatsInfo> getFieldStatsInfo() {
+    return _statsInfo;
+  }
+
   @Override
   public String toString()
   {
@@ -63,7 +78,16 @@ public class PivotField implements Serializable
     for( int i=0; i<indent; i++ ) {
       out.print( "  " );
     }
-    out.println( _field + "=" + _value + " ("+_count+")" );
+    out.print( _field + "=" + _value + " ("+_count+")" );
+    if (null != _statsInfo) {
+      out.print( "->stats:[" ); 
+      for( FieldStatsInfo fieldStatsInfo : _statsInfo.values() ) {
+        out.print(fieldStatsInfo.toString());
+        out.print(",");
+      }
+      out.print("]");
+    }
+    out.println();
     if( _pivot != null ) {
       for( PivotField p : _pivot ) {
         p.write( out, indent+1 );

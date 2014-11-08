@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
@@ -157,7 +157,8 @@ public class CompiledAutomaton {
       }
     }
     sinkState = foundState;
-    runAutomaton = new ByteRunAutomaton(automaton, true);
+    // It's safe to allow unlimited determinized here:
+    runAutomaton = new ByteRunAutomaton(automaton, true, Integer.MAX_VALUE);
     type = AUTOMATON_TYPE.RANGE;
   }
 
@@ -177,7 +178,8 @@ public class CompiledAutomaton {
     automaton.addTransition(lastState, lastState, 0, 255);
     sinkState = lastState;
     automaton.finishState();
-    runAutomaton = new ByteRunAutomaton(automaton, true);
+    // It's safe to allow unlimited determinized here:
+    runAutomaton = new ByteRunAutomaton(automaton, true, Integer.MAX_VALUE);
     commonSuffixRef = null;
     finite = false;
     minInclusive = false;
@@ -190,7 +192,20 @@ public class CompiledAutomaton {
    *  possibly expensive operations to determine if the automaton is one
    *  the cases in {@link CompiledAutomaton.AUTOMATON_TYPE}. */
   public CompiledAutomaton(Automaton automaton, Boolean finite, boolean simplify) {
+    this(automaton, finite, simplify, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+  }
 
+
+  /** Create this.  If finite is null, we use {@link Operations#isFinite}
+   *  to determine whether it is finite.  If simplify is true, we run
+   *  possibly expensive operations to determine if the automaton is one
+   *  the cases in {@link CompiledAutomaton.AUTOMATON_TYPE}. If simplify
+   *  requires determinizing the autaomaton then only maxDeterminizedStates
+   *  will be created.  Any more than that will cause a
+   *  TooComplexToDeterminizeException.
+   */
+  public CompiledAutomaton(Automaton automaton, Boolean finite, boolean simplify,
+      int maxDeterminizedStates) {
     if (automaton.getNumStates() == 0) {
       automaton = new Automaton();
       automaton.createState();
@@ -231,7 +246,7 @@ public class CompiledAutomaton {
         return;
       } else {
 
-        automaton = Operations.determinize(automaton);
+        automaton = Operations.determinize(automaton, maxDeterminizedStates);
 
         final String commonPrefix = Operations.getCommonPrefix(automaton);
         final String singleton;
@@ -257,7 +272,7 @@ public class CompiledAutomaton {
           return;
         } else if (commonPrefix.length() > 0) {
           Automaton other = Operations.concatenate(Automata.makeString(commonPrefix), Automata.makeAnyString());
-          other = Operations.determinize(other);
+          other = Operations.determinize(other, maxDeterminizedStates);
           assert Operations.hasDeadStates(other) == false;
           if (Operations.sameLanguage(automaton, other)) {
             // matches a constant prefix
@@ -276,7 +291,8 @@ public class CompiledAutomaton {
             sinkState = lastState;
             automaton.finishState();
             this.automaton = automaton;
-            runAutomaton = new ByteRunAutomaton(automaton, true);
+            // It's safe to allow unlimited determinized here:
+            runAutomaton = new ByteRunAutomaton(automaton, true, Integer.MAX_VALUE);
             this.finite = false;
             maxTerm = null;
             minInclusive = false;
@@ -305,9 +321,9 @@ public class CompiledAutomaton {
     if (this.finite) {
       commonSuffixRef = null;
     } else {
-      commonSuffixRef = Operations.getCommonSuffixBytesRef(binary);
+      commonSuffixRef = Operations.getCommonSuffixBytesRef(binary, maxDeterminizedStates);
     }
-    runAutomaton = new ByteRunAutomaton(binary, true);
+    runAutomaton = new ByteRunAutomaton(binary, true, maxDeterminizedStates);
 
     this.automaton = runAutomaton.automaton;
   }

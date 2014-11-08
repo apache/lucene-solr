@@ -282,7 +282,7 @@ public class EditFileRequestHandler extends RequestHandlerBase {
 
       if (coreContainer.isZooKeeperAware()) {
         try {
-          String confPath = ((ZkSolrResourceLoader) core.getResourceLoader()).getCollectionZkPath();
+          String confPath = ((ZkSolrResourceLoader) core.getResourceLoader()).getConfigSetZkPath();
 
           ZkController.downloadConfigDir(coreContainer.getZkController().getZkClient(), confPath,
               new File(coll, "conf"));

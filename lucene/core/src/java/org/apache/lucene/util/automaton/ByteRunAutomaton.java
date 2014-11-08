@@ -24,12 +24,12 @@ public class ByteRunAutomaton extends RunAutomaton {
 
   /** Converts incoming automaton to byte-based (UTF32ToUTF8) first */
   public ByteRunAutomaton(Automaton a) {
-    this(a, false);
+    this(a, false, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
   }
 
   /** expert: if isBinary is true, the input is already byte-based, else it's UTF-32 and we'll convert to UTF-8 */
-  public ByteRunAutomaton(Automaton a, boolean isBinary) {
-    super(isBinary ? a : new UTF32ToUTF8().convert(a), 256, true);
+  public ByteRunAutomaton(Automaton a, boolean isBinary, int maxDeterminizedStates) {
+    super(isBinary ? a : new UTF32ToUTF8().convert(a), 256, true, maxDeterminizedStates);
   }
 
   /**
