@@ -619,6 +619,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
               currentField = new Field("dummy", bogus, ft);
               doc.add(currentField);
             } else {
+              System.out.println("add doc=" + doc);
               iw.addDocument(doc);
               if (doc.getFields().size() > 1) {
                 // back to 1 field
