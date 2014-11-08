@@ -140,6 +140,9 @@ public final class FieldInfo {
   }
 
   void setDocValuesType(DocValuesType type) {
+    if (type == null) {
+      throw new NullPointerException("DocValuesType cannot be null (field: \"" + name + "\")");
+    }
     if (docValuesType != DocValuesType.NONE && type != DocValuesType.NONE && docValuesType != type) {
       throw new IllegalArgumentException("cannot change DocValues type from " + docValuesType + " to " + type + " for field \"" + name + "\"");
     }
