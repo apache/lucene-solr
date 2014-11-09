@@ -123,8 +123,8 @@ public class TestLockFactory extends LuceneTestCase {
     // IndexWriters over & over in 2 threads and making sure
     // no unexpected exceptions are raised:
     @Nightly
-    public void testStressLocks() throws Exception {
-      _testStressLocks(null, createTempDir("index.TestLockFactory6"));
+    public void testStressLocksSimpleFSLockFactory() throws Exception {
+      _testStressLocks(SimpleFSLockFactory.INSTANCE, createTempDir("index.TestLockFactory6"));
     }
 
     // Verify: do stress test, by opening IndexReaders and
