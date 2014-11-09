@@ -20,12 +20,13 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.NoSuchFileException;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+
+import org.apache.lucene.util.IOUtils;
 
 
 /**
@@ -38,10 +39,15 @@ import java.util.HashSet;
  * to this class, and must allow multiple threads to call
  * contains at once.</p>
  *
+ * <p>Locks with a name having the specified extensions are
+ * delegated to the primary directory; others are delegated
+ * to the secondary directory. Ideally, both Directory
+ * instances should use the same lock factory.</p>
+ *
  * @lucene.experimental
  */
 
-public class FileSwitchDirectory extends BaseDirectory {
+public class FileSwitchDirectory extends Directory {
   private final Directory secondaryDir;
   private final Directory primaryDir;
   private final Set<String> primaryExtensions;
@@ -52,7 +58,6 @@ public class FileSwitchDirectory extends BaseDirectory {
     this.primaryDir = primaryDir;
     this.secondaryDir = secondaryDir;
     this.doClose = doClose;
-    this.lockFactory = primaryDir.getLockFactory();
   }
 
   /** Return the primary directory */
@@ -66,13 +71,14 @@ public class FileSwitchDirectory extends BaseDirectory {
   }
   
   @Override
+  public Lock makeLock(String name) {
+    return getDirectory(name).makeLock(name);
+  }
+
+  @Override
   public void close() throws IOException {
     if (doClose) {
-      try {
-        secondaryDir.close();
-      } finally { 
-        primaryDir.close();
-      }
+      IOUtils.close(primaryDir, secondaryDir);
       doClose = false;
     }
   }

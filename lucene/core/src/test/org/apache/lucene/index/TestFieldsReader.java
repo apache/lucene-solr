@@ -27,15 +27,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -111,55 +109,18 @@ public class TestFieldsReader extends LuceneTestCase {
   }
 
 
-  public class FaultyFSDirectory extends BaseDirectory {
-    Directory fsDir;
+  public class FaultyFSDirectory extends FilterDirectory {
     AtomicBoolean doFail = new AtomicBoolean();
 
-    public FaultyFSDirectory(Path dir) {
-      fsDir = newFSDirectory(dir);
-      lockFactory = fsDir.getLockFactory();
+    public FaultyFSDirectory(Directory fsDir) {
+      super(fsDir);
     }
     
     @Override
     public IndexInput openInput(String name, IOContext context) throws IOException {
-      return new FaultyIndexInput(doFail, fsDir.openInput(name, context));
+      return new FaultyIndexInput(doFail, in.openInput(name, context));
     }
     
-    @Override
-    public String[] listAll() throws IOException {
-      return fsDir.listAll();
-    }
-    
-    @Override
-    public void deleteFile(String name) throws IOException {
-      fsDir.deleteFile(name);
-    }
-    
-    @Override
-    public long fileLength(String name) throws IOException {
-      return fsDir.fileLength(name);
-    }
-    
-    @Override
-    public IndexOutput createOutput(String name, IOContext context) throws IOException {
-      return fsDir.createOutput(name, context);
-    }
-    
-    @Override
-    public void sync(Collection<String> names) throws IOException {
-      fsDir.sync(names);
-    }
-
-    @Override
-    public void renameFile(String source, String dest) throws IOException {
-      fsDir.renameFile(source, dest);
-    }
-
-    @Override
-    public void close() throws IOException {
-      fsDir.close();
-    }
-
     public void startFailing() {
       doFail.set(true);
     }
@@ -228,7 +189,8 @@ public class TestFieldsReader extends LuceneTestCase {
     Path indexDir = createTempDir("testfieldswriterexceptions");
 
     try {
-      FaultyFSDirectory dir = new FaultyFSDirectory(indexDir);
+      Directory fsDir = newFSDirectory(indexDir);
+      FaultyFSDirectory dir = new FaultyFSDirectory(fsDir);
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
                                 .setOpenMode(OpenMode.CREATE);
       IndexWriter writer = new IndexWriter(dir, iwc);

@@ -31,12 +31,10 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestCrash extends LuceneTestCase {
 
   private IndexWriter initIndex(Random random, boolean initialCommit) throws IOException {
-    return initIndex(random, newMockDirectory(random), initialCommit, true);
+    return initIndex(random, newMockDirectory(random, NoLockFactory.INSTANCE), initialCommit, true);
   }
 
   private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit, boolean commitOnClose) throws IOException {
-    dir.setLockFactory(NoLockFactory.getNoLockFactory());
-
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
         .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler()).setCommitOnClose(commitOnClose));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
@@ -187,7 +185,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashAfterCloseNoWait() throws IOException {
     Random random = random();
-    MockDirectoryWrapper dir = newMockDirectory(random);
+    MockDirectoryWrapper dir = newMockDirectory(random, NoLockFactory.INSTANCE);
     IndexWriter writer = initIndex(random, dir, false, false);
 
     try {

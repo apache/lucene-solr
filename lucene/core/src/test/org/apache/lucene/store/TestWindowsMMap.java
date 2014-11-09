@@ -65,7 +65,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     // may take some time until the files are finally dereferenced. So clean the
     // directory up front, or otherwise new IndexWriter will fail.
     Path dirPath = createTempDir("testLuceneMmap");
-    MMapDirectory dir = new MMapDirectory(dirPath, null);
+    MMapDirectory dir = new MMapDirectory(dirPath);
     
     // plan to add a set of useful stopwords, consider changing some of the
     // interior filters.

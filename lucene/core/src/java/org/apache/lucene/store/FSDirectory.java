@@ -125,15 +125,9 @@ public abstract class FSDirectory extends BaseDirectory {
    * @throws IOException if there is a low-level I/O error
    */
   protected FSDirectory(Path path, LockFactory lockFactory) throws IOException {
-    // new ctors use always NativeFSLockFactory as default:
-    if (lockFactory == null) {
-      lockFactory = new NativeFSLockFactory();
-    }
-    
+    super(lockFactory);
     Files.createDirectories(path);  // create directory, if it doesnt exist
     directory = path.toRealPath();
-
-    setLockFactory(lockFactory);
   }
 
   /** Creates an FSDirectory instance, trying to pick the
@@ -157,7 +151,7 @@ public abstract class FSDirectory extends BaseDirectory {
    *
    * <p>See <a href="#subclasses">above</a> */
   public static FSDirectory open(Path path) throws IOException {
-    return open(path, null);
+    return open(path, FSLockFactory.getDefault());
   }
 
   /** Just like {@link #open(Path)}, but allows you to
@@ -172,26 +166,6 @@ public abstract class FSDirectory extends BaseDirectory {
     }
   }
 
-  @Override
-  public void setLockFactory(LockFactory lockFactory) throws IOException {
-    super.setLockFactory(lockFactory);
-
-    // for filesystem based LockFactory, delete the lockPrefix, if the locks are placed
-    // in index dir. If no index dir is given, set ourselves
-    if (lockFactory instanceof FSLockFactory) {
-      final FSLockFactory lf = (FSLockFactory) lockFactory;
-      final Path dir = lf.getLockDir();
-      // if the lock factory has no lockDir set, use the this directory as lockDir
-      if (dir == null) {
-        lf.setLockDir(directory);
-        lf.setLockPrefix(null);
-      } else if (dir.toRealPath().equals(directory)) {
-        lf.setLockPrefix(null);
-      }
-    }
-
-  }
-  
   /** Lists all files (not subdirectories) in the
    *  directory.
    *
@@ -280,19 +254,6 @@ public abstract class FSDirectory extends BaseDirectory {
     IOUtils.fsync(directory, true);
   }
 
-  @Override
-  public String getLockID() {
-    ensureOpen();
-    String dirName = directory.toString();  // name to be hashed
-
-    int digest = 0;
-    for(int charIDX=0;charIDX<dirName.length();charIDX++) {
-      final char ch = dirName.charAt(charIDX);
-      digest = 31 * digest + ch;
-    }
-    return "lucene-" + Integer.toHexString(digest);
-  }
-
   /** Closes the store to future operations. */
   @Override
   public synchronized void close() {
@@ -308,7 +269,7 @@ public abstract class FSDirectory extends BaseDirectory {
   /** For debug output. */
   @Override
   public String toString() {
-    return this.getClass().getSimpleName() + "@" + directory + " lockFactory=" + getLockFactory();
+    return this.getClass().getSimpleName() + "@" + directory + " lockFactory=" + lockFactory;
   }
 
   final class FSIndexOutput extends OutputStreamIndexOutput {

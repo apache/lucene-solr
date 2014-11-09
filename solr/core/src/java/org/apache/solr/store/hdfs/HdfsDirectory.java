@@ -45,15 +45,19 @@ public class HdfsDirectory extends BaseDirectory {
   public static final int BUFFER_SIZE = 8192;
   
   private static final String LF_EXT = ".lf";
-  protected Path hdfsDirPath;
-  protected Configuration configuration;
+  protected final Path hdfsDirPath;
+  protected final Configuration configuration;
   
   private final FileSystem fileSystem;
   private final FileContext fileContext;
   
+  public HdfsDirectory(Path hdfsDirPath, Configuration configuration) throws IOException {
+    this(hdfsDirPath, HdfsLockFactory.INSTANCE, configuration);
+  }
+
   public HdfsDirectory(Path hdfsDirPath, LockFactory lockFactory, Configuration configuration)
       throws IOException {
-    setLockFactory(lockFactory);
+    super(lockFactory);
     this.hdfsDirPath = hdfsDirPath;
     this.configuration = configuration;
     fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), configuration);

@@ -81,11 +81,10 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   /**
    * Creates a new LockFactory for a given path.
-   * @param lockPath the path of the index directory
    * @param rawLockType A string value as passed in config. Every factory should at least support 'none' to disable locking.
    * @throws IOException If there is a low-level I/O error.
    */
-  protected abstract LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException;
+  protected abstract LockFactory createLockFactory(String rawLockType) throws IOException;
   
   /**
    * Returns true if a Directory exists for a given path.

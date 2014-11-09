@@ -17,17 +17,12 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 
 public class TestDirectory extends BaseDirectoryTestCase {
 
@@ -63,9 +58,9 @@ public class TestDirectory extends BaseDirectoryTestCase {
     }
 
     final FSDirectory[] dirs = new FSDirectory[] {
-      new SimpleFSDirectory(path, null),
-      new NIOFSDirectory(path, null),
-      new MMapDirectory(path, null)
+      new SimpleFSDirectory(path),
+      new NIOFSDirectory(path),
+      new MMapDirectory(path)
     };
 
     for (int i=0; i<dirs.length; i++) {
@@ -142,11 +137,12 @@ public class TestDirectory extends BaseDirectoryTestCase {
   }
 
   // LUCENE-1468
+  @SuppressWarnings("resource")
   public void testCopySubdir() throws Throwable {
     Path path = createTempDir("testsubdir");
     try {
       Files.createDirectory(path.resolve("subdir"));
-      Directory fsDir = new SimpleFSDirectory(path, null);
+      Directory fsDir = new SimpleFSDirectory(path);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
       IOUtils.rm(path);
@@ -156,13 +152,13 @@ public class TestDirectory extends BaseDirectoryTestCase {
   // LUCENE-1468
   public void testNotDirectory() throws Throwable {
     Path path = createTempDir("testnotdir");
-    Directory fsDir = new SimpleFSDirectory(path, null);
+    Directory fsDir = new SimpleFSDirectory(path);
     try {
       IndexOutput out = fsDir.createOutput("afile", newIOContext(random()));
       out.close();
       assertTrue(slowFileExists(fsDir, "afile"));
       try {
-        new SimpleFSDirectory(path.resolve("afile"), null);
+        new SimpleFSDirectory(path.resolve("afile"));
         fail("did not hit expected exception");
       } catch (IOException nsde) {
         // Expected

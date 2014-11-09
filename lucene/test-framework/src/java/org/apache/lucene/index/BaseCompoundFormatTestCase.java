@@ -317,28 +317,6 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     dir.close();
   }
   
-  // test that cfs reader is read-only
-  public void testClearLockDisabled() throws IOException {
-    final String testfile = "_123.test";
-
-    Directory dir = newDirectory();
-    IndexOutput out = dir.createOutput(testfile, IOContext.DEFAULT);
-    out.writeInt(3);
-    out.close();
- 
-    SegmentInfo si = newSegmentInfo(dir, "_123");
-    si.getCodec().compoundFormat().write(dir, si, Collections.<String>emptyList(), MergeState.CheckAbort.NONE, IOContext.DEFAULT);
-    Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
-    try {
-      cfs.clearLock("foobar");
-      fail("didn't get expected exception");
-    } catch (UnsupportedOperationException expected) {
-      // expected UOE
-    }
-    cfs.close();
-    dir.close();
-  }
-  
   /** 
    * This test creates a compound file based on a large number of files of
    * various length. The file content is generated randomly. The sizes range

@@ -65,14 +65,11 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
@@ -513,45 +510,6 @@ public class TestIndexWriter extends LuceneTestCase {
       td.nextDoc();
       assertEquals(128*1024, td.freq());
       reader.close();
-      dir.close();
-    }
-
-    // Make sure that a Directory implementation that does
-    // not use LockFactory at all (ie overrides makeLock and
-    // implements its own private locking) works OK.  This
-    // was raised on java-dev as loss of backwards
-    // compatibility.
-    public void testNullLockFactory() throws IOException {
-
-      final class MyRAMDirectory extends MockDirectoryWrapper {
-        private LockFactory myLockFactory;
-        MyRAMDirectory(Directory delegate) {
-          super(random(), delegate);
-          lockFactory = null;
-          myLockFactory = new SingleInstanceLockFactory();
-        }
-        @Override
-        public Lock makeLock(String name) {
-          return myLockFactory.makeLock(name);
-        }
-      }
-
-      Directory dir = new MyRAMDirectory(new RAMDirectory());
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      for (int i = 0; i < 100; i++) {
-        addDoc(writer);
-      }
-      writer.close();
-      Term searchTerm = new Term("content", "aaa");
-      IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = newSearcher(reader);
-      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
-      assertEquals("did not get right number of hits", 100, hits.length);
-      reader.close();
-
-      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-        .setOpenMode(OpenMode.CREATE));
-      writer.close();
       dir.close();
     }
 
@@ -1464,7 +1422,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Tests that if FSDir is opened w/ a NoLockFactory (or SingleInstanceLF),
     // then IndexWriter ctor succeeds. Previously (LUCENE-2386) it failed
     // when listAll() was called in IndexFileDeleter.
-    Directory dir = newFSDirectory(createTempDir("emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
+    Directory dir = newFSDirectory(createTempDir("emptyFSDirNoLock"), NoLockFactory.INSTANCE);
     new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))).close();
     dir.close();
   }
@@ -1535,8 +1493,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testNoSegmentFile() throws IOException {
-    BaseDirectoryWrapper dir = newDirectory();
-    dir.setLockFactory(NoLockFactory.getNoLockFactory());
+    BaseDirectoryWrapper dir = newDirectory(random(), NoLockFactory.INSTANCE);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                            .setMaxBufferedDocs(2));
 
@@ -1778,11 +1735,10 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testWhetherDeleteAllDeletesWriteLock() throws Exception {
-    Directory d = newFSDirectory(createTempDir("TestIndexWriter.testWhetherDeleteAllDeletesWriteLock"));
     // Must use SimpleFSLockFactory... NativeFSLockFactory
     // somehow "knows" a lock is held against write.lock
     // even if you remove that file:
-    d.setLockFactory(new SimpleFSLockFactory());
+    Directory d = newFSDirectory(createTempDir("TestIndexWriter.testWhetherDeleteAllDeletesWriteLock"), SimpleFSLockFactory.INSTANCE);
     RandomIndexWriter w1 = new RandomIndexWriter(random(), d);
     w1.deleteAll();
     try {

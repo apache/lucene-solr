@@ -37,21 +37,20 @@ public class SimpleFSDirectory extends FSDirectory {
   /** Create a new SimpleFSDirectory for the named location.
    *
    * @param path the path of the directory
-   * @param lockFactory the lock factory to use, or null for the default
-   * ({@link NativeFSLockFactory});
+   * @param lockFactory the lock factory to use
    * @throws IOException if there is a low-level I/O error
    */
   public SimpleFSDirectory(Path path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
   }
   
-  /** Create a new SimpleFSDirectory for the named location and {@link NativeFSLockFactory}.
+  /** Create a new SimpleFSDirectory for the named location and {@link FSLockFactory#getDefault()}.
    *
    * @param path the path of the directory
    * @throws IOException if there is a low-level I/O error
    */
   public SimpleFSDirectory(Path path) throws IOException {
-    super(path, null);
+    this(path, FSLockFactory.getDefault());
   }
 
   /** Creates an IndexInput for the file with the given name. */

@@ -1,5 +1,50 @@
 # Apache Lucene Migration Guide
 
+## Disk I/O API completely changed to Java-7-NIO.2
+
+All directory APIs were changed to make use of the new Java 7 NIO.2 API.
+It is no longer possible to pass java.io.File or string-based directory
+names to FSDirectory classes. FSDirectory classes now require
+java.nio.file.Path instances. This allows to place index directories also
+on "virtual file systems" like ZIP or TAR files. To migrate existing code
+use java.io.File#toPath().
+
+In addition, please make sure that custom directory implementations throw
+the new Exceptions, because Lucene cannot understand the old legacy
+Exceptions like java.io.FileNotFoundException instead of
+java.nio.file.NoSuchFileException.
+
+## Directory and LockFactory APIs restructured (LUCENE-5953)
+
+Locking is now under the responsibility of the Directory implementation.
+LockFactory is only used by subclasses of BaseDirectory to delegate locking
+to an impl class. LockFactories are responsible to create a Lock on behalf
+of a BaseDirectory subclass.
+
+The following changes in existing code need to be done:
+
+- LockFactory implementations are singletons now and have no state. They only
+  need to implement one method: makeLock(Directory dir, String name).
+  The passed directory can be used to determine the corect file system path
+  for the lock file or similar, so it knows where to create the lock.
+  In addition, the factory may check with instanceof, if the lock factory
+  can be used with the type of directory at all.
+- It was never really supported to place lock files outside of the index
+  directory and this functionality was removed. If you still rely on this,
+  you can use the following trick: Use FileSwitchDirectory and delegate
+  the file extension ".lock" to another Directory instance pointing to
+  another path. FileSwitchDirectory also delegates lock files based on
+  the extension.
+- If you wrap another directory using FilterDirectory, you cannot make use
+  of LockFactories anymore, because only BaseDirectory knows about them.
+  To wrap locking, you must hook into FilterDirectory.makeLock(String name)
+  and wrap the Lock instance returned, as needed. See MockDirectoryWrapper
+  in lucene-test-framework for an example.
+- It is no longer allowed to pass "null" as LockFactory to FSDirectory
+  implementations. You have to explicitely pass the platform default to the
+  directory (currently always NativeFSLockFactory.INSTANCE, but subject to
+  change!). To get the platform default, call FSLockFactory.getDefault().
+
 ## Removed Reader from Tokenizer constructor (LUCENE-5388)
 
 The constructor of Tokenizer no longer takes Reader, as this was a leftover

@@ -32,7 +32,6 @@ import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   }
   
   @Override
-  protected LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException {
+  protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
       // we default to "native"
       log.warn("No lockType configured, assuming 'native'.");
@@ -64,13 +63,13 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
       case "simple":
-        return new SimpleFSLockFactory(new File(lockPath).toPath());
+        return SimpleFSLockFactory.INSTANCE;
       case "native":
-        return new NativeFSLockFactory(new File(lockPath).toPath());
+        return NativeFSLockFactory.INSTANCE;
       case "single":
         return new SingleInstanceLockFactory();
       case "none":
-        return NoLockFactory.getNoLockFactory();
+        return NoLockFactory.INSTANCE;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unrecognized lockType: " + rawLockType);

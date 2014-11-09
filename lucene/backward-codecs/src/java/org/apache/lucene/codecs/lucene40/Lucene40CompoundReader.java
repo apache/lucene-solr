@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.lucene40;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
@@ -42,7 +41,7 @@ import java.io.IOException;
  * @deprecated only for reading 4.x segments
  */
 @Deprecated
-final class Lucene40CompoundReader extends BaseDirectory {
+final class Lucene40CompoundReader extends Directory {
   
   // TODO: would be great to move this read-write stuff out of here into test.
 
@@ -61,6 +60,7 @@ final class Lucene40CompoundReader extends BaseDirectory {
   private final Lucene40CompoundWriter writer;
   private final IndexInput handle;
   private int version;
+  private boolean isOpen;
   
   /**
    * Create a new CompoundFileDirectory.
@@ -239,11 +239,6 @@ final class Lucene40CompoundReader extends BaseDirectory {
     throw new UnsupportedOperationException();
   }
   
-  @Override
-  public void clearLock(String name) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
   @Override
   public String toString() {
     return "CompoundFileDirectory(file=\"" + fileName + "\" in dir=" + directory + ")";

@@ -38,8 +38,8 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
   private boolean allowReadingFilesStillOpenForWrite = Boolean.getBoolean(SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
 
   @Override
-  protected LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException {
-    return NoLockFactory.getNoLockFactory(); // dummy, actually unused
+  protected LockFactory createLockFactory(String rawLockType) throws IOException {
+    return NoLockFactory.INSTANCE; // dummy, actually unused
   }
 
   @Override

@@ -45,8 +45,8 @@ public class LockStressTest {
                          "  myID = int from 0 .. 255 (should be unique for test process)\n" +
                          "  verifierHost = hostname that LockVerifyServer is listening on\n" +
                          "  verifierPort = port that LockVerifyServer is listening on\n" +
-                         "  lockFactoryClassName = primary LockFactory class that we will use\n" +
-                         "  lockDirName = path to the lock directory (only set for Simple/NativeFSLockFactory\n" +
+                         "  lockFactoryClassName = primary FSLockFactory class that we will use\n" +
+                         "  lockDirName = path to the lock directory\n" +
                          "  sleepTimeMS = milliseconds to pause betweeen each lock obtain/release\n" +
                          "  count = number of locking tries\n" +
                          "\n" +
@@ -69,11 +69,13 @@ public class LockStressTest {
     final String verifierHost = args[arg++];
     final int verifierPort = Integer.parseInt(args[arg++]);
     final String lockFactoryClassName = args[arg++];
-    final String lockDirName = args[arg++];
+    final Path lockDirPath = Paths.get(args[arg++]);
     final int sleepTimeMS = Integer.parseInt(args[arg++]);
     final int count = Integer.parseInt(args[arg++]);
 
-    final LockFactory lockFactory = getNewLockFactory(lockFactoryClassName, lockDirName);
+    final LockFactory lockFactory = getNewLockFactory(lockFactoryClassName);
+    // we test the lock factory directly, so we don't need it on the directory itsself (the directory is just for testing)
+    final FSDirectory lockDir = new SimpleFSDirectory(lockDirPath, NoLockFactory.INSTANCE);
     final InetSocketAddress addr = new InetSocketAddress(verifierHost, verifierPort);
     System.out.println("Connecting to server " + addr +
         " and registering as client " + myID + "...");
@@ -86,7 +88,7 @@ public class LockStressTest {
       out.write(myID);
       out.flush();
       LockFactory verifyLF = new VerifyingLockFactory(lockFactory, in, out);
-      Lock l = verifyLF.makeLock("test.lock");
+      Lock l = verifyLF.makeLock(lockDir, "test.lock");
       final Random rnd = new Random();
       
       // wait for starting gun
@@ -103,9 +105,9 @@ public class LockStressTest {
         if (obtained) {
           if (rnd.nextInt(10) == 0) {
             if (rnd.nextBoolean()) {
-              verifyLF = new VerifyingLockFactory(getNewLockFactory(lockFactoryClassName, lockDirName), in, out);
+              verifyLF = new VerifyingLockFactory(getNewLockFactory(lockFactoryClassName), in, out);
             }
-            final Lock secondLock = verifyLF.makeLock("test.lock");
+            final Lock secondLock = verifyLF.makeLock(lockDir, "test.lock");
             if (secondLock.obtain()) {
               throw new IOException("Double Obtain");
             }
@@ -126,20 +128,21 @@ public class LockStressTest {
   }
 
 
-  private static LockFactory getNewLockFactory(String lockFactoryClassName, String lockDirName) throws IOException {
-    LockFactory lockFactory;
+  private static FSLockFactory getNewLockFactory(String lockFactoryClassName) throws IOException {
+    // try to get static INSTANCE field of class
     try {
-      lockFactory = Class.forName(lockFactoryClassName).asSubclass(LockFactory.class).newInstance();
+      return (FSLockFactory) Class.forName(lockFactoryClassName).getField("INSTANCE").get(null);
+    } catch (ReflectiveOperationException e) {
+      // fall-through
+    }
+    
+    // try to create a new instance
+    try {
+      return Class.forName(lockFactoryClassName).asSubclass(FSLockFactory.class).newInstance();
     } catch (IllegalAccessException | InstantiationException | ClassCastException | ClassNotFoundException e) {
-      throw new IOException("Cannot instantiate lock factory " + lockFactoryClassName);
+      // fall-through
     }
 
-    Path lockDir = Paths.get(lockDirName);
-
-    if (lockFactory instanceof FSLockFactory) {
-      ((FSLockFactory) lockFactory).setLockDir(lockDir);
-    }
-    lockFactory.setLockPrefix("test");
-    return lockFactory;
+    throw new IOException("Cannot get lock factory singleton of " + lockFactoryClassName);
   }
 }
