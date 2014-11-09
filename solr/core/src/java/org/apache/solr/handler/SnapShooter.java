@@ -54,7 +54,7 @@ public class SnapShooter {
   private SolrCore solrCore;
   private String snapshotName = null;
   private String directoryName = null;
-  private FSDirectory snapShotDir = null;
+  private File snapShotDir = null;
 
   public SnapShooter(SolrCore core, String location, String snapshotName) {
     solrCore = core;
@@ -115,16 +115,15 @@ public class SnapShooter {
   }
 
   void validateCreateSnapshot() throws IOException {
-    final File snapShotFile = new File(snapDir, directoryName);
-    if (snapShotFile.exists()) {
+    snapShotDir = new File(snapDir, directoryName);
+    if (snapShotDir.exists()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Snapshot directory already exists: " + snapShotFile.getAbsolutePath());
+          "Snapshot directory already exists: " + snapShotDir.getAbsolutePath());
     }
-    if (!snapShotFile.mkdirs()) {
+    if (!snapShotDir.mkdirs()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to create snapshot directory: " + snapShotFile.getAbsolutePath());
+          "Unable to create snapshot directory: " + snapShotDir.getAbsolutePath());
     }
-    snapShotDir = new SimpleFSDirectory(snapShotFile.toPath(), NoLockFactory.INSTANCE);
   }
 
   void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
@@ -147,7 +146,7 @@ public class SnapShooter {
       details.add("snapshotName", snapshotName);
       LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName));
     } catch (Exception e) {
-      SnapPuller.delTree(snapShotDir.getDirectory().toFile());
+      SnapPuller.delTree(snapShotDir);
       LOG.error("Exception while creating snapshot", e);
       details.add("snapShootException", e.getMessage());
     } finally {
@@ -224,13 +223,12 @@ public class SnapShooter {
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
   
 
-  private void copyFiles(Directory sourceDir, Collection<String> files, Directory destDir) throws IOException {
-    for (String indexFile : files) {
-      copyFile(sourceDir, indexFile, destDir);
+  private static void copyFiles(Directory sourceDir, Collection<String> files, File destDir) throws IOException {
+    try (FSDirectory dir = new SimpleFSDirectory(destDir.toPath(), NoLockFactory.INSTANCE)) {
+      for (String indexFile : files) {
+        sourceDir.copy(dir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      }
     }
   }
-  
-  private void copyFile(Directory sourceDir, String indexFile, Directory destDir) throws IOException {
-    sourceDir.copy(destDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
-  }
+    
 }
