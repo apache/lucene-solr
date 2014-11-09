@@ -45,12 +45,8 @@ public class TestLockFactory extends LuceneTestCase {
     // methods are called at the right time, locks are created, etc.
 
     public void testCustomLockFactory() throws IOException {
-        Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
         MockLockFactory lf = new MockLockFactory();
-        dir.setLockFactory(lf);
-
-        // Lock prefix should have been set:
-        assertTrue("lock prefix was not set by the RAMDirectory", lf.lockPrefixSet);
+        Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory(lf));
 
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
 
@@ -78,11 +74,8 @@ public class TestLockFactory extends LuceneTestCase {
     // exceptions raised:
     // Verify: NoLockFactory allows two IndexWriters
     public void testRAMDirectoryNoLocking() throws IOException {
-        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-        dir.setLockFactory(NoLockFactory.getNoLockFactory());
-        dir.setWrapLockFactory(false); // we are gonna explicitly test we get this back
-        assertTrue("RAMDirectory.setLockFactory did not take",
-                   NoLockFactory.class.isInstance(dir.getLockFactory()));
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory(NoLockFactory.INSTANCE));
+        dir.setAssertLocks(false); // we are gonna explicitly test we get this back
 
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
         writer.commit(); // required so the second open succeed 
@@ -105,10 +98,10 @@ public class TestLockFactory extends LuceneTestCase {
     // Verify: SingleInstanceLockFactory is the default lock for RAMDirectory
     // Verify: RAMDirectory does basic locking correctly (can't create two IndexWriters)
     public void testDefaultRAMDirectory() throws IOException {
-        Directory dir = new RAMDirectory();
+        RAMDirectory dir = new RAMDirectory();
 
-        assertTrue("RAMDirectory did not use correct LockFactory: got " + dir.getLockFactory(),
-                   SingleInstanceLockFactory.class.isInstance(dir.getLockFactory()));
+        assertTrue("RAMDirectory did not use correct LockFactory: got " + dir.lockFactory,
+                   dir.lockFactory instanceof SingleInstanceLockFactory);
 
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
 
@@ -141,7 +134,7 @@ public class TestLockFactory extends LuceneTestCase {
     @Nightly
     public void testStressLocksNativeFSLockFactory() throws Exception {
       Path dir = createTempDir("index.TestLockFactory7");
-      _testStressLocks(new NativeFSLockFactory(dir), dir);
+      _testStressLocks(NativeFSLockFactory.INSTANCE, dir);
     }
 
     public void _testStressLocks(LockFactory lockFactory, Path indexDir) throws Exception {
@@ -171,11 +164,10 @@ public class TestLockFactory extends LuceneTestCase {
 
     // Verify: NativeFSLockFactory works correctly
     public void testNativeFSLockFactory() throws IOException {
-      NativeFSLockFactory f = new NativeFSLockFactory(createTempDir(LuceneTestCase.getTestClass().getSimpleName()));
+      Directory dir = FSDirectory.open(createTempDir(LuceneTestCase.getTestClass().getSimpleName()), NativeFSLockFactory.INSTANCE);
 
-      f.setLockPrefix("test");
-      Lock l = f.makeLock("commit");
-      Lock l2 = f.makeLock("commit");
+      Lock l = dir.makeLock("commit");
+      Lock l2 = dir.makeLock("commit");
 
       assertTrue("failed to obtain lock", l.obtain());
       assertTrue("succeeded in obtaining lock twice", !l2.obtain());
@@ -200,53 +192,12 @@ public class TestLockFactory extends LuceneTestCase {
       Path lockFile = tempDir.resolve("test.lock");
       Files.createFile(lockFile);
       
-      Lock l = new NativeFSLockFactory(tempDir).makeLock("test.lock");
+      Directory dir = FSDirectory.open(tempDir, NativeFSLockFactory.INSTANCE);
+      Lock l = dir.makeLock("test.lock");
       assertTrue("failed to obtain lock", l.obtain());
       l.close();
       assertFalse("failed to release lock", l.isLocked());
       Files.deleteIfExists(lockFile);
-    }
-
-    // Verify: NativeFSLockFactory assigns null as lockPrefix if the lockDir is inside directory
-    public void testNativeFSLockFactoryPrefix() throws IOException {
-
-      Path fdir1 = createTempDir("TestLockFactory.8");
-      Path fdir2 = createTempDir("TestLockFactory.8.Lockdir");
-      Directory dir1 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir1));
-      // same directory, but locks are stored somewhere else. The prefix of the lock factory should != null
-      Directory dir2 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir2));
-
-      String prefix1 = dir1.getLockFactory().getLockPrefix();
-      assertNull("Lock prefix for lockDir same as directory should be null", prefix1);
-      
-      String prefix2 = dir2.getLockFactory().getLockPrefix();
-      assertNotNull("Lock prefix for lockDir outside of directory should be not null", prefix2);
-
-      dir1.close();
-      dir2.close();
-      IOUtils.rm(fdir1, fdir2);
-    }
-
-    // Verify: default LockFactory has no prefix (ie
-    // write.lock is stored in index):
-    public void testDefaultFSLockFactoryPrefix() throws IOException {
-
-      // Make sure we get null prefix, which wont happen if setLockFactory is ever called.
-      Path dirName = createTempDir("TestLockFactory.10");
-
-      Directory dir = new SimpleFSDirectory(dirName);
-      assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
-      dir.close();
-      
-      dir = new MMapDirectory(dirName);
-      assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
-      dir.close();
-      
-      dir = new NIOFSDirectory(dirName);
-      assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
-      dir.close();
- 
-      IOUtils.rm(dirName);
     }
 
     private class WriterThread extends Thread { 
@@ -349,28 +300,18 @@ public class TestLockFactory extends LuceneTestCase {
         }
     }
 
-    public class MockLockFactory extends LockFactory {
+    class MockLockFactory extends LockFactory {
 
-        public boolean lockPrefixSet;
         public Map<String,Lock> locksCreated = Collections.synchronizedMap(new HashMap<String,Lock>());
         public int makeLockCount = 0;
 
         @Override
-        public void setLockPrefix(String lockPrefix) {    
-            super.setLockPrefix(lockPrefix);
-            lockPrefixSet = true;
-        }
-
-        @Override
-        synchronized public Lock makeLock(String lockName) {
+        public synchronized Lock makeLock(Directory dir, String lockName) {
             Lock lock = new MockLock();
             locksCreated.put(lockName, lock);
             makeLockCount++;
             return lock;
         }
-
-        @Override
-        public void clearLock(String specificLockName) {}
 
         public class MockLock extends Lock {
             public int lockAttempts;

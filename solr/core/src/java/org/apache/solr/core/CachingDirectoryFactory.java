@@ -347,7 +347,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       
       if (directory == null) {
-        directory = create(fullPath, createLockFactory(fullPath, rawLockType), dirContext);
+        directory = create(fullPath, createLockFactory(rawLockType), dirContext);
         boolean success = false;
         try {
           directory = rateLimit(directory);

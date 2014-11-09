@@ -20,7 +20,6 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -31,15 +30,14 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.ArrayUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
   
@@ -267,18 +265,14 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       }
     }
 
-    private static class MockFSDirectory extends BaseDirectory {
+    private static class MockFSDirectory extends FilterDirectory {
 
-      List<IndexInput> allIndexInputs = new ArrayList<>();
-
-      Random rand;
-
-      private Directory dir;
+      final List<IndexInput> allIndexInputs = new ArrayList<>();
+      final Random rand;
 
       public MockFSDirectory(Path path, Random rand) throws IOException {
+        super(new SimpleFSDirectory(path));
         this.rand = rand;
-        lockFactory = NoLockFactory.getNoLockFactory();
-        dir = new SimpleFSDirectory(path, null);
       }
 
       public void tweakBufferSizes() {
@@ -296,46 +290,9 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       public IndexInput openInput(String name, IOContext context) throws IOException {
         // Make random changes to buffer size
         //bufferSize = 1+Math.abs(rand.nextInt() % 10);
-        IndexInput f = dir.openInput(name, context);
+        IndexInput f = super.openInput(name, context);
         allIndexInputs.add(f);
         return f;
-      }
-
-      @Override
-      public IndexOutput createOutput(String name, IOContext context) throws IOException {
-        return dir.createOutput(name, context);
-      }
-
-      @Override
-      public void close() throws IOException {
-        dir.close();
-      }
-
-      @Override
-      public void deleteFile(String name)
-        throws IOException
-      {
-        dir.deleteFile(name);
-      }
-      @Override
-      public String[] listAll()
-        throws IOException
-      {
-        return dir.listAll();
-      }
-      @Override
-      public void sync(Collection<String> names) throws IOException {
-        dir.sync(names);
-      }
-      
-      @Override
-      public void renameFile(String source, String dest) throws IOException {
-        dir.renameFile(source, dest);
-      }
-
-      @Override
-      public long fileLength(String name) throws IOException {
-        return dir.fileLength(name);
       }
     }
 }

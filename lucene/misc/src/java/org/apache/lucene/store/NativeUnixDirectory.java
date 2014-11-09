@@ -90,6 +90,7 @@ public class NativeUnixDirectory extends FSDirectory {
   /** Create a new NIOFSDirectory for the named location.
    * 
    * @param path the path of the directory
+   * @param lockFactory to use
    * @param mergeBufferSize Size of buffer to use for
    *    merging.  See {@link #DEFAULT_MERGE_BUFFER_SIZE}.
    * @param minBytesDirect Merges, or files to be opened for
@@ -99,8 +100,8 @@ public class NativeUnixDirectory extends FSDirectory {
    * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
-  public NativeUnixDirectory(Path path, int mergeBufferSize, long minBytesDirect, Directory delegate) throws IOException {
-    super(path, delegate.getLockFactory());
+  public NativeUnixDirectory(Path path, int mergeBufferSize, long minBytesDirect, LockFactory lockFactory, Directory delegate) throws IOException {
+    super(path, lockFactory);
     if ((mergeBufferSize & ALIGN) != 0) {
       throw new IllegalArgumentException("mergeBufferSize must be 0 mod " + ALIGN + " (got: " + mergeBufferSize + ")");
     }
@@ -112,11 +113,22 @@ public class NativeUnixDirectory extends FSDirectory {
   /** Create a new NIOFSDirectory for the named location.
    * 
    * @param path the path of the directory
+   * @param lockFactory the lock factory to use
+   * @param delegate fallback Directory for non-merges
+   * @throws IOException If there is a low-level I/O error
+   */
+  public NativeUnixDirectory(Path path, LockFactory lockFactory, Directory delegate) throws IOException {
+    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, lockFactory, delegate);
+  }  
+
+  /** Create a new NIOFSDirectory for the named location with {@link FSLockFactory#getDefault()}.
+   * 
+   * @param path the path of the directory
    * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
   public NativeUnixDirectory(Path path, Directory delegate) throws IOException {
-    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, delegate);
+    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, FSLockFactory.getDefault(), delegate);
   }  
 
   @Override

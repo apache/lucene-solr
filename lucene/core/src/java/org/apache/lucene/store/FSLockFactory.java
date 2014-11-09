@@ -17,47 +17,29 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 /**
  * Base class for file system based locking implementation.
+ * This class is explicitly checking that the passed {@link Directory}
+ * is an {@link FSDirectory}.
  */
-
 public abstract class FSLockFactory extends LockFactory {
-
-  /**
-   * Directory for the lock files.
-   */
-  protected Path lockDir = null;
-
-  /**
-   * Set the lock directory. This method can be only called
-   * once to initialize the lock directory. It is used by {@link FSDirectory}
-   * to set the lock directory to itself.
-   * Subclasses can also use this method to set the directory
-   * in the constructor.
-   */
-  protected final void setLockDir(Path lockDir) throws IOException {
-    if (this.lockDir != null)
-      throw new IllegalStateException("You can set the lock directory for this factory only once.");
-    if (lockDir != null) {
-      Files.createDirectories(lockDir);
-    }
-    this.lockDir = lockDir;
-  }
   
-  /**
-   * Retrieve the lock directory.
+  /** Returns the default locking implementation for this platform.
+   * This method currently returns always {@link NativeFSLockFactory}.
    */
-  public Path getLockDir() {
-    return lockDir;
+  public static final FSLockFactory getDefault() {
+    return NativeFSLockFactory.INSTANCE;
   }
 
   @Override
-  public String toString() {
-    return this.getClass().getSimpleName() + "@" + lockDir;
+  public final Lock makeLock(Directory dir, String lockName) {
+    if (!(dir instanceof FSDirectory)) {
+      throw new UnsupportedOperationException(getClass().getSimpleName() + " can only be used with FSDirectory subclasses, got: " + dir);
+    }
+    return makeFSLock((FSDirectory) dir, lockName);
   }
   
+  /** Implement this method to create a lock for a FSDirectory instance. */
+  protected abstract Lock makeFSLock(FSDirectory dir, String lockName);
+
 }

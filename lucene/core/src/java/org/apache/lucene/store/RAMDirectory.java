@@ -33,8 +33,7 @@ import org.apache.lucene.util.Accountables;
 
 /**
  * A memory-resident {@link Directory} implementation.  Locking
- * implementation is by default the {@link SingleInstanceLockFactory}
- * but can be changed with {@link #setLockFactory}.
+ * implementation is by default the {@link SingleInstanceLockFactory}.
  * 
  * <p><b>Warning:</b> This class is not intended to work with huge
  * indexes. Everything beyond several hundred megabytes will waste
@@ -52,17 +51,14 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   
-  // *****
-  // Lock acquisition sequence:  RAMDirectory, then RAMFile
-  // ***** 
-
   /** Constructs an empty {@link Directory}. */
   public RAMDirectory() {
-    try {
-      setLockFactory(new SingleInstanceLockFactory());
-    } catch (IOException e) {
-      // Cannot happen
-    }
+    this(new SingleInstanceLockFactory());
+  }
+
+  /** Constructs an empty {@link Directory} with the given {@link LockFactory}. */
+  public RAMDirectory(LockFactory lockFactory) {
+    super(lockFactory);
   }
 
   /**
@@ -105,11 +101,6 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     }
   }
 
-  @Override
-  public String getLockID() {
-    return "lucene-" + Integer.toHexString(hashCode());
-  }
-  
   @Override
   public final String[] listAll() {
     ensureOpen();
@@ -156,11 +147,6 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     return Accountables.namedAccountables("file", fileMap);
   }
   
-  @Override
-  public String toString() {
-    return getClass().getSimpleName() + "(id=" + getLockID() + ")";
-  }
-
   /** Removes an existing file in the directory.
    * @throws IOException if the file does not exist
    */

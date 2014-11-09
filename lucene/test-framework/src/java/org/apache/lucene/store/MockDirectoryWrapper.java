@@ -74,7 +74,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean assertNoDeleteOpenFile = false;
   boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
-  boolean wrapLockFactory = true;
+  boolean wrapLocking = true;
   boolean useSlowOpenClosers = true;
   boolean enableVirusScanner = true;
   boolean allowRandomFileNotFoundException = true;
@@ -86,7 +86,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = Throttling.SOMETIMES;
-  protected LockFactory lockFactory;
 
   final AtomicInteger inputCloneCount = new AtomicInteger();
 
@@ -129,8 +128,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     this.randomState = new Random(random.nextInt());
     this.throttledOutput = new ThrottledIndexOutput(ThrottledIndexOutput
         .mBitsToBytes(40 + randomState.nextInt(10)), 5 + randomState.nextInt(5), null);
-    // force wrapping of lockfactory
-    this.lockFactory = new MockLockFactoryWrapper(this, delegate.getLockFactory());
     init();
   }
 
@@ -709,16 +706,16 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
   
   /**
-   * Set to false if you want to return the pure lockfactory
-   * and not wrap it with MockLockFactoryWrapper.
+   * Set to false if you want to return the pure {@link LockFactory} and not
+   * wrap all lock with {@code AssertingLock}.
    * <p>
-   * Be careful if you turn this off: MockDirectoryWrapper might
-   * no longer be able to detect if you forget to close an IndexWriter,
+   * Be careful if you turn this off: {@code MockDirectoryWrapper} might
+   * no longer be able to detect if you forget to close an {@link IndexWriter},
    * and spit out horribly scary confusing exceptions instead of
    * simply telling you that.
    */
-  public void setWrapLockFactory(boolean v) {
-    this.wrapLockFactory = v;
+  public void setAssertLocks(boolean v) {
+    this.wrapLocking = v;
   }
 
   @Override
@@ -987,39 +984,43 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   @Override
   public synchronized Lock makeLock(String name) {
     maybeYield();
-    return getLockFactory().makeLock(name);
-  }
-
-  @Override
-  public synchronized void clearLock(String name) throws IOException {
-    maybeYield();
-    getLockFactory().clearLock(name);
-  }
-
-  @Override
-  public synchronized void setLockFactory(LockFactory lockFactory) throws IOException {
-    maybeYield();
-    // sneaky: we must pass the original this way to the dir, because
-    // some impls (e.g. FSDir) do instanceof here.
-    in.setLockFactory(lockFactory);
-    // now set our wrapped factory here
-    this.lockFactory = new MockLockFactoryWrapper(this, lockFactory);
-  }
-
-  @Override
-  public synchronized LockFactory getLockFactory() {
-    maybeYield();
-    if (wrapLockFactory) {
-      return lockFactory;
+    if (wrapLocking) {
+      return new AssertingLock(super.makeLock(name), name);
     } else {
-      return in.getLockFactory();
+      return super.makeLock(name);
     }
   }
+  
+  private final class AssertingLock extends Lock {
+    private final Lock delegateLock;
+    private final String name;
+    
+    AssertingLock(Lock delegate, String name) {
+      this.delegateLock = delegate;
+      this.name = name;
+    }
 
-  @Override
-  public synchronized String getLockID() {
-    maybeYield();
-    return in.getLockID();
+    @Override
+    public boolean obtain() throws IOException {
+      if (delegateLock.obtain()) {
+        assert delegateLock == NoLockFactory.SINGLETON_LOCK || !openLocks.containsKey(name);
+        openLocks.put(name, new RuntimeException("lock \"" + name + "\" was not released"));
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegateLock.close();
+      openLocks.remove(name);
+    }
+
+    @Override
+    public boolean isLocked() throws IOException {
+      return delegateLock.isLocked();
+    }
   }
 
   @Override

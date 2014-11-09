@@ -36,7 +36,7 @@ public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
   public static Logger LOG = LoggerFactory.getLogger(RAMDirectoryFactory.class);
   
   @Override
-  protected LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException {
+  protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (!(rawLockType == null || "single".equalsIgnoreCase(rawLockType.trim()))) {
       throw new SolrException(ErrorCode.FORBIDDEN,
           "RAMDirectory can only be used with the 'single' lock factory type.");
@@ -46,9 +46,7 @@ public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    final Directory dir = new RAMDirectory();
-    dir.setLockFactory(lockFactory); // more or less a no-op, just for completeness
-    return dir;
+    return new RAMDirectory(lockFactory);
   }
 
 }

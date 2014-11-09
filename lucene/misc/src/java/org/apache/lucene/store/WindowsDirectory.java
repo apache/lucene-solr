@@ -22,7 +22,6 @@ import java.io.EOFException;
 import java.nio.file.Path;
 
 import org.apache.lucene.store.Directory; // javadoc
-import org.apache.lucene.store.NativeFSLockFactory; // javadoc
 
 /**
  * Native {@link Directory} implementation for Microsoft Windows.
@@ -52,21 +51,20 @@ public class WindowsDirectory extends FSDirectory {
   /** Create a new WindowsDirectory for the named location.
    * 
    * @param path the path of the directory
-   * @param lockFactory the lock factory to use, or null for the default
-   * ({@link NativeFSLockFactory});
+   * @param lockFactory the lock factory to use
    * @throws IOException If there is a low-level I/O error
    */
   public WindowsDirectory(Path path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
   }
 
-  /** Create a new WindowsDirectory for the named location and {@link NativeFSLockFactory}.
+  /** Create a new WindowsDirectory for the named location and {@link FSLockFactory#getDefault()}.
    *
    * @param path the path of the directory
    * @throws IOException If there is a low-level I/O error
    */
   public WindowsDirectory(Path path) throws IOException {
-    super(path, null);
+    this(path, FSLockFactory.getDefault());
   }
 
   @Override

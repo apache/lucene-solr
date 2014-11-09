@@ -21,50 +21,45 @@ import java.io.IOException;
 
 /**
  * Use this {@link LockFactory} to disable locking entirely.
- * Only one instance of this lock is created.  You should call {@link
- * #getNoLockFactory()} to get the instance.
+ * This is a singleton, you have to use {@link #INSTANCE}.
  *
  * @see LockFactory
  */
 
-public class NoLockFactory extends LockFactory {
+public final class NoLockFactory extends LockFactory {
 
-  // Single instance returned whenever makeLock is called.
-  private static NoLock singletonLock = new NoLock();
-  private static NoLockFactory singleton = new NoLockFactory();
+  /** The singleton */
+  public static final NoLockFactory INSTANCE = new NoLockFactory();
+  
+  // visible for AssertingLock!
+  static final NoLock SINGLETON_LOCK = new NoLock();
   
   private NoLockFactory() {}
 
-  public static NoLockFactory getNoLockFactory() {
-    return singleton;
+  @Override
+  public Lock makeLock(Directory dir, String lockName) {
+    return SINGLETON_LOCK;
+  }
+  
+  private static class NoLock extends Lock {
+    @Override
+    public boolean obtain() throws IOException {
+      return true;
+    }
+
+    @Override
+    public void close() {
+    }
+
+    @Override
+    public boolean isLocked() {
+      return false;
+    }
+
+    @Override
+    public String toString() {
+      return "NoLock";
+    }
   }
 
-  @Override
-  public Lock makeLock(String lockName) {
-    return singletonLock;
-  }
-
-  @Override
-  public void clearLock(String lockName) {}
-}
-
-class NoLock extends Lock {
-  @Override
-  public boolean obtain() throws IOException {
-    return true;
-  }
-
-  @Override
-  public void close() {
-  }
-
-  @Override
-  public boolean isLocked() {
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    return "NoLock";
-  }
 }

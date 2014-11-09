@@ -39,8 +39,7 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
   }
   
   public void testFailIfIndexWriterNotClosedChangeLockFactory() throws IOException {
-    MockDirectoryWrapper dir = newMockDirectory();
-    dir.setLockFactory(new SingleInstanceLockFactory());
+    MockDirectoryWrapper dir = newMockDirectory(random(), new SingleInstanceLockFactory());
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     try {
       dir.close();

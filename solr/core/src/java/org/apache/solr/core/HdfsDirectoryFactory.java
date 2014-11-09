@@ -17,25 +17,21 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.Locale;
 
 import org.apache.hadoop.conf.Configuration;
-
-import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -108,7 +104,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   }
   
   @Override
-  protected LockFactory createLockFactory(String lockPath, String rawLockType) throws IOException {
+  protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
       LOG.warn("No lockType configured, assuming 'hdfs'.");
       rawLockType = "hdfs";
@@ -116,11 +112,11 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
       case "hdfs":
-        return new HdfsLockFactory(new Path(lockPath), getConf());
+        return HdfsLockFactory.INSTANCE;
       case "single":
         return new SingleInstanceLockFactory();
       case "none":
-        return NoLockFactory.getNoLockFactory();
+        return NoLockFactory.INSTANCE;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unrecognized lockType: " + rawLockType);

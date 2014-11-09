@@ -37,8 +37,7 @@ import org.apache.lucene.util.IOUtils;
  * </ul>
  *
  * Directory locking is implemented by an instance of {@link
- * LockFactory}, and can be changed for each Directory
- * instance using {@link #setLockFactory}.
+ * LockFactory}.
  *
  */
 public abstract class Directory implements Closeable {
@@ -116,53 +115,14 @@ public abstract class Directory implements Closeable {
    */
   public abstract Lock makeLock(String name);
 
-  /**
-   * Attempt to clear (forcefully unlock and remove) the
-   * specified lock.  Only call this at a time when you are
-   * certain this lock is no longer in use.
-   * @param name name of the lock to be cleared.
-   */
-  public abstract void clearLock(String name) throws IOException;
-
   /** Closes the store. */
   @Override
   public abstract void close()
        throws IOException;
 
-  /**
-   * Set the LockFactory that this Directory instance should
-   * use for its locking implementation.  Each * instance of
-   * LockFactory should only be used for one directory (ie,
-   * do not share a single instance across multiple
-   * Directories).
-   *
-   * @param lockFactory instance of {@link LockFactory}.
-   */
-  public abstract void setLockFactory(LockFactory lockFactory) throws IOException;
-
-  /**
-   * Get the LockFactory that this Directory instance is
-   * using for its locking implementation.  Note that this
-   * may be null for Directory implementations that provide
-   * their own locking implementation.
-   */
-  public abstract LockFactory getLockFactory();
-
-  /**
-   * Return a string identifier that uniquely differentiates
-   * this Directory instance from other Directory instances.
-   * This ID should be the same if two Directory instances
-   * (even in different JVMs and/or on different machines)
-   * are considered "the same index".  This is how locking
-   * "scopes" to the right index.
-   */
-  public String getLockID() {
-    return this.toString();
-  }
-
   @Override
   public String toString() {
-    return getClass().getSimpleName() + '@' + Integer.toHexString(hashCode()) + " lockFactory=" + getLockFactory();
+    return getClass().getSimpleName() + '@' + Integer.toHexString(hashCode());
   }
 
   /**

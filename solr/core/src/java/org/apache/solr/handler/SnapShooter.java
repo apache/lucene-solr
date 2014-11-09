@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -52,10 +53,9 @@ public class SnapShooter {
   private static final Logger LOG = LoggerFactory.getLogger(SnapShooter.class.getName());
   private String snapDir = null;
   private SolrCore solrCore;
-  private SimpleFSLockFactory lockFactory;
   private String snapshotName = null;
   private String directoryName = null;
-  private File snapShotDir = null;
+  private FSDirectory snapShotDir = null;
   private Lock lock = null;
 
   public SnapShooter(SolrCore core, String location, String snapshotName) {
@@ -66,11 +66,6 @@ public class SnapShooter {
       snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
       File dir = new File(snapDir);
       if (!dir.exists())  dir.mkdirs();
-    }
-    try {
-      lockFactory = new SimpleFSLockFactory(new File(snapDir).toPath());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
     this.snapshotName = snapshotName;
 
@@ -122,19 +117,20 @@ public class SnapShooter {
   }
 
   void validateCreateSnapshot() throws IOException {
-    Lock lock = lockFactory.makeLock(directoryName + ".lock");
-    snapShotDir = new File(snapDir, directoryName);
+    final File snapShotFile = new File(snapDir, directoryName);
+    if (snapShotFile.exists()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Snapshot directory already exists: " + snapShotFile.getAbsolutePath());
+    }
+    if (!snapShotFile.mkdirs()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to create snapshot directory: " + snapShotFile.getAbsolutePath());
+    }
+    snapShotDir = new SimpleFSDirectory(snapShotFile.toPath(), SimpleFSLockFactory.INSTANCE);
+    Lock lock = snapShotDir.makeLock("write.lock");
     if (lock.isLocked()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to acquire lock for snapshot directory: " + snapShotDir.getAbsolutePath());
-    }
-    if (snapShotDir.exists()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Snapshot directory already exists: " + snapShotDir.getAbsolutePath());
-    }
-    if (!snapShotDir.mkdirs()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to create snapshot directory: " + snapShotDir.getAbsolutePath());
+          "Unable to acquire lock for snapshot directory: " + snapShotFile.getAbsolutePath());
     }
   }
 
@@ -146,11 +142,10 @@ public class SnapShooter {
 
     try {
       Collection<String> files = indexCommit.getFileNames();
-      FileCopier fileCopier = new FileCopier();
 
       Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
       try {
-        fileCopier.copyFiles(dir, files, snapShotDir);
+        copyFiles(dir, files, snapShotDir);
       } finally {
         solrCore.getDirectoryFactory().release(dir);
       }
@@ -161,7 +156,7 @@ public class SnapShooter {
       details.add("snapshotName", snapshotName);
       LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName));
     } catch (Exception e) {
-      SnapPuller.delTree(snapShotDir);
+      SnapPuller.delTree(snapShotDir.getDirectory().toFile());
       LOG.error("Exception while creating snapshot", e);
       details.add("snapShootException", e.getMessage());
     } finally {
@@ -245,35 +240,13 @@ public class SnapShooter {
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
   
 
-  private class FileCopier {
-    
-    public void copyFiles(Directory sourceDir, Collection<String> files,
-        File destDir) throws IOException {
-      // does destinations directory exist ?
-      if (destDir != null && !destDir.exists()) {
-        destDir.mkdirs();
-      }
-      
-      FSDirectory dir = FSDirectory.open(destDir.toPath());
-      try {
-        for (String indexFile : files) {
-          copyFile(sourceDir, indexFile, new File(destDir, indexFile), dir);
-        }
-      } finally {
-        dir.close();
-      }
+  private void copyFiles(Directory sourceDir, Collection<String> files, Directory destDir) throws IOException {
+    for (String indexFile : files) {
+      copyFile(sourceDir, indexFile, destDir);
     }
-    
-    public void copyFile(Directory sourceDir, String indexFile, File destination, Directory destDir)
-      throws IOException {
-
-      // make sure we can write to destination
-      if (destination.exists() && !destination.canWrite()) {
-        String message = "Unable to open file " + destination + " for writing.";
-        throw new IOException(message);
-      }
-
-      sourceDir.copy(destDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
-    }
+  }
+  
+  private void copyFile(Directory sourceDir, String indexFile, Directory destDir) throws IOException {
+    sourceDir.copy(destDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
   }
 }

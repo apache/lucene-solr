@@ -114,6 +114,7 @@ import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IOContext.Context;
@@ -1208,6 +1209,14 @@ public abstract class LuceneTestCase extends Assert {
     return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r));
   }
 
+  /**
+   * Returns a new Directory instance, using the specified random.
+   * See {@link #newDirectory()} for more information.
+   */
+  public static BaseDirectoryWrapper newDirectory(Random r, LockFactory lf) {
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), rarely(r));
+  }
+
   public static MockDirectoryWrapper newMockDirectory() {
     return newMockDirectory(random());
   }
@@ -1216,8 +1225,16 @@ public abstract class LuceneTestCase extends Assert {
     return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
   }
 
+  public static MockDirectoryWrapper newMockDirectory(Random r, LockFactory lf) {
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), false);
+  }
+
   public static MockDirectoryWrapper newMockFSDirectory(Path f) {
-    return (MockDirectoryWrapper) newFSDirectory(f, null, false);
+    return (MockDirectoryWrapper) newFSDirectory(f, FSLockFactory.getDefault(), false);
+  }
+
+  public static MockDirectoryWrapper newMockFSDirectory(Path f, LockFactory lf) {
+    return (MockDirectoryWrapper) newFSDirectory(f, lf, false);
   }
 
   /**
@@ -1231,7 +1248,7 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
   public static BaseDirectoryWrapper newFSDirectory(Path f) {
-    return newFSDirectory(f, null);
+    return newFSDirectory(f, FSLockFactory.getDefault());
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
@@ -1255,11 +1272,8 @@ public abstract class LuceneTestCase extends Assert {
         clazz = CommandLineUtil.loadFSDirectoryClass(fsdirClass);
       }
 
-      Directory fsdir = newFSDirectoryImpl(clazz, f);
+      Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
       BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
-      if (lf != null) {
-        wrapped.setLockFactory(lf);
-      }
       return wrapped;
     } catch (Exception e) {
       Rethrow.rethrow(e);
@@ -1454,17 +1468,21 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static Directory newFSDirectoryImpl(Class<? extends FSDirectory> clazz, Path path) throws IOException {
+  private static Directory newFSDirectoryImpl(Class<? extends FSDirectory> clazz, Path path, LockFactory lf) throws IOException {
     FSDirectory d = null;
     try {
-      d = CommandLineUtil.newFSDirectory(clazz, path);
-    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      d = CommandLineUtil.newFSDirectory(clazz, path, lf);
+    } catch (ReflectiveOperationException e) {
       Rethrow.rethrow(e);
     }
     return d;
   }
 
   static Directory newDirectoryImpl(Random random, String clazzName) {
+    return newDirectoryImpl(random, clazzName, FSLockFactory.getDefault());
+  }
+  
+  static Directory newDirectoryImpl(Random random, String clazzName, LockFactory lf) {
     if (clazzName.equals("random")) {
       if (rarely(random)) {
         clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
@@ -1478,21 +1496,27 @@ public abstract class LuceneTestCase extends Assert {
       // If it is a FSDirectory type, try its ctor(Path)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
         final Path dir = createTempDir("index-" + clazzName);
-        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
+        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir, lf);
       }
 
-      // See if it has a Path ctor even though it's not an
+      // See if it has a Path/LockFactory ctor even though it's not an
       // FSDir subclass:
-      Constructor<? extends Directory> pathCtor = null;
       try {
-        pathCtor = clazz.getConstructor(Path.class);
+        Constructor<? extends Directory> pathCtor = clazz.getConstructor(Path.class, LockFactory.class);
+        final Path dir = createTempDir("index");
+        return pathCtor.newInstance(dir, lf);
       } catch (NoSuchMethodException nsme) {
         // Ignore
       }
-
-      if (pathCtor != null) {
-        final Path dir = createTempDir("index");
-        return pathCtor.newInstance(dir);
+      
+      // the remaining dirs are no longer filesystem based, so we must check that the passedLockFactory is not file based:
+      if (!(lf instanceof FSLockFactory)) {
+        // try ctor with only LockFactory (e.g. RAMDirectory)
+        try {
+          return clazz.getConstructor(LockFactory.class).newInstance(lf);
+        } catch (NoSuchMethodException nsme) {
+          // Ignore
+        }
       }
 
       // try empty ctor

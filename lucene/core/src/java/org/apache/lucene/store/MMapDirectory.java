@@ -24,7 +24,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
@@ -85,27 +84,37 @@ public class MMapDirectory extends FSDirectory {
    * Default max chunk size.
    * @see #MMapDirectory(Path, LockFactory, int)
    */
-  public static final int DEFAULT_MAX_BUFF = Constants.JRE_IS_64BIT ? (1 << 30) : (1 << 28);
+  public static final int DEFAULT_MAX_CHUNK_SIZE = Constants.JRE_IS_64BIT ? (1 << 30) : (1 << 28);
   final int chunkSizePower;
 
   /** Create a new MMapDirectory for the named location.
    *
    * @param path the path of the directory
-   * @param lockFactory the lock factory to use, or null for the default
-   * ({@link NativeFSLockFactory});
+   * @param lockFactory the lock factory to use
    * @throws IOException if there is a low-level I/O error
    */
   public MMapDirectory(Path path, LockFactory lockFactory) throws IOException {
-    this(path, lockFactory, DEFAULT_MAX_BUFF);
+    this(path, lockFactory, DEFAULT_MAX_CHUNK_SIZE);
   }
 
-  /** Create a new MMapDirectory for the named location and {@link NativeFSLockFactory}.
-   *
-   * @param path the path of the directory
-   * @throws IOException if there is a low-level I/O error
-   */
+  /** Create a new MMapDirectory for the named location and {@link FSLockFactory#getDefault()}.
+  *
+  * @param path the path of the directory
+  * @throws IOException if there is a low-level I/O error
+  */
   public MMapDirectory(Path path) throws IOException {
-    this(path, null);
+    this(path, FSLockFactory.getDefault());
+  }
+  
+  /** Create a new MMapDirectory for the named location and {@link FSLockFactory#getDefault()}.
+  *
+  * @param path the path of the directory
+  * @param maxChunkSize maximum chunk size (default is 1 GiBytes for
+  * 64 bit JVMs and 256 MiBytes for 32 bit JVMs) used for memory mapping.
+  * @throws IOException if there is a low-level I/O error
+  */
+  public MMapDirectory(Path path, int maxChunkSize) throws IOException {
+    this(path, FSLockFactory.getDefault(), maxChunkSize);
   }
   
   /**
