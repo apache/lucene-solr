@@ -31,9 +31,8 @@ import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
@@ -56,7 +55,6 @@ public class SnapShooter {
   private String snapshotName = null;
   private String directoryName = null;
   private FSDirectory snapShotDir = null;
-  private Lock lock = null;
 
   public SnapShooter(SolrCore core, String location, String snapshotName) {
     solrCore = core;
@@ -126,20 +124,13 @@ public class SnapShooter {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Unable to create snapshot directory: " + snapShotFile.getAbsolutePath());
     }
-    snapShotDir = new SimpleFSDirectory(snapShotFile.toPath(), SimpleFSLockFactory.INSTANCE);
-    Lock lock = snapShotDir.makeLock("write.lock");
-    if (lock.isLocked()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to acquire lock for snapshot directory: " + snapShotFile.getAbsolutePath());
-    }
+    snapShotDir = new SimpleFSDirectory(snapShotFile.toPath(), NoLockFactory.INSTANCE);
   }
 
   void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
     LOG.info("Creating backup snapshot...");
     NamedList<Object> details = new NamedList<>();
     details.add("startTime", new Date().toString());
-    String directoryName = null;
-
     try {
       Collection<String> files = indexCommit.getFileNames();
 
@@ -162,13 +153,6 @@ public class SnapShooter {
     } finally {
       replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
       replicationHandler.snapShootDetails = details;
-      if (lock != null) {
-        try {
-          lock.close();
-        } catch (IOException e) {
-          LOG.error("Unable to release snapshoot lock: " + directoryName + ".lock");
-        }
-      }
     }
   }
 
