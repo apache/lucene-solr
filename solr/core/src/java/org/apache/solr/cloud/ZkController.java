@@ -190,7 +190,7 @@ public final class ZkController {
   private volatile boolean isClosed;
   
   // keeps track of replicas that have been asked to recover by leaders running on this node
-  private Map<String,String> replicasInLeaderInitiatedRecovery = new HashMap<String,String>();
+  private final Map<String,String> replicasInLeaderInitiatedRecovery = new HashMap<String,String>();
   
   // This is an expert and unsupported development mode that does not create
   // an Overseer or register a /live node. This let's you monitor the cluster
@@ -1914,10 +1914,10 @@ public final class ZkController {
       // if the replica's state is not DOWN right now, make it so ...
       // we only really need to try to send the recovery command if the node itself is "live"
       if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)) {
-        replicasInLeaderInitiatedRecovery.put(replicaUrl, 
-            getLeaderInitiatedRecoveryZnodePath(collection, shardId, replicaCoreNodeName));
         // create a znode that requires the replica needs to "ack" to verify it knows it was out-of-sync
         updateLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName, ZkStateReader.DOWN);
+        replicasInLeaderInitiatedRecovery.put(replicaUrl,
+            getLeaderInitiatedRecoveryZnodePath(collection, shardId, replicaCoreNodeName));
         log.info("Put replica core={} coreNodeName={} on "+
           replicaNodeName+" into leader-initiated recovery.", replicaCoreProps.getCoreName(), replicaCoreNodeName);
         publishDownState = true;        
@@ -1946,8 +1946,8 @@ public final class ZkController {
     }
     
     return nodeIsLive;
-  }  
-  
+  }
+
   public boolean isReplicaInRecoveryHandling(String replicaUrl) {
     boolean exists = false;
     synchronized (replicasInLeaderInitiatedRecovery) {
