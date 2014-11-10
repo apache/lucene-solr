@@ -1,18 +1,18 @@
 # Apache Lucene Migration Guide
 
-## Disk I/O API completely changed to Java-7-NIO.2
+## All file handling APIs changed to Java 7 NIO.2 (LUCENE-5945)
 
-All directory APIs were changed to make use of the new Java 7 NIO.2 API.
-It is no longer possible to pass java.io.File or string-based directory
-names to FSDirectory classes. FSDirectory classes now require
+All APIs around Directory and other file-based resources were changed to make
+use of the new Java 7 NIO.2 API. It is no longer possible to pass
+java.io.File onames to FSDirectory classes. FSDirectory classes now requires
 java.nio.file.Path instances. This allows to place index directories also
 on "virtual file systems" like ZIP or TAR files. To migrate existing code
 use java.io.File#toPath().
 
-In addition, please make sure that custom directory implementations throw
-the new Exceptions, because Lucene cannot understand the old legacy
-Exceptions like java.io.FileNotFoundException instead of
-java.nio.file.NoSuchFileException.
+In addition, make sure that custom directory implementations throw the new
+IOException types, because Lucene cannot understand the old legacy
+IOExceptions (like java.io.FileNotFoundException) instead of the new ones
+like java.nio.file.NoSuchFileException.
 
 ## Directory and LockFactory APIs restructured (LUCENE-5953)
 
