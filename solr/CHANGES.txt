@@ -275,6 +275,9 @@ Bug Fixes
 * SOLR-6579:SnapPuller Replication blocks clean shutdown of tomcat
   (Philip Black-Knight via Noble Paul)
 
+* SOLR-6721: ZkController.ensureReplicaInLeaderInitiatedRecovery puts replica
+  in local map before writing to ZK. (shalin)
+
 Optimizations
 ----------------------
 
