@@ -116,10 +116,10 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
    * Attributes this implementation supports.
    */
   public abstract void copyTo(AttributeImpl target);
-    
+
   /**
-   * Shallow clone. Subclasses must override this if they 
-   * need to clone any members deeply,
+   * In most cases the clone is, and should be, deep in order to be able to
+   * properly capture the state of all attributes.
    */
   @Override
   public AttributeImpl clone() {
