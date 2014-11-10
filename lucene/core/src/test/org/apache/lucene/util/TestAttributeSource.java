@@ -159,4 +159,21 @@ public class TestAttributeSource extends LuceneTestCase {
     assertTrue("The hashCode is identical, so the captured state was preserved.", hash1 != src1.hashCode());
     assertEquals(src2.hashCode(), src1.hashCode());
   }
+  
+  public void testClonePayloadAttribute() throws Exception {
+    // LUCENE-6055: verify that PayloadAttribute.clone() does deep cloning.
+    PayloadAttributeImpl src = new PayloadAttributeImpl(new BytesRef(new byte[] { 1, 2, 3 }));
+    
+    // test clone()
+    PayloadAttributeImpl clone = src.clone();
+    clone.getPayload().bytes[0] = 10; // modify one byte, srcBytes shouldn't change
+    assertEquals("clone() wasn't deep", 1, src.getPayload().bytes[0]);
+    
+    // test copyTo()
+    clone = new PayloadAttributeImpl();
+    src.copyTo(clone);
+    clone.getPayload().bytes[0] = 10; // modify one byte, srcBytes shouldn't change
+    assertEquals("clone() wasn't deep", 1, src.getPayload().bytes[0]);
+  }
+  
 }

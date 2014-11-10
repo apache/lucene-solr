@@ -226,6 +226,9 @@ Bug Fixes
   the only docs in it had fields that hit non-aborting exceptions
   during indexing but also had doc values.  (Mike McCandless)
 
+* LUCENE-6055: PayloadAttribute.clone() now does a deep clone of the underlying
+  bytes. (Shai Erera)
+  
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
