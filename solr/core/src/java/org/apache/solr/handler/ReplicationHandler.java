@@ -228,6 +228,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           doFetch(paramsCopy, false);
         }
       };
+      puller.setDaemon(false);
       puller.start();
       if (solrParams.getBool(WAIT, false)) {
         puller.join();

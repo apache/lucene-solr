@@ -272,6 +272,9 @@ Bug Fixes
 * SOLR-6706: /update/json/docs throws RuntimeException if a nested structure
   contains a non-leaf float field (Noble Paul, shalin)
 
+* SOLR-6579:SnapPuller Replication blocks clean shutdown of tomcat
+  (Philip Black-Knight via Noble Paul)
+
 Optimizations
 ----------------------
 
