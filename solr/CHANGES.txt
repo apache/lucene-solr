@@ -26,6 +26,11 @@ Bug Fixes
 
 * SOLR-6704: TrieDateField type drops schema properties in branch 4.10 (Tomás Fernández Löbbe)
 
+* SOLR-6679: Remove suggester component from stock solrconfig.xml since
+  it caused long startup times on lage indexes even when it wasn't used.
+  (yonik)
+
+
 ==================  4.10.2 ==================
 
 Bug Fixes
