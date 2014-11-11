@@ -617,6 +617,12 @@ IF "%verbose%"=="1" (
     @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
     @echo     CLOUD_MODE_OPTS = %CLOUD_MODE_OPTS%
     @echo     SOLR_TIMEZONE   = %SOLR_TIMEZONE%
+    IF NOT "%SOLR_OPTS%"=="" (
+      @echo     SOLR_OPTS       = %SOLR_OPTS%
+    )
+    IF NOT "%SOLR_ADDL_ARGS%"=="" (
+      @echo     SOLR_ADDL_ARGS  = %SOLR_ADDL_ARGS%
+    )
 )
 
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE% -Djava.net.preferIPv4Stack=true
@@ -625,6 +631,7 @@ IF NOT "!CLOUD_MODE_OPTS!"=="" set START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!
 IF NOT "%REMOTE_JMX_OPTS%"=="" set START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%
 IF NOT "%SOLR_ADDL_ARGS%"=="" set START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%
 IF NOT "%SOLR_HOST_ARG%"=="" set START_OPTS=%START_OPTS% %SOLR_HOST_ARG%
+IF NOT "%SOLR_OPTS%"=="" set START_OPTS=%START_OPTS% %SOLR_OPTS%
 
 cd "%SOLR_SERVER_DIR%"
 @echo.

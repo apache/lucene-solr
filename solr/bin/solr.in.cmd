@@ -67,3 +67,10 @@ REM JMX savvy tools like VisualVM remotely, set to "false" to disable that behav
 REM (recommended in production environments)
 set ENABLE_REMOTE_JMX_OPTS=true
 
+REM Anything you add to the SOLR_OPTS variable will be included in the java
+REM start command line as-is, in ADDITION to other options. If you specify the
+REM -a option on start script, those options will be appended as well. Examples:
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
+
