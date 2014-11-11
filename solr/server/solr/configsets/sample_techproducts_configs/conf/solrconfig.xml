@@ -1441,11 +1441,12 @@
     </arr>
   </requestHandler>
 
+  <!-- This causes long startup times on big indexes, even when never used.  See SOLR-6679
   <searchComponent name="suggest" class="solr.SuggestComponent">
-  	<lst name="suggester">
+    <lst name="suggester">
       <str name="name">mySuggester</str>
-      <str name="lookupImpl">FuzzyLookupFactory</str>      <!-- org.apache.solr.spelling.suggest.fst -->
-      <str name="dictionaryImpl">DocumentDictionaryFactory</str>     <!-- org.apache.solr.spelling.suggest.HighFrequencyDictionaryFactory --> 
+      <str name="lookupImpl">FuzzyLookupFactory</str>      
+      <str name="dictionaryImpl">DocumentDictionaryFactory</str>
       <str name="field">cat</str>
       <str name="weightField">price</str>
       <str name="suggestAnalyzerFieldType">string</str>
@@ -1461,6 +1462,9 @@
       <str>suggest</str>
     </arr>
   </requestHandler>
+  -->
+
+
   <!-- Term Vector Component
 
        http://wiki.apache.org/solr/TermVectorComponent
