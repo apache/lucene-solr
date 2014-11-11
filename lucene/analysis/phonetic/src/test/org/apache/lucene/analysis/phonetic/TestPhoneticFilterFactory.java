@@ -18,14 +18,12 @@ package org.apache.lucene.analysis.phonetic;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.Caverphone2;
+import org.apache.commons.codec.language.Metaphone;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
@@ -164,6 +162,12 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
           "67", "Meir", "862", "Schmidt" });
     assertAlgorithm("ColognePhonetic", "false", "Meier Schmitt Meir Schmidt",
         new String[] { "67", "862", "67", "862" });
+    
+    assertAlgorithm("Nysiis", "true", "Macintosh Knuth Bart Hurd",
+        new String[] { "MCANT", "Macintosh", "NAT", "Knuth", 
+          "BAD", "Bart", "HAD", "Hurd" });
+    assertAlgorithm("Nysiis", "false", "Macintosh Knuth Bart Hurd",
+        new String[] { "MCANT", "NAT", "BAD", "HAD" });
   }
   
   /** Test that bogus arguments result in exception */

@@ -79,6 +79,9 @@ New Features
 
 * LUCENE-6053: Add Serbian analyzer.  (Nikola Smolenski via Robert Muir, Mike McCandless)
 
+* LUCENE-4400: Add support for new NYSIIS Apache commons phonetic
+  codec (Thomas Neidhart via Mike McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
