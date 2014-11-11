@@ -77,6 +77,8 @@ New Features
   improved exception handling, and indirect norms encoding for sparse fields.
   (Mike McCandless, Ryan Ernst, Robert Muir)
 
+* LUCENE-6053: Add Serbian analyzer.  (Nikola Smolenski via Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
