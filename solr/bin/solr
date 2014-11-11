@@ -312,7 +312,7 @@ function stop_solr() {
 
   DIR="$1"
   SOLR_PORT="$2"
-  STOP_PORT="79${SOLR_PORT: -2}"
+  STOP_PORT=`expr $SOLR_PORT - 1000`
   STOP_KEY="$3"
   SOLR_PID="$4"
 
@@ -378,7 +378,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
     while true; do  
       case $1 in
           -c|-collection)
-              if [ "${2:0:1}" == "-" ]; then
+              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Expected collection name but found $2 instead!"
                 exit 1            
               fi
@@ -386,7 +386,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               shift 2
           ;;
           -z|-zkhost)          
-              if [ "${2:0:1}" == "-" ]; then
+              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Expected a ZooKeeper connection string but found $2 instead!"
                 exit 1            
               fi          
@@ -446,7 +446,7 @@ if [ $# -gt 0 ]; then
             shift
         ;;
         -d|-dir)
-            if [ "${2:0:1}" == "-" ]; then
+            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Expected directory but found $2 instead!"
               exit 1            
             fi
@@ -460,7 +460,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -s|-solr.home)
-            if [ "${2:0:1}" == "-" ]; then
+            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Expected directory but found $2 instead!"
               exit 1
             fi
@@ -469,7 +469,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -e|-example)
-            if [ "${2:0:1}" == "-" ]; then
+            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Expected example name but found $2 instead!"
               exit 1            
             fi
@@ -481,7 +481,7 @@ if [ $# -gt 0 ]; then
             shift
         ;;
         -h|-host)
-            if [ "${2:0:1}" == "-" ]; then
+            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Expected hostname but found $2 instead!"
               exit 1            
             fi
@@ -489,7 +489,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -m|-memory)
-            if [ "${2:0:1}" == "-" ]; then
+            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Expected memory setting but found $2 instead!"
               exit 1            
             fi            
@@ -497,7 +497,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -p|-port)
-            if [ "${2:0:1}" == "-" ]; then
+            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Expected port number but found $2 instead!"
               exit 1            
             fi            
@@ -505,7 +505,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -z|-zkhost)
-            if [ "${2:0:1}" == "-" ]; then
+            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Expected ZooKeeper connection string but found $2 instead!"
               exit 1            
             fi
@@ -708,7 +708,7 @@ if [ "$SOLR_PORT" == "" ]; then
 fi
 
 if [ "$STOP_PORT" == "" ]; then
-  STOP_PORT="79${SOLR_PORT: -2}"
+  STOP_PORT=`expr $SOLR_PORT - 1000`
 fi
 
 if [[ "$SCRIPT_CMD" == "start" ]]; then
@@ -840,7 +840,7 @@ fi
 function launch_solr() {
 
   run_in_foreground="$1"
-  stop_port="79${SOLR_PORT: -2}"
+  stop_port="$STOP_PORT"
   
   SOLR_ADDL_ARGS="$2"
 
