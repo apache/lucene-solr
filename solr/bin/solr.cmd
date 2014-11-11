@@ -278,6 +278,10 @@ goto parse_args
 :set_server_dir
 
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Directory name is required!
+  goto invalid_cmd_line
+)
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected directory but found %2 instead!
@@ -297,6 +301,11 @@ goto parse_args
 :set_solr_home_dir
 
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Directory name is required!
+  goto invalid_cmd_line
+)
+
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected directory but found %2 instead!
@@ -310,6 +319,11 @@ goto parse_args
 :set_example
 
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Example name is required!
+  goto invalid_cmd_line
+)
+
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected example name but found %2 instead!
@@ -324,6 +338,11 @@ goto parse_args
 :set_memory
 
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Memory setting is required!
+  goto invalid_cmd_line
+)
+
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected memory setting but found %2 instead!
@@ -337,6 +356,11 @@ goto parse_args
 
 :set_host
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Hostname is required!
+  goto invalid_cmd_line
+)
+
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected hostname but found %2 instead!
@@ -350,6 +374,11 @@ goto parse_args
 
 :set_port
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Port is required!
+  goto invalid_cmd_line
+)
+
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected port but found %2 instead!
@@ -363,9 +392,14 @@ goto parse_args
 
 :set_stop_key
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Stop key is required!
+  goto invalid_cmd_line
+)
+
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=Expected port but found %2 instead!
+  set SCRIPT_ERROR=Expected stop key but found %2 instead!
   goto invalid_cmd_line
 )
 set STOP_KEY=%~2
@@ -381,6 +415,11 @@ goto parse_args
 :set_zookeeper
 
 set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=ZooKeeper connection string is required!
+  goto invalid_cmd_line
+)
+
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
   set SCRIPT_ERROR=Expected ZooKeeper connection string but found %2 instead!
@@ -638,7 +677,9 @@ IF "%EXAMPLE%"=="techproducts" (
 )
 
 @echo.
-@echo Solr %EXAMPLE% launched successfully.
+IF NOT "%EXAMPLE%"=="" (
+  @echo Solr %EXAMPLE% example launched successfully.
+)
 @echo Direct your Web browser to http://localhost:%SOLR_PORT%/solr to visit the Solr Admin UI
 @echo.
 
