@@ -91,6 +91,10 @@ New Features
   index using it will need to be rebuilt.  (Thomas
   Neidhart via Mike McCandless)
 
+* LUCENE-6050: Accept MUST and MUST_NOT (in addition to SHOULD) for
+  each context passed to Analyzing/BlendedInfixSuggester (Arcadius
+  Ahouansou, jane chang via Mike McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

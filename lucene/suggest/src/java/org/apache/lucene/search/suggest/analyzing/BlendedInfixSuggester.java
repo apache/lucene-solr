@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -33,6 +34,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopFieldDocs;
@@ -144,6 +146,12 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
   public List<Lookup.LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
     // here we multiply the number of searched element by the defined factor
     return super.lookup(key, contexts, num * numFactor, allTermsRequired, doHighlight);
+  }
+
+  @Override
+  public List<Lookup.LookupResult> lookup(CharSequence key, Map<BytesRef, BooleanClause.Occur> contextInfo, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+    // here we multiply the number of searched element by the defined factor
+    return super.lookup(key, contextInfo, num * numFactor, allTermsRequired, doHighlight);
   }
 
   @Override

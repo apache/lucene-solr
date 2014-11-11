@@ -23,8 +23,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -35,6 +37,7 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -899,7 +902,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       assertTrue(result.contexts.contains(new BytesRef("foo")));
       assertTrue(result.contexts.contains(new BytesRef("bar")));
 
-      // Both suggestions have "foo" context:
+      // Both have "foo" context:
       results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), asSet("foo"), 10, true, true);
       assertEquals(2, results.size());
 
@@ -934,8 +937,16 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       assertTrue(result.contexts.contains(new BytesRef("foo")));
       assertTrue(result.contexts.contains(new BytesRef("bar")));
 
-      // Only one has "baz" context:
-      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), asSet("baz"), 10, true, true);
+      // None do not have "foo" context:
+      Map<BytesRef, BooleanClause.Occur> contextInfo = new HashMap<>();
+      contextInfo.put(new BytesRef("foo"), BooleanClause.Occur.MUST_NOT);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), contextInfo, 10, true, true);
+      assertEquals(0, results.size());
+
+      // Only one does not have "bar" context:
+      contextInfo.clear();
+      contextInfo.put(new BytesRef("bar"), BooleanClause.Occur.MUST_NOT);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), contextInfo, 10, true, true);
       assertEquals(1, results.size());
 
       result = results.get(0);
@@ -947,7 +958,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       assertTrue(result.contexts.contains(new BytesRef("foo")));
       assertTrue(result.contexts.contains(new BytesRef("baz")));
 
-      // Both have foo or bar:
+      // Both have "foo" or "bar" context:
       results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), asSet("foo", "bar"), 10, true, true);
       assertEquals(2, results.size());
 
@@ -968,6 +979,99 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       assertEquals(2, result.contexts.size());
       assertTrue(result.contexts.contains(new BytesRef("foo")));
       assertTrue(result.contexts.contains(new BytesRef("bar")));
+
+      // Both have "bar" or "baz" context:
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), asSet("bar", "baz"), 10, true, true);
+      assertEquals(2, results.size());
+
+      result = results.get(0);
+      assertEquals("a penny saved is a penny <b>ear</b>ned", result.key);
+      assertEquals(10, result.value);
+      assertEquals(new BytesRef("foobaz"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef("foo")));
+      assertTrue(result.contexts.contains(new BytesRef("baz")));
+
+      result = results.get(1);
+      assertEquals("lend me your <b>ear</b>", result.key);
+      assertEquals(8, result.value);
+      assertEquals(new BytesRef("foobar"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef("foo")));
+      assertTrue(result.contexts.contains(new BytesRef("bar")));
+
+      // Only one has "foo" and "bar" context:
+      contextInfo.clear();
+      contextInfo.put(new BytesRef("foo"), BooleanClause.Occur.MUST);
+      contextInfo.put(new BytesRef("bar"), BooleanClause.Occur.MUST);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), contextInfo, 10, true, true);
+      assertEquals(1, results.size());
+
+      result = results.get(0);
+      assertEquals("lend me your <b>ear</b>", result.key);
+      assertEquals(8, result.value);
+      assertEquals(new BytesRef("foobar"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef("foo")));
+      assertTrue(result.contexts.contains(new BytesRef("bar")));
+
+      // None have "bar" and "baz" context:
+      contextInfo.clear();
+      contextInfo.put(new BytesRef("bar"), BooleanClause.Occur.MUST);
+      contextInfo.put(new BytesRef("baz"), BooleanClause.Occur.MUST);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), contextInfo, 10, true, true);
+      assertEquals(0, results.size());
+
+      // None do not have "foo" and do not have "bar" context:
+      contextInfo.clear();
+      contextInfo.put(new BytesRef("foo"), BooleanClause.Occur.MUST_NOT);
+      contextInfo.put(new BytesRef("bar"), BooleanClause.Occur.MUST_NOT);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), contextInfo, 10, true, true);
+      assertEquals(0, results.size());
+
+      // Both do not have "bar" and do not have "baz" context:
+      contextInfo.clear();
+      contextInfo.put(new BytesRef("bar"), BooleanClause.Occur.MUST_NOT);
+      contextInfo.put(new BytesRef("baz"), BooleanClause.Occur.MUST_NOT);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), asSet("bar", "baz"), 10, true, true);
+      assertEquals(2, results.size());
+
+      result = results.get(0);
+      assertEquals("a penny saved is a penny <b>ear</b>ned", result.key);
+      assertEquals(10, result.value);
+      assertEquals(new BytesRef("foobaz"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef("foo")));
+      assertTrue(result.contexts.contains(new BytesRef("baz")));
+
+      result = results.get(1);
+      assertEquals("lend me your <b>ear</b>", result.key);
+      assertEquals(8, result.value);
+      assertEquals(new BytesRef("foobar"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef("foo")));
+      assertTrue(result.contexts.contains(new BytesRef("bar")));
+
+      // Only one has "foo" and does not have "bar" context:
+      contextInfo.clear();
+      contextInfo.put(new BytesRef("foo"), BooleanClause.Occur.MUST);
+      contextInfo.put(new BytesRef("bar"), BooleanClause.Occur.MUST_NOT);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), contextInfo, 10, true, true);
+      assertEquals(1, results.size());
+
+      result = results.get(0);
+      assertEquals("a penny saved is a penny <b>ear</b>ned", result.key);
+      assertEquals(10, result.value);
+      assertEquals(new BytesRef("foobaz"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef("foo")));
+      assertTrue(result.contexts.contains(new BytesRef("baz")));
 
       suggester.close();
     }
