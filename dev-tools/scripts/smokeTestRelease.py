@@ -859,7 +859,10 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
-  server = subprocess.Popen(['bin/solr', '-f'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
+  # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
+  subprocess.call(['bin/solr','stop','-p','8983'])
+  print('      starting Solr on port 8983 from %s' % unpackPath)
+  server = subprocess.Popen(['bin/solr', '-f', '-p', '8983'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
 
   startupEvent = threading.Event()
   failureEvent = threading.Event()
@@ -887,9 +890,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      index example docs...')
-    # "$JAVA" -Durl=http://localhost:$SOLR_PORT/solr/$EXAMPLE/update -jar $SOLR_TIP/example/exampledocs/post.jar $SOLR_TIP/example/exampledocs/*.xml
     run('java -Durl=http://localhost:8983/solr/techproducts/update -jar ./exampledocs/post.jar ./exampledocs/*.xml', 'post-example-docs.log')
-    #run('sh ./exampledocs/post.sh ./exampledocs/*.xml', 'post-example-docs.log')
     print('      run query...')
     s = urllib.request.urlopen('http://localhost:8983/solr/techproducts/select/?q=video').read().decode('UTF-8')
     if s.find('<result name="response" numFound="3" start="0">') == -1:
@@ -898,7 +899,6 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   finally:
     # Stop server:
     print('      stop server using: bin/solr stop -p 8983')
-    #os.kill(server.pid, signal.SIGINT)
     if isSrc:
       os.chdir(unpackPath+'/solr')
     else:
