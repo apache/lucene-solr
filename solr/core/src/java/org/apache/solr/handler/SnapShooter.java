@@ -31,8 +31,8 @@ import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.SimpleFSLockFactory;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
@@ -52,11 +52,9 @@ public class SnapShooter {
   private static final Logger LOG = LoggerFactory.getLogger(SnapShooter.class.getName());
   private String snapDir = null;
   private SolrCore solrCore;
-  private SimpleFSLockFactory lockFactory;
   private String snapshotName = null;
   private String directoryName = null;
   private File snapShotDir = null;
-  private Lock lock = null;
 
   public SnapShooter(SolrCore core, String location, String snapshotName) {
     solrCore = core;
@@ -66,11 +64,6 @@ public class SnapShooter {
       snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
       File dir = new File(snapDir);
       if (!dir.exists())  dir.mkdirs();
-    }
-    try {
-      lockFactory = new SimpleFSLockFactory(new File(snapDir).toPath());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
     this.snapshotName = snapshotName;
 
@@ -122,12 +115,7 @@ public class SnapShooter {
   }
 
   void validateCreateSnapshot() throws IOException {
-    Lock lock = lockFactory.makeLock(directoryName + ".lock");
     snapShotDir = new File(snapDir, directoryName);
-    if (lock.isLocked()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to acquire lock for snapshot directory: " + snapShotDir.getAbsolutePath());
-    }
     if (snapShotDir.exists()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Snapshot directory already exists: " + snapShotDir.getAbsolutePath());
@@ -142,15 +130,12 @@ public class SnapShooter {
     LOG.info("Creating backup snapshot...");
     NamedList<Object> details = new NamedList<>();
     details.add("startTime", new Date().toString());
-    String directoryName = null;
-
     try {
       Collection<String> files = indexCommit.getFileNames();
-      FileCopier fileCopier = new FileCopier();
 
       Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
       try {
-        fileCopier.copyFiles(dir, files, snapShotDir);
+        copyFiles(dir, files, snapShotDir);
       } finally {
         solrCore.getDirectoryFactory().release(dir);
       }
@@ -167,13 +152,6 @@ public class SnapShooter {
     } finally {
       replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
       replicationHandler.snapShootDetails = details;
-      if (lock != null) {
-        try {
-          lock.close();
-        } catch (IOException e) {
-          LOG.error("Unable to release snapshoot lock: " + directoryName + ".lock");
-        }
-      }
     }
   }
 
@@ -245,35 +223,12 @@ public class SnapShooter {
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
   
 
-  private class FileCopier {
-    
-    public void copyFiles(Directory sourceDir, Collection<String> files,
-        File destDir) throws IOException {
-      // does destinations directory exist ?
-      if (destDir != null && !destDir.exists()) {
-        destDir.mkdirs();
+  private static void copyFiles(Directory sourceDir, Collection<String> files, File destDir) throws IOException {
+    try (FSDirectory dir = new SimpleFSDirectory(destDir.toPath(), NoLockFactory.INSTANCE)) {
+      for (String indexFile : files) {
+        sourceDir.copy(dir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
       }
-      
-      FSDirectory dir = FSDirectory.open(destDir.toPath());
-      try {
-        for (String indexFile : files) {
-          copyFile(sourceDir, indexFile, new File(destDir, indexFile), dir);
-        }
-      } finally {
-        dir.close();
-      }
-    }
-    
-    public void copyFile(Directory sourceDir, String indexFile, File destination, Directory destDir)
-      throws IOException {
-
-      // make sure we can write to destination
-      if (destination.exists() && !destination.canWrite()) {
-        String message = "Unable to open file " + destination + " for writing.";
-        throw new IOException(message);
-      }
-
-      sourceDir.copy(destDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
+    
 }

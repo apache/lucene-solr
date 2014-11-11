@@ -988,7 +988,18 @@ function launch_solr() {
   
   SOLR_ADDL_ARGS="$2"
 
-  # commented out debugging info
+  # deal with Java version specific GC and other flags
+  JAVA_VERSION=`echo "$(java -version 2>&1)" | grep "java version" | awk '{ print substr($3, 2, length($3)-2); }'`
+  if [ "${JAVA_VERSION:0:3}" == "1.7" ]; then
+    # Specific Java version hacking
+    GC_TUNE="$GC_TUNE -XX:CMSFullGCsBeforeCompaction=1 -XX:CMSTriggerPermRatio=80"
+    JAVA_MINOR_VERSION=${JAVA_VERSION:(-2)}
+    if [[ $JAVA_MINOR_VERSION -ge 40 && $JAVA_MINOR_VERSION -le 51 ]]; then
+      GC_TUNE="$GC_TUNE -XX:-UseSuperWord"
+      echo -e "\nWARNING: Java version $JAVA_VERSION has known bugs with Lucene and requires the -XX:-UseSuperWord flag. Please consider upgrading your JVM.\n"
+    fi
+  fi
+
   if $verbose ; then
     echo -e "\nStarting Solr using the following settings:"
     echo -e "    SOLR_SERVER_DIR = $SOLR_SERVER_DIR"
@@ -1028,7 +1039,9 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"
   fi
-  
+
+  mkdir -p $SOLR_SERVER_DIR/logs
+
   if [ "$run_in_foreground" == "true" ]; then
     echo -e "\nStarting Solr$IN_CLOUD_MODE on port $SOLR_PORT from $SOLR_SERVER_DIR\n"
     $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar
@@ -1174,7 +1187,8 @@ else
     echo $CLOUD_REPFACT
 
     USER_INPUT=
-    read -e -p "Please choose a configuration for the $CLOUD_COLLECTION collection, available options are:\nbasic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
+    echo "Please choose a configuration for the $CLOUD_COLLECTION collection, available options are:"
+    read -e -p "basic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
     # trim whitespace out of the user input
     CLOUD_CONFIG=`echo $USER_INPUT | tr -d ' '`
 

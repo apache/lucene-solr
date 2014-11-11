@@ -32,7 +32,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -103,7 +102,7 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       endOffsets[i] = Long.parseLong(stripPrefix(scratch, TABLEEND));
     }
     
-    return new BaseDirectory() {
+    return new Directory() {
       
       private int getIndex(String name) throws IOException {
         int index = Arrays.binarySearch(fileNames, name);
@@ -135,7 +134,6 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       
       @Override
       public void close() throws IOException {
-        isOpen = false;
         in.close();
       }
       
@@ -155,9 +153,6 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       
       @Override
       public Lock makeLock(String name) { throw new UnsupportedOperationException(); }
-      
-      @Override
-      public void clearLock(String name) { throw new UnsupportedOperationException(); }
     };
   }
 

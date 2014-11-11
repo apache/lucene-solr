@@ -39,6 +39,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -112,7 +113,7 @@ public class TestDoc extends LuceneTestCase {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
       
-      Directory directory = newFSDirectory(indexDir, null);
+      Directory directory = newFSDirectory(indexDir);
 
       if (directory instanceof MockDirectoryWrapper) {
         // We create unreferenced files (we don't even write
@@ -156,7 +157,7 @@ public class TestDoc extends LuceneTestCase {
       sw = new StringWriter();
       out = new PrintWriter(sw, true);
 
-      directory = newFSDirectory(indexDir, null);
+      directory = newFSDirectory(indexDir);
 
       if (directory instanceof MockDirectoryWrapper) {
         // We create unreferenced files (we don't even write

@@ -65,8 +65,9 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
   public void testBasic() throws IOException {
     URI uri = dfsCluster.getURI();
     Path lockPath = new Path(uri.toString(), "/basedir/lock");
-    HdfsLockFactory lockFactory = new HdfsLockFactory(lockPath, new Configuration());
-    Lock lock = lockFactory.makeLock("testlock");
+    Configuration conf = new Configuration();
+    HdfsDirectory dir = new HdfsDirectory(lockPath, conf);
+    Lock lock = dir.makeLock("testlock");
     boolean success = lock.obtain();
     assertTrue("We could not get the lock when it should be available", success);
     success = lock.obtain();
@@ -76,6 +77,7 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
     assertTrue("We could not get the lock when it should be available", success);
     success = lock.obtain();
     assertFalse("We got the lock but it should be unavailble", success);
+    dir.close();
   }
   
 

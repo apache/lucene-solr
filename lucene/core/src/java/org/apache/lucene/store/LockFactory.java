@@ -17,7 +17,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
 
 /**
  * <p>Base class for Locking implementation.  {@link Directory} uses
@@ -46,40 +45,10 @@ import java.io.IOException;
 
 public abstract class LockFactory {
 
-  protected String lockPrefix = null;
-
-  /**
-   * Set the prefix in use for all locks created in this
-   * LockFactory.  This is normally called once, when a
-   * Directory gets this LockFactory instance.  However, you
-   * can also call this (after this instance is assigned to
-   * a Directory) to override the prefix in use.  This
-   * is helpful if you're running Lucene on machines that
-   * have different mount points for the same shared
-   * directory.
-   */
-  public void setLockPrefix(String lockPrefix) {
-    this.lockPrefix = lockPrefix;
-  }
-
-  /**
-   * Get the prefix in use for all locks created in this LockFactory.
-   */
-  public String getLockPrefix() {
-    return this.lockPrefix;
-  }
-
   /**
    * Return a new Lock instance identified by lockName.
    * @param lockName name of the lock to be created.
    */
-  public abstract Lock makeLock(String lockName);
+  public abstract Lock makeLock(Directory dir, String lockName);
 
-  /**
-   * Attempt to clear (forcefully unlock and remove) the
-   * specified lock.  Only call this at a time when you are
-   * certain this lock is no longer in use.
-   * @param lockName name of the lock to be cleared.
-   */
-  abstract public void clearLock(String lockName) throws IOException;
 }

@@ -35,7 +35,7 @@ import java.io.OutputStream;
  * @see LockStressTest
  */
 
-public class VerifyingLockFactory extends LockFactory {
+public final class VerifyingLockFactory extends LockFactory {
 
   final LockFactory lf;
   final InputStream in;
@@ -94,13 +94,7 @@ public class VerifyingLockFactory extends LockFactory {
   }
 
   @Override
-  public synchronized Lock makeLock(String lockName) {
-    return new CheckedLock(lf.makeLock(lockName));
-  }
-
-  @Override
-  public synchronized void clearLock(String lockName)
-    throws IOException {
-    lf.clearLock(lockName);
+  public Lock makeLock(Directory dir, String lockName) {
+    return new CheckedLock(lf.makeLock(dir, lockName));
   }
 }

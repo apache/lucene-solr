@@ -150,7 +150,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
 
     public CrashAfterCreateOutput(Directory realDirectory) throws IOException {
       super(realDirectory);
-      setLockFactory(realDirectory.getLockFactory());
     }
         
     public void setCrashAfterCreateOutput(String name) {

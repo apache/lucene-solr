@@ -88,7 +88,6 @@ import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
-import org.eclipse.jetty.util.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -509,7 +508,11 @@ public class SnapPuller {
     } finally {
       try {
         if (!successfulInstall) {
-          logReplicationTimeAndConfFiles(null, successfulInstall);
+          try {
+            logReplicationTimeAndConfFiles(null, successfulInstall);
+          } catch(Exception e) {
+            LOG.error("caught", e);
+          }
         }
         filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
         replicationStartTime = 0;

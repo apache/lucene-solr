@@ -215,9 +215,9 @@ public final class TestUtil {
    *  look for any other corruption.  */
   public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors, boolean failFast) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    // TODO: actually use the dir's lock factory, unless test uses a special method?
+    // TODO: actually use the dir's locking, unless test uses a special method?
     // some tests e.g. exception tests become much more complicated if they have to close the writer
-    try (CheckIndex checker = new CheckIndex(dir, NoLockFactory.getNoLockFactory().makeLock("bogus"))) {
+    try (CheckIndex checker = new CheckIndex(dir, NoLockFactory.INSTANCE.makeLock(dir, "bogus"))) {
       checker.setCrossCheckTermVectors(crossCheckTermVectors);
       checker.setFailFast(failFast);
       checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
