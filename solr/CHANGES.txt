@@ -285,6 +285,10 @@ Bug Fixes
 * SOLR-6662: better validation when parsing command-line options that expect a value
   (Timothy Potter)
 
+* SOLR-6705: Better strategy for dealing with JVM specific options in the start
+  scripts; remove -XX:+AggressiveOpts and only set -XX:-UseSuperWord for Java 1.7u40
+  to u51. (Uwe Schindler, janhoy, hossman, Timothy Potter)
+
 Optimizations
 ----------------------
 
