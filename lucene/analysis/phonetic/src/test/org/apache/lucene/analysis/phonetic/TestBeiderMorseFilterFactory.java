@@ -17,12 +17,10 @@ package org.apache.lucene.analysis.phonetic;
  * limitations under the License.
  */
 
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /** Simple tests for {@link BeiderMorseFilterFactory} */
@@ -31,10 +29,10 @@ public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(new HashMap<String,String>());
     TokenStream ts = factory.create(whitespaceMockTokenizer("Weinberg"));
     assertTokenStreamContents(ts,
-        new String[] { "vDnbirk", "vanbirk", "vinbirk", "wDnbirk", "wanbirk", "winbirk" },
-        new int[] { 0, 0, 0, 0, 0, 0 },
-        new int[] { 8, 8, 8, 8, 8, 8 },
-        new int[] { 1, 0, 0, 0, 0, 0 });
+        new String[] { "vDnbYrk", "vDnbirk", "vanbYrk", "vanbirk", "vinbYrk", "vinbirk", "wDnbirk", "wanbirk", "winbirk" },
+        new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        new int[] { 8, 8, 8, 8, 8, 8, 8, 8, 8},
+        new int[] { 1, 0, 0, 0, 0, 0, 0, 0, 0});
   }
   
   public void testLanguageSet() throws Exception {
