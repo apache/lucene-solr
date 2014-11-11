@@ -385,6 +385,8 @@ Other Changes
 * SOLR-6715: ZkSolrResourceLoader constructors accept a parameter called 'collection'
   but it should be 'configName'. (shalin)
 
+* SOLR-6697: bin/solr start scripts allow setting SOLR_OPTS in solr.in.* (janhoy)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

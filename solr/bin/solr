@@ -1014,6 +1014,9 @@ function launch_solr() {
     echo -e "    CLOUD_MODE_OPTS = $CLOUD_MODE_OPTS"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
     
+    if [ "$SOLR_OPTS" != "" ]; then
+      echo -e "    SOLR_OPTS        = $SOLR_OPTS"
+    fi
     if [ "$SOLR_ADDL_ARGS" != "" ]; then
       echo -e "    SOLR_ADDL_ARGS   = $SOLR_ADDL_ARGS"
     fi
@@ -1034,7 +1037,8 @@ $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
 -Dsolr.solr.home=$SOLR_HOME \
 -Dsolr.install.dir=$SOLR_TIP \
 -Duser.timezone=$SOLR_TIMEZONE \
--Djava.net.preferIPv4Stack=true"
+-Djava.net.preferIPv4Stack=true \
+$SOLR_OPTS"
   
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"
