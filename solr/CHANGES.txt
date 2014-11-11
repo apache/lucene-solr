@@ -282,6 +282,9 @@ Bug Fixes
   it caused long startup times on lage indexes even when it wasn't used.
   (yonik)
 
+* SOLR-6662: better validation when parsing command-line options that expect a value
+  (Timothy Potter)
+
 Optimizations
 ----------------------
 
