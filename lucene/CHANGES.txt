@@ -83,7 +83,12 @@ New Features
   codec (Thomas Neidhart via Mike McCandless)
 
 * LUCENE-6059: Add Daitch-Mokotoff Soundex phonetic Apache commons
-  phonetic codec, and upgrade to Apache commons codec 1.10 (Thomas
+  phonetic codec, and upgrade to Apache commons codec 1.10. (Thomas
+  Neidhart via Mike McCandless)
+
+* LUCENE-6058: With the upgrade to Apache commons codec 1.10, the
+  experimental BeiderMorseFilter has changed its behavior, so any
+  index using it will need to be rebuilt.  (Thomas
   Neidhart via Mike McCandless)
 
 API Changes
