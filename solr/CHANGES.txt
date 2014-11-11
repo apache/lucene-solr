@@ -278,6 +278,10 @@ Bug Fixes
 * SOLR-6721: ZkController.ensureReplicaInLeaderInitiatedRecovery puts replica
   in local map before writing to ZK. (shalin)
 
+* SOLR-6679: Remove suggester component from stock solrconfig.xml since
+  it caused long startup times on lage indexes even when it wasn't used.
+  (yonik)
+
 Optimizations
 ----------------------
 
