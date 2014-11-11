@@ -26,14 +26,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BaseDocValuesFormatTestCase;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -92,12 +90,14 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
       }
     });
     IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document doc = new Document();
+    Document2 doc = iwriter.newDocument();
+    FieldTypes fieldTypes = iwriter.getFieldTypes();
+    fieldTypes.setDocValuesType("dv2", DocValuesType.BINARY);
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
-    doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new NumericDocValuesField("dv1", 5));
-    doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
+    doc.addLargeText("fieldname", text);
+    doc.addInt("dv1", 5);
+    doc.addBinary("dv2", new BytesRef("hello world"));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -117,6 +117,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
       assertEquals(5, dv.get(hits.scoreDocs[i].doc));
       BinaryDocValues dv2 = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
+      assertNotNull(dv2);
       final BytesRef term = dv2.get(hits.scoreDocs[i].doc);
       assertEquals(new BytesRef("hello world"), term);
     }

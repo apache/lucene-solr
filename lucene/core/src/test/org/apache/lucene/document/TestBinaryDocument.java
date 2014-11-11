@@ -36,23 +36,18 @@ public class TestBinaryDocument extends LuceneTestCase {
   public void testBinaryFieldInIndex()
     throws Exception
   {
-    FieldType ft = new FieldType();
-    ft.setStored(true);
-    StoredField binaryFldStored = new StoredField("binaryStored", binaryValStored.getBytes(StandardCharsets.UTF_8));
-    Field stringFldStored = new Field("stringStored", binaryValStored, ft);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     
-    doc.add(binaryFldStored);
-    
-    doc.add(stringFldStored);
+    doc.addStored("binaryStored", binaryValStored.getBytes(StandardCharsets.UTF_8));
+    doc.addStored("stringStored", binaryValStored);
 
     /** test for field count */
     assertEquals(2, doc.getFields().size());
     
     /** add the doc to a ram index */
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 
@@ -76,17 +71,15 @@ public class TestBinaryDocument extends LuceneTestCase {
   }
   
   public void testCompressionTools() throws Exception {
-    StoredField binaryFldCompressed = new StoredField("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes(StandardCharsets.UTF_8)));
-    StoredField stringFldCompressed = new StoredField("stringCompressed", CompressionTools.compressString(binaryValCompressed));
-    
-    Document doc = new Document();
-    
-    doc.add(binaryFldCompressed);
-    doc.add(stringFldCompressed);
-    
-    /** add the doc to a ram index */
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    Document2 doc = writer.newDocument();
+    
+    doc.addStored("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes(StandardCharsets.UTF_8)));
+    doc.addStored("stringCompressed", CompressionTools.compressString(binaryValCompressed));
+    
+    /** add the doc to a ram index */
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 

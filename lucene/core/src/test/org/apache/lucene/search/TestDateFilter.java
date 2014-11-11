@@ -17,16 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+
 import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-
-import java.io.IOException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * DateFilter JUnit tests.
@@ -45,10 +44,10 @@ public class TestDateFilter extends LuceneTestCase {
     
     long now = System.currentTimeMillis();
     
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     // add time that is in the past
-    doc.add(newStringField("datefield", DateTools.timeToString(now - 1000, DateTools.Resolution.MILLISECOND), Field.Store.YES));
-    doc.add(newTextField("body", "Today is a very sunny day in New York City", Field.Store.YES));
+    doc.addAtom("datefield", DateTools.timeToString(now - 1000, DateTools.Resolution.MILLISECOND));
+    doc.addLargeText("body", "Today is a very sunny day in New York City");
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
@@ -108,10 +107,10 @@ public class TestDateFilter extends LuceneTestCase {
     
     long now = System.currentTimeMillis();
     
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     // add time that is in the future
-    doc.add(newStringField("datefield", DateTools.timeToString(now + 888888, DateTools.Resolution.MILLISECOND), Field.Store.YES));
-    doc.add(newTextField("body", "Today is a very sunny day in New York City", Field.Store.YES));
+    doc.addAtom("datefield", DateTools.timeToString(now + 888888, DateTools.Resolution.MILLISECOND));
+    doc.addLargeText("body", "Today is a very sunny day in New York City");
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();

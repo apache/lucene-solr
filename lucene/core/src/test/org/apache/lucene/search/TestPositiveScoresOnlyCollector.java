@@ -22,7 +22,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.document.Document;
 
 public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
 
@@ -79,7 +78,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     IndexReader ir = writer.getReader();
     writer.close();

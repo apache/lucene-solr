@@ -29,10 +29,6 @@ import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -102,14 +98,14 @@ public class TestLiveFieldValues extends LuceneTestCase {
               startingGun.await();
               for(int iter=0; iter<iters;iter++) {
                 // Add/update a document
-                Document doc = new Document();
+                Document2 doc = w.newDocument();
                 // Threads must not update the same id at the
                 // same time:
                 if (threadRandom.nextDouble() <= addChance) {
                   String id = String.format(Locale.ROOT, "%d_%04x", threadID, threadRandom.nextInt(idCount));
                   Integer field = threadRandom.nextInt(Integer.MAX_VALUE);
-                  doc.add(new StringField("id", id, Field.Store.YES));
-                  doc.add(new IntField("field", field.intValue(), Field.Store.YES));
+                  doc.addUniqueAtom("id", id);
+                  doc.addInt("field", field.intValue());
                   w.updateDocument(new Term("id", id), doc);
                   rt.add(id, field);
                   if (values.put(id, field) == null) {

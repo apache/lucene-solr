@@ -16,6 +16,7 @@ package org.apache.lucene.codecs.perfield;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -25,10 +26,8 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -67,25 +66,25 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa", Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("content", "aaa");
       writer.addDocument(doc);
     }
   }
 
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("content", "bbb", Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("content", "bbb");
       writer.addDocument(doc);
     }
   }
 
   private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("content", "ccc", Field.Store.NO));
-      doc.add(newStringField("id", "" + i, Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("content", "ccc");
+      doc.addAtom("id", "" + i);
       writer.addDocument(doc);
     }
   }
@@ -244,15 +243,14 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
           new MockAnalyzer(random()));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
       IndexWriter writer = newWriter(dir, config);
+      FieldTypes fieldTypes = writer.getFieldTypes();
       for (int j = 0; j < docsPerRound; j++) {
-        final Document doc = new Document();
+        final Document2 doc = writer.newDocument();
         for (int k = 0; k < num; k++) {
-          FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-          customType.setTokenized(random().nextBoolean());
-          customType.setOmitNorms(random().nextBoolean());
-          Field field = newField("" + k, TestUtil
-              .randomRealisticUnicodeString(random(), 128), customType);
-          doc.add(field);
+          if (random().nextBoolean()) {
+            fieldTypes.disableNorms("" + k);
+          }
+          doc.addLargeText("" + k, TestUtil.randomRealisticUnicodeString(random(), 128));
         }
         writer.addDocument(doc);
       }
@@ -303,19 +301,18 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(codec);
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    FieldTypes fieldTypes = iw.getFieldTypes();
     // turn on vectors for the checkindex cross-check
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    ft.setStoreTermVectorPositions(true);
-    Field idField = new Field("id", "", ft);
-    Field dateField = new Field("date", "", ft);
-    doc.add(idField);
-    doc.add(dateField);
+    fieldTypes.enableTermVectors("id");
+    fieldTypes.enableTermVectorOffsets("id");
+    fieldTypes.enableTermVectorPositions("id");
+    fieldTypes.enableTermVectors("date");
+    fieldTypes.enableTermVectorOffsets("date");
+    fieldTypes.enableTermVectorPositions("date");
     for (int i = 0; i < 100; i++) {
-      idField.setStringValue(Integer.toString(random().nextInt(50)));
-      dateField.setStringValue(Integer.toString(random().nextInt(100)));
+      Document2 doc = iw.newDocument();
+      doc.addLargeText("id", Integer.toString(random().nextInt(50)));
+      doc.addLargeText("date", Integer.toString(random().nextInt(100)));
       iw.addDocument(doc);
     }
     iw.close();

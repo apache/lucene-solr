@@ -15,26 +15,26 @@ package org.apache.lucene.search.payloads;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -42,7 +42,6 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
 
 public class TestPayloadNearQuery extends LuceneTestCase {
   private static IndexSearcher searcher;
@@ -110,10 +109,10 @@ public class TestPayloadNearQuery extends LuceneTestCase {
         .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("field", English.intToEnglish(i));
       String txt = English.intToEnglish(i) +' '+English.intToEnglish(i+1);
-      doc.add(newTextField("field2", txt, Field.Store.YES));
+      doc.addLargeText("field2", txt);
       writer.addDocument(doc);
     }
     reader = writer.getReader();

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Terms;
@@ -43,13 +44,12 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     //writer.setNoCFSRatio(0.0);
     //writer.infoStream = System.out;
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
-    customType.setStoreTermVectors(true);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setIndexOptions("field", IndexOptions.DOCS);
+    fieldTypes.enableTermVectors("field");
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      Field fld = newField("field", English.intToEnglish(i), customType);
-      doc.add(fld);
+      Document2 doc = writer.newDocument();
+      doc.addAtom("field", English.intToEnglish(i));
       writer.addDocument(doc);
     }
     writer.close();

@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -30,7 +29,7 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 10; i++) {
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
     }
     
     boolean[] inOrder = new boolean[] { false, true };

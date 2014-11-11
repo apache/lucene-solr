@@ -26,15 +26,12 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
@@ -133,12 +130,14 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
       }
     });
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("dv");
+    fieldTypes.setMultiValued("indexed");
+
     // index some docs
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
-      doc.add(idField);
+      Document2 doc = writer.newDocument();
+      doc.addUniqueAtom("id", Integer.toString(i));
       final int length = TestUtil.nextInt(random(), minLength, maxLength);
       int numValues = random().nextInt(17);
       // create a random list of strings
@@ -151,14 +150,14 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
       ArrayList<String> unordered = new ArrayList<>(values);
       Collections.shuffle(unordered, random());
       for (String v : values) {
-        doc.add(newStringField("indexed", v, Field.Store.NO));
+        doc.addAtom("indexed", v);
       }
 
       // add in any order to the dv field
       ArrayList<String> unordered2 = new ArrayList<>(values);
       Collections.shuffle(unordered2, random());
       for (String v : unordered2) {
-        doc.add(new SortedSetDocValuesField("dv", new BytesRef(v)));
+        doc.addBinary("dv", new BytesRef(v));
       }
 
       writer.addDocument(doc);

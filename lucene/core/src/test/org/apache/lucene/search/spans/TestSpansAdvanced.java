@@ -23,8 +23,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -88,9 +86,9 @@ public class TestSpansAdvanced extends LuceneTestCase {
   protected void addDocument(final RandomIndexWriter writer, final String id,
       final String text) throws IOException {
     
-    final Document document = new Document();
-    document.add(newStringField(FIELD_ID, id, Field.Store.YES));
-    document.add(newTextField(FIELD_TEXT, text, Field.Store.YES));
+    Document2 document = writer.newDocument();
+    document.addUniqueAtom(FIELD_ID, id);
+    document.addLargeText(FIELD_TEXT, text);
     writer.addDocument(document);
   }
   

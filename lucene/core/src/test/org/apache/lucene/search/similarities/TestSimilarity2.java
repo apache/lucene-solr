@@ -20,10 +20,8 @@ package org.apache.lucene.search.similarities;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -93,8 +91,8 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void testEmptyField() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("foo", "bar", Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -115,8 +113,8 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void testEmptyTerm() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("foo", "bar", Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -137,11 +135,10 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void testNoNorms() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setOmitNorms(true);
-    ft.freeze();
-    doc.add(newField("foo", "bar", ft));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableNorms("foo");
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -161,12 +158,12 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void testOmitTF() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS);
-    ft.freeze();
-    Field f = newField("foo", "bar", ft);
-    doc.add(f);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setIndexOptions("foo", IndexOptions.DOCS);
+    fieldTypes.disableHighlighting("foo");
+
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -186,13 +183,13 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void testOmitTFAndNorms() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS);
-    ft.setOmitNorms(true);
-    ft.freeze();
-    Field f = newField("foo", "bar", ft);
-    doc.add(f);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+
+    Document2 doc = iw.newDocument();
+    fieldTypes.setIndexOptions("foo", IndexOptions.DOCS);
+    fieldTypes.disableNorms("foo");
+    fieldTypes.disableHighlighting("foo");
+    doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -216,9 +213,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     // inner queries are not real queries, their boosts are ignored, etc.
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    doc.add(newField("foo", "bar", ft));
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();

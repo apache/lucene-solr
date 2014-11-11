@@ -38,9 +38,8 @@ to check if the results are what we expect):</p>
     //Directory directory = FSDirectory.open("/tmp/testindex");
     IndexWriterConfig config = new IndexWriterConfig(analyzer);
     IndexWriter iwriter = new IndexWriter(directory, config);
-    Document doc = new Document();
-    String text = "This is the text to be indexed.";
-    doc.add(new Field("fieldname", text, TextField.TYPE_STORED));
+    Document doc = iwriter.newDocument();
+    doc.addLargeText("fieldname", "This is the text to be indexed.");
     iwriter.addDocument(doc);
     iwriter.close();
     

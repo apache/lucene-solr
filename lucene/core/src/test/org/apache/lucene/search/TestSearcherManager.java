@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -205,7 +204,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     // Test can deadlock if we use SMS:
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     final CountDownLatch awaitEnterWarm = new CountDownLatch(1);
     final CountDownLatch awaitClose = new CountDownLatch(1);
@@ -237,7 +236,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     } finally {
       searcherManager.release(searcher);
     }
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     final AtomicBoolean success = new AtomicBoolean(false);
     final Throwable[] exc = new Throwable[1];
@@ -308,7 +307,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
     SearcherManager sm = new SearcherManager(writer, false, new SearcherFactory());
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     sm.maybeRefreshBlocking();
 
@@ -376,7 +375,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         }
       }
     });
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     iw.commit();
     assertFalse(afterRefreshCalled.get());
     sm.maybeRefreshBlocking();

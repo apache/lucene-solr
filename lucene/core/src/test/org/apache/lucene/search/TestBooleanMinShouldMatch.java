@@ -23,8 +23,6 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -60,11 +58,11 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), index);
 
     for (int i = 0; i < data.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", String.valueOf(i), Field.Store.YES));//Field.Keyword("id",String.valueOf(i)));
-      doc.add(newStringField("all", "all", Field.Store.YES));//Field.Keyword("all","all"));
+      Document2 doc = w.newDocument();
+      doc.addUniqueAtom("id", String.valueOf(i));//Field.Keyword("id",String.valueOf(i)));
+      doc.addLargeText("all", "all");//Field.Keyword("all","all"));
       if (null != data[i]) {
-        doc.add(newTextField("data", data[i], Field.Store.YES));//Field.Text("data",data[i]));
+        doc.addLargeText("data", data[i]);//Field.Text("data",data[i]));
       }
       w.addDocument(doc);
     }

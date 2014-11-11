@@ -17,14 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Locale;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -43,16 +42,19 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    
+
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("asc");
+    fieldTypes.setMultiValued("trie");
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.ROOT));
     
     int num = atLeast(500);
     for (int l = 0; l < num; l++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       for (int m=0, c=random().nextInt(10); m<=c; m++) {
         int value = random().nextInt(Integer.MAX_VALUE);
-        doc.add(newStringField("asc", format.format(value), Field.Store.NO));
-        doc.add(new IntField("trie", value, Field.Store.NO));
+        doc.addAtom("asc", format.format(value));
+        doc.addInt("trie", value);
       }
       writer.addDocument(doc);
     }
@@ -67,11 +69,11 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       if (lower>upper) {
         int a=lower; lower=upper; upper=a;
       }
-      TermRangeQuery cq=TermRangeQuery.newStringRange("asc", format.format(lower), format.format(upper), true, true);
-      NumericRangeQuery<Integer> tq=NumericRangeQuery.newIntRange("trie", lower, upper, true, true);
+      Query cq = new ConstantScoreQuery(fieldTypes.newRangeFilter("asc", format.format(lower), true, format.format(upper), true));
+      Query tq = new ConstantScoreQuery(fieldTypes.newRangeFilter("trie", lower, true, upper, true));
       TopDocs trTopDocs = searcher.search(cq, 1);
       TopDocs nrTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits );
+      assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits);
     }
     reader.close();
     directory.close();

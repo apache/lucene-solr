@@ -32,8 +32,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -2173,6 +2173,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
              */
             // Don't bother saving any changes in our segmentInfos
             readerPool.dropAll(false);
+            fieldTypes.clear();
             // Mark that the index has changed
             ++changeCount;
             segmentInfos.changed();

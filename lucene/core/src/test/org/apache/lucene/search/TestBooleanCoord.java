@@ -20,10 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriter;
@@ -49,22 +47,24 @@ public class TestBooleanCoord extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("field");
+
     // we only add two documents for testing:
     // the first document has 3 terms A,B,C (for positive matching). we test scores against this.
     // the second document has 3 negative terms 1,2,3 that exist in the segment (for non-null scorers)
     // to test terms that don't exist (null scorers), we use X,Y,Z
     
-    Document doc = new Document();
-    doc.add(new StringField("field", "A", Field.Store.NO));
-    doc.add(new StringField("field", "B", Field.Store.NO));
-    doc.add(new StringField("field", "C", Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addAtom("field", "A");
+    doc.addAtom("field", "B");
+    doc.addAtom("field", "C");
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new StringField("field", "1", Field.Store.NO));
-    doc.add(new StringField("field", "2", Field.Store.NO));
-    doc.add(new StringField("field", "3", Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addAtom("field", "1");
+    doc.addAtom("field", "2");
+    doc.addAtom("field", "3");
     iw.addDocument(doc);
 
     iw.close();

@@ -20,13 +20,10 @@ package org.apache.lucene.index;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.Directory;
@@ -278,7 +275,7 @@ public class TestUniqueAtom extends LuceneTestCase {
       fail("did not hit exception");
     } catch (RuntimeException re) {
       // expected
-      assertEquals("UNIQUE_ATOM field=\"field\" is not unique: term=[6f 6e 65] matches both docID=0 and docID=1; unable to fix this index", re.getMessage());
+      assertEquals("UNIQUE_ATOM field=\"field\" is not unique: e.g. term=[6f 6e 65] matches both docID=0 and docID=1", re.getMessage());
     }
     
     dir.close();

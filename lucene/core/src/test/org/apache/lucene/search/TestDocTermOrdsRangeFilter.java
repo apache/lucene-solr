@@ -24,9 +24,8 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -54,16 +53,17 @@ public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued(fieldName);
     List<String> terms = new ArrayList<>();
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addUniqueAtom("id", Integer.toString(i));
       int numTerms = random().nextInt(4);
       for (int j = 0; j < numTerms; j++) {
         String s = TestUtil.randomUnicodeString(random());
-        doc.add(newStringField(fieldName, s, Field.Store.NO));
-        doc.add(new SortedSetDocValuesField(fieldName, new BytesRef(s)));
+        doc.addAtom(fieldName, s);
         terms.add(s);
       }
       writer.addDocument(doc);

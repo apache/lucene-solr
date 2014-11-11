@@ -26,6 +26,7 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 
 import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -55,16 +56,16 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     RandomGen random = new RandomGen(random());
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the
                                            // problem doesn't show up
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       if ((i % 5) != 0) { // some documents must not have an entry in the first
                           // sort field
-        doc.add(newStringField("publicationDate_", random.getLuceneDate(), Field.Store.YES));
+        doc.addAtom("publicationDate_", random.getLuceneDate());
       }
       if ((i % 7) == 0) { // some documents to match the query (see below)
-        doc.add(newTextField("content", "test", Field.Store.YES));
+        doc.addLargeText("content", "test");
       }
       // every document has a defined 'mandant' field
-      doc.add(newStringField("mandant", Integer.toString(i % 3), Field.Store.YES));
+      doc.addAtom("mandant", Integer.toString(i % 3));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

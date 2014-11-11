@@ -22,16 +22,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import junit.framework.Assert;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+
+import junit.framework.Assert;
 
 public class TestDocIdSet extends LuceneTestCase {
   public void testFilteredDocIdSet() throws Exception {
@@ -111,8 +110,8 @@ public class TestDocIdSet extends LuceneTestCase {
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("c", "val", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addAtom("c", "val");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -137,8 +136,8 @@ public class TestDocIdSet extends LuceneTestCase {
   public void testNullIteratorFilteredDocIdSet() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("c", "val", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addAtom("c", "val");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

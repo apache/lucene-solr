@@ -17,13 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests {@link PrefixFilter} class.
@@ -39,8 +38,8 @@ public class TestPrefixFilter extends LuceneTestCase {
                                         "/Computers/Windows"};
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     for (int i = 0; i < categories.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("category", categories[i], Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("category", categories[i]);
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();

@@ -23,10 +23,8 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -52,15 +50,13 @@ public class TestRegexpRandom extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setOmitNorms(true);
-    Field field = newField("field", "", customType);
-    doc.add(field);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableNorms("field");
     
     NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ROOT));
     for (int i = 0; i < 1000; i++) {
-      field.setStringValue(df.format(i));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("field", df.format(i));
       writer.addDocument(doc);
     }
     

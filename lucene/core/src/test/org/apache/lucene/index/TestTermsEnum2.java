@@ -25,8 +25,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.CheckHits;
@@ -56,15 +55,13 @@ public class TestTermsEnum2 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
             .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    Document doc = new Document();
-    Field field = newStringField("field", "", Field.Store.YES);
-    doc.add(field);
     terms = new TreeSet<>();
  
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = TestUtil.randomUnicodeString(random());
-      field.setStringValue(s);
+      Document2 doc = writer.newDocument();
+      doc.addAtom("field", s);
       terms.add(new BytesRef(s));
       writer.addDocument(doc);
     }

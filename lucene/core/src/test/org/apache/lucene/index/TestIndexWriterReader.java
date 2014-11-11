@@ -27,8 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -36,8 +34,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
@@ -47,7 +45,24 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import org.junit.Test;
 
 // nocommit sometimes fails? ant test  -Dtestcase=TestIndexWriterReader -Dtests.method=testAddIndexesAndDoDeletesThreads -Dtests.seed=964B420DA6617A73 -Dtests.locale=fr -Dtests.timezone=Africa/Maseru -Dtests.asserts=true -Dtests.file.encoding=UTF-8
-
+/*
+   [junit4]    > Throwable #1: java.io.EOFException: read past EOF: RAMInputStream(name=FieldTypes)
+   [junit4]    > 	at __randomizedtesting.SeedInfo.seed([57595240E47BF490:8D6A12648FE2F4AC]:0)
+   [junit4]    > 	at org.apache.lucene.store.RAMInputStream.switchCurrentBuffer(RAMInputStream.java:98)
+   [junit4]    > 	at org.apache.lucene.store.RAMInputStream.readBytes(RAMInputStream.java:81)
+   [junit4]    > 	at org.apache.lucene.store.BufferedChecksumIndexInput.readBytes(BufferedChecksumIndexInput.java:49)
+   [junit4]    > 	at org.apache.lucene.store.DataInput.readString(DataInput.java:234)
+   [junit4]    > 	at org.apache.lucene.document.FieldTypes$FieldType.<init>(FieldTypes.java:955)
+   [junit4]    > 	at org.apache.lucene.document.FieldTypes.readFromString(FieldTypes.java:3191)
+   [junit4]    > 	at org.apache.lucene.document.FieldTypes.loadFields(FieldTypes.java:1126)
+   [junit4]    > 	at org.apache.lucene.document.FieldTypes.<init>(FieldTypes.java:1112)
+   [junit4]    > 	at org.apache.lucene.document.FieldTypes.getFieldTypes(FieldTypes.java:3222)
+   [junit4]    > 	at org.apache.lucene.index.CheckIndex.checkIndex(CheckIndex.java:481)
+   [junit4]    > 	at org.apache.lucene.util.TestUtil.checkIndex(TestUtil.java:224)
+   [junit4]    > 	at org.apache.lucene.util.TestUtil.checkIndex(TestUtil.java:211)
+   [junit4]    > 	at org.apache.lucene.util.TestUtil.checkIndex(TestUtil.java:207)
+   [junit4]    > 	at org.apache.lucene.index.TestIndexWriterReader.testAddIndexesAndDoDeletesThreads(TestIndexWriterReader.java:383)
+*/
 public class TestIndexWriterReader extends LuceneTestCase {
   
   private final int numThreads = TEST_NIGHTLY ? 5 : 3;

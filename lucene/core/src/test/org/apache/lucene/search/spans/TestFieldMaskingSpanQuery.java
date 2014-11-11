@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -38,10 +38,13 @@ import org.junit.BeforeClass;
 
 public class TestFieldMaskingSpanQuery extends LuceneTestCase {
 
-  protected static Document doc(Field[] fields) {
-    Document doc = new Document();
-    for (int i = 0; i < fields.length; i++) {
-      doc.add(fields[i]);
+  protected static Document2 doc(RandomIndexWriter w, String... nameAndValues) {
+    Document2 doc = w.newDocument();
+    int upto = 0;
+    while (upto < nameAndValues.length) {
+      doc.addLargeText(nameAndValues[upto],
+                       nameAndValues[upto+1]);
+      upto += 2;
     }
     return doc;
   }
@@ -59,59 +62,53 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     
-    writer.addDocument(doc(new Field[] { field("id", "0")
-                                         ,
-                                         field("gender", "male"),
-                                         field("first",  "james"),
-                                         field("last",   "jones")     }));
+    writer.addDocument(doc(writer,
+                           "id", "0",
+                           "gender", "male",
+                           "first",  "james",
+                           "last",   "jones"));
                                                
-    writer.addDocument(doc(new Field[] { field("id", "1")
-                                         ,
-                                         field("gender", "male"),
-                                         field("first",  "james"),
-                                         field("last",   "smith")
-                                         ,
-                                         field("gender", "female"),
-                                         field("first",  "sally"),
-                                         field("last",   "jones")     }));
+    writer.addDocument(doc(writer,
+                           "id", "1",
+                           "gender", "male",
+                           "first",  "james",
+                           "last",   "smith",
+                           "gender", "female",
+                           "first",  "sally",
+                           "last",   "jones"));
     
-    writer.addDocument(doc(new Field[] { field("id", "2")
-                                         ,
-                                         field("gender", "female"),
-                                         field("first",  "greta"),
-                                         field("last",   "jones")
-                                         ,
-                                         field("gender", "female"),
-                                         field("first",  "sally"),
-                                         field("last",   "smith")
-                                         ,
-                                         field("gender", "male"),
-                                         field("first",  "james"),
-                                         field("last",   "jones")     }));
+    writer.addDocument(doc(writer,
+                           "id", "2",
+                           "gender", "female",
+                           "first",  "greta",
+                           "last",   "jones",
+                           "gender", "female",
+                           "first",  "sally",
+                           "last",   "smith",
+                           "gender", "male",
+                           "first",  "james",
+                           "last",   "jones"));
      
-    writer.addDocument(doc(new Field[] { field("id", "3")
-                                         ,
-                                         field("gender", "female"),
-                                         field("first",  "lisa"),
-                                         field("last",   "jones")
-                                         ,
-                                         field("gender", "male"),
-                                         field("first",  "bob"),
-                                         field("last",   "costas")     }));
+    writer.addDocument(doc(writer,
+                           "id", "3",
+                           "gender", "female",
+                           "first",  "lisa",
+                           "last",   "jones",
+                           "gender", "male",
+                           "first",  "bob",
+                           "last",   "costas"));
     
-    writer.addDocument(doc(new Field[] { field("id", "4")
-                                         ,
-                                         field("gender", "female"),
-                                         field("first",  "sally"),
-                                         field("last",   "smith")
-                                         ,
-                                         field("gender", "female"),
-                                         field("first",  "linda"),
-                                         field("last",   "dixit")
-                                         ,
-                                         field("gender", "male"),
-                                         field("first",  "bubba"),
-                                         field("last",   "jones")     }));
+    writer.addDocument(doc(writer,
+                           "id", "4",
+                           "gender", "female",
+                           "first",  "sally",
+                           "last",   "smith",
+                           "gender", "female",
+                           "first",  "linda",
+                           "last",   "dixit",
+                           "gender", "male",
+                           "first",  "bubba",
+                           "last",   "jones"));
     reader = writer.getReader();
     writer.close();
     searcher = newSearcher(reader);

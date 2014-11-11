@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -38,17 +38,12 @@ public class TestDocBoost extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    Field f1 = newTextField("field", "word", Field.Store.YES);
-    Field f2 = newTextField("field", "word", Field.Store.YES);
-    f2.setBoost(2.0f);
-
-    Document d1 = new Document();
-    Document d2 = new Document();
-
-    d1.add(f1);                                 // boost = 1
-    d2.add(f2);                                 // boost = 2
-
+    Document2 d1 = writer.newDocument();
+    d1.addLargeText("field", "word");           // boost = 1
     writer.addDocument(d1);
+
+    Document2 d2 = writer.newDocument();
+    d2.addLargeText("field", "word", 2.0f);     // boost = 2
     writer.addDocument(d2);
 
     IndexReader reader = writer.getReader();

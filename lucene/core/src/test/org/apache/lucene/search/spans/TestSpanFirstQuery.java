@@ -20,8 +20,7 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -40,11 +39,11 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet);
     
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, analyzer);
-    Document doc = new Document();
-    doc.add(newTextField("field", "the quick brown fox", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "the quick brown fox");
     writer.addDocument(doc);
-    Document doc2 = new Document();
-    doc2.add(newTextField("field", "quick brown fox", Field.Store.NO));
+    Document2 doc2 = writer.newDocument();
+    doc2.addLargeText("field", "quick brown fox");
     writer.addDocument(doc2);
     
     IndexReader reader = writer.getReader();

@@ -22,9 +22,7 @@ import java.util.LinkedList;
 
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -195,8 +193,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   private void add(String s, RandomIndexWriter writer) throws IOException {
-    Document doc = new Document();
-    doc.add(newTextField("body", s, Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("body", s);
     writer.addDocument(doc);
   }
   
@@ -315,9 +313,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   private void add(String s, String type, RandomIndexWriter writer)
       throws IOException {
-    Document doc = new Document();
-    doc.add(newTextField("body", s, Field.Store.YES));
-    doc.add(newStringField("type", type, Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("body", s);
+    doc.addAtom("type", type);
     writer.addDocument(doc);
   }
   
@@ -366,11 +364,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     tokens[2].setPositionIncrement(0);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new TextField("field", new CannedTokenStream(tokens)));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", new CannedTokenStream(tokens));
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new TextField("field", new CannedTokenStream(tokens)));
+    doc = writer.newDocument();
+    doc.addLargeText("field", new CannedTokenStream(tokens));
     writer.addDocument(doc);
     IndexReader r = writer.getReader();
     writer.close();
@@ -467,8 +465,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     Directory dir = newDirectory(); // random dir
     IndexWriterConfig cfg = newIndexWriterConfig(null);
     IndexWriter writer = new IndexWriter(dir, cfg);
-    Document doc = new Document();
-    doc.add(new TextField("field", new CannedTokenStream(INCR_0_DOC_TOKENS)));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", new CannedTokenStream(INCR_0_DOC_TOKENS));
     writer.addDocument(doc);
     IndexReader r = DirectoryReader.open(writer,false);
     writer.close();

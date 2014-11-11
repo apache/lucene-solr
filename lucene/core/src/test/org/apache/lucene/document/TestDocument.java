@@ -39,7 +39,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-
 /**
  * Tests {@link Document} class.
  */
@@ -340,68 +339,39 @@ public class TestDocument extends LuceneTestCase {
     }
   }
   
-  public void testFieldSetValue() throws Exception {
-    
-    Field field = new StringField("id", "id1", Field.Store.YES);
-    Document doc = new Document();
-    doc.add(field);
-    doc.add(new StringField("keyword", "test", Field.Store.YES));
-    
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.addDocument(doc);
-    field.setStringValue("id2");
-    writer.addDocument(doc);
-    field.setStringValue("id3");
-    writer.addDocument(doc);
-    
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader);
-    
-    Query query = new TermQuery(new Term("keyword", "test"));
-    
-    // ensure that queries return expected results without DateFilter first
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
-    assertEquals(3, hits.length);
-    int result = 0;
-    for (int i = 0; i < 3; i++) {
-      Document2 doc2 = searcher.doc(hits[i].doc);
-      IndexableField f = doc2.getField("id");
-      if (f.stringValue().equals("id1")) result |= 1;
-      else if (f.stringValue().equals("id2")) result |= 2;
-      else if (f.stringValue().equals("id3")) result |= 4;
-      else fail("unexpected id field");
-    }
-    writer.close();
-    reader.close();
-    dir.close();
-    assertEquals("did not see all IDs", 7, result);
-  }
-  
   // LUCENE-3616
-  public void testInvalidFields() {
+  public void testInvalidFields() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+
+    fieldTypes.enableStored("foo");
+    Tokenizer tok = new MockTokenizer();
+    tok.setReader(new StringReader(""));
+    Document2 doc = iw.newDocument();
+    
     try {
-      Tokenizer tok = new MockTokenizer();
-      tok.setReader(new StringReader(""));
-      new Field("foo", tok, StringField.TYPE_STORED);
+      doc.addLargeText("foo", tok);
       fail("did not hit expected exc");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // expected
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
     }
+    iw.close();
+    dir.close();
   }
   
   public void testNumericFieldAsString() throws Exception {
-    Document doc = new Document();
-    doc.add(new IntField("int", 5, Field.Store.YES));
-    assertEquals("5", doc.get("int"));
-    assertNull(doc.get("somethingElse"));
-    doc.add(new IntField("int", 4, Field.Store.YES));
-    assertArrayEquals(new String[] { "5", "4" }, doc.getValues("int"));
-    
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("int");
+    Document2 doc = iw.newDocument();
+    doc.addInt("int", 5);
+    assertEquals("5", doc.getString("int"));
+    assertNull(doc.get("somethingElse"));
+    doc.addInt("int", 4);
+    assertArrayEquals(new String[] { "5", "4" }, doc.getStrings("int"));
+    
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     Document2 sdoc = ir.document(0);

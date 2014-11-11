@@ -20,12 +20,15 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -53,19 +56,18 @@ public class TestSort extends LuceneTestCase {
   public void testString() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("foo")));
-    doc.add(newStringField("value", "foo", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", "foo");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("value", "bar", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", "bar");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -81,19 +83,18 @@ public class TestSort extends LuceneTestCase {
   public void testStringReverse() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("value", "bar", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", "bar");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("foo")));
-    doc.add(newStringField("value", "foo", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", "foo");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING, true));
+    Sort sort = fieldTypes.newSort("value", true);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -109,19 +110,21 @@ public class TestSort extends LuceneTestCase {
   public void testStringVal() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new BinaryDocValuesField("value", new BytesRef("foo")));
-    doc.add(newStringField("value", "foo", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setDocValuesType("value", DocValuesType.BINARY);
+    fieldTypes.enableSorting("value");
+    
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", "foo");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new BinaryDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("value", "bar", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", "bar");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -137,19 +140,22 @@ public class TestSort extends LuceneTestCase {
   public void testStringValReverse() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new BinaryDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("value", "bar", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setDocValuesType("value", DocValuesType.BINARY);
+    fieldTypes.enableSorting("value");
+
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", "bar");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new BinaryDocValuesField("value", new BytesRef("foo")));
-    doc.add(newStringField("value", "foo", Field.Store.YES));
+
+    doc = writer.newDocument();
+    doc.addAtom("value", "foo");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
+    Sort sort = fieldTypes.newSort("value", true);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -165,18 +171,19 @@ public class TestSort extends LuceneTestCase {
   public void testStringValSorted() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("foo")));
-    doc.add(newStringField("value", "foo", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", "foo");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("value", "bar", Field.Store.YES));
+
+    doc = writer.newDocument();
+    doc.addAtom("value", "bar");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
+
+    // NOTE: don't ask FieldTypes here, because we are forcing STRING_VAL even though we indexed SORTED DV:
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -193,18 +200,19 @@ public class TestSort extends LuceneTestCase {
   public void testStringValReverseSorted() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("value", "bar", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", "bar");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedDocValuesField("value", new BytesRef("foo")));
-    doc.add(newStringField("value", "foo", Field.Store.YES));
+
+    doc = writer.newDocument();
+    doc.addAtom("value", "foo");
     writer.addDocument(doc);
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
+    // NOTE: don't ask FieldTypes here, because we are forcing STRING_VAL even though we indexed SORTED DV:
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -221,30 +229,26 @@ public class TestSort extends LuceneTestCase {
   public void testInt() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("value", 300000));
-    doc.add(newStringField("value", "300000", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    
+    for(int value : new int[] {300000, -1, 4}) {
+      Document2 doc = writer.newDocument();
+      doc.addInt("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -254,61 +258,54 @@ public class TestSort extends LuceneTestCase {
   public void testIntReverse() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("value", 300000));
-    doc.add(newStringField("value", "300000", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(int value : new int[] {300000, -1, 4}) {
+      Document2 doc = writer.newDocument();
+      doc.addInt("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
+    Sort sort = fieldTypes.newSort("value", true);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // reverse numeric order
-    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
   }
   
   /** Tests sorting on type int with a missing value */
-  public void testIntMissing() throws IOException {
+  public void testIntMissingDefault() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    writer.addDocument(writer.newDocument());
+    for(int value : new int[] {-1, 4}) {
+      Document2 doc = writer.newDocument();
+      doc.addInt("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    // null is treated as a 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    // sort missing last by default:
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -318,30 +315,26 @@ public class TestSort extends LuceneTestCase {
   public void testIntMissingLast() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setSortMissingLast("value");
+    writer.addDocument(writer.newDocument());
+    for(int value : new int[] {-1, 4}) {
+      Document2 doc = writer.newDocument();
+      doc.addInt("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("value", SortField.Type.INT);
-    sortField.setMissingValue(Integer.MAX_VALUE);
-    Sort sort = new Sort(sortField);
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    // null is treated as a Integer.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -351,30 +344,24 @@ public class TestSort extends LuceneTestCase {
   public void testLong() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("value", 3000000000L));
-    doc.add(newStringField("value", "3000000000", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(long value : new long[] {3000000000L, -1L, 4L}) {
+      Document2 doc = writer.newDocument();
+      doc.addLong("value", value);
+      writer.addDocument(doc);
+    }
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -384,61 +371,53 @@ public class TestSort extends LuceneTestCase {
   public void testLongReverse() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("value", 3000000000L));
-    doc.add(newStringField("value", "3000000000", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(long value : new long[] {3000000000L, -1L, 4L}) {
+      Document2 doc = writer.newDocument();
+      doc.addLong("value", value);
+      writer.addDocument(doc);
+    }
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
+    Sort sort = fieldTypes.newSort("value", true);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // reverse numeric order
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
   }
   
   /** Tests sorting on type long with a missing value */
-  public void testLongMissing() throws IOException {
+  public void testLongMissingDefault() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    writer.addDocument(writer.newDocument());
+    for(long value : new long[] {-1L, 4L}) {
+      Document2 doc = writer.newDocument();
+      doc.addLong("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    // null is treated as 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    // sort missing last by default:
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -448,30 +427,26 @@ public class TestSort extends LuceneTestCase {
   public void testLongMissingLast() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", -1));
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new NumericDocValuesField("value", 4));
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setSortMissingLast("value");
+    writer.addDocument(writer.newDocument());
+    for(long value : new long[] {-1L, 4L}) {
+      Document2 doc = writer.newDocument();
+      doc.addLong("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("value", SortField.Type.LONG);
-    sortField.setMissingValue(Long.MAX_VALUE);
-    Sort sort = new Sort(sortField);
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    // null is treated as Long.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -480,31 +455,26 @@ public class TestSort extends LuceneTestCase {
   /** Tests sorting on type float */
   public void testFloat() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new FloatDocValuesField("value", 30.1F));
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", -1.3F));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", 4.2F));
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
-    writer.addDocument(doc);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(float value : new float[] {30.1F, -1.3F, 4.2F}) {
+      Document2 doc = writer.newDocument();
+      doc.addFloat("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -513,62 +483,56 @@ public class TestSort extends LuceneTestCase {
   /** Tests sorting on type float in reverse */
   public void testFloatReverse() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new FloatDocValuesField("value", 30.1F));
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", -1.3F));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", 4.2F));
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
-    writer.addDocument(doc);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(float value : new float[] {30.1F, -1.3F, 4.2F}) {
+      Document2 doc = writer.newDocument();
+      doc.addFloat("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
+    Sort sort = fieldTypes.newSort("value", true);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    // reverse numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    // numeric order
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
   }
   
   /** Tests sorting on type float with a missing value */
-  public void testFloatMissing() throws IOException {
+  public void testFloatMissingDefault() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", -1.3F));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", 4.2F));
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
-    writer.addDocument(doc);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    writer.addDocument(writer.newDocument());
+    for(float value : new float[] {-1.3F, 4.2F}) {
+      Document2 doc = writer.newDocument();
+      doc.addFloat("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    // null is treated as 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    // sort missing last by default:
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -577,31 +541,28 @@ public class TestSort extends LuceneTestCase {
   /** Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE */
   public void testFloatMissingLast() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", -1.3F));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FloatDocValuesField("value", 4.2F));
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
-    writer.addDocument(doc);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setSortMissingLast("value");
+    writer.addDocument(writer.newDocument());
+    for(float value : new float[] {-1.3F, 4.2F}) {
+      Document2 doc = writer.newDocument();
+      doc.addFloat("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("value", SortField.Type.FLOAT);
-    sortField.setMissingValue(Float.MAX_VALUE);
-    Sort sort = new Sort(sortField);
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    // null is treated as Float.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -611,35 +572,26 @@ public class TestSort extends LuceneTestCase {
   public void testDouble() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 30.1));
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", -1.3));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333333));
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333332));
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+
+    for(double value : new double[] {30.1, -1.3, 4.2333333333333, 4.2333333333332}) {
+      Document2 doc = writer.newDocument();
+      doc.addDouble("value", value);
+      writer.addDocument(doc);
+    }
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).getString("value"));
 
     ir.close();
     dir.close();
@@ -649,26 +601,24 @@ public class TestSort extends LuceneTestCase {
   public void testDoubleSignedZero() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new DoubleDocValuesField("value", +0D));
-    doc.add(newStringField("value", "+0", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", -0D));
-    doc.add(newStringField("value", "-0", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(double value : new double[] {+0D, -0D}) {
+      Document2 doc = writer.newDocument();
+      doc.addDouble("value", value);
+      writer.addDocument(doc);
+    }
+
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // numeric order
-    assertEquals("-0", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("+0", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals(-0D, searcher.doc(td.scoreDocs[0].doc).getDouble("value").doubleValue(), 0.0D);
+    assertEquals(+0D, searcher.doc(td.scoreDocs[1].doc).getDouble("value").doubleValue(), 0.0D);
 
     ir.close();
     dir.close();
@@ -678,71 +628,56 @@ public class TestSort extends LuceneTestCase {
   public void testDoubleReverse() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 30.1));
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", -1.3));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333333));
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333332));
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+
+    for(double value : new double[] {30.1, -1.3, 4.2333333333333, 4.2333333333332}) {
+      Document2 doc = writer.newDocument();
+      doc.addDouble("value", value);
+      writer.addDocument(doc);
+    }
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
+    Sort sort = fieldTypes.newSort("value", true);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).getString("value"));
 
     ir.close();
     dir.close();
   }
   
   /** Tests sorting on type double with a missing value */
-  public void testDoubleMissing() throws IOException {
+  public void testDoubleMissingDefault() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", -1.3));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333333));
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333332));
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    writer.addDocument(writer.newDocument());
+    for(double value : new double[] {-1.3, 4.2333333333333, 4.2333333333332}) {
+      Document2 doc = writer.newDocument();
+      doc.addDouble("value", value);
+      writer.addDocument(doc);
+    }
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
-    // null treated as a 0
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
+
+    // sort missing last by default:
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
 
     ir.close();
     dir.close();
@@ -752,34 +687,25 @@ public class TestSort extends LuceneTestCase {
   public void testDoubleMissingLast() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", -1.3));
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333333));
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new DoubleDocValuesField("value", 4.2333333333332));
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
-    writer.addDocument(doc);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    writer.addDocument(writer.newDocument());
+    for(double value : new double[] {-1.3, 4.2333333333333, 4.2333333333332}) {
+      Document2 doc = writer.newDocument();
+      doc.addDouble("value", value);
+      writer.addDocument(doc);
+    }
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("value", SortField.Type.DOUBLE);
-    sortField.setMissingValue(Double.MAX_VALUE);
-    Sort sort = new Sort(sortField);
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
-    // null treated as Double.MAX_VALUE
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
     assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
 
     ir.close();

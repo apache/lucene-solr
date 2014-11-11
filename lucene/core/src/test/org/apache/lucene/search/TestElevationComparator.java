@@ -17,19 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestElevationComparator extends LuceneTestCase {
 
@@ -39,18 +38,18 @@ public class TestElevationComparator extends LuceneTestCase {
   public void testSorting() throws Throwable {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(
-        directory,
-        newIndexWriterConfig(new MockAnalyzer(random())).
-            setMaxBufferedDocs(2).
-            setMergePolicy(newLogMergePolicy(1000)).
-            setSimilarity(new DefaultSimilarity())
-    );
-    writer.addDocument(adoc(new String[] {"id", "a", "title", "ipod", "str_s", "a"}));
-    writer.addDocument(adoc(new String[] {"id", "b", "title", "ipod ipod", "str_s", "b"}));
-    writer.addDocument(adoc(new String[] {"id", "c", "title", "ipod ipod ipod", "str_s","c"}));
-    writer.addDocument(adoc(new String[] {"id", "x", "title", "boosted", "str_s", "x"}));
-    writer.addDocument(adoc(new String[] {"id", "y", "title", "boosted boosted", "str_s","y"}));
-    writer.addDocument(adoc(new String[] {"id", "z", "title", "boosted boosted boosted","str_s", "z"}));
+                                         directory,
+                                         newIndexWriterConfig(new MockAnalyzer(random())).
+                                         setMaxBufferedDocs(2).
+                                         setMergePolicy(newLogMergePolicy(1000)).
+                                         setSimilarity(new DefaultSimilarity())
+                                         );
+    adoc(writer, new String[] {"id", "a", "title", "ipod", "str_s", "a"});
+    adoc(writer, new String[] {"id", "b", "title", "ipod ipod", "str_s", "b"});
+    adoc(writer, new String[] {"id", "c", "title", "ipod ipod ipod", "str_s","c"});
+    adoc(writer, new String[] {"id", "x", "title", "boosted", "str_s", "x"});
+    adoc(writer, new String[] {"id", "y", "title", "boosted boosted", "str_s","y"});
+    adoc(writer, new String[] {"id", "z", "title", "boosted boosted boosted","str_s", "z"});
 
     IndexReader r = DirectoryReader.open(writer, true);
     writer.close();
@@ -74,9 +73,9 @@ public class TestElevationComparator extends LuceneTestCase {
     newq.add(getElevatedQuery(new String[] {"id", "a", "id", "x"}), BooleanClause.Occur.SHOULD);
 
     Sort sort = new Sort(
-        new SortField("id", new ElevationComparatorSource(priority), false),
-        new SortField(null, SortField.Type.SCORE, reversed)
-      );
+                         new SortField("id", new ElevationComparatorSource(priority), false),
+                         new SortField(null, SortField.Type.SCORE, reversed)
+                         );
 
     TopDocsCollector<Entry> topCollector = TopFieldCollector.create(sort, 50, false, true, true, true);
     searcher.search(newq, null, topCollector);
@@ -99,40 +98,41 @@ public class TestElevationComparator extends LuceneTestCase {
     }
 
     /*
-    for (int i = 0; i < nDocsReturned; i++) {
-     ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-     ids[i] = scoreDoc.doc;
-     scores[i] = scoreDoc.score;
-     documents[i] = searcher.doc(ids[i]);
-     System.out.println("ids[i] = " + ids[i]);
-     System.out.println("documents[i] = " + documents[i]);
-     System.out.println("scores[i] = " + scores[i]);
-   }
+      for (int i = 0; i < nDocsReturned; i++) {
+      ScoreDoc scoreDoc = topDocs.scoreDocs[i];
+      ids[i] = scoreDoc.doc;
+      scores[i] = scoreDoc.score;
+      documents[i] = searcher.doc(ids[i]);
+      System.out.println("ids[i] = " + ids[i]);
+      System.out.println("documents[i] = " + documents[i]);
+      System.out.println("scores[i] = " + scores[i]);
+      }
     */
- }
+  }
 
- private Query getElevatedQuery(String[] vals) {
-   BooleanQuery q = new BooleanQuery(false);
-   q.setBoost(0);
-   int max = (vals.length / 2) + 5;
-   for (int i = 0; i < vals.length - 1; i += 2) {
-     q.add(new TermQuery(new Term(vals[i], vals[i + 1])), BooleanClause.Occur.SHOULD);
-     priority.put(new BytesRef(vals[i + 1]), Integer.valueOf(max--));
-     // System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
-   }
-   return q;
- }
+  private Query getElevatedQuery(String[] vals) {
+    BooleanQuery q = new BooleanQuery(false);
+    q.setBoost(0);
+    int max = (vals.length / 2) + 5;
+    for (int i = 0; i < vals.length - 1; i += 2) {
+      q.add(new TermQuery(new Term(vals[i], vals[i + 1])), BooleanClause.Occur.SHOULD);
+      priority.put(new BytesRef(vals[i + 1]), Integer.valueOf(max--));
+      // System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
+    }
+    return q;
+  }
 
- private Document adoc(String[] vals) {
-   Document doc = new Document();
-   for (int i = 0; i < vals.length - 2; i += 2) {
-     doc.add(newTextField(vals[i], vals[i + 1], Field.Store.YES));
-     if (vals[i].equals("id")) {
-       doc.add(new SortedDocValuesField(vals[i], new BytesRef(vals[i+1])));
-     }
-   }
-   return doc;
- }
+  private void adoc(IndexWriter w, String[] vals) throws IOException {
+    Document2 doc = w.newDocument();
+    for (int i = 0; i < vals.length - 2; i += 2) {
+      if (vals[i].equals("id")) {
+        doc.addUniqueAtom(vals[i], new BytesRef(vals[i+1]));
+      } else {
+        doc.addLargeText(vals[i], vals[i + 1]);
+      }
+    }
+    w.addDocument(doc);
+  }
 }
 
 class ElevationComparatorSource extends FieldComparatorSource {

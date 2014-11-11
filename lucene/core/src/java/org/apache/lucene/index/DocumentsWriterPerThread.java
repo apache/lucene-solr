@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.similarities.Similarity;
@@ -226,6 +227,12 @@ class DocumentsWriterPerThread {
 
   public void updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException {
     testPoint("DocumentsWriterPerThread addDocument start");
+    if (doc instanceof Document2) {
+      Document2 doc2 = (Document2) doc;
+      if (doc2.getFieldTypes() != fieldTypes) {
+        throw new IllegalArgumentException("this document wasn't created by this writer (fieldTypes are different)");
+      }
+    }
     assert deleteQueue != null;
     docState.doc = doc;
     docState.analyzer = analyzer;
@@ -280,6 +287,12 @@ class DocumentsWriterPerThread {
         // document, so the counter will be "wrong" in that case, but
         // it's very hard to fix (we can't easily distinguish aborting
         // vs non-aborting exceptions):
+        if (doc instanceof Document2) {
+          Document2 doc2 = (Document2) doc;
+          if (doc2.getFieldTypes() != fieldTypes) {
+            throw new IllegalArgumentException("this document wasn't created by this writer (fieldTypes are different)");
+          }
+        }
         reserveDoc();
         docState.doc = doc;
         docState.docID = numDocsInRAM;

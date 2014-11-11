@@ -17,12 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.*;
+
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.*;
-import java.util.*;
 
 public class TestMultiFields extends LuceneTestCase {
 
@@ -46,11 +47,6 @@ public class TestMultiFields extends LuceneTestCase {
       List<BytesRef> terms = new ArrayList<>();
 
       int numDocs = TestUtil.nextInt(random(), 1, 100 * RANDOM_MULTIPLIER);
-      Document doc = new Document();
-      Field f = newStringField("field", "", Field.Store.NO);
-      doc.add(f);
-      Field id = newStringField("id", "", Field.Store.NO);
-      doc.add(id);
 
       boolean onlyUniqueTerms = random().nextBoolean();
       if (VERBOSE) {
@@ -59,11 +55,12 @@ public class TestMultiFields extends LuceneTestCase {
       Set<BytesRef> uniqueTerms = new HashSet<>();
       for(int i=0;i<numDocs;i++) {
 
+        Document2 doc = w.newDocument();
         if (!onlyUniqueTerms && random().nextBoolean() && terms.size() > 0) {
           // re-use existing term
           BytesRef term = terms.get(random().nextInt(terms.size()));
           docs.get(term).add(i);
-          f.setStringValue(term.utf8ToString());
+          doc.addAtom("field", term.utf8ToString());
         } else {
           String s = TestUtil.randomUnicodeString(random(), 10);
           BytesRef term = new BytesRef(s);
@@ -73,9 +70,9 @@ public class TestMultiFields extends LuceneTestCase {
           docs.get(term).add(i);
           terms.add(term);
           uniqueTerms.add(term);
-          f.setStringValue(s);
+          doc.addAtom("field", s);
         }
-        id.setStringValue(""+i);
+        doc.addUniqueAtom("id", ""+i);
         w.addDocument(doc);
         if (random().nextInt(4) == 1) {
           w.commit();
@@ -126,7 +123,7 @@ public class TestMultiFields extends LuceneTestCase {
         DocsEnum docsEnum = TestUtil.docs(random(), reader, "field", term, liveDocs, null, DocsEnum.FLAG_NONE);
         if (docsEnum == null) {
           for(int docID : docs.get(term)) {
-            assert deleted.contains(docID);
+            assertTrue(deleted.contains(docID));
           }
         } else {
           for(int docID : docs.get(term)) {
@@ -161,8 +158,8 @@ public class TestMultiFields extends LuceneTestCase {
   public void testSeparateEnums() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document d = new Document();
-    d.add(newStringField("f", "j", Field.Store.NO));
+    Document2 d = w.newDocument();
+    d.addAtom("f", "j");
     w.addDocument(d);
     w.commit();
     w.addDocument(d);
@@ -179,8 +176,8 @@ public class TestMultiFields extends LuceneTestCase {
   public void testTermDocsEnum() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document d = new Document();
-    d.add(newStringField("f", "j", Field.Store.NO));
+    Document2 d = w.newDocument();
+    d.addAtom("f", "j");
     w.addDocument(d);
     w.commit();
     w.addDocument(d);

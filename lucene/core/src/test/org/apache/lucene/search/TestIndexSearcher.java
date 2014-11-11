@@ -22,8 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -45,9 +44,9 @@ public class TestIndexSearcher extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 100; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
-      doc.add(newStringField("field2", Boolean.toString(i % 2 == 0), Field.Store.NO));
+      Document2 doc = iw.newDocument();
+      doc.addUniqueAtom("field", Integer.toString(i));
+      doc.addAtom("field2", Boolean.toString(i % 2 == 0));
       iw.addDocument(doc);
     }
     reader = iw.getReader();
@@ -124,7 +123,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     // LUCENE-5128: ensure we get a meaningful message if searchAfter exceeds maxDoc
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     IndexReader r = w.getReader();
     w.close();
     

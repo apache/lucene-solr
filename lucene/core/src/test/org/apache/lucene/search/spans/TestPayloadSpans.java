@@ -28,14 +28,12 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -112,8 +110,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(new PayloadAnalyzer()).setSimilarity(similarity));
 
-    Document doc = new Document();
-    doc.add(newTextField(PayloadHelper.FIELD, "one two three one four three", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText(PayloadHelper.FIELD, "one two three one four three");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -255,8 +253,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(new TestPayloadAnalyzer()));
 
-    Document doc = new Document();
-    doc.add(new TextField("content", new StringReader("a b c d e f g h i j a k")));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", new StringReader("a b c d e f g h i j a k"));
     writer.addDocument(doc);
 
     IndexReader reader = writer.getReader();
@@ -292,8 +290,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(new TestPayloadAnalyzer()));
 
-    Document doc = new Document();
-    doc.add(new TextField("content", new StringReader("a b a d k f a h i k a k")));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", new StringReader("a b a d k f a h i k a k"));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
@@ -327,8 +325,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(new TestPayloadAnalyzer()));
 
-    Document doc = new Document();
-    doc.add(new TextField("content", new StringReader("j k a l f k k p a t a k l k t a")));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", new StringReader("j k a l f k k p a t a k l k t a"));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
@@ -368,8 +366,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(new PayloadAnalyzer()).setSimilarity(similarity));
 
-    Document doc = new Document();
-    doc.add(newTextField(PayloadHelper.FIELD, "xx rr yy mm  pp", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText(PayloadHelper.FIELD, "xx rr yy mm  pp");
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
@@ -428,11 +426,10 @@ public class TestPayloadSpans extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(new PayloadAnalyzer()).setSimilarity(similarity));
 
-    Document doc = null;
     for(int i = 0; i < docs.length; i++) {
-      doc = new Document();
+      Document2 doc = writer.newDocument();
       String docText = docs[i];
-      doc.add(newTextField(PayloadHelper.FIELD, docText, Field.Store.YES));
+      doc.addLargeText(PayloadHelper.FIELD, docText);
       writer.addDocument(doc);
     }
 

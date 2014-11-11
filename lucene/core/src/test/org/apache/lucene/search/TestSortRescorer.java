@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -43,22 +41,22 @@ public class TestSortRescorer extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     
-    Document doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
-    doc.add(newTextField("body", "some contents and more contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 5));
+    Document2 doc = iw.newDocument();
+    doc.addUniqueAtom("id", "1");
+    doc.addLargeText("body", "some contents and more contents");
+    doc.addInt("popularity", 5);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(newStringField("id", "2", Field.Store.YES));
-    doc.add(newTextField("body", "another document with different contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 20));
+    doc = iw.newDocument();
+    doc.addUniqueAtom("id", "2");
+    doc.addLargeText("body", "another document with different contents");
+    doc.addInt("popularity", 20);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
-    doc.add(newTextField("body", "crappy contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 2));
+    doc = iw.newDocument();
+    doc.addUniqueAtom("id", "3");
+    doc.addLargeText("body", "crappy contents");
+    doc.addInt("popularity", 2);
     iw.addDocument(doc);
     
     reader = iw.getReader();
@@ -116,16 +114,16 @@ public class TestSortRescorer extends LuceneTestCase {
     final int[] idToNum = new int[numDocs];
     int maxValue = TestUtil.nextInt(random(), 10, 1000000);
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", ""+i, Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addUniqueAtom("id", ""+i);
       int numTokens = TestUtil.nextInt(random(), 1, 10);
       StringBuilder b = new StringBuilder();
       for(int j=0;j<numTokens;j++) {
         b.append("a ");
       }
-      doc.add(newTextField("field", b.toString(), Field.Store.NO));
+      doc.addLargeText("field", b.toString());
       idToNum[i] = random().nextInt(maxValue);
-      doc.add(new NumericDocValuesField("num", idToNum[i]));
+      doc.addInt("num", idToNum[i]);
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();

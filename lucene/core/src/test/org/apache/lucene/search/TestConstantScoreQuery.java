@@ -17,16 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import java.io.IOException;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 /** This class only tests some basic functionality in CSQ, the main parts are mostly
  * tested by MultiTermQuery tests, explanations seems to be tested in TestExplanations! */
@@ -84,8 +83,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       directory = newDirectory();
       RandomIndexWriter writer = new RandomIndexWriter (random(), directory);
 
-      Document doc = new Document();
-      doc.add(newStringField("field", "term", Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("field", "term");
       writer.addDocument(doc);
 
       reader = writer.getReader();
@@ -129,11 +128,11 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testConstantScoreQueryAndFilter() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    doc.add(newStringField("field", "a", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addAtom("field", "a");
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("field", "b", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addAtom("field", "b");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
@@ -158,8 +157,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testQueryWrapperFilter() throws IOException {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    doc.add(newStringField("field", "a", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addAtom("field", "a");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();

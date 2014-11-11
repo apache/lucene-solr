@@ -23,28 +23,26 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Term position unit test.
@@ -91,8 +89,8 @@ public class TestPositionIncrement extends LuceneTestCase {
     };
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store, analyzer);
-    Document d = new Document();
-    d.add(newTextField("field", "bogus", Field.Store.YES));
+    Document2 d = writer.newDocument();
+    d.addLargeText("field", "bogus");
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -204,9 +202,8 @@ public class TestPositionIncrement extends LuceneTestCase {
   public void testPayloadsPos0() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockPayloadAnalyzer());
-    Document doc = new Document();
-    doc.add(new TextField("content", new StringReader(
-        "a a b c d e a f g h i j a b k k")));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", new StringReader("a a b c d e a f g h i j a b k k"));
     writer.addDocument(doc);
 
     final IndexReader readerFromWriter = writer.getReader();

@@ -141,11 +141,11 @@ public class Document2 implements Iterable<IndexableField> {
       case INT:
         return getReusedBinaryTokenStream(intToBytes(((Number) value).intValue()), reuse);
       case FLOAT:
-        return getReusedBinaryTokenStream(intToBytes(Float.floatToIntBits(((Number) value).floatValue())), reuse);
+        return getReusedBinaryTokenStream(intToBytes(sortableFloatBits(Float.floatToIntBits(((Number) value).floatValue()))), reuse);
       case LONG:
         return getReusedBinaryTokenStream(longToBytes(((Number) value).longValue()), reuse);
       case DOUBLE:
-        return getReusedBinaryTokenStream(longToBytes(Double.doubleToLongBits(((Number) value).doubleValue())), reuse);
+        return getReusedBinaryTokenStream(longToBytes(sortableDoubleBits(Double.doubleToLongBits(((Number) value).doubleValue()))), reuse);
       case DATE:
         return getReusedBinaryTokenStream(longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
@@ -268,9 +268,11 @@ public class Document2 implements Iterable<IndexableField> {
       case LONG:
         return (Number) value;
       case FLOAT:
-        return Integer.valueOf(Float.floatToIntBits((Float) value));
+        // nocommit i shouldn't do sortableFloatBits?  but why does ot TestSortedNumericSortField.testFloat fail?
+        return Integer.valueOf(sortableFloatBits(Float.floatToIntBits((Float) value)));
       case DOUBLE:
-        return Long.valueOf(Double.doubleToLongBits((Double) value));
+        // nocommit i shouldn't do sortableDoubleBits?
+        return Long.valueOf(sortableDoubleBits(Double.doubleToLongBits((Double) value)));
       case DATE:
         return Long.valueOf(((Date) value).getTime());
       case BOOLEAN:
@@ -303,6 +305,7 @@ public class Document2 implements Iterable<IndexableField> {
           return null;
         }
       case ATOM:
+      case UNIQUE_ATOM:
         if (value instanceof String) {
           return (String) value;
         } else {
@@ -486,11 +489,21 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   /** Default: store this value. */
+  public void addStored(String fieldName, byte[] value) {
+    addStored(fieldName, new BytesRef(value));
+  }
+
+  /** Default: store & DV this value. */
   public void addBinary(String fieldName, BytesRef value) {
     if (changeSchema) {
       fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BINARY);
     }
     fields.add(new FieldValue(fieldName, value));
+  }
+
+  /** Default: store this value. */
+  public void addBinary(String fieldName, byte[] value) {
+    addBinary(fieldName, new BytesRef(value));
   }
 
   /** Default: store this value. */
@@ -701,6 +714,16 @@ public class Document2 implements Iterable<IndexableField> {
     return token;
   }
 
+  /** Converts IEEE 754 representation of a double to sortable order (or back to the original) */
+  public static long sortableDoubleBits(long bits) {
+    return bits ^ (bits >> 63) & 0x7fffffffffffffffL;
+  }
+  
+  /** Converts IEEE 754 representation of a float to sortable order (or back to the original) */
+  public static int sortableFloatBits(int bits) {
+    return bits ^ (bits >> 31) & 0x7fffffff;
+  }
+
   public Boolean getBoolean(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
     for(FieldValue fieldValue : fields) {
@@ -711,6 +734,8 @@ public class Document2 implements Iterable<IndexableField> {
 
     return null;
   }
+
+  // nocommit getFloat, getDouble, getLong
 
   public Date getDate(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
@@ -779,6 +804,17 @@ public class Document2 implements Iterable<IndexableField> {
     return null;
   }
 
+  public Double getDouble(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is correct?
+    for(FieldValue fieldValue : fields) {
+      if (fieldValue.fieldName.equals(fieldName)) {
+        return (Double) fieldValue.value;
+      }
+    }
+
+    return null;
+  }
+
   public Object get(String fieldName) {
     for(FieldValue fieldValue : fields) {
       if (fieldValue.fieldName.equals(fieldName)) {
@@ -805,6 +841,10 @@ public class Document2 implements Iterable<IndexableField> {
       }
     }
     return b.toString();
+  }
+
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
   }
 
   private static final TokenStream EMPTY_TOKEN_STREAM = new TokenStream() {

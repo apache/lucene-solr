@@ -17,19 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.store.Directory;
-
 import java.io.IOException;
 import java.util.LinkedList;
+
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * This class tests PhrasePrefixQuery class.
@@ -42,16 +41,16 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
   public void testPhrasePrefix() throws IOException {
     Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
-    Document doc1 = new Document();
-    Document doc2 = new Document();
-    Document doc3 = new Document();
-    Document doc4 = new Document();
-    Document doc5 = new Document();
-    doc1.add(newTextField("body", "blueberry pie", Field.Store.YES));
-    doc2.add(newTextField("body", "blueberry strudel", Field.Store.YES));
-    doc3.add(newTextField("body", "blueberry pizza", Field.Store.YES));
-    doc4.add(newTextField("body", "blueberry chewing gum", Field.Store.YES));
-    doc5.add(newTextField("body", "piccadilly circus", Field.Store.YES));
+    Document2 doc1 = writer.newDocument();
+    Document2 doc2 = writer.newDocument();
+    Document2 doc3 = writer.newDocument();
+    Document2 doc4 = writer.newDocument();
+    Document2 doc5 = writer.newDocument();
+    doc1.addLargeText("body", "blueberry pie");
+    doc2.addLargeText("body", "blueberry strudel");
+    doc3.addLargeText("body", "blueberry pizza");
+    doc4.addLargeText("body", "blueberry chewing gum");
+    doc5.addLargeText("body", "piccadilly circus");
     writer.addDocument(doc1);
     writer.addDocument(doc2);
     writer.addDocument(doc3);

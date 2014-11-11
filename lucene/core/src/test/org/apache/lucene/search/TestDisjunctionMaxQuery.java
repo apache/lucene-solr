@@ -24,8 +24,8 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -108,53 +108,39 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     // d1 is an "ok" match for: albino elephant
     {
-      Document d1 = new Document();
-      d1.add(newField("id", "d1", nonAnalyzedType));// Field.Keyword("id",
-                                                                               // "d1"));
-      d1
-          .add(newTextField("hed", "elephant", Field.Store.YES));// Field.Text("hed", "elephant"));
-      d1
-          .add(newTextField("dek", "elephant", Field.Store.YES));// Field.Text("dek", "elephant"));
+      Document2 d1 = writer.newDocument();
+      d1.addUniqueAtom("id", "d1");
+      d1.addLargeText("hed", "elephant");
+      d1.addLargeText("dek", "elephant");
       writer.addDocument(d1);
     }
     
     // d2 is a "good" match for: albino elephant
     {
-      Document d2 = new Document();
-      d2.add(newField("id", "d2", nonAnalyzedType));// Field.Keyword("id",
-                                                                               // "d2"));
-      d2
-          .add(newTextField("hed", "elephant", Field.Store.YES));// Field.Text("hed", "elephant"));
-      d2.add(newTextField("dek", "albino", Field.Store.YES));// Field.Text("dek",
-                                                                                // "albino"));
-      d2
-          .add(newTextField("dek", "elephant", Field.Store.YES));// Field.Text("dek", "elephant"));
+      Document2 d2 = writer.newDocument();
+      d2.addUniqueAtom("id", "d2");
+      d2.addLargeText("hed", "elephant");
+      d2.addLargeText("dek", "albino");
+      d2.addLargeText("dek", "elephant");
       writer.addDocument(d2);
     }
     
     // d3 is a "better" match for: albino elephant
     {
-      Document d3 = new Document();
-      d3.add(newField("id", "d3", nonAnalyzedType));// Field.Keyword("id",
-                                                                               // "d3"));
-      d3.add(newTextField("hed", "albino", Field.Store.YES));// Field.Text("hed",
-                                                                                // "albino"));
-      d3
-          .add(newTextField("hed", "elephant", Field.Store.YES));// Field.Text("hed", "elephant"));
+      Document2 d3 = writer.newDocument();
+      d3.addUniqueAtom("id", "d3");
+      d3.addLargeText("hed", "albino");
+      d3.addLargeText("hed", "elephant");
       writer.addDocument(d3);
     }
     
     // d4 is the "best" match for: albino elephant
     {
-      Document d4 = new Document();
-      d4.add(newField("id", "d4", nonAnalyzedType));// Field.Keyword("id",
-                                                                               // "d4"));
-      d4.add(newTextField("hed", "albino", Field.Store.YES));// Field.Text("hed",
-                                                                                // "albino"));
-      d4
-          .add(newField("hed", "elephant", nonAnalyzedType));// Field.Text("hed", "elephant"));
-      d4.add(newTextField("dek", "albino", Field.Store.YES));// Field.Text("dek",
-                                                                                // "albino"));
+      Document2 d4 = writer.newDocument();
+      d4.addUniqueAtom("id", "d4");
+      d4.addLargeText("hed", "albino");
+      d4.addLargeText("hed", "elephant");
+      d4.addLargeText("dek", "albino");
       writer.addDocument(d4);
     }
     

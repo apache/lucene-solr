@@ -21,12 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -110,11 +106,9 @@ public class TestSimilarityBase extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     for (int i = 0; i < docs.length; i++) {
-      Document d = new Document();
-      FieldType ft = new FieldType(TextField.TYPE_STORED);
-      ft.setIndexOptions(IndexOptions.NONE);
-      d.add(newField(FIELD_ID, Integer.toString(i), ft));
-      d.add(newTextField(FIELD_BODY, docs[i], Field.Store.YES));
+      Document2 d = writer.newDocument();
+      d.addStored(FIELD_ID, Integer.toString(i));
+      d.addLargeText(FIELD_BODY, docs[i]);
       writer.addDocument(d);
     }
     

@@ -17,18 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * A basic unit test for FieldCacheTermsFilter
@@ -41,10 +37,9 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
     for (int i = 0; i < 100; i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       int term = i * 10; //terms are units of 10;
-      doc.add(newStringField(fieldName, "" + term, Field.Store.YES));
-      doc.add(new SortedDocValuesField(fieldName, new BytesRef("" + term)));
+      doc.addAtom(fieldName, "" + term);
       w.addDocument(doc);
     }
     IndexReader reader = w.getReader();

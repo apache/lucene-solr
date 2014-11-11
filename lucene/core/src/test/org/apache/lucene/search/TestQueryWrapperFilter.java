@@ -16,11 +16,11 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -34,8 +34,8 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "value", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "value");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -90,7 +90,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     final int numDocs = atLeast(100);
     final Set<String> aDocs = new HashSet<>();
     for(int i=0;i<numDocs;i++) {
-      final Document doc = new Document();
+      final Document2 doc = w.newDocument();
       final String v;
       if (random().nextInt(5) == 4) {
         v = "a";
@@ -98,9 +98,8 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
       } else {
         v = "b";
       }
-      final Field f = newStringField("field", v, Field.Store.NO);
-      doc.add(f);
-      doc.add(newStringField("id", ""+i, Field.Store.YES));
+      doc.addAtom("field", v);
+      doc.addUniqueAtom("id", ""+i);
       w.addDocument(doc);
     }
 
@@ -128,8 +127,8 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 1000; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("field", English.intToEnglish(i), Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addUniqueAtom("field", English.intToEnglish(i));
       writer.addDocument(doc);
     }
     

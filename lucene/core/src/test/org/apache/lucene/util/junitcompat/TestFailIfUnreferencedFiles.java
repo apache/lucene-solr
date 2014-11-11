@@ -19,7 +19,8 @@ package org.apache.lucene.util.junitcompat;
 
 import java.util.Collections;
 
-import org.apache.lucene.document.Document;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.IOContext;
@@ -30,7 +31,6 @@ import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 
 // LUCENE-4456: Test that we fail if there are unreferenced files
 public class TestFailIfUnreferencedFiles extends WithNestedTests {
@@ -43,7 +43,7 @@ public class TestFailIfUnreferencedFiles extends WithNestedTests {
       MockDirectoryWrapper dir = newMockDirectory();
       dir.setAssertNoUnrefencedFilesOnClose(true);
       IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-      iw.addDocument(new Document());
+      iw.addDocument(iw.newDocument());
       iw.close();
       IndexOutput output = dir.createOutput("_hello.world", IOContext.DEFAULT);
       output.writeString("i am unreferenced!");

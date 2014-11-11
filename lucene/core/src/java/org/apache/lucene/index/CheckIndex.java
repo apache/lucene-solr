@@ -741,6 +741,8 @@ public class CheckIndex implements Closeable {
     if (onlySegments == null && result.numBadSegments == 0) {
       MultiReader topReader = new MultiReader(segmentReaders);
       try {
+        int nonUniqueCount = 0;
+        String nonUniqueMessage = null;
         for(String fieldName : fieldTypes.getFieldNames()) {
           if (fieldTypes.isUniqueAtom(fieldName)) {
             Terms terms = MultiFields.getTerms(topReader, fieldName);
@@ -752,21 +754,35 @@ public class CheckIndex implements Closeable {
                 docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
                 int docID = docsEnum.nextDoc();
                 if (docID != DocsEnum.NO_MORE_DOCS) {
-                  int docID2 = docsEnum.nextDoc();
-                  if (docID2 != DocsEnum.NO_MORE_DOCS) {
-                    msg(infoStream, "FAILED");
-                    // nocommit should "isUnique" be in low schema?
-                    // nocommit have -fix delete the offenders:
-                    String comment = "UNIQUE_ATOM field=\"" + fieldName + "\" is not unique: term=" + termsEnum.term() + " matches both docID=" + docID + " and docID=" + docID2 + "; unable to fix this index";
-                    msg(infoStream, comment);
-                    if (failFast) {
-                      throw new RuntimeException(comment);
+                  while (true) {
+                    int docID2 = docsEnum.nextDoc();
+                    if (docID2 != DocsEnum.NO_MORE_DOCS) {
+                      if (nonUniqueCount == 0) {
+                        // nocommit should "isUnique" be in low schema?
+                        // nocommit have -fix delete the offenders:
+                        nonUniqueMessage = "UNIQUE_ATOM field=\"" + fieldName + "\" is not unique: e.g. term=" + termsEnum.term() + " matches both docID=" + docID + " and docID=" + docID2;
+                        if (failFast) {
+                          msg(infoStream, "FAILED");
+                          msg(infoStream, nonUniqueMessage);
+                          throw new RuntimeException(nonUniqueMessage);
+                        }
+                      }
+                      nonUniqueCount++;
+                    } else {
+                      break;
                     }
                   }
                 }
               }
             }
           }
+        }
+
+        if (nonUniqueCount != 0) {
+          nonUniqueMessage += "; total " + nonUniqueCount + " non-unique documents would be deleted";
+          msg(infoStream, "FAILED");
+          msg(infoStream, nonUniqueMessage);
+          throw new RuntimeException(nonUniqueMessage);
         }
       } finally {
         topReader.close();

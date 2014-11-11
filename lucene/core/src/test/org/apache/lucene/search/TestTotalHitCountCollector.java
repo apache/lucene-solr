@@ -17,9 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -31,9 +29,8 @@ public class TestTotalHitCountCollector extends LuceneTestCase {
     Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for(int i=0; i<5; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("string", "a"+i, Field.Store.NO));
-      doc.add(new StringField("string", "b"+i, Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("string", "a"+i);
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();

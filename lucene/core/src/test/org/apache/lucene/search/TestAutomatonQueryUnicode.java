@@ -19,8 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -46,38 +45,28 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    Document doc = new Document();
-    Field titleField = newTextField("title", "some title", Field.Store.NO);
-    Field field = newTextField(FN, "", Field.Store.NO);
-    Field footerField = newTextField("footer", "a footer", Field.Store.NO);
-    doc.add(titleField);
-    doc.add(field);
-    doc.add(footerField);
-    field.setStringValue("\uD866\uDF05abcdef");
-    writer.addDocument(doc);
-    field.setStringValue("\uD866\uDF06ghijkl");
-    writer.addDocument(doc);
-    // this sorts before the previous two in UTF-8/UTF-32, but after in UTF-16!!!
-    field.setStringValue("\uFB94mnopqr"); 
-    writer.addDocument(doc);
-    field.setStringValue("\uFB95stuvwx"); // this one too.
-    writer.addDocument(doc);
-    field.setStringValue("a\uFFFCbc");
-    writer.addDocument(doc);
-    field.setStringValue("a\uFFFDbc");
-    writer.addDocument(doc);
-    field.setStringValue("a\uFFFEbc");
-    writer.addDocument(doc);
-    field.setStringValue("a\uFB94bc");
-    writer.addDocument(doc);
-    field.setStringValue("bacadaba");
-    writer.addDocument(doc);
-    field.setStringValue("\uFFFD");
-    writer.addDocument(doc);
-    field.setStringValue("\uFFFD\uD866\uDF05");
-    writer.addDocument(doc);
-    field.setStringValue("\uFFFD\uFFFD");
-    writer.addDocument(doc);
+
+    for(String body : new String[] {
+        "\uD866\uDF05abcdef",
+        "\uD866\uDF06ghijkl",
+        "\uFB94mnopqr", // this sorts before the previous two in UTF-8/UTF-32, but after in UTF-16!!!
+        "\uFB95stuvwx", // this one too.
+        "a\uFFFCbc",
+        "a\uFFFDbc",
+        "a\uFFFEbc",
+        "a\uFB94bc",
+        "bacadaba",
+        "\uFFFD",
+        "\uFFFD\uD866\uDF05",
+        "\uFFFD\uFFFD" }) {
+
+      Document2 doc = writer.newDocument();
+      doc.addLargeText(FN, body);
+      doc.addShortText("title", "some title");
+      doc.addShortText("footer", "a footer");
+      writer.addDocument(doc);
+    }
+
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();

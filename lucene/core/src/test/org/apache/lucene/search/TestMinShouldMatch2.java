@@ -25,12 +25,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
@@ -62,9 +60,12 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("field");
+    fieldTypes.setMultiValued("dv");
     final int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = iw.newDocument();
       
       addSome(doc, alwaysTerms);
       
@@ -102,13 +103,13 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     dir = null;
   }
   
-  private static void addSome(Document doc, String values[]) {
+  private static void addSome(Document2 doc, String values[]) {
     List<String> list = Arrays.asList(values);
     Collections.shuffle(list, random());
     int howMany = TestUtil.nextInt(random(), 1, list.size());
     for (int i = 0; i < howMany; i++) {
-      doc.add(new StringField("field", list.get(i), Field.Store.NO));
-      doc.add(new SortedSetDocValuesField("dv", new BytesRef(list.get(i))));
+      doc.addAtom("field", list.get(i));
+      doc.addBinary("dv", new BytesRef(list.get(i)));
     }
   }
   

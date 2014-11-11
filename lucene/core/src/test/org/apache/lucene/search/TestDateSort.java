@@ -21,14 +21,10 @@ import java.util.Arrays;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -52,16 +48,16 @@ public class TestDateSort extends LuceneTestCase {
 
     // oldest doc:
     // Add the first document.  text = "Document 1"  dateTime = Oct 10 03:25:22 EDT 2007
-    writer.addDocument(createDocument("Document 1", 1192001122000L));
+    writer.addDocument(createDocument(writer, "Document 1", 1192001122000L));
     // Add the second document.  text = "Document 2"  dateTime = Oct 10 03:25:26 EDT 2007 
-    writer.addDocument(createDocument("Document 2", 1192001126000L));
+    writer.addDocument(createDocument(writer, "Document 2", 1192001126000L));
     // Add the third document.  text = "Document 3"  dateTime = Oct 11 07:12:13 EDT 2007 
-    writer.addDocument(createDocument("Document 3", 1192101133000L));
+    writer.addDocument(createDocument(writer, "Document 3", 1192101133000L));
     // Add the fourth document.  text = "Document 4"  dateTime = Oct 11 08:02:09 EDT 2007
-    writer.addDocument(createDocument("Document 4", 1192104129000L));
+    writer.addDocument(createDocument(writer, "Document 4", 1192104129000L));
     // latest doc:
     // Add the fifth document.  text = "Document 5"  dateTime = Oct 12 13:25:43 EDT 2007
-    writer.addDocument(createDocument("Document 5", 1192209943000L));
+    writer.addDocument(createDocument(writer, "Document 5", 1192209943000L));
 
     reader = writer.getReader();
     writer.close();
@@ -100,18 +96,15 @@ public class TestDateSort extends LuceneTestCase {
     assertEquals(Arrays.asList(expectedOrder), Arrays.asList(actualOrder));
   }
 
-  private Document createDocument(String text, long time) {
-    Document document = new Document();
+  private Document2 createDocument(RandomIndexWriter writer, String text, long time) {
+    Document2 document = writer.newDocument();
 
     // Add the text field.
-    Field textField = newTextField(TEXT_FIELD, text, Field.Store.YES);
-    document.add(textField);
+    document.addLargeText(TEXT_FIELD, text);
 
     // Add the date/time field.
-    String dateTimeString = DateTools.timeToString(time, DateTools.Resolution.SECOND);
-    Field dateTimeField = newStringField(DATE_TIME_FIELD, dateTimeString, Field.Store.YES);
-    document.add(dateTimeField);
-    document.add(new SortedDocValuesField(DATE_TIME_FIELD, new BytesRef(dateTimeString)));
+    document.addAtom(DATE_TIME_FIELD,
+                     DateTools.timeToString(time, DateTools.Resolution.SECOND));
 
     return document;
   }

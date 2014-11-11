@@ -17,24 +17,23 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
 
 public class TestMultiTermQueryRewrites extends LuceneTestCase {
 
@@ -52,10 +51,13 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     final RandomIndexWriter swriter2 = new RandomIndexWriter(random(), sdir2, new MockAnalyzer(random()));
 
     for (int i = 0; i < 10; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("data", Integer.toString(i), Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("data", Integer.toString(i));
       writer.addDocument(doc);
-      ((i % 2 == 0) ? swriter1 : swriter2).addDocument(doc);
+      RandomIndexWriter otherWriter = (i % 2 == 0) ? swriter1 : swriter2;
+      doc = otherWriter.newDocument();
+      doc.addAtom("data", Integer.toString(i));
+      otherWriter.addDocument(doc);
     }
     writer.forceMerge(1); swriter1.forceMerge(1); swriter2.forceMerge(1);
     writer.close(); swriter1.close(); swriter2.close();

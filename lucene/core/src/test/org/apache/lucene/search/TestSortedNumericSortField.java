@@ -17,16 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 
 /** Simple tests for SortedNumericSortField */
 public class TestSortedNumericSortField extends LuceneTestCase {
@@ -67,15 +65,17 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   
   public void testForward() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 5));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
+    FieldTypes fieldTypes = writer.getFieldTypes();     
+    fieldTypes.setMultiValued("value");
+    Document2 doc = writer.newDocument();
+    doc.addInt("value", 5);
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 3));
-    doc.add(new SortedNumericDocValuesField("value", 7));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addInt("value", 3);
+    doc.addInt("value", 7);
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -96,14 +96,16 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   public void testReverse() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 3));
-    doc.add(new SortedNumericDocValuesField("value", 7));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    Document2 doc = writer.newDocument();
+    doc.addInt("value", 3);
+    doc.addInt("value", 7);
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 5));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addInt("value", 5);
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
 
     IndexReader ir = writer.getReader();
@@ -125,25 +127,28 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   public void testMissingFirst() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 5));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    fieldTypes.enableSorting("value");
+    fieldTypes.setSortMissingFirst("value");
+
+    Document2 doc = writer.newDocument();
+    doc.addInt("value", 5);
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 3));
-    doc.add(new SortedNumericDocValuesField("value", 7));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addInt("value", 3);
+    doc.addInt("value", 7);
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortedNumericSortField("value", SortField.Type.INT);
-    sortField.setMissingValue(Integer.MIN_VALUE);
-    Sort sort = new Sort(sortField);
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
@@ -160,25 +165,25 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   public void testMissingLast() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 5));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    Document2 doc = writer.newDocument();
+    doc.addInt("value", 5);
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 3));
-    doc.add(new SortedNumericDocValuesField("value", 7));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addInt("value", 3);
+    doc.addInt("value", 7);
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortedNumericSortField("value", SortField.Type.INT);
-    sortField.setMissingValue(Integer.MAX_VALUE);
-    Sort sort = new Sort(sortField);
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
@@ -195,19 +200,20 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   public void testSingleton() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 5));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    Document2 doc = writer.newDocument();
+    doc.addInt("value", 5);
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", 3));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addInt("value", 3);
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortedNumericSortField("value", SortField.Type.INT));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -222,20 +228,24 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   public void testFloat() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.floatToSortableInt(-3f)));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+
+    Document2 doc = writer.newDocument();
+    doc.addFloat("value", -3f);
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.floatToSortableInt(-5f)));
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.floatToSortableInt(7f)));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addFloat("value", -5f);
+    doc.addFloat("value", 7f);
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortedNumericSortField("value", SortField.Type.FLOAT));
+    Sort sort = fieldTypes.newSort("value");
+    System.out.println("sort: " + sort);
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
@@ -250,20 +260,23 @@ public class TestSortedNumericSortField extends LuceneTestCase {
   public void testDouble() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.doubleToSortableLong(-3d)));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+
+    Document2 doc = writer.newDocument();
+    doc.addDouble("value", -3d);
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.doubleToSortableLong(-5d)));
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.doubleToSortableLong(7d)));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addDouble("value", -5d);
+    doc.addDouble("value", 7d);
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortedNumericSortField("value", SortField.Type.DOUBLE));
+    Sort sort = fieldTypes.newSort("value");
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);

@@ -17,20 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Similarity unit test.
  *
@@ -58,11 +56,11 @@ public class TestSimilarity extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setSimilarity(new SimpleSimilarity()));
     
-    Document d1 = new Document();
-    d1.add(newTextField("field", "a c", Field.Store.YES));
+    Document2 d1 = writer.newDocument();
+    d1.addLargeText("field", "a c");
 
-    Document d2 = new Document();
-    d2.add(newTextField("field", "a b c", Field.Store.YES));
+    Document2 d2 = writer.newDocument();
+    d2.addLargeText("field", "a b c");
     
     writer.addDocument(d1);
     writer.addDocument(d2);

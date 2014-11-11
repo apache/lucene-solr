@@ -21,9 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -44,29 +44,31 @@ public class TestTermVectors extends LuceneTestCase {
   public static void beforeClass() throws Exception {                  
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+
     //writer.setNoCFSRatio(1.0);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
-      Document doc = new Document();
       FieldType ft = new FieldType(TextField.TYPE_STORED);
       int mod3 = i % 3;
       int mod2 = i % 2;
       if (mod2 == 0 && mod3 == 0) {
-        ft.setStoreTermVectors(true);
-        ft.setStoreTermVectorOffsets(true);
-        ft.setStoreTermVectorPositions(true);
+        fieldTypes.enableTermVectors("field");
+        fieldTypes.enableTermVectorOffsets("field");
+        fieldTypes.enableTermVectorPositions("field");
       } else if (mod2 == 0) {
-        ft.setStoreTermVectors(true);
-        ft.setStoreTermVectorPositions(true);
+        fieldTypes.enableTermVectors("field");
+        fieldTypes.enableTermVectorPositions("field");
       } else if (mod3 == 0) {
-        ft.setStoreTermVectors(true);
-        ft.setStoreTermVectorOffsets(true);
+        fieldTypes.enableTermVectors("field");
+        fieldTypes.enableTermVectorOffsets("field");
       } else {
-        ft.setStoreTermVectors(true);
+        fieldTypes.enableTermVectors("field");
       }
-      doc.add(new Field("field", English.intToEnglish(i), ft));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("field", English.intToEnglish(i));
       //test no term vectors too
-      doc.add(new TextField("noTV", English.intToEnglish(i), Field.Store.YES));
+      doc.addLargeText("noTV", English.intToEnglish(i));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -88,17 +90,18 @@ public class TestTermVectors extends LuceneTestCase {
 
   private void createDir(Directory dir) throws IOException {
     IndexWriter writer = createWriter(dir);
-    writer.addDocument(createDoc());
+    writer.addDocument(createDoc(writer));
     writer.close();
   }
 
-  private Document createDoc() {
-    Document doc = new Document();
-    final FieldType ft = new FieldType(TextField.TYPE_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    ft.setStoreTermVectorPositions(true);
-    doc.add(newField("c", "aaa", ft));
+  private Document2 createDoc(IndexWriter writer) {
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("c");
+    fieldTypes.enableTermVectorOffsets("c");
+    fieldTypes.enableTermVectorPositions("c");
+
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("c", "aaa");
     return doc;
   }
 
@@ -117,7 +120,7 @@ public class TestTermVectors extends LuceneTestCase {
     // with maxBufferedDocs=2, this results in two segments, so that forceMerge
     // actually does something.
     for (int i = 0; i < 4; i++) {
-      writer.addDocument(createDoc());
+      writer.addDocument(createDoc(writer));
     }
     writer.forceMerge(1);
     writer.close();

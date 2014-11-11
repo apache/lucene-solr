@@ -56,7 +56,6 @@ import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
@@ -102,11 +101,24 @@ import org.apache.lucene.util.Version;
 //   PerFieldAnalyzerWrapper
 //   oal.document
 
+// tie into query parser
+//   default operators?
+//   default search field
+
+// tie into highlighter
+// tie into faceting
+
 // nocommit byte, short?
+
+// nocommit iterator over all fields / types?
+
+// nocommit proxy sort field
 
 // nocommit allow adding array of atom values?  fieldnamesfield would use it?
 
 // nocommit optimize field exists filter to MatchAllBits when all docs in the seg have the field; same opto as range query when min < terms.min & max > terms.max
+
+// nocomit should exists filter use docsWithField?
 
 // nocommit use better pf when field is unique
 
@@ -191,9 +203,24 @@ import org.apache.lucene.util.Version;
 
 // nocommit can we move multi-field-ness out of IW?  so IW only gets a single instance of each field
 
+// nocommit nested/parent/child docs?
+
+// nocommit "all" field:
+
+// nocommit doc blocks?
+
+// nocomit hierarchical fields?
+
+// nocommit required?  not null?
+
 /** Records how each field is indexed, stored, etc.  This class persists
  *  its state using {@link IndexWriter#setCommitData}, using the
  *  {@link FieldTypes#FIELD_PROPERTIES_KEY} key. */
+
+// nocommit what about uniqueAtom number int/long?  maybe break out isUnique?  then, e.g. like norms, you could have unique set, but maybe
+// later turn it off
+
+// nocommit IW should detect if incoming document's fieldTypes != its own
 
 public class FieldTypes {
 
@@ -213,6 +240,8 @@ public class FieldTypes {
     INET_ADDRESS,
     // nocommit primary_key?
   }
+
+  // nocommit should we have a "resolution" for Date field?
 
   private final boolean readOnly;
 
@@ -237,10 +266,6 @@ public class FieldTypes {
   /** Used only in memory to record when something changed. */
   private long changeCount;
 
-  // nocommit nested docs?
-
-  // nocommit required?  not null?
-
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
   static class FieldType implements IndexableFieldType {
     private final String name;
@@ -257,7 +282,6 @@ public class FieldTypes {
       this.createdVersion = version;
     }
 
-    // nocommit don't use null here:
     volatile ValueType valueType = ValueType.NONE;
     volatile DocValuesType docValuesType = DocValuesType.NONE;
     private volatile boolean docValuesTypeSet;
@@ -393,7 +417,7 @@ public class FieldTypes {
         }
         if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
           // nocommit too anal?
-          illegalState(name, "type " + valueType + " can only be indexed as DOCS_ONLY; got " + indexOptions);
+          illegalState(name, "type " + valueType + " can only be indexed as DOCS; got " + indexOptions);
         }
         if (minTokenLength != null) {
           illegalState(name, "type " + valueType + " cannot set min/max token length");
@@ -461,7 +485,20 @@ public class FieldTypes {
         illegalState(name, "DocValuesType=" + docValuesType + " cannot be multi-valued");
       }
 
-      if (sortable == Boolean.TRUE && (docValuesTypeSet && (docValuesType == DocValuesType.NONE || docValuesType == DocValuesType.BINARY))) {
+      if (storeTermVectors == Boolean.TRUE) {
+        if (indexOptionsSet && indexOptions == IndexOptions.NONE) {
+          illegalState(name, "cannot enable term vectors when indexOptions is NONE");
+        }
+      } else {
+        if (storeTermVectorOffsets == Boolean.TRUE) {
+          illegalState(name, "cannot enable term vector offsets when term vectors are not enabled");
+        }
+        if (storeTermVectorPositions == Boolean.TRUE) {
+          illegalState(name, "cannot enable term vector positions when term vectors are not enabled");
+        }
+      }
+
+      if (sortable == Boolean.TRUE && (docValuesTypeSet && docValuesType == DocValuesType.NONE)) {
         illegalState(name, "cannot sort when DocValuesType=" + docValuesType);
       }
 
@@ -1113,7 +1150,7 @@ public class FieldTypes {
   /** Key used to store the field types inside {@link IndexWriter#setCommitData}. */
   public static final String FIELD_TYPES_KEY = "FieldTypes";
   
-  private Version loadFields(Map<String,String> commitUserData, boolean isNewIndex) throws IOException {
+  private synchronized Version loadFields(Map<String,String> commitUserData, boolean isNewIndex) throws IOException {
     // nocommit must deserialize current fields from commit data
     String currentFieldTypes = commitUserData.get(FIELD_TYPES_KEY);
     if (currentFieldTypes != null) {
@@ -1135,7 +1172,7 @@ public class FieldTypes {
     }
   }
 
-  private FieldType newFieldType(String fieldName) {
+  private synchronized FieldType newFieldType(String fieldName) {
     if (fieldName.equals(FIELD_NAMES_FIELD)) {
       throw new IllegalArgumentException("field name \"" + fieldName + "\" is reserved");
     }
@@ -1345,6 +1382,8 @@ public class FieldTypes {
         return field.analyzerPositionGap.intValue();
       } else if (field.indexAnalyzer != null) {
         return field.indexAnalyzer.getPositionIncrementGap(fieldName);
+      } else if (defaultIndexAnalyzer == null) {
+        return 0;
       } else {
         return defaultIndexAnalyzer.getPositionIncrementGap(fieldName);
       }
@@ -1365,6 +1404,8 @@ public class FieldTypes {
         return field.analyzerOffsetGap.intValue();
       } else if (field.indexAnalyzer != null) {
         return field.indexAnalyzer.getOffsetGap(fieldName);
+      } else if (defaultIndexAnalyzer == null) {
+        return 1;
       } else {
         return defaultIndexAnalyzer.getOffsetGap(fieldName);
       }
@@ -1854,50 +1895,52 @@ public class FieldTypes {
   }
 
   public synchronized void setSortMissingFirst(String fieldName) {
-    // Field must exist
-    FieldType current = getFieldType(fieldName);
-
-    if (current.sortable != Boolean.TRUE) {
-      illegalState(fieldName, "cannot setSortMissingFirst: field is not enabled for sorting");
-    }
-
-    Boolean currentValue = current.sortMissingLast;
-    if (currentValue != Boolean.FALSE) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = newFieldType(fieldName);
       current.sortMissingLast = Boolean.FALSE;
-      boolean success = false;
-      try {
-        current.validate();
-        success = true;
-      } finally {
-        if (success == false) {
-          current.sortMissingLast = currentValue;
-        }
-      }
+      fields.put(fieldName, current);
       changed();
+    } else {
+      Boolean currentValue = current.sortMissingLast;
+      if (currentValue != Boolean.FALSE) {
+        current.sortMissingLast = Boolean.FALSE;
+        boolean success = false;
+        try {
+          current.validate();
+          success = true;
+        } finally {
+          if (success == false) {
+            current.sortMissingLast = currentValue;
+          }
+        }
+        changed();
+      }
     }
   }
 
   public synchronized void setSortMissingLast(String fieldName) {
-    // Field must exist
-    FieldType current = getFieldType(fieldName);
-
-    if (current.sortable != Boolean.TRUE) {
-      illegalState(fieldName, "cannot setSortMissingLast: field is not enabled for sorting");
-    }
-
-    Boolean currentValue = current.sortMissingLast;
-    if (currentValue != Boolean.TRUE) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = newFieldType(fieldName);
       current.sortMissingLast = Boolean.TRUE;
-      boolean success = false;
-      try {
-        current.validate();
-        success = true;
-      } finally {
-        if (success == false) {
-          current.sortMissingLast = currentValue;
-        }
-      }
+      fields.put(fieldName, current);
       changed();
+    } else {
+      Boolean currentValue = current.sortMissingLast;
+      if (currentValue != Boolean.TRUE) {
+        current.sortMissingLast = Boolean.TRUE;
+        boolean success = false;
+        try {
+          current.validate();
+          success = true;
+        } finally {
+          if (success == false) {
+            current.sortMissingLast = currentValue;
+          }
+        }
+        changed();
+      }
     }
   }
 
@@ -2076,8 +2119,6 @@ public class FieldTypes {
   public synchronized boolean getStored(String fieldName) {
     return getFieldType(fieldName).stored == Boolean.TRUE;
   }
-
-  // nocommit iterator over all fields / types?
 
   // nocommit should we make a single method to enable the different combinations...?
   public synchronized void enableTermVectors(String fieldName) {
@@ -2540,6 +2581,8 @@ public class FieldTypes {
           } else {
             field.docValuesType = DocValuesType.SORTED;
           }
+        } else {
+          field.docValuesType = DocValuesType.BINARY;
         }
         field.docValuesTypeSet = true;
       }
@@ -2840,6 +2883,10 @@ public class FieldTypes {
     return newRangeFilter(fieldName, new BytesRef(minTerm), minInclusive, new BytesRef(maxTerm), maxInclusive);
   }
 
+  public Filter newRangeFilter(String fieldName, String minTerm, boolean minInclusive, String maxTerm, boolean maxInclusive) {
+    return newRangeFilter(fieldName, new BytesRef(minTerm), minInclusive, new BytesRef(maxTerm), maxInclusive);
+  }
+
   public Filter newRangeFilter(String fieldName, BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
 
     // Field must exist:
@@ -3070,6 +3117,8 @@ public class FieldTypes {
         if (fieldType.multiValued == Boolean.TRUE) {
           // nocommit need to be able to set selector...
           sortField = new SortedSetSortField(fieldName, reverse);
+        } else if (fieldType.docValuesType == DocValuesType.BINARY) {
+          sortField = new SortField(fieldName, SortField.Type.STRING_VAL, reverse);
         } else {
           sortField = new SortField(fieldName, SortField.Type.STRING, reverse);
         }
@@ -3104,6 +3153,7 @@ public class FieldTypes {
     if (enableExistsFilters == false) {
       throw new IllegalStateException("field exists filter was disabled");
     }
+    // nocommit just use FieldValueFilter if field is DV'd? and then don't index such fields into FIELD_NAMES_FIELD?
 
     // nocommit TermFilter?
     // nocommit optimize this filter to MatchAllDocs when Terms.getDocCount() == maxDoc
@@ -3146,10 +3196,14 @@ public class FieldTypes {
     writeBoolean(out, enableExistsFilters);
     writeBoolean(out, indexedDocs);
 
-    out.writeVInt(fields.size());
+    int count = fields.size();
+    out.writeVInt(count);
+    int count2 = 0;
     for(FieldType fieldType : fields.values()) {
       fieldType.write(out);
+      count2++;
     }
+    assert count == count2;
 
     CodecUtil.writeFooter(out);
 
@@ -3223,7 +3277,7 @@ public class FieldTypes {
   }
 
   // nocommit on exception (mismatched schema), this should ensure no changes were actually made:
-  public void addAll(FieldTypes in) {
+  public synchronized void addAll(FieldTypes in) {
     for (FieldType fieldType : in.fields.values()) {
       FieldType curFieldType = fields.get(fieldType.name);
       if (curFieldType == null) {
@@ -3280,5 +3334,19 @@ public class FieldTypes {
     } else {
       throw new CorruptIndexException("invalid byte for boolean: " + b, in);
     }
+  }
+
+  public synchronized void clear() {
+    fields.clear();
+    enableExistsFilters = true;
+    indexedDocs = false;
+
+    FieldType fieldType = new FieldType(FIELD_NAMES_FIELD);
+    fields.put(FIELD_NAMES_FIELD, fieldType);
+    fieldType.multiValued = Boolean.TRUE;
+    fieldType.valueType = ValueType.ATOM;
+    fieldType.sortable = Boolean.TRUE;
+    fieldType.stored = Boolean.FALSE;
+    setDefaults(fieldType);
   }
 }

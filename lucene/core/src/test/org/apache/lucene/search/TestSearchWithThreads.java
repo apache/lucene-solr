@@ -20,14 +20,13 @@ package org.apache.lucene.search;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestSearchWithThreads extends LuceneTestCase {
@@ -50,9 +49,6 @@ public class TestSearchWithThreads extends LuceneTestCase {
 
     // TODO: replace w/ the @nightly test data; make this
     // into an optional @nightly stress test
-    final Document doc = new Document();
-    final Field body = newTextField("body", "", Field.Store.NO);
-    doc.add(body);
     final StringBuilder sb = new StringBuilder();
     for(int docCount=0;docCount<NUM_DOCS;docCount++) {
       final int numTerms = random().nextInt(10);
@@ -60,7 +56,8 @@ public class TestSearchWithThreads extends LuceneTestCase {
         sb.append(random().nextBoolean() ? "aaa" : "bbb");
         sb.append(' ');
       }
-      body.setStringValue(sb.toString());
+      Document2 doc = w.newDocument();
+      doc.addLargeText("body", sb.toString());
       w.addDocument(doc);
       sb.delete(0, sb.length());
     }

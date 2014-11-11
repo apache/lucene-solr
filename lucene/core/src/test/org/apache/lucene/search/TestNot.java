@@ -17,14 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.LuceneTestCase;
-
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Similarity unit test.
  *
@@ -36,8 +34,8 @@ public class TestNot extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store);
 
-    Document d1 = new Document();
-    d1.add(newTextField("field", "a b", Field.Store.YES));
+    Document2 d1 = writer.newDocument();
+    d1.addLargeText("field", "a b");
 
     writer.addDocument(d1);
     IndexReader reader = writer.getReader();

@@ -19,9 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -109,7 +108,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 30; i++) {
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
     }
     reader = writer.getReader();
     writer.close();

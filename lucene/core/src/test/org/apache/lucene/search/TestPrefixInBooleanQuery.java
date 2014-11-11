@@ -17,8 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -26,7 +25,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
 
 /**
  * https://issues.apache.org/jira/browse/LUCENE-1974
@@ -49,23 +47,25 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
 
-    Document doc = new Document();
-    Field field = newStringField(FIELD, "meaninglessnames", Field.Store.NO);
-    doc.add(field);
+    Document2 doc = writer.newDocument();
+    doc.addAtom(FIELD, "meaninglessnames");
     
     for (int i = 0; i < 5137; ++i) {
       writer.addDocument(doc);
     }
     
-    field.setStringValue("tangfulin");
+    doc = writer.newDocument();
+    doc.addAtom(FIELD, "tangfulin");
     writer.addDocument(doc);
 
-    field.setStringValue("meaninglessnames");
+    doc = writer.newDocument();
+    doc.addAtom(FIELD, "meaninglessnames");
     for (int i = 5138; i < 11377; ++i) {
       writer.addDocument(doc);
     }
     
-    field.setStringValue("tangfulin");
+    doc = writer.newDocument();
+    doc.addAtom(FIELD, "tangfulin");
     writer.addDocument(doc);
     
     reader = writer.getReader();

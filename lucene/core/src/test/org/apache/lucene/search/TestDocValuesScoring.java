@@ -19,13 +19,11 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -47,21 +45,17 @@ public class TestDocValuesScoring extends LuceneTestCase {
   public void testSimple() throws Exception {    
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field field = newTextField("foo", "", Field.Store.NO);
-    doc.add(field);
-    Field dvField = new FloatDocValuesField("foo_boost", 0.0F);
-    doc.add(dvField);
-    Field field2 = newTextField("bar", "", Field.Store.NO);
-    doc.add(field2);
     
-    field.setStringValue("quick brown fox");
-    field2.setStringValue("quick brown fox");
-    dvField.setFloatValue(2f); // boost x2
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("foo", "quick brown fox");
+    doc.addLargeText("bar", "quick brown fox");
+    doc.addFloat("foo_boost", 2f);
     iw.addDocument(doc);
-    field.setStringValue("jumps over lazy brown dog");
-    field2.setStringValue("jumps over lazy brown dog");
-    dvField.setFloatValue(4f); // boost x4
+
+    doc = iw.newDocument();
+    doc.addLargeText("foo", "jumps over lazy brown dog");
+    doc.addLargeText("bar", "jumps over lazy brown dog");
+    doc.addFloat("foo_boost", 4f); // boost x4
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
