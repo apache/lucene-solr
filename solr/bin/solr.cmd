@@ -604,6 +604,32 @@ IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
 IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
+@REM Add Java version specific flags if needed
+set JAVAVER=
+set JAVA_MAJOR=
+set JAVA_BUILD=0
+
+"%JAVA%" -version 2>&1 | findstr /i "version" > javavers
+set /p JAVAVEROUT=<javavers
+del javavers
+for /f "tokens=3" %%g in ("!JAVAVEROUT!") do (
+  set JAVAVER=%%g
+  set JAVAVER=!JAVAVER:"=!
+  for /f "delims=_ tokens=1-3" %%v in ("!JAVAVER!") do (
+    set JAVA_MAJOR=!JAVAVER:~0,3!
+    set /a JAVA_BUILD=%%w
+  )
+)
+IF "!JAVA_MAJOR!"=="1.7" (
+  set "GC_TUNE=%GC_TUNE% -XX:CMSFullGCsBeforeCompaction=1 -XX:CMSTriggerPermRatio=80"
+  IF !JAVA_BUILD! GEQ 40 (
+    IF !JAVA_BUILD! LEQ 51 (
+      set "GC_TUNE=!GC_TUNE! -XX:-UseSuperWord"
+      @echo WARNING: Java version !JAVAVER! has known bugs with Lucene and requires the -XX:-UseSuperWord flag. Please consider upgrading your JVM.
+    )
+  )
+)
+
 IF "%verbose%"=="1" (
     @echo Starting Solr using the following settings:
     @echo     JAVA            = %JAVA%
@@ -611,7 +637,7 @@ IF "%verbose%"=="1" (
     @echo     SOLR_HOME       = %SOLR_HOME%
     @echo     SOLR_HOST       = %SOLR_HOST%
     @echo     SOLR_PORT       = %SOLR_PORT%
-    @echo     GC_TUNE         = %GC_TUNE%
+    @echo     GC_TUNE         = !GC_TUNE!
     @echo     GC_LOG_OPTS     = %GC_LOG_OPTS%
     @echo     SOLR_JAVA_MEM   = %SOLR_JAVA_MEM%
     @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
@@ -626,7 +652,7 @@ IF "%verbose%"=="1" (
 )
 
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE% -Djava.net.preferIPv4Stack=true
-set START_OPTS=%START_OPTS% %GC_TUNE% %GC_LOG_OPTS%
+set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!
 IF NOT "%REMOTE_JMX_OPTS%"=="" set START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%
 IF NOT "%SOLR_ADDL_ARGS%"=="" set START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%
