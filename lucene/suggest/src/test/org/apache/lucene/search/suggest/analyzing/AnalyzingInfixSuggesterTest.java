@@ -41,9 +41,11 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
 
 public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
 
@@ -1076,4 +1078,28 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       suggester.close();
     }
   }
+
+  @Test
+  public void testAddPrefixMatch() throws IOException {
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    Directory dir = newDirectory();
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(dir, a);
+
+    assertEquals("<b>Sol</b>r", pfmToString(suggester, "Solr", "Sol"));
+    assertEquals("<b>Solr</b>", pfmToString(suggester, "Solr", "Solr"));
+
+    // Test SOLR-6085 - the analyzed tokens match due to ss->ß normalization
+    assertEquals("<b>daß</b>", pfmToString(suggester, "daß", "dass"));
+
+    dir.close();
+    suggester.close();
+  }
+
+  private String pfmToString(AnalyzingInfixSuggester suggester, String surface, String prefix) throws IOException {
+    StringBuilder sb = new StringBuilder();
+    suggester.addPrefixMatch(sb, surface, "", prefix);
+    return sb.toString();
+  }
+
+
 }

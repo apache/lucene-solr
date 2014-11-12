@@ -400,6 +400,8 @@ Bug Fixes
 
 * SOLR-6704: TrieDateField type drops schema properties in branch 4.10 (Tomás Fernández Löbbe)
 
+* SOLR-6085: Suggester crashes when prefixToken is longer than surface form (janhoy)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
