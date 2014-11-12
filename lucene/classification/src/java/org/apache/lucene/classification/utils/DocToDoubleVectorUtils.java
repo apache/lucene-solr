@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.classification.utils;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
 
 /**
  * utility class for converting Lucene {@link org.apache.lucene.document.Document}s to <code>Double</code> vectors.
