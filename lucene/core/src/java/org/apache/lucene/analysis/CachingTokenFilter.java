@@ -18,8 +18,8 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.util.AttributeSource;
@@ -27,7 +27,8 @@ import org.apache.lucene.util.AttributeSource;
 /**
  * This class can be used if the token attributes of a TokenStream
  * are intended to be consumed more than once. It caches
- * all token attribute states locally in a List.
+ * all token attribute states locally in a List when the first call to
+ * {@link #incrementToken()} is called.
  * 
  * <P>CachingTokenFilter implements the optional method
  * {@link TokenStream#reset()}, which repositions the
@@ -51,7 +52,7 @@ public final class CachingTokenFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     if (cache == null) {
       // fill cache lazily
-      cache = new LinkedList<>();
+      cache = new ArrayList<>(64);
       fillCache();
       iterator = cache.iterator();
     }
@@ -81,18 +82,23 @@ public final class CachingTokenFilter extends TokenFilter {
    */
   @Override
   public void reset() {
-    if(cache != null) {
+    if (cache != null) {
       iterator = cache.iterator();
     }
   }
   
   private void fillCache() throws IOException {
-    while(input.incrementToken()) {
+    while (input.incrementToken()) {
       cache.add(captureState());
     }
     // capture final state
     input.end();
     finalState = captureState();
+  }
+
+  /** If the underlying token stream was consumed and cached. */
+  public boolean isCached() {
+    return cache != null;
   }
 
 }
