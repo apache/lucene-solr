@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
 /**
- * Testcase for {@link org.apache.lucene.classification.CachingNaiveBayesClassifier
+ * Testcase for {@link org.apache.lucene.classification.CachingNaiveBayesClassifier}
  */
 public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<BytesRef> {
 
