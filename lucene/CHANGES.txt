@@ -302,6 +302,9 @@ Optimizations
 * LUCENE-6040: Speed up EliasFanoDocIdSet through broadword bit selection.
   (Paul Elschot)
 
+* LUCENE-6033: CachingTokenFilter now uses ArrayList not LinkedList, and has new
+  isCached() method. (David Smiley)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
