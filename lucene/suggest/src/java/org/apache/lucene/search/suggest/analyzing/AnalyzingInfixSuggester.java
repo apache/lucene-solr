@@ -626,12 +626,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   protected void addPrefixMatch(StringBuilder sb, String surface, String analyzed, String prefixToken) {
     // TODO: apps can try to invert their analysis logic
     // here, e.g. downcase the two before checking prefix:
+    if (prefixToken.length() >= surface.length()) {
+      addWholeMatch(sb, surface, analyzed);
+      return;
+    }
     sb.append("<b>");
     sb.append(surface.substring(0, prefixToken.length()));
     sb.append("</b>");
-    if (prefixToken.length() < surface.length()) {
-      sb.append(surface.substring(prefixToken.length()));
-    }
+    sb.append(surface.substring(prefixToken.length()));
   }
 
   @Override
