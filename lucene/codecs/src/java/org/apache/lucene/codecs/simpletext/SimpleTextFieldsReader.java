@@ -267,7 +267,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       this.liveDocs = liveDocs;
       nextDocStart = fp;
       docID = -1;
-      omitTF = indexOptions == IndexOptions.DOCS;
+      omitTF = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) < 0;
       readPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       readOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (!readOffsets) {

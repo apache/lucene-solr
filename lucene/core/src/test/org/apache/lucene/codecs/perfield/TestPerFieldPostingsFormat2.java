@@ -17,7 +17,8 @@ package org.apache.lucene.codecs.perfield;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -45,8 +46,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-import java.io.IOException;
-
 /**
  * 
  *
@@ -54,7 +53,6 @@ import java.io.IOException;
 //TODO: would be better in this test to pull termsenums and instanceof or something?
 // this way we can verify PFPF is doing the right thing.
 // for now we do termqueries.
-@Seed("1DE5837433BC54F6")
 public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
@@ -268,7 +266,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
     dir.close();
   }
-  
+
   public void testSameCodecDifferentInstance() throws Exception {
     Codec codec = new AssertingCodec() {
       @Override
