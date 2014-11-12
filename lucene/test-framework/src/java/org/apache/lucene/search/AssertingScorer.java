@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AssertingLeafReader;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Collection;
@@ -24,8 +26,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Random;
 import java.util.WeakHashMap;
-
-import org.apache.lucene.index.AssertingLeafReader;
 
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
@@ -111,18 +111,28 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
+  public int nextPosition() throws IOException {
+    assert iterating();
+    return in.nextPosition();
+  }
+
+  @Override
   public int docID() {
     return in.docID();
   }
 
   @Override
   public int nextDoc() throws IOException {
-    return docsEnumIn.nextDoc();
+    int doc = docsEnumIn.nextDoc();
+    assert in.startPosition() == -1;
+    return doc;
   }
 
   @Override
   public int advance(int target) throws IOException {
-    return docsEnumIn.advance(target);
+    int doc = docsEnumIn.advance(target);
+    assert in.startPosition() == -1;
+    return doc;
   }
 
   @Override

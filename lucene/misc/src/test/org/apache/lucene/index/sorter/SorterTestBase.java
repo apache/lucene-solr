@@ -17,13 +17,6 @@ package org.apache.lucene.index.sorter;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -31,8 +24,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -42,7 +35,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexOptions;
@@ -57,9 +49,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.sorter.SortingLeafReader.SortingDocsAndPositionsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.sorter.SortingLeafReader.SortingDocsEnum;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -74,6 +65,13 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 public abstract class SorterTestBase extends LuceneTestCase {
 
@@ -254,7 +252,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   public void testDocsAndPositionsEnum() throws Exception {
     TermsEnum termsEnum = sortedReader.terms(DOC_POSITIONS_FIELD).iterator(null);
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
-    DocsAndPositionsEnum sortedPositions = termsEnum.docsAndPositions(null, null);
+    DocsEnum sortedPositions = termsEnum.docsAndPositions(null, null);
     int doc;
     
     // test nextDoc()
@@ -270,10 +268,10 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
     
     // test advance()
-    final DocsAndPositionsEnum reuse = sortedPositions;
+    final DocsEnum reuse = sortedPositions;
     sortedPositions = termsEnum.docsAndPositions(null, reuse);
-    if (sortedPositions instanceof SortingDocsAndPositionsEnum) {
-      assertTrue(((SortingDocsAndPositionsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
+    if (sortedPositions instanceof SortingDocsEnum) {
+      assertTrue(((SortingDocsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
     }
     doc = 0;
     while ((doc = sortedPositions.advance(doc + TestUtil.nextInt(random(), 1, 5))) != DocIdSetIterator.NO_MORE_DOCS) {

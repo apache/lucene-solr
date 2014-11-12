@@ -23,7 +23,6 @@ import java.util.Arrays;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
@@ -48,6 +47,9 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * An {@link org.apache.lucene.index.LeafReader} which supports sorting documents by a given
@@ -164,30 +166,8 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, final int flags) throws IOException {
-      final DocsAndPositionsEnum inReuse;
-      final SortingDocsAndPositionsEnum wrapReuse;
-      if (reuse != null && reuse instanceof SortingDocsAndPositionsEnum) {
-        // if we're asked to reuse the given DocsEnum and it is Sorting, return
-        // the wrapped one, since some Codecs expect it.
-        wrapReuse = (SortingDocsAndPositionsEnum) reuse;
-        inReuse = wrapReuse.getWrapped();
-      } else {
-        wrapReuse = null;
-        inReuse = reuse;
-      }
-
-      final DocsAndPositionsEnum inDocsAndPositions = in.docsAndPositions(newToOld(liveDocs), inReuse, flags);
-      if (inDocsAndPositions == null) {
-        return null;
-      }
-
-      // we ignore the fact that offsets may be stored but not asked for,
-      // since this code is expected to be used during addIndexes which will
-      // ask for everything. if that assumption changes in the future, we can
-      // factor in whether 'flags' says offsets are not required.
-      final boolean storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-      return new SortingDocsAndPositionsEnum(docMap.size(), wrapReuse, inDocsAndPositions, docMap, storeOffsets);
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, final int flags) throws IOException {
+      return docs(liveDocs, reuse, flags);
     }
 
   }
@@ -505,8 +485,9 @@ public class SortingLeafReader extends FilterLeafReader {
       return in;
     }
   }
-  
-  static class SortingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
+
+  // nocommit - merge this into SortingDocsEnum?
+  static class SortingDocsAndPositionsEnum extends FilterDocsEnum {
     
     /**
      * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
@@ -589,7 +570,7 @@ public class SortingLeafReader extends FilterLeafReader {
 
     private final RAMFile file;
 
-    SortingDocsAndPositionsEnum(int maxDoc, SortingDocsAndPositionsEnum reuse, final DocsAndPositionsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
+    SortingDocsAndPositionsEnum(int maxDoc, SortingDocsAndPositionsEnum reuse, final DocsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
       super(in);
       this.maxDoc = maxDoc;
       this.storeOffsets = storeOffsets;
@@ -632,14 +613,14 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     // for testing
-    boolean reused(DocsAndPositionsEnum other) {
+    boolean reused(DocsEnum other) {
       if (other == null || !(other instanceof SortingDocsAndPositionsEnum)) {
         return false;
       }
       return docs == ((SortingDocsAndPositionsEnum) other).docs;
     }
 
-    private void addPositions(final DocsAndPositionsEnum in, final IndexOutput out) throws IOException {
+    private void addPositions(final DocsEnum in, final IndexOutput out) throws IOException {
       int freq = in.freq();
       out.writeVInt(freq);
       int previousPosition = 0;
@@ -730,8 +711,8 @@ public class SortingLeafReader extends FilterLeafReader {
       return startOffset;
     }
 
-    /** Returns the wrapped {@link DocsAndPositionsEnum}. */
-    DocsAndPositionsEnum getWrapped() {
+    /** Returns the wrapped {@link org.apache.lucene.index.DocsEnum}. */
+    DocsEnum getWrapped() {
       return in;
     }
   }

@@ -86,8 +86,8 @@ public class IgnoreAcceptDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      return w.scorer(context, null);
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
+      return w.scorer(context, flags, null);
     }
   }
 

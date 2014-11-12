@@ -17,18 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
+import java.io.IOException;
+
 /** Iterator to seek ({@link #seekCeil(BytesRef)}, {@link
  * #seekExact(BytesRef)}) or step through ({@link
  * #next} terms to obtain frequency information ({@link
  * #docFreq}), {@link DocsEnum} or {@link
- * DocsAndPositionsEnum} for the current term ({@link
+ * DocsEnum} for the current term ({@link
  * #docs}.
  * 
  * <p>Term enumerations are always ordered by
@@ -162,20 +162,20 @@ public abstract class TermsEnum implements BytesRefIterator {
    * @see #docs(Bits, DocsEnum, int) */
   public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException;
 
-  /** Get {@link DocsAndPositionsEnum} for the current term.
+  /** Get {@link DocsEnum} for the current term.
    *  Do not call this when the enum is unpositioned.  This
    *  method will return null if positions were not
    *  indexed.
    *  
    *  @param liveDocs unset bits are documents that should not
    *  be returned
-   *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse
-   *  @see #docsAndPositions(Bits, DocsAndPositionsEnum, int) */
-  public final DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-    return docsAndPositions(liveDocs, reuse, DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS);
+   *  @param reuse pass a prior DocsEnum for possible reuse
+   **/
+  public final DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse) throws IOException {
+    return docsAndPositions(liveDocs, reuse, DocsEnum.FLAG_OFFSETS | DocsEnum.FLAG_PAYLOADS);
   }
 
-  /** Get {@link DocsAndPositionsEnum} for the current term,
+  /** Get {@link DocsEnum} for the current term,
    *  with control over whether offsets and payloads are
    *  required.  Some codecs may be able to optimize their
    *  implementation when offsets and/or payloads are not required.
@@ -184,11 +184,11 @@ public abstract class TermsEnum implements BytesRefIterator {
 
    *  @param liveDocs unset bits are documents that should not
    *  be returned
-   *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse
+   *  @param reuse pass a prior DocsEnum for possible reuse
    *  @param flags specifies which optional per-position values you
-   *         require; see {@link DocsAndPositionsEnum#FLAG_OFFSETS} and 
-   *         {@link DocsAndPositionsEnum#FLAG_PAYLOADS}. */
-  public abstract DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException;
+   *         require; see {@link DocsEnum#FLAG_OFFSETS} and 
+   *         {@link DocsEnum#FLAG_PAYLOADS}. */
+  public abstract DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException;
 
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
@@ -250,11 +250,6 @@ public abstract class TermsEnum implements BytesRefIterator {
     }
       
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
-      throw new IllegalStateException("this method should never be called");
-    }
-      
-    @Override
     public BytesRef next() {
       return null;
     }
@@ -271,6 +266,12 @@ public abstract class TermsEnum implements BytesRefIterator {
 
     @Override
     public void seekExact(BytesRef term, TermState state) {
+      throw new IllegalStateException("this method should never be called");
+    }
+
+    @Override
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags)
+        throws IOException {
       throw new IllegalStateException("this method should never be called");
     }
   };

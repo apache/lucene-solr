@@ -17,10 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
 
 /** {@code LeafReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -238,11 +237,11 @@ public abstract class LeafReader extends IndexReader {
     return null;
   }
 
-  /** Returns {@link DocsAndPositionsEnum} for the specified
+  /** Returns {@link DocsEnum} for the specified
    *  term.  This will return null if the
    *  field or term does not exist or positions weren't indexed.
-   *  @see TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum) */
-  public final DocsAndPositionsEnum termPositionsEnum(Term term) throws IOException {
+   *  @see TermsEnum#docsAndPositions(Bits, DocsEnum) */
+  public final DocsEnum termPositionsEnum(Term term) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
     final Fields fields = fields();

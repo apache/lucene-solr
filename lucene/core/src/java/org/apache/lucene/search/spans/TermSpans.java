@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
 
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -30,7 +30,7 @@ import java.util.Collection;
  * Public for extension only
  */
 public class TermSpans extends Spans {
-  protected final DocsAndPositionsEnum postings;
+  protected final DocsEnum postings;
   protected final Term term;
   protected int doc;
   protected int freq;
@@ -38,7 +38,7 @@ public class TermSpans extends Spans {
   protected int position;
   protected boolean readPayload;
 
-  public TermSpans(DocsAndPositionsEnum postings, Term term) {
+  public TermSpans(DocsEnum postings, Term term) {
     this.postings = postings;
     this.term = term;
     doc = -1;
@@ -132,7 +132,7 @@ public class TermSpans extends Spans {
             (doc == -1 ? "START" : (doc == Integer.MAX_VALUE) ? "END" : doc + "-" + position);
   }
 
-  public DocsAndPositionsEnum getPostings() {
+  public DocsEnum getPostings() {
     return postings;
   }
 

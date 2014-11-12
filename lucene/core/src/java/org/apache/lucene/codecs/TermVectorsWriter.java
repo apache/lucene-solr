@@ -17,11 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Iterator;
-
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -33,6 +29,10 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * Codec API for writing term vectors:
@@ -230,7 +230,7 @@ public abstract class TermVectorsWriter implements Closeable {
     String lastFieldName = null;
     
     TermsEnum termsEnum = null;
-    DocsAndPositionsEnum docsAndPositionsEnum = null;
+    DocsEnum docsAndPositionsEnum = null;
     
     int fieldCount = 0;
     for(String fieldName : vectors) {
@@ -287,7 +287,7 @@ public abstract class TermVectorsWriter implements Closeable {
             
             final BytesRef payload = docsAndPositionsEnum.getPayload();
 
-            assert !hasPositions || pos >= 0;
+            assert !hasPositions || pos >= 0 ;
             addPosition(pos, startOffset, endOffset, payload);
           }
         }

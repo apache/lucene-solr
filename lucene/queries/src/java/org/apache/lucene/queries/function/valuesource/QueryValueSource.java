@@ -17,12 +17,16 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
@@ -123,7 +127,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return defVal;
-        scorer = weight.scorer(readerContext, acceptDocs);
+        scorer = weight.scorer(readerContext, DocsEnum.FLAG_FREQS, acceptDocs);
         if (scorer==null) {
           noMatches = true;
           return defVal;
@@ -154,7 +158,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return false;
-        scorer = weight.scorer(readerContext, acceptDocs);
+        scorer = weight.scorer(readerContext, DocsEnum.FLAG_FREQS, acceptDocs);
         scorerDoc = -1;
         if (scorer==null) {
           noMatches = true;
@@ -212,7 +216,7 @@ class QueryDocValues extends FloatDocValues {
             mval.exists = false;
             return;
           }
-          scorer = weight.scorer(readerContext, acceptDocs);
+          scorer = weight.scorer(readerContext, DocsEnum.FLAG_FREQS, acceptDocs);
           scorerDoc = -1;
           if (scorer==null) {
             noMatches = true;

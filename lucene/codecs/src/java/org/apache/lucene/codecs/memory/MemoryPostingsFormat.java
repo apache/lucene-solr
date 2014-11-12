@@ -17,26 +17,18 @@ package org.apache.lucene.codecs.memory;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
@@ -62,6 +54,13 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 // TODO: would be nice to somehow allow this to act like
 // InstantiatedIndex, by never writing to disk; ie you write
@@ -317,7 +316,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
         DocsEnum docsEnum = null;
-        DocsAndPositionsEnum posEnum = null;
+        DocsEnum posEnum = null;
         int enumFlags;
 
         IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -332,15 +331,15 @@ public final class MemoryPostingsFormat extends PostingsFormat {
           enumFlags = DocsEnum.FLAG_FREQS;
         } else if (writeOffsets == false) {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+            enumFlags = DocsEnum.FLAG_PAYLOADS;
           } else {
             enumFlags = 0;
           }
         } else {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = DocsEnum.FLAG_PAYLOADS | DocsEnum.FLAG_OFFSETS;
           } else {
-            enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = DocsEnum.FLAG_OFFSETS;
           }
         }
 
@@ -539,14 +538,19 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     public int freq() {
       return freq;
     }
-    
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
     @Override
     public long cost() {
       return numDocs;
     }
   }
 
-  private final static class FSTDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final static class FSTDocsAndPositionsEnum extends DocsEnum {
     private final boolean storePayloads;
     private byte[] buffer = new byte[16];
     private final ByteArrayDataInput in = new ByteArrayDataInput(buffer);
@@ -817,7 +821,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
 
       boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {

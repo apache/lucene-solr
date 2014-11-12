@@ -17,13 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
+
+import java.io.IOException;
 
 /**
  * Holds all implementations of classes in the o.a.l.search package as a
@@ -215,6 +215,11 @@ final class JustCompileSearch {
     }
 
     @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public int docID() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -228,7 +233,7 @@ final class JustCompileSearch {
     public int advance(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
     @Override
     public long cost() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -319,7 +324,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

@@ -17,11 +17,10 @@
 
 package org.apache.solr.search;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -49,10 +48,10 @@ import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntIntOpenHashMap;
-import com.carrotsearch.hppc.IntOpenHashSet;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
 
@@ -352,6 +351,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public int freq() {
       return 0;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
     }
 
     public int advance(int i) {

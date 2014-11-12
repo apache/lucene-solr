@@ -17,25 +17,25 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.Arrays;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Query that sets document score as a programmatic function of several (sub) scores:
@@ -234,14 +234,14 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Scorer subQueryScorer = subQueryWeight.scorer(context, acceptDocs);
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
+      Scorer subQueryScorer = subQueryWeight.scorer(context, flags, acceptDocs);
       if (subQueryScorer == null) {
         return null;
       }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(context, acceptDocs);
+         valSrcScorers[i] = valSrcWeights[i].scorer(context, flags, acceptDocs);
       }
       return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, queryWeight, subQueryScorer, valSrcScorers);
     }
@@ -330,6 +330,11 @@ public class CustomScoreQuery extends Query {
     @Override
     public int freq() throws IOException {
       return subQueryScorer.freq();
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return subQueryScorer.nextPosition();
     }
 
     @Override

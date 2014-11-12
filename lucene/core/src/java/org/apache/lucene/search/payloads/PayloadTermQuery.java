@@ -19,7 +19,7 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -79,7 +79,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
       return new PayloadTermSpanScorer((TermSpans) query.getSpans(context, acceptDocs, termContexts),
           this, similarity.simScorer(stats, context));
     }
@@ -120,7 +120,7 @@ public class PayloadTermQuery extends SpanTermQuery {
 
       protected void processPayload(Similarity similarity) throws IOException {
         if (termSpans.isPayloadAvailable()) {
-          final DocsAndPositionsEnum postings = termSpans.getPostings();
+          final DocsEnum postings = termSpans.getPostings();
           payload = postings.getPayload();
           if (payload != null) {
             payloadScore = function.currentScore(doc, term.field(),
@@ -176,7 +176,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, context.reader().getLiveDocs());
+      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, DocsEnum.FLAG_POSITIONS, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

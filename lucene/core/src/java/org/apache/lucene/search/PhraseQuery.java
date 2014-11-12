@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,27 +17,27 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
-
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Set;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -138,13 +138,15 @@ public class PhraseQuery extends Query {
   }
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
-    final DocsAndPositionsEnum postings;
+    final TermDocsEnumFactory factory;
+    final DocsEnum postings;
     final int docFreq;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
-    public PostingsAndFreq(DocsAndPositionsEnum postings, int docFreq, int position, Term... terms) {
+    public PostingsAndFreq(DocsEnum postings, TermDocsEnumFactory factory, int docFreq, int position, Term... terms) throws IOException {
+      this.factory = factory;
       this.postings = postings;
       this.docFreq = docFreq;
       this.position = position;
@@ -245,7 +247,7 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
       assert !terms.isEmpty();
       final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -267,7 +269,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+        DocsEnum postingsEnum = te.docs(liveDocs, null, DocsEnum.FLAG_POSITIONS);
 
         // PhraseQuery on a field that did not index
         // positions.
@@ -276,7 +278,8 @@ public class PhraseQuery extends Query {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, te.docFreq(), positions.get(i).intValue(), t);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(t.bytes(), state, te, flags, acceptDocs);
+        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, factory, te.docFreq(), positions.get(i).intValue(), t);
       }
 
       // sort by increasing docFreq order
@@ -298,7 +301,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, DocsEnum.FLAG_POSITIONS, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -396,4 +399,33 @@ public class PhraseQuery extends Query {
       ^ positions.hashCode();
   }
 
+  static class TermDocsEnumFactory {
+    protected final TermsEnum termsEnum;
+    protected final Bits liveDocs;
+    protected final int flags;
+
+    private final BytesRef term;
+    private final TermState termState;
+    
+    TermDocsEnumFactory(TermsEnum termsEnum, int flags, Bits liveDocs) {
+      this(null, null, termsEnum, flags, liveDocs);
+    }
+    
+    TermDocsEnumFactory(BytesRef term, TermState termState, TermsEnum termsEnum, int flags,  Bits liveDocs) {
+      this.termsEnum = termsEnum;
+      this.termState = termState;
+      this.liveDocs = liveDocs;
+      this.term = term;
+      this.flags = flags;
+    }
+    
+    
+    public DocsEnum docsAndPositionsEnum()
+        throws IOException {
+      assert term != null;
+      termsEnum.seekExact(term, termState);
+      return termsEnum.docsAndPositions(liveDocs, null, flags);
+    }
+
+  }
 }

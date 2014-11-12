@@ -17,50 +17,54 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
+import org.apache.lucene.search.similarities.Similarity;
+
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.similarities.Similarity;
-
 final class ExactPhraseScorer extends Scorer {
   private final int endMinus1;
-
+  
   private final static int CHUNK = 4096;
-
+  
   private int gen;
   private final int[] counts = new int[CHUNK];
   private final int[] gens = new int[CHUNK];
 
+  
+  boolean noDocs;
   private final long cost;
 
   private final static class ChunkState {
-    final DocsAndPositionsEnum posEnum;
+    final TermDocsEnumFactory factory;
+    final DocsEnum posEnum;
     final int offset;
     int posUpto;
     int posLimit;
     int pos;
     int lastPos;
 
-    public ChunkState(DocsAndPositionsEnum posEnum, int offset) {
+    public ChunkState(TermDocsEnumFactory factory, DocsEnum posEnum, int offset) {
+      this.factory = factory;
       this.posEnum = posEnum;
       this.offset = offset;
     }
   }
-
+  
   private final ChunkState[] chunkStates;
-  private final DocsAndPositionsEnum lead;
+  private final DocsEnum lead;
 
   private int docID = -1;
-  private int freq;
 
   private final Similarity.SimScorer docScorer;
-  
+
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
                     Similarity.SimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
-
+    
     chunkStates = new ChunkState[postings.length];
 
     endMinus1 = postings.length-1;
@@ -70,7 +74,7 @@ final class ExactPhraseScorer extends Scorer {
     cost = lead.cost();
 
     for(int i=0;i<postings.length;i++) {
-      chunkStates[i] = new ChunkState(postings[i].postings, -postings[i].position);
+      chunkStates[i] = new ChunkState(postings[i].factory, postings[i].postings, -postings[i].position);
     }
   }
   
@@ -79,7 +83,7 @@ final class ExactPhraseScorer extends Scorer {
       // TODO: don't dup this logic from conjunctionscorer :)
       advanceHead: for(;;) {
         for (int i = 1; i < chunkStates.length; i++) {
-          final DocsAndPositionsEnum de = chunkStates[i].posEnum;
+          final DocsEnum de = chunkStates[i].posEnum;
           if (de.docID() < doc) {
             int d = de.advance(doc);
 
@@ -93,7 +97,7 @@ final class ExactPhraseScorer extends Scorer {
         // all DocsEnums are on the same doc
         if (doc == NO_MORE_DOCS) {
           return doc;
-        } else if (phraseFreq() > 0) {
+        } else if (firstPosition() != NO_MORE_POSITIONS) {
           return doc;            // success: matches phrase
         } else {
           doc = lead.nextDoc();  // doesn't match phrase
@@ -103,7 +107,7 @@ final class ExactPhraseScorer extends Scorer {
       doc = lead.advance(doc);
     }
   }
-
+  
   @Override
   public int nextDoc() throws IOException {
     return docID = doNext(lead.nextDoc());
@@ -113,51 +117,116 @@ final class ExactPhraseScorer extends Scorer {
   public int advance(int target) throws IOException {
     return docID = doNext(lead.advance(target));
   }
-
+  
   @Override
   public String toString() {
     return "ExactPhraseScorer(" + weight + ")";
   }
-
+  
   @Override
-  public int freq() {
+  public int freq() throws IOException {
+    int freq = 0;
+    while (nextPosition() != NO_MORE_DOCS) {
+      freq++;
+    }
     return freq;
   }
-
+  
   @Override
   public int docID() {
     return docID;
   }
-
+  
   @Override
-  public float score() {
-    return docScorer.score(docID, freq);
+  public float score() throws IOException {
+    return docScorer.score(docID, freq());
   }
 
-  private int phraseFreq() throws IOException {
+  private int chunkStart = 0;
+  private int chunkEnd = CHUNK;
 
-    freq = 0;
+  private int posRemaining;
+  private int positionsInChunk;
+  private boolean cached = false;
 
-    // init chunks
-    for(int i=0;i<chunkStates.length;i++) {
-      final ChunkState cs = chunkStates[i];
+  private void resetPositions() throws IOException {
+    chunkStart = 0;
+    chunkEnd = CHUNK;
+    posRemaining = 0;
+    cached = false;
+    for (final ChunkState cs : chunkStates) {
       cs.posLimit = cs.posEnum.freq();
       cs.pos = cs.offset + cs.posEnum.nextPosition();
       cs.posUpto = 1;
       cs.lastPos = -1;
     }
+  }
 
-    int chunkStart = 0;
-    int chunkEnd = CHUNK;
+  private int firstPosition() throws IOException {
+    resetPositions();
+    int pos = nextPosition();
+    cached = true;
+    return pos;
+  }
 
-    // process chunk by chunk
-    boolean end = false;
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue[positionsInChunk - posRemaining];
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return startPosition() + chunkStates.length - 1;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    if (cached) {
+      cached = false;
+      return startPosition();
+    }
+
+    if (posRemaining == 0 && !findNextMatches())
+      return NO_MORE_POSITIONS;
+
+    if (posRemaining == 0)
+      return NO_MORE_POSITIONS;
+
+    posRemaining--;
+    return startPosition();
+  }
+
+  int[] posQueue = new int[8];
+
+  private void addPosition(int pos) {
+    positionsInChunk++;
+    if (posQueue.length < positionsInChunk) {
+      int[] newQueue = new int[posQueue.length * 2];
+      System.arraycopy(posQueue, 0, newQueue, 0, posQueue.length);
+      posQueue = newQueue;
+    }
+    posQueue[positionsInChunk] = pos;
+  }
+
+  private boolean findNextMatches() throws IOException {
 
     // TODO: we could fold in chunkStart into offset and
     // save one subtract per pos incr
 
-    while(!end) {
+    boolean exhausted = false;
 
+    while (true) {
+      positionsInChunk = 0;
       gen++;
 
       if (gen == 0) {
@@ -169,7 +238,7 @@ final class ExactPhraseScorer extends Scorer {
       // first term
       {
         final ChunkState cs = chunkStates[0];
-        while(cs.pos < chunkEnd) {
+        while (cs.pos < chunkEnd) {
           if (cs.pos > cs.lastPos) {
             cs.lastPos = cs.pos;
             final int posIndex = cs.pos - chunkStart;
@@ -179,7 +248,7 @@ final class ExactPhraseScorer extends Scorer {
           }
 
           if (cs.posUpto == cs.posLimit) {
-            end = true;
+            exhausted = true;
             break;
           }
           cs.posUpto++;
@@ -189,10 +258,10 @@ final class ExactPhraseScorer extends Scorer {
 
       // middle terms
       boolean any = true;
-      for(int t=1;t<endMinus1;t++) {
+      for (int t = 1; t < endMinus1; t++) {
         final ChunkState cs = chunkStates[t];
         any = false;
-        while(cs.pos < chunkEnd) {
+        while (cs.pos < chunkEnd) {
           if (cs.pos > cs.lastPos) {
             cs.lastPos = cs.pos;
             final int posIndex = cs.pos - chunkStart;
@@ -204,7 +273,7 @@ final class ExactPhraseScorer extends Scorer {
           }
 
           if (cs.posUpto == cs.posLimit) {
-            end = true;
+            exhausted = true;
             break;
           }
           cs.posUpto++;
@@ -220,6 +289,8 @@ final class ExactPhraseScorer extends Scorer {
         // petered out for this chunk
         chunkStart += CHUNK;
         chunkEnd += CHUNK;
+        if (exhausted)
+          return false;
         continue;
       }
 
@@ -227,17 +298,17 @@ final class ExactPhraseScorer extends Scorer {
 
       {
         final ChunkState cs = chunkStates[endMinus1];
-        while(cs.pos < chunkEnd) {
+        while (cs.pos < chunkEnd) {
           if (cs.pos > cs.lastPos) {
             cs.lastPos = cs.pos;
             final int posIndex = cs.pos - chunkStart;
-            if (posIndex >= 0 && gens[posIndex] == gen && counts[posIndex] == endMinus1) {
-              freq++;
+            if (posIndex >= 0 && gens[posIndex] == gen
+                && counts[posIndex] == endMinus1) {
+              addPosition(cs.pos);
             }
           }
 
           if (cs.posUpto == cs.posLimit) {
-            end = true;
             break;
           }
           cs.posUpto++;
@@ -247,13 +318,15 @@ final class ExactPhraseScorer extends Scorer {
 
       chunkStart += CHUNK;
       chunkEnd += CHUNK;
-    }
 
-    return freq;
+      posRemaining = positionsInChunk;
+      return true;
+    }
   }
 
   @Override
   public long cost() {
     return cost;
   }
+
 }

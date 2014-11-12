@@ -29,12 +29,12 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
-final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
+final class MappingMultiDocsAndPositionsEnum extends DocsEnum {
   private MultiDocsAndPositionsEnum.EnumWithSlice[] subs;
   int numSubs;
   int upto;
   MergeState.DocMap currentMap;
-  DocsAndPositionsEnum current;
+  DocsEnum current;
   int currentBase;
   int doc = -1;
   private MergeState mergeState;

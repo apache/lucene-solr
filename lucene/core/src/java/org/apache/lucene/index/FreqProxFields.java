@@ -17,17 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
-import org.apache.lucene.util.AttributeSource; // javadocs
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 
 /** Implements limited (iterators only, no stats) {@link
  *  Fields} interface over the in-RAM buffered
@@ -256,7 +256,7 @@ class FreqProxFields extends Fields {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
       if (liveDocs != null) {
         throw new IllegalArgumentException("liveDocs must be null");
       }
@@ -268,7 +268,7 @@ class FreqProxFields extends Fields {
         throw new IllegalArgumentException("did not index positions");
       }
 
-      if (!terms.hasOffsets && (flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0) {
+      if (!terms.hasOffsets && (flags & DocsEnum.FLAG_OFFSETS) == DocsEnum.FLAG_OFFSETS) {
         // Caller wants offsets but we didn't index them;
         // don't lie:
         throw new IllegalArgumentException("did not index offsets");
@@ -348,6 +348,11 @@ class FreqProxFields extends Fields {
     }
 
     @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
     public int nextDoc() throws IOException {
       if (reader.eof()) {
         if (ended) {
@@ -389,7 +394,7 @@ class FreqProxFields extends Fields {
     }
   }
 
-  private static class FreqProxDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private static class FreqProxDocsAndPositionsEnum extends DocsEnum {
 
     final FreqProxTermsWriterPerField terms;
     final FreqProxPostingsArray postingsArray;

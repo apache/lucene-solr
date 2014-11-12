@@ -17,13 +17,9 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
@@ -31,6 +27,9 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.Collections;
 
 final class IDVersionPostingsReader extends PostingsReaderBase {
 
@@ -80,8 +79,8 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, int flags) {
+  public DocsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
+                                   DocsEnum reuse, int flags) {
     SingleDocsAndPositionsEnum posEnum;
 
     if (reuse instanceof SingleDocsAndPositionsEnum) {

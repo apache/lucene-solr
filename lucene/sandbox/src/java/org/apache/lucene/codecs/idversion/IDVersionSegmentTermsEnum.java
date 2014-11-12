@@ -17,11 +17,7 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.PrintStream;
-
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermState;
@@ -36,6 +32,9 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.Util;
+
+import java.io.IOException;
+import java.io.PrintStream;
 
 /** Iterates through terms in this field; this class is public so users
  *  can cast it to call {@link #seekExact(BytesRef, long)} for
@@ -1010,7 +1009,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+  public DocsEnum docsAndPositions(Bits skipDocs, DocsEnum reuse, int flags) throws IOException {
     if (fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
       // Positions were not indexed:
       return null;

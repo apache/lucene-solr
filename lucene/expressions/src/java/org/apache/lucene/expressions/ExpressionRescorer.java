@@ -34,6 +34,12 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortRescorer;
 import org.apache.lucene.search.Weight;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * A {@link Rescorer} that uses an expression to re-score
  * first pass hits.  Functionally this is the same as {@link
@@ -80,6 +86,11 @@ class ExpressionRescorer extends SortRescorer {
     @Override
     public int freq() {
       return freq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException("FakeScorer doesn't support nextPosition()");
     }
 
     @Override

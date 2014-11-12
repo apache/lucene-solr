@@ -74,10 +74,16 @@ public abstract class CachingCollector extends FilterCollector {
     public final int freq() { throw new UnsupportedOperationException(); }
 
     @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public final int nextDoc() { throw new UnsupportedOperationException(); }
 
     @Override
     public long cost() { return 1; }
+
   }
 
   private static class NoScoreCachingCollector extends CachingCollector {
@@ -94,6 +100,11 @@ public abstract class CachingCollector extends FilterCollector {
       contexts = new ArrayList<>();
       acceptDocsOutOfOrders = new ArrayList<>();
       docs = new ArrayList<>();
+    }
+
+    @Override
+    public int postingFeatures() {
+      return in.postingFeatures();
     }
 
     protected NoScoreCachingLeafCollector wrap(LeafCollector in, int maxDocsToCache) {
@@ -304,11 +315,16 @@ public abstract class CachingCollector extends FilterCollector {
    * @param acceptDocsOutOfOrder
    *          whether documents are allowed to be collected out-of-order
    */
-  public static CachingCollector create(final boolean acceptDocsOutOfOrder, boolean cacheScores, double maxRAMMB) {
+  public static CachingCollector create(final boolean acceptDocsOutOfOrder, final int flags, boolean cacheScores, double maxRAMMB) {
     Collector other = new SimpleCollector() {
       @Override
       public boolean acceptsDocsOutOfOrder() {
         return acceptDocsOutOfOrder;
+      }
+
+      @Override
+      public int postingFeatures() {
+        return flags;
       }
 
       @Override

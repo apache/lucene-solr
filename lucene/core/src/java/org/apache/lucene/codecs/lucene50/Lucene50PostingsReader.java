@@ -17,15 +17,10 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -39,6 +34,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 
 import static org.apache.lucene.codecs.lucene50.ForUtil.MAX_DATA_SIZE;
 import static org.apache.lucene.codecs.lucene50.ForUtil.MAX_ENCODED_SIZE;
@@ -196,30 +195,38 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-    BlockDocsEnum docsEnum;
-    if (reuse instanceof BlockDocsEnum) {
-      docsEnum = (BlockDocsEnum) reuse;
-      if (!docsEnum.canReuse(docIn, fieldInfo)) {
+    if ((flags & DocsEnum.FLAG_POSITIONS) != DocsEnum.FLAG_POSITIONS) {
+      BlockDocsEnum docsEnum;
+      if (reuse instanceof BlockDocsEnum) {
+        docsEnum = (BlockDocsEnum) reuse;
+        if (!docsEnum.canReuse(docIn, fieldInfo)) {
+          docsEnum = new BlockDocsEnum(fieldInfo);
+        }
+      } else {
         docsEnum = new BlockDocsEnum(fieldInfo);
       }
-    } else {
-      docsEnum = new BlockDocsEnum(fieldInfo);
+      return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
     }
-    return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
+
+    return docsAndPositions(fieldInfo, termState, liveDocs, reuse, flags);
   }
 
   // TODO: specialize to liveDocs vs not
   
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, int flags)
+  public DocsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
+                                               DocsEnum reuse, int flags)
     throws IOException {
 
+    boolean indexHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean indexHasPayloads = fieldInfo.hasPayloads();
 
-    if ((!indexHasOffsets || (flags & DocsAndPositionsEnum.FLAG_OFFSETS) == 0) &&
-        (!indexHasPayloads || (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) == 0)) {
+    if (!indexHasPositions)
+      return null;
+
+    if ((!indexHasOffsets || (flags & DocsEnum.FLAG_OFFSETS) == 0) &&
+        (!indexHasPayloads || (flags & DocsEnum.FLAG_PAYLOADS) == 0)) {
       BlockDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse instanceof BlockDocsAndPositionsEnum) {
         docsAndPositionsEnum = (BlockDocsAndPositionsEnum) reuse;
@@ -336,6 +343,11 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     @Override
     public int freq() throws IOException {
       return freq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
     }
 
     @Override
@@ -474,7 +486,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
 
 
-  final class BlockDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  final class BlockDocsAndPositionsEnum extends DocsEnum {
     
     private final byte[] encoded;
 
@@ -552,7 +564,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public DocsAndPositionsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
+    public DocsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
       this.liveDocs = liveDocs;
 
       docFreq = termState.docFreq;
@@ -771,6 +783,10 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
+
+      if (posPendingCount == 0)
+        return NO_MORE_POSITIONS;
+
       if (posPendingFP != -1) {
         posIn.seek(posPendingFP);
         posPendingFP = -1;
@@ -790,6 +806,16 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       }
       position += posDeltaBuffer[posBufferUpto++];
       posPendingCount--;
+      return position;
+    }
+
+    @Override
+    public int startPosition() {
+      return position;
+    }
+
+    @Override
+    public int endPosition() {
       return position;
     }
 
@@ -815,7 +841,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
 
   // Also handles payloads + offsets
-  final class EverythingEnum extends DocsAndPositionsEnum {
+  final class EverythingEnum extends DocsEnum {
     
     private final byte[] encoded;
 
@@ -962,8 +988,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
       }
 
-      this.needsOffsets = (flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0;
-      this.needsPayloads = (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0;
+      this.needsOffsets = (flags & DocsEnum.FLAG_OFFSETS) != 0;
+      this.needsPayloads = (flags & DocsEnum.FLAG_PAYLOADS) != 0;
 
       doc = -1;
       accum = 0;
@@ -1230,6 +1256,9 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
+      if (posPendingCount == 0)
+        return NO_MORE_POSITIONS;
+
       if (posPendingFP != -1) {
         posIn.seek(posPendingFP);
         posPendingFP = -1;
@@ -1270,6 +1299,16 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
       posBufferUpto++;
       posPendingCount--;
+      return position;
+    }
+
+    @Override
+    public int startPosition() {
+      return position;
+    }
+
+    @Override
+    public int endPosition() {
       return position;
     }
 

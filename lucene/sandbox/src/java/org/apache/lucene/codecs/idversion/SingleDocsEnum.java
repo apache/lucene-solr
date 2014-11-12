@@ -20,6 +20,8 @@ package org.apache.lucene.codecs.idversion;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.util.Bits;
 
+import java.io.IOException;
+
 class SingleDocsEnum extends DocsEnum {
 
   private int doc;
@@ -67,5 +69,10 @@ class SingleDocsEnum extends DocsEnum {
   @Override
   public int freq() {
     return 1;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return -1;
   }
 }

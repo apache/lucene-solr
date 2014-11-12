@@ -17,13 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 /**  A <code>FilterLeafReader</code> contains another LeafReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -220,7 +220,7 @@ public class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       return in.docsAndPositions(liveDocs, reuse, flags);
     }
   }
@@ -267,55 +267,18 @@ public class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public long cost() {
-      return in.cost();
-    }
-  }
-
-  /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */
-  public static class FilterDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    /** The underlying DocsAndPositionsEnum instance. */
-    protected final DocsAndPositionsEnum in;
-
-    /**
-     * Create a new FilterDocsAndPositionsEnum
-     * @param in the underlying DocsAndPositionsEnum instance.
-     */
-    public FilterDocsAndPositionsEnum(DocsAndPositionsEnum in) {
-      if (in == null) {
-        throw new NullPointerException("incoming DocsAndPositionsEnum cannot be null");
-      }
-      this.in = in;
-    }
-
-    @Override
-    public AttributeSource attributes() {
-      return in.attributes();
-    }
-
-    @Override
-    public int docID() {
-      return in.docID();
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return in.freq();
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return in.nextDoc();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return in.advance(target);
-    }
-
-    @Override
     public int nextPosition() throws IOException {
       return in.nextPosition();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return in.startPosition();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return in.endPosition();
     }
 
     @Override
@@ -332,7 +295,7 @@ public class FilterLeafReader extends LeafReader {
     public BytesRef getPayload() throws IOException {
       return in.getPayload();
     }
-    
+
     @Override
     public long cost() {
       return in.cost();

@@ -17,23 +17,11 @@ package org.apache.lucene.codecs.ramonly;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -52,6 +40,17 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -267,7 +266,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
         DocsEnum docsEnum = null;
-        DocsAndPositionsEnum posEnum = null;
         int enumFlags;
 
         IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -282,15 +280,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
           enumFlags = DocsEnum.FLAG_FREQS;
         } else if (writeOffsets == false) {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+            enumFlags = DocsEnum.FLAG_PAYLOADS;
           } else {
             enumFlags = 0;
           }
         } else {
           if (writePayloads) {
-            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = DocsEnum.FLAG_PAYLOADS | DocsEnum.FLAG_OFFSETS;
           } else {
-            enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+            enumFlags = DocsEnum.FLAG_OFFSETS;
           }
         }
 
@@ -300,14 +298,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
             break;
           }
           RAMPostingsWriterImpl postingsWriter = termsConsumer.startTerm(term);
-
-          if (writePositions) {
-            posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
-            docsEnum = posEnum;
-          } else {
-            docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
-            posEnum = null;
-          }
+          docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
 
           int docFreq = 0;
           long totalTermFreq = 0;
@@ -330,13 +321,13 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
             postingsWriter.startDoc(docID, freq);
             if (writePositions) {
               for (int i=0;i<freq;i++) {
-                int pos = posEnum.nextPosition();
-                BytesRef payload = writePayloads ? posEnum.getPayload() : null;
+                int pos = docsEnum.nextPosition();
+                BytesRef payload = writePayloads ? docsEnum.getPayload() : null;
                 int startOffset;
                 int endOffset;
                 if (writeOffsets) {
-                  startOffset = posEnum.startOffset();
-                  endOffset = posEnum.endOffset();
+                  startOffset = docsEnum.startOffset();
+                  endOffset = docsEnum.endOffset();
                 } else {
                   startOffset = -1;
                   endOffset = -1;
@@ -498,8 +489,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
-      return new RAMDocsAndPositionsEnum(ramField.termToDocs.get(current), liveDocs);
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
+      return new RAMDocsEnum(ramField.termToDocs.get(current), liveDocs);
     }
   }
 
@@ -546,59 +537,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public int docID() {
       return current.docID;
     }
-    
-    @Override
-    public long cost() {
-      return ramTerm.docs.size();
-    } 
-  }
-
-  private static class RAMDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    private final RAMTerm ramTerm;
-    private final Bits liveDocs;
-    private RAMDoc current;
-    int upto = -1;
-    int posUpto = 0;
-
-    public RAMDocsAndPositionsEnum(RAMTerm ramTerm, Bits liveDocs) {
-      this.ramTerm = ramTerm;
-      this.liveDocs = liveDocs;
-    }
-
-    @Override
-    public int advance(int targetDocID) throws IOException {
-      return slowAdvance(targetDocID);
-    }
-
-    // TODO: override bulk read, for better perf
-    @Override
-    public int nextDoc() {
-      while(true) {
-        upto++;
-        if (upto < ramTerm.docs.size()) {
-          current = ramTerm.docs.get(upto);
-          if (liveDocs == null || liveDocs.get(current.docID)) {
-            posUpto = 0;
-            return current.docID;
-          }
-        } else {
-          return NO_MORE_DOCS;
-        }
-      }
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return current.positions.length;
-    }
-
-    @Override
-    public int docID() {
-      return current.docID;
-    }
 
     @Override
     public int nextPosition() {
+      if (posUpto >= current.positions.length)
+        return NO_MORE_POSITIONS;
       return current.positions[posUpto++];
     }
 

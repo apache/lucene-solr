@@ -28,20 +28,20 @@ import java.util.Arrays;
  * @lucene.experimental
  */
 
-public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
+public final class MultiDocsAndPositionsEnum extends DocsEnum {
   private final MultiTermsEnum parent;
-  final DocsAndPositionsEnum[] subDocsAndPositionsEnum;
+  final DocsEnum[] subDocsAndPositionsEnum;
   private final EnumWithSlice[] subs;
   int numSubs;
   int upto;
-  DocsAndPositionsEnum current;
+  DocsEnum current;
   int currentBase;
   int doc = -1;
 
   /** Sole constructor. */
   public MultiDocsAndPositionsEnum(MultiTermsEnum parent, int subReaderCount) {
     this.parent = parent;
-    subDocsAndPositionsEnum = new DocsAndPositionsEnum[subReaderCount];
+    subDocsAndPositionsEnum = new DocsEnum[subReaderCount];
     this.subs = new EnumWithSlice[subReaderCount];
     for (int i = 0; i < subs.length; i++) {
       subs[i] = new EnumWithSlice();
@@ -159,14 +159,14 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   // TODO: implement bulk read more efficiently than super
-  /** Holds a {@link DocsAndPositionsEnum} along with the
+  /** Holds a {@link DocsEnum} along with the
    *  corresponding {@link ReaderSlice}. */
   public final static class EnumWithSlice {
     EnumWithSlice() {
     }
 
-    /** {@link DocsAndPositionsEnum} for this sub-reader. */
-    public DocsAndPositionsEnum docsAndPositionsEnum;
+    /** {@link DocsEnum} for this sub-reader. */
+    public DocsEnum docsAndPositionsEnum;
 
     /** {@link ReaderSlice} describing how this sub-reader
      *  fits into the composite reader. */

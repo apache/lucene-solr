@@ -158,22 +158,22 @@ public final class MultiFields extends Fields {
     return null;
   }
 
-  /** Returns {@link DocsAndPositionsEnum} for the specified
+  /** Returns {@link DocsEnum} for the specified
    *  field & term.  This will return null if the field or
    *  term does not exist or positions were not indexed. 
    *  @see #getTermPositionsEnum(IndexReader, Bits, String, BytesRef, int) */
-  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
-    return getTermPositionsEnum(r, liveDocs, field, term, DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS);
+  public static DocsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
+    return getTermPositionsEnum(r, liveDocs, field, term, DocsEnum.FLAG_OFFSETS | DocsEnum.FLAG_PAYLOADS);
   }
 
-  /** Returns {@link DocsAndPositionsEnum} for the specified
+  /** Returns {@link DocsEnum} for the specified
    *  field & term, with control over whether offsets and payloads are
    *  required.  Some codecs may be able to optimize
    *  their implementation when offsets and/or payloads are not
    *  required. This will return null if the field or term does not
    *  exist or positions were not indexed. See {@link
-   *  TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}. */
-  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
+   *  TermsEnum#docs(Bits,DocsEnum,int)}. */
+  public static DocsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
     final Terms terms = getTerms(r, field);

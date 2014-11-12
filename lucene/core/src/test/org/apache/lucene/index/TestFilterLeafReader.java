@@ -18,10 +18,6 @@ package org.apache.lucene.index;
  */
 
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,6 +27,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 public class TestFilterLeafReader extends LuceneTestCase {
 
@@ -76,14 +76,14 @@ public class TestFilterLeafReader extends LuceneTestCase {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in, flags));
+      public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsEnum) reuse).in, flags));
       }
     }
 
     /** Filter that only returns odd numbered documents. */
-    private static class TestPositions extends FilterDocsAndPositionsEnum {
-      public TestPositions(DocsAndPositionsEnum in) {
+    private static class TestPositions extends FilterDocsEnum {
+      public TestPositions(DocsEnum in) {
         super(in);
       }
 
@@ -151,7 +151,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
-    DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader), null);
+    DocsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader), null);
     while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
     }
@@ -189,7 +189,6 @@ public class TestFilterLeafReader extends LuceneTestCase {
     checkOverrideMethods(FilterLeafReader.FilterTerms.class);
     checkOverrideMethods(FilterLeafReader.FilterTermsEnum.class);
     checkOverrideMethods(FilterLeafReader.FilterDocsEnum.class);
-    checkOverrideMethods(FilterLeafReader.FilterDocsAndPositionsEnum.class);
   }
 
 }

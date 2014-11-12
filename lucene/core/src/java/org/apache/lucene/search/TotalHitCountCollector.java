@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
 
 /**
  * Just counts the total number of hits.
@@ -33,6 +34,12 @@ public class TotalHitCountCollector extends SimpleCollector {
   @Override
   public void collect(int doc) {
     totalHits++;
+  }
+
+  @Override
+  public int postingFeatures() {
+    // we don't need frequencies here
+    return DocsEnum.FLAG_NONE;
   }
 
   @Override

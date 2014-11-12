@@ -17,12 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -44,6 +38,12 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Random;
 
 // TODO: test multiple codecs here?
 
@@ -342,7 +342,7 @@ public class TestCodecs extends LuceneTestCase {
         assertTrue(doc != DocIdSetIterator.NO_MORE_DOCS);
         assertEquals(docs[i], doc);
         if (doPos) {
-          this.verifyPositions(positions[i], ((DocsAndPositionsEnum) docsEnum));
+          this.verifyPositions(positions[i], docsEnum);
         }
       }
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
@@ -350,7 +350,7 @@ public class TestCodecs extends LuceneTestCase {
 
     byte[] data = new byte[10];
 
-    private void verifyPositions(final PositionData[] positions, final DocsAndPositionsEnum posEnum) throws Throwable {
+    private void verifyPositions(final PositionData[] positions, final DocsEnum posEnum) throws Throwable {
       for(int i=0;i<positions.length;i++) {
         final int pos = posEnum.nextPosition();
         assertEquals(positions[i].pos, pos);
@@ -462,7 +462,7 @@ public class TestCodecs extends LuceneTestCase {
           term = field.terms[upto];
           if (random().nextInt(3) == 1) {
             final DocsEnum docs;
-            final DocsAndPositionsEnum postings;
+            final DocsEnum postings;
             if (!field.omitTF) {
               postings = termsEnum.docsAndPositions(null, null);
               if (postings != null) {
@@ -693,22 +693,21 @@ public class TestCodecs extends LuceneTestCase {
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
       assert liveDocs == null;
-      return new DataDocsAndPositionsEnum(fieldData.terms[upto]);
+      return new DataDocsEnum(fieldData.terms[upto]);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
-      assert liveDocs == null;
-      return new DataDocsAndPositionsEnum(fieldData.terms[upto]);
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
+      return docs(liveDocs, reuse, flags);
     }
   }
 
-  private static class DataDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private static class DataDocsEnum extends DocsEnum {
     final TermData termData;
     int docUpto = -1;
     int posUpto;
 
-    public DataDocsAndPositionsEnum(TermData termData) {
+    public DataDocsEnum(TermData termData) {
       this.termData = termData;
     }
 

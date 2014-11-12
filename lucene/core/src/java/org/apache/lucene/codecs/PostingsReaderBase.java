@@ -17,10 +17,6 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
@@ -29,10 +25,13 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 /** The core terms dictionaries (BlockTermsReader,
  *  BlockTreeTermsReader) interact with a single instance
  *  of this class to manage creation of {@link DocsEnum} and
- *  {@link DocsAndPositionsEnum} instances.  It provides an
+ *  {@link DocsEnum} instances.  It provides an
  *  IndexInput (termsIn) where this class may read any
  *  previously stored data that it had written in its
  *  corresponding {@link PostingsWriterBase} at indexing
@@ -70,9 +69,10 @@ public abstract class PostingsReaderBase implements Closeable, Accountable {
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse,
+  public abstract DocsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsEnum reuse,
                                                         int flags) throws IOException;
-  
+  // nocommit this still has the distinction - no need to remove this as long as we get the interface straight?
+
   /** 
    * Checks consistency of this reader.
    * <p>
@@ -81,7 +81,7 @@ public abstract class PostingsReaderBase implements Closeable, Accountable {
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
-  
+
   @Override
   public abstract void close() throws IOException;
 }

@@ -31,7 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -100,7 +100,7 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     IndexSearcher searcher = newSearcher(reader);
     
-    DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
+    DocsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
                                                                 MultiFields.getLiveDocs(searcher.getIndexReader()),
                                                                 "field",
                                                                 new BytesRef("1"));
@@ -212,7 +212,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     final IndexReader readerFromWriter = writer.getReader();
     LeafReader r = SlowCompositeReaderWrapper.wrap(readerFromWriter);
 
-    DocsAndPositionsEnum tp = r.termPositionsEnum(new Term("content", "a"));
+    DocsEnum tp = r.termPositionsEnum(new Term("content", "a"));
     
     int count = 0;
     assertTrue(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

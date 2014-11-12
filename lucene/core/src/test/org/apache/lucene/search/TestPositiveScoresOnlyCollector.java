@@ -24,6 +24,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
 
+import java.io.IOException;
+
 public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
 
   private static final class SimpleScorer extends Scorer {
@@ -41,6 +43,11 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
       return 1;
     }
 
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
     @Override public int docID() { return idx; }
 
     @Override public int nextDoc() {
@@ -51,7 +58,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
       idx = target;
       return idx < scores.length ? idx : NO_MORE_DOCS;
     }
-    
+
     @Override
     public long cost() {
       return scores.length;

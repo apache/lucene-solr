@@ -17,8 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
@@ -134,14 +135,14 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+    public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, int flags, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
-        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        return super.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
       } else {
         assert query != null && innerWeight != null;
-        BulkScorer bulkScorer = innerWeight.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        BulkScorer bulkScorer = innerWeight.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
         if (bulkScorer == null) {
           return null;
         }
@@ -150,7 +151,7 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
@@ -161,7 +162,7 @@ public class ConstantScoreQuery extends Query {
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, acceptDocs);
+        disi = innerWeight.scorer(context, flags, acceptDocs);
       }
 
       if (disi == null) {
@@ -177,7 +178,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      final Scorer cs = scorer(context, context.reader().getLiveDocs());
+      final Scorer cs = scorer(context, DocsEnum.FLAG_FREQS, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -259,10 +260,15 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
-    
+
     @Override
     public long cost() {
       return docIdSetIterator.cost();

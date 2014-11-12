@@ -17,12 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -34,6 +28,12 @@ import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class TestBooleanScorer extends LuceneTestCase {
   private static final String FIELD = "category";
@@ -207,12 +207,12 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
+        public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) {
           throw new UnsupportedOperationException();
         }
 
         @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) {
+        public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, int flags, Bits acceptDocs) {
           return new BulkScorer() {
 
             @Override

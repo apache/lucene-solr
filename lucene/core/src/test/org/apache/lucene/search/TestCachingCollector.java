@@ -17,9 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 public class TestCachingCollector extends LuceneTestCase {
 
@@ -38,6 +39,11 @@ public class TestCachingCollector extends LuceneTestCase {
     public int freq() throws IOException { return 0; }
 
     @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
     public int docID() { return 0; }
 
     @Override
@@ -45,7 +51,7 @@ public class TestCachingCollector extends LuceneTestCase {
 
     @Override
     public int advance(int target) throws IOException { return 0; }
-    
+
     @Override
     public long cost() {
       return 1;
@@ -170,7 +176,7 @@ public class TestCachingCollector extends LuceneTestCase {
   public void testNoWrappedCollector() throws Exception {
     for (boolean cacheScores : new boolean[] { false, true }) {
       // create w/ null wrapped collector, and test that the methods work
-      CachingCollector cc = CachingCollector.create(true, cacheScores, 50 * ONE_BYTE);
+      CachingCollector cc = CachingCollector.create(true, DocsEnum.FLAG_NONE, cacheScores, 50 * ONE_BYTE);
       LeafCollector acc = cc.getLeafCollector(null);
       acc.setScorer(new MockScorer());
       acc.collect(0);

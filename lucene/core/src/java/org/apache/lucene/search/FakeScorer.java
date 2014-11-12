@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collection;
 
 /** Used by {@link BulkScorer}s that need to pass a {@link
@@ -43,6 +44,11 @@ final class FakeScorer extends Scorer {
   @Override
   public int freq() {
     return freq;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    throw new UnsupportedOperationException("FakeScorer doesn't support nextPosition()");
   }
 
   @Override

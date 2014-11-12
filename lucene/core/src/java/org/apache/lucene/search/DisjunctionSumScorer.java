@@ -19,13 +19,14 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#advance(int)} and uses advance() on the given Scorers. 
  */
 final class DisjunctionSumScorer extends DisjunctionScorer { 
   private double score;
   private final float[] coord;
-  
+
   /** Construct a <code>DisjunctionScorer</code>.
    * @param weight The weight to be used.
    * @param subScorers Array of at least two subscorers.
@@ -50,4 +51,5 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
   protected float getFinal() {
     return (float)score * coord[freq]; 
   }
+
 }

@@ -1,15 +1,15 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
-import java.io.IOException;
-
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
+
+import java.io.IOException;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -129,9 +129,9 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
     // it's ok to use MultiFields because we only iterate on one posting list.
     // breaking it to loop over the leaves() only complicates code for no
     // apparent gain.
-    DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(reader, null,
+    DocsEnum positions = MultiFields.getTermPositionsEnum(reader, null,
         Consts.FIELD_PAYLOADS, Consts.PAYLOAD_PARENT_BYTES_REF,
-        DocsAndPositionsEnum.FLAG_PAYLOADS);
+        DocsEnum.FLAG_PAYLOADS);
 
     // shouldn't really happen, if it does, something's wrong
     if (positions == null || positions.advance(first) == DocIdSetIterator.NO_MORE_DOCS) {

@@ -17,6 +17,27 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.Charset;
@@ -25,20 +46,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestPayloads extends LuceneTestCase {
     
@@ -183,7 +190,7 @@ public class TestPayloads extends LuceneTestCase {
 
         byte[] verifyPayloadData = new byte[payloadDataLength];
         offset = 0;
-        DocsAndPositionsEnum[] tps = new DocsAndPositionsEnum[numTerms];
+        DocsEnum[] tps = new DocsEnum[numTerms];
         for (int i = 0; i < numTerms; i++) {
           tps[i] = MultiFields.getTermPositionsEnum(reader,
                                                     MultiFields.getLiveDocs(reader),
@@ -214,7 +221,7 @@ public class TestPayloads extends LuceneTestCase {
         /*
          *  test lazy skipping
          */        
-        DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
+        DocsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                    MultiFields.getLiveDocs(reader),
                                                                    terms[0].field(),
                                                                    new BytesRef(terms[0].text()));
@@ -481,7 +488,7 @@ public class TestPayloads extends LuceneTestCase {
         IndexReader reader = DirectoryReader.open(dir);
         TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
         Bits liveDocs = MultiFields.getLiveDocs(reader);
-        DocsAndPositionsEnum tp = null;
+        DocsEnum tp = null;
         while (terms.next() != null) {
           String termText = terms.term().utf8ToString();
           tp = terms.docsAndPositions(liveDocs, tp);
@@ -604,7 +611,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader sr = SlowCompositeReaderWrapper.wrap(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
+    DocsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -638,7 +645,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     SegmentReader sr = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
+    DocsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());

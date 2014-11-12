@@ -20,7 +20,7 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -120,7 +120,7 @@ public class SpanTermQuery extends SpanQuery {
     final TermsEnum termsEnum = context.reader().terms(term.field()).iterator(null);
     termsEnum.seekExact(term.bytes(), state);
     
-    final DocsAndPositionsEnum postings = termsEnum.docsAndPositions(acceptDocs, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
+    final DocsEnum postings = termsEnum.docsAndPositions(acceptDocs, null, DocsEnum.FLAG_PAYLOADS);
 
     if (postings != null) {
       return new TermSpans(postings, term);

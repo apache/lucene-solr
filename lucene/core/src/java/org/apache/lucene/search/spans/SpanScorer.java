@@ -17,11 +17,11 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
+
+import java.io.IOException;
 
 /**
  * Public for extension only.
@@ -96,16 +96,22 @@ public class SpanScorer extends Scorer {
   public int freq() throws IOException {
     return numMatches;
   }
-  
+
+  @Override
+  public int nextPosition() throws IOException {
+    return -1; // nocommit maybe I can coerce this into working?
+  }
+
   /** Returns the intermediate "sloppy freq" adjusted for edit distance 
    *  @lucene.internal */
   // only public so .payloads can see it.
   public float sloppyFreq() throws IOException {
     return freq;
   }
-  
+
   @Override
   public long cost() {
     return spans.cost();
   }
+
 }

@@ -17,10 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
@@ -64,6 +65,36 @@ final class TermScorer extends Scorer {
   public int nextDoc() throws IOException {
     return docsEnum.nextDoc();
   }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return docsEnum.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return docsEnum.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return docsEnum.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return docsEnum.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return docsEnum.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return docsEnum.getPayload();
+  }
   
   @Override
   public float score() throws IOException {
@@ -92,5 +123,16 @@ final class TermScorer extends Scorer {
 
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
-  public String toString() { return "scorer(" + weight + ")"; }
+  public String toString() {
+    return "scorer(" + weight + ")[" + super.toString() + "]";
+  }
+  
+  // TODO: benchmark if the specialized conjunction really benefits
+  // from this, or if instead its from sorting by docFreq, or both
+
+  DocsEnum getDocsEnum() {
+    return docsEnum;
+  }
+
+
 }

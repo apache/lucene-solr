@@ -17,11 +17,11 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
+class SingleDocsAndPositionsEnum extends DocsEnum {
   private int doc;
   private int pos;
   private int singleDocID;

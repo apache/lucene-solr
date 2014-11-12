@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,27 +17,37 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -179,7 +189,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
       final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
@@ -197,9 +207,9 @@ public class MultiPhraseQuery extends Query {
       for (int pos=0; pos<postingsFreqs.length; pos++) {
         Term[] terms = termArrays.get(pos);
 
-        final DocsAndPositionsEnum postingsEnum;
+        final DocsEnum postingsEnum;
         int docFreq;
-
+        TermDocsEnumFactory factory;
         if (terms.length > 1) {
           postingsEnum = new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum);
 
@@ -221,6 +231,7 @@ public class MultiPhraseQuery extends Query {
             // None of the terms are in this reader
             return null;
           }
+          factory = new MultiTermDocsEnumFactory(liveDocs, context, terms, termContexts, termsEnum, flags);
         } else {
           final Term term = terms[0];
           TermState termState = termContexts.get(term).get(context.ord);
@@ -237,10 +248,10 @@ public class MultiPhraseQuery extends Query {
             throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
           }
 
-          docFreq = termsEnum.docFreq();
+          factory = new TermDocsEnumFactory(term.bytes(), termState, termsEnum, flags, acceptDocs);
         }
-
-        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue(), terms);
+        
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, factory, termsEnum.docFreq() , positions.get(pos).intValue(), terms);
       }
 
       // sort by increasing docFreq order
@@ -257,7 +268,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, DocsEnum.FLAG_POSITIONS, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -401,6 +412,27 @@ public class MultiPhraseQuery extends Query {
     }
     return true;
   }
+
+  private static class MultiTermDocsEnumFactory extends TermDocsEnumFactory {
+
+    LeafReaderContext context;
+    Term[] terms;
+    Map<Term, TermContext> termContexts;
+
+    MultiTermDocsEnumFactory(Bits liveDocs, LeafReaderContext context, Term[] terms,
+                             Map<Term,TermContext> termContexts, TermsEnum termsEnum, int flags) throws IOException {
+      super(termsEnum, flags, liveDocs);
+      this.context = context;
+      this.terms = terms;
+      this.termContexts = termContexts;
+    }
+
+    @Override
+    public DocsEnum docsAndPositionsEnum() throws IOException {
+      return new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum, flags);
+    }
+
+  }
 }
 
 /**
@@ -408,15 +440,15 @@ public class MultiPhraseQuery extends Query {
  */
 
 // TODO: if ever we allow subclassing of the *PhraseScorer
-class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
+class UnionDocsAndPositionsEnum extends DocsEnum {
 
-  private static final class DocsQueue extends PriorityQueue<DocsAndPositionsEnum> {
-    DocsQueue(List<DocsAndPositionsEnum> docsEnums) throws IOException {
+  private static final class DocsQueue extends PriorityQueue<DocsEnum> {
+    DocsQueue(List<DocsEnum> docsEnums) throws IOException {
       super(docsEnums.size());
 
-      Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
+      Iterator<DocsEnum> i = docsEnums.iterator();
       while (i.hasNext()) {
-        DocsAndPositionsEnum postings = i.next();
+        DocsEnum postings = i.next();
         if (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           add(postings);
         }
@@ -424,30 +456,46 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
 
     @Override
-    public final boolean lessThan(DocsAndPositionsEnum a, DocsAndPositionsEnum b) {
+    public final boolean lessThan(DocsEnum a, DocsEnum b) {
       return a.docID() < b.docID();
     }
   }
 
-  private static final class IntQueue {
-    private int _arraySize = 16;
+  // TODO: Reimplement this as int[_arraySize * 3], storing position at i * 3,
+  // startOffset at i * 3 + 1 and endOffset at i * 3 + 2.  Will need to also
+  // implement a new SorterTemplate to sort the array.
+
+  private static final class PositionQueue {
+    private int _arraySize = 48;
     private int _index = 0;
     private int _lastIndex = 0;
     private int[] _array = new int[_arraySize];
     
-    final void add(int i) {
-      if (_lastIndex == _arraySize)
+    final void add(int pos, int start, int end) {
+      if (_lastIndex * 3 == _arraySize)
         growArray();
 
-      _array[_lastIndex++] = i;
+      _array[_lastIndex * 3] = pos;
+      _array[_lastIndex * 3 + 1] = start;
+      _array[_lastIndex * 3 + 2] = end;
+      _lastIndex += 1;
     }
 
     final int next() {
-      return _array[_index++];
+      return _array[_index++ * 3];
+    }
+
+    final int startOffset() {
+      return _array[(_index - 1) * 3 + 1];
+    }
+
+    final int endOffset() {
+      return _array[(_index - 1) * 3 + 2];
     }
 
     final void sort() {
-      Arrays.sort(_array, _index, _lastIndex);
+      //Arrays.sort(_array, _index, _lastIndex);
+      sorter.sort(_index, _lastIndex - 1);
     }
 
     final void clear() {
@@ -465,16 +513,54 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
       _array = newArray;
       _arraySize *= 2;
     }
+
+    private IntroSorter sorter = new IntroSorter() {
+      private int pivot;
+
+      @Override
+      protected void swap(int i, int j) {
+        int ti = _array[i * 3];
+        int ts = _array[i * 3 + 1];
+        int te = _array[i * 3 + 2];
+        _array[i * 3] = _array[j * 3];
+        _array[i * 3 + 1] = _array[j * 3 + 1];
+        _array[i * 3 + 2] = _array[j * 3 + 2];
+        _array[j * 3] = ti;
+        _array[j * 3 + 1] = ts;
+        _array[j * 3 + 2] = te;
+      }
+
+      @Override
+      protected int compare(int i, int j) {
+        return _array[i * 3] - _array[j * 3];
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = i;
+      }
+
+      @Override
+      protected int comparePivot(int j) {
+        return pivot - _array[j * 3];
+      }
+    };
   }
 
   private int _doc = -1;
   private int _freq;
   private DocsQueue _queue;
-  private IntQueue _posList;
+  private PositionQueue _posList;
+  private int posPending;
   private long cost;
 
-  public UnionDocsAndPositionsEnum(Bits liveDocs, LeafReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
-    List<DocsAndPositionsEnum> docsEnums = new LinkedList<>();
+  public UnionDocsAndPositionsEnum(Bits liveDocs, LeafReaderContext context, Term[] terms,
+                                   Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
+    this(liveDocs, context, terms, termContexts, termsEnum, DocsEnum.FLAG_POSITIONS);
+  }
+
+  public UnionDocsAndPositionsEnum(Bits liveDocs, LeafReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum, int flags) throws IOException {
+    List<DocsEnum> docsEnums = new LinkedList<>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];
       TermState termState = termContexts.get(term).get(context.ord);
@@ -483,7 +569,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
         continue;
       }
       termsEnum.seekExact(term.bytes(), termState);
-      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+      DocsEnum postings = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
       if (postings == null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
@@ -493,7 +579,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
 
     _queue = new DocsQueue(docsEnums);
-    _posList = new IntQueue();
+    _posList = new PositionQueue();
   }
 
   @Override
@@ -509,13 +595,13 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     _doc = _queue.top().docID();
 
     // merge sort all positions together
-    DocsAndPositionsEnum postings;
+    DocsEnum postings;
     do {
       postings = _queue.top();
 
       final int freq = postings.freq();
       for (int i = 0; i < freq; i++) {
-        _posList.add(postings.nextPosition());
+        _posList.add(postings.nextPosition(), postings.startOffset(), postings.endOffset());
       }
 
       if (postings.nextDoc() != NO_MORE_DOCS) {
@@ -527,23 +613,27 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
     _posList.sort();
     _freq = _posList.size();
+    posPending = _freq;
 
     return _doc;
   }
 
   @Override
   public int nextPosition() {
+    if (posPending == 0)
+      return NO_MORE_POSITIONS;
+    posPending--;
     return _posList.next();
   }
 
   @Override
   public int startOffset() {
-    return -1;
+    return _posList.startOffset();
   }
 
   @Override
   public int endOffset() {
-    return -1;
+    return _posList.endOffset();
   }
 
   @Override
@@ -554,7 +644,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   @Override
   public final int advance(int target) throws IOException {
     while (_queue.top() != null && target > _queue.top().docID()) {
-      DocsAndPositionsEnum postings = _queue.pop();
+      DocsEnum postings = _queue.pop();
       if (postings.advance(target) != NO_MORE_DOCS) {
         _queue.add(postings);
       }
@@ -563,7 +653,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
-  public final int freq() {
+  public final int freq() throws IOException {
     return _freq;
   }
 

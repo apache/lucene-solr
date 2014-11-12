@@ -17,12 +17,7 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Set;
-
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,6 +34,12 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * This query requires that you index
@@ -155,9 +156,9 @@ public class ToParentBlockJoinQuery extends Query {
     // NOTE: acceptDocs applies (and is checked) only in the
     // parent document space
     @Override
-    public Scorer scorer(LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext readerContext, int flags, Bits acceptDocs) throws IOException {
 
-      final Scorer childScorer = childWeight.scorer(readerContext, readerContext.reader().getLiveDocs());
+      final Scorer childScorer = childWeight.scorer(readerContext, flags, readerContext.reader().getLiveDocs());
       if (childScorer == null) {
         // No matches
         return null;
@@ -183,7 +184,7 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, context.reader().getLiveDocs());
+      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, DocsEnum.FLAG_FREQS, context.reader().getLiveDocs());
       if (scorer != null && scorer.advance(doc) == doc) {
         return scorer.explain(context.docBase);
       }
@@ -367,6 +368,11 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public int freq() {
       return parentFreq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1; // nocommit do positions make sense here?
     }
 
     @Override

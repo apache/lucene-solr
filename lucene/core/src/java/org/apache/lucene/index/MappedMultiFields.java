@@ -17,9 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
 
 import static org.apache.lucene.index.FilterLeafReader.FilterFields;
 import static org.apache.lucene.index.FilterLeafReader.FilterTerms;
@@ -120,7 +120,7 @@ public class MappedMultiFields extends FilterFields {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       if (liveDocs != null) {
         throw new IllegalArgumentException("liveDocs must be null");
       }

@@ -17,16 +17,10 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
@@ -47,10 +41,16 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
-import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.Operations;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Support for highlighting multiterm queries in PostingsHighlighter.
@@ -197,7 +197,7 @@ class MultiTermHighlighting {
    * <p>
    * This is solely used internally by PostingsHighlighter: <b>DO NOT USE THIS METHOD!</b>
    */
-  static DocsAndPositionsEnum getDocsEnum(final TokenStream ts, final CharacterRunAutomaton[] matchers) throws IOException {
+  static DocsEnum getDocsEnum(final TokenStream ts, final CharacterRunAutomaton[] matchers) throws IOException {
     final CharTermAttribute charTermAtt = ts.addAttribute(CharTermAttribute.class);
     final OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
     ts.reset();
@@ -207,7 +207,7 @@ class MultiTermHighlighting {
     // would only serve to make this method less bogus.
     // instead, we always return freq() = Integer.MAX_VALUE and let PH terminate based on offset...
     
-    return new DocsAndPositionsEnum() {
+    return new DocsEnum() {
       int currentDoc = -1;
       int currentMatch = -1;
       int currentStartOffset = -1;

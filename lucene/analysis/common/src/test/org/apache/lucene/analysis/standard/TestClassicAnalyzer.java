@@ -7,7 +7,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -281,7 +281,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     // Make sure position is still incremented when
     // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader,
+    DocsEnum tps = MultiFields.getTermPositionsEnum(reader,
                                                                 MultiFields.getLiveDocs(reader),
                                                                 "content",
                                                                 new BytesRef("another"));

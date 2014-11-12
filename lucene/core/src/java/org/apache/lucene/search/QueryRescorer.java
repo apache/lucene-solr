@@ -17,12 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.LeafReaderContext;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
-import org.apache.lucene.index.LeafReaderContext;
 
 /** A {@link Rescorer} that uses a provided Query to assign
  *  scores to the first-pass hits.
@@ -82,7 +83,7 @@ public abstract class QueryRescorer extends Rescorer {
       if (readerContext != null) {
         // We advanced to another segment:
         docBase = readerContext.docBase;
-        scorer = weight.scorer(readerContext, null);
+        scorer = weight.scorer(readerContext, DocsEnum.FLAG_NONE, null);
       }
 
       if(scorer != null) {

@@ -20,7 +20,7 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.DocsAndPositionsEnum; // for javadoc
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
@@ -43,7 +43,7 @@ import org.apache.lucene.util.BytesRef;
   with type "eos".  The default token type is "word".  
   <p>
   A Token can optionally have metadata (a.k.a. payload) in the form of a variable
-  length byte array. Use {@link DocsAndPositionsEnum#getPayload()} to retrieve the 
+  length byte array. Use {@link DocsEnum#getPayload()} to retrieve the 
   payloads from the index.
   
   <br><br>

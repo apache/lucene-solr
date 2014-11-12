@@ -17,10 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.lucene.util.AttributeSource;
+
+import java.io.IOException;
 
 /** 
  * A {@code FilterScorer} contains another {@code Scorer}, which it
@@ -58,6 +57,11 @@ abstract class FilterScorer extends Scorer {
   @Override
   public int nextDoc() throws IOException {
     return in.nextDoc();
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return in.nextPosition();
   }
 
   @Override

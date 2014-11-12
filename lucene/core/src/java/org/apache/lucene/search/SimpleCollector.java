@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
+
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -49,5 +51,10 @@ public abstract class SimpleCollector implements Collector, LeafCollector {
 
   @Override
   public abstract void collect(int doc) throws IOException;
+
+  @Override
+  public int postingFeatures() {
+    return DocsEnum.FLAG_FREQS;
+  }
 
 }

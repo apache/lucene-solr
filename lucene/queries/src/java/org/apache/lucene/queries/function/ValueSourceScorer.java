@@ -93,6 +93,11 @@ public class ValueSourceScorer extends Scorer {
   }
 
   @Override
+  public int nextPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
   public long cost() {
     return maxDoc;
   }

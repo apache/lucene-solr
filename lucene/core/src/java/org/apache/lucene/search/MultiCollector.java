@@ -17,10 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.LeafReaderContext;
+
 import java.io.IOException;
 import java.util.Arrays;
-
-import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * A {@link Collector} which allows running a search with several
@@ -99,6 +99,15 @@ public class MultiCollector implements Collector {
       leafCollectors[i] = collectors[i].getLeafCollector(context);
     }
     return new MultiLeafCollector(leafCollectors);
+  }
+
+  @Override
+  public int postingFeatures() {
+    int pf = 0;
+    for (Collector collector : collectors) {
+      pf |= collector.postingFeatures();
+    }
+    return pf;
   }
 
 

@@ -145,7 +145,7 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     
-    DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(reader,
+    DocsEnum positions = MultiFields.getTermPositionsEnum(reader,
                                                                       MultiFields.getLiveDocs(reader),
                                                                       DocHelper.TEXT_FIELD_1_KEY,
                                                                       new BytesRef("field"));

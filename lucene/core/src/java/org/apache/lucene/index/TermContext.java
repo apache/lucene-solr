@@ -17,10 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
+
 import java.io.IOException;
 import java.util.Arrays;
-
-import org.apache.lucene.util.BytesRef;
 
 /**
  * Maintains a {@link IndexReader} {@link TermState} view over

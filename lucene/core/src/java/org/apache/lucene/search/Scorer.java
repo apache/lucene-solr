@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.apache.lucene.index.DocsEnum;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -66,6 +66,15 @@ public abstract class Scorer extends DocsEnum {
    */
   public Weight getWeight() {
     return weight;
+  }
+
+  @Override
+  public String toString() {
+    try {
+      return String.format("%d:%d(%d)->%d(%d)", docID(), startPosition(), startOffset(), endPosition(), endOffset());
+    } catch (IOException e) {
+      return String.format("Cannot retrieve position due to IOException");
+    }
   }
   
   /** Returns child sub-scorers

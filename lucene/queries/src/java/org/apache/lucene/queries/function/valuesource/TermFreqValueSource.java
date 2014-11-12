@@ -77,6 +77,11 @@ public class TermFreqValueSource extends DocFreqValueSource {
             }
 
             @Override
+            public int nextPosition() throws IOException {
+              return -1;
+            }
+
+            @Override
             public int docID() {
               return DocIdSetIterator.NO_MORE_DOCS;
             }

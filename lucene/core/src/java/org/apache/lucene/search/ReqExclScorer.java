@@ -110,6 +110,31 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
+  public int nextPosition() throws IOException {
+    return reqScorer.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return reqScorer.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return reqScorer.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return reqScorer.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return reqScorer.endOffset();
+  }
+
+  @Override
   public Collection<ChildScorer> getChildren() {
     return Collections.singleton(new ChildScorer(reqScorer, "MUST"));
   }

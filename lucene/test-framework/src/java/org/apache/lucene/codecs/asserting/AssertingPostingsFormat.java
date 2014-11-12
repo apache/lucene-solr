@@ -17,14 +17,10 @@ package org.apache.lucene.codecs.asserting;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.AssertingLeafReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -37,6 +33,9 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.TestUtil;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * Just like the default postings format but with additional asserts.
@@ -159,7 +158,6 @@ public final class AssertingPostingsFormat extends PostingsFormat {
         termsEnum = terms.iterator(termsEnum);
         BytesRefBuilder lastTerm = null;
         DocsEnum docsEnum = null;
-        DocsAndPositionsEnum posEnum = null;
 
         boolean hasFreqs = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
         boolean hasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -190,13 +188,12 @@ public final class AssertingPostingsFormat extends PostingsFormat {
             docsEnum = termsEnum.docs(null, docsEnum, flags);
           } else {
             if (hasPayloads) {
-              flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+              flags |= DocsEnum.FLAG_PAYLOADS;
             }
             if (hasOffsets) {
-              flags = flags | DocsAndPositionsEnum.FLAG_OFFSETS;
+              flags = flags | DocsEnum.FLAG_OFFSETS;
             }
-            posEnum = termsEnum.docsAndPositions(null, posEnum, flags);
-            docsEnum = posEnum;
+            docsEnum = termsEnum.docsAndPositions(null, docsEnum, flags);
           }
 
           assert docsEnum != null : "termsEnum=" + termsEnum + " hasPositions=" + hasPositions;
@@ -218,13 +215,13 @@ public final class AssertingPostingsFormat extends PostingsFormat {
                 int lastPos = -1;
                 int lastStartOffset = -1;
                 for(int i=0;i<freq;i++) {
-                  int pos = posEnum.nextPosition();
+                  int pos = docsEnum.nextPosition();
                   assert pos >= lastPos: "pos=" + pos + " vs lastPos=" + lastPos + " i=" + i + " freq=" + freq;
                   lastPos = pos;
 
                   if (hasOffsets) {
-                    int startOffset = posEnum.startOffset();
-                    int endOffset = posEnum.endOffset();
+                    int startOffset = docsEnum.startOffset();
+                    int endOffset = docsEnum.endOffset();
                     assert endOffset >= startOffset;
                     assert startOffset >= lastStartOffset;
                     lastStartOffset = startOffset;

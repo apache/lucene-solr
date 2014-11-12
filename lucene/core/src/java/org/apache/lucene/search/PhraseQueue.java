@@ -42,4 +42,8 @@ final class PhraseQueue extends PriorityQueue<PhrasePositions> {
       return pp1.doc < pp2.doc;
     }
   }
+
+  public Object[] getPPs() {
+    return getHeapArray();
+  }
 }

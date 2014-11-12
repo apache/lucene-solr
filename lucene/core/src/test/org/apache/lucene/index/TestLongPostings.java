@@ -167,7 +167,7 @@ public class TestLongPostings extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " doS1=" + doS1);
       }
         
-      final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(r, null, "field", new BytesRef(term));
+      final DocsEnum postings = MultiFields.getTermPositionsEnum(r, null, "field", new BytesRef(term));
 
       int docID = -1;
       while(docID < DocIdSetIterator.NO_MORE_DOCS) {

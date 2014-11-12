@@ -17,21 +17,11 @@ package org.apache.lucene.codecs.bloom;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Map;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -50,6 +40,15 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * <p>
@@ -381,11 +380,10 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       public long totalTermFreq() throws IOException {
         return delegate().totalTermFreq();
       }
-      
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
-          DocsAndPositionsEnum reuse, int flags) throws IOException {
+      public DocsEnum docsAndPositions(Bits liveDocs,
+          DocsEnum reuse, int flags) throws IOException {
         return delegate().docsAndPositions(liveDocs, reuse, flags);
       }
 
@@ -394,6 +392,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           throws IOException {
         return delegate().docs(liveDocs, reuse, flags);
       }
+
     }
 
     @Override

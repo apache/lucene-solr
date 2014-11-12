@@ -20,23 +20,26 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * Base class for Scorers that score disjunctions.
  */
 abstract class DisjunctionScorer extends Scorer {
-  private final Scorer subScorers[];
-  private int numScorers;
+  protected final Scorer subScorers[];
 
   /** The document number of the current match. */
   protected int doc = -1;
+  protected int numScorers;
+  protected PositionQueue posQueue;
   /** Number of matching scorers for the current match. */
   protected int freq = -1;
-  
+
   protected DisjunctionScorer(Weight weight, Scorer subScorers[]) {
     super(weight);
     this.subScorers = subScorers;
     this.numScorers = subScorers.length;
+    this.posQueue = new PositionQueue(subScorers);
     if (numScorers <= 1) {
       throw new IllegalArgumentException("There must be at least 2 subScorers");
     }
@@ -115,6 +118,45 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   @Override
+  public int nextPosition() throws IOException {
+    //System.out.println("Advancing " + this.toString());
+    int pos = posQueue.nextPosition();
+    //System.out.println(this);
+    return pos;
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return posQueue.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return posQueue.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return posQueue.endOffset();
+  }
+
+  @Override
+  public String toString() {
+    try {
+      return String.format(Locale.ROOT, "DisjScorer[%s] %d(%d)->%d(%d)", weight.toString(),
+                            posQueue.startPosition(),
+                            posQueue.startOffset(), posQueue.endPosition(), posQueue.endOffset());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
   public final long cost() {
     long sum = 0;
     for (int i = 0; i < numScorers; i++) {
@@ -143,6 +185,7 @@ abstract class DisjunctionScorer extends Scorer {
       int docID = subScorers[0].docID();
       if (docID != doc) {
         freq = -1;
+        posQueue.advanceTo(docID);
         return doc = docID;
       }
     }
@@ -163,11 +206,12 @@ abstract class DisjunctionScorer extends Scorer {
       int docID = subScorers[0].docID();
       if (docID >= target) {
         freq = -1;
+        posQueue.advanceTo(docID);
         return doc = docID;
       }
     }
   }
-  
+
   // if we haven't already computed freq + score, do so
   private void visitScorers() throws IOException {
     reset();
@@ -209,4 +253,5 @@ abstract class DisjunctionScorer extends Scorer {
   
   /** Return final score */
   protected abstract float getFinal();
+
 }

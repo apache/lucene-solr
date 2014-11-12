@@ -17,11 +17,9 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -30,6 +28,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.schema.IndexSchema;
+
+import java.io.IOException;
 
 /** 
  * Allows access to uninverted docvalues by delete-by-queries.
@@ -82,8 +82,8 @@ final class DeleteByQueryWrapper extends Query {
       public void normalize(float norm, float topLevelBoost) { inner.normalize(norm, topLevelBoost); }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        return inner.scorer(privateContext.getIndexReader().leaves().get(0), acceptDocs);
+      public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
+        return inner.scorer(privateContext.getIndexReader().leaves().get(0), flags, acceptDocs);
       }
     };
   }

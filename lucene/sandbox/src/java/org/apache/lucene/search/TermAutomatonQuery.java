@@ -17,14 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -39,6 +32,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
@@ -325,7 +325,7 @@ public class TermAutomatonQuery extends Query {
 
   static class EnumAndScorer {
     public final int termID;
-    public final DocsAndPositionsEnum posEnum;
+    public final DocsEnum posEnum;
 
     // How many positions left in the current document:
     public int posLeft;
@@ -333,7 +333,7 @@ public class TermAutomatonQuery extends Query {
     // Current position
     public int pos;
 
-    public EnumAndScorer(int termID, DocsAndPositionsEnum posEnum) {
+    public EnumAndScorer(int termID, DocsEnum posEnum) {
       this.termID = termID;
       this.posEnum = posEnum;
     }
@@ -385,7 +385,7 @@ public class TermAutomatonQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
 
       // Initialize the enums; null for a given slot means that term didn't appear in this reader
       EnumAndScorer[] enums = new EnumAndScorer[idToTerm.size()];

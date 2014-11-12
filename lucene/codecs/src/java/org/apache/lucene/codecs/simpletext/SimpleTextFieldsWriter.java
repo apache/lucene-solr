@@ -17,10 +17,7 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -32,8 +29,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
+import java.io.IOException;
+
 class SimpleTextFieldsWriter extends FieldsConsumer {
-  
+
   private IndexOutput out;
   private final BytesRefBuilder scratch = new BytesRefBuilder();
   private final SegmentWriteState writeState;
@@ -81,10 +80,10 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
       if (hasPositions) {
         
         if (hasPayloads) {
-          flags = flags | DocsAndPositionsEnum.FLAG_PAYLOADS;
+          flags = flags | DocsEnum.FLAG_PAYLOADS;
         }
         if (hasOffsets) {
-          flags = flags | DocsAndPositionsEnum.FLAG_OFFSETS;
+          flags = flags | DocsEnum.FLAG_OFFSETS;
         }
       } else {
         if (hasFreqs) {
@@ -93,7 +92,6 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
       }
 
       TermsEnum termsEnum = terms.iterator(null);
-      DocsAndPositionsEnum posEnum = null;
       DocsEnum docsEnum = null;
 
       // for each term in field
@@ -104,8 +102,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
         }
 
         if (hasPositions) {
-          posEnum = termsEnum.docsAndPositions(null, posEnum, flags);
-          docsEnum = posEnum;
+          docsEnum = termsEnum.docsAndPositions(null, docsEnum, flags);
         } else {
           docsEnum = termsEnum.docs(null, docsEnum, flags);
         }
@@ -154,15 +151,15 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
               // for each pos in field+term+doc
               for(int i=0;i<freq;i++) {
-                int position = posEnum.nextPosition();
+                int position = docsEnum.nextPosition();
 
                 write(POS);
                 write(Integer.toString(position));
                 newline();
 
                 if (hasOffsets) {
-                  int startOffset = posEnum.startOffset();
-                  int endOffset = posEnum.endOffset();
+                  int startOffset = docsEnum.startOffset();
+                  int endOffset = docsEnum.endOffset();
                   assert endOffset >= startOffset;
                   assert startOffset >= lastStartOffset: "startOffset=" + startOffset + " lastStartOffset=" + lastStartOffset;
                   lastStartOffset = startOffset;
@@ -174,7 +171,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
                   newline();
                 }
 
-                BytesRef payload = posEnum.getPayload();
+                BytesRef payload = docsEnum.getPayload();
 
                 if (payload != null && payload.length > 0) {
                   assert payload.length != 0;

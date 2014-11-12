@@ -17,14 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -35,6 +33,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** 
  * Tests coord() computation by BooleanQuery
@@ -707,7 +708,7 @@ public class TestBooleanCoord extends LuceneTestCase {
   private void assertScore(final float expected, Query query) throws Exception {
     // test in-order
     Weight weight = searcher.createNormalizedWeight(query);
-    Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    Scorer scorer = weight.scorer(reader.leaves().get(0), DocsEnum.FLAG_FREQS,  null);
     assertTrue(scorer.docID() == -1 || scorer.docID() == DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(0, scorer.nextDoc());
     assertEquals(expected, scorer.score(), 0.0001f);
@@ -715,7 +716,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     // test out-of-order (if supported)
     if (weight.scoresDocsOutOfOrder()) {
       final AtomicBoolean seen = new AtomicBoolean(false);
-      BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), false, null);
+      BulkScorer bulkScorer = weight.bulkScorer(reader.leaves().get(0), false, DocsEnum.FLAG_FREQS, null);
       assertNotNull(bulkScorer);
       bulkScorer.score(new LeafCollector() {
         Scorer scorer;

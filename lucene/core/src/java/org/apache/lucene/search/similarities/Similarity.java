@@ -17,10 +17,8 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -28,9 +26,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.spans.SpanQuery; // javadoc
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SmallFloat; // javadoc
+import org.apache.lucene.util.SmallFloat;
+
+import java.io.IOException;
 
 /** 
  * Similarity defines the components of Lucene scoring.

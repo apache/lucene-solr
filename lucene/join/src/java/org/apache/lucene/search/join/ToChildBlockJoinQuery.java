@@ -35,6 +35,11 @@ import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Just like {@link ToParentBlockJoinQuery}, except this
  * query joins in reverse: you provide a Query matching
@@ -122,9 +127,9 @@ public class ToChildBlockJoinQuery extends Query {
     // NOTE: acceptDocs applies (and is checked) only in the
     // child document space
     @Override
-    public Scorer scorer(LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext readerContext, int flags, Bits acceptDocs) throws IOException {
 
-      final Scorer parentScorer = parentWeight.scorer(readerContext, null);
+      final Scorer parentScorer = parentWeight.scorer(readerContext, flags, null);
 
       if (parentScorer == null) {
         // No matches
@@ -270,6 +275,11 @@ public class ToChildBlockJoinQuery extends Query {
     @Override
     public int freq() throws IOException {
       return parentFreq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1; // nocommit do positions make sense here?
     }
 
     @Override

@@ -17,11 +17,8 @@ package org.apache.lucene.index.sorter;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Comparator;
-
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -29,6 +26,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
+
+import java.io.IOException;
+import java.util.Comparator;
 
 /**
  * Sorts documents of a given index by returning a permutation on the document
@@ -268,6 +268,11 @@ final class Sorter {
     
     @Override
     public int freq() throws IOException { throw new UnsupportedOperationException(); }
+
+    @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
     public int docID() { throw new UnsupportedOperationException(); }

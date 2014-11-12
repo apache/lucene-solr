@@ -20,11 +20,11 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
 
-import java.util.Set;
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * A query that matches all documents.
@@ -73,6 +73,11 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
+    public int nextPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       doc = target-1;
       return nextDoc();
@@ -114,7 +119,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
       return new MatchAllScorer(context.reader(), acceptDocs, this, queryWeight);
     }
 

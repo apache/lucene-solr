@@ -17,11 +17,18 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.ComplexExplanation;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
@@ -81,7 +88,7 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
     if (stats == null) {
       return null;
     } else {
@@ -91,7 +98,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    SpanScorer scorer = (SpanScorer) scorer(context, context.reader().getLiveDocs());
+    SpanScorer scorer = (SpanScorer) scorer(context, DocsEnum.FLAG_POSITIONS, context.reader().getLiveDocs());
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

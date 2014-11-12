@@ -12,6 +12,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
+    <orderEntry type="module" scope="TEST" module-name="codecs" />
     <orderEntry type="module" module-name="memory" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="queries" />

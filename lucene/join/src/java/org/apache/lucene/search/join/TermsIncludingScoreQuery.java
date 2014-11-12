@@ -17,10 +17,6 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Locale;
-import java.util.Set;
-
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -41,6 +37,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
+
+import java.io.IOException;
+import java.util.Locale;
+import java.util.Set;
 
 class TermsIncludingScoreQuery extends Query {
 
@@ -133,7 +133,7 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        SVInnerScorer scorer = (SVInnerScorer) bulkScorer(context, false, null);
+        SVInnerScorer scorer = (SVInnerScorer) bulkScorer(context, false, DocsEnum.FLAG_FREQS, null);
         if (scorer != null) {
           return scorer.explain(doc);
         }
@@ -163,7 +163,7 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms == null) {
           return null;
@@ -181,10 +181,10 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, int flags, Bits acceptDocs) throws IOException {
 
         if (scoreDocsInOrder) {
-          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+          return super.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
         } else {
           Terms terms = context.reader().terms(field);
           if (terms == null) {
@@ -288,6 +288,7 @@ class TermsIncludingScoreQuery extends Query {
 
       return new ComplexExplanation(true, scores[ords[scoreUpto]], "Score based on join value " + termsEnum.term().utf8ToString());
     }
+
   }
 
   // This impl that tracks whether a docid has already been emitted. This check makes sure that docs aren't emitted
@@ -358,6 +359,11 @@ class TermsIncludingScoreQuery extends Query {
     @Override
     public int freq() throws IOException {
       return 1;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return -1;
     }
 
     @Override

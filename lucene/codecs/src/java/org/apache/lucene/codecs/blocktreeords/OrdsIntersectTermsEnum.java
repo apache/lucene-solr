@@ -17,10 +17,7 @@ package org.apache.lucene.codecs.blocktreeords;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermState;
@@ -34,6 +31,8 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.fst.FST;
+
+import java.io.IOException;
 
 // NOTE: cannot seek!
 final class OrdsIntersectTermsEnum extends TermsEnum {
@@ -209,7 +208,7 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+  public DocsEnum docsAndPositions(Bits skipDocs, DocsEnum reuse, int flags) throws IOException {
     if (fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
       // Positions were not indexed:
       return null;

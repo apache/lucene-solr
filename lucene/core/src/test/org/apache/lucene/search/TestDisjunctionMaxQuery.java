@@ -17,21 +17,21 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -39,11 +39,12 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
-import java.io.IOException;
 
 /**
  * Test of the DisjunctionMaxQuery.
@@ -180,7 +181,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     assertTrue(s.getTopReaderContext() instanceof LeafReaderContext);
     final Weight dw = s.createNormalizedWeight(dq);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
-    final Scorer ds = dw.scorer(context, context.reader().getLiveDocs());
+    final Scorer ds = dw.scorer(context, DocsEnum.FLAG_FREQS, context.reader().getLiveDocs());
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
@@ -196,7 +197,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     QueryUtils.check(random(), dq, s);
     final Weight dw = s.createNormalizedWeight(dq);
     LeafReaderContext context = (LeafReaderContext)s.getTopReaderContext();
-    final Scorer ds = dw.scorer(context, context.reader().getLiveDocs());
+    final Scorer ds = dw.scorer(context, DocsEnum.FLAG_FREQS, context.reader().getLiveDocs());
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));

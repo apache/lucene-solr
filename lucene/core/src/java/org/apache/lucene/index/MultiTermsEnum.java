@@ -401,7 +401,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+  public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     MultiDocsAndPositionsEnum docsAndPositionsEnum;
     // Can only reuse if incoming enum is also a MultiDocsAndPositionsEnum
     if (reuse != null && reuse instanceof MultiDocsAndPositionsEnum) {
@@ -452,7 +452,7 @@ public final class MultiTermsEnum extends TermsEnum {
       }
 
       assert entry.index < docsAndPositionsEnum.subDocsAndPositionsEnum.length: entry.index + " vs " + docsAndPositionsEnum.subDocsAndPositionsEnum.length + "; " + subs.length;
-      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index], flags);
+      final DocsEnum subPostings = entry.terms.docsAndPositions(b, docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index], flags);
 
       if (subPostings != null) {
         docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index] = subPostings;

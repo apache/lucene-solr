@@ -1,13 +1,13 @@
 package org.apache.lucene.index;
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -144,16 +144,16 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       assert state == State.POSITIONED: "docsAndPositions(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
       // and randomly *not* unwrap?
-      if (reuse instanceof AssertingDocsAndPositionsEnum) {
-        reuse = ((AssertingDocsAndPositionsEnum) reuse).in;
+      if (reuse instanceof AssertingDocsEnum) {
+        reuse = ((AssertingDocsEnum) reuse).in;
       }
-      DocsAndPositionsEnum docs = super.docsAndPositions(liveDocs, reuse, flags);
-      return docs == null ? null : new AssertingDocsAndPositionsEnum(docs);
+      DocsEnum docs = super.docsAndPositions(liveDocs, reuse, flags);
+      return docs == null ? null : new AssertingDocsEnum(docs);
     }
 
     // TODO: we should separately track if we are 'at the end' ?
@@ -256,8 +256,10 @@ public class AssertingLeafReader extends FilterLeafReader {
   /** Wraps a docsenum with additional checks */
   public static class AssertingDocsEnum extends FilterDocsEnum {
     private DocsEnumState state = DocsEnumState.START;
+    int positionCount = 0;
+    int positionMax = 0;
     private int doc;
-    
+
     public AssertingDocsEnum(DocsEnum in) {
       this(in, true);
     }
@@ -282,9 +284,12 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc + " " + in;
       if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
+        positionMax = 0;
       } else {
         state = DocsEnumState.ITERATING;
+        positionMax = super.freq();
       }
+      positionCount = 0;
       assert super.docID() == nextDoc;
       return doc = nextDoc;
     }
@@ -297,9 +302,12 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
       if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
+        positionMax = 0;
       } else {
         state = DocsEnumState.ITERATING;
+        positionMax = super.freq();
       }
+      positionCount = 0;
       assert super.docID() == advanced;
       return doc = advanced;
     }
@@ -315,18 +323,78 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert state != DocsEnumState.START : "freq() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "freq() called after NO_MORE_DOCS";
       int freq = super.freq();
+      if (freq == 0) {
+        System.out.println();
+      }
       assert freq > 0;
       return freq;
     }
+
+    @Override
+    public int nextPosition() throws IOException {
+      assert state != DocsEnumState.START : "nextPosition() called before nextDoc()/advance()";
+      assert state != DocsEnumState.FINISHED : "nextPosition() called after NO_MORE_DOCS";
+      int position = super.nextPosition();
+      assert position >= 0 || position == -1 : "invalid position: " + position;
+      if (positionCount++ >= positionMax)
+        assert position == NO_MORE_POSITIONS : "nextPosition() does not return NO_MORE_POSITIONS when exhausted";
+      return position;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      assert state != DocsEnumState.START : "startOffset() called before nextDoc()/advance()";
+      assert state != DocsEnumState.FINISHED : "startOffset() called after NO_MORE_DOCS";
+      assert positionCount > 0 : "startOffset() called before nextPosition()!";
+      assert positionCount <= positionMax : "startOffset() called after NO_MORE_POSITIONS";
+      return super.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      assert state != DocsEnumState.START : "endOffset() called before nextDoc()/advance()";
+      assert state != DocsEnumState.FINISHED : "endOffset() called after NO_MORE_DOCS";
+      assert positionCount > 0 : "endOffset() called before nextPosition()!";
+      assert positionCount <= positionMax : "endOffset() called after NO_MORE_POSITIONS";
+      return super.endOffset();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      assert state != DocsEnumState.START : "startPosition() called before nextDoc()/advance()";
+      assert state != DocsEnumState.FINISHED : "startPosition() called after NO_MORE_DOCS";
+      assert positionCount > 0 : "startPosition() called before nextPosition()!";
+      assert positionCount <= positionMax : "startPosition() called after NO_MORE_POSITIONS";
+      return super.startPosition();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      assert state != DocsEnumState.START : "endPosition() called before nextDoc()/advance()";
+      assert state != DocsEnumState.FINISHED : "endPosition() called after NO_MORE_DOCS";
+      assert positionCount > 0 : "endPosition() called before nextPosition()!";
+      assert positionCount <= positionMax : "endPosition() called after NO_MORE_POSITIONS";
+      return super.endPosition();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      assert state != DocsEnumState.START : "getPayload() called before nextDoc()/advance()";
+      assert state != DocsEnumState.FINISHED : "getPayload() called after NO_MORE_DOCS";
+      assert positionCount > 0 : "getPayload() called before nextPosition()!";
+      BytesRef payload = super.getPayload();
+      assert payload == null || payload.length > 0 : "getPayload() returned payload with invalid length!";
+      return payload;
+    }
   }
   
-  static class AssertingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
+  static class AssertingDocsAndPositionsEnum extends FilterDocsEnum {
     private DocsEnumState state = DocsEnumState.START;
     private int positionMax = 0;
     private int positionCount = 0;
     private int doc;
 
-    public AssertingDocsAndPositionsEnum(DocsAndPositionsEnum in) {
+    public AssertingDocsAndPositionsEnum(DocsEnum in) {
       super(in);
       int docid = in.docID();
       assert docid == -1 : "invalid initial doc id: " + docid;

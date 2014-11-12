@@ -70,6 +70,11 @@ final class MappingMultiDocsEnum extends DocsEnum {
   }
 
   @Override
+  public int nextPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
   public int docID() {
     return doc;
   }

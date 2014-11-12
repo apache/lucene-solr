@@ -16,11 +16,9 @@ package org.apache.lucene.facet;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -29,10 +27,11 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
+import java.io.IOException;
+import java.util.Arrays;
 /** Only purpose is to punch through and return a
  *  DrillSidewaysScorer */ 
 
@@ -118,17 +117,17 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
         // We can only run as a top scorer:
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, int flags, Bits acceptDocs) throws IOException {
 
         // TODO: it could be better if we take acceptDocs
         // into account instead of baseScorer?
-        Scorer baseScorer = baseWeight.scorer(context, acceptDocs);
+        Scorer baseScorer = baseWeight.scorer(context, flags, acceptDocs);
 
         DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDowns.length];
         int nullCount = 0;
@@ -173,7 +172,7 @@ class DrillSidewaysQuery extends Query {
               dims[dim].disi = disi;
             }
           } else {
-            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, null);
+            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, flags, null);
             if (disi == null) {
               nullCount++;
               continue;

@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.lucene.search.Scorer.ChildScorer;
-
 /** Internal document-at-a-time scorers used to deal with stupid coord() computation */
 class BooleanTopLevelScorers {
   
@@ -61,7 +59,7 @@ class BooleanTopLevelScorers {
     private final Scorer req;
     private final Scorer opt;
     
-    CoordinatingConjunctionScorer(Weight weight, float coords[], Scorer req, int reqCount, Scorer opt) {
+    CoordinatingConjunctionScorer(Weight weight, float coords[], Scorer req, int reqCount, Scorer opt) throws IOException {
       super(weight, new Scorer[] { req, opt });
       this.coords = coords;
       this.req = req;

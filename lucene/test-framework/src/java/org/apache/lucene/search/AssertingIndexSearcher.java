@@ -17,15 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.TestUtil;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.util.TestUtil;
 
 /**
  * Helper class that adds some extra checks to ensure correct
@@ -62,6 +63,21 @@ public class AssertingIndexSearcher extends IndexSearcher {
       @Override
       public void normalize(float norm, float topLevelBoost) {
         throw new IllegalStateException("Weight already normalized.");
+      }
+
+      @Override
+      public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
+        Scorer scorer = w.scorer(context, flags, acceptDocs);
+        if (scorer != null) {
+          // check that scorer obeys disi contract for docID() before next()/advance
+          try {
+            int docid = scorer.docID();
+            assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS;
+          } catch (UnsupportedOperationException ignored) {
+            // from a top-level BS1
+          }
+        }
+        return scorer;
       }
 
       @Override

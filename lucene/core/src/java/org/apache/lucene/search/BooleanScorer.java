@@ -17,10 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+
 import java.io.IOException;
 import java.util.List;
-
-import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -98,8 +99,13 @@ final class BooleanScorer extends BulkScorer {
       return true;
     }
 
+    @Override
+    public int postingFeatures() {
+      return DocsEnum.FLAG_FREQS;
+    }
+
   }
-  
+
   static final class Bucket {
     int doc = -1;            // tells if bucket is valid
     double score;             // incremental score

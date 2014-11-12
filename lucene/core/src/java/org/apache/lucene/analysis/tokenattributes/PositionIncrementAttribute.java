@@ -43,7 +43,7 @@ import org.apache.lucene.util.Attribute;
  *
  * </ul>
  * 
- * @see org.apache.lucene.index.DocsAndPositionsEnum
+ * @see org.apache.lucene.index.DocsEnum
  */
 public interface PositionIncrementAttribute extends Attribute {
   /** Set the position increment. The default value is one.

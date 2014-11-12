@@ -17,15 +17,10 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.Arrays;
-import java.util.Random;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
@@ -39,6 +34,11 @@ import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
+
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.Random;
 
 import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
@@ -321,7 +321,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     final Terms terms = fields.terms("f");
     final TermsEnum te = terms.iterator(null);
     assertEquals(new BytesRef("a"), te.next());
-    final DocsAndPositionsEnum dpe = te.docsAndPositions(null, null);
+    final DocsEnum dpe = te.docsAndPositions(null, null);
     assertEquals(0, dpe.nextDoc());
     assertEquals(2, dpe.freq());
     assertEquals(0, dpe.nextPosition());

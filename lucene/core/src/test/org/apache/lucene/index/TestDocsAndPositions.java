@@ -16,10 +16,6 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,6 +28,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class TestDocsAndPositions extends LuceneTestCase {
   private String fieldName;
 
@@ -42,7 +42,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   }
 
   /**
-   * Simple testcase for {@link DocsAndPositionsEnum}
+   * Simple testcase for {@link DocsEnum}
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
@@ -65,7 +65,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("1");
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
-        DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
+        DocsEnum docsAndPosEnum = getDocsAndPositions(
             leafReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
         if (leafReaderContext.reader().maxDoc() == 0) {
@@ -90,7 +90,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     directory.close();
   }
 
-  public DocsAndPositionsEnum getDocsAndPositions(LeafReader reader,
+  public DocsEnum getDocsAndPositions(LeafReader reader,
       BytesRef bytes, Bits liveDocs) throws IOException {
     Terms terms = reader.terms(fieldName);
     if (terms != null) {
@@ -148,7 +148,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("" + term);
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
-        DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
+        DocsEnum docsAndPosEnum = getDocsAndPositions(
             leafReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
         int initDoc = 0;
@@ -303,7 +303,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
-        DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
+        DocsEnum docsAndPosEnum = getDocsAndPositions(
             leafReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
 
@@ -361,7 +361,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader r = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum disi = r.termPositionsEnum(new Term("foo", "bar"));
+    DocsEnum disi = r.termPositionsEnum(new Term("foo", "bar"));
     int docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

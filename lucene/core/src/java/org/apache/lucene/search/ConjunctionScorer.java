@@ -17,126 +17,183 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.ArrayUtil;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 
-import org.apache.lucene.util.ArrayUtil;
-
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
-  protected int lastDoc = -1;
-  protected final DocsAndFreqs[] docsAndFreqs;
-  private final DocsAndFreqs lead;
+  
+  private final Scorer[] scorersOrdered;
+  private final Scorer[] scorers;
+  private int lastDoc = -1;
   private final float coord;
+  final PositionQueue posQueue;
 
-  ConjunctionScorer(Weight weight, Scorer[] scorers) {
+  public ConjunctionScorer(Weight weight, Scorer[] scorers) throws IOException {
     this(weight, scorers, 1f);
   }
   
-  ConjunctionScorer(Weight weight, Scorer[] scorers, float coord) {
+  public ConjunctionScorer(Weight weight, Scorer[] scorers, float coord) throws IOException {
     super(weight);
+    scorersOrdered = new Scorer[scorers.length];
+    System.arraycopy(scorers, 0, scorersOrdered, 0, scorers.length);
+    this.scorers = scorers;
     this.coord = coord;
-    this.docsAndFreqs = new DocsAndFreqs[scorers.length];
+    posQueue = new PositionQueue(scorers);
+    
     for (int i = 0; i < scorers.length; i++) {
-      docsAndFreqs[i] = new DocsAndFreqs(scorers[i]);
+      if (scorers[i].nextDoc() == NO_MORE_DOCS) {
+        // If even one of the sub-scorers does not have any documents, this
+        // scorer should not attempt to do any more work.
+        lastDoc = NO_MORE_DOCS;
+        return;
+      }
     }
-    // Sort the array the first time to allow the least frequent DocsEnum to
-    // lead the matching.
-    ArrayUtil.timSort(docsAndFreqs, new Comparator<DocsAndFreqs>() {
+
+    // Sort the array the first time...
+    // We don't need to sort the array in any future calls because we know
+    // it will already start off sorted (all scorers on same doc).
+    
+    // Note that this comparator is not consistent with equals!
+    // Also we use mergeSort here to be stable (so order of Scorers that
+    // match on first document keeps preserved):
+    ArrayUtil.timSort(scorers, new Comparator<Scorer>() { // sort the array
       @Override
-      public int compare(DocsAndFreqs o1, DocsAndFreqs o2) {
-        return Long.compare(o1.cost, o2.cost);
+      public int compare(Scorer o1, Scorer o2) {
+        return o1.docID() - o2.docID();
       }
     });
 
-    lead = docsAndFreqs[0]; // least frequent DocsEnum leads the intersection
-  }
+    // NOTE: doNext() must be called before the re-sorting of the array later on.
+    // The reason is this: assume there are 5 scorers, whose first docs are 1,
+    // 2, 3, 5, 5 respectively. Sorting (above) leaves the array as is. Calling
+    // doNext() here advances all the first scorers to 5 (or a larger doc ID
+    // they all agree on). 
+    // However, if we re-sort before doNext() is called, the order will be 5, 3,
+    // 2, 1, 5 and then doNext() will stop immediately, since the first scorer's
+    // docs equals the last one. So the invariant that after calling doNext() 
+    // all scorers are on the same doc ID is broken.
+    if (doNext() == NO_MORE_DOCS) {
+      // The scorers did not agree on any document.
+      lastDoc = NO_MORE_DOCS;
+      return;
+    }
 
-  private int doNext(int doc) throws IOException {
-    for(;;) {
-      // doc may already be NO_MORE_DOCS here, but we don't check explicitly
-      // since all scorers should advance to NO_MORE_DOCS, match, then
-      // return that value.
-      advanceHead: for(;;) {
-        for (int i = 1; i < docsAndFreqs.length; i++) {
-          // invariant: docsAndFreqs[i].doc <= doc at this point.
-
-          // docsAndFreqs[i].doc may already be equal to doc if we "broke advanceHead"
-          // on the previous iteration and the advance on the lead scorer exactly matched.
-          if (docsAndFreqs[i].doc < doc) {
-            docsAndFreqs[i].doc = docsAndFreqs[i].scorer.advance(doc);
-
-            if (docsAndFreqs[i].doc > doc) {
-              // DocsEnum beyond the current doc - break and advance lead to the new highest doc.
-              doc = docsAndFreqs[i].doc;
-              break advanceHead;
-            }
-          }
-        }
-        // success - all DocsEnums are on the same doc
-        return doc;
-      }
-      // advance head for next iteration
-      doc = lead.doc = lead.scorer.advance(doc);
+    // If first-time skip distance is any predictor of
+    // scorer sparseness, then we should always try to skip first on
+    // those scorers.
+    // Keep last scorer in it's last place (it will be the first
+    // to be skipped on), but reverse all of the others so that
+    // they will be skipped on in order of original high skip.
+    int end = scorers.length - 1;
+    int max = end >> 1;
+    for (int i = 0; i < max; i++) {
+      Scorer tmp = scorers[i];
+      int idx = end - i - 1;
+      scorers[i] = scorers[idx];
+      scorers[idx] = tmp;
     }
   }
 
+  private int doNext() throws IOException {
+    int first = 0;
+    int doc = scorers[scorers.length - 1].docID();
+    Scorer firstScorer;
+    while ((firstScorer = scorers[first]).docID() < doc) {
+      doc = firstScorer.advance(doc);
+      first = first == scorers.length - 1 ? 0 : first + 1;
+    }
+    posQueue.advanceTo(doc);
+    return doc;
+  }
+  
   @Override
   public int advance(int target) throws IOException {
-    lead.doc = lead.scorer.advance(target);
-    return lastDoc = doNext(lead.doc);
+    if (lastDoc == NO_MORE_DOCS) {
+      return lastDoc;
+    } else if (scorers[(scorers.length - 1)].docID() < target) {
+      scorers[(scorers.length - 1)].advance(target);
+    }
+    return lastDoc = doNext();
   }
 
   @Override
   public int docID() {
     return lastDoc;
   }
-
+  
   @Override
   public int nextDoc() throws IOException {
-    lead.doc = lead.scorer.nextDoc();
-    return lastDoc = doNext(lead.doc);
+    if (lastDoc == NO_MORE_DOCS) {
+      return lastDoc;
+    } else if (lastDoc == -1) {
+      lastDoc = scorers[scorers.length - 1].docID();
+      posQueue.advanceTo(lastDoc);
+      return lastDoc;
+    }
+    scorers[(scorers.length - 1)].nextDoc();
+    return lastDoc = doNext();
   }
-
+  
   @Override
   public float score() throws IOException {
     // TODO: sum into a double and cast to float if we ever send required clauses to BS1
     float sum = 0.0f;
-    for (DocsAndFreqs docs : docsAndFreqs) {
-      sum += docs.scorer.score();
+    for (int i = 0; i < scorers.length; i++) {
+      sum += scorers[i].score();
     }
     return sum * coord;
   }
-  
+
   @Override
-  public int freq() {
-    return docsAndFreqs.length;
+  public int freq() throws IOException {
+    return scorers.length;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return posQueue.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return posQueue.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return posQueue.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return posQueue.endOffset();
   }
 
   @Override
   public long cost() {
-    return lead.scorer.cost();
+    long sum = 0;
+    for (int i = 0; i < scorers.length; i++) {
+      sum += scorers[i].cost();
+    }
+    return sum; // nocommit is this right?
   }
 
   @Override
   public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>(docsAndFreqs.length);
-    for (DocsAndFreqs docs : docsAndFreqs) {
-      children.add(new ChildScorer(docs.scorer, "MUST"));
+    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(scorers.length);
+    for (Scorer scorer : scorersOrdered) {
+      children.add(new ChildScorer(scorer, "MUST"));
     }
     return children;
-  }
-
-  static final class DocsAndFreqs {
-    final long cost;
-    final Scorer scorer;
-    int doc = -1;
-   
-    DocsAndFreqs(Scorer scorer) {
-      this.scorer = scorer;
-      this.cost = scorer.cost();
-    }
   }
 }

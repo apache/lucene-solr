@@ -17,15 +17,14 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+
+import java.io.IOException;
 
 /**
  * Extension of {@link PostingsWriterBase}, adding a push
@@ -43,7 +42,6 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
 
   // Reused in writeTerm
   private DocsEnum docsEnum;
-  private DocsAndPositionsEnum posEnum;
   private int enumFlags;
 
   /** {@link FieldInfo} of current field being written. */
@@ -103,15 +101,15 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
       enumFlags = DocsEnum.FLAG_FREQS;
     } else if (writeOffsets == false) {
       if (writePayloads) {
-        enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+        enumFlags = DocsEnum.FLAG_PAYLOADS;
       } else {
         enumFlags = 0;
       }
     } else {
       if (writePayloads) {
-        enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+        enumFlags = DocsEnum.FLAG_PAYLOADS | DocsEnum.FLAG_OFFSETS;
       } else {
-        enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+        enumFlags = DocsEnum.FLAG_OFFSETS;
       }
     }
 
@@ -124,8 +122,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
     if (writePositions == false) {
       docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
     } else {
-      posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
-      docsEnum = posEnum;
+      docsEnum = termsEnum.docsAndPositions(null, docsEnum, enumFlags);
     }
     assert docsEnum != null;
 
@@ -149,13 +146,13 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
 
       if (writePositions) {
         for(int i=0;i<freq;i++) {
-          int pos = posEnum.nextPosition();
-          BytesRef payload = writePayloads ? posEnum.getPayload() : null;
+          int pos = docsEnum.nextPosition();
+          BytesRef payload = writePayloads ? docsEnum.getPayload() : null;
           int startOffset;
           int endOffset;
           if (writeOffsets) {
-            startOffset = posEnum.startOffset();
-            endOffset = posEnum.endOffset();
+            startOffset = docsEnum.startOffset();
+            endOffset = docsEnum.endOffset();
           } else {
             startOffset = -1;
             endOffset = -1;

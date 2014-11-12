@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -335,7 +335,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     docNL.add(field, fieldNL);
 
     BytesRef text;
-    DocsAndPositionsEnum dpEnum = null;
+    DocsEnum dpEnum = null;
     while((text = termsEnum.next()) != null) {
       String term = text.utf8ToString();
       NamedList<Object> termInfo = new NamedList<>();

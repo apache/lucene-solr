@@ -46,6 +46,7 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
   DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier, Scorer[] subScorers) {
     super(weight, subScorers);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
+        
   }
   
   @Override
@@ -66,4 +67,5 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
   protected float getFinal() {
     return scoreMax + (scoreSum - scoreMax) * tieBreakerMultiplier; 
   }
+
 }

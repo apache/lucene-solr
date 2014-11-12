@@ -17,9 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.lucene.search.TermAutomatonQuery.EnumAndScorer;
 import org.apache.lucene.search.TermAutomatonQuery.TermAutomatonWeight;
 import org.apache.lucene.search.similarities.Similarity;
@@ -29,6 +26,9 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
+
+import java.io.IOException;
+import java.util.Map;
 
 class TermAutomatonScorer extends Scorer {
   private final EnumAndScorer[] subs;
@@ -323,6 +323,11 @@ class TermAutomatonScorer extends Scorer {
   @Override
   public int freq() {
     return freq;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return -1; // nocommit we should be able to implement this
   }
 
   @Override

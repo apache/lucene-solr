@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Random;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
+import java.util.Random;
 
 class AssertingWeight extends Weight {
 
@@ -60,18 +60,18 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
-    final Scorer inScorer = in.scorer(context, acceptDocs);
+    final Scorer inScorer = in.scorer(context, flags, acceptDocs);
     return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
   }
 
   @Override
-  public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(LeafReaderContext context, boolean scoreDocsInOrder, int flags, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
-    BulkScorer inScorer = in.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+    BulkScorer inScorer = in.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
     if (inScorer == null) {
       return null;
     }
@@ -83,7 +83,7 @@ class AssertingWeight extends Weight {
     } else if (random.nextBoolean()) {
       // Let super wrap this.scorer instead, so we use
       // AssertingScorer:
-      inScorer = super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+      inScorer = super.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
     }
 
     if (scoreDocsInOrder == false && random.nextBoolean()) {

@@ -17,16 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -49,7 +40,15 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Base class aiming at testing {@link TermVectorsFormat term vectors formats}.
@@ -382,7 +381,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
   // to test reuse
   private final ThreadLocal<TermsEnum> termsEnum = new ThreadLocal<>();
   private final ThreadLocal<DocsEnum> docsEnum = new ThreadLocal<>();
-  private final ThreadLocal<DocsAndPositionsEnum> docsAndPositionsEnum = new ThreadLocal<>();
+  private final ThreadLocal<DocsEnum> docsAndPositionsEnum = new ThreadLocal<>();
 
   protected void assertEquals(RandomTokenStream tk, FieldType ft, Terms terms) throws IOException {
     assertEquals(1, terms.getDocCount());
@@ -420,7 +419,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       this.docsEnum.set(docsEnum);
 
       bits.clear(0);
-      DocsAndPositionsEnum docsAndPositionsEnum = termsEnum.docsAndPositions(bits, random().nextBoolean() ? null : this.docsAndPositionsEnum.get());
+      DocsEnum docsAndPositionsEnum = termsEnum.docsAndPositions(bits, random().nextBoolean() ? null : this.docsEnum.get());
       assertEquals(ft.storeTermVectorOffsets() || ft.storeTermVectorPositions(), docsAndPositionsEnum != null);
       if (docsAndPositionsEnum != null) {
         assertEquals(DocsEnum.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
@@ -486,7 +485,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
         }
         assertEquals(DocsEnum.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
       }
-      this.docsAndPositionsEnum.set(docsAndPositionsEnum);
+      this.docsEnum.set(docsAndPositionsEnum);
     }
     assertNull(termsEnum.next());
     for (int i = 0; i < 5; ++i) {

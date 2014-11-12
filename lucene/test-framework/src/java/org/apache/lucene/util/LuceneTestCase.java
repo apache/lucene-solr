@@ -17,6 +17,72 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.MixWithSuiteName;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.Listeners;
+import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
+import com.carrotsearch.randomizedtesting.annotations.TestGroup;
+import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
+import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
+import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.search.AssertingIndexSearcher;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
+import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -69,7 +135,6 @@ import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldFilterLeafReader;
 import org.apache.lucene.index.FieldInfo;
@@ -1891,8 +1956,8 @@ public abstract class LuceneTestCase extends Assert {
   public void assertTermsEnumEquals(String info, IndexReader leftReader, TermsEnum leftTermsEnum, TermsEnum rightTermsEnum, boolean deep) throws IOException {
     BytesRef term;
     Bits randomBits = new RandomBits(leftReader.maxDoc(), random().nextDouble(), random());
-    DocsAndPositionsEnum leftPositions = null;
-    DocsAndPositionsEnum rightPositions = null;
+    DocsEnum leftPositions = null;
+    DocsEnum rightPositions = null;
     DocsEnum leftDocs = null;
     DocsEnum rightDocs = null;
     
@@ -1956,7 +2021,7 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * checks docs + freqs + positions + payloads, sequentially
    */
-  public void assertDocsAndPositionsEnumEquals(String info, DocsAndPositionsEnum leftDocs, DocsAndPositionsEnum rightDocs) throws IOException {
+  public void assertDocsAndPositionsEnumEquals(String info, DocsEnum leftDocs, DocsEnum rightDocs) throws IOException {
     if (leftDocs == null || rightDocs == null) {
       assertNull(leftDocs);
       assertNull(rightDocs);
@@ -2035,7 +2100,7 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * checks advancing docs + positions
    */
-  public void assertPositionsSkippingEquals(String info, IndexReader leftReader, int docFreq, DocsAndPositionsEnum leftDocs, DocsAndPositionsEnum rightDocs) throws IOException {
+  public void assertPositionsSkippingEquals(String info, IndexReader leftReader, int docFreq, DocsEnum leftDocs, DocsEnum rightDocs) throws IOException {
     if (leftDocs == null || rightDocs == null) {
       assertNull(leftDocs);
       assertNull(rightDocs);

@@ -17,12 +17,8 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
-import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
-import org.apache.lucene.index.DocsEnum; // javadocs
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermsEnum;
@@ -30,6 +26,9 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * Class that plugs into term dictionaries, such as {@link
@@ -54,8 +53,8 @@ public abstract class PostingsWriterBase implements Closeable {
   public abstract void init(IndexOutput termsOut, SegmentWriteState state) throws IOException;
 
   /** Write all postings for one term; use the provided
-   *  {@link TermsEnum} to pull a {@link DocsEnum} or {@link
-   *  DocsAndPositionsEnum}.  This method should not
+   *  {@link TermsEnum} to pull a {@link DocsEnum}.
+   *  This method should not
    *  re-position the {@code TermsEnum}!  It is already
    *  positioned on the term that should be written.  This
    *  method must set the bit in the provided {@link

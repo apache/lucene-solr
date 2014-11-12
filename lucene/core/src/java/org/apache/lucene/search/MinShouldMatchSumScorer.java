@@ -17,13 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.ArrayUtil;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-
-import org.apache.lucene.util.ArrayUtil;
 
 /**
  * A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
@@ -61,6 +61,8 @@ class MinShouldMatchSumScorer extends Scorer {
   private double score = Float.NaN;
   
   private final float coord[];
+
+  private final PositionQueue posQueue;
 
   /**
    * Construct a <code>MinShouldMatchSumScorer</code>.
@@ -110,6 +112,8 @@ class MinShouldMatchSumScorer extends Scorer {
     this.coord = coord;
     minheapHeapify();
     assert minheapCheck();
+
+    posQueue = new PositionQueue(subScorers.toArray(new Scorer[subScorers.size()]));
   }
 
   @Override
@@ -145,6 +149,7 @@ class MinShouldMatchSumScorer extends Scorer {
         break;
       }
     }
+    posQueue.advanceTo(doc);
     return doc;
   }
   
@@ -231,6 +236,11 @@ class MinShouldMatchSumScorer extends Scorer {
     return nrMatchers;
   }
 
+  @Override
+  public int nextPosition() throws IOException {
+    return posQueue.nextPosition();
+  }
+
   /**
    * Advances to the first match beyond the current whose document number is
    * greater than or equal to a given target. <br>
@@ -261,6 +271,7 @@ class MinShouldMatchSumScorer extends Scorer {
     evaluateSmallestDocInHeap();
 
     if (nrMatchers >= mm) {
+      posQueue.advanceTo(doc);
       return doc;
     } else {
       return nextDoc();
