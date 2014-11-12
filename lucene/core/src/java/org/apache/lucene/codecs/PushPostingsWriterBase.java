@@ -17,14 +17,14 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
 
 /**
  * Extension of {@link PostingsWriterBase}, adding a push
@@ -103,7 +103,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
       if (writePayloads) {
         enumFlags = DocsEnum.FLAG_PAYLOADS;
       } else {
-        enumFlags = 0;
+        enumFlags = DocsEnum.FLAG_POSITIONS;
       }
     } else {
       if (writePayloads) {
