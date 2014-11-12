@@ -17,6 +17,14 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -47,14 +55,6 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.DOC;
 import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END;
@@ -246,6 +246,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final CharsRefBuilder scratchUTF16_2 = new CharsRefBuilder();
     private BytesRef payload;
     private long nextDocStart;
+    private boolean omitTF;
     private boolean readOffsets;
     private boolean readPositions;
     private int startOffset;
@@ -266,12 +267,14 @@ class SimpleTextFieldsReader extends FieldsProducer {
       this.liveDocs = liveDocs;
       nextDocStart = fp;
       docID = -1;
+      omitTF = indexOptions == IndexOptions.DOCS;
       readPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       readOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (!readOffsets) {
         startOffset = -1;
         endOffset = -1;
       }
+      tf = 1;
       cost = docFreq;
       return this;
     }
@@ -291,6 +294,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       boolean first = true;
       in.seek(nextDocStart);
       long posStart = 0;
+      int termFreq = 0;
       while(true) {
         final long lineStart = in.getFilePointer();
         SimpleTextUtil.readLine(in, scratch);
@@ -299,16 +303,19 @@ class SimpleTextFieldsReader extends FieldsProducer {
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
             in.seek(posStart);
+            if (!omitTF) {
+              tf = termFreq;
+            }
             return docID;
           }
           scratchUTF16.copyUTF8Bytes(scratch.bytes(), DOC.length, scratch.length()-DOC.length);
           docID = ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
-          tf = 0;
+          termFreq = 0;
           posPending = 0;
           first = false;
         } else if (StringHelper.startsWith(scratch.get(), FREQ)) {
           scratchUTF16.copyUTF8Bytes(scratch.bytes(), FREQ.length, scratch.length()-FREQ.length);
-          tf = ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
+          termFreq = ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
           posStart = in.getFilePointer();
         } else if (StringHelper.startsWith(scratch.get(), POS)) {
           // skip

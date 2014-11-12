@@ -16,10 +16,12 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -28,8 +30,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-import java.io.IOException;
-
 // We need to store offsets here, so don't use the following Codecs, which don't
 // support them.
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
@@ -37,7 +37,7 @@ public class TestPositionsAndOffsets extends IntervalTestBase {
 
   protected void addDocs(RandomIndexWriter writer) throws IOException {
     FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
-    fieldType.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     Document doc = new Document();
     doc.add(newField(
         "field",
