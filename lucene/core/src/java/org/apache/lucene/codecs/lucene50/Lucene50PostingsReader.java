@@ -17,6 +17,10 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
@@ -34,10 +38,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 
 import static org.apache.lucene.codecs.lucene50.ForUtil.MAX_DATA_SIZE;
 import static org.apache.lucene.codecs.lucene50.ForUtil.MAX_ENCODED_SIZE;
@@ -347,7 +347,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      return -1; // throw new UnsupportedOperationException("Shouldn't call nextPosition() on BlockDocsEnum");
     }
 
     @Override
