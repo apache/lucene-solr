@@ -395,6 +395,8 @@ Other Changes
 
 * SOLR-6739: Admin UI - Sort list of command line args (steffkes)
 
+* SOLR-6740: Admin UI - improve Files View (steffkes)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
