@@ -393,6 +393,8 @@ Other Changes
 
 * SOLR-6697: bin/solr start scripts allow setting SOLR_OPTS in solr.in.* (janhoy)
 
+* SOLR-6739: Admin UI - Sort list of command line args (steffkes)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
