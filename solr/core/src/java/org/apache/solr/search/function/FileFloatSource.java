@@ -132,9 +132,9 @@ public class FileFloatSource extends ValueSource {
    * @param reader the IndexReader whose cache needs refreshing
    */
   public void refreshCache(IndexReader reader) {
-    log.info("Refreshing FlaxFileFloatSource cache for field {}", this.field.getName());
+    log.info("Refreshing FileFloatSource cache for field {}", this.field.getName());
     floatCache.refresh(reader, new Entry(this));
-    log.info("FlaxFileFloatSource cache for field {} reloaded", this.field.getName());
+    log.info("FileFloatSource cache for field {} reloaded", this.field.getName());
   }
 
   private final float[] getCachedFloats(IndexReader reader) {
