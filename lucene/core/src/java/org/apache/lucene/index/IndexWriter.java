@@ -32,8 +32,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -4350,17 +4350,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public static boolean isLocked(Directory directory) throws IOException {
     return directory.makeLock(WRITE_LOCK_NAME).isLocked();
-  }
-
-  /**
-   * Forcibly unlocks the index in the named directory.
-   * <P>
-   * Caution: this should only be used by failure recovery code,
-   * when it is known that no other process nor thread is in fact
-   * currently accessing this index.
-   */
-  public static void unlock(Directory directory) throws IOException {
-    directory.makeLock(IndexWriter.WRITE_LOCK_NAME).close();
   }
 
   /** If {@link DirectoryReader#open(IndexWriter,boolean)} has

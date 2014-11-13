@@ -246,6 +246,9 @@ Bug Fixes
 
 * LUCENE-6055: PayloadAttribute.clone() now does a deep clone of the underlying
   bytes. (Shai Erera)
+
+* LUCENE-6060: Remove dangerous IndexWriter.unlock method (Simon
+  Willnauer, Mike McCandless)
   
 Documentation
 

@@ -23,18 +23,18 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.ReaderManager;
 import org.apache.lucene.index.SegmentInfos;
@@ -44,8 +44,6 @@ import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException; // javadocs
-import org.apache.lucene.store.NativeFSLockFactory;
-import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.BytesRef;
 
 /*
@@ -136,22 +134,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
   
   /**
-   * Forcibly unlocks the taxonomy in the named directory.
-   * <P>
-   * Caution: this should only be used by failure recovery code, when it is
-   * known that no other process nor thread is in fact currently accessing
-   * this taxonomy.
-   * <P>
-   * This method is unnecessary if your {@link Directory} uses a
-   * {@link NativeFSLockFactory} instead of the default
-   * {@link SimpleFSLockFactory}. When the "native" lock is used, a lock
-   * does not stay behind forever when the process using it dies. 
-   */
-  public static void unlock(Directory directory) throws IOException {
-    IndexWriter.unlock(directory);
-  }
-
-  /**
    * Construct a Taxonomy writer.
    * 
    * @param directory
@@ -173,10 +155,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * @throws CorruptIndexException
    *     if the taxonomy is corrupted.
    * @throws LockObtainFailedException
-   *     if the taxonomy is locked by another writer. If it is known
-   *     that no other concurrent writer is active, the lock might
-   *     have been left around by an old dead process, and should be
-   *     removed using {@link #unlock(Directory)}.
+   *     if the taxonomy is locked by another writer.
    * @throws IOException
    *     if another error occurred.
    */
