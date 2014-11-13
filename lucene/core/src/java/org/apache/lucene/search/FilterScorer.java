@@ -17,9 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.AttributeSource;
-
 import java.io.IOException;
+
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 
 /** 
  * A {@code FilterScorer} contains another {@code Scorer}, which it
@@ -36,6 +37,11 @@ abstract class FilterScorer extends Scorer {
   
   public FilterScorer(Scorer in) {
     super(in.weight);
+    this.in = in;
+  }
+
+  public FilterScorer(Scorer in, Weight weight) {
+    super(weight);
     this.in = in;
   }
   
@@ -72,6 +78,31 @@ abstract class FilterScorer extends Scorer {
   @Override
   public long cost() {
     return in.cost();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return in.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return in.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return in.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return in.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return in.getPayload();
   }
 
   @Override

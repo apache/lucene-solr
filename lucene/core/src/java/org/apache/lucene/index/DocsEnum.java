@@ -86,31 +86,22 @@ public abstract class DocsEnum extends DocIdSetIterator {
    *  when pulling the enum.  */
   public abstract int nextPosition() throws IOException;
 
-  public int startPosition() throws IOException {
-    throw new UnsupportedOperationException("startPosition() is not implemented on " + this.getClass().getSimpleName());
-  }
+  public abstract int startPosition() throws IOException;
 
-  public int endPosition() throws IOException {
-    throw new UnsupportedOperationException("endPosition() is not implemented on " + this.getClass().getSimpleName());
-  }
+  public abstract int endPosition() throws IOException;
 
   /** Returns start offset for the current position, or -1
    *  if offsets were not indexed. */
-  public int startOffset() throws IOException {
-    throw new UnsupportedOperationException("startOffset() is not implemented on " + this.getClass().getSimpleName());
-  }
+  public abstract int startOffset() throws IOException;
 
   /** Returns end offset for the current position, or -1 if
    *  offsets were not indexed. */
-  public int endOffset() throws IOException {
-    throw new UnsupportedOperationException("endOffset() is not implemented on " + this.getClass().getSimpleName());
-  }
+  public abstract int endOffset() throws IOException;
 
   /** Returns the payload at this position, or null if no
    *  payload was indexed. You should not modify anything 
    *  (neither members of the returned BytesRef nor bytes 
    *  in the byte[]). */
-  public BytesRef getPayload() throws IOException {
-    return null;
-  }
+  public abstract BytesRef getPayload() throws IOException;
+
 }

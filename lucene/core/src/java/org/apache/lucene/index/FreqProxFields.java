@@ -17,17 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /** Implements limited (iterators only, no stats) {@link
  *  Fields} interface over the in-RAM buffered
@@ -353,6 +353,31 @@ class FreqProxFields extends Fields {
     }
 
     @Override
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int nextDoc() throws IOException {
       if (reader.eof()) {
         if (ended) {
@@ -502,6 +527,16 @@ class FreqProxFields extends Fields {
         endOffset = startOffset + posReader.readVInt();
       }
 
+      return pos;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return pos;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
       return pos;
     }
 

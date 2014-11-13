@@ -17,13 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ArrayUtil;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
@@ -239,6 +240,31 @@ class MinShouldMatchSumScorer extends Scorer {
   @Override
   public int nextPosition() throws IOException {
     return posQueue.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return posQueue.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return posQueue.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return posQueue.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return posQueue.getPayload();
   }
 
   /**

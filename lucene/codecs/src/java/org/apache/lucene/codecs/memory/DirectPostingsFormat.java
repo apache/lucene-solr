@@ -17,6 +17,12 @@ package org.apache.lucene.codecs.memory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -42,12 +48,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
 
 // TODO: 
 //   - build depth-N prefix hash?
@@ -1593,6 +1593,31 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int startPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
@@ -1663,6 +1688,31 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public int nextPosition() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override
@@ -1919,6 +1969,31 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int startPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public int advance(int target) {
       /*
       upto++;
@@ -2115,6 +2190,16 @@ public final class DirectPostingsFormat extends PostingsFormat {
       if (posUpto >= curPositions.length)
         return NO_MORE_POSITIONS;
       posUpto += posJump;
+      return curPositions[posUpto];
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return curPositions[posUpto];
+    }
+
+    @Override
+    public int endPosition() throws IOException {
       return curPositions[posUpto];
     }
 

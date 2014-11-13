@@ -17,12 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
-import java.util.Arrays;
+import org.apache.lucene.util.BytesRef;
 
 final class ExactPhraseScorer extends Scorer {
   private final int endMinus1;
@@ -182,6 +183,11 @@ final class ExactPhraseScorer extends Scorer {
   @Override
   public int endOffset() throws IOException {
     return -1;
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return null; // nocommit how to deal with payloads across multiple positions?
   }
 
   @Override

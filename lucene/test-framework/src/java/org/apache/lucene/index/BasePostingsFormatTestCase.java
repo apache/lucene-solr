@@ -271,7 +271,17 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       posUpto++;
       return pos;
     }
-  
+
+    @Override
+    public int startPosition() throws IOException {
+      return pos;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return pos;
+    }
+
     @Override
     public int startOffset() {
       return startOffset;

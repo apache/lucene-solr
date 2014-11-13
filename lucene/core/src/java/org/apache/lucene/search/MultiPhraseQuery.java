@@ -17,6 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -36,18 +48,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -485,6 +485,14 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
       return _array[_index++ * 3];
     }
 
+    final int startPosition() {
+      return _array[(_index - 1) * 3];
+    }
+
+    final int endPosition() {
+      return _array[(_index - 1) * 3];
+    }
+
     final int startOffset() {
       return _array[(_index - 1) * 3 + 1];
     }
@@ -624,6 +632,16 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
       return NO_MORE_POSITIONS;
     posPending--;
     return _posList.next();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return _posList.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return _posList.endPosition();
   }
 
   @Override

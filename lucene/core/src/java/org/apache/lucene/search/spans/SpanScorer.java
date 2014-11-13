@@ -17,11 +17,12 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Public for extension only.
@@ -97,9 +98,36 @@ public class SpanScorer extends Scorer {
     return numMatches;
   }
 
+  // nocommit - make SpanScorer work with positions, or just nuke it entirely?
+
   @Override
   public int nextPosition() throws IOException {
-    return -1; // nocommit maybe I can coerce this into working?
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   /** Returns the intermediate "sloppy freq" adjusted for edit distance 

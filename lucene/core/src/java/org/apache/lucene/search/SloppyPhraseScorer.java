@@ -17,10 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.FixedBitSet;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +24,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 
 final class SloppyPhraseScorer extends Scorer {
@@ -584,6 +585,11 @@ final class SloppyPhraseScorer extends Scorer {
   @Override
   public int endOffset() throws IOException {
     return -1; // nocommit
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return null; // nocommit
   }
 
   @Override

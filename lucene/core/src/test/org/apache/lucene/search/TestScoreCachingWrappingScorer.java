@@ -17,13 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 public class TestScoreCachingWrappingScorer extends LuceneTestCase {
 
@@ -50,6 +51,31 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     @Override
     public int nextPosition() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override public int docID() { return doc; }

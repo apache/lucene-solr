@@ -1,10 +1,11 @@
 package org.apache.lucene.search;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.posfilter.Interval;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
-
-import java.io.IOException;
 
 /**
  * Copyright (c) 2013 Lemur Consulting Ltd.
@@ -123,5 +124,10 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
   public int endOffset() throws IOException {
     return current.offsetEnd;
   }
+
+  public BytesRef getPayload() throws IOException {
+    return top().docsEnum.getPayload();
+  }
+
 
 }

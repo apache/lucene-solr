@@ -249,6 +249,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private boolean omitTF;
     private boolean readOffsets;
     private boolean readPositions;
+    private int pos;
     private int startOffset;
     private int endOffset;
     private int posPending;
@@ -295,6 +296,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       in.seek(nextDocStart);
       long posStart = 0;
       int termFreq = 0;
+      pos = -1;
       while(true) {
         final long lineStart = in.getFilePointer();
         SimpleTextUtil.readLine(in, scratch);
@@ -345,7 +347,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public int nextPosition() throws IOException {
-      final int pos;
       if (posPending == 0)
         return NO_MORE_POSITIONS;
 
@@ -383,6 +384,16 @@ class SimpleTextFieldsReader extends FieldsProducer {
         in.seek(fp);
       }
       posPending--;
+      return pos;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return pos;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
       return pos;
     }
 

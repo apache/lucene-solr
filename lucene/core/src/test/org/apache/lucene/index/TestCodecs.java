@@ -17,6 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Random;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -38,12 +44,6 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Random;
 
 // TODO: test multiple codecs here?
 
@@ -750,6 +750,16 @@ public class TestCodecs extends LuceneTestCase {
     @Override
     public int nextPosition() {
       posUpto++;
+      return termData.positions[docUpto][posUpto].pos;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return termData.positions[docUpto][posUpto].pos;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
       return termData.positions[docUpto][posUpto].pos;
     }
 

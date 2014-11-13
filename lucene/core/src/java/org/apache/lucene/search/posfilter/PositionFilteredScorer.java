@@ -17,10 +17,11 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
 
 public abstract class PositionFilteredScorer extends Scorer {
 
@@ -127,6 +128,11 @@ public abstract class PositionFilteredScorer extends Scorer {
   @Override
   public int endOffset() throws IOException {
     return current.offsetEnd;
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return null; // nocommit
   }
 
   @Override

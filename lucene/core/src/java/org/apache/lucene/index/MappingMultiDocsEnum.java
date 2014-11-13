@@ -17,9 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.MultiDocsEnum.EnumWithSlice;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.MultiDocsEnum.EnumWithSlice;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments,
@@ -72,6 +73,31 @@ final class MappingMultiDocsEnum extends DocsEnum {
   @Override
   public int nextPosition() throws IOException {
     return -1;
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return -1;
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return null;
   }
 
   @Override

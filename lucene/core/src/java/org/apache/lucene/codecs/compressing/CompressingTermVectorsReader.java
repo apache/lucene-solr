@@ -17,6 +17,12 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -43,12 +49,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.BLOCK_SIZE;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_DAT;
@@ -995,6 +995,16 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       } else {
         return positions[positionIndex + i];
       }
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return positions[positionIndex + i];
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return positions[positionIndex + i];
     }
 
     @Override

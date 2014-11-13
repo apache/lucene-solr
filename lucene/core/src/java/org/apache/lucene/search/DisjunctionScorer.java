@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Base class for Scorers that score disjunctions.
  */
@@ -143,6 +145,11 @@ abstract class DisjunctionScorer extends Scorer {
   @Override
   public int endOffset() throws IOException {
     return posQueue.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return posQueue.getPayload();
   }
 
   @Override

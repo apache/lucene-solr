@@ -17,17 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  * A query that wraps another query or a filter and simply returns a constant score equal to the
@@ -259,9 +260,36 @@ public class ConstantScoreQuery extends Query {
       return 1;
     }
 
+    // nocommit maybe split into ConstantFilterScorer and ConstantQueryScorer to make these available?
+
     @Override
     public int nextPosition() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override

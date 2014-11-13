@@ -17,6 +17,17 @@ package org.apache.lucene.codecs.ramonly;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -40,17 +51,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -543,6 +543,16 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       if (posUpto >= current.positions.length)
         return NO_MORE_POSITIONS;
       return current.positions[posUpto++];
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return current.positions[posUpto-1];
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return current.positions[posUpto-1];
     }
 
     @Override

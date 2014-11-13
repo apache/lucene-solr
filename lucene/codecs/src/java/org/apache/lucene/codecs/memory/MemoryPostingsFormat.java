@@ -17,6 +17,13 @@ package org.apache.lucene.codecs.memory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -54,13 +61,6 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 // TODO: would be nice to somehow allow this to act like
 // InstantiatedIndex, by never writing to disk; ie you write
@@ -545,6 +545,31 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int startPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
     public long cost() {
       return numDocs;
     }
@@ -695,6 +720,16 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       }
 
       //System.out.println("      pos=" + pos + " payload=" + payload + " fp=" + in.getPosition());
+      return pos;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return pos;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
       return pos;
     }
 

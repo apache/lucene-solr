@@ -17,12 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ArrayUtil;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
@@ -177,6 +178,11 @@ class ConjunctionScorer extends Scorer {
   @Override
   public int endOffset() throws IOException {
     return posQueue.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return posQueue.getPayload();
   }
 
   @Override

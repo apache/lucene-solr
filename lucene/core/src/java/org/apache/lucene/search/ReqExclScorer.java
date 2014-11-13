@@ -27,7 +27,7 @@ import java.util.Collections;
  * This <code>Scorer</code> implements {@link Scorer#advance(int)},
  * and it uses the skipTo() on the given scorers.
  */
-class ReqExclScorer extends Scorer {
+class ReqExclScorer extends FilterScorer {
   private Scorer reqScorer;
   private DocIdSetIterator exclDisi;
   private int doc = -1;
@@ -37,7 +37,7 @@ class ReqExclScorer extends Scorer {
    * @param exclDisi indicates exclusion.
    */
   public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi) {
-    super(reqScorer.weight);
+    super(reqScorer);
     this.reqScorer = reqScorer;
     this.exclDisi = exclDisi;
   }
@@ -103,36 +103,6 @@ class ReqExclScorer extends Scorer {
   public float score() throws IOException {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
-  
-  @Override
-  public int freq() throws IOException {
-    return reqScorer.freq();
-  }
-
-  @Override
-  public int nextPosition() throws IOException {
-    return reqScorer.nextPosition();
-  }
-
-  @Override
-  public int startPosition() throws IOException {
-    return reqScorer.startPosition();
-  }
-
-  @Override
-  public int endPosition() throws IOException {
-    return reqScorer.endPosition();
-  }
-
-  @Override
-  public int startOffset() throws IOException {
-    return reqScorer.startOffset();
-  }
-
-  @Override
-  public int endOffset() throws IOException {
-    return reqScorer.endOffset();
-  }
 
   @Override
   public Collection<ChildScorer> getChildren() {
@@ -154,8 +124,4 @@ class ReqExclScorer extends Scorer {
     return doc = toNonExcluded();
   }
 
-  @Override
-  public long cost() {
-    return reqScorer.cost();
-  }
 }

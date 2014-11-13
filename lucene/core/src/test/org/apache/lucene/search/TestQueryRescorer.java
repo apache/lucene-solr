@@ -17,11 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Set;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -31,13 +36,9 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Set;
 
 public class TestQueryRescorer extends LuceneTestCase {
 
@@ -461,6 +462,31 @@ public class TestQueryRescorer extends LuceneTestCase {
             @Override
             public int nextPosition() throws IOException {
               return -1;
+            }
+
+            @Override
+            public int startPosition() throws IOException {
+              return -1;
+            }
+
+            @Override
+            public int endPosition() throws IOException {
+              return -1;
+            }
+
+            @Override
+            public int startOffset() throws IOException {
+              return -1;
+            }
+
+            @Override
+            public int endOffset() throws IOException {
+              return -1;
+            }
+
+            @Override
+            public BytesRef getPayload() throws IOException {
+              return null;
             }
 
             @Override

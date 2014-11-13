@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.lucene.util.BytesRef;
+
 /** Used by {@link BulkScorer}s that need to pass a {@link
  *  Scorer} to {@link LeafCollector#setScorer}. */
 final class FakeScorer extends Scorer {
@@ -49,6 +51,31 @@ final class FakeScorer extends Scorer {
   @Override
   public int nextPosition() throws IOException {
     throw new UnsupportedOperationException("FakeScorer doesn't support nextPosition()");
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    throw new UnsupportedOperationException("FakeScorer doesn't support startPosition()");
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    throw new UnsupportedOperationException("FakeScorer doesn't support endPosition()");
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    throw new UnsupportedOperationException("FakeScorer doesn't support startOffset()");
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    throw new UnsupportedOperationException("FakeScorer doesn't support endOffset()");
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    throw new UnsupportedOperationException("FakeScorer doesn't support getPayload()");
   }
 
   @Override

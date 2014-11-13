@@ -17,6 +17,13 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
@@ -40,13 +47,6 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.DOC;
 import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.END;
@@ -492,6 +492,16 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         nextPos++;
         return -1;
       }
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return positions[nextPos - 1];
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return positions[nextPos - 1];
     }
 
     @Override

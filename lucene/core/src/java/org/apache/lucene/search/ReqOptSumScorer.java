@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.apache.lucene.util.BytesRef;
+
 /** A Scorer for queries with a required part and an optional part.
  * Delays skipTo() on the optional part until a score() is needed.
  * <br>
@@ -124,6 +126,11 @@ class ReqOptSumScorer extends Scorer {
   @Override
   public int endOffset() throws IOException {
     return posQueue.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return posQueue.getPayload();
   }
 
   @Override

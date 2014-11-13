@@ -17,10 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCachingCollector extends LuceneTestCase {
 
@@ -41,6 +42,31 @@ public class TestCachingCollector extends LuceneTestCase {
     @Override
     public int nextPosition() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override

@@ -18,10 +18,10 @@ package org.apache.lucene.index;
  */
 
 
-import org.apache.lucene.util.BytesRef;
-
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Exposes {@link DocsEnum}, merged from {@link DocsEnum}
@@ -95,6 +95,16 @@ public final class MultiDocsEnum extends DocsEnum {
   @Override
   public int nextPosition() throws IOException {
     return current.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return current.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return current.endPosition();
   }
 
   @Override

@@ -17,10 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -141,6 +141,16 @@ public final class MultiDocsAndPositionsEnum extends DocsEnum {
   @Override
   public int nextPosition() throws IOException {
     return current.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return current.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return current.endPosition();
   }
 
   @Override
