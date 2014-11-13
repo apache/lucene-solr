@@ -4573,7 +4573,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * Caution: this should only be used by failure recovery code,
    * when it is known that no other process nor thread is in fact
    * currently accessing this index.
+   *
+   * @deprecated This method is very dangerous and will be removed in Lucene 5.0
    */
+  @Deprecated
   public static void unlock(Directory directory) throws IOException {
     directory.makeLock(IndexWriter.WRITE_LOCK_NAME).close();
   }
