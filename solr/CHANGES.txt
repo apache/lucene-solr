@@ -289,6 +289,8 @@ Bug Fixes
   scripts; remove -XX:+AggressiveOpts and only set -XX:-UseSuperWord for Java 1.7u40
   to u51. (Uwe Schindler, janhoy, hossman, Timothy Potter)
 
+* SOLR-6738: Admin UI - Escape Data on Plugins-View (steffkes)
+
 Optimizations
 ----------------------
 
