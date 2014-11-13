@@ -44,6 +44,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
+import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -154,6 +156,10 @@ public class WeightedSpanTermExtractor {
       for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
         extract(iterator.next(), terms);
       }
+    } else if (query instanceof ToParentBlockJoinQuery) {
+      extract(((ToParentBlockJoinQuery) query).getChildQuery(), terms);
+    } else if (query instanceof ToChildBlockJoinQuery) {
+      extract(((ToChildBlockJoinQuery) query).getParentQuery(), terms);
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
       final List<Term[]> termArrays = mpq.getTermArrays();

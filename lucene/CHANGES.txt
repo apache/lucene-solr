@@ -95,6 +95,9 @@ New Features
   each context passed to Analyzing/BlendedInfixSuggester (Arcadius
   Ahouansou, jane chang via Mike McCandless)
 
+* LUCENE-5929: Also extract terms to highlight from block join
+  queries. (Julie Tibshirani via Mike McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
