@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -73,8 +73,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.suggest.InputIterator;
-import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -609,8 +609,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       LookupResult result;
 
       if (doHighlight) {
-        Object highlightKey = highlight(text, matchedTokens, prefixToken);
-        result = new LookupResult(highlightKey.toString(), highlightKey, score, payload, contexts);
+        result = new LookupResult(text, highlight(text, matchedTokens, prefixToken), score, payload, contexts);
       } else {
         result = new LookupResult(text, score, payload, contexts);
       }
