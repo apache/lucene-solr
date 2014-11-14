@@ -23,7 +23,9 @@ Bug fixes
   McCandless)
 
 * LUCENE-3229: Overlapping ordered SpanNearQuery spans should not match.
-  (Ludovic Boutros, Paul Elschot, Greg Dearing, ehatcher)Documentation
+  (Ludovic Boutros, Paul Elschot, Greg Dearing, ehatcher)
+
+Documentation
 
 * LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
 
