@@ -48,12 +48,15 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   /** Construct a SpanNearQuery.  Matches spans matching a span from each
    * clause, with up to <code>slop</code> total unmatched positions between
-   * them.  * When <code>inOrder</code> is true, the spans from each clause
-   * must be * ordered as in <code>clauses</code>.
+   * them.
+   * <br>When <code>inOrder</code> is true, the spans from each clause
+   * must be in the same order as in <code>clauses</code> and must be non-overlapping.
+   * <br>When <code>inOrder</code> is false, the spans from each clause
+   * need not be ordered and may overlap.
    * @param clauses the clauses to find near each other
    * @param slop The slop value
    * @param inOrder true if order is important
-   * */
+   */
   public SpanNearQuery(SpanQuery[] clauses, int slop, boolean inOrder) {
     this(clauses, slop, inOrder, true);     
   }
