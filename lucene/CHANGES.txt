@@ -22,6 +22,10 @@ Bug fixes
 * LUCENE-6060: Deprecate IndexWriter.unlock (Simon Willnauer, Mike
   McCandless)
 
+Documentation
+
+* LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
+
 ======================= Lucene 4.10.2 ======================
 
 Bug fixes
