@@ -258,6 +258,8 @@ Documentation
 * LUCENE-5392: Add/improve analysis package documentation to reflect
   analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
+* LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
+
 Tests
 
 * LUCENE-5957: Add option for tests to not randomize codec
