@@ -25,6 +25,9 @@ Bug fixes
 * LUCENE-3229: Overlapping ordered SpanNearQuery spans should not match.
   (Ludovic Boutros, Paul Elschot, Greg Dearing, ehatcher)
 
+* LUCENE-5929: Also extract terms to highlight from block join
+  queries. (Julie Tibshirani via Mike McCandless)
+
 Documentation
 
 * LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)

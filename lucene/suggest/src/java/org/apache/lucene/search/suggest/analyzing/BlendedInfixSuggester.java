@@ -180,8 +180,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
       LookupResult result;
       if (doHighlight) {
-        Object highlightKey = highlight(text, matchedTokens, prefixToken);
-        result = new LookupResult(highlightKey.toString(), highlightKey, score, payload);
+        result = new LookupResult(text, highlight(text, matchedTokens, prefixToken), score, payload);
       } else {
         result = new LookupResult(text, score, payload);
       }
