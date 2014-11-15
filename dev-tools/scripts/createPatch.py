@@ -30,10 +30,11 @@ import os
 import subprocess
 import sys
 
-def make_filter_func(src_dir):
-  if os.path.exists(os.path.join(src_dir, '.git')):
+def make_filter_func(src_root, src_dir):
+  git_root = os.path.join(src_root, '.git')
+  if os.path.exists(git_root):
     def git_filter(filename):
-      rc = subprocess.call('git --git-dir=%s check-ignore %s' % (src_dir, filename), shell=True)
+      rc = subprocess.call('git --git-dir=%s check-ignore %s' % (git_root, filename), shell=True, stdout=subprocess.DEVNULL)
       return rc == 0
     return git_filter
 
@@ -89,13 +90,20 @@ def run_diff(from_dir, to_dir, skip_whitespace):
     flags += 'bBw'
 
   args = ['diff', flags]
-  for ignore in ('.svn', '.git', 'build', '.caches'):
+  for ignore in ('.svn', '.git', 'build', '.caches', '.idea', 'idea-build'):
     args.append('-x')
     args.append(ignore)
   args.append(from_dir)
   args.append(to_dir)
 
   return subprocess.Popen(args, shell=False, stdout=subprocess.PIPE)
+
+def find_root(path):
+  relative = []
+  while not os.path.exists(os.path.join(path, 'lucene', 'CHANGES.txt')):
+    path, base = os.path.split(path)
+    relative.prepend(base)
+  return path, '' if not relative else os.path.join(relative)
 
 def parse_config():
   parser = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
@@ -107,20 +115,24 @@ def parse_config():
 
   if not os.path.isdir(c.from_dir):
     parser.error('\'from\' path %s is not a valid directory' % c.from_dir)
-  if not os.path.exists(os.path.join(c.from_dir, 'lucene', 'CHANGES.txt')):
-    parser.error('\'from\' path %s is not a valid lucene/solr checkout' % c.from_dir)
+  (c.from_root, from_relative) = find_root(c.from_dir)
+  if c.from_root is None:
+    parser.error('\'from\' path %s is not relative to a lucene/solr checkout' % c.from_dir)
   if not os.path.isdir(c.to_dir):
     parser.error('\'to\' path %s is not a valid directory' % c.to_dir)
-  if not os.path.exists(os.path.join(c.to_dir, 'lucene', 'CHANGES.txt')):
-    parser.error('\'to\' path %s is not a valid lucene/solr checkout' % c.to_dir)
-
+  (c.to_root, to_relative) = find_root(c.to_dir)
+  if c.to_root is None:
+    parser.error('\'to\' path %s is not relative to a lucene/solr checkout' % c.to_dir)
+  if from_relative != to_relative:
+    parser.error('\'from\' and \'to\' path are not equivalent relative paths within their'
+                 ' checkouts: %s != %s' % (from_relative, to_relative))
   return c
 
 def main():
   c = parse_config()
 
   p = run_diff(c.from_dir, c.to_dir, c.skip_whitespace)
-  should_filter = make_filter_func(c.from_dir)
+  should_filter = make_filter_func(c.from_root, c.from_dir)
   print_filtered_output(p.stdout, should_filter)
 
 if __name__ == '__main__':
