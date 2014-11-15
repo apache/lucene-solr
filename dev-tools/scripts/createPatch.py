@@ -102,8 +102,8 @@ def find_root(path):
   relative = []
   while not os.path.exists(os.path.join(path, 'lucene', 'CHANGES.txt')):
     path, base = os.path.split(path)
-    relative.prepend(base)
-  return path, '' if not relative else os.path.join(relative)
+    relative.insert(0, base)
+  return path, '' if not relative else os.path.normpath(os.path.join(*relative))
 
 def parse_config():
   parser = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
@@ -125,7 +125,7 @@ def parse_config():
     parser.error('\'to\' path %s is not relative to a lucene/solr checkout' % c.to_dir)
   if from_relative != to_relative:
     parser.error('\'from\' and \'to\' path are not equivalent relative paths within their'
-                 ' checkouts: %s != %s' % (from_relative, to_relative))
+                 ' checkouts: %r != %r' % (from_relative, to_relative))
   return c
 
 def main():
