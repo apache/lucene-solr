@@ -16,5 +16,6 @@
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="lucene-core" />
+    <orderEntry type="module" module-name="join" />
   </component>
 </module>
