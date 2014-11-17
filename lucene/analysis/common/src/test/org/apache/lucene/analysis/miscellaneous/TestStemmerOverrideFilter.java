@@ -135,7 +135,9 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     if (map.isEmpty()) {
       map.put("booked", "books");
     }
-    StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(random().nextBoolean());
+    // This test might fail if ignoreCase is true since the map might have twice the same key, once
+    // lowercased and once uppercased
+    StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(false);
     Set<Entry<String,String>> entrySet = map.entrySet();
     for (Entry<String,String> entry : entrySet) {
       builder.add(entry.getKey(), entry.getValue());
