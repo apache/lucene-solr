@@ -58,7 +58,6 @@
   
   <target name="run-example" depends="example"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
-    <property name="example.solr.home" location="example/solr"/>
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
     <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
@@ -66,11 +65,9 @@
     </condition>
     <property name="example.jvm.line" value=""/>
     <property name="example.heap.size" value="512M"/>
-    <java jar="${server.dir}/start.jar" fork="true" dir="${server.dir}" maxmemory="${example.heap.size}">
-      <jvmarg line="${example.jvm.line}"/>
-      <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
-      <sysproperty key="jetty.port" value="${example.jetty.port}"/>
-    </java>
+    <exec executable="${common-solr.dir}/bin/solr" failonerror="true">
+      <arg line="-e techproducts -p ${example.jetty.port} -m ${example.heap.size} -d ${server.dir} -a '${example.jvm.line}'"/>
+    </exec>
   </target>
  
   <!-- setup proxy for download tasks -->

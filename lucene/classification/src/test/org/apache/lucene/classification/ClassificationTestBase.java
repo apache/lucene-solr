@@ -91,7 +91,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
       assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
-      assertTrue("got a not positive score " + classificationResult.getScore(), classificationResult.getScore() > 0);
+      double score = classificationResult.getScore();
+      assertTrue("score should be between 0 and 1, got:" + score, score <= 1 && score >= 0);
     } finally {
       if (leafReader != null)
         leafReader.close();
@@ -110,11 +111,12 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
       assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
-      assertTrue("got a not positive score " + classificationResult.getScore(), classificationResult.getScore() > 0);
+      double score = classificationResult.getScore();
+      assertTrue("score should be between 0 and 1, got: " + score, score <= 1 && score >= 0);
       updateSampleIndex(analyzer);
       ClassificationResult<T> secondClassificationResult = classifier.assignClass(inputDoc);
       assertEquals(classificationResult.getAssignedClass(), secondClassificationResult.getAssignedClass());
-      assertEquals(Double.valueOf(classificationResult.getScore()), Double.valueOf(secondClassificationResult.getScore()));
+      assertEquals(Double.valueOf(score), Double.valueOf(secondClassificationResult.getScore()));
 
     } finally {
       if (leafReader != null)

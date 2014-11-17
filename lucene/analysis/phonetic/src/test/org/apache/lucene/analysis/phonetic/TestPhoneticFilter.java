@@ -21,7 +21,12 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.commons.codec.Encoder;
-import org.apache.commons.codec.language.*;
+import org.apache.commons.codec.language.Caverphone2;
+import org.apache.commons.codec.language.DoubleMetaphone;
+import org.apache.commons.codec.language.Metaphone;
+import org.apache.commons.codec.language.Nysiis;
+import org.apache.commons.codec.language.RefinedSoundex;
+import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -59,6 +64,11 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
           "TTA1111111", "Datha", "KLN1111111", "Carlene" });
     assertAlgorithm(new Caverphone2(), false, "Darda Karleen Datha Carlene",
         new String[] { "TTA1111111", "KLN1111111", "TTA1111111", "KLN1111111" });
+
+    assertAlgorithm(new Nysiis(), true, "aaa bbb ccc easgasg",
+        new String[] { "A", "aaa", "B", "bbb", "C", "ccc", "EASGAS", "easgasg" });
+    assertAlgorithm(new Nysiis(), false, "aaa bbb ccc easgasg",
+        new String[] { "A", "B", "C", "EASGAS" });
   }
 
   

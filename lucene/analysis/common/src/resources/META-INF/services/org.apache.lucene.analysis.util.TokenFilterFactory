@@ -91,6 +91,7 @@ org.apache.lucene.analysis.reverse.ReverseStringFilterFactory
 org.apache.lucene.analysis.ru.RussianLightStemFilterFactory
 org.apache.lucene.analysis.shingle.ShingleFilterFactory
 org.apache.lucene.analysis.snowball.SnowballPorterFilterFactory
+org.apache.lucene.analysis.sr.SerbianNormalizationFilterFactory
 org.apache.lucene.analysis.standard.ClassicFilterFactory
 org.apache.lucene.analysis.standard.StandardFilterFactory
 org.apache.lucene.analysis.sv.SwedishLightStemFilterFactory

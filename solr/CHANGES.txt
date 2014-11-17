@@ -282,6 +282,15 @@ Bug Fixes
   it caused long startup times on lage indexes even when it wasn't used.
   (yonik)
 
+* SOLR-6662: better validation when parsing command-line options that expect a value
+  (Timothy Potter)
+
+* SOLR-6705: Better strategy for dealing with JVM specific options in the start
+  scripts; remove -XX:+AggressiveOpts and only set -XX:-UseSuperWord for Java 1.7u40
+  to u51. (Uwe Schindler, janhoy, hossman, Timothy Potter)
+
+* SOLR-6738: Admin UI - Escape Data on Plugins-View (steffkes)
+
 Optimizations
 ----------------------
 
@@ -382,6 +391,12 @@ Other Changes
 * SOLR-6715: ZkSolrResourceLoader constructors accept a parameter called 'collection'
   but it should be 'configName'. (shalin)
 
+* SOLR-6697: bin/solr start scripts allow setting SOLR_OPTS in solr.in.* (janhoy)
+
+* SOLR-6739: Admin UI - Sort list of command line args (steffkes)
+
+* SOLR-6740: Admin UI - improve Files View (steffkes)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
@@ -390,6 +405,8 @@ Bug Fixes
 * SOLR-6696: bin/solr start script should not enable autoSoftCommit by default (janhoy)
 
 * SOLR-6704: TrieDateField type drops schema properties in branch 4.10 (Tomás Fernández Löbbe)
+
+* SOLR-6085: Suggester crashes when prefixToken is longer than surface form (janhoy)
 
 ==================  4.10.2 ==================
 

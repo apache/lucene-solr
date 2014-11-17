@@ -122,6 +122,11 @@ public class ToParentBlockJoinQuery extends Query {
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new BlockJoinWeight(this, childQuery.createWeight(searcher), parentsFilter, scoreMode);
   }
+  
+  /** Return our child query. */
+  public Query getChildQuery() {
+    return childQuery;
+  }
 
   private static class BlockJoinWeight extends Weight {
     private final Query joinQuery;

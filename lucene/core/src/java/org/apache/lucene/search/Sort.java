@@ -127,7 +127,11 @@ public class Sort {
     setSort(field);
   }
 
-  /** Sorts in succession by the criteria in each SortField. */
+  /** Sets the sort to the given criteria in succession: the
+   *  first SortField is checked first, but if it produces a
+   *  tie, then the second SortField is used to break the tie,
+   *  etc.  Finally, if there is still a tie after all SortFields
+   *  are checked, the internal Lucene docid is used to break it. */
   public Sort(SortField... fields) {
     setSort(fields);
   }
@@ -137,7 +141,11 @@ public class Sort {
     this.fields = new SortField[] { field };
   }
 
-  /** Sets the sort to the given criteria in succession. */
+  /** Sets the sort to the given criteria in succession: the
+   *  first SortField is checked first, but if it produces a
+   *  tie, then the second SortField is used to break the tie,
+   *  etc.  Finally, if there is still a tie after all SortFields
+   *  are checked, the internal Lucene docid is used to break it. */
   public void setSort(SortField... fields) {
     this.fields = fields;
   }

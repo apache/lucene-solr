@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -70,8 +72,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.suggest.InputIterator;
-import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -390,7 +392,22 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** Lookup, without any context. */
   public List<LookupResult> lookup(CharSequence key, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-    return lookup(key, null, num, allTermsRequired, doHighlight);
+    return lookup(key, (Map<BytesRef, BooleanClause.Occur>)null, num, allTermsRequired, doHighlight);
+  }
+
+  /** Lookup, with context but without booleans. Context booleans default to SHOULD,
+   *  so each suggestion must have at least one of the contexts. */
+  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+
+    if (contexts == null) {
+      return lookup(key, num, allTermsRequired, doHighlight);
+    }
+
+    Map<BytesRef, BooleanClause.Occur> contextInfo = new HashMap<>();
+    for (BytesRef context : contexts) {
+      contextInfo.put(context, BooleanClause.Occur.SHOULD);
+    }
+    return lookup(key, contextInfo, num, allTermsRequired, doHighlight);
   }
 
   /** This is called if the last token isn't ended
@@ -408,7 +425,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** Retrieve suggestions, specifying whether all terms
    *  must match ({@code allTermsRequired}) and whether the hits
    *  should be highlighted ({@code doHighlight}). */
-  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+  public List<LookupResult> lookup(CharSequence key, Map<BytesRef, BooleanClause.Occur> contextInfo, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
 
     if (searcherMgr == null) {
       throw new IllegalStateException("suggester was not built");
@@ -469,21 +486,35 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         }
       }
 
-      if (contexts != null) {
-        BooleanQuery sub = new BooleanQuery();
-        query.add(sub, BooleanClause.Occur.MUST);
-        for(BytesRef context : contexts) {
-          // NOTE: we "should" wrap this in
-          // ConstantScoreQuery, or maybe send this as a
-          // Filter instead to search, but since all of
-          // these are MUST'd, the change to the score won't
-          // affect the overall ranking.  Since we indexed
-          // as DOCS_ONLY, the perf should be the same
-          // either way (no freq int[] blocks to decode):
+      if (contextInfo != null) {
+        
+        boolean allMustNot = true;
+        for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
+          if (entry.getValue() != BooleanClause.Occur.MUST_NOT) {
+            allMustNot = false;
+            break;
+          }
+        }
 
-          // TODO: if we had a BinaryTermField we could fix
-          // this "must be valid ut8f" limitation:
-          sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, context.utf8ToString())), BooleanClause.Occur.SHOULD);
+        // do not make a subquery if all context booleans are must not
+        if (allMustNot == true) {
+          for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
+            query.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey().utf8ToString())), BooleanClause.Occur.MUST_NOT);
+          }
+
+        } else {
+          BooleanQuery sub = new BooleanQuery();
+          query.add(sub, BooleanClause.Occur.MUST);
+
+          for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
+            // NOTE: we "should" wrap this in
+            // ConstantScoreQuery, or maybe send this as a
+            // Filter instead to search.
+
+            // TODO: if we had a BinaryTermField we could fix
+            // this "must be valid ut8f" limitation:
+            sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey().utf8ToString())), entry.getValue());
+          }
         }
       }
     }
@@ -572,8 +603,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       LookupResult result;
 
       if (doHighlight) {
-        Object highlightKey = highlight(text, matchedTokens, prefixToken);
-        result = new LookupResult(highlightKey.toString(), highlightKey, score, payload, contexts);
+        result = new LookupResult(text, highlight(text, matchedTokens, prefixToken), score, payload, contexts);
       } else {
         result = new LookupResult(text, score, payload, contexts);
       }
@@ -664,12 +694,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   protected void addPrefixMatch(StringBuilder sb, String surface, String analyzed, String prefixToken) {
     // TODO: apps can try to invert their analysis logic
     // here, e.g. downcase the two before checking prefix:
+    if (prefixToken.length() >= surface.length()) {
+      addWholeMatch(sb, surface, analyzed);
+      return;
+    }
     sb.append("<b>");
     sb.append(surface.substring(0, prefixToken.length()));
     sb.append("</b>");
-    if (prefixToken.length() < surface.length()) {
-      sb.append(surface.substring(prefixToken.length()));
-    }
+    sb.append(surface.substring(prefixToken.length()));
   }
 
   @Override

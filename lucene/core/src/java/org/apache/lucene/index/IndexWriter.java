@@ -4408,17 +4408,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return directory.makeLock(WRITE_LOCK_NAME).isLocked();
   }
 
-  /**
-   * Forcibly unlocks the index in the named directory.
-   * <P>
-   * Caution: this should only be used by failure recovery code,
-   * when it is known that no other process nor thread is in fact
-   * currently accessing this index.
-   */
-  public static void unlock(Directory directory) throws IOException {
-    directory.makeLock(IndexWriter.WRITE_LOCK_NAME).close();
-  }
-
   /** If {@link DirectoryReader#open(IndexWriter,boolean)} has
    *  been called (ie, this writer is in near real-time
    *  mode), then after a merge completes, this class can be

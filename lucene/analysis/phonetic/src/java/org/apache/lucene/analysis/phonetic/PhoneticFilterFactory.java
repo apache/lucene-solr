@@ -18,8 +18,8 @@ package org.apache.lucene.analysis.phonetic;
  */
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -29,6 +29,7 @@ import org.apache.commons.codec.language.Caverphone2;
 import org.apache.commons.codec.language.ColognePhonetic;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
+import org.apache.commons.codec.language.Nysiis;
 import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
@@ -46,8 +47,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * This takes one required argument, "encoder", and the rest are optional:
  * <dl>
  *  <dt>encoder</dt><dd> required, one of "DoubleMetaphone", "Metaphone", "Soundex", "RefinedSoundex", "Caverphone" (v2.0),
- *  or "ColognePhonetic" (case insensitive). If encoder isn't one of these, it'll be resolved as a class name either by
- *  itself if it already contains a '.' or otherwise as in the same package as these others.</dd>
+ *  "ColognePhonetic" or "Nysiis" (case insensitive). If encoder isn't one of these, it'll be resolved as a class name
+ *  either by itself if it already contains a '.' or otherwise as in the same package as these others.</dd>
  *  <dt>inject</dt><dd> (default=true) add tokens to the stream with the offset=0</dd>
  *  <dt>maxCodeLength</dt><dd>The maximum length of the phonetic codes, as defined by the encoder. If an encoder doesn't
  *  support this then specifying this is an error.</dd>
@@ -82,6 +83,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory implements Resourc
     registry.put("RefinedSoundex".toUpperCase(Locale.ROOT), RefinedSoundex.class);
     registry.put("Caverphone".toUpperCase(Locale.ROOT), Caverphone2.class);
     registry.put("ColognePhonetic".toUpperCase(Locale.ROOT), ColognePhonetic.class);
+    registry.put("Nysiis".toUpperCase(Locale.ROOT), Nysiis.class);
   }
 
   final boolean inject; //accessed by the test

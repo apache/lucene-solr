@@ -77,6 +77,27 @@ New Features
   improved exception handling, and indirect norms encoding for sparse fields.
   (Mike McCandless, Ryan Ernst, Robert Muir)
 
+* LUCENE-6053: Add Serbian analyzer.  (Nikola Smolenski via Robert Muir, Mike McCandless)
+
+* LUCENE-4400: Add support for new NYSIIS Apache commons phonetic
+  codec (Thomas Neidhart via Mike McCandless)
+
+* LUCENE-6059: Add Daitch-Mokotoff Soundex phonetic Apache commons
+  phonetic codec, and upgrade to Apache commons codec 1.10. (Thomas
+  Neidhart via Mike McCandless)
+
+* LUCENE-6058: With the upgrade to Apache commons codec 1.10, the
+  experimental BeiderMorseFilter has changed its behavior, so any
+  index using it will need to be rebuilt.  (Thomas
+  Neidhart via Mike McCandless)
+
+* LUCENE-6050: Accept MUST and MUST_NOT (in addition to SHOULD) for
+  each context passed to Analyzing/BlendedInfixSuggester (Arcadius
+  Ahouansou, jane chang via Mike McCandless)
+
+* LUCENE-5929: Also extract terms to highlight from block join
+  queries. (Julie Tibshirani via Mike McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
@@ -195,6 +216,9 @@ Bug Fixes
   not have the regular "spinlock" of DirectoryReader.open. It now implements
   Closeable and you must close it to release the lock.  (Mike McCandless, Robert Muir)
 
+* LUCENE-6004: Don't highlight the LookupResult.key returned from
+  AnalyzingInfixSuggester (Christian Reuschling, jane chang via Mike McCandless)
+
 * LUCENE-5980: Don't let document length overflow. (Robert Muir)
 
 * LUCENE-5961: Fix the exists() method for FunctionValues returned by many ValueSoures to
@@ -228,11 +252,16 @@ Bug Fixes
 
 * LUCENE-6055: PayloadAttribute.clone() now does a deep clone of the underlying
   bytes. (Shai Erera)
+
+* LUCENE-6060: Remove dangerous IndexWriter.unlock method (Simon
+  Willnauer, Mike McCandless)
   
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
   analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
+
+* LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
 
 Tests
 
@@ -284,6 +313,9 @@ Optimizations
 * LUCENE-6040: Speed up EliasFanoDocIdSet through broadword bit selection.
   (Paul Elschot)
 
+* LUCENE-6033: CachingTokenFilter now uses ArrayList not LinkedList, and has new
+  isCached() method. (David Smiley)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
@@ -305,6 +337,13 @@ Other
   (Adrien Grand, Robert Muir)
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
+
+======================= Lucene 4.10.3 ======================
+
+Bug fixes
+
+* LUCENE-3229: Overlapping ordered SpanNearQuery spans should not match.
+  (Ludovic Boutros, Paul Elschot, Greg Dearing, ehatcher)
 
 ======================= Lucene 4.10.2 ======================
 
