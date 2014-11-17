@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -86,9 +87,6 @@ public class TestBagOfPostings extends LuceneTestCase {
           @Override
           public void run() {
             try {
-              Document document = new Document();
-              Field field = newTextField("field", "", Field.Store.NO);
-              document.add(field);
               startingGun.await();
               while (!postings.isEmpty()) {
                 StringBuilder text = new StringBuilder();
@@ -107,7 +105,8 @@ public class TestBagOfPostings extends LuceneTestCase {
                   text.append(token);
                   visited.add(token);
                 }
-                field.setStringValue(text.toString());
+                Document2 document = iw.newDocument();
+                document.addLargeText("field", text.toString());
                 iw.addDocument(document);
               }
             } catch (Exception e) {

@@ -16,35 +16,36 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.English;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.QueryUtils;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.CheckHits;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.spans.MultiSpansWrapper;
-import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.spans.MultiSpansWrapper;
+import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.English;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
 
 
 /**
@@ -120,12 +121,10 @@ public class TestPayloadTermQuery extends LuceneTestCase {
            .setSimilarity(similarity).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
-      Document doc = new Document();
-      Field noPayloadField = newTextField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES);
-      //noPayloadField.setBoost(0);
-      doc.add(noPayloadField);
-      doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
-      doc.add(newTextField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i));
+      doc.addLargeText("field", English.intToEnglish(i));
+      doc.addLargeText("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

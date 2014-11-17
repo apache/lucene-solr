@@ -22,19 +22,21 @@ import java.util.BitSet;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -62,24 +64,24 @@ public class TestFilteredQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter (random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    Document doc = new Document();
-    doc.add (newTextField("field", "one two three four five", Field.Store.YES));
-    doc.add (newTextField("sorter", "b", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "one two three four five");
+    doc.addLargeText("sorter", "b");
     writer.addDocument (doc);
 
-    doc = new Document();
-    doc.add (newTextField("field", "one two three four", Field.Store.YES));
-    doc.add (newTextField("sorter", "d", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("field", "one two three four");
+    doc.addLargeText("sorter", "d");
     writer.addDocument (doc);
 
-    doc = new Document();
-    doc.add (newTextField("field", "one two three y", Field.Store.YES));
-    doc.add (newTextField("sorter", "a", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("field", "one two three y");
+    doc.addLargeText("sorter", "a");
     writer.addDocument (doc);
 
-    doc = new Document();
-    doc.add (newTextField("field", "one two x", Field.Store.YES));
-    doc.add (newTextField("sorter", "c", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("field", "one two x");
+    doc.addLargeText("sorter", "c");
     writer.addDocument (doc);
 
     // tests here require single segment (eg try seed
@@ -404,29 +406,30 @@ public class TestFilteredQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new MockAnalyzer(random())));
+    final FieldTypes fieldTypes = writer.getFieldTypes();
     int numDocs = atLeast(50);
     int totalDocsWithZero = 0;
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       int num = random().nextInt(5);
       if (num == 0) {
         totalDocsWithZero++;
       }
-      doc.add(newTextField("field", "" + num, Field.Store.YES));
+      doc.addInt("field", num);
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(reader);
-    Query query = new FilteredQuery(new TermQuery(new Term("field", "0")),
+    Query query = new FilteredQuery(fieldTypes.newIntTermQuery("field", 0),
         new Filter() {
           @Override
           public DocIdSet getDocIdSet(LeafReaderContext context,
               Bits acceptDocs) throws IOException {
             final boolean nullBitset = random().nextInt(10) == 5;
             final LeafReader reader = context.reader();
-            DocsEnum termDocsEnum = reader.termDocsEnum(new Term("field", "0"));
+            DocsEnum termDocsEnum = reader.termDocsEnum(fieldTypes.newIntTerm("field", 0));
             if (termDocsEnum == null) {
               return null; // no docs -- return null
             }
@@ -469,7 +472,7 @@ public class TestFilteredQuery extends LuceneTestCase {
                 assertTrue(
                     "iterator should not be called if bitset is present",
                     nullBitset);
-                return reader.termDocsEnum(new Term("field", "0"));
+                return reader.termDocsEnum(fieldTypes.newIntTerm("field", 0));
               }
               
             };
@@ -491,19 +494,20 @@ public class TestFilteredQuery extends LuceneTestCase {
     int numDocs = atLeast(50);
     int totalDocsWithZero = 0;
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       int num = random().nextInt(10);
       if (num == 0) {
         totalDocsWithZero++;
       }
-      doc.add (newTextField("field", ""+num, Field.Store.YES));
+      doc.addInt("field", num);
       writer.addDocument (doc);  
     }
     IndexReader reader = writer.getReader();
+    final FieldTypes fieldTypes = reader.getFieldTypes();
     writer.close();
     final boolean queryFirst = random().nextBoolean();
     IndexSearcher searcher = newSearcher(reader);
-    Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {
+    Query query = new FilteredQuery(fieldTypes.newIntTermQuery("field", 0), new Filter() {
       @Override
       public DocIdSet getDocIdSet(final LeafReaderContext context, Bits acceptDocs)
           throws IOException {
@@ -520,7 +524,7 @@ public class TestFilteredQuery extends LuceneTestCase {
           }
           @Override
           public DocIdSetIterator iterator() throws IOException {
-            final DocsEnum termDocsEnum = context.reader().termDocsEnum(new Term("field", "0"));
+            final DocsEnum termDocsEnum = context.reader().termDocsEnum(fieldTypes.newIntTerm("field", 0));
             if (termDocsEnum == null) {
               return null;
             }

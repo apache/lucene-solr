@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -66,12 +67,12 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     IndexWriter indexWriter = new IndexWriter(crashAfterCreateOutput,
                                               newIndexWriterConfig(new MockAnalyzer(random())));
             
-    indexWriter.addDocument(getDocument());
+    indexWriter.addDocument(getDocument(indexWriter));
     // writes segments_1:
     indexWriter.commit();
             
     crashAfterCreateOutput.setCrashAfterCreateOutput("pending_segments_2");
-    indexWriter.addDocument(getDocument());
+    indexWriter.addDocument(getDocument(indexWriter));
     try {
       // tries to write segments_2 but hits fake exc:
       indexWriter.commit();
@@ -99,7 +100,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
             
     // currently the test fails above.
     // however, to test the fix, the following lines should pass as well.
-    indexWriter.addDocument(getDocument());
+    indexWriter.addDocument(getDocument(indexWriter));
     indexWriter.close();
     assertFalse(slowFileExists(realDirectory, "segments_2"));
     realDirectory.close();
@@ -124,9 +125,9 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
   /**
    * Gets a document with content "my dog has fleas".
    */
-  private Document getDocument() {
-    Document document = new Document();
-    document.add(newTextField(TEXT_FIELD, "my dog has fleas", Field.Store.NO));
+  private Document2 getDocument(IndexWriter w) {
+    Document2 document = w.newDocument();
+    document.addLargeText(TEXT_FIELD, "my dog has fleas");
     return document;
   }
     

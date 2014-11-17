@@ -22,8 +22,10 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -58,8 +60,8 @@ public class TestMixedCodecs extends LuceneTestCase {
         w = new RandomIndexWriter(random(), dir, iwc);
         docsLeftInThisSegment = TestUtil.nextInt(random(), 10, 100);
       }
-      final Document doc = new Document();
-      doc.add(newStringField("id", String.valueOf(docUpto), Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addUniqueInt("id", docUpto);
       w.addDocument(doc);
       docUpto++;
       docsLeftInThisSegment--;
@@ -69,13 +71,15 @@ public class TestMixedCodecs extends LuceneTestCase {
       System.out.println("\nTEST: now delete...");
     }
 
+    FieldTypes fieldTypes = w.getFieldTypes();
+
     // Random delete half the docs:
     final Set<Integer> deleted = new HashSet<>();
     while(deleted.size() < NUM_DOCS/2) {
       final Integer toDelete = random().nextInt(NUM_DOCS);
       if (!deleted.contains(toDelete)) {
         deleted.add(toDelete);
-        w.deleteDocuments(new Term("id", String.valueOf(toDelete)));
+        w.deleteDocuments(fieldTypes.newIntTerm("id", toDelete));
         if (random().nextInt(17) == 6) {
           final IndexReader r = w.getReader();
           assertEquals(NUM_DOCS - deleted.size(), r.numDocs());

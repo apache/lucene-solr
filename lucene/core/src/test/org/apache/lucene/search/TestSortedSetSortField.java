@@ -17,8 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -67,22 +69,23 @@ public class TestSortedSetSortField extends LuceneTestCase {
   public void testForward() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("baz")));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    doc.addAtom("value", new BytesRef("baz"));
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("foo")));
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("foo"));
+    doc.addAtom("value", new BytesRef("bar"));
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortedSetSortField("value", false));
 
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("value"));
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
@@ -95,23 +98,24 @@ public class TestSortedSetSortField extends LuceneTestCase {
   public void testReverse() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("foo")));
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("foo"));
+    doc.addAtom("value", new BytesRef("bar"));
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("baz")));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("baz"));
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
 
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortedSetSortField("value", true));
 
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("value", true));
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'baz'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
@@ -124,27 +128,27 @@ public class TestSortedSetSortField extends LuceneTestCase {
   public void testMissingFirst() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("baz")));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    fieldTypes.setSortMissingFirst("value");
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("baz"));
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("foo")));
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("foo"));
+    doc.addAtom("value", new BytesRef("bar"));
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortedSetSortField("value", false);
-    sortField.setMissingValue(SortField.STRING_FIRST);
-    Sort sort = new Sort(sortField);
 
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("value"));
     assertEquals(3, td.totalHits);
     // 'bar' comes before 'baz'
     // null comes first
@@ -159,27 +163,26 @@ public class TestSortedSetSortField extends LuceneTestCase {
   public void testMissingLast() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("baz")));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    Document2 doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("baz"));
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("foo")));
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("foo"));
+    doc.addAtom("value", new BytesRef("bar"));
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortedSetSortField("value", false);
-    sortField.setMissingValue(SortField.STRING_LAST);
-    Sort sort = new Sort(sortField);
 
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("value"));
     assertEquals(3, td.totalHits);
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
@@ -194,13 +197,17 @@ public class TestSortedSetSortField extends LuceneTestCase {
   public void testSingleton() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("baz")));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+
+    Document2 doc = writer.newDocument();
+
+    doc.addAtom("value", new BytesRef("baz"));
+    doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addAtom("value", new BytesRef("bar"));
+    doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();

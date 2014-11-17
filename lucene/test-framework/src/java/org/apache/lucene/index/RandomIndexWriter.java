@@ -249,7 +249,7 @@ public class RandomIndexWriter implements Closeable {
     w.updateBinaryDocValue(term, field, value);
   }
   
-  public void updateDocValues(Term term, Field... updates) throws IOException {
+  public void updateDocValues(Term term, Iterable<? extends IndexableField> updates) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.updateDocValues(term, updates);
   }

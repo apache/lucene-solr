@@ -21,14 +21,15 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
@@ -54,10 +55,10 @@ public class TestSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
-      Document doc = new Document();
-      doc.add(newTextField(field, docFields[i], Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText(field, docFields[i]);
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -446,9 +447,9 @@ public class TestSpans extends LuceneTestCase {
 
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
-    final Document doc = new Document();
-    doc.add( newStringField("id", id, Field.Store.YES) );
-    doc.add( newTextField("text", text, Field.Store.YES) );
+    Document2 doc = writer.newDocument();
+    doc.addUniqueAtom("id", id);
+    doc.addLargeText("text", text);
     writer.addDocument(doc);
   }
 

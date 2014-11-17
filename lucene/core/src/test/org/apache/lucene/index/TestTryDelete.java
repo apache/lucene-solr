@@ -20,8 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -58,8 +60,8 @@ public class TestTryDelete extends LuceneTestCase
     IndexWriter writer = getWriter(directory);
 
     for (int i = 0; i < 10; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("foo", String.valueOf(i), Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addUniqueInt("foo", i);
       writer.addDocument(doc);
     }
 
@@ -81,11 +83,11 @@ public class TestTryDelete extends LuceneTestCase
                                                               new SearcherFactory());
 
     TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
+    FieldTypes fieldTypes = mgrWriter.getFieldTypes();
 
     IndexSearcher searcher = mgr.acquire();
 
-    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")),
-                                      100);
+    TopDocs topDocs = searcher.search(fieldTypes.newIntTermQuery("foo", 0), 100);
     assertEquals(1, topDocs.totalHits);
 
     long result;
@@ -112,7 +114,7 @@ public class TestTryDelete extends LuceneTestCase
 
     searcher = mgr.acquire();
 
-    topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
+    topDocs = searcher.search(fieldTypes.newIntTermQuery("foo", 0), 100);
 
     assertEquals(0, topDocs.totalHits);
   }
@@ -123,6 +125,7 @@ public class TestTryDelete extends LuceneTestCase
     Directory directory = createIndex();
 
     IndexWriter writer = getWriter(directory);
+    FieldTypes fieldTypes = writer.getFieldTypes();
 
     ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
                                                               true,
@@ -130,8 +133,7 @@ public class TestTryDelete extends LuceneTestCase
 
     IndexSearcher searcher = mgr.acquire();
 
-    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")),
-                                      100);
+    TopDocs topDocs = searcher.search(fieldTypes.newIntTermQuery("foo", 0), 100);
     assertEquals(1, topDocs.totalHits);
 
     TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
@@ -148,7 +150,7 @@ public class TestTryDelete extends LuceneTestCase
 
     searcher = mgr.acquire();
 
-    topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
+    topDocs = searcher.search(fieldTypes.newIntTermQuery("foo", 0), 100);
 
     assertEquals(0, topDocs.totalHits);
 
@@ -156,7 +158,7 @@ public class TestTryDelete extends LuceneTestCase
 
     searcher = new IndexSearcher(DirectoryReader.open(directory));
 
-    topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
+    topDocs = searcher.search(fieldTypes.newIntTermQuery("foo", 0), 100);
 
     assertEquals(0, topDocs.totalHits);
 
@@ -168,6 +170,7 @@ public class TestTryDelete extends LuceneTestCase
     Directory directory = createIndex();
 
     IndexWriter writer = getWriter(directory);
+    FieldTypes fieldTypes = writer.getFieldTypes();
 
     ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
                                                               true,
@@ -175,13 +178,11 @@ public class TestTryDelete extends LuceneTestCase
 
     IndexSearcher searcher = mgr.acquire();
 
-    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")),
-                                      100);
+    TopDocs topDocs = searcher.search(fieldTypes.newIntTermQuery("foo", 0), 100);
     assertEquals(1, topDocs.totalHits);
 
     TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
-    long result = mgrWriter.deleteDocuments(new TermQuery(new Term("foo",
-                                                                   "0")));
+    long result = mgrWriter.deleteDocuments(fieldTypes.newIntTermQuery("foo", 0));
 
     assertEquals(1, result);
 
@@ -193,7 +194,7 @@ public class TestTryDelete extends LuceneTestCase
 
     searcher = mgr.acquire();
 
-    topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
+    topDocs = searcher.search(fieldTypes.newIntTermQuery("foo", 0), 100);
 
     assertEquals(0, topDocs.totalHits);
   }

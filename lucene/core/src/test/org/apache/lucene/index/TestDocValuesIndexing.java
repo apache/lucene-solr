@@ -24,12 +24,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -160,6 +161,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testLengthPrefixAcrossTwoPages() throws Exception {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setIndexOptions("field", IndexOptions.NONE);
+
     Document2 doc = w.newDocument();
     byte[] bytes = new byte[32764];
     BytesRef b = new BytesRef();
@@ -851,64 +855,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     assertTrue(bits.get(0));
     assertTrue(bits.get(1));
     r.close();
-    dir.close();
-  }
-
-  // nocommit must cut this over to low-schema:
-  @Ignore
-  public void testSameFieldNameForPostingAndDocValue() throws Exception {
-    // LUCENE-5192: FieldInfos.Builder neglected to update
-    // globalFieldNumbers.docValuesType map if the field existed, resulting in
-    // potentially adding the same field with different DV types.
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    IndexWriter writer = new IndexWriter(dir, conf);
-    
-    Document2 doc = writer.newDocument();
-    doc.addAtom("f", "mock-value");
-    doc.addInt("f", 5);
-    writer.addDocument(doc);
-    writer.commit();
-    
-    doc = writer.newDocument();
-    doc.addAtom("f", new BytesRef("mock"));
-    try {
-      writer.addDocument(doc);
-      fail("should not have succeeded to add a field with different DV type than what already exists");
-    } catch (IllegalArgumentException e) {
-      writer.rollback();
-    }
-    
-    dir.close();
-  }
-
-  // LUCENE-6049
-  // nocommit must cut this over to low-schema:
-  @Ignore
-  public void testExcIndexingDocBeforeDocValues() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    IndexWriter w = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setDocValuesType(DocValuesType.SORTED);
-    ft.freeze();
-    Field field = new Field("test", "value", ft);
-    field.setTokenStream(new TokenStream() {
-        @Override
-        public boolean incrementToken() {
-          throw new RuntimeException("no");
-        }
-      });
-    doc.add(field);
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (RuntimeException re) {
-      // expected
-    }
-    w.addDocument(new Document());
-    w.close();
     dir.close();
   }
 }

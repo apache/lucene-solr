@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -39,22 +41,26 @@ public class TestParallelTermEnum extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    Document doc;
+    Document2 doc;
     rd1 = newDirectory();
     IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random())));
+    FieldTypes fieldTypes = iw1.getFieldTypes();
+    fieldTypes.disableExistsFilters();
 
-    doc = new Document();
-    doc.add(newTextField("field1", "the quick brown fox jumps", Field.Store.YES));
-    doc.add(newTextField("field2", "the quick brown fox jumps", Field.Store.YES));
+    doc = iw1.newDocument();
+    doc.addLargeText("field1", "the quick brown fox jumps");
+    doc.addLargeText("field2", "the quick brown fox jumps");
     iw1.addDocument(doc);
 
     iw1.close();
     rd2 = newDirectory();
     IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig(new MockAnalyzer(random())));
+    fieldTypes = iw2.getFieldTypes();
+    fieldTypes.disableExistsFilters();
 
-    doc = new Document();
-    doc.add(newTextField("field1", "the fox jumps over the lazy dog", Field.Store.YES));
-    doc.add(newTextField("field3", "the fox jumps over the lazy dog", Field.Store.YES));
+    doc = iw2.newDocument();
+    doc.addLargeText("field1", "the fox jumps over the lazy dog");
+    doc.addLargeText("field3", "the fox jumps over the lazy dog");
     iw2.addDocument(doc);
 
     iw2.close();

@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.ControlledRealTimeReopenThread; // javadocs
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -45,6 +47,14 @@ public class TrackingIndexWriter {
    *  provided {@link IndexWriter}. */
   public TrackingIndexWriter(IndexWriter writer) {
     this.writer = writer;
+  }
+
+  public Document2 newDocument() {
+    return writer.newDocument();
+  }
+
+  public FieldTypes getFieldTypes() {
+    return writer.getFieldTypes();
   }
 
   /** Calls {@link

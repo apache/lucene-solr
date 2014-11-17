@@ -21,8 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -44,6 +46,8 @@ public class TestStressDeletes extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter w = new IndexWriter(dir, iwc);
+    final FieldTypes fieldTypes = w.getFieldTypes();
+
     final int iters = atLeast(2000);
     final Map<Integer,Boolean> exists = new ConcurrentHashMap<>();
     Thread[] threads = new Thread[TestUtil.nextInt(random(), 2, 6)];
@@ -59,12 +63,12 @@ public class TestStressDeletes extends LuceneTestCase {
                 synchronized (locks[id]) {
                   Boolean v = exists.get(id);
                   if (v == null || v.booleanValue() == false) {
-                    Document doc = new Document();
-                    doc.add(newStringField("id", ""+id, Field.Store.NO));
+                    Document2 doc = w.newDocument();
+                    doc.addUniqueInt("id", id);
                     w.addDocument(doc);
                     exists.put(id, true);
                   } else {
-                    w.deleteDocuments(new Term("id", ""+id));
+                    w.deleteDocuments(fieldTypes.newIntTerm("id", id));
                     exists.put(id, false);
                   }
                 }
@@ -92,7 +96,7 @@ public class TestStressDeletes extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     for(Map.Entry<Integer,Boolean> ent : exists.entrySet()) {
       int id = ent.getKey();
-      TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
+      TopDocs hits = s.search(fieldTypes.newIntTermQuery("id", id), 1);
       if (ent.getValue()) {
         assertEquals(1, hits.totalHits);
       } else {

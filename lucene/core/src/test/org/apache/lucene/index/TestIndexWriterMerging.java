@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -47,15 +48,13 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     fillIndex(random(), indexA, 0, num);
     boolean fail = verifyIndex(indexA, 0);
-    if (fail)
-    {
+    if (fail) {
       fail("Index a is invalid");
     }
 
     fillIndex(random(), indexB, num, num);
     fail = verifyIndex(indexB, num);
-    if (fail)
-    {
+    if (fail) {
       fail("Index b is invalid");
     }
 
@@ -89,10 +88,9 @@ public class TestIndexWriterMerging extends LuceneTestCase
       Document2 temp = reader.document(i);
       //System.out.println("doc "+i+"="+temp.getField("count").stringValue());
       //compare the index doc number to the value that it should be
-      if (!temp.getField("count").stringValue().equals((i + startAt) + ""))
-      {
+      if (temp.getInt("count") != i + startAt) {
         fail = true;
-        System.out.println("Document " + (i + startAt) + " is returning document " + temp.getField("count").stringValue());
+        System.out.println("Document " + (i + startAt) + " is returning document " + temp.getInt("count"));
       }
     }
     reader.close();
@@ -111,9 +109,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     for (int i = start; i < (start + numDocs); i++)
     {
-      Document temp = new Document();
-      temp.add(newStringField("count", (""+i), Field.Store.YES));
-
+      Document2 temp = writer.newDocument();
+      temp.addUniqueInt("count", i);
       writer.addDocument(temp);
     }
     writer.close();
@@ -126,26 +123,18 @@ public class TestIndexWriterMerging extends LuceneTestCase
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMaxBufferedDocs(2)
                                                 .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
-    Document document = new Document();
 
-    FieldType customType = new FieldType();
-    customType.setStored(true);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("termVector");
+    fieldTypes.enableTermVectorOffsets("termVector");
+    fieldTypes.enableTermVectorPositions("termVector");
 
-    FieldType customType1 = new FieldType(TextField.TYPE_STORED);
-    customType1.setTokenized(false);
-    customType1.setStoreTermVectors(true);
-    customType1.setStoreTermVectorPositions(true);
-    customType1.setStoreTermVectorOffsets(true);
-    
-    Field idField = newStringField("id", "", Field.Store.NO);
-    document.add(idField);
-    Field storedField = newField("stored", "stored", customType);
-    document.add(storedField);
-    Field termVectorField = newField("termVector", "termVector", customType1);
-    document.add(termVectorField);
     for(int i=0;i<10;i++) {
-      idField.setStringValue("" + i);
-      writer.addDocument(document);
+      Document2 doc = writer.newDocument();
+      doc.addUniqueInt("id", i);
+      doc.addStored("stored", "stored");
+      doc.addAtom("termVector", "termVector");
+      writer.addDocument(doc);
     }
     writer.close();
 
@@ -157,8 +146,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
     IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
-    writer.deleteDocuments(new Term("id", "0"));
-    writer.deleteDocuments(new Term("id", "7"));
+    writer.deleteDocuments(fieldTypes.newIntTerm("id", 0));
+    writer.deleteDocuments(fieldTypes.newIntTerm("id", 7));
     writer.close();
     
     ir = DirectoryReader.open(dir);
@@ -190,26 +179,17 @@ public class TestIndexWriterMerging extends LuceneTestCase
           .setMergePolicy(newLogMergePolicy(50))
     );
 
-    Document document = new Document();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("termVector");
+    fieldTypes.enableTermVectorOffsets("termVector");
+    fieldTypes.enableTermVectorPositions("termVector");
 
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-
-    FieldType customType1 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType1.setTokenized(false);
-    customType1.setStoreTermVectors(true);
-    customType1.setStoreTermVectorPositions(true);
-    customType1.setStoreTermVectorOffsets(true);
-    
-    Field storedField = newField("stored", "stored", customType);
-    document.add(storedField);
-    Field termVectorField = newField("termVector", "termVector", customType1);
-    document.add(termVectorField);
-    Field idField = newStringField("id", "", Field.Store.NO);
-    document.add(idField);
     for(int i=0;i<98;i++) {
-      idField.setStringValue("" + i);
-      writer.addDocument(document);
+      Document2 doc = writer.newDocument();
+      doc.addUniqueInt("id", i);
+      doc.addStored("stored", "stored");
+      doc.addAtom("termVector", "termVector");
+      writer.addDocument(doc);
     }
     writer.close();
 
@@ -222,7 +202,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
-      writer.deleteDocuments(new Term("id", "" + i));
+      writer.deleteDocuments(fieldTypes.newIntTerm("id", i));
     }
     writer.close();
     
@@ -257,25 +237,17 @@ public class TestIndexWriterMerging extends LuceneTestCase
             .setMergePolicy(newLogMergePolicy(50))
     );
 
-    FieldType customType = new FieldType();
-    customType.setStored(true);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("termVector");
+    fieldTypes.enableTermVectorOffsets("termVector");
+    fieldTypes.enableTermVectorPositions("termVector");
 
-    FieldType customType1 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType1.setTokenized(false);
-    customType1.setStoreTermVectors(true);
-    customType1.setStoreTermVectorPositions(true);
-    customType1.setStoreTermVectorOffsets(true);
-    
-    Document document = new Document();
-    Field storedField = newField("stored", "stored", customType);
-    document.add(storedField);
-    Field termVectorField = newField("termVector", "termVector", customType1);
-    document.add(termVectorField);
-    Field idField = newStringField("id", "", Field.Store.NO);
-    document.add(idField);
     for(int i=0;i<98;i++) {
-      idField.setStringValue("" + i);
-      writer.addDocument(document);
+      Document2 doc = writer.newDocument();
+      doc.addUniqueInt("id", i);
+      doc.addStored("stored", "stored");
+      doc.addAtom("termVector", "termVector");
+      writer.addDocument(doc);
     }
     writer.close();
 
@@ -288,7 +260,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
-      writer.deleteDocuments(new Term("id", "" + i));
+      writer.deleteDocuments(fieldTypes.newIntTerm("id", i));
     }
     writer.close();
     ir = DirectoryReader.open(dir);
@@ -342,14 +314,13 @@ public class TestIndexWriterMerging extends LuceneTestCase
     lmp.setMaxMergeDocs(20);
     lmp.setMergeFactor(2);
     IndexWriter iw = new IndexWriter(dir, conf);
-    Document document = new Document();
-
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    
-    document.add(newField("tvtest", "a b c", customType));
-    for(int i=0;i<177;i++)
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableTermVectors("tvtest");
+    Document2 document = iw.newDocument();
+    document.addLargeText("tvtest", "a b c");
+    for(int i=0;i<177;i++) {
       iw.addDocument(document);
+    }
     iw.close();
     dir.close();
   }
@@ -360,13 +331,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
     if (directory instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper) directory).setPreventDoubleWrite(false);
     }
-
-    final Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setTokenized(false);
-
-    Field idField = newField("id", "", customType);
-    doc.add(idField);
 
     for(int pass=0;pass<2;pass++) {
       if (VERBOSE) {
@@ -383,6 +347,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
       }
 
       IndexWriter writer = new IndexWriter(directory, conf);
+      FieldTypes fieldTypes = writer.getFieldTypes();
+
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);          
 
       for(int iter=0;iter<10;iter++) {
@@ -390,13 +356,14 @@ public class TestIndexWriterMerging extends LuceneTestCase
           System.out.println("TEST: iter=" + iter);
         }
         for(int j=0;j<199;j++) {
-          idField.setStringValue(Integer.toString(iter*201+j));
+          Document2 doc = writer.newDocument();
+          doc.addUniqueInt("id", iter*201+j);
           writer.addDocument(doc);
         }
 
         int delID = iter*199;
         for(int j=0;j<20;j++) {
-          writer.deleteDocuments(new Term("id", Integer.toString(delID)));
+          writer.deleteDocuments(fieldTypes.newIntTerm("id", delID));
           delID += 5;
         }
 
@@ -415,7 +382,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
               while(!done) {
                 for(int i=0;i<100;i++) {
                   try {
-                    finalWriter.addDocument(doc);
+                    finalWriter.addDocument(finalWriter.newDocument());
                   } catch (AlreadyClosedException e) {
                     done = true;
                     break;

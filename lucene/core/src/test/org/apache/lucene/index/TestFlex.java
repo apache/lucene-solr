@@ -38,11 +38,11 @@ public class TestFlex extends LuceneTestCase {
 
     for(int iter=0;iter<2;iter++) {
       if (iter == 0) {
-        Document doc = new Document();
-        doc.add(newTextField("field1", "this is field1", Field.Store.NO));
-        doc.add(newTextField("field2", "this is field2", Field.Store.NO));
-        doc.add(newTextField("field3", "aaa", Field.Store.NO));
-        doc.add(newTextField("field4", "bbb", Field.Store.NO));
+        Document2 doc = w.newDocument();
+        doc.addLargeText("field1", "this is field1");
+        doc.addLargeText("field2", "this is field2");
+        doc.addLargeText("field3", "aaa");
+        doc.addLargeText("field4", "bbb");
         for(int i=0;i<DOC_COUNT;i++) {
           w.addDocument(doc);
         }
@@ -65,8 +65,8 @@ public class TestFlex extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random()))
                                          .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
-    Document doc = new Document();
-    doc.add(newTextField("f", "a b c", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("f", "a b c");
     w.addDocument(doc);
     w.forceMerge(1);
     DirectoryReader r = w.getReader();

@@ -471,8 +471,8 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     IndexWriterConfig config = new IndexWriterConfig(indexerAnalyzer);
     IndexWriter writer = new IndexWriter(directory, config);
     String FIELD = "content";
-    Document d = new Document();
-    d.add(new TextField(FIELD, "clockwork orange", Field.Store.YES));
+    Document2 d = writer.newDocument();
+    d.addLargeText(FIELD, "clockwork orange");
     writer.addDocument(d);
     writer.close();
 

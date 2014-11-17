@@ -26,8 +26,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -656,6 +658,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
         mp = conf.getMergePolicy();
         mp.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
         writer = new IndexWriter(dir, conf);
+        FieldTypes fieldTypes = writer.getFieldTypes();
+
         policy = (KeepLastNDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
         for(int j=0;j<17;j++) {
           addDocWithID(writer, i*(N+1)+j);
@@ -667,7 +671,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           .setMergePolicy(NoMergePolicy.INSTANCE);
         writer = new IndexWriter(dir, conf);
         policy = (KeepLastNDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-        writer.deleteDocuments(new Term("id", "" + (i*(N+1)+3)));
+        writer.deleteDocuments(fieldTypes.newIntTerm("id", (i*(N+1)+3)));
         // this is a commit
         writer.close();
         IndexReader reader = DirectoryReader.open(dir);
@@ -737,16 +741,15 @@ public class TestDeletionPolicy extends LuceneTestCase {
   }
 
   private void addDocWithID(IndexWriter writer, int id) throws IOException {
-    Document doc = new Document();
-    doc.add(newTextField("content", "aaa", Field.Store.NO));
-    doc.add(newStringField("id", "" + id, Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "aaa");
+    doc.addUniqueInt("id", id);
     writer.addDocument(doc);
   }
   
-  private void addDoc(IndexWriter writer) throws IOException
-  {
-    Document doc = new Document();
-    doc.add(newTextField("content", "aaa", Field.Store.NO));
+  private void addDoc(IndexWriter writer) throws IOException {
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "aaa");
     writer.addDocument(doc);
   }
 }

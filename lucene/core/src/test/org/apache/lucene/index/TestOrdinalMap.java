@@ -22,7 +22,9 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
@@ -65,16 +67,18 @@ public class TestOrdinalMap extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("ssdv");
     final int maxDoc = TestUtil.nextInt(random(), 10, 1000);
     final int maxTermLength = TestUtil.nextInt(random(), 1, 4);
     for (int i = 0; i < maxDoc; ++i) {
-      Document d = new Document();
+      Document2 d = iw.newDocument();
       if (random().nextBoolean()) {
-        d.add(new SortedDocValuesField("sdv", new BytesRef(TestUtil.randomSimpleString(random(), maxTermLength))));
+        d.addShortText("sdv", TestUtil.randomSimpleString(random(), maxTermLength));
       }
       final int numSortedSet = random().nextInt(3);
       for (int j = 0; j < numSortedSet; ++j) {
-        d.add(new SortedSetDocValuesField("ssdv", new BytesRef(TestUtil.randomSimpleString(random(), maxTermLength))));
+        d.addShortText("ssdv", TestUtil.randomSimpleString(random(), maxTermLength));
       }
       iw.addDocument(d);
       if (rarely()) {

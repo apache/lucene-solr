@@ -31,9 +31,11 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.cranky.CrankyCodec;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -45,8 +47,8 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
+import org.apache.lucene.util.TestUtil;
 
 /** 
  * Causes a bunch of non-aborting and aborting exceptions and checks that
@@ -98,28 +100,32 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     int numDocs = atLeast(2000);
     
     IndexWriter iw = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableTermVectors("text_vectors");
+    fieldTypes.disableSorting("dv2");
+    fieldTypes.setMultiValued("dv4");
+    fieldTypes.setMultiValued("dv5");
+
     try {
       for (int i = 0; i < numDocs; i++) {
         // TODO: add crankyDocValuesFields, etc
-        Document doc = new Document();
-        doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
-        doc.add(new NumericDocValuesField("dv", i));
-        doc.add(new BinaryDocValuesField("dv2", new BytesRef(Integer.toString(i))));
-        doc.add(new SortedDocValuesField("dv3", new BytesRef(Integer.toString(i))));
-        doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
-        doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
-        doc.add(new SortedNumericDocValuesField("dv5", i));
-        doc.add(new SortedNumericDocValuesField("dv5", i-1));
-        doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
+        Document2 doc = iw.newDocument();
+        doc.addAtom("id", Integer.toString(i));
+        doc.addInt("dv", i);
+        doc.addBinary("dv2", new BytesRef(Integer.toString(i)));
+        doc.addShortText("dv3", Integer.toString(i));
+        doc.addShortText("dv4", Integer.toString(i));
+        doc.addShortText("dv4", Integer.toString(i-1));
+        doc.addInt("dv5", i);
+        doc.addInt("dv5", i-1);
+        doc.addLargeText("text1", TestUtil.randomAnalysisString(random(), 20, true));
         // ensure we store something
-        doc.add(new StoredField("stored1", "foo"));
-        doc.add(new StoredField("stored1", "bar"));    
+        doc.addStored("stored1", "foo");
+        doc.addStored("stored1", "bar");
         // ensure we get some payloads
-        doc.add(newTextField("text_payloads", TestUtil.randomAnalysisString(random(), 6, true), Field.Store.NO));
+        doc.addLargeText("text_payloads", TestUtil.randomAnalysisString(random(), 6, true));
         // ensure we get some vectors
-        FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-        ft.setStoreTermVectors(true);
-        doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
+        doc.addLargeText("text_vectors", TestUtil.randomAnalysisString(random(), 6, true));
         
         if (random().nextInt(10) > 0) {
           // single doc
@@ -144,12 +150,12 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           }
         } else {
           // block docs
-          Document doc2 = new Document();
-          doc2.add(newStringField("id", Integer.toString(-i), Field.Store.NO));
-          doc2.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
-          doc2.add(new StoredField("stored1", "foo"));
-          doc2.add(new StoredField("stored1", "bar"));
-          doc2.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
+          Document2 doc2 = iw.newDocument();
+          doc2.addAtom("id", Integer.toString(-i));
+          doc2.addLargeText("text1", TestUtil.randomAnalysisString(random(), 20, true));
+          doc2.addStored("stored1", "foo");
+          doc2.addStored("stored1", "bar");
+          doc2.addLargeText("text_vectors", TestUtil.randomAnalysisString(random(), 6, true));
           
           try {
             iw.addDocuments(Arrays.asList(doc, doc2));

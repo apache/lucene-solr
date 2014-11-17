@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -90,17 +92,19 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
         System.out.println("\nTEST: make 1st writer");
       }
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random())));
-      Document doc = new Document();
-      Field idField = newTextField("id", "", Field.Store.NO);
-      doc.add(idField);
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
-      doc.add(newField("test", "", customType));
-      idField.setStringValue("1");
+      FieldTypes fieldTypes = iw.getFieldTypes();
+      fieldTypes.enableTermVectors("test");
+
+      Document2 doc = iw.newDocument();
+      doc.addLargeText("test", "");
+      doc.addUniqueInt("id", 1);
       iw.addDocument(doc);
-      doc.add(newField("test", "", customType));
-      idField.setStringValue("2");
+
+      doc = iw.newDocument();
+      doc.addLargeText("test", "");
+      doc.addUniqueInt("id", 2);
       iw.addDocument(doc);
+
       iw.close();
 
       IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
@@ -109,8 +113,9 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
         System.out.println("\nTEST: make 2nd writer");
       }
       IndexWriter writer = new IndexWriter(rd1, dontMergeConfig);
-      
-      writer.deleteDocuments(new Term("id", "1"));
+      fieldTypes = writer.getFieldTypes();
+
+      writer.deleteDocuments(fieldTypes.newIntTerm("id", 1));
       writer.close();
       IndexReader ir = DirectoryReader.open(rd1);
       assertEquals(2, ir.maxDoc());
@@ -126,8 +131,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     Directory rd2 = newDirectory();
     {
       IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig(new MockAnalyzer(random())));
-      Document doc = new Document();
-      iw.addDocument(doc);
+      iw.addDocument(iw.newDocument());
       iw.close();
     }
 

@@ -136,7 +136,7 @@ public class QueryUtils {
     public FCInvisibleMultiReader(IndexReader... readers) {
       super(readers);
     }
-    
+
     @Override
     public Object getCoreCacheKey() {
       return cacheKey;

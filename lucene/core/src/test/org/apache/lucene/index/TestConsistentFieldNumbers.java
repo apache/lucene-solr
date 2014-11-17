@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -34,91 +36,29 @@ import org.junit.Test;
 public class TestConsistentFieldNumbers extends LuceneTestCase {
 
   @Test
-  public void testSameFieldNumbersAcrossSegments() throws Exception {
-    for (int i = 0; i < 2; i++) {
-      Directory dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                   .setMergePolicy(NoMergePolicy.INSTANCE));
-
-      Document d1 = new Document();
-      d1.add(new StringField("f1", "first field", Field.Store.YES));
-      d1.add(new StringField("f2", "second field", Field.Store.YES));
-      writer.addDocument(d1);
-
-      if (i == 1) {
-        writer.close();
-        writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                         .setMergePolicy(NoMergePolicy.INSTANCE));
-      } else {
-        writer.commit();
-      }
-
-      Document d2 = new Document();
-      FieldType customType2 = new FieldType(TextField.TYPE_STORED);
-      customType2.setStoreTermVectors(true);
-      d2.add(new TextField("f2", "second field", Field.Store.NO));
-      d2.add(new Field("f1", "first field", customType2));
-      d2.add(new TextField("f3", "third field", Field.Store.NO));
-      d2.add(new TextField("f4", "fourth field", Field.Store.NO));
-      writer.addDocument(d2);
-
-      writer.close();
-
-      SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
-      assertEquals(2, sis.size());
-
-      FieldInfos fis1 = IndexWriter.readFieldInfos(sis.info(0));
-      FieldInfos fis2 = IndexWriter.readFieldInfos(sis.info(1));
-
-      assertEquals("f1", fis1.fieldInfo(0).name);
-      assertEquals("f2", fis1.fieldInfo(1).name);
-      assertEquals("f1", fis2.fieldInfo(0).name);
-      assertEquals("f2", fis2.fieldInfo(1).name);
-      assertEquals("f3", fis2.fieldInfo(2).name);
-      assertEquals("f4", fis2.fieldInfo(3).name);
-
-      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      writer.forceMerge(1);
-      writer.close();
-
-      sis = SegmentInfos.readLatestCommit(dir);
-      assertEquals(1, sis.size());
-
-      FieldInfos fis3 = IndexWriter.readFieldInfos(sis.info(0));
-
-      assertEquals("f1", fis3.fieldInfo(0).name);
-      assertEquals("f2", fis3.fieldInfo(1).name);
-      assertEquals("f3", fis3.fieldInfo(2).name);
-      assertEquals("f4", fis3.fieldInfo(3).name);
-
-
-      dir.close();
-    }
-  }
-
-  @Test
   public void testAddIndexes() throws Exception {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random()))
                                                  .setMergePolicy(NoMergePolicy.INSTANCE));
 
-    Document d1 = new Document();
-    d1.add(new TextField("f1", "first field", Field.Store.YES));
-    d1.add(new TextField("f2", "second field", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    Document2 d1 = writer.newDocument();
+    d1.addLargeText("f1", "first field");
+    d1.addLargeText("f2", "second field");
     writer.addDocument(d1);
 
     writer.close();
     writer = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random()))
                                      .setMergePolicy(NoMergePolicy.INSTANCE));
 
-    Document d2 = new Document();
-    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
-    customType2.setStoreTermVectors(true);
-    d2.add(new TextField("f2", "second field", Field.Store.YES));
-    d2.add(new Field("f1", "first field", customType2));
-    d2.add(new TextField("f3", "third field", Field.Store.YES));
-    d2.add(new TextField("f4", "fourth field", Field.Store.YES));
+    fieldTypes = writer.getFieldTypes();
+    Document2 d2 = writer.newDocument();
+    fieldTypes.enableTermVectors("f1");
+    d2.addLargeText("f2", "second field");
+    d2.addLargeText("f1", "first field");
+    d2.addLargeText("f3", "third field");
+    d2.addLargeText("f4", "fourth field");
     writer.addDocument(d2);
 
     writer.close();
@@ -153,9 +93,12 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                     .setMergePolicy(NoMergePolicy.INSTANCE));
-        Document d = new Document();
-        d.add(new TextField("f1", "d1 first field", Field.Store.YES));
-        d.add(new TextField("f2", "d1 second field", Field.Store.YES));
+        FieldTypes fieldTypes = writer.getFieldTypes();
+        fieldTypes.disableExistsFilters();
+
+        Document2 d = writer.newDocument();
+        d.addLargeText("f1", "d1 first field");
+        d.addLargeText("f2", "d1 second field");
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -169,9 +112,9 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                     .setMergePolicy(NoMergePolicy.INSTANCE));
-        Document d = new Document();
-        d.add(new TextField("f1", "d2 first field", Field.Store.YES));
-        d.add(new StoredField("f3", new byte[] { 1, 2, 3 }));
+        Document2 d = writer.newDocument();
+        d.addLargeText("f1", "d2 first field");
+        d.addStored("f3", new byte[] { 1, 2, 3 });
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -188,10 +131,10 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                     .setMergePolicy(NoMergePolicy.INSTANCE));
-        Document d = new Document();
-        d.add(new TextField("f1", "d3 first field", Field.Store.YES));
-        d.add(new TextField("f2", "d3 second field", Field.Store.YES));
-        d.add(new StoredField("f3", new byte[] { 1, 2, 3, 4, 5 }));
+        Document2 d = writer.newDocument();
+        d.addLargeText("f1", "d3 first field");
+        d.addLargeText("f2", "d3 second field");
+        d.addStored("f3", new byte[] { 1, 2, 3, 4, 5 });
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -249,14 +192,25 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    for(int i=0;i<MAX_FIELDS;i++) {
+      fieldTypes.setMultiValued(""+i);
+    }
 
     for (int i = 0; i < NUM_DOCS; i++) {
-      Document d = new Document();
+      Document2 d = writer.newDocument();
       for (int j = 0; j < docs[i].length; j++) {
-        d.add(getField(docs[i][j]));
+        addField(fieldTypes, d, docs[i][j]);
       }
 
       writer.addDocument(d);
+    }
+
+    Document2 d = writer.newDocument();
+
+    for(int i=0;i<MAX_FIELDS;i++) {
+      addField(fieldTypes, d, i);
     }
 
     writer.forceMerge(1);
@@ -267,7 +221,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       FieldInfos fis = IndexWriter.readFieldInfos(si);
 
       for (FieldInfo fi : fis) {
-        Field expected = getField(Integer.parseInt(fi.name));
+        IndexableField expected = d.getField(fi.name);
         assertEquals(expected.fieldType().indexOptions(), fi.getIndexOptions());
         assertEquals(expected.fieldType().storeTermVectors(), fi.hasVectors());
       }
@@ -276,70 +230,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     dir.close();
   }
 
-  private Field getField(int number) {
-    int mode = number % 16;
+  private void addField(FieldTypes fieldTypes, Document2 d, int number) {
     String fieldName = "" + number;
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    
-    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
-    customType2.setTokenized(false);
-    
-    FieldType customType3 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType3.setTokenized(false);
-    
-    FieldType customType4 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType4.setTokenized(false);
-    customType4.setStoreTermVectors(true);
-    customType4.setStoreTermVectorOffsets(true);
-    
-    FieldType customType5 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType5.setStoreTermVectors(true);
-    customType5.setStoreTermVectorOffsets(true);
-
-    FieldType customType6 = new FieldType(TextField.TYPE_STORED);
-    customType6.setTokenized(false);
-    customType6.setStoreTermVectors(true);
-    customType6.setStoreTermVectorOffsets(true);
-
-    FieldType customType7 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType7.setTokenized(false);
-    customType7.setStoreTermVectors(true);
-    customType7.setStoreTermVectorOffsets(true);
-
-    FieldType customType8 = new FieldType(TextField.TYPE_STORED);
-    customType8.setTokenized(false);
-    customType8.setStoreTermVectors(true);
-    customType8.setStoreTermVectorPositions(true);
-
-    FieldType customType9 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType9.setStoreTermVectors(true);
-    customType9.setStoreTermVectorPositions(true);
-
-    FieldType customType10 = new FieldType(TextField.TYPE_STORED);
-    customType10.setTokenized(false);
-    customType10.setStoreTermVectors(true);
-    customType10.setStoreTermVectorPositions(true);
-
-    FieldType customType11 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType11.setTokenized(false);
-    customType11.setStoreTermVectors(true);
-    customType11.setStoreTermVectorPositions(true);
-
-    FieldType customType12 = new FieldType(TextField.TYPE_STORED);
-    customType12.setStoreTermVectors(true);
-    customType12.setStoreTermVectorOffsets(true);
-    customType12.setStoreTermVectorPositions(true);
-
-    FieldType customType13 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType13.setStoreTermVectors(true);
-    customType13.setStoreTermVectorOffsets(true);
-    customType13.setStoreTermVectorPositions(true);
-
-    FieldType customType14 = new FieldType(TextField.TYPE_STORED);
-    customType14.setTokenized(false);
-    customType14.setStoreTermVectors(true);
-    customType14.setStoreTermVectorOffsets(true);
-    customType14.setStoreTermVectorPositions(true);
 
     FieldType customType15 = new FieldType(TextField.TYPE_NOT_STORED);
     customType15.setTokenized(false);
@@ -347,24 +239,93 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType15.setStoreTermVectorOffsets(true);
     customType15.setStoreTermVectorPositions(true);
     
+    int mode = number % 16;
     switch (mode) {
-      case 0: return new Field(fieldName, "some text", customType);
-      case 1: return new TextField(fieldName, "some text", Field.Store.NO);
-      case 2: return new Field(fieldName, "some text", customType2);
-      case 3: return new Field(fieldName, "some text", customType3);
-      case 4: return new Field(fieldName, "some text", customType4);
-      case 5: return new Field(fieldName, "some text", customType5);
-      case 6: return new Field(fieldName, "some text", customType6);
-      case 7: return new Field(fieldName, "some text", customType7);
-      case 8: return new Field(fieldName, "some text", customType8);
-      case 9: return new Field(fieldName, "some text", customType9);
-      case 10: return new Field(fieldName, "some text", customType10);
-      case 11: return new Field(fieldName, "some text", customType11);
-      case 12: return new Field(fieldName, "some text", customType12);
-      case 13: return new Field(fieldName, "some text", customType13);
-      case 14: return new Field(fieldName, "some text", customType14);
-      case 15: return new Field(fieldName, "some text", customType15);
-      default: return null;
+    case 0:
+      d.addStored(fieldName, "some text");
+      return;
+    case 1:
+      d.addLargeText(fieldName, "some text");
+      return;
+    case 2:
+      d.addAtom(fieldName, "some text");
+      return;
+    case 3:
+      fieldTypes.disableStored(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 4:
+      fieldTypes.disableStored(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 5:
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addLargeText(fieldName, "some text");
+      return;
+    case 6:
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 7:
+      fieldTypes.disableStored(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 8:
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 9:
+      fieldTypes.disableStored(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      d.addLargeText(fieldName, "some text");
+      return;
+    case 10:
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 11:
+      fieldTypes.disableStored(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 12:
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addLargeText(fieldName, "some text");
+      return;
+    case 13:
+      fieldTypes.disableStored(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addLargeText(fieldName, "some text");
+      return;
+    case 14:
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    case 15:
+      fieldTypes.disableStored(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      d.addAtom(fieldName, "some text");
+      return;
+    default:
+      assert false;
     }
   }
 }

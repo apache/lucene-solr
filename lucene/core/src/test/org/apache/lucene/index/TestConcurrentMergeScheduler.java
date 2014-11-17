@@ -24,8 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -84,9 +86,6 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random()))
                                                       .setMaxBufferedDocs(2));
-    Document doc = new Document();
-    Field idField = newStringField("id", "", Field.Store.YES);
-    doc.add(idField);
     int extraCount = 0;
 
     for(int i=0;i<10;i++) {
@@ -95,10 +94,13 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       }
 
       for(int j=0;j<20;j++) {
-        idField.setStringValue(Integer.toString(i*20+j));
+        Document2 doc = writer.newDocument();
+        doc.addInt("id", i*20+j);
         writer.addDocument(doc);
       }
 
+      Document2 doc = writer.newDocument();
+      doc.addInt("id", i*20+19);
       // must cycle here because sometimes the merge flushes
       // the doc we just added and so there's nothing to
       // flush, and we don't hit the exception
@@ -142,15 +144,14 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random()))
                                                       .setMergePolicy(mp));
 
-    Document doc = new Document();
-    Field idField = newStringField("id", "", Field.Store.YES);
-    doc.add(idField);
+    FieldTypes fieldTypes = writer.getFieldTypes();
     for(int i=0;i<10;i++) {
       if (VERBOSE) {
         System.out.println("\nTEST: cycle");
       }
       for(int j=0;j<100;j++) {
-        idField.setStringValue(Integer.toString(i*100+j));
+        Document2 doc = writer.newDocument();
+        doc.addUniqueInt("id", i*100+j);
         writer.addDocument(doc);
       }
 
@@ -159,7 +160,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: del " + delID);
         }
-        writer.deleteDocuments(new Term("id", ""+delID));
+        writer.deleteDocuments(fieldTypes.newIntTerm("id", delID));
         delID += 10;
       }
 
@@ -189,8 +190,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       }
 
       for(int j=0;j<21;j++) {
-        Document doc = new Document();
-        doc.add(newTextField("content", "a b c", Field.Store.NO));
+        Document2 doc = writer.newDocument();
+        doc.addLargeText("content", "a b c");
         writer.addDocument(doc);
       }
         
@@ -212,9 +213,6 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testNoWaitClose() throws IOException {
     Directory directory = newDirectory();
-    Document doc = new Document();
-    Field idField = newStringField("id", "", Field.Store.YES);
-    doc.add(idField);
 
     IndexWriter writer = new IndexWriter(
         directory,
@@ -224,24 +222,26 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(100)).
             setCommitOnClose(false)
     );
+    FieldTypes fieldTypes = writer.getFieldTypes();
 
     for(int iter=0;iter<10;iter++) {
 
       for(int j=0;j<201;j++) {
-        idField.setStringValue(Integer.toString(iter*201+j));
+        Document2 doc = writer.newDocument();
+        doc.addUniqueInt("id",iter*201+j);
         writer.addDocument(doc);
       }
 
       int delID = iter*201;
       for(int j=0;j<20;j++) {
-        writer.deleteDocuments(new Term("id", Integer.toString(delID)));
+        writer.deleteDocuments(fieldTypes.newIntTerm("id", delID));
         delID += 5;
       }
 
       // Force a bunch of merge threads to kick off so we
       // stress out aborting them on close:
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
-      writer.addDocument(doc);
+      writer.addDocument(writer.newDocument());
       writer.commit();
 
       try {
@@ -327,8 +327,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     tmp.setSegmentsPerTier(2);
 
     IndexWriter w = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    doc.add(newField("field", "field", TextField.TYPE_NOT_STORED));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "field");
     while(enoughMergesWaiting.getCount() != 0 && !failed.get()) {
       for(int i=0;i<10;i++) {
         w.addDocument(doc);
@@ -374,13 +374,15 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       iwc.setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat()));
     }
     IndexWriter w = new IndexWriter(d, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
+
     for(int i=0;i<1000;i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", ""+i, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addUniqueInt("id", i);
       w.addDocument(doc);
 
       if (random().nextBoolean()) {
-        w.deleteDocuments(new Term("id", ""+random().nextInt(i+1)));
+        w.deleteDocuments(fieldTypes.newIntTerm("id", random().nextInt(i+1)));
       }
     }
     atLeastOneMerge.await();
@@ -431,7 +433,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriter w = new IndexWriter(d, iwc);
     // Makes 100 segments
     for(int i=0;i<200;i++) {
-      w.addDocument(new Document());
+      w.addDocument(w.newDocument());
     }
 
     // No merges should have run so far, because TMP has high segmentsPerTier:
@@ -445,7 +447,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     // Makes another 100 segments
     for(int i=0;i<200;i++) {
-      w.addDocument(new Document());
+      w.addDocument(w.newDocument());
     }
 
     ((ConcurrentMergeScheduler) w.getConfig().getMergeScheduler()).setMaxMergesAndThreads(1, 1);

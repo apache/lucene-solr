@@ -18,17 +18,17 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.Monster;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util.LuceneTestCase.Monster;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Memory", "Direct"})
@@ -54,11 +54,10 @@ public class Test2BSortedDocValues extends LuceneTestCase {
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setCodec(TestUtil.getDefaultCodec()));
 
-    Document doc = new Document();
+    Document2 doc = w.newDocument();
     byte bytes[] = new byte[2];
     BytesRef data = new BytesRef(bytes);
-    SortedDocValuesField dvField = new SortedDocValuesField("dv", data);
-    doc.add(dvField);
+    doc.addBinary("dv", data);
     
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       bytes[0] = (byte)(i >> 8);
@@ -110,11 +109,10 @@ public class Test2BSortedDocValues extends LuceneTestCase {
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setCodec(TestUtil.getDefaultCodec()));
 
-    Document doc = new Document();
+    Document2 doc = w.newDocument();
     byte bytes[] = new byte[4];
     BytesRef data = new BytesRef(bytes);
-    SortedDocValuesField dvField = new SortedDocValuesField("dv", data);
-    doc.add(dvField);
+    doc.addBinary("dv", data);
     
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       bytes[0] = (byte)(i >> 24);

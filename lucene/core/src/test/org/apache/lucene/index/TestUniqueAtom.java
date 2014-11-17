@@ -275,7 +275,7 @@ public class TestUniqueAtom extends LuceneTestCase {
       fail("did not hit exception");
     } catch (RuntimeException re) {
       // expected
-      assertEquals("UNIQUE_ATOM field=\"field\" is not unique: e.g. term=[6f 6e 65] matches both docID=0 and docID=1", re.getMessage());
+      assertEquals("field=\"field\" is supposed to be unique, but isn't: e.g. term=[6f 6e 65] matches both docID=0 and docID=1", re.getMessage());
     }
     
     dir.close();

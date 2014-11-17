@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -241,7 +242,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     );
     for(int j=0;j<1470;j++) {
-      TestIndexWriter.addDocWithIndex(writer, j);
+      TestIndexWriter.addDocWithIndex(writer, 30+j);
     }
     long midDiskUsage = dir.getMaxUsedSizeInBytes();
     dir.resetMaxUsedSizeInBytes();
@@ -359,16 +360,14 @@ public class TestIndexWriterCommit extends LuceneTestCase {
           @Override
           public void run() {
             try {
-              final Document doc = new Document();
               DirectoryReader r = DirectoryReader.open(dir);
-              Field f = newStringField("f", "", Field.Store.NO);
-              doc.add(f);
               int count = 0;
               do {
                 if (failed.get()) break;
                 for(int j=0;j<10;j++) {
                   final String s = finalI + "_" + String.valueOf(count++);
-                  f.setStringValue(s);
+                  Document2 doc = w.newDocument();
+                  doc.addAtom("f", s);
                   w.addDocument(doc);
                   w.commit();
                   DirectoryReader r2 = DirectoryReader.openIfChanged(r);
@@ -441,8 +440,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                            .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
-    Document doc = new Document();
-    w.addDocument(doc);
+    w.addDocument(w.newDocument());
 
     // commit to "first"
     Map<String,String> commitData = new HashMap<>();
@@ -451,7 +449,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.commit();
 
     // commit to "second"
-    w.addDocument(doc);
+    w.addDocument(w.newDocument());
     commitData.put("tag", "second");
     w.setCommitData(commitData);
     w.close();
@@ -474,7 +472,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     assertEquals(1, w.numDocs());
 
     // commit IndexWriter to "third"
-    w.addDocument(doc);
+    w.addDocument(w.newDocument());
     commitData.put("tag", "third");
     w.setCommitData(commitData);
     w.close();
@@ -692,7 +690,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
   public void testPrepareCommitThenClose() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     w.prepareCommit();
     try {
       w.close();

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -44,11 +45,9 @@ public class TestBinaryTerms extends LuceneTestCase {
       bytes.bytes[0] = (byte) i;
       bytes.bytes[1] = (byte) (255 - i);
       bytes.length = 2;
-      Document doc = new Document();
-      FieldType customType = new FieldType();
-      customType.setStored(true);
-      doc.add(new Field("id", "" + i, customType));
-      doc.add(new TextField("bytes", tokenStream));
+      Document2 doc = iw.newDocument();
+      doc.addStored("id", "" + i);
+      doc.addLargeText("bytes", tokenStream);
       iw.addDocument(doc);
     }
     

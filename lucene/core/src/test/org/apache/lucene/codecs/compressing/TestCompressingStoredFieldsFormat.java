@@ -68,13 +68,10 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     
     // make sure that #writeField will fail to trigger an abort
     Document2 invalidDoc = iw.newDocument();
-    invalidDoc.addStored("invalid", (String) null);
     
     try {
-      iw.addDocument(invalidDoc);
-      iw.commit();
-    }
-    finally {
+      invalidDoc.addStored("invalid", (String) null);
+    } finally {
       int counter = 0;
       for (String fileName : dir.listAll()) {
         if (fileName.endsWith(".fdt") || fileName.endsWith(".fdx")) {

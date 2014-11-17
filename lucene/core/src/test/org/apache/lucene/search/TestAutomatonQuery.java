@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -56,19 +57,26 @@ public class TestAutomatonQuery extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    Document doc = new Document();
-    Field titleField = newTextField("title", "some title", Field.Store.NO);
-    Field field = newTextField(FN, "this is document one 2345", Field.Store.NO);
-    Field footerField = newTextField("footer", "a footer", Field.Store.NO);
-    doc.add(titleField);
-    doc.add(field);
-    doc.add(footerField);
+
+    Document2 doc = writer.newDocument();
+    doc.addLargeText(FN, "this is document one 2345");
+    doc.addShortText("title", "some title");
+    doc.addShortText("footer", "a footer");
     writer.addDocument(doc);
-    field.setStringValue("some text from doc two a short piece 5678.91");
+
+    doc = writer.newDocument();
+    doc.addLargeText(FN, "some text from doc two a short piece 5678.91");
+    doc.addShortText("title", "some title");
+    doc.addShortText("footer", "a footer");
     writer.addDocument(doc);
-    field.setStringValue("doc three has some different stuff"
+
+    doc = writer.newDocument();
+    doc.addLargeText(FN, "doc three has some different stuff"
         + " with numbers 1234 5678.9 and letter b");
+    doc.addShortText("title", "some title");
+    doc.addShortText("footer", "a footer");
     writer.addDocument(doc);
+
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();

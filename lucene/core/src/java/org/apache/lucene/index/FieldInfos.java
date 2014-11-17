@@ -233,13 +233,19 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * Returns true if the {@code fieldName} exists in the map and is of the
      * same {@code dvType}.
      */
-    synchronized boolean contains(String fieldName, DocValuesType dvType) {
+    synchronized void verifyUpdateDocValuesType(String fieldName, DocValuesType dvType) {
       // used by IndexWriter.updateNumericDocValue
       if (!nameToNumber.containsKey(fieldName)) {
-        return false;
+        throw new IllegalArgumentException("can only update existing " + dvType + " field but field=\"" + fieldName + "\" does not exist");
       } else {
-        // only return true if the field has the same dvType as the requested one
-        return dvType == docValuesType.get(fieldName);
+        DocValuesType currentDVType = docValuesType.get(fieldName);
+        if (dvType != currentDVType) {
+          if (currentDVType != DocValuesType.NUMERIC && currentDVType != DocValuesType.BINARY) {
+            throw new IllegalArgumentException("can only update NUMERIC or BINARY doc values, but updated field=\"" + fieldName + "\" has docValuesType " + currentDVType);
+          } else {
+            throw new IllegalArgumentException("can only update existing " + dvType + " field but updated field=\"" + fieldName + "\" has docValuesType " + currentDVType);
+          }
+        }
       }
     }
     

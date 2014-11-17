@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -60,15 +62,15 @@ public class Test2BPostings extends LuceneTestCase {
      // 1 petabyte:
      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
     }
-
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setOmitNorms(true);
-    ft.setIndexOptions(IndexOptions.DOCS);
-    Field field = new Field("field", new MyTokenStream(), ft);
-    doc.add(field);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setIndexOptions("field", IndexOptions.DOCS);
+    fieldTypes.disableStored("field");
+    fieldTypes.disableNorms("field");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", new MyTokenStream());
     
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;
+    byte[] bytes = new byte[1];
     for (int i = 0; i < numDocs; i++) {
       w.addDocument(doc);
       if (VERBOSE && i % 100000 == 0) {

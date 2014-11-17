@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.util.*;
 
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
@@ -38,8 +39,8 @@ public class TestTerms extends LuceneTestCase {
   public void testTermMinMaxBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c cc ddd", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addShortText("field", "a b c cc ddd");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
@@ -57,9 +58,6 @@ public class TestTerms extends LuceneTestCase {
     BytesRef minTerm = null;
     BytesRef maxTerm = null;
     for(int i=0;i<numDocs;i++ ){
-      Document doc = new Document();
-      Field field = new TextField("field", "", Field.Store.NO);
-      doc.add(field);
       //System.out.println("  doc " + i);
       CannedBinaryTokenStream.BinaryToken[] tokens = new CannedBinaryTokenStream.BinaryToken[atLeast(10)];
       for(int j=0;j<tokens.length;j++) {
@@ -77,7 +75,9 @@ public class TestTerms extends LuceneTestCase {
         }
         tokens[j] = new CannedBinaryTokenStream.BinaryToken(tokenBytes);
       }
-      field.setTokenStream(new CannedBinaryTokenStream(tokens));
+
+      Document2 doc = w.newDocument();
+      doc.addLargeText("field", new CannedBinaryTokenStream(tokens));
       w.addDocument(doc);
     }
 
@@ -98,18 +98,18 @@ public class TestTerms extends LuceneTestCase {
     int minValue = Integer.MAX_VALUE;
     int maxValue = Integer.MIN_VALUE;
     for(int i=0;i<numDocs;i++ ){
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       int num = random().nextInt();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new IntField("field", num, Field.Store.NO));
+      doc.addInt("field", num);
       w.addDocument(doc);
     }
     
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, NumericUtils.getMinInt(terms));
-    assertEquals(maxValue, NumericUtils.getMaxInt(terms));
+    assertEquals(minValue, Document2.bytesToInt(terms.getMin()));
+    assertEquals(maxValue, Document2.bytesToInt(terms.getMax()));
 
     r.close();
     w.close();
@@ -123,19 +123,19 @@ public class TestTerms extends LuceneTestCase {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     for(int i=0;i<numDocs;i++ ){
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       long num = random().nextLong();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new LongField("field", num, Field.Store.NO));
+      doc.addLong("field", num);
       w.addDocument(doc);
     }
     
     IndexReader r = w.getReader();
 
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, NumericUtils.getMinLong(terms));
-    assertEquals(maxValue, NumericUtils.getMaxLong(terms));
+    assertEquals(minValue, Document2.bytesToLong(terms.getMin()));
+    assertEquals(maxValue, Document2.bytesToLong(terms.getMax()));
 
     r.close();
     w.close();
@@ -149,18 +149,18 @@ public class TestTerms extends LuceneTestCase {
     float minValue = Float.POSITIVE_INFINITY;
     float maxValue = Float.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++ ){
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       float num = random().nextFloat();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new FloatField("field", num, Field.Store.NO));
+      doc.addFloat("field", num);
       w.addDocument(doc);
     }
     
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, NumericUtils.sortableIntToFloat(NumericUtils.getMinInt(terms)), 0.0f);
-    assertEquals(maxValue, NumericUtils.sortableIntToFloat(NumericUtils.getMaxInt(terms)), 0.0f);
+    assertEquals(minValue, Document2.bytesToFloat(terms.getMin()), 0.0f);
+    assertEquals(maxValue, Document2.bytesToFloat(terms.getMax()), 0.0f);
 
     r.close();
     w.close();
@@ -174,11 +174,11 @@ public class TestTerms extends LuceneTestCase {
     double minValue = Double.POSITIVE_INFINITY;
     double maxValue = Double.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++ ){
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       double num = random().nextDouble();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new DoubleField("field", num, Field.Store.NO));
+      doc.addDouble("field", num);
       w.addDocument(doc);
     }
     
@@ -186,8 +186,8 @@ public class TestTerms extends LuceneTestCase {
 
     Terms terms = MultiFields.getTerms(r, "field");
 
-    assertEquals(minValue, NumericUtils.sortableLongToDouble(NumericUtils.getMinLong(terms)), 0.0);
-    assertEquals(maxValue, NumericUtils.sortableLongToDouble(NumericUtils.getMaxLong(terms)), 0.0);
+    assertEquals(minValue, Document2.bytesToDouble(terms.getMin()), 0.0);
+    assertEquals(maxValue, Document2.bytesToDouble(terms.getMax()), 0.0);
 
     r.close();
     w.close();

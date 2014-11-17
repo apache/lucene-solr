@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -146,9 +147,9 @@ public class TestParallelLeafReader extends LuceneTestCase {
     // one document only:
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document d3 = new Document();
+    Document2 d3 = w2.newDocument();
 
-    d3.add(newTextField("f3", "v1", Field.Store.YES));
+    d3.addLargeText("f3", "v1");
     w2.addDocument(d3);
     w2.close();
     
@@ -263,17 +264,17 @@ public class TestParallelLeafReader extends LuceneTestCase {
   private IndexSearcher single(Random random) throws IOException {
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random)));
-    Document d1 = new Document();
-    d1.add(newTextField("f1", "v1", Field.Store.YES));
-    d1.add(newTextField("f2", "v1", Field.Store.YES));
-    d1.add(newTextField("f3", "v1", Field.Store.YES));
-    d1.add(newTextField("f4", "v1", Field.Store.YES));
+    Document2 d1 = w.newDocument();
+    d1.addShortText("f1", "v1");
+    d1.addShortText("f2", "v1");
+    d1.addShortText("f3", "v1");
+    d1.addShortText("f4", "v1");
     w.addDocument(d1);
-    Document d2 = new Document();
-    d2.add(newTextField("f1", "v2", Field.Store.YES));
-    d2.add(newTextField("f2", "v2", Field.Store.YES));
-    d2.add(newTextField("f3", "v2", Field.Store.YES));
-    d2.add(newTextField("f4", "v2", Field.Store.YES));
+    Document2 d2 = w.newDocument();
+    d2.addShortText("f1", "v2");
+    d2.addShortText("f2", "v2");
+    d2.addShortText("f3", "v2");
+    d2.addShortText("f4", "v2");
     w.addDocument(d2);
     w.close();
 
@@ -295,13 +296,16 @@ public class TestParallelLeafReader extends LuceneTestCase {
   private Directory getDir1(Random random) throws IOException {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random)));
-    Document d1 = new Document();
-    d1.add(newTextField("f1", "v1", Field.Store.YES));
-    d1.add(newTextField("f2", "v1", Field.Store.YES));
+    FieldTypes fieldTypes = w1.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+
+    Document2 d1 = w1.newDocument();
+    d1.addShortText("f1", "v1");
+    d1.addShortText("f2", "v1");
     w1.addDocument(d1);
-    Document d2 = new Document();
-    d2.add(newTextField("f1", "v2", Field.Store.YES));
-    d2.add(newTextField("f2", "v2", Field.Store.YES));
+    Document2 d2 = w1.newDocument();
+    d2.addShortText("f1", "v2");
+    d2.addShortText("f2", "v2");
     w1.addDocument(d2);
     w1.close();
     return dir1;
@@ -310,13 +314,15 @@ public class TestParallelLeafReader extends LuceneTestCase {
   private Directory getDir2(Random random) throws IOException {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random)));
-    Document d3 = new Document();
-    d3.add(newTextField("f3", "v1", Field.Store.YES));
-    d3.add(newTextField("f4", "v1", Field.Store.YES));
+    FieldTypes fieldTypes = w2.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    Document2 d3 = w2.newDocument();
+    d3.addShortText("f3", "v1");
+    d3.addShortText("f4", "v1");
     w2.addDocument(d3);
-    Document d4 = new Document();
-    d4.add(newTextField("f3", "v2", Field.Store.YES));
-    d4.add(newTextField("f4", "v2", Field.Store.YES));
+    Document2 d4 = w2.newDocument();
+    d4.addShortText("f3", "v2");
+    d4.addShortText("f4", "v2");
     w2.addDocument(d4);
     w2.close();
     return dir2;

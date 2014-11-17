@@ -33,6 +33,7 @@ import java.util.LinkedList;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
@@ -130,6 +131,8 @@ public class TestDoc extends LuceneTestCase {
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))
       );
+      FieldTypes fieldTypes = writer.getFieldTypes();
+      fieldTypes.disableExistsFilters();
 
       SegmentCommitInfo si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
@@ -175,6 +178,9 @@ public class TestDoc extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(10))
       );
 
+      fieldTypes = writer.getFieldTypes();
+      fieldTypes.disableExistsFilters();
+
       si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
 
@@ -202,9 +208,9 @@ public class TestDoc extends LuceneTestCase {
    private SegmentCommitInfo indexDoc(IndexWriter writer, String fileName)
      throws Exception {
      Path path = workDir.resolve(fileName);
-     Document doc = new Document();
+     Document2 doc = writer.newDocument();
      InputStreamReader is = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8);
-     doc.add(new TextField("contents", is));
+     doc.addLargeText("contents", is);
      writer.addDocument(doc);
      writer.commit();
      is.close();
@@ -261,7 +267,6 @@ public class TestDoc extends LuceneTestCase {
           out.println("    DF=" + tis.docFreq());
 
           DocsAndPositionsEnum positions = tis.docsAndPositions(reader.getLiveDocs(), null);
-
           while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             out.print(" doc=" + positions.docID());
             out.print(" TF=" + positions.freq());

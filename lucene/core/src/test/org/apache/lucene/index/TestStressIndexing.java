@@ -74,19 +74,21 @@ public class TestStressIndexing extends LuceneTestCase {
 
     @Override
     public void doWork() throws Exception {
+      FieldTypes fieldTypes = writer.getFieldTypes();
+
       // Add 10 docs:
       for(int j=0; j<10; j++) {
-        Document d = new Document();
+        Document2 d = writer.newDocument();
         int n = random().nextInt();
-        d.add(newStringField("id", Integer.toString(nextID++), Field.Store.YES));
-        d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
+        d.addInt("id", nextID++);
+        d.addLargeText("contents", English.intToEnglish(n));
         writer.addDocument(d);
       }
 
       // Delete 5 docs:
       int deleteID = nextID-1;
       for(int j=0; j<5; j++) {
-        writer.deleteDocuments(new Term("id", ""+deleteID));
+        writer.deleteDocuments(fieldTypes.newIntTerm("id", deleteID));
         deleteID -= 2;
       }
     }

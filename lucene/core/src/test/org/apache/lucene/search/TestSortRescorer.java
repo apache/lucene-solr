@@ -115,7 +115,7 @@ public class TestSortRescorer extends LuceneTestCase {
     int maxValue = TestUtil.nextInt(random(), 10, 1000000);
     for(int i=0;i<numDocs;i++) {
       Document2 doc = w.newDocument();
-      doc.addUniqueAtom("id", ""+i);
+      doc.addUniqueInt("id", i);
       int numTokens = TestUtil.nextInt(random(), 1, 10);
       StringBuilder b = new StringBuilder();
       for(int j=0;j<numTokens;j++) {

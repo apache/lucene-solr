@@ -24,8 +24,10 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -71,7 +73,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
       throws RuntimeException, IOException {
     for (int i = 0; i < numSnapshots; i++) {
       // create dummy document to trigger commit.
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       writer.commit();
       snapshots.add(sdp.snapshot());
     }
@@ -123,16 +125,16 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     }
     dp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.commit();
-    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("content");
+    fieldTypes.enableTermVectorPositions("content");
+    fieldTypes.enableTermVectorOffsets("content");
+
     final Thread t = new Thread() {
         @Override
         public void run() {
-          Document doc = new Document();
-          FieldType customType = new FieldType(TextField.TYPE_STORED);
-          customType.setStoreTermVectors(true);
-          customType.setStoreTermVectorPositions(true);
-          customType.setStoreTermVectorOffsets(true);
-          doc.add(newField("content", "aaa", customType));
+          Document2 doc = writer.newDocument();
+          doc.addLargeText("content", "aaa");
           do {
             for(int i=0;i<27;i++) {
               try {
@@ -172,12 +174,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Add one more document to force writer to commit a
     // final segment, so deletion policy has a chance to
     // delete again:
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    doc.add(newField("content", "aaa", customType));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "aaa");
     writer.addDocument(doc);
 
     // Make sure we don't have any leftover files in the
@@ -299,7 +297,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
         @Override
         public void run() {
           try {
-            writer.addDocument(new Document());
+            writer.addDocument(writer.newDocument());
             writer.commit();
             snapshots[finalI] = sdp.snapshot();
           } catch (Exception e) {
@@ -319,7 +317,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     }
 
     // Do one last commit, so that after we release all snapshots, we stay w/ one commit
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     
     for (int i=0;i<threads.length;i++) {
@@ -369,7 +367,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     
     // Create another commit - we must do that, because otherwise the "snapshot"
     // files will still remain in the index, since it's the last commit.
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     
     // Release
@@ -387,7 +385,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     
     IndexCommit s1 = sdp.snapshot();
@@ -395,7 +393,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     assertSame(s1, s2); // should be the same instance
     
     // create another commit
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     
     // release "s1" should not delete "s2"
@@ -418,12 +416,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     }
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     IndexCommit s1 = sdp.snapshot();
 
     // create another commit, not snapshotted.
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.close();
 
     // open a new writer w/ KeepOnlyLastCommit policy, so it will delete "s1"

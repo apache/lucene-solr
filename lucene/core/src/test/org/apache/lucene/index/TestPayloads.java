@@ -27,550 +27,540 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestPayloads extends LuceneTestCase {
     
-    // Simple tests to test the Payload class
-    public void testPayload() throws Exception {
-        BytesRef payload = new BytesRef("This is a test!");
-        assertEquals("Wrong payload length.", "This is a test!".length(), payload.length);
+  // Simple tests to test the Payload class
+  public void testPayload() throws Exception {
+    BytesRef payload = new BytesRef("This is a test!");
+    assertEquals("Wrong payload length.", "This is a test!".length(), payload.length);
         
-        BytesRef clone = payload.clone();
-        assertEquals(payload.length, clone.length);
-        for (int i = 0; i < payload.length; i++) {
-          assertEquals(payload.bytes[i + payload.offset], clone.bytes[i + clone.offset]);
-        }
-        
+    BytesRef clone = payload.clone();
+    assertEquals(payload.length, clone.length);
+    for (int i = 0; i < payload.length; i++) {
+      assertEquals(payload.bytes[i + payload.offset], clone.bytes[i + clone.offset]);
     }
-
-    // Tests whether the DocumentWriter and SegmentMerger correctly enable the
-    // payload bit in the FieldInfo
-    public void testPayloadFieldBit() throws Exception {
-        Directory ram = newDirectory();
-        PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
-        Document d = new Document();
-        // this field won't have any payloads
-        d.add(newTextField("f1", "This field has no payloads", Field.Store.NO));
-        // this field will have payloads in all docs, however not for all term positions,
-        // so this field is used to check if the DocumentWriter correctly enables the payloads bit
-        // even if only some term positions have payloads
-        d.add(newTextField("f2", "This field has payloads in all docs", Field.Store.NO));
-        d.add(newTextField("f2", "This field has payloads in all docs NO PAYLOAD", Field.Store.NO));
-        // this field is used to verify if the SegmentMerger enables payloads for a field if it has payloads 
-        // enabled in only some documents
-        d.add(newTextField("f3", "This field has payloads in some docs", Field.Store.NO));
-        // only add payload data for field f2
-        analyzer.setPayloadData("f2", "somedata".getBytes(StandardCharsets.UTF_8), 0, 1);
-        writer.addDocument(d);
-        // flush
-        writer.close();
-
-      SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
-        FieldInfos fi = reader.getFieldInfos();
-        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
-        assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
-        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f3").hasPayloads());
-        reader.close();
         
-        // now we add another document which has payloads for field f3 and verify if the SegmentMerger
-        // enabled payloads for that field
-        analyzer = new PayloadAnalyzer(); // Clear payload state for each field
-        writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
-                                        .setOpenMode(OpenMode.CREATE));
-        d = new Document();
-        d.add(newTextField("f1", "This field has no payloads", Field.Store.NO));
-        d.add(newTextField("f2", "This field has payloads in all docs", Field.Store.NO));
-        d.add(newTextField("f2", "This field has payloads in all docs", Field.Store.NO));
-        d.add(newTextField("f3", "This field has payloads in some docs", Field.Store.NO));
-        // add payload data for field f2 and f3
-        analyzer.setPayloadData("f2", "somedata".getBytes(StandardCharsets.UTF_8), 0, 1);
-        analyzer.setPayloadData("f3", "somedata".getBytes(StandardCharsets.UTF_8), 0, 3);
-        writer.addDocument(d);
+  }
 
-        // force merge
-        writer.forceMerge(1);
-        // flush
-        writer.close();
+  // Tests whether the DocumentWriter and SegmentMerger correctly enable the
+  // payload bit in the FieldInfo
+  public void testPayloadFieldBit() throws Exception {
+    Directory ram = newDirectory();
+    PayloadAnalyzer analyzer = new PayloadAnalyzer();
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
+    Document2 d = writer.newDocument();
+    // this field won't have any payloads
+    d.addLargeText("f1", "This field has no payloads");
+    // this field will have payloads in all docs, however not for all term positions,
+    // so this field is used to check if the DocumentWriter correctly enables the payloads bit
+    // even if only some term positions have payloads
+    d.addLargeText("f2", "This field has payloads in all docs");
+    d.addLargeText("f2", "This field has payloads in all docs NO PAYLOAD");
+    // this field is used to verify if the SegmentMerger enables payloads for a field if it has payloads 
+    // enabled in only some documents
+    d.addLargeText("f3", "This field has payloads in some docs");
+    // only add payload data for field f2
+    analyzer.setPayloadData("f2", "somedata".getBytes(StandardCharsets.UTF_8), 0, 1);
+    writer.addDocument(d);
+    // flush
+    writer.close();
 
-      reader = getOnlySegmentReader(DirectoryReader.open(ram));
-        fi = reader.getFieldInfos();
-        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
-        assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
-        assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").hasPayloads());
-        reader.close();
-        ram.close();
+    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    FieldInfos fi = reader.getFieldInfos();
+    assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
+    assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
+    assertFalse("Payload field bit should not be set.", fi.fieldInfo("f3").hasPayloads());
+    reader.close();
+        
+    // now we add another document which has payloads for field f3 and verify if the SegmentMerger
+    // enabled payloads for that field
+    analyzer = new PayloadAnalyzer(); // Clear payload state for each field
+    writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
+                             .setOpenMode(OpenMode.CREATE));
+    d = writer.newDocument();
+    d.addLargeText("f1", "This field has no payloads");
+    d.addLargeText("f2", "This field has payloads in all docs");
+    d.addLargeText("f2", "This field has payloads in all docs");
+    d.addLargeText("f3", "This field has payloads in some docs");
+    // add payload data for field f2 and f3
+    analyzer.setPayloadData("f2", "somedata".getBytes(StandardCharsets.UTF_8), 0, 1);
+    analyzer.setPayloadData("f3", "somedata".getBytes(StandardCharsets.UTF_8), 0, 3);
+    writer.addDocument(d);
+
+    // force merge
+    writer.forceMerge(1);
+    // flush
+    writer.close();
+
+    reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    fi = reader.getFieldInfos();
+    assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
+    assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
+    assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").hasPayloads());
+    reader.close();
+    ram.close();
+  }
+
+  // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
+  // builds an index with payloads in the given Directory and performs
+  // different tests to verify the payload encoding
+  public void testPayloadsEncoding() throws Exception {
+    Directory dir = newDirectory();
+    PayloadAnalyzer analyzer = new PayloadAnalyzer();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
+                                         .setOpenMode(OpenMode.CREATE)
+                                         .setMergePolicy(newLogMergePolicy()));
+        
+    // should be in sync with value in TermInfosWriter
+    final int skipInterval = 16;
+        
+    final int numTerms = 5;
+    final String fieldName = "f1";
+        
+    int numDocs = skipInterval + 1; 
+    // create content for the test documents with just a few terms
+    Term[] terms = generateTerms(fieldName, numTerms);
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < terms.length; i++) {
+      sb.append(terms[i].text());
+      sb.append(" ");
     }
-
-    // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
-    public void testPayloadsEncoding() throws Exception {
-        Directory dir = newDirectory();
-        performTest(dir);
-        dir.close();
+    String content = sb.toString();
+        
+    int payloadDataLength = numTerms * numDocs * 2 + numTerms * numDocs * (numDocs - 1) / 2;
+    byte[] payloadData = generateRandomData(payloadDataLength);
+        
+    Document2 d = writer.newDocument();
+    d.addLargeText(fieldName, content);
+    // add the same document multiple times to have the same payload lengths for all
+    // occurrences within two consecutive skip intervals
+    int offset = 0;
+    for (int i = 0; i < 2 * numDocs; i++) {
+      analyzer.setPayloadData(fieldName, payloadData, offset, 1);
+      offset += numTerms;
+      writer.addDocument(d);
     }
-    
-    // builds an index with payloads in the given Directory and performs
-    // different tests to verify the payload encoding
-    private void performTest(Directory dir) throws Exception {
-        PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
-            .setOpenMode(OpenMode.CREATE)
-            .setMergePolicy(newLogMergePolicy()));
         
-        // should be in sync with value in TermInfosWriter
-        final int skipInterval = 16;
+    // make sure we create more than one segment to test merging
+    writer.commit();
         
-        final int numTerms = 5;
-        final String fieldName = "f1";
+    // now we make sure to have different payload lengths next at the next skip point        
+    for (int i = 0; i < numDocs; i++) {
+      analyzer.setPayloadData(fieldName, payloadData, offset, i);
+      offset += i * numTerms;
+      writer.addDocument(d);
+    }
         
-        int numDocs = skipInterval + 1; 
-        // create content for the test documents with just a few terms
-        Term[] terms = generateTerms(fieldName, numTerms);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < terms.length; i++) {
-            sb.append(terms[i].text());
-            sb.append(" ");
-        }
-        String content = sb.toString();
+    writer.forceMerge(1);
+    // flush
+    writer.close();
         
         
-        int payloadDataLength = numTerms * numDocs * 2 + numTerms * numDocs * (numDocs - 1) / 2;
-        byte[] payloadData = generateRandomData(payloadDataLength);
-        
-        Document d = new Document();
-        d.add(newTextField(fieldName, content, Field.Store.NO));
-        // add the same document multiple times to have the same payload lengths for all
-        // occurrences within two consecutive skip intervals
-        int offset = 0;
-        for (int i = 0; i < 2 * numDocs; i++) {
-            analyzer = new PayloadAnalyzer(fieldName, payloadData, offset, 1);
-            offset += numTerms;
-            writer.addDocument(d, analyzer);
-        }
-        
-        // make sure we create more than one segment to test merging
-        writer.commit();
-        
-        // now we make sure to have different payload lengths next at the next skip point        
-        for (int i = 0; i < numDocs; i++) {
-            analyzer = new PayloadAnalyzer(fieldName, payloadData, offset, i);
-            offset += i * numTerms;
-            writer.addDocument(d, analyzer);
-        }
-        
-        writer.forceMerge(1);
-        // flush
-        writer.close();
-        
-        
-        /*
-         * Verify the index
-         * first we test if all payloads are stored correctly
-         */        
-        IndexReader reader = DirectoryReader.open(dir);
+    /*
+     * Verify the index
+     * first we test if all payloads are stored correctly
+     */        
+    IndexReader reader = DirectoryReader.open(dir);
 
-        byte[] verifyPayloadData = new byte[payloadDataLength];
-        offset = 0;
-        DocsAndPositionsEnum[] tps = new DocsAndPositionsEnum[numTerms];
-        for (int i = 0; i < numTerms; i++) {
-          tps[i] = MultiFields.getTermPositionsEnum(reader,
-                                                    MultiFields.getLiveDocs(reader),
-                                                    terms[i].field(),
-                                                    new BytesRef(terms[i].text()));
-        }
+    byte[] verifyPayloadData = new byte[payloadDataLength];
+    offset = 0;
+    DocsAndPositionsEnum[] tps = new DocsAndPositionsEnum[numTerms];
+    for (int i = 0; i < numTerms; i++) {
+      tps[i] = MultiFields.getTermPositionsEnum(reader,
+                                                MultiFields.getLiveDocs(reader),
+                                                terms[i].field(),
+                                                new BytesRef(terms[i].text()));
+    }
         
-        while (tps[0].nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-            for (int i = 1; i < numTerms; i++) {
-                tps[i].nextDoc();
-            }
-            int freq = tps[0].freq();
+    while (tps[0].nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      for (int i = 1; i < numTerms; i++) {
+        tps[i].nextDoc();
+      }
+      int freq = tps[0].freq();
 
-            for (int i = 0; i < freq; i++) {
-                for (int j = 0; j < numTerms; j++) {
-                    tps[j].nextPosition();
-                    BytesRef br = tps[j].getPayload();
-                    if (br != null) {
-                      System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
-                      offset += br.length;
-                    }
-                }
-            }
+      for (int i = 0; i < freq; i++) {
+        for (int j = 0; j < numTerms; j++) {
+          tps[j].nextPosition();
+          BytesRef br = tps[j].getPayload();
+          if (br != null) {
+            System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
+            offset += br.length;
+          }
         }
+      }
+    }
         
-        assertByteArrayEquals(payloadData, verifyPayloadData);
+    assertByteArrayEquals(payloadData, verifyPayloadData);
         
-        /*
-         *  test lazy skipping
-         */        
-        DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
-                                                                   MultiFields.getLiveDocs(reader),
-                                                                   terms[0].field(),
-                                                                   new BytesRef(terms[0].text()));
-        tp.nextDoc();
-        tp.nextPosition();
-        // NOTE: prior rev of this test was failing to first
-        // call next here:
-        tp.nextDoc();
-        // now we don't read this payload
-        tp.nextPosition();
-        BytesRef payload = tp.getPayload();
-        assertEquals("Wrong payload length.", 1, payload.length);
-        assertEquals(payload.bytes[payload.offset], payloadData[numTerms]);
-        tp.nextDoc();
-        tp.nextPosition();
+    /*
+     *  test lazy skipping
+     */        
+    DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
+                                                               MultiFields.getLiveDocs(reader),
+                                                               terms[0].field(),
+                                                               new BytesRef(terms[0].text()));
+    tp.nextDoc();
+    tp.nextPosition();
+    // NOTE: prior rev of this test was failing to first
+    // call next here:
+    tp.nextDoc();
+    // now we don't read this payload
+    tp.nextPosition();
+    BytesRef payload = tp.getPayload();
+    assertEquals("Wrong payload length.", 1, payload.length);
+    assertEquals(payload.bytes[payload.offset], payloadData[numTerms]);
+    tp.nextDoc();
+    tp.nextPosition();
         
-        // we don't read this payload and skip to a different document
-        tp.advance(5);
-        tp.nextPosition();
-        payload = tp.getPayload();
-        assertEquals("Wrong payload length.", 1, payload.length);
-        assertEquals(payload.bytes[payload.offset], payloadData[5 * numTerms]);
+    // we don't read this payload and skip to a different document
+    tp.advance(5);
+    tp.nextPosition();
+    payload = tp.getPayload();
+    assertEquals("Wrong payload length.", 1, payload.length);
+    assertEquals(payload.bytes[payload.offset], payloadData[5 * numTerms]);
                 
         
-        /*
-         * Test different lengths at skip points
-         */
-        tp = MultiFields.getTermPositionsEnum(reader,
-                                              MultiFields.getLiveDocs(reader),
-                                              terms[1].field(),
-                                              new BytesRef(terms[1].text()));
-        tp.nextDoc();
-        tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayload().length);
-        tp.advance(skipInterval - 1);
-        tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayload().length);
-        tp.advance(2 * skipInterval - 1);
-        tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayload().length);
-        tp.advance(3 * skipInterval - 1);
-        tp.nextPosition();
-        assertEquals("Wrong payload length.", 3 * skipInterval - 2 * numDocs - 1, tp.getPayload().length);
+    /*
+     * Test different lengths at skip points
+     */
+    tp = MultiFields.getTermPositionsEnum(reader,
+                                          MultiFields.getLiveDocs(reader),
+                                          terms[1].field(),
+                                          new BytesRef(terms[1].text()));
+    tp.nextDoc();
+    tp.nextPosition();
+    assertEquals("Wrong payload length.", 1, tp.getPayload().length);
+    tp.advance(skipInterval - 1);
+    tp.nextPosition();
+    assertEquals("Wrong payload length.", 1, tp.getPayload().length);
+    tp.advance(2 * skipInterval - 1);
+    tp.nextPosition();
+    assertEquals("Wrong payload length.", 1, tp.getPayload().length);
+    tp.advance(3 * skipInterval - 1);
+    tp.nextPosition();
+    assertEquals("Wrong payload length.", 3 * skipInterval - 2 * numDocs - 1, tp.getPayload().length);
         
-        reader.close();
+    reader.close();
         
-        // test long payload
-        analyzer = new PayloadAnalyzer();
-        writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
-                                        .setOpenMode(OpenMode.CREATE));
-        String singleTerm = "lucene";
+    // test long payload
+    analyzer = new PayloadAnalyzer();
+    writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
+                             .setOpenMode(OpenMode.CREATE));
+    String singleTerm = "lucene";
         
-        d = new Document();
-        d.add(newTextField(fieldName, singleTerm, Field.Store.NO));
-        // add a payload whose length is greater than the buffer size of BufferedIndexOutput
-        payloadData = generateRandomData(2000);
-        analyzer.setPayloadData(fieldName, payloadData, 100, 1500);
-        writer.addDocument(d);
+    d = writer.newDocument();
+    d.addLargeText(fieldName, singleTerm);
+    // add a payload whose length is greater than the buffer size of BufferedIndexOutput
+    payloadData = generateRandomData(2000);
+    analyzer.setPayloadData(fieldName, payloadData, 100, 1500);
+    writer.addDocument(d);
 
         
-        writer.forceMerge(1);
-        // flush
-        writer.close();
+    writer.forceMerge(1);
+    // flush
+    writer.close();
         
-        reader = DirectoryReader.open(dir);
-        tp = MultiFields.getTermPositionsEnum(reader,
-                                              MultiFields.getLiveDocs(reader),
-                                              fieldName,
-                                              new BytesRef(singleTerm));
-        tp.nextDoc();
-        tp.nextPosition();
+    reader = DirectoryReader.open(dir);
+    tp = MultiFields.getTermPositionsEnum(reader,
+                                          MultiFields.getLiveDocs(reader),
+                                          fieldName,
+                                          new BytesRef(singleTerm));
+    tp.nextDoc();
+    tp.nextPosition();
         
-        BytesRef br = tp.getPayload();
-        verifyPayloadData = new byte[br.length];
-        byte[] portion = new byte[1500];
-        System.arraycopy(payloadData, 100, portion, 0, 1500);
+    BytesRef br = tp.getPayload();
+    verifyPayloadData = new byte[br.length];
+    byte[] portion = new byte[1500];
+    System.arraycopy(payloadData, 100, portion, 0, 1500);
         
-        assertByteArrayEquals(portion, br.bytes, br.offset, br.length);
-        reader.close();
-        
-    }
+    assertByteArrayEquals(portion, br.bytes, br.offset, br.length);
+    reader.close();
+    dir.close();
+  }
     
-    static final Charset utf8 = StandardCharsets.UTF_8;
+  static final Charset utf8 = StandardCharsets.UTF_8;
     
-    private void generateRandomData(byte[] data) {
-      // this test needs the random data to be valid unicode
-      String s = TestUtil.randomFixedByteLengthUnicodeString(random(), data.length);
-      byte b[] = s.getBytes(utf8);
-      assert b.length == data.length;
-      System.arraycopy(b, 0, data, 0, b.length);
-    }
+  private void generateRandomData(byte[] data) {
+    // this test needs the random data to be valid unicode
+    String s = TestUtil.randomFixedByteLengthUnicodeString(random(), data.length);
+    byte b[] = s.getBytes(utf8);
+    assert b.length == data.length;
+    System.arraycopy(b, 0, data, 0, b.length);
+  }
 
-    private byte[] generateRandomData(int n) {
-        byte[] data = new byte[n];
-        generateRandomData(data);
-        return data;
-    }
+  private byte[] generateRandomData(int n) {
+    byte[] data = new byte[n];
+    generateRandomData(data);
+    return data;
+  }
     
-    private Term[] generateTerms(String fieldName, int n) {
-        int maxDigits = (int) (Math.log(n) / Math.log(10));
-        Term[] terms = new Term[n];
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < n; i++) {
-            sb.setLength(0);
-            sb.append("t");
-            int zeros = maxDigits - (int) (Math.log(i) / Math.log(10));
-            for (int j = 0; j < zeros; j++) {
-                sb.append("0");
-            }
-            sb.append(i);
-            terms[i] = new Term(fieldName, sb.toString());
-        }
-        return terms;
+  private Term[] generateTerms(String fieldName, int n) {
+    int maxDigits = (int) (Math.log(n) / Math.log(10));
+    Term[] terms = new Term[n];
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < n; i++) {
+      sb.setLength(0);
+      sb.append("t");
+      int zeros = maxDigits - (int) (Math.log(i) / Math.log(10));
+      for (int j = 0; j < zeros; j++) {
+        sb.append("0");
+      }
+      sb.append(i);
+      terms[i] = new Term(fieldName, sb.toString());
     }
+    return terms;
+  }
 
 
-    void assertByteArrayEquals(byte[] b1, byte[] b2) {
-        if (b1.length != b2.length) {
-          fail("Byte arrays have different lengths: " + b1.length + ", " + b2.length);
-        }
+  void assertByteArrayEquals(byte[] b1, byte[] b2) {
+    if (b1.length != b2.length) {
+      fail("Byte arrays have different lengths: " + b1.length + ", " + b2.length);
+    }
         
-        for (int i = 0; i < b1.length; i++) {
-          if (b1[i] != b2[i]) {
-            fail("Byte arrays different at index " + i + ": " + b1[i] + ", " + b2[i]);
-          }
-        }
-      }    
+    for (int i = 0; i < b1.length; i++) {
+      if (b1[i] != b2[i]) {
+        fail("Byte arrays different at index " + i + ": " + b1[i] + ", " + b2[i]);
+      }
+    }
+  }    
     
   void assertByteArrayEquals(byte[] b1, byte[] b2, int b2offset, int b2length) {
-        if (b1.length != b2length) {
-          fail("Byte arrays have different lengths: " + b1.length + ", " + b2length);
-        }
+    if (b1.length != b2length) {
+      fail("Byte arrays have different lengths: " + b1.length + ", " + b2length);
+    }
         
-        for (int i = 0; i < b1.length; i++) {
-          if (b1[i] != b2[b2offset+i]) {
-            fail("Byte arrays different at index " + i + ": " + b1[i] + ", " + b2[b2offset+i]);
-          }
-        }
-      }    
+    for (int i = 0; i < b1.length; i++) {
+      if (b1[i] != b2[b2offset+i]) {
+        fail("Byte arrays different at index " + i + ": " + b1[i] + ", " + b2[b2offset+i]);
+      }
+    }
+  }    
     
-    
-    /**
-     * This Analyzer uses an WhitespaceTokenizer and PayloadFilter.
-     */
-    private static class PayloadAnalyzer extends Analyzer {
-        Map<String,PayloadData> fieldToData = new HashMap<>();
+  static class PayloadData {
+    byte[] data;
+    int offset;
+    int length;
 
-        public PayloadAnalyzer() {
-          super(PER_FIELD_REUSE_STRATEGY);
-        }
-        
-        public PayloadAnalyzer(String field, byte[] data, int offset, int length) {
-            super(PER_FIELD_REUSE_STRATEGY);
-            setPayloadData(field, data, offset, length);
-        }
+    PayloadData(byte[] data, int offset, int length) {
+      this.data = data;
+      this.offset = offset;
+      this.length = length;
+    }
+  }
 
-        void setPayloadData(String field, byte[] data, int offset, int length) {
-            fieldToData.put(field, new PayloadData(data, offset, length));
-        }
-        
-        @Override
-        public TokenStreamComponents createComponents(String fieldName) {
-            PayloadData payload =  fieldToData.get(fieldName);
-            Tokenizer ts = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-            TokenStream tokenStream = (payload != null) ?
-                new PayloadFilter(ts, payload.data, payload.offset, payload.length) : ts;
-            return new TokenStreamComponents(ts, tokenStream);
-        }
-        
-        private static class PayloadData {
-            byte[] data;
-            int offset;
-            int length;
+  private static class PayloadAnalyzer extends Analyzer {
+    Map<String,PayloadData> fieldToData = new HashMap<>();
 
-            PayloadData(byte[] data, int offset, int length) {
-                this.data = data;
-                this.offset = offset;
-                this.length = length;
-            }
-        }
+    public PayloadAnalyzer() {
+      super(PER_FIELD_REUSE_STRATEGY);
+    }
+        
+    public PayloadAnalyzer(String field, byte[] data, int offset, int length) {
+      super(PER_FIELD_REUSE_STRATEGY);
+      setPayloadData(field, data, offset, length);
     }
 
+    void setPayloadData(String field, byte[] data, int offset, int length) {
+      fieldToData.put(field, new PayloadData(data, offset, length));
+    }
+        
+    @Override
+    public TokenStreamComponents createComponents(String fieldName) {
+      PayloadData payload =  fieldToData.get(fieldName);
+      Tokenizer ts = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+      TokenStream tokenStream = (payload != null) ?
+        new PayloadFilter(ts, fieldName, fieldToData) : ts;
+      return new TokenStreamComponents(ts, tokenStream);
+    }
+  }
     
-    /**
-     * This Filter adds payloads to the tokens.
-     */
-    private static class PayloadFilter extends TokenFilter {
-        private byte[] data;
-        private int length;
-        private int offset;
-        private int startOffset;
-        PayloadAttribute payloadAtt;
-        CharTermAttribute termAttribute;
+  /**
+   * This Filter adds payloads to the tokens.
+   */
+  private static class PayloadFilter extends TokenFilter {
+    private int startOffset;
+    PayloadAttribute payloadAtt;
+    CharTermAttribute termAttribute;
+    private Map<String,PayloadData> fieldToData;
+    private String fieldName;
+    private PayloadData payloadData;
+    private int offset;
+
+    public PayloadFilter(TokenStream in, String fieldName, Map<String,PayloadData> fieldToData) {
+      super(in);
+      this.fieldToData = fieldToData;
+      this.fieldName = fieldName;
+      payloadAtt = addAttribute(PayloadAttribute.class);
+      termAttribute = addAttribute(CharTermAttribute.class);
+    }
         
-        public PayloadFilter(TokenStream in, byte[] data, int offset, int length) {
-            super(in);
-            this.data = data;
-            this.length = length;
-            this.offset = offset;
-            this.startOffset = offset;
-            payloadAtt = addAttribute(PayloadAttribute.class);
-            termAttribute = addAttribute(CharTermAttribute.class);
-        }
+    @Override
+    public boolean incrementToken() throws IOException {
+      boolean hasNext = input.incrementToken();
+      if (!hasNext) {
+        return false;
+      }
+
+      // Some values of the same field are to have payloads and others not
+      if (offset + payloadData.length <= payloadData.data.length && !termAttribute.toString().endsWith("NO PAYLOAD")) {
+        BytesRef p = new BytesRef(payloadData.data, offset, payloadData.length);
+        payloadAtt.setPayload(p);
+        offset += payloadData.length;
+      } else {
+        payloadAtt.setPayload(null);
+      }
+
+      return true;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.payloadData = fieldToData.get(fieldName);
+      this.offset = payloadData.offset;
+    }
+  }
+    
+  public void testThreadSafety() throws Exception {
+    final int numThreads = 5;
+    final int numDocs = atLeast(50);
+    final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
-        @Override
-        public boolean incrementToken() throws IOException {
-            boolean hasNext = input.incrementToken();
-            if (!hasNext) {
-              return false;
+    Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    final String field = "test";
+        
+    Thread[] ingesters = new Thread[numThreads];
+    for (int i = 0; i < numThreads; i++) {
+      ingesters[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              for (int j = 0; j < numDocs; j++) {
+                Document2 d = writer.newDocument();
+                d.addLargeText(field, new PoolingPayloadTokenStream(pool));
+                writer.addDocument(d);
+              }
+            } catch (Exception e) {
+              e.printStackTrace();
+              fail(e.toString());
             }
-
-            // Some values of the same field are to have payloads and others not
-            if (offset + length <= data.length && !termAttribute.toString().endsWith("NO PAYLOAD")) {
-              BytesRef p = new BytesRef(data, offset, length);
-              payloadAtt.setPayload(p);
-              offset += length;
-            } else {
-              payloadAtt.setPayload(null);
-            }
-
-            return true;
+          }
+        };
+      ingesters[i].start();
+    }
+        
+    for (int i = 0; i < numThreads; i++) {
+      ingesters[i].join();
+    }
+    writer.close();
+    IndexReader reader = DirectoryReader.open(dir);
+    TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
+    Bits liveDocs = MultiFields.getLiveDocs(reader);
+    DocsAndPositionsEnum tp = null;
+    while (terms.next() != null) {
+      String termText = terms.term().utf8ToString();
+      tp = terms.docsAndPositions(liveDocs, tp);
+      while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        int freq = tp.freq();
+        for (int i = 0; i < freq; i++) {
+          tp.nextPosition();
+          final BytesRef payload = tp.getPayload();
+          assertEquals(termText, payload.utf8ToString());
         }
+      }
+    }
+    reader.close();
+    dir.close();
+    assertEquals(pool.size(), numThreads);
+  }
+    
+  private class PoolingPayloadTokenStream extends TokenStream {
+    private byte[] payload;
+    private boolean first;
+    private ByteArrayPool pool;
+    private String term;
 
-      @Override
-      public void reset() throws IOException {
-        super.reset();
-        this.offset = startOffset;
+    CharTermAttribute termAtt;
+    PayloadAttribute payloadAtt;
+        
+    PoolingPayloadTokenStream(ByteArrayPool pool) {
+      this.pool = pool;
+      payload = pool.get();
+      generateRandomData(payload);
+      term = new String(payload, 0, payload.length, utf8);
+      first = true;
+      payloadAtt = addAttribute(PayloadAttribute.class);
+      termAtt = addAttribute(CharTermAttribute.class);
+    }
+        
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (!first) return false;
+      first = false;
+      clearAttributes();
+      termAtt.append(term);
+      payloadAtt.setPayload(new BytesRef(payload));
+      return true;
+    }
+        
+    @Override
+    public void close() throws IOException {
+      pool.release(payload);
+    }
+        
+  }
+    
+  private static class ByteArrayPool {
+    private List<byte[]> pool;
+        
+    ByteArrayPool(int capacity, int size) {
+      pool = new ArrayList<>();
+      for (int i = 0; i < capacity; i++) {
+        pool.add(new byte[size]);
       }
     }
     
-    public void testThreadSafety() throws Exception {
-        final int numThreads = 5;
-        final int numDocs = atLeast(50);
-        final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
-        
-        Directory dir = newDirectory();
-        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-        final String field = "test";
-        
-        Thread[] ingesters = new Thread[numThreads];
-        for (int i = 0; i < numThreads; i++) {
-            ingesters[i] = new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        for (int j = 0; j < numDocs; j++) {
-                            Document d = new Document();
-                            d.add(new TextField(field, new PoolingPayloadTokenStream(pool)));
-                            writer.addDocument(d);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        fail(e.toString());
-                    }
-                }
-            };
-            ingesters[i].start();
-        }
-        
-        for (int i = 0; i < numThreads; i++) {
-          ingesters[i].join();
-        }
-        writer.close();
-        IndexReader reader = DirectoryReader.open(dir);
-        TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
-        Bits liveDocs = MultiFields.getLiveDocs(reader);
-        DocsAndPositionsEnum tp = null;
-        while (terms.next() != null) {
-          String termText = terms.term().utf8ToString();
-          tp = terms.docsAndPositions(liveDocs, tp);
-          while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-            int freq = tp.freq();
-            for (int i = 0; i < freq; i++) {
-              tp.nextPosition();
-              final BytesRef payload = tp.getPayload();
-              assertEquals(termText, payload.utf8ToString());
-            }
-          }
-        }
-        reader.close();
-        dir.close();
-        assertEquals(pool.size(), numThreads);
+    synchronized byte[] get() {
+      return pool.remove(0);
     }
-    
-    private class PoolingPayloadTokenStream extends TokenStream {
-        private byte[] payload;
-        private boolean first;
-        private ByteArrayPool pool;
-        private String term;
-
-        CharTermAttribute termAtt;
-        PayloadAttribute payloadAtt;
         
-        PoolingPayloadTokenStream(ByteArrayPool pool) {
-            this.pool = pool;
-            payload = pool.get();
-            generateRandomData(payload);
-            term = new String(payload, 0, payload.length, utf8);
-            first = true;
-            payloadAtt = addAttribute(PayloadAttribute.class);
-            termAtt = addAttribute(CharTermAttribute.class);
-        }
-        
-        @Override
-        public boolean incrementToken() throws IOException {
-            if (!first) return false;
-            first = false;
-            clearAttributes();
-            termAtt.append(term);
-            payloadAtt.setPayload(new BytesRef(payload));
-            return true;
-        }
-        
-        @Override
-        public void close() throws IOException {
-            pool.release(payload);
-        }
-        
+    synchronized void release(byte[] b) {
+      pool.add(b);
     }
-    
-    private static class ByteArrayPool {
-        private List<byte[]> pool;
         
-        ByteArrayPool(int capacity, int size) {
-            pool = new ArrayList<>();
-            for (int i = 0; i < capacity; i++) {
-                pool.add(new byte[size]);
-            }
-        }
-    
-        synchronized byte[] get() {
-            return pool.remove(0);
-        }
-        
-        synchronized void release(byte[] b) {
-            pool.add(b);
-        }
-        
-        synchronized int size() {
-            return pool.size();
-        }
+    synchronized int size() {
+      return pool.size();
     }
+  }
 
   public void testAcrossFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
                                                      new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
-    Document doc = new Document();
-    doc.add(new TextField("hasMaybepayload", "here we go", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("hasMaybepayload", "here we go");
     writer.addDocument(doc);
     writer.close();
 
     writer = new RandomIndexWriter(random(), dir,
                                    new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
-    doc = new Document();
-    doc.add(new TextField("hasMaybepayload2", "here we go", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("hasMaybepayload2", "here we go");
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.forceMerge(1);
@@ -585,22 +575,22 @@ public class TestPayloads extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    Field field = new TextField("field", "", Field.Store.NO);
+    Document2 doc = writer.newDocument();
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-    ((Tokenizer)ts).setReader(new StringReader("here we go"));
-    field.setTokenStream(ts);
-    doc.add(field);
+    ((Tokenizer) ts).setReader(new StringReader("here we go"));
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
     Token withPayload = new Token("withPayload", 0, 11);
     withPayload.setPayload(new BytesRef("test"));
     ts = new CannedTokenStream(withPayload);
     assertTrue(ts.hasAttribute(PayloadAttribute.class));
-    field.setTokenStream(ts);
+    doc = writer.newDocument();
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("another"));
-    field.setTokenStream(ts);
+    doc = writer.newDocument();
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader sr = SlowCompositeReaderWrapper.wrap(reader);
@@ -617,24 +607,18 @@ public class TestPayloads extends LuceneTestCase {
   public void testMixupMultiValued() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field field = new TextField("field", "", Field.Store.NO);
+    Document2 doc = writer.newDocument();
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
-    field.setTokenStream(ts);
-    doc.add(field);
-    Field field2 = new TextField("field", "", Field.Store.NO);
+    doc.addLargeText("field", ts);
     Token withPayload = new Token("withPayload", 0, 11);
     withPayload.setPayload(new BytesRef("test"));
     ts = new CannedTokenStream(withPayload);
     assertTrue(ts.hasAttribute(PayloadAttribute.class));
-    field2.setTokenStream(ts);
-    doc.add(field2);
-    Field field3 = new TextField("field", "", Field.Store.NO);
+    doc.addLargeText("field", ts);
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("nopayload"));
-    field3.setTokenStream(ts);
-    doc.add(field3);
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     SegmentReader sr = getOnlySegmentReader(reader);
@@ -646,5 +630,4 @@ public class TestPayloads extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
 }

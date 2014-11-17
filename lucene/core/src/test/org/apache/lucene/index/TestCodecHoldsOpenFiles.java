@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -33,8 +34,8 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     int numDocs = atLeast(100);
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
-      doc.add(newField("foo", "bar", TextField.TYPE_NOT_STORED));
+      Document2 doc = w.newDocument();
+      doc.addLargeText("foo", "bar");
       w.addDocument(doc);
     }
 

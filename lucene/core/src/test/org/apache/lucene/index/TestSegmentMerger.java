@@ -43,11 +43,9 @@ public class TestSegmentMerger extends LuceneTestCase {
   private String mergedSegment = "test";
   //First segment to be merged
   private Directory merge1Dir;
-  private Document doc1 = new Document();
   private SegmentReader reader1 = null;
   //Second Segment to be merged
   private Directory merge2Dir;
-  private Document doc2 = new Document();
   private SegmentReader reader2 = null;
 
   @Override

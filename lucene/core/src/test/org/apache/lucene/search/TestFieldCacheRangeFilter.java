@@ -20,8 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
@@ -437,19 +439,17 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   public void testSparseIndex() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    FieldTypes fieldTypes = writer.getFieldTypes();
 
     for (int d = -20; d <= 20; d++) {
-      Document doc = new Document();
-      doc.add(new IntField("id_int", d, Field.Store.NO));
-      doc.add(new NumericDocValuesField("id_int", d));
-      doc.add(newStringField("body", "body", Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addInt("id_int", d);
+      doc.addAtom("body", "body");
       writer.addDocument(doc);
     }
     
     writer.forceMerge(1);
-    BytesRefBuilder term0 = new BytesRefBuilder();
-    NumericUtils.intToPrefixCoded(0, 0, term0);
-    writer.deleteDocuments(new Term("id_int", term0.get()));
+    writer.deleteDocuments(fieldTypes.newIntTerm("id_int", 0));
     writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);

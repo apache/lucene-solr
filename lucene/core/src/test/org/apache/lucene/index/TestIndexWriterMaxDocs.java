@@ -20,8 +20,10 @@ package org.apache.lucene.index;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -43,9 +45,9 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   public void testExactlyAtTrueLimit() throws Exception {
     Directory dir = newFSDirectory(createTempDir("2BDocs3"));
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(newStringField("field", "text", Field.Store.NO));
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
+      Document2 doc = iw.newDocument();
+      doc.addAtom("field", "text");
       iw.addDocument(doc);
       /*
       if (i%1000000 == 0) {
@@ -84,12 +86,12 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
       for(int i=0;i<10;i++) {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
       }
 
       // 11th document should fail:
       try {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
         fail("didn't hit exception");
       } catch (IllegalStateException ise) {
         // expected
@@ -107,12 +109,12 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
       for(int i=0;i<10;i++) {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
       }
 
       // 11th document should fail:
       try {
-        w.addDocuments(Collections.singletonList(new Document()));
+        w.addDocuments(Collections.singletonList(w.newDocument()));
         fail("didn't hit exception");
       } catch (IllegalStateException ise) {
         // expected
@@ -130,12 +132,12 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
       for(int i=0;i<10;i++) {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
       }
 
       // 11th document should fail:
       try {
-        w.updateDocument(new Term("field", "foo"), new Document());
+        w.updateDocument(new Term("field", "foo"), w.newDocument());
         fail("didn't hit exception");
       } catch (IllegalStateException ise) {
         // expected
@@ -153,12 +155,12 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
       for(int i=0;i<10;i++) {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
       }
 
       // 11th document should fail:
       try {
-        w.updateDocuments(new Term("field", "foo"), Collections.singletonList(new Document()));
+        w.updateDocuments(new Term("field", "foo"), Collections.singletonList(w.newDocument()));
         fail("didn't hit exception");
       } catch (IllegalStateException ise) {
         // expected
@@ -175,15 +177,16 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     try {
       Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+      FieldTypes fieldTypes = w.getFieldTypes();
       for(int i=0;i<10;i++) {
-        Document doc = new Document();
-        doc.add(newStringField("id", ""+i, Field.Store.NO));
+        Document2 doc = w.newDocument();
+        doc.addUniqueInt("id", i);
         w.addDocument(doc);
       }
 
       // Delete 5 of them:
       for(int i=0;i<5;i++) {
-        w.deleteDocuments(new Term("id", ""+i));
+        w.deleteDocuments(fieldTypes.newIntTerm("id", i));
       }
 
       w.forceMerge(1);
@@ -192,12 +195,12 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
       // Add 5 more docs
       for(int i=0;i<5;i++) {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
       }
 
       // 11th document should fail:
       try {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
         fail("didn't hit exception");
       } catch (IllegalStateException ise) {
         // expected
@@ -217,9 +220,11 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       IndexWriterConfig iwc = new IndexWriterConfig(null);
       iwc.setMergePolicy(NoMergePolicy.INSTANCE);
       IndexWriter w = new IndexWriter(dir, iwc);
+      FieldTypes fieldTypes = w.getFieldTypes();
+
       for(int i=0;i<10;i++) {
-        Document doc = new Document();
-        doc.add(newStringField("id", ""+i, Field.Store.NO));
+        Document2 doc = w.newDocument();
+        doc.addUniqueInt("id", i);
         w.addDocument(doc);
         if (i % 2 == 0) {
           // Make a new segment every 2 docs:
@@ -229,7 +234,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
       // Delete 5 of them:
       for(int i=0;i<5;i++) {
-        w.deleteDocuments(new Term("id", ""+i));
+        w.deleteDocuments(fieldTypes.newIntTerm("id", i));
       }
 
       w.forceMerge(1);
@@ -238,12 +243,12 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
       // Add 5 more docs
       for(int i=0;i<5;i++) {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
       }
 
       // 11th document should fail:
       try {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
         fail("didn't hit exception");
       } catch (IllegalStateException ise) {
         // expected
@@ -261,13 +266,13 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
       for(int i=0;i<10;i++) {
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
       }
       w.close();
 
       Directory dir2 = newDirectory();
       IndexWriter w2 = new IndexWriter(dir2, new IndexWriterConfig(null));
-      w2.addDocument(new Document());
+      w2.addDocument(w2.newDocument());
       try {
         w2.addIndexes(new Directory[] {dir});
         fail("didn't hit exception");
@@ -294,8 +299,8 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   // Make sure MultiReader lets you search exactly the limit number of docs:
   public void testMultiReaderExactLimit() throws Exception {
     Directory dir = newDirectory();
-    Document doc = new Document();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    Document2 doc = w.newDocument();
     for (int i = 0; i < 100000; i++) {
       w.addDocument(doc);
     }
@@ -304,6 +309,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     int remainder = IndexWriter.MAX_DOCS % 100000;
     Directory dir2 = newDirectory();
     w = new IndexWriter(dir2, new IndexWriterConfig(null));
+    doc = w.newDocument();
     for (int i = 0; i < remainder; i++) {
       w.addDocument(doc);
     }
@@ -329,8 +335,8 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   // Make sure MultiReader is upset if you exceed the limit
   public void testMultiReaderBeyondLimit() throws Exception {
     Directory dir = newDirectory();
-    Document doc = new Document();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    Document2 doc = w.newDocument();
     for (int i = 0; i < 100000; i++) {
       w.addDocument(doc);
     }
@@ -343,6 +349,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
     Directory dir2 = newDirectory();
     w = new IndexWriter(dir2, new IndexWriterConfig(null));
+    doc = w.newDocument();
     for (int i = 0; i < remainder; i++) {
       w.addDocument(doc);
     }

@@ -19,14 +19,15 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 
 public class TestSegmentTermEnum extends LuceneTestCase {
@@ -133,10 +134,9 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     reader.close();
   }
 
-  private void addDoc(IndexWriter writer, String value) throws IOException
-  {
-    Document doc = new Document();
-    doc.add(newTextField("content", value, Field.Store.NO));
+  private void addDoc(IndexWriter writer, String value) throws IOException {
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", value);
     writer.addDocument(doc);
   }
 }

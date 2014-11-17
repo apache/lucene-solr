@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -38,17 +39,12 @@ public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(TestUtil.getDefaultCodec());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
-    Document doc = new Document();
-    // these fields should sometimes get term vectors, etc
-    Field idField = newStringField("id", "", Field.Store.NO);
-    Field bodyField = newTextField("body", "", Field.Store.NO);
-    Field dvField = new NumericDocValuesField("dv", 5);
-    doc.add(idField);
-    doc.add(bodyField);
-    doc.add(dvField);
     for (int i = 0; i < 100; i++) {
-      idField.setStringValue(Integer.toString(i));
-      bodyField.setStringValue(TestUtil.randomUnicodeString(random()));
+      Document2 doc = riw.newDocument();
+      doc.addUniqueInt("id", i);
+      // these fields should sometimes get term vectors, etc
+      doc.addLargeText("body", TestUtil.randomUnicodeString(random()));
+      doc.addInt("dv", 5);
       riw.addDocument(doc);
       if (random().nextInt(7) == 0) {
         riw.commit();

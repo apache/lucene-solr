@@ -39,6 +39,8 @@ public class TestMultiFields extends LuceneTestCase {
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                              .setMergePolicy(NoMergePolicy.INSTANCE));
+      FieldTypes fieldTypes = w.getFieldTypes();
+
       // we can do this because we use NoMergePolicy (and dont merge to "nothing")
       w.setKeepFullyDeletedSegments(true);
 
@@ -72,7 +74,7 @@ public class TestMultiFields extends LuceneTestCase {
           uniqueTerms.add(term);
           doc.addAtom("field", s);
         }
-        doc.addUniqueAtom("id", ""+i);
+        doc.addUniqueInt("id", i);
         w.addDocument(doc);
         if (random().nextInt(4) == 1) {
           w.commit();
@@ -80,7 +82,7 @@ public class TestMultiFields extends LuceneTestCase {
         if (i > 0 && random().nextInt(20) == 1) {
           int delID = random().nextInt(i);
           deleted.add(delID);
-          w.deleteDocuments(new Term("id", ""+delID));
+          w.deleteDocuments(fieldTypes.newIntTerm("id", delID));
           if (VERBOSE) {
             System.out.println("TEST: delete " + delID);
           }

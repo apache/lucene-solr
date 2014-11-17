@@ -19,8 +19,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
@@ -142,25 +144,23 @@ public class TestFieldValueFilter extends LuceneTestCase {
 
   private int[] buildIndex(RandomIndexWriter writer, int docs)
       throws IOException {
+    FieldTypes fieldTypes = writer.getFieldTypes();
     int[] docStates = new int[docs];
     for (int i = 0; i < docs; i++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       if (random().nextBoolean()) {
         docStates[i] = 1;
-        doc.add(newTextField("some", "value", Field.Store.YES));
-        doc.add(new SortedDocValuesField("some", new BytesRef("value")));
+        doc.addShortText("some", "value");
       }
-      doc.add(newTextField("all", "test", Field.Store.NO));
-      doc.add(new SortedDocValuesField("all", new BytesRef("test")));
-      doc.add(newTextField("id", "" + i, Field.Store.YES));
-      doc.add(new SortedDocValuesField("id", new BytesRef("" + i)));
+      doc.addShortText("all", "test");
+      doc.addUniqueInt("id", i);
       writer.addDocument(doc);
     }
     writer.commit();
     int numDeletes = random().nextInt(docs);
     for (int i = 0; i < numDeletes; i++) {
       int docID = random().nextInt(docs);
-      writer.deleteDocuments(new Term("id", "" + docID));
+      writer.deleteDocuments(fieldTypes.newIntTerm("id", docID));
       docStates[docID] = 2;
     }
     writer.close();

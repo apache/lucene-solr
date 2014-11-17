@@ -17,8 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -34,22 +36,17 @@ public class TestSumDocFreq extends LuceneTestCase {
     
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = writer.getFieldTypes();
     
-    Document doc = new Document();
-    Field id = newStringField("id", "", Field.Store.NO);
-    Field field1 = newTextField("foo", "", Field.Store.NO);
-    Field field2 = newTextField("bar", "", Field.Store.NO);
-    doc.add(id);
-    doc.add(field1);
-    doc.add(field2);
     for (int i = 0; i < numDocs; i++) {
-      id.setStringValue("" + i);
+      Document2 doc = writer.newDocument();
+      doc.addUniqueInt("id", i);
       char ch1 = (char) TestUtil.nextInt(random(), 'a', 'z');
       char ch2 = (char) TestUtil.nextInt(random(), 'a', 'z');
-      field1.setStringValue("" + ch1 + " " + ch2);
+      doc.addLargeText("foo", "" + ch1 + " " + ch2);
       ch1 = (char) TestUtil.nextInt(random(), 'a', 'z');
       ch2 = (char) TestUtil.nextInt(random(), 'a', 'z');
-      field2.setStringValue("" + ch1 + " " + ch2);
+      doc.addLargeText("bar", "" + ch1 + " " + ch2);
       writer.addDocument(doc);
     }
     
@@ -60,7 +57,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     
     int numDeletions = atLeast(20);
     for (int i = 0; i < numDeletions; i++) {
-      writer.deleteDocuments(new Term("id", "" + random().nextInt(numDocs)));
+      writer.deleteDocuments(fieldTypes.newIntTerm("id", random().nextInt(numDocs)));
     }
     writer.forceMerge(1);
     writer.close();

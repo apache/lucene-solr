@@ -26,20 +26,21 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -72,10 +73,9 @@ public class TestSortRandom extends LuceneTestCase {
     final List<BytesRef> docValues = new ArrayList<>();
     // TODO: deletions
     while (numDocs < NUM_DOCS) {
-      final Document doc = new Document();
+      final Document2 doc = writer.newDocument();
 
       // 10% of the time, the document is missing the value:
-      final BytesRef br;
       if (random().nextInt(10) != 7) {
         final String s;
         if (random.nextBoolean()) {
@@ -95,20 +95,17 @@ public class TestSortRandom extends LuceneTestCase {
           System.out.println("  " + numDocs + ": s=" + s);
         }
 
-        br = new BytesRef(s);
-        doc.add(new SortedDocValuesField("stringdv", br));
-        docValues.add(br);
+        doc.addShortText("stringdv", s);
+        docValues.add(new BytesRef(s));
 
       } else {
-        br = null;
         if (VERBOSE) {
           System.out.println("  " + numDocs + ": <missing>");
         }
         docValues.add(null);
       }
 
-      doc.add(new NumericDocValuesField("id", numDocs));
-      doc.add(new StoredField("id", numDocs));
+      doc.addInt("id", numDocs);
       writer.addDocument(doc);
       numDocs++;
 

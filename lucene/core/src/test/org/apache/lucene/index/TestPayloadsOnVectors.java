@@ -26,9 +26,11 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -42,29 +44,32 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorPayloads(true);
-    customType.setStoreTermVectorOffsets(random().nextBoolean());
-    Field field = new Field("field", "", customType);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.enableTermVectorPayloads("field");
+    if (random().nextBoolean()) {
+      fieldTypes.enableTermVectorOffsets("field");
+    }
+
+    Document2 doc = writer.newDocument();
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
-    field.setTokenStream(ts);
-    doc.add(field);
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
     
     Token withPayload = new Token("withPayload", 0, 11);
     withPayload.setPayload(new BytesRef("test"));
     ts = new CannedTokenStream(withPayload);
     assertTrue(ts.hasAttribute(PayloadAttribute.class));
-    field.setTokenStream(ts);
+    doc = writer.newDocument();
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
     
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("another"));
-    field.setTokenStream(ts);
+    doc = writer.newDocument();
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
     
     DirectoryReader reader = writer.getReader();
@@ -85,30 +90,31 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
   public void testMixupMultiValued() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
+
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorPayloads(true);
-    customType.setStoreTermVectorOffsets(random().nextBoolean());
-    Field field = new Field("field", "", customType);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.enableTermVectorPayloads("field");
+    if (random().nextBoolean()) {
+      fieldTypes.enableTermVectorOffsets("field");
+    }
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
-    field.setTokenStream(ts);
-    doc.add(field);
-    Field field2 = new Field("field", "", customType);
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", ts);
+
     Token withPayload = new Token("withPayload", 0, 11);
     withPayload.setPayload(new BytesRef("test"));
     ts = new CannedTokenStream(withPayload);
     assertTrue(ts.hasAttribute(PayloadAttribute.class));
-    field2.setTokenStream(ts);
-    doc.add(field2);
-    Field field3 = new Field("field", "", customType);
+    doc.addLargeText("field", ts);
+
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("nopayload"));
-    field3.setTokenStream(ts);
-    doc.add(field3);
+    doc.addLargeText("field", ts);
     writer.addDocument(doc);
+
     DirectoryReader reader = writer.getReader();
     Terms terms = reader.getTermVector(0, "field");
     assert terms != null;
@@ -126,17 +132,12 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
   public void testPayloadsWithoutPositions() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(false);
-    customType.setStoreTermVectorPayloads(true);
-    customType.setStoreTermVectorOffsets(random().nextBoolean());
-    doc.add(new Field("field", "foo", customType));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
     try {
-      writer.addDocument(doc);
-      fail();
-    } catch (IllegalArgumentException expected) {
+      fieldTypes.enableTermVectorPayloads("field");
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
       // expected
     }
     writer.close();

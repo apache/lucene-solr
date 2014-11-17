@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -86,27 +87,29 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
   public void testRandom() throws Exception {
     final Directory d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    FieldTypes fieldTypes = w.getFieldTypes();
+
     w.w.getConfig().setMaxBufferedDocs(17);
     final int numDocs = atLeast(100);
-    final Set<String> aDocs = new HashSet<>();
+    final Set<Integer> aDocs = new HashSet<>();
     for(int i=0;i<numDocs;i++) {
       final Document2 doc = w.newDocument();
       final String v;
       if (random().nextInt(5) == 4) {
         v = "a";
-        aDocs.add(""+i);
+        aDocs.add(i);
       } else {
         v = "b";
       }
       doc.addAtom("field", v);
-      doc.addUniqueAtom("id", ""+i);
+      doc.addUniqueInt("id", i);
       w.addDocument(doc);
     }
 
     final int numDelDocs = atLeast(10);
     for(int i=0;i<numDelDocs;i++) {
-      final String delID = ""+random().nextInt(numDocs);
-      w.deleteDocuments(new Term("id", delID));
+      int delID = random().nextInt(numDocs);
+      w.deleteDocuments(fieldTypes.newIntTerm("id", delID));
       aDocs.remove(delID);
     }
 

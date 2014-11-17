@@ -232,9 +232,9 @@ public class TestStressNRT extends LuceneTestCase {
 
                     // add tombstone first
                     if (tombstones) {
-                      Document d = new Document();
-                      d.add(newStringField("id", "-"+Integer.toString(id), Field.Store.YES));
-                      d.add(newField(field, Long.toString(nextVal), storedOnlyType));
+                      Document2 d = writer.newDocument();
+                      d.addAtom("id", "-"+Integer.toString(id));
+                      d.addStored(field, Long.toString(nextVal));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
 
@@ -248,9 +248,9 @@ public class TestStressNRT extends LuceneTestCase {
 
                     // add tombstone first
                     if (tombstones) {
-                      Document d = new Document();
-                      d.add(newStringField("id", "-"+Integer.toString(id), Field.Store.YES));
-                      d.add(newField(field, Long.toString(nextVal), storedOnlyType));
+                      Document2 d = writer.newDocument();
+                      d.addAtom("id", "-"+Integer.toString(id));
+                      d.addStored(field, Long.toString(nextVal));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
 
@@ -261,9 +261,9 @@ public class TestStressNRT extends LuceneTestCase {
                     model.put(id, -nextVal);
                   } else {
                     // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
-                    Document d = new Document();
-                    d.add(newStringField("id", Integer.toString(id), Field.Store.YES));
-                    d.add(newField(field, Long.toString(nextVal), storedOnlyType));
+                    Document2 d = writer.newDocument();
+                    d.addAtom("id", Integer.toString(id));
+                    d.addStored(field, Long.toString(nextVal));
                     if (VERBOSE) {
                       System.out.println("TEST: " + Thread.currentThread().getName() + ": u id:" + id + " val=" + nextVal);
                     }

@@ -69,7 +69,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       doc.addLargeText("field1", "this field uses the standard codec as the test");
       // uses memory codec:
       doc.addLargeText("field2", "this field uses the memory codec as the test");
-      doc.addAtom("id", ""+i);
+      doc.addUniqueInt("id", i);
       w.addDocument(doc);
       if ((i+1)%10 == 0) {
         w.commit();
@@ -78,7 +78,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now delete id=77");
     }
-    w.deleteDocuments(new Term("id", "77"));
+    w.deleteDocuments(fieldTypes.newIntTerm("id", 77));
 
     IndexReader r = DirectoryReader.open(w, true);
     
@@ -91,7 +91,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: now delete 2nd doc");
     }
-    w.deleteDocuments(new Term("id", "44"));
+    w.deleteDocuments(fieldTypes.newIntTerm("id", 44));
 
     if (VERBOSE) {
       System.out.println("\nTEST: now force merge");
@@ -106,9 +106,9 @@ public class TestExternalCodecs extends LuceneTestCase {
     s = newSearcher(r);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field2", "memory")), 1).totalHits);
-    assertEquals(1, s.search(new TermQuery(new Term("id", "76")), 1).totalHits);
-    assertEquals(0, s.search(new TermQuery(new Term("id", "77")), 1).totalHits);
-    assertEquals(0, s.search(new TermQuery(new Term("id", "44")), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newIntTermQuery("id", 76), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newIntTermQuery("id", 77), 1).totalHits);
+    assertEquals(0, s.search(fieldTypes.newIntTermQuery("id", 44), 1).totalHits);
 
     if (VERBOSE) {
       System.out.println("\nTEST: now close NRT reader");

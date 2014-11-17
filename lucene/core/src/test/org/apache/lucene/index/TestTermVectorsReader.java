@@ -26,9 +26,11 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -96,28 +98,21 @@ public class TestTermVectorsReader extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(false, 10))
             .setUseCompoundFile(false)
     );
-
-    Document doc = new Document();
+    FieldTypes fieldTypes = writer.getFieldTypes();
     for(int i=0;i<testFields.length;i++) {
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      if (testFieldsStorePos[i] && testFieldsStoreOff[i]) {
-        customType.setStoreTermVectors(true);
-        customType.setStoreTermVectorPositions(true);
-        customType.setStoreTermVectorOffsets(true);
+      fieldTypes.enableTermVectors(testFields[i]);
+      if (testFieldsStorePos[i]) {
+        fieldTypes.enableTermVectorPositions(testFields[i]);
       }
-      else if (testFieldsStorePos[i] && !testFieldsStoreOff[i]) {
-        customType.setStoreTermVectors(true);
-        customType.setStoreTermVectorPositions(true);
+      if (testFieldsStoreOff[i]) {
+        fieldTypes.enableTermVectorOffsets(testFields[i]);
       }
-      else if (!testFieldsStorePos[i] && testFieldsStoreOff[i]) {
-        customType.setStoreTermVectors(true);
-        customType.setStoreTermVectorPositions(true);
-        customType.setStoreTermVectorOffsets(true);
-      }
-      else {
-        customType.setStoreTermVectors(true);
-      }
-      doc.add(new Field(testFields[i], "", customType));
+    }
+
+    Document2 doc = writer.newDocument();
+    for(int i=0;i<testFields.length;i++) {
+      // nocommit shouldn't it be testTerms[i] not ""?
+      doc.addLargeText(testFields[i], "");
     }
 
     //Create 5 documents for testing, they all have the same
@@ -339,117 +334,59 @@ public class TestTermVectorsReader extends LuceneTestCase {
     MockAnalyzer a = new MockAnalyzer(random());
     a.setEnableChecks(false);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorPayloads(true);
-    Document doc = new Document();
-    doc.add(new Field("field", "value", ft));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
     try {
-      w.addDocument(doc);
+      fieldTypes.enableTermVectorPayloads("field");
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", iae.getMessage());
+      assertEquals("field \"field\": cannot enable termVectorPayloads when termVectorPositions haven't been enabled", ise.getMessage());
     }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(false);
-    ft.setStoreTermVectorOffsets(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
     try {
-      w.addDocument(doc);
+      fieldTypes.enableTermVectorOffsets("field2");
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("cannot index term vector offsets when term vectors are not indexed (field=\"field\")", iae.getMessage());
+      assertEquals("field \"field2\": cannot enable termVectorOffsets when termVectors haven't been enabled", ise.getMessage());
     }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(false);
-    ft.setStoreTermVectorPositions(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
     try {
-      w.addDocument(doc);
+      fieldTypes.enableTermVectorPositions("field2");
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("cannot index term vector positions when term vectors are not indexed (field=\"field\")", iae.getMessage());
+      assertEquals("field \"field2\": cannot enable termVectorPositions when termVectors haven't been enabled", ise.getMessage());
     }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(false);
-    ft.setStoreTermVectorPayloads(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
     try {
-      w.addDocument(doc);
+      fieldTypes.enableTermVectorPayloads("field2");
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("cannot index term vector payloads when term vectors are not indexed (field=\"field\")", iae.getMessage());
+      assertEquals("field \"field2\": cannot enable termVectorPayloads when termVectors haven't been enabled", ise.getMessage());
     }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorPayloads(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
+    fieldTypes.enableTermVectors("field3");
     try {
-      w.addDocument(doc);
+      fieldTypes.enableTermVectorPayloads("field3");
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", iae.getMessage());
+      assertEquals("field \"field3\": cannot enable termVectorPayloads when termVectorPositions haven't been enabled", ise.getMessage());
     }
 
-    ft = new FieldType(StoredField.TYPE);
-    ft.setStoreTermVectors(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
+    fieldTypes.enableTermVectors("field4");
+    Document2 doc = w.newDocument();
     try {
+      doc.addStored("field4", "foo");
       w.addDocument(doc);
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("cannot store term vectors for a field that is not indexed (field=\"field\")", iae.getMessage());
-    }
-
-    ft = new FieldType(StoredField.TYPE);
-    ft.setStoreTermVectorPositions(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot store term vector positions for a field that is not indexed (field=\"field\")", iae.getMessage());
-    }
-
-    ft = new FieldType(StoredField.TYPE);
-    ft.setStoreTermVectorOffsets(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot store term vector offsets for a field that is not indexed (field=\"field\")", iae.getMessage());
-    }
-
-    ft = new FieldType(StoredField.TYPE);
-    ft.setStoreTermVectorPayloads(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot store term vector payloads for a field that is not indexed (field=\"field\")", iae.getMessage());
+      assertEquals("field \"field4\": cannot enable term vectors when indexOptions is NONE", ise.getMessage());
     }
 
     w.close();

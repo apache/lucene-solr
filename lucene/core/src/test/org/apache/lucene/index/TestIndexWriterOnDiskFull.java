@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -501,9 +502,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // we can do this because we add/delete/add (and dont merge to "nothing")
     w.setKeepFullyDeletedSegments(true);
 
-    Document doc = new Document();
-
-    doc.add(newTextField("f", "doctor who", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("f", "doctor who");
     w.addDocument(doc);
     w.commit();
 
@@ -541,9 +541,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
                                                 .setCommitOnClose(false));
     writer.commit(); // empty commit, to not create confusing situation with first commit
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
-    final Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
+    final Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
     try {
       writer.addDocument(doc);
       fail("did not hit disk full");
@@ -572,20 +571,18 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   
   // TODO: these are also in TestIndexWriter... add a simple doc-writing method
   // like this to LuceneTestCase?
-  private void addDoc(IndexWriter writer) throws IOException
-  {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa", Field.Store.NO));
-      doc.add(new NumericDocValuesField("numericdv", 1));
-      writer.addDocument(doc);
+  private void addDoc(IndexWriter writer) throws IOException {
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "aaa");
+    doc.addInt("numericdv", 1);
+    writer.addDocument(doc);
   }
   
-  private void addDocWithIndex(IndexWriter writer, int index) throws IOException
-  {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
-      doc.add(newTextField("id", "" + index, Field.Store.NO));
-      doc.add(new NumericDocValuesField("numericdv", 1));
-      writer.addDocument(doc);
+  private void addDocWithIndex(IndexWriter writer, int index) throws IOException {
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "aaa " + index);
+    doc.addLargeText("id", "" + index);
+    doc.addInt("numericdv", 1);
+    writer.addDocument(doc);
   }
 }

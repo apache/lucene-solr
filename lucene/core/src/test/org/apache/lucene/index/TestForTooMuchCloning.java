@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -48,8 +49,8 @@ public class TestForTooMuchCloning extends LuceneTestCase {
         sb.append(TestUtil.randomRealisticUnicodeString(random()));
         sb.append(' ');
       }
-      final Document doc = new Document();
-      doc.add(new TextField("field", sb.toString(), Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addLargeText("field", sb.toString());
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();

@@ -617,7 +617,9 @@ public class TestDirectoryReader extends LuceneTestCase {
       while(enum1.next() != null) {
         assertEquals("Different terms", enum1.term(), enum2.next());
         DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null);
+        assertNotNull("no positions for field=" + field1 + " term=" + enum1.term(), tp1);
         DocsAndPositionsEnum tp2 = enum2.docsAndPositions(liveDocs, null);
+        assertNotNull("no positions field=" + field1 + " term=" + enum2.term(), tp2);
 
         while(tp1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           assertTrue(tp2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

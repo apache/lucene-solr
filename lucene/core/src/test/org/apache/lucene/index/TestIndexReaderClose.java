@@ -98,7 +98,7 @@ public class TestIndexReaderClose extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), newDirectory());
     final int numDocs = TestUtil.nextInt(random(), 1, 5);
     for (int i = 0; i < numDocs; ++i) {
-      w.addDocument(new Document());
+      w.addDocument(w.newDocument());
       if (random().nextBoolean()) {
         w.commit();
       }

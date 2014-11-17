@@ -20,8 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -31,8 +33,8 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -49,17 +51,17 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field idField = new StringField("id", "", Field.Store.NO);
-    doc.add(idField);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+
     // add 500 docs with id 0..499
     for (int i = 0; i < 500; i++) {
-      idField.setStringValue(Integer.toString(i));
+      Document2 doc = iw.newDocument();
+      doc.addUniqueInt("id", i);
       iw.addDocument(doc);
     }
     // delete 20 of them
     for (int i = 0; i < 20; i++) {
-      iw.deleteDocuments(new Term("id", Integer.toString(random().nextInt(iw.maxDoc()))));
+      iw.deleteDocuments(fieldTypes.newIntTerm("id", random().nextInt(iw.maxDoc())));
     }
     ir = iw.getReader();
     is = newSearcher(ir);
@@ -250,7 +252,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testIsCacheAble() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
@@ -293,8 +295,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader, false);
 
     // add a doc, refresh the reader, and check that it's there
-    Document doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addAtom("id", "1");
     writer.addDocument(doc);
 
     reader = refreshReader(reader);

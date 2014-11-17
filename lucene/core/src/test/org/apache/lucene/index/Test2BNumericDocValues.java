@@ -18,16 +18,16 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase.Monster;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util.LuceneTestCase.Monster;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Memory", "Direct"})
@@ -53,12 +53,9 @@ public class Test2BNumericDocValues extends LuceneTestCase {
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setCodec(TestUtil.getDefaultCodec()));
 
-    Document doc = new Document();
-    NumericDocValuesField dvField = new NumericDocValuesField("dv", 0);
-    doc.add(dvField);
-    
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
-      dvField.setLongValue(i);
+      Document2 doc = w.newDocument();
+      doc.addLong("dv", i);
       w.addDocument(doc);
       if (i % 100000 == 0) {
         System.out.println("indexed: " + i);

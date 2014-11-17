@@ -99,6 +99,7 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
   public void intField(FieldInfo fieldInfo, int value) {
     FieldTypes.FieldType fieldType = getFieldType(fieldInfo.name);
     if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.BOOLEAN) {
+      // nocommit real check?
       assert value == 0 || value == 1;
       doc.addBoolean(fieldInfo.name, Boolean.valueOf(value == 1));
     } else {

@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.document.FieldTypes;
+
 /** Base class for implementing {@link CompositeReader}s based on an array
  * of sub-readers. The implementing class has to add code for
  * correctly refcounting and closing the sub-readers.
@@ -82,6 +84,17 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     starts[subReaders.length] = maxDoc;
     this.maxDoc = maxDoc;
     this.numDocs = numDocs;
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    // nocommit must validate they are the same?
+    if (subReaders.length == 0) {
+      // nocommit FieldTypes.EMPTY?
+      return null;
+    } else {
+      return subReaders[0].getFieldTypes();
+    }
   }
 
   @Override

@@ -17,20 +17,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockAnalyzer;
+import java.util.Random;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
-
-import java.util.Random;
 
 public class TestThreadedForceMerge extends LuceneTestCase {
 
@@ -69,13 +69,10 @@ public class TestThreadedForceMerge extends LuceneTestCase {
 
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
 
-      final FieldType customType = new FieldType(StringField.TYPE_STORED);
-      customType.setOmitNorms(true);
-      
       for(int i=0;i<200;i++) {
-        Document d = new Document();
-        d.add(newField("id", Integer.toString(i), customType));
-        d.add(newField("contents", English.intToEnglish(i), customType));
+        Document2 d = writer.newDocument();
+        d.addAtom("id", Integer.toString(i));
+        d.addAtom("contents", English.intToEnglish(i));
         writer.addDocument(d);
       }
 
@@ -93,13 +90,14 @@ public class TestThreadedForceMerge extends LuceneTestCase {
               for(int j=0;j<NUM_ITER2;j++) {
                 writerFinal.forceMerge(1, false);
                 for(int k=0;k<17*(1+iFinal);k++) {
-                  Document d = new Document();
-                  d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, customType));
-                  d.add(newField("contents", English.intToEnglish(iFinal+k), customType));
+                  Document2 d = writerFinal.newDocument();
+                  d.addAtom("id", iterFinal + "_" + iFinal + "_" + j + "_" + k);
+                  d.addAtom("contents", English.intToEnglish(iFinal+k));
                   writerFinal.addDocument(d);
                 }
-                for(int k=0;k<9*(1+iFinal);k++)
+                for(int k=0;k<9*(1+iFinal);k++) {
                   writerFinal.deleteDocuments(new Term("id", iterFinal + "_" + iFinal + "_" + j + "_" + k));
+                }
                 writerFinal.forceMerge(1);
               }
             } catch (Throwable t) {

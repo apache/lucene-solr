@@ -23,9 +23,11 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
@@ -43,23 +45,16 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(TestUtil.getDefaultCodec());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
-    Document doc = new Document();
-    Field idField = newStringField("id", "", Field.Store.YES);
-    Field bodyField = newTextField("body", "", Field.Store.YES);
-    FieldType vectorsType = new FieldType(TextField.TYPE_STORED);
-    vectorsType.setStoreTermVectors(true);
-    vectorsType.setStoreTermVectorPositions(true);
-    Field vectorsField = new Field("vectors", "", vectorsType);
-    Field dvField = new NumericDocValuesField("dv", 5);
-    doc.add(idField);
-    doc.add(bodyField);
-    doc.add(vectorsField);
-    doc.add(dvField);
+    FieldTypes fieldTypes = riw.getFieldTypes();
+    fieldTypes.enableTermVectors("vectors");
+    fieldTypes.enableTermVectorPositions("vectors");
+
     for (int i = 0; i < 100; i++) {
-      idField.setStringValue(Integer.toString(i));
-      bodyField.setStringValue(TestUtil.randomUnicodeString(random()));
-      dvField.setLongValue(random().nextInt(5));
-      vectorsField.setStringValue(TestUtil.randomUnicodeString(random()));
+      Document2 doc = riw.newDocument();
+      doc.addInt("id", i);
+      doc.addLargeText("body", TestUtil.randomUnicodeString(random()));
+      doc.addLargeText("vectors", TestUtil.randomUnicodeString(random()));
+      doc.addInt("dv", random().nextInt(5));
       riw.addDocument(doc);
       if (random().nextInt(7) == 0) {
         riw.commit();

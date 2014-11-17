@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -56,18 +58,17 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
     
     IndexWriter w = new IndexWriter
       (dir, newIndexWriterConfig(random(), new MockAnalyzer(random())));
+    FieldTypes fieldTypes = w.getFieldTypes();
     try {
       final FieldType ft = new FieldType();
       ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
       ft.setStored(random().nextBoolean());
       ft.freeze();
       
-      final Document doc = new Document();
+      final Document2 doc = w.newDocument();
       if (random().nextBoolean()) {
         // totally ok short field value
-        doc.add(new Field(TestUtil.randomSimpleString(random(), 1, 10),
-                          TestUtil.randomSimpleString(random(), 1, 10),
-                          ft));
+        doc.addLargeText(TestUtil.randomSimpleString(random(), 1, 10), TestUtil.randomSimpleString(random(), 1, 10));
       }
       // problematic field
       final String name = TestUtil.randomSimpleString(random(), 1, 50);
@@ -77,11 +78,9 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
       final Field f = new Field(name, value, ft);
       if (random().nextBoolean()) {
         // totally ok short field value
-        doc.add(new Field(TestUtil.randomSimpleString(random(), 1, 10),
-                          TestUtil.randomSimpleString(random(), 1, 10),
-                          ft));
+        doc.addLargeText(TestUtil.randomSimpleString(random(), 1, 10), TestUtil.randomSimpleString(random(), 1, 10));
       }
-      doc.add(f);
+      doc.addLargeText(name, value);
       
       try {
         w.addDocument(doc);

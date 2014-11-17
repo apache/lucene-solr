@@ -25,11 +25,12 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -217,10 +218,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
                 setOpenMode(OpenMode.CREATE).
                 setMergePolicy(newLogMergePolicy(false))
         );
+        FieldTypes fieldTypes = writer.getFieldTypes();
+
         for(int i=0;i<37;i++) {
           Document2 doc = writer.newDocument();
           doc.addLargeText("content", "aaa bbb ccc ddd" + i);
-          doc.addAtom("id", "" + i);
+          doc.addUniqueInt("id", i);
           writer.addDocument(doc);
         }
 
@@ -233,7 +236,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         reader.close();
         
         dir.tweakBufferSizes();
-        writer.deleteDocuments(new Term("id", "0"));
+        writer.deleteDocuments(fieldTypes.newIntTerm("id", 0));
         reader = DirectoryReader.open(writer, true);
         IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(new TermQuery(bbb), null, 1000).scoreDocs;
@@ -243,7 +246,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         reader.close();
         
         dir.tweakBufferSizes();
-        writer.deleteDocuments(new Term("id", "4"));
+        writer.deleteDocuments(fieldTypes.newIntTerm("id", 4));
         reader = DirectoryReader.open(writer, true);
         searcher = newSearcher(reader);
 
@@ -251,7 +254,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
         dir.tweakBufferSizes();
-        hits = searcher.search(new TermQuery(new Term("id", "33")), null, 1000).scoreDocs;
+        hits = searcher.search(fieldTypes.newIntTermQuery("id", 33), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(1, hits.length);
         hits = searcher.search(new TermQuery(aaa), null, 1000).scoreDocs;

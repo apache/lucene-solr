@@ -61,6 +61,12 @@ public class Document2 implements Iterable<IndexableField> {
     }
 
     public FieldValue(String fieldName, Object value, float boost) {
+      if (fieldName == null) {
+        throw new IllegalArgumentException("field name cannot be null");
+      }
+      if (value == null) {
+        throw new IllegalArgumentException("field=\"" + fieldName + "\": value cannot be null");
+      }
       this.fieldName = fieldName;
       this.value = value;
       this.boost = boost;
@@ -149,7 +155,6 @@ public class Document2 implements Iterable<IndexableField> {
       case DATE:
         return getReusedBinaryTokenStream(longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
-      case UNIQUE_ATOM:
         if (fieldType.minTokenLength != null) {
           if (value instanceof String) {
             String s = (String) value;
@@ -305,7 +310,6 @@ public class Document2 implements Iterable<IndexableField> {
           return null;
         }
       case ATOM:
-      case UNIQUE_ATOM:
         if (value instanceof String) {
           return (String) value;
         } else {
@@ -367,6 +371,13 @@ public class Document2 implements Iterable<IndexableField> {
     this.changeSchema = changeSchema;
   }
 
+  private boolean enableExistsField = true;
+  
+  // nocommit only needed for dv updates ... is there a simple way?
+  public void disableExistsField() {
+    enableExistsField = false;
+  }
+
   @Override
   public Iterator<IndexableField> iterator() {
     if (fieldTypes != null) {
@@ -378,7 +389,7 @@ public class Document2 implements Iterable<IndexableField> {
       int fieldNamesIndex;
 
       public boolean hasNext() {
-        return index < fields.size() || (changeSchema && fieldTypes != null && fieldTypes.enableExistsFilters && fieldNamesIndex < fields.size());
+        return index < fields.size() || (enableExistsField && changeSchema && fieldTypes != null && fieldTypes.enableExistsFilters && fieldNamesIndex < fields.size());
       }
 
       public void remove() {
@@ -388,7 +399,7 @@ public class Document2 implements Iterable<IndexableField> {
       public IndexableField next() {
         if (index < fields.size()) {
           return fields.get(index++);
-        } else if (fieldTypes != null && changeSchema && fieldTypes.enableExistsFilters && fieldNamesIndex < fields.size()) {
+        } else if (enableExistsField && fieldTypes != null && changeSchema && fieldTypes.enableExistsFilters && fieldNamesIndex < fields.size()) {
           // nocommit make a more efficient version?  e.g. a single field that takes a list and iterates each via TokenStream.  maybe we
           // should addAtom(String...)?
           return new FieldValue(FieldTypes.FIELD_NAMES_FIELD, fields.get(fieldNamesIndex++).fieldName);
@@ -452,7 +463,7 @@ public class Document2 implements Iterable<IndexableField> {
   /** E.g. a primary key field. */
   public void addUniqueAtom(String fieldName, String value) {
     if (changeSchema) {
-      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.UNIQUE_ATOM);
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM, true);
     }
     fields.add(new FieldValue(fieldName, value));
   }
@@ -465,7 +476,7 @@ public class Document2 implements Iterable<IndexableField> {
   /** E.g. a primary key field. */
   public void addUniqueAtom(String fieldName, BytesRef value) {
     if (changeSchema) {
-      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.UNIQUE_ATOM);
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.ATOM, true);
     }
     fields.add(new FieldValue(fieldName, value));
   }
@@ -493,6 +504,15 @@ public class Document2 implements Iterable<IndexableField> {
     addStored(fieldName, new BytesRef(value));
   }
 
+  /** Default: store this value. */
+  public void addStored(String fieldName, String value) {
+    // nocommit akward we inferred large_text here?
+    if (changeSchema) {
+      fieldTypes.recordLargeTextType(fieldName, true, false);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
   /** Default: store & DV this value. */
   public void addBinary(String fieldName, BytesRef value) {
     if (changeSchema) {
@@ -504,15 +524,6 @@ public class Document2 implements Iterable<IndexableField> {
   /** Default: store this value. */
   public void addBinary(String fieldName, byte[] value) {
     addBinary(fieldName, new BytesRef(value));
-  }
-
-  /** Default: store this value. */
-  public void addStored(String fieldName, String value) {
-    // nocommit akward we inferred large_text here?
-    if (changeSchema) {
-      fieldTypes.recordLargeTextType(fieldName, true, false);
-    }
-    fields.add(new FieldValue(fieldName, value));
   }
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer and stores the value. */
@@ -565,6 +576,14 @@ public class Document2 implements Iterable<IndexableField> {
   }
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
+  public void addUniqueInt(String fieldName, int value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.INT, true);
+    }
+    fields.add(new FieldValue(fieldName, Integer.valueOf(value)));
+  }
+
+  /** Default: support for range filtering/querying and sorting (using numeric doc values). */
   public void addFloat(String fieldName, float value) {
     if (changeSchema) {
       fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.FLOAT);
@@ -576,6 +595,14 @@ public class Document2 implements Iterable<IndexableField> {
   public void addLong(String fieldName, long value) {
     if (changeSchema) {
       fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.LONG);
+    }
+    fields.add(new FieldValue(fieldName, Long.valueOf(value)));
+  }
+
+  /** Default: support for range filtering/querying and sorting (using numeric doc values). */
+  public void addUniqueLong(String fieldName, long value) {
+    if (changeSchema) {
+      fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.LONG, true);
     }
     fields.add(new FieldValue(fieldName, Long.valueOf(value)));
   }
@@ -613,7 +640,7 @@ public class Document2 implements Iterable<IndexableField> {
 
   static {
     // nocommit is there a cleaner/general way to detect missing enum value in case switch statically?  must we use ecj?
-    assert FieldTypes.ValueType.values().length == 13: "missing case for switch statement below";
+    assert FieldTypes.ValueType.values().length == 12: "missing case for switch statement below";
   }
 
   /** Note: this FieldTypes must already know about all the fields in the incoming doc. */
@@ -636,13 +663,6 @@ public class Document2 implements Iterable<IndexableField> {
           addAtom(fieldName, (BytesRef) field.value);
         } else {
           addAtom(fieldName, (String) field.value);
-        }
-        break;
-      case UNIQUE_ATOM:
-        if (field.value instanceof BytesRef) {
-          addUniqueAtom(fieldName, (BytesRef) field.value);
-        } else {
-          addUniqueAtom(fieldName, (String) field.value);
         }
         break;
       case INT:
@@ -701,6 +721,19 @@ public class Document2 implements Iterable<IndexableField> {
     return token;
   }
 
+  // nocommit move elsewhere?
+  public static int bytesToInt(BytesRef bytes) {
+    if (bytes.length != 4) {
+      throw new IllegalArgumentException("incoming bytes should be length=4; got length=" + bytes.length);
+    }
+    int sortableBits = 0;
+    for(int i=0;i<4;i++) {
+      sortableBits = (sortableBits << 8) | bytes.bytes[bytes.offset + i] & 0xff;
+    }
+
+    return sortableBits ^ 0x80000000;
+  }
+
   static BytesRef longToBytes(long v) {
     long sortableBits = v ^ 0x8000000000000000L;
     BytesRef token = new BytesRef(8);
@@ -712,6 +745,29 @@ public class Document2 implements Iterable<IndexableField> {
       sortableBits >>>= 8;
     }
     return token;
+  }
+
+  // nocommit move elsewhere?
+  public static long bytesToLong(BytesRef bytes) {
+    if (bytes.length != 8) {
+      throw new IllegalArgumentException("incoming bytes should be length=8; got length=" + bytes.length);
+    }
+    long sortableBits = 0;
+    for(int i=0;i<8;i++) {
+      sortableBits = (sortableBits << 8) | bytes.bytes[bytes.offset + i] & 0xff;
+    }
+
+    return sortableBits ^ 0x8000000000000000L;
+  }
+
+  // nocommit move elsewhere?
+  public static float bytesToFloat(BytesRef bytes) {
+    return Float.intBitsToFloat(sortableFloatBits(bytesToInt(bytes)));
+  }
+
+  // nocommit move elsewhere?
+  public static double bytesToDouble(BytesRef bytes) {
+    return Double.longBitsToDouble(sortableDoubleBits(bytesToLong(bytes)));
   }
 
   /** Converts IEEE 754 representation of a double to sortable order (or back to the original) */

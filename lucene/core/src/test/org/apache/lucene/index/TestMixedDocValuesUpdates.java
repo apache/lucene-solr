@@ -9,8 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
@@ -19,7 +21,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /*
@@ -49,6 +50,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     lmp.setMergeFactor(3); // merge often
     conf.setMergePolicy(lmp);
     IndexWriter writer = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = writer.getFieldTypes();
     
     final boolean isNRT = random.nextBoolean();
     DirectoryReader reader;
@@ -65,6 +67,9 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     for (int i = 0; i < fieldValues.length; i++) {
       fieldValues[i] = 1;
     }
+    for(int i=numNDVFields;i<numFields;i++) {
+      fieldTypes.disableSorting("f" + i);
+    }
     
     int numRounds = atLeast(15);
     int docID = 0;
@@ -72,15 +77,15 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int numDocs = atLeast(5);
 //      System.out.println("[" + Thread.currentThread().getName() + "]: round=" + i + ", numDocs=" + numDocs);
       for (int j = 0; j < numDocs; j++) {
-        Document doc = new Document();
-        doc.add(new StringField("id", "doc-" + docID, Store.NO));
-        doc.add(new StringField("key", "all", Store.NO)); // update key
+        Document2 doc = writer.newDocument();
+        doc.addAtom("id", "doc-" + docID);
+        doc.addAtom("key", "all"); // update key
         // add all fields with their current value
         for (int f = 0; f < fieldValues.length; f++) {
           if (f < numNDVFields) {
-            doc.add(new NumericDocValuesField("f" + f, fieldValues[f]));
+            doc.addLong("f" + f, fieldValues[f]);
           } else {
-            doc.add(new BinaryDocValuesField("f" + f, TestBinaryDocValuesUpdates.toBytes(fieldValues[f])));
+            doc.addBinary("f" + f, TestBinaryDocValuesUpdates.toBytes(fieldValues[f]));
           }
         }
         writer.addDocument(doc);
@@ -155,25 +160,31 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     final Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter writer = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = writer.getFieldTypes();
     
     // create index
     final int numFields = TestUtil.nextInt(random(), 2, 4);
     final int numThreads = TestUtil.nextInt(random(), 3, 6);
     final int numDocs = atLeast(2000);
+
+    for(int i=0;i<numFields;i++) {
+      fieldTypes.disableSorting("f" + i);
+    }
+
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", "doc" + i, Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", "doc" + i);
       double group = random().nextDouble();
       String g;
       if (group < 0.1) g = "g0";
       else if (group < 0.5) g = "g1";
       else if (group < 0.8) g = "g2";
       else g = "g3";
-      doc.add(new StringField("updKey", g, Store.NO));
+      doc.addAtom("updKey", g);
       for (int j = 0; j < numFields; j++) {
         long value = random().nextInt();
-        doc.add(new BinaryDocValuesField("f" + j, TestBinaryDocValuesUpdates.toBytes(value)));
-        doc.add(new NumericDocValuesField("cf" + j, value * 2)); // control, always updated to f * 2
+        doc.addBinary("f" + j, TestBinaryDocValuesUpdates.toBytes(value));
+        doc.addLong("cf" + j, value * 2); // control, always updated to f * 2
       }
       writer.addDocument(doc);
     }
@@ -203,9 +214,12 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
               final String f = "f" + field;
               final String cf = "cf" + field;
               long updValue = random.nextInt();
+              Document2 update = writer.newDocument();
+              update.disableExistsField();
+              update.addBinary(f, TestBinaryDocValuesUpdates.toBytes(updValue));
+              update.addLong(cf, updValue*2);
 //              System.err.println("[" + Thread.currentThread().getName() + "] t=" + t + ", f=" + f + ", updValue=" + updValue);
-              writer.updateDocValues(t, new BinaryDocValuesField(f, TestBinaryDocValuesUpdates.toBytes(updValue)),
-                  new NumericDocValuesField(cf, updValue*2));
+              writer.updateDocValues(t, update);
               
               if (random.nextDouble() < 0.2) {
                 // delete a random document
@@ -292,13 +306,16 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(4);
     IndexWriter writer = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableSorting("f");
+
     final int numDocs = atLeast(10);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", "doc" + i, Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", "doc" + i);
       long value = random().nextInt();
-      doc.add(new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)));
-      doc.add(new NumericDocValuesField("cf", value * 2));
+      doc.addBinary("f", TestBinaryDocValuesUpdates.toBytes(value));
+      doc.addLong("cf", value * 2);
       writer.addDocument(doc);
     }
     
@@ -307,8 +324,11 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
-      writer.updateDocValues(t, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
-          new NumericDocValuesField("cf", value*2));
+      Document2 update = writer.newDocument();
+      update.disableExistsField();
+      update.addBinary("f", TestBinaryDocValuesUpdates.toBytes(value));
+      update.addLong("cf", value*2);
+      writer.updateDocValues(t, update);
       DirectoryReader reader = DirectoryReader.open(writer, true);
       for (LeafReaderContext context : reader.leaves()) {
         LeafReader r = context.reader();
@@ -332,7 +352,14 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
     conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH); // don't flush by doc
     IndexWriter writer = new IndexWriter(dir, conf);
-    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableSorting("upd");
+
+    final int numUpdates = atLeast(100);
+    for(int i=0;i<numUpdates;i++) {
+      fieldTypes.disableSorting("f" + i);
+    }
+
     // test data: lots of documents (few 10Ks) and lots of update terms (few hundreds)
     final int numDocs = atLeast(20000);
     final int numBinaryFields = atLeast(5);
@@ -346,32 +373,35 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     
     // build a large index with many BDV fields and update terms
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       int numUpdateTerms = TestUtil.nextInt(random, 1, numTerms / 10);
       for (int j = 0; j < numUpdateTerms; j++) {
-        doc.add(new StringField("upd", RandomPicks.randomFrom(random, updateTerms), Store.NO));
+        doc.addAtom("upd", RandomPicks.randomFrom(random, updateTerms));
       }
       for (int j = 0; j < numBinaryFields; j++) {
         long val = random.nextInt();
-        doc.add(new BinaryDocValuesField("f" + j, TestBinaryDocValuesUpdates.toBytes(val)));
-        doc.add(new NumericDocValuesField("cf" + j, val * 2));
+        doc.addBinary("f" + j, TestBinaryDocValuesUpdates.toBytes(val));
+        doc.addLong("cf" + j, val * 2);
       }
       writer.addDocument(doc);
     }
     
     writer.commit(); // commit so there's something to apply to
-    
+
     // set to flush every 2048 bytes (approximately every 12 updates), so we get
     // many flushes during binary updates
     writer.getConfig().setRAMBufferSizeMB(2048.0 / 1024 / 1024);
-    final int numUpdates = atLeast(100);
+
 //    System.out.println("numUpdates=" + numUpdates);
     for (int i = 0; i < numUpdates; i++) {
       int field = random.nextInt(numBinaryFields);
       Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
       long value = random.nextInt();
-      writer.updateDocValues(updateTerm, new BinaryDocValuesField("f"+field, TestBinaryDocValuesUpdates.toBytes(value)),
-          new NumericDocValuesField("cf"+field, value*2));
+      Document2 update = writer.newDocument();
+      update.disableExistsField();
+      update.addBinary("f"+field, TestBinaryDocValuesUpdates.toBytes(value));
+      update.addLong("cf"+field, value*2);
+      writer.updateDocValues(updateTerm, update);
     }
 
     writer.close();

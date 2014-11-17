@@ -84,7 +84,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = writer.newDocument();
       doc.addLargeText("content", "ccc");
-      doc.addAtom("id", "" + i);
+      doc.addUniqueInt("id", i);
       writer.addDocument(doc);
     }
   }

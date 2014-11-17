@@ -107,6 +107,13 @@ import org.apache.lucene.util.Version;
 
 // tie into highlighter
 // tie into faceting
+// tie into index sorting
+
+// nocommit run all monster tests
+
+// nocommit cutover AnalyzingInfixSuggester to binary atom for contexts
+
+// nocommit is it bad that you can no longer add e.g. a stored value separately from a custom token stream?
 
 // nocommit byte, short?
 
@@ -229,7 +236,6 @@ public class FieldTypes {
     TEXT,
     SHORT_TEXT,
     ATOM,  // nocommit binary sort of overlaps w/ this?
-    UNIQUE_ATOM,  // nocommit binary sort of overlaps w/ this?
     INT,
     FLOAT,
     LONG,
@@ -267,7 +273,7 @@ public class FieldTypes {
   private long changeCount;
 
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
-  static class FieldType implements IndexableFieldType {
+  static class FieldType implements IndexableFieldType, Cloneable {
     private final String name;
 
     // Lucene version when we were created:
@@ -282,9 +288,52 @@ public class FieldTypes {
       this.createdVersion = version;
     }
 
+    /** Copy constructor. */
+    FieldType(FieldType other) {
+      this.name = other.name;
+      this.createdVersion = other.createdVersion;
+      this.valueType = other.valueType;
+      this.docValuesType = other.docValuesType;
+      this.docValuesTypeSet = other.docValuesTypeSet;
+      this.isUnique = other.isUnique;
+      this.blockTreeMinItemsInBlock = other.blockTreeMinItemsInBlock;
+      this.blockTreeMaxItemsInBlock = other.blockTreeMaxItemsInBlock;
+      this.blockTreeMinItemsInAutoPrefix = other.blockTreeMinItemsInAutoPrefix;
+      this.blockTreeMaxItemsInAutoPrefix = other.blockTreeMaxItemsInAutoPrefix;
+      this.analyzerPositionGap = other.analyzerPositionGap;
+      this.analyzerOffsetGap = other.analyzerOffsetGap;
+      this.minTokenLength = other.minTokenLength;
+      this.maxTokenLength = other.maxTokenLength;
+      this.maxTokenCount = other.maxTokenCount;
+      this.stored = other.stored;
+      this.sortable = other.sortable;
+      this.sortReversed = other.sortReversed;
+      this.sortMissingLast = other.sortMissingLast;
+      this.fastRanges = other.fastRanges;
+      this.multiValued = other.multiValued;
+      this.indexNorms = other.indexNorms;
+      this.storeTermVectors = other.storeTermVectors;
+      this.storeTermVectorPositions = other.storeTermVectorPositions;
+      this.storeTermVectorOffsets = other.storeTermVectorOffsets;
+      this.storeTermVectorPayloads = other.storeTermVectorPayloads;
+      this.indexOptions = other.indexOptions;
+      this.indexOptionsSet = other.indexOptionsSet;
+      this.docValuesFormat = other.docValuesFormat;
+      this.postingsFormat = other.postingsFormat;
+      this.highlighted = other.highlighted;
+      this.queryAnalyzer = other.queryAnalyzer;
+      this.indexAnalyzer = other.indexAnalyzer;
+      this.similarity = other.similarity;
+      this.wrappedIndexAnalyzer = other.wrappedIndexAnalyzer;
+      this.wrappedQueryAnalyzer = other.wrappedQueryAnalyzer;
+    }
+
     volatile ValueType valueType = ValueType.NONE;
     volatile DocValuesType docValuesType = DocValuesType.NONE;
     private volatile boolean docValuesTypeSet;
+
+    // True if the term is unique across all documents (e.g. a primary key field):
+    volatile Boolean isUnique;
 
     // Expert: settings we pass to BlockTree to control how many terms are allowed in each block and auto-prefix term
     volatile Integer blockTreeMinItemsInBlock;
@@ -427,7 +476,6 @@ public class FieldTypes {
         }
         break;
       case ATOM:
-      case UNIQUE_ATOM:
         if (highlighted == Boolean.TRUE) {
           illegalState(name, "type " + valueType + " cannot highlight");
         }
@@ -442,14 +490,6 @@ public class FieldTypes {
         }
         if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
           illegalState(name, "type " + valueType + " can only be indexed as DOCS; got " + indexOptions);
-        }
-        if (valueType == ValueType.UNIQUE_ATOM) {
-          if (indexOptions != IndexOptions.DOCS) {
-            illegalState(name, "type " + valueType + " must be indexed as DOCS; got " + indexOptions);
-          }
-          if (multiValued == Boolean.TRUE) {
-            illegalState(name, "type " + valueType + " cannot be multivalued");
-          }
         }
         if (maxTokenCount != null) {
           illegalState(name, "type " + valueType + " cannot set max token count");
@@ -502,28 +542,39 @@ public class FieldTypes {
         illegalState(name, "cannot sort when DocValuesType=" + docValuesType);
       }
 
-      if (indexOptions == IndexOptions.NONE) {
-        if (blockTreeMinItemsInBlock != null) {
-          illegalState(name, "can only setTermsDictBlockSize if the field is indexed");
-        }
-        if (blockTreeMinItemsInAutoPrefix != null) {
-          illegalState(name, "can only setTermsDictAutoPrefixSize if the field is indexed");
-        }
-        if (indexAnalyzer != null) {
-          illegalState(name, "can only setIndexAnalyzer if the field is indexed");
-        }
-        if (queryAnalyzer != null) {
-          illegalState(name, "can only setQueryAnalyzer if the field is indexed");
-        }
-        if (fastRanges == Boolean.TRUE) {
-          illegalState(name, "can only enableFastRanges if the field is indexed");
-        }
-      } else {
-        if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && indexAnalyzer != null) {
-          illegalState(name, "can only setIndexAnalyzer for short text and large text fields; got valueType=" + valueType);
-        }
-        if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && queryAnalyzer != null) {
-          illegalState(name, "can only setQueryAnalyzer for short text and large text fields; got valueType=" + valueType);
+      if (indexOptionsSet) {
+        if (indexOptions == IndexOptions.NONE) {
+          if (blockTreeMinItemsInBlock != null) {
+            illegalState(name, "can only setTermsDictBlockSize if the field is indexed");
+          }
+          if (blockTreeMinItemsInAutoPrefix != null) {
+            illegalState(name, "can only setTermsDictAutoPrefixSize if the field is indexed");
+          }
+          if (indexAnalyzer != null) {
+            illegalState(name, "can only setIndexAnalyzer if the field is indexed");
+          }
+          if (queryAnalyzer != null) {
+            illegalState(name, "can only setQueryAnalyzer if the field is indexed");
+          }
+          if (fastRanges == Boolean.TRUE) {
+            illegalState(name, "can only enableFastRanges if the field is indexed");
+          }
+          if (isUnique == Boolean.TRUE) {
+            illegalState(name, "can only setIsUnique if the field is indexed");
+          }
+          if (storeTermVectors == Boolean.TRUE) {
+            illegalState(name, "can only store term vectors if the field is indexed");
+          }
+        } else {
+          if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && indexAnalyzer != null) {
+            illegalState(name, "can only setIndexAnalyzer for short text and large text fields; got valueType=" + valueType);
+          }
+          if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && queryAnalyzer != null) {
+            illegalState(name, "can only setQueryAnalyzer for short text and large text fields; got valueType=" + valueType);
+          }
+          if (isUnique == Boolean.TRUE && indexOptions != IndexOptions.DOCS) {
+            illegalState(name, "unique fields should be indexed with IndexOptions.DOCS; got indexOptions=" + indexOptions);
+          }
         }
       }
 
@@ -637,15 +688,18 @@ public class FieldTypes {
       if (analyzerPositionGap != null) {
         b.append("  multi-valued position gap: ");
         b.append(analyzerPositionGap);
+        b.append('\n');
       }
 
       if (analyzerOffsetGap != null) {
         b.append("  multi-valued offset gap: ");
         b.append(analyzerOffsetGap);
+        b.append('\n');
       }
 
       if (multiValued == Boolean.TRUE) {
         b.append("  multiValued: true");
+        b.append('\n');
       }
 
       b.append("  stored: ");
@@ -715,15 +769,18 @@ public class FieldTypes {
         b.append("disabled");
       } else {
         b.append(indexOptions);
+        if (isUnique != null) {
+          b.append("\n  unique: " + isUnique);
+        }
         if (storeTermVectors == Boolean.TRUE) {
           b.append("\n  termVectors: yes");
-          if (storeTermVectorPositions) {
+          if (storeTermVectorPositions == Boolean.TRUE) {
             b.append(" positions");
             if (storeTermVectorPayloads) {
               b.append(" payloads");
             }
           }
-          if (storeTermVectorOffsets) {
+          if (storeTermVectorOffsets == Boolean.TRUE) {
             b.append(" offsets");
           }
         } else if (storeTermVectors == Boolean.FALSE) {
@@ -834,9 +891,6 @@ public class FieldTypes {
       case INET_ADDRESS:
         out.writeByte((byte) 11);
         break;
-      case UNIQUE_ATOM:
-        out.writeByte((byte) 12);
-        break;
       default:
         throw new AssertionError("missing ValueType in switch");
       }
@@ -890,6 +944,7 @@ public class FieldTypes {
       writeNullableBoolean(out, storeTermVectorPositions);
       writeNullableBoolean(out, storeTermVectorOffsets);
       writeNullableBoolean(out, storeTermVectorPayloads);
+      writeNullableBoolean(out, isUnique);
 
       if (indexOptionsSet == false) {
         assert indexOptions == IndexOptions.NONE;
@@ -1024,9 +1079,6 @@ public class FieldTypes {
       case 11:
         valueType = ValueType.INET_ADDRESS;
         break;
-      case 12:
-        valueType = ValueType.UNIQUE_ATOM;
-        break;
       default:
         throw new CorruptIndexException("invalid byte for ValueType: " + b, in);
       }
@@ -1086,6 +1138,7 @@ public class FieldTypes {
       storeTermVectorPositions = readNullableBoolean(in);
       storeTermVectorOffsets = readNullableBoolean(in);
       storeTermVectorPayloads = readNullableBoolean(in);
+      isUnique = readNullableBoolean(in);
 
       b = in.readByte();
       switch (b) {
@@ -1158,18 +1211,25 @@ public class FieldTypes {
     } else if (isNewIndex == false) {
       // nocommit must handle back compat here
       // throw new CorruptIndexException("FieldTypes is missing from this index", "CommitUserData");
+      System.out.println("  not new, null");
       enableExistsFilters = false;
       return Version.LATEST;
     } else {
-      FieldType fieldType = new FieldType(FIELD_NAMES_FIELD);
-      fields.put(FIELD_NAMES_FIELD, fieldType);
-      fieldType.multiValued = Boolean.TRUE;
-      fieldType.valueType = ValueType.ATOM;
-      fieldType.sortable = Boolean.TRUE;
-      fieldType.stored = Boolean.FALSE;
-      setDefaults(fieldType);
+      addFieldNamesField();
       return Version.LATEST;
     }
+  }
+
+  private void addFieldNamesField() {
+    assert fields.containsKey(FIELD_NAMES_FIELD) == false;
+
+    FieldType fieldType = new FieldType(FIELD_NAMES_FIELD);
+    fields.put(FIELD_NAMES_FIELD, fieldType);
+    fieldType.multiValued = Boolean.TRUE;
+    fieldType.valueType = ValueType.ATOM;
+    fieldType.sortable = Boolean.FALSE;
+    fieldType.stored = Boolean.FALSE;
+    setDefaults(fieldType);
   }
 
   private synchronized FieldType newFieldType(String fieldName) {
@@ -2154,8 +2214,8 @@ public class FieldTypes {
   }
 
   public synchronized void enableTermVectorOffsets(String fieldName) {
-    FieldType current = getFieldType(fieldName);
-    if (current.storeTermVectors != Boolean.TRUE) {
+    FieldType current = fields.get(fieldName);
+    if (current == null || current.storeTermVectors != Boolean.TRUE) {
       // nocommit we could enable term vectors for you?
       illegalState(fieldName, "cannot enable termVectorOffsets when termVectors haven't been enabled");
     }
@@ -2180,8 +2240,8 @@ public class FieldTypes {
   }
 
   public synchronized void enableTermVectorPositions(String fieldName) {
-    FieldType current = getFieldType(fieldName);
-    if (current.storeTermVectors != Boolean.TRUE) {
+    FieldType current = fields.get(fieldName);
+    if (current == null || current.storeTermVectors != Boolean.TRUE) {
       // nocommit we could enable term vectors for you?
       illegalState(fieldName, "cannot enable termVectorPositions when termVectors haven't been enabled");
     }
@@ -2206,10 +2266,13 @@ public class FieldTypes {
   }
 
   public synchronized void enableTermVectorPayloads(String fieldName) {
-    FieldType current = getFieldType(fieldName);
-    if (current.storeTermVectors != Boolean.TRUE) {
+    FieldType current = fields.get(fieldName);
+    if (current == null || current.storeTermVectors != Boolean.TRUE) {
       // nocommit we could enable term vectors / positions for you?
       illegalState(fieldName, "cannot enable termVectorPayloads when termVectors haven't been enabled");
+    }
+    if (current.storeTermVectorPositions != Boolean.TRUE) {
+      illegalState(fieldName, "cannot enable termVectorPayloads when termVectorPositions haven't been enabled");
     }
     if (current.storeTermVectorPayloads != Boolean.TRUE) {
       // nocommit should this change not be allowed...
@@ -2284,6 +2347,10 @@ public class FieldTypes {
     }
   }
 
+  public synchronized void disableDocValues(String fieldName) {
+    setDocValuesType(fieldName, DocValuesType.NONE);
+  }
+
   public synchronized void setDocValuesType(String fieldName, DocValuesType dvType) {
     ensureWritable();
     if (dvType == null) {
@@ -2328,31 +2395,46 @@ public class FieldTypes {
   }
 
   synchronized void recordValueType(String fieldName, ValueType valueType) {
+    recordValueType(fieldName, valueType, false);
+  }
+
+  synchronized void recordValueType(String fieldName, ValueType valueType, boolean isUnique) {
     ensureWritable();
     indexedDocs = true;
     FieldType current = fields.get(fieldName);
     if (current == null) {
       current = newFieldType(fieldName);
       current.valueType = valueType;
+      current.isUnique = isUnique;
       fields.put(fieldName, current);
       setDefaults(current);
       changed();
     } else if (current.valueType == ValueType.NONE) {
+      if (current.isUnique != null && current.isUnique.booleanValue() != isUnique) {
+        // nocommit make sure test covers this
+        illegalState(fieldName, "cannot change to isUnique to " + isUnique + ": field was already with isUnique=" + current.isUnique);
+      }
+
+      Boolean currentIsUnique = current.isUnique;
       // This can happen if e.g. the app first calls FieldTypes.setStored(...)
       boolean success = false;
       try {
+        current.isUnique = isUnique;
         current.valueType = valueType;
         current.validate();
         success = true;
       } finally {
         if (success == false) {
           current.valueType = ValueType.NONE;
+          current.isUnique = currentIsUnique;
         }
       }
       setDefaults(current);
       changed();
     } else if (current.valueType != valueType) {
       illegalState(fieldName, "cannot change from value type " + current.valueType + " to " + valueType);
+    } else if (current.isUnique != isUnique) {
+      illegalState(fieldName, "cannot change isUnique from " + current.isUnique + " to " + isUnique);
     }
   }
 
@@ -2370,11 +2452,12 @@ public class FieldTypes {
       }
       if (indexed == false) {
         current.indexOptions = IndexOptions.NONE;
+        current.indexOptionsSet = true;
       }
       changed();
     } else if (current.valueType == ValueType.NONE) {
       // This can happen if e.g. the app first calls FieldTypes.setStored(...)
-      Boolean oldStored = current.stored;
+      FieldType sav = new FieldType(current);
       boolean success = false;
       try {
         current.valueType = ValueType.TEXT;
@@ -2385,12 +2468,17 @@ public class FieldTypes {
             current.stored = Boolean.FALSE;
           }
         }
+        if (indexed == false) {
+          if (current.indexOptionsSet == false) {
+            assert current.indexOptions == IndexOptions.NONE;
+            current.indexOptionsSet = true;
+          }
+        }
         current.validate();
         success = true;
       } finally {
         if (success == false) {
-          current.valueType = ValueType.NONE;
-          current.stored = oldStored;
+          fields.put(fieldName, sav);
         }
       }
       setDefaults(current);
@@ -2398,6 +2486,25 @@ public class FieldTypes {
     } else if (current.valueType != ValueType.TEXT) {
       illegalState(fieldName, "cannot change from value type " + current.valueType + " to " + ValueType.TEXT);
     }
+  }
+
+  /** Each value in this field will be unique (never occur in more than one document).  IndexWriter validates this.  */
+  public void setIsUnique(String fieldName) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = newFieldType(fieldName);
+      current.isUnique = Boolean.TRUE;
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.isUnique == Boolean.FALSE) {
+      illegalState(fieldName, "cannot change isUnique from FALSE to TRUE");
+    }
+  }
+
+  /** Returns true if values in this field must be unique across all documents in the index. */
+  public synchronized boolean getIsUnique(String fieldName) {   
+    FieldType fieldType = fields.get(fieldName);
+    return fieldType != null && fieldType.isUnique == Boolean.TRUE;
   }
 
   // ncommit move this method inside FildType:
@@ -2454,6 +2561,9 @@ public class FieldTypes {
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
       }
+      if (field.isUnique == null) {
+        field.isUnique = Boolean.FALSE;
+      }
       break;
 
     case SHORT_TEXT:
@@ -2500,10 +2610,12 @@ public class FieldTypes {
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
       }
+      if (field.isUnique == null) {
+        field.isUnique = Boolean.FALSE;
+      }
       break;
 
     case ATOM:
-    case UNIQUE_ATOM:
     case INET_ADDRESS:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
@@ -2547,6 +2659,9 @@ public class FieldTypes {
       }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
+      }
+      if (field.isUnique == null) {
+        field.isUnique = Boolean.FALSE;
       }
       break;
 
@@ -2592,6 +2707,9 @@ public class FieldTypes {
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
       }
+      if (field.isUnique == null) {
+        field.isUnique = Boolean.FALSE;
+      }
       break;
 
     case TEXT:
@@ -2628,6 +2746,9 @@ public class FieldTypes {
       }
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.TRUE;
+      }
+      if (field.isUnique == null) {
+        field.isUnique = Boolean.FALSE;
       }
       break;
     
@@ -2669,6 +2790,9 @@ public class FieldTypes {
       if (field.indexNorms == null) {
         field.indexNorms = Boolean.FALSE;
       }
+      if (field.isUnique == null) {
+        field.isUnique = Boolean.FALSE;
+      }
       break;
 
     default:
@@ -2693,15 +2817,14 @@ public class FieldTypes {
     assert field.indexOptions != null;
     assert field.docValuesTypeSet;
     assert field.docValuesType != null;
+    assert field.isUnique != null;
     assert field.indexOptions == IndexOptions.NONE || field.indexNorms != null;
 
     // nocommit not an assert?  our setDefaults should never create an invalid setting!
     assert field.validate();
   } 
 
-  /** Returns a query matching all documents that have this int term. */
-  public Query newIntTermQuery(String fieldName, int token) {
-    // nocommit should we take Number?
+  public Term newIntTerm(String fieldName, int token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2723,11 +2846,15 @@ public class FieldTypes {
       bytes = null;
     }
 
-    return new TermQuery(new Term(fieldName, bytes));
+    return new Term(fieldName, bytes);
   }
 
-  /** Returns a query matching all documents that have this long term. */
-  public Query newLongTermQuery(String fieldName, long token) {
+  /** Returns a query matching all documents that have this int term. */
+  public Query newIntTermQuery(String fieldName, int token) {
+    return new TermQuery(newIntTerm(fieldName, token));
+  }
+
+  public Term newLongTerm(String fieldName, long token) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
@@ -2749,7 +2876,12 @@ public class FieldTypes {
       bytes = null;
     }
 
-    return new TermQuery(new Term(fieldName, bytes));
+    return new Term(fieldName, bytes);
+  }
+
+  /** Returns a query matching all documents that have this long term. */
+  public Query newLongTermQuery(String fieldName, long token) {
+    return new TermQuery(newLongTerm(fieldName, token));
   }
 
   /** Returns a query matching all documents that have this binary token. */
@@ -2772,6 +2904,7 @@ public class FieldTypes {
   }
 
   public Query newStringTermQuery(String fieldName, String token) {
+
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
 
@@ -2789,6 +2922,7 @@ public class FieldTypes {
   }
 
   public Query newBooleanTermQuery(String fieldName, boolean token) {
+
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
 
@@ -2811,6 +2945,7 @@ public class FieldTypes {
   }
 
   public Query newInetAddressTermQuery(String fieldName, InetAddress token) {
+
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
 
@@ -3108,7 +3243,6 @@ public class FieldTypes {
 
     case SHORT_TEXT:
     case ATOM:
-    case UNIQUE_ATOM:
     case BINARY:
     case BOOLEAN:
     case INET_ADDRESS:
@@ -3268,10 +3402,6 @@ public class FieldTypes {
     return new FieldTypes(commitUserData, defaultQueryAnalyzer, defaultSimilarity);
   }
 
-  public boolean isUniqueAtom(String fieldName) {
-    return getFieldType(fieldName).valueType == ValueType.UNIQUE_ATOM;
-  }
-
   public Iterable<String> getFieldNames() {
     return Collections.unmodifiableSet(fields.keySet());
   }
@@ -3287,12 +3417,6 @@ public class FieldTypes {
         // nocommit must merge / check here!!  and fail if inconsistent ... and needs tests showing this:
       }
     }
-  }
-
-  /** Returns true if values in this field must be unique across all documents in the index. */
-  public synchronized boolean isUnique(String fieldName) {   
-    FieldType current = fields.get(fieldName);
-    return current != null && current.valueType == ValueType.UNIQUE_ATOM;
   }
 
   /** Defines a dynamic field, computed by a Javascript expression referring
@@ -3340,13 +3464,6 @@ public class FieldTypes {
     fields.clear();
     enableExistsFilters = true;
     indexedDocs = false;
-
-    FieldType fieldType = new FieldType(FIELD_NAMES_FIELD);
-    fields.put(FIELD_NAMES_FIELD, fieldType);
-    fieldType.multiValued = Boolean.TRUE;
-    fieldType.valueType = ValueType.ATOM;
-    fieldType.sortable = Boolean.TRUE;
-    fieldType.stored = Boolean.FALSE;
-    setDefaults(fieldType);
+    addFieldNamesField();
   }
 }

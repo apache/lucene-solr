@@ -18,33 +18,36 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.nio.file.Path;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
 
   private static final String S_1 = "A A A";
   private static final String S_2 = "A 1 2 3 A 4 5 6 A";
 
-  private static final Document DOC_1 = makeDocument("X " + S_1 + " Y");
-  private static final Document DOC_2 = makeDocument("X " + S_2 + " Y");
-  private static final Document DOC_3 = makeDocument("X " + S_1 + " A Y");
-  private static final Document DOC_1_B = makeDocument("X " + S_1 + " Y N N N N " + S_1 + " Z");
-  private static final Document DOC_2_B = makeDocument("X " + S_2 + " Y N N N N " + S_2 + " Z");
-  private static final Document DOC_3_B = makeDocument("X " + S_1 + " A Y N N N N " + S_1 + " A Y");
-  private static final Document DOC_4 = makeDocument("A A X A X B A X B B A A X B A A");
-  private static final Document DOC_5_3 = makeDocument("H H H X X X H H H X X X H H H");
-  private static final Document DOC_5_4 = makeDocument("H H H H");
+  private static final String DOC_1 = "X " + S_1 + " Y";
+  private static final String DOC_2 = "X " + S_2 + " Y";
+  private static final String DOC_3 = "X " + S_1 + " A Y";
+  private static final String DOC_1_B = "X " + S_1 + " Y N N N N " + S_1 + " Z";
+  private static final String DOC_2_B = "X " + S_2 + " Y N N N N " + S_2 + " Z";
+  private static final String DOC_3_B = "X " + S_1 + " A Y N N N N " + S_1 + " A Y";
+  private static final String DOC_4 = "A A X A X B A X B B A A X B A A";
+  private static final String DOC_5_3 = "H H H X X X H H H X X X H H H";
+  private static final String DOC_5_4 = "H H H H";
 
   private static final PhraseQuery QUERY_1 = makePhraseQuery( S_1 );
   private static final PhraseQuery QUERY_2 = makePhraseQuery( S_2 );
@@ -132,12 +135,12 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
   }
   
-  private float  checkPhraseQuery(Document doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
+  private float checkPhraseQuery(String doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
     query.setSlop(slop);
 
     Directory ramDir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
-    writer.addDocument(doc);
+    addDocument(writer, doc);
 
     IndexReader reader = writer.getReader();
 
@@ -156,13 +159,13 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     return c.max; 
   }
 
-  private static Document makeDocument(String docText) {
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setOmitNorms(true);
-    Field f = new Field("f", docText, customType);
-    doc.add(f);
-    return doc;
+  private static void addDocument(RandomIndexWriter w, String text) throws IOException {
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableNorms("f");
+
+    Document2 doc = w.newDocument();
+    doc.addLargeText("f", text);
+    w.addDocument(doc);
   }
 
   private static PhraseQuery makePhraseQuery(String terms) {
@@ -223,24 +226,29 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   // LUCENE-3215
   public void testSlopWithHoles() throws Exception {  
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setOmitNorms(true);
-    Field f = new Field("lyrics", "", customType);
-    Document doc = new Document();
-    doc.add(f);
-    f.setStringValue("drug drug");
+    RandomIndexWriter iw = newRandomIndexWriter(dir);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableNorms("lyrics");
+
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("lyrics", "drug drug");
     iw.addDocument(doc);
-    f.setStringValue("drug druggy drug");
+
+    doc = iw.newDocument();
+    doc.addLargeText("lyrics", "drug druggy drug");
     iw.addDocument(doc);
-    f.setStringValue("drug druggy druggy drug");
+
+    doc = iw.newDocument();
+    doc.addLargeText("lyrics", "drug druggy druggy drug");
     iw.addDocument(doc);
-    f.setStringValue("drug druggy drug druggy drug");
+
+    doc = iw.newDocument();
+    doc.addLargeText("lyrics", "drug druggy drug druggy drug");
     iw.addDocument(doc);
+
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
     PhraseQuery pq = new PhraseQuery();
     // "drug the drug"~1
     pq.add(new Term("lyrics", "drug"), 1);
@@ -261,8 +269,8 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("lyrics", document);
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
@@ -314,8 +322,8 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
      Directory dir = newDirectory();
 
      RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-     Document doc = new Document();
-     doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_NOT_STORED)));
+     Document2 doc = iw.newDocument();
+     doc.addLargeText("lyrics", document);
      iw.addDocument(doc);
      IndexReader ir = iw.getReader();
      iw.close();

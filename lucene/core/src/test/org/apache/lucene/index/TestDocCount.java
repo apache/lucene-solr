@@ -17,8 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
@@ -34,7 +36,7 @@ public class TestDocCount extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(100);
     for (int i = 0; i < numDocs; i++) {
-      iw.addDocument(doc());
+      iw.addDocument(doc(iw));
     }
     IndexReader ir = iw.getReader();
     verifyCount(ir);
@@ -47,11 +49,14 @@ public class TestDocCount extends LuceneTestCase {
     dir.close();
   }
   
-  private Document doc() {
-    Document doc = new Document();
+  private Document2 doc(RandomIndexWriter w) {
+    Document2 doc = w.newDocument();
     int numFields = TestUtil.nextInt(random(), 1, 10);
+    FieldTypes fieldTypes = w.getFieldTypes();
     for (int i = 0; i < numFields; i++) {
-      doc.add(newStringField("" + TestUtil.nextInt(random(), 'a', 'z'), "" + TestUtil.nextInt(random(), 'a', 'z'), Field.Store.NO));
+      String fieldName = "" + TestUtil.nextInt(random(), 'a', 'z');
+      fieldTypes.setMultiValued(fieldName);
+      doc.addAtom(fieldName, "" + TestUtil.nextInt(random(), 'a', 'z'));
     }
     return doc;
   }

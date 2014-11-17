@@ -19,18 +19,19 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Memory", "Direct"})
@@ -55,18 +56,18 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
         .setMergePolicy(newLogMergePolicy(false, 10))
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setCodec(TestUtil.getDefaultCodec()));
-
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting("dv");
     byte bytes[] = new byte[4];
     BytesRef data = new BytesRef(bytes);
-    BinaryDocValuesField dvField = new BinaryDocValuesField("dv", data);
-    doc.add(dvField);
     
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
+      Document2 doc = w.newDocument();
       bytes[0] = (byte)(i >> 24);
       bytes[1] = (byte)(i >> 16);
       bytes[2] = (byte)(i >> 8);
       bytes[3] = (byte) i;
+      doc.addBinary("dv", data);
       w.addDocument(doc);
       if (i % 100000 == 0) {
         System.out.println("indexed: " + i);
@@ -116,17 +117,19 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setCodec(TestUtil.getDefaultCodec()));
 
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting("dv");
+
     byte bytes[] = new byte[4];
     ByteArrayDataOutput encoder = new ByteArrayDataOutput(bytes);
     BytesRef data = new BytesRef(bytes);
-    BinaryDocValuesField dvField = new BinaryDocValuesField("dv", data);
-    doc.add(dvField);
     
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       encoder.reset(bytes);
       encoder.writeVInt(i % 65535); // 1, 2, or 3 bytes
       data.length = encoder.getPosition();
+      Document2 doc = w.newDocument();
+      doc.addBinary("dv", data);
       w.addDocument(doc);
       if (i % 100000 == 0) {
         System.out.println("indexed: " + i);

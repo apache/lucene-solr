@@ -839,7 +839,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       fieldTypes = new FieldTypes(this, create, config.getAnalyzer(), config.getSimilarity());
-
       rollbackSegments = segmentInfos.createBackupSegmentInfos();
 
       // start with previous field numbers, but new FieldInfos
@@ -1165,6 +1164,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  // nocommit remove
   public void addDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer) throws IOException {
     updateDocument(null, doc, analyzer);
   }
@@ -1221,6 +1221,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
+  // nocommit remove
   public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
     updateDocuments(null, docs, analyzer);
   }
@@ -1256,6 +1257,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
+  // nocommit remove
   public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
     ensureOpen();
     try {
@@ -1425,6 +1427,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  // nocommit remove
   public void updateDocument(Term term, Iterable<? extends IndexableField> doc, Analyzer analyzer)
       throws IOException {
     ensureOpen();
@@ -1465,9 +1468,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public void updateNumericDocValue(Term term, String field, long value) throws IOException {
     ensureOpen();
-    if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
-      throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
-    }
+    globalFieldNumberMap.verifyUpdateDocValuesType(field, DocValuesType.NUMERIC);
     try {
       if (docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value))) {
         processEvents(true, false);
@@ -1502,9 +1503,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (value == null) {
       throw new IllegalArgumentException("cannot update a field to a null value: " + field);
     }
-    if (!globalFieldNumberMap.contains(field, DocValuesType.BINARY)) {
-      throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
-    }
+    globalFieldNumberMap.verifyUpdateDocValuesType(field, DocValuesType.BINARY);
     try {
       if (docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value))) {
         processEvents(true, false);
@@ -1527,11 +1526,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException
    *           if there is a low-level IO error
    */
-  public void updateDocValues(Term term, Field... updates) throws IOException {
+  public void updateDocValues(Term term, Iterable<? extends IndexableField> updates) throws IOException {
     ensureOpen();
-    DocValuesUpdate[] dvUpdates = new DocValuesUpdate[updates.length];
-    for (int i = 0; i < updates.length; i++) {
-      final Field f = updates[i];
+    List<DocValuesUpdate> dvUpdates = new ArrayList<>();
+    for (IndexableField f : updates) {
       final DocValuesType dvType = f.fieldType().docValuesType();
       if (dvType == null) {
         throw new NullPointerException("DocValuesType cannot be null (field: \"" + f.name() + "\")");
@@ -1539,22 +1537,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (dvType == DocValuesType.NONE) {
         throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());
       }
-      if (!globalFieldNumberMap.contains(f.name(), dvType)) {
-        throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
-      }
       switch (dvType) {
         case NUMERIC:
-          dvUpdates[i] = new NumericDocValuesUpdate(term, f.name(), (Long) f.numericValue());
+          globalFieldNumberMap.verifyUpdateDocValuesType(f.name(), dvType);
+          dvUpdates.add(new NumericDocValuesUpdate(term, f.name(), (Long) f.numericValue()));
           break;
         case BINARY:
-          dvUpdates[i] = new BinaryDocValuesUpdate(term, f.name(), f.binaryValue());
+          globalFieldNumberMap.verifyUpdateDocValuesType(f.name(), dvType);
+          dvUpdates.add(new BinaryDocValuesUpdate(term, f.name(), f.binaryValue()));
           break;
         default:
           throw new IllegalArgumentException("can only update NUMERIC or BINARY fields: field=" + f.name() + ", type=" + dvType);
       }
     }
     try {
-      if (docWriter.updateDocValues(dvUpdates)) {
+      if (docWriter.updateDocValues(dvUpdates.toArray(new DocValuesUpdate[dvUpdates.size()]))) {
         processEvents(true, false);
       }
     } catch (OutOfMemoryError oom) {
@@ -4706,7 +4703,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   synchronized LiveUniqueValues getUniqueValues(String uidFieldName) {
     LiveUniqueValues v;
-    if (fieldTypes.isUnique(uidFieldName)) {
+    if (fieldTypes.getIsUnique(uidFieldName)) {
       v = uniqueValues.get(uidFieldName);
       if (v == null) {
         v = new LiveUniqueValues(uidFieldName, readerManager);

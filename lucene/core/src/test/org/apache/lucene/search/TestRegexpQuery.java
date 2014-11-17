@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -49,8 +50,8 @@ public class TestRegexpQuery extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    Document doc = new Document();
-    doc.add(newTextField(FN, "the quick brown fox jumps over the lazy ??? dog 493432 49344", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText(FN, "the quick brown fox jumps over the lazy ??? dog 493432 49344");
     writer.addDocument(doc);
     reader = writer.getReader();
     writer.close();

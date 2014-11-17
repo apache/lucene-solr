@@ -17,14 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
-
+import org.apache.lucene.util.*;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class TestIsCurrent extends LuceneTestCase {
 
@@ -41,8 +41,8 @@ public class TestIsCurrent extends LuceneTestCase {
     writer = new RandomIndexWriter(random(), directory);
 
     // write document
-    Document doc = new Document();
-    doc.add(newTextField("UUID", "1", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("UUID", "1");
     writer.addDocument(doc);
     writer.commit();
   }

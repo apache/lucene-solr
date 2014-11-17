@@ -82,7 +82,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     assertEquals(numSnapshots, psdp.getSnapshotCount());
     assertSnapshotExists(dir, psdp, numSnapshots, false);
 
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     snapshots.add(psdp.snapshot());
     assertEquals(numSnapshots+1, psdp.getSnapshots().size());
@@ -129,7 +129,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
       });
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), new PersistentSnapshotDeletionPolicy(
                                          new KeepOnlyLastCommitDeletionPolicy(), dir, OpenMode.CREATE_OR_APPEND)));
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
 
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();

@@ -25,9 +25,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -39,10 +41,10 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * MultiThreaded IndexWriter tests
@@ -63,26 +65,26 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     public IndexerThread(IndexWriter writer, boolean noErrors) {
       this.writer = writer;
       this.noErrors = noErrors;
+
+      FieldTypes fieldTypes = writer.getFieldTypes();
+      fieldTypes.enableTermVectors("field");
+      fieldTypes.enableTermVectorOffsets("field");
+      fieldTypes.enableTermVectorPositions("field");
     }
 
     @Override
     public void run() {
-
-      final Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectorOffsets(true);
-      
-      doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
-      doc.add(new NumericDocValuesField("dv", 5));
 
       int idUpto = 0;
       int fullCount = 0;
       final long stopTime = System.currentTimeMillis() + 200;
 
       do {
+        Document2 doc = writer.newDocument();
+        doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
+        doc.addInt("dv", 5);
         try {
+          // nocommit wtf?  id was never indexed in the doc?
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
           addCount++;
         } catch (IOException ioe) {
@@ -333,15 +335,16 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
                                                 .setMaxBufferedDocs(2)
                                                 .setMergeScheduler(new ConcurrentMergeScheduler())
                                                 .setCommitOnClose(false));
-    final Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    final Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
 
-    for(int i=0;i<6;i++)
+    for(int i=0;i<6;i++) {
       writer.addDocument(doc);
+    }
 
     dir.failOn(failure);
     failure.setDoFail();
@@ -538,10 +541,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        Document doc = new Document();
-        Field field = newTextField("field", "testData", Field.Store.YES);
-        doc.add(field);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+        Document2 doc = writer.newDocument();
+        doc.addLargeText("field", "testData");
         iwConstructed.countDown();
         startIndexing.await();
         writer.addDocument(doc);

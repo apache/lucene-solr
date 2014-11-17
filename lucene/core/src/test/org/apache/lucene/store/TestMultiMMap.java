@@ -345,7 +345,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     int numDocs = 100;
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = writer.newDocument();
-      doc.addAtom("docid", "" + i);
+      doc.addUniqueInt("docid", i);
       doc.addAtom("junk", TestUtil.randomUnicodeString(random));
       writer.addDocument(doc);
     }
@@ -355,7 +355,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     int numAsserts = atLeast(100);
     for (int i = 0; i < numAsserts; i++) {
       int docID = random.nextInt(numDocs);
-      assertEquals("" + docID, reader.document(docID).get("docid"));
+      assertEquals(docID, reader.document(docID).getInt("docid").intValue());
     }
     reader.close();
     dir.close();

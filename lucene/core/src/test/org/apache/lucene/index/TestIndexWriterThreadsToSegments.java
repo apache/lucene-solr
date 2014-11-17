@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
@@ -60,8 +61,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
           public void run() {
             try {
               startingGun.await();
-              Document doc = new Document();
-              doc.add(newTextField("field", "here is some text", Field.Store.NO));
+              Document2 doc = w.newDocument();
+              doc.addLargeText("field", "here is some text");
               w.addDocument(doc);
               startDone.countDown();
 
@@ -210,8 +211,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
                   }
 
                   // We get to index on this cycle:
-                  Document doc = new Document();
-                  doc.add(new TextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
+                  Document2 doc = w.newDocument();
+                  doc.addLargeText("field", "here is some text that is a bit longer than normal trivial text");
                   for(int j=0;j<200;j++) {
                     w.addDocument(doc);
                   }
@@ -253,8 +254,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
           public void run() {
             try {
               startingGun.await();
-              Document doc = new Document();
-              doc.add(new TextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
+              Document2 doc = w.newDocument();
+              doc.addLargeText("field", "here is some text that is a bit longer than normal trivial text");
               for(int j=0;j<1000;j++) {
                 w.addDocument(doc);
               }
@@ -301,8 +302,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
             try {
               startingGun.await();
               for(int j=0;j<1000;j++) {
-                Document doc = new Document();
-                doc.add(newStringField("field", "threadID" + threadID, Field.Store.NO));
+                Document2 doc = w.newDocument();
+                doc.addAtom("field", "threadID" + threadID);
                 w.addDocument(doc);
               }
             } catch (Exception e) {
@@ -325,8 +326,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     // At this point the writer should have 2 thread states w/ docs; now we index with only 1 thread until we see all 1000 thread0 & thread1
     // docs flushed.  If the writer incorrectly holds onto previously indexed docs forever then this will run forever:
     while (thread0Count < 1000 || thread1Count < 1000) {
-      Document doc = new Document();
-      doc.add(newStringField("field", "threadIDmain", Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("field", "threadIDmain");
       w.addDocument(doc);
 
       for(String fileName : dir.listAll()) {

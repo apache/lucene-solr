@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -38,14 +39,14 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -87,52 +88,50 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+
     FieldTypes fieldTypes = iw.getFieldTypes();
-    Document doc = new Document();
-    FieldType docsOnlyType = new FieldType(TextField.TYPE_NOT_STORED);
-    // turn this on for a cross-check
-    docsOnlyType.setStoreTermVectors(true);
-    docsOnlyType.setIndexOptions(IndexOptions.DOCS);
-    
-    FieldType docsAndFreqsType = new FieldType(TextField.TYPE_NOT_STORED);
-    // turn this on for a cross-check
-    docsAndFreqsType.setStoreTermVectors(true);
-    docsAndFreqsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-    
-    FieldType positionsType = new FieldType(TextField.TYPE_NOT_STORED);
+
     // turn these on for a cross-check
-    positionsType.setStoreTermVectors(true);
-    positionsType.setStoreTermVectorPositions(true);
-    positionsType.setStoreTermVectorOffsets(true);
-    positionsType.setStoreTermVectorPayloads(true);
-    FieldType offsetsType = new FieldType(positionsType);
-    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    Field field1 = new Field("field1docs", "", docsOnlyType);
-    Field field2 = new Field("field2freqs", "", docsAndFreqsType);
-    Field field3 = new Field("field3positions", "", positionsType);
-    Field field4 = new Field("field4offsets", "", offsetsType);
-    Field field5 = new Field("field5payloadsFixed", "", positionsType);
-    Field field6 = new Field("field6payloadsVariable", "", positionsType);
-    Field field7 = new Field("field7payloadsFixedOffsets", "", offsetsType);
-    Field field8 = new Field("field8payloadsVariableOffsets", "", offsetsType);
-    doc.add(field1);
-    doc.add(field2);
-    doc.add(field3);
-    doc.add(field4);
-    doc.add(field5);
-    doc.add(field6);
-    doc.add(field7);
-    doc.add(field8);
+    fieldTypes.enableTermVectors("field1docs");
+    fieldTypes.disableHighlighting("field1docs");
+    fieldTypes.setIndexOptions("field1docs", IndexOptions.DOCS);
+
+    // turn these on for a cross-check
+    fieldTypes.enableTermVectors("field2freqs");
+    fieldTypes.disableHighlighting("field2freqs");
+    fieldTypes.setIndexOptions("field2freqs", IndexOptions.DOCS);
+
+    for(String fieldName : new String[] {"field3positons",
+                                         "field5payloadsFixed",
+                                         "field6payloadsVariable"}) {
+      // turn these on for a cross-check
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.disableHighlighting(fieldName);
+      fieldTypes.setIndexOptions(fieldName, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    }
+
+    for(String fieldName : new String[] {"field4offsets",
+                                         "field7payloadsFixedOffsets",
+                                         "field8payloadsVariableOffsets"}) {
+      // turn these on for a cross-check
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.setIndexOptions(fieldName, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    }
+
     for (int i = 0; i < MAXDOC; i++) {
       String stringValue = Integer.toString(i) + " verycommon " + English.intToEnglish(i).replace('-', ' ') + " " + TestUtil.randomSimpleString(random());
-      field1.setStringValue(stringValue);
-      field2.setStringValue(stringValue);
-      field3.setStringValue(stringValue);
-      field4.setStringValue(stringValue);
-      field5.setStringValue(stringValue);
-      field6.setStringValue(stringValue);
-      field7.setStringValue(stringValue);
-      field8.setStringValue(stringValue);
+      Document2 doc = iw.newDocument();
+      for(String fieldName : new String[] {
+          "field1docs",
+          "field2freqs",
+          "field3positions",
+          "field4offsets",
+          "field5payloadsFixed",
+          "field6payloadsVariable",
+          "field7payloadsFixedOffsets",
+          "field8payloadsVariableOffsets"}) { 
+        doc.addLargeText(fieldName, stringValue);
+      }
       iw.addDocument(doc);
     }
     iw.close();

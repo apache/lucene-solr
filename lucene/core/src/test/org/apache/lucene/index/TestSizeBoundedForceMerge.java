@@ -19,8 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -34,9 +36,9 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs, boolean withID) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       if (withID) {
-        doc.add(new StringField("id", "" + i, Field.Store.NO));
+        doc.addUniqueInt("id", i);
       }
       writer.addDocument(doc);
     }
@@ -281,13 +283,12 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = writer.getFieldTypes();
     
     addDocs(writer, 3);
     addDocs(writer, 5);
     addDocs(writer, 3);
     
-    // delete the last document, so that the last segment is merged.
-    writer.deleteDocuments(new Term("id", "10"));
     writer.close();
     
     conf = newWriterConfig();
@@ -334,12 +335,13 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = writer.getFieldTypes();
     
     addDocs(writer, 5, true);
     
     // delete the last document
     
-    writer.deleteDocuments(new Term("id", "4"));
+    writer.deleteDocuments(fieldTypes.newIntTerm("id", 4));
     writer.close();
     
     conf = newWriterConfig();

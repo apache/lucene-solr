@@ -23,6 +23,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -72,8 +73,8 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     for (int i = 0; i < 10; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("c", "a" + i, Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("c", "a" + i);
       writer.addDocument(doc);
       writer.commit();
       assertEquals("wrong number of commits !", i + 1, DirectoryReader.listCommits(dir).size());

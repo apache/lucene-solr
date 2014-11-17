@@ -18,8 +18,10 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 
@@ -40,8 +42,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     tmp.setForceMergeDeletesPctAllowed(30.0);
     IndexWriter w = new IndexWriter(dir, conf);
     for(int i=0;i<80;i++) {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa " + (i%4), Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addLargeText("content", "aaa " + (i%4));
       w.addDocument(doc);
     }
     assertEquals(80, w.maxDoc());
@@ -86,8 +88,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       int maxCount = 0;
       final int numDocs = TestUtil.nextInt(random(), 20, 100);
       for(int i=0;i<numDocs;i++) {
-        Document doc = new Document();
-        doc.add(newTextField("content", "aaa " + (i%4), Field.Store.NO));
+        Document2 doc = w.newDocument();
+        doc.addLargeText("content", "aaa " + (i%4));
         w.addDocument(doc);
         int count = w.getSegmentCount();
         maxCount = Math.max(count, maxCount);
@@ -117,13 +119,14 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     tmp.setForceMergeDeletesPctAllowed(0.0);
     conf.setMergePolicy(tmp);
 
-    final IndexWriter w = new IndexWriter(dir, conf);
+    IndexWriter w = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = w.getFieldTypes();
 
     final int numDocs = atLeast(200);
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + i, Field.Store.NO));
-      doc.add(newTextField("content", "aaa " + i, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addUniqueInt("id", i);
+      doc.addLargeText("content", "aaa " + i);
       w.addDocument(doc);
     }
 
@@ -137,7 +140,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       System.out.println("\nTEST: delete doc");
     }
 
-    w.deleteDocuments(new Term("id", ""+(42+17)));
+    w.deleteDocuments(fieldTypes.newIntTerm("id", 42+17));
 
     r = w.getReader();
     assertEquals(numDocs, r.maxDoc());
@@ -224,9 +227,10 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     iwc.setMaxBufferedDocs(100);
     iwc.setRAMBufferSizeMB(-1);
     IndexWriter w = new IndexWriter(dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
     for(int i=0;i<15000*RANDOM_MULTIPLIER;i++) {
-      Document doc = new Document();
-      doc.add(newTextField("id", random().nextLong() + "" + random().nextLong(), Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addAtom("id", random().nextLong() + "" + random().nextLong());
       w.addDocument(doc);
     }
     IndexReader r = DirectoryReader.open(w, true);

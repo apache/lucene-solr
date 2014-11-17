@@ -17,10 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -30,15 +35,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-
 /**
  * Test adding to the info stream when there's an exception thrown during field analysis.
  */
 public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
-  private static final FieldType storedTextType = new FieldType(TextField.TYPE_NOT_STORED);
 
   private static class BadNews extends RuntimeException {
     private BadNews(String message) {
@@ -67,15 +67,14 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   @Test
   public void testInfoStreamGetsFieldName() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer;
     IndexWriterConfig c = new IndexWriterConfig(new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
     c.setInfoStream(printStreamInfoStream);
-    writer = new IndexWriter(dir, c);
-    Document doc = new Document();
-    doc.add(newField("distinctiveFieldName", "aaa ", storedTextType));
+    IndexWriter writer = new IndexWriter(dir, c);
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("distinctiveFieldName", "aaa ");
     try {
       writer.addDocument(doc);
       fail("Failed to fail.");
@@ -92,15 +91,14 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
   @Test
   public void testNoExtraNoise() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer;
     IndexWriterConfig c = new IndexWriterConfig(new ThrowingAnalyzer());
     final ByteArrayOutputStream infoBytes = new ByteArrayOutputStream();
     PrintStream infoPrintStream = new PrintStream(infoBytes, true, IOUtils.UTF_8);
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
     c.setInfoStream(printStreamInfoStream);
-    writer = new IndexWriter(dir, c);
-    Document doc = new Document();
-    doc.add(newField("boringFieldName", "aaa ", storedTextType));
+    IndexWriter writer = new IndexWriter(dir, c);
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("boringFieldName", "aaa ");
     try {
       writer.addDocument(doc);
     } catch(BadNews badNews) {

@@ -75,12 +75,14 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     @Override
     public void doWork() throws Exception {
+      FieldTypes fieldTypes = writer.getFieldTypes();
+
       // Update all 100 docs...
       for(int i=0; i<100; i++) {
-        Document d = new Document();
-        d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
-        d.add(new TextField("contents", English.intToEnglish(i+10*count), Field.Store.NO));
-        writer.updateDocument(new Term("id", Integer.toString(i)), d);
+        Document2 d = writer.newDocument();
+        d.addUniqueInt("id", i);
+        d.addLargeText("contents", English.intToEnglish(i+10*count));
+        writer.updateDocument(fieldTypes.newIntTerm("id", i), d);
       }
     }
   }
@@ -116,9 +118,9 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {
-      Document d = new Document();
-      d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
-      d.add(newTextField("contents", English.intToEnglish(i), Field.Store.NO));
+      Document2 d = writer.newDocument();
+      d.addUniqueInt("id", i);
+      d.addLargeText("contents", English.intToEnglish(i));
       if ((i-1)%7 == 0) {
         writer.commit();
       }

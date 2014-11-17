@@ -23,9 +23,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
@@ -33,6 +35,7 @@ import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -135,44 +138,66 @@ public class TestSearchAfter extends LuceneTestCase {
 
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("straightbytesdocvalues");
+    fieldTypes.setIndexOptions("intdocvalues", IndexOptions.NONE);
+    fieldTypes.setIndexOptions("floatdocvalues", IndexOptions.NONE);
+
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
-      List<Field> fields = new ArrayList<>();
-      fields.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
-      fields.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
-      fields.add(newStringField("byte", "" + ((byte) random().nextInt()), Field.Store.NO));
-      fields.add(newStringField("short", "" + ((short) random().nextInt()), Field.Store.NO));
-      fields.add(new IntField("int", random().nextInt(), Field.Store.NO));
-      fields.add(new LongField("long", random().nextLong(), Field.Store.NO));
 
-      fields.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
-      fields.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
-      fields.add(newStringField("bytes", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
-      fields.add(newStringField("bytesval", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
-      fields.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
+      Document2 doc = iw.newDocument();
+      if (random().nextInt(5) != 4) {
+        doc.addLargeText("english", English.intToEnglish(i));
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addLargeText("oddeven", (i % 2 == 0) ? "even" : "odd");
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addAtom("byte", "" + ((byte) random().nextInt()));
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addAtom("short", "" + ((short) random().nextInt()));
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addInt("int", random().nextInt());
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addLong("long", random().nextLong());
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addFloat("float", random().nextFloat());
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addDouble("double", random().nextDouble());
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addAtom("bytes", TestUtil.randomRealisticUnicodeString(random()));
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addAtom("bytesval", TestUtil.randomRealisticUnicodeString(random()));
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addInt("intdocvalues", random().nextInt());
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addFloat("floatdocvalues", random().nextFloat());
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addShortText("sortedbytesdocvalues", TestUtil.randomRealisticUnicodeString(random()));
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addShortText("sortedbytesdocvaluesval", TestUtil.randomRealisticUnicodeString(random()));
+      }
+      if (random().nextInt(5) != 4) {
+        doc.addBinary("straightbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random())));
+      }
 
-      fields.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
-      fields.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
-      fields.add(new SortedDocValuesField("sortedbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-      fields.add(new SortedDocValuesField("sortedbytesdocvaluesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-      fields.add(new BinaryDocValuesField("straightbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-
-      Document document = new Document();
-      document.add(new StoredField("id", ""+i));
+      doc.addUniqueInt("id", i);
       if (VERBOSE) {
         System.out.println("  add doc id=" + i);
       }
-      for(Field field : fields) {
-        // So we are sometimes missing that field:
-        if (random().nextInt(5) != 4) {
-          document.add(field);
-          if (VERBOSE) {
-            System.out.println("    " + field);
-          }
-        }
-      }
-
-      iw.addDocument(document);
+      iw.addDocument(doc);
 
       if (random().nextInt(50) == 17) {
         iw.commit();
@@ -251,7 +276,7 @@ public class TestSearchAfter extends LuceneTestCase {
       System.out.println("  all.totalHits=" + all.totalHits);
       int upto = 0;
       for(ScoreDoc scoreDoc : all.scoreDocs) {
-        System.out.println("    hit " + (upto++) + ": id=" + searcher.doc(scoreDoc.doc).get("id") + " " + scoreDoc);
+        System.out.println("    hit " + (upto++) + ": id=" + searcher.doc(scoreDoc.doc).getInt("id") + " " + scoreDoc);
       }
     }
     int pageStart = 0;
@@ -294,8 +319,8 @@ public class TestSearchAfter extends LuceneTestCase {
       ScoreDoc sd2 = paged.scoreDocs[i];
       if (VERBOSE) {
         System.out.println("    hit " + (pageStart + i));
-        System.out.println("      expected id=" + searcher.doc(sd1.doc).get("id") + " " + sd1);
-        System.out.println("        actual id=" + searcher.doc(sd2.doc).get("id") + " " + sd2);
+        System.out.println("      expected id=" + searcher.doc(sd1.doc).getInt("id") + " " + sd1);
+        System.out.println("        actual id=" + searcher.doc(sd2.doc).getInt("id") + " " + sd2);
       }
       assertEquals(sd1.doc, sd2.doc);
       assertEquals(sd1.score, sd2.score, 0f);

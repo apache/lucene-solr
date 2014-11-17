@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -210,11 +211,10 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     out.close();
   }
 
-  private void addDoc(IndexWriter writer, int id) throws IOException
-  {
-    Document doc = new Document();
-    doc.add(newTextField("content", "aaa", Field.Store.NO));
-    doc.add(newStringField("id", Integer.toString(id), Field.Store.NO));
+  private void addDoc(IndexWriter writer, int id) throws IOException {
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "aaa");
+    doc.addAtom("id", Integer.toString(id));
     writer.addDocument(doc);
   }
   
@@ -245,7 +245,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     });
     
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     // stop virus scanner
     stopScanning.set(true);
     iw.commit();
@@ -321,7 +321,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     
     // ensure we write _4 segment next
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     iw.commit();
     iw.close();
     sis = SegmentInfos.readLatestCommit(dir);
@@ -336,7 +336,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     
     // initial commit
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     iw.commit();
     iw.close();   
     
@@ -383,7 +383,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     
     // initial commit
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     iw.commit();
     iw.close();   
     
@@ -466,8 +466,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
         } else if (random().nextInt(10) == 7) {
           w.getReader().close();
         } else {
-          Document doc = new Document();
-          doc.add(newTextField("field", "some text", Field.Store.NO));
+          Document2 doc = w.newDocument();
+          doc.addLargeText("field", "some text");
           w.addDocument(doc);
         }
       } catch (IOException ioe) {

@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
@@ -327,13 +328,14 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     // Change to true:
     w.getConfig().setUseCompoundFile(true);
 
-    Document doc = new Document();
-    doc.add(newStringField("field", "foo", Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addAtom("field", "foo");
     w.addDocument(doc);
     w.commit();
     assertTrue("Expected CFS after commit", w.newestSegment().info.getUseCompoundFile());
     
-    doc.add(newStringField("field", "foo", Store.NO));
+    doc = w.newDocument();
+    doc.addAtom("field", "foo");
     w.addDocument(doc);
     w.commit();
     w.forceMerge(1);

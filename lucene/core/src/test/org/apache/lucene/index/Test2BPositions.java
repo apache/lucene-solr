@@ -21,18 +21,19 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase.Monster;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util.LuceneTestCase.Monster;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
@@ -64,15 +65,14 @@ public class Test2BPositions extends LuceneTestCase {
      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
     }
 
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setOmitNorms(true);
-    Field field = new Field("field", new MyTokenStream(), ft);
-    doc.add(field);
-    
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableNorms("field");
+
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", new MyTokenStream());
+    w.addDocument(doc);
     for (int i = 0; i < numDocs; i++) {
-      w.addDocument(doc);
       if (VERBOSE && i % 100000 == 0) {
         System.out.println(i + " of " + numDocs + "...");
       }

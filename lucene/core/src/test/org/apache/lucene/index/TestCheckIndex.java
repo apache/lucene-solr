@@ -17,23 +17,25 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCheckIndex extends LuceneTestCase {
 
@@ -41,13 +43,15 @@ public class TestCheckIndex extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                  .setMaxBufferedDocs(2));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.enableTermVectorOffsets("field");
+
     for(int i=0;i<19;i++) {
-      Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectorOffsets(true);
-      doc.add(newField("field", "aaa"+i, customType));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("field", "aaa"+i);
       writer.addDocument(doc);
     }
     writer.forceMerge(1);
@@ -104,15 +108,15 @@ public class TestCheckIndex extends LuceneTestCase {
   public void testBogusTermVectors() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    Field field = new Field("foo", "", ft);
-    field.setTokenStream(new CannedTokenStream(
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableTermVectors("foo");
+    fieldTypes.enableTermVectorOffsets("foo");
+    fieldTypes.disableHighlighting("foo");
+
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("foo", new CannedTokenStream(
         new Token("bar", 5, 10), new Token("bar", 1, 4)
     ));
-    doc.add(field);
     iw.addDocument(doc);
     iw.close();
     dir.close(); // checkindex
@@ -121,7 +125,7 @@ public class TestCheckIndex extends LuceneTestCase {
   public void testObtainsLock() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     iw.commit();
     
     // keep IW open...

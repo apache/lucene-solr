@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FilteredTermsEnum;
@@ -53,13 +54,10 @@ public class TestPrefixRandom extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
-    Document doc = new Document();
-    Field field = newStringField("field", "", Field.Store.NO);
-    doc.add(field);
-
     int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
-      field.setStringValue(TestUtil.randomUnicodeString(random(), 10));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("field", TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

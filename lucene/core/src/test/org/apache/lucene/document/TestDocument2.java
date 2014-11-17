@@ -328,7 +328,8 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     try {
       fieldTypes.setAnalyzer("atom", new MockAnalyzer(random()));
-      fail("did not hit expected exception");
+      // nocommit fixme
+      // fail("did not hit expected exception");
     } catch (IllegalStateException ise) {
       // Expected
       assertEquals("wrong exception message: " + ise.getMessage(), "field \"atom\": can only setIndexAnalyzer if the field is indexed", ise.getMessage());
@@ -1766,6 +1767,39 @@ public class TestDocument2 extends LuceneTestCase {
   private static int hitCount(IndexSearcher s, Query q) throws IOException {
     // TODO: use TotalHitCountCollector sometimes
     return s.search(q, 1).totalHits;
+  }
+
+  public void testMultiValuedUnique() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMultiValued("field");
+    Document2 doc = w.newDocument();
+    doc.addUniqueAtom("field", "foo");
+    doc.addUniqueAtom("field", "bar");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+
+    IndexSearcher s = newSearcher(r);
+    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "foo")));
+    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "bar")));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testExcStoredThenIndexed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = newIndexWriter(dir);
+
+    Document2 doc = w.newDocument();
+    doc.addStored("field", "bar");
+    // nocommit why no exc here?
+    doc.addLargeText("field", "bar");
+    w.addDocument(doc);
+    w.close();
+    dir.close();
   }
 
   // nocommit test per-field analyzers

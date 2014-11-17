@@ -25,12 +25,15 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -48,16 +51,16 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     a.setOffsetGap(0);
     a.setPositionIncrementGap(0);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
-    Document doc = new Document();
-    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = newField("field", "abcd", customType);
-    doc.add(f);
-    doc.add(f);
-    doc.add(newField("field", "", customType));
-    doc.add(f);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setDocValuesType("field", DocValuesType.NONE);
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    Document2 doc = w.newDocument();
+    doc.addAtom("field", "abcd");
+    doc.addAtom("field", "abcd");
+    doc.addAtom("field", "");
+    doc.addAtom("field", "abcd");
     w.addDocument(doc);
     w.close();
 
@@ -105,15 +108,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1442
   public void testDoubleOffsetCounting2() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = newField("field", "abcd", customType);
-    doc.add(f);
-    doc.add(f);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "abcd");
+    doc.addLargeText("field", "abcd");
     w.addDocument(doc);
     w.close();
 
@@ -140,15 +142,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1448
   public void testEndOffsetPositionCharAnalyzer() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = newField("field", "abcd   ", customType);
-    doc.add(f);
-    doc.add(f);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "abcd   ");
+    doc.addLargeText("field", "abcd   ");
     w.addDocument(doc);
     w.close();
 
@@ -177,17 +178,16 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(analyzer));
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    Document2 doc = w.newDocument();
     try (TokenStream stream = analyzer.tokenStream("field", "abcd   ")) {
       stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
       TokenStream cachedStream = new CachingTokenFilter(stream);
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectorOffsets(true);
-      Field f = new Field("field", cachedStream, customType);
-      doc.add(f);
-      doc.add(f);
+      doc.addLargeText("field", cachedStream);
+      doc.addLargeText("field", cachedStream);
       w.addDocument(doc);
     }
     w.close();
@@ -216,14 +216,13 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStopFilter() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = newField("field", "abcd the", customType);
-    doc.add(f);
-    doc.add(f);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "abcd the");
+    doc.addLargeText("field", "abcd the");
     w.addDocument(doc);
     w.close();
 
@@ -251,15 +250,13 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStandard() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = newField("field", "abcd the  ", customType);
-    Field f2 = newField("field", "crunch man", customType);
-    doc.add(f);
-    doc.add(f2);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "abcd the  ");
+    doc.addLargeText("field", "crunch man");
     w.addDocument(doc);
     w.close();
 
@@ -294,16 +291,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1448
   public void testEndOffsetPositionStandardEmptyField() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    Field f = newField("field", "", customType);
-    Field f2 = newField("field", "crunch man", customType);
-    doc.add(f);
-    doc.add(f2);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    Document2 doc = w.newDocument();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    doc.addLargeText("field", "");
+    doc.addLargeText("field", "crunch man");
     w.addDocument(doc);
     w.close();
 
@@ -333,19 +328,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStandardEmptyField2() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-
-    Field f = newField("field", "abcd", customType);
-    doc.add(f);
-    doc.add(newField("field", "", customType));
-
-    Field f2 = newField("field", "crunch", customType);
-    doc.add(f2);
-
+    Document2 doc = w.newDocument();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    doc.addLargeText("field", "abcd");
+    doc.addLargeText("field", "");
+    doc.addLargeText("field", "crunch");
     w.addDocument(doc);
     w.close();
 
@@ -383,24 +373,19 @@ public class TestTermVectorsWriter extends LuceneTestCase {
           .setMergeScheduler(new SerialMergeScheduler())
           .setMergePolicy(new LogDocMergePolicy()));
 
-      Document document = new Document();
-      FieldType customType = new FieldType();
-      customType.setStored(true);
+      FieldTypes fieldTypes = writer.getFieldTypes();
+      fieldTypes.enableTermVectors("termVector");
+      fieldTypes.enableTermVectorOffsets("termVector");
+      fieldTypes.enableTermVectorPositions("termVector");
 
-      Field storedField = newField("stored", "stored", customType);
-      document.add(storedField);
+      Document2 document = writer.newDocument();
+      document.addStored("stored", "stored");
       writer.addDocument(document);
       writer.addDocument(document);
 
-      document = new Document();
-      document.add(storedField);
-      FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
-      customType2.setStoreTermVectors(true);
-      customType2.setStoreTermVectorPositions(true);
-      customType2.setStoreTermVectorOffsets(true);
-      Field termVectorField = newField("termVector", "termVector", customType2);
-
-      document.add(termVectorField);
+      document = writer.newDocument();
+      document.addStored("stored", "stored");
+      document.addLargeText("termVector", "termVector");
       writer.addDocument(document);
       writer.forceMerge(1);
       writer.close();
@@ -436,24 +421,19 @@ public class TestTermVectorsWriter extends LuceneTestCase {
           .setMergeScheduler(new SerialMergeScheduler())
           .setMergePolicy(new LogDocMergePolicy()));
 
-      Document document = new Document();
+      FieldTypes fieldTypes = writer.getFieldTypes();
+      fieldTypes.enableTermVectors("termVector");
+      fieldTypes.enableTermVectorOffsets("termVector");
+      fieldTypes.enableTermVectorPositions("termVector");
 
-      FieldType customType = new FieldType();
-      customType.setStored(true);
-
-      Field storedField = newField("stored", "stored", customType);
-      document.add(storedField);
+      Document2 document = writer.newDocument();
+      document.addStored("stored", "stored");
       writer.addDocument(document);
       writer.addDocument(document);
 
-      document = new Document();
-      document.add(storedField);
-      FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
-      customType2.setStoreTermVectors(true);
-      customType2.setStoreTermVectorPositions(true);
-      customType2.setStoreTermVectorOffsets(true);
-      Field termVectorField = newField("termVector", "termVector", customType2);
-      document.add(termVectorField);
+      document = writer.newDocument();
+      document.addStored("stored", "stored");
+      document.addLargeText("termVector", "termVector");
       writer.addDocument(document);
       writer.forceMerge(1);
       writer.close();
@@ -475,21 +455,17 @@ public class TestTermVectorsWriter extends LuceneTestCase {
         .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setMergeScheduler(new SerialMergeScheduler())
         .setMergePolicy(new LogDocMergePolicy()));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("termVector");
+    fieldTypes.enableTermVectorOffsets("termVector");
+    fieldTypes.enableTermVectorPositions("termVector");
 
-    Document document = new Document();
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-
-    Field storedField = newField("stored", "stored", customType);
-    document.add(storedField);
-    FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
-    customType2.setStoreTermVectors(true);
-    customType2.setStoreTermVectorPositions(true);
-    customType2.setStoreTermVectorOffsets(true);
-    Field termVectorField = newField("termVector", "termVector", customType2);
-    document.add(termVectorField);
-    for(int i=0;i<10;i++)
+    Document2 document = writer.newDocument();
+    document.addStored("stored", "stored");
+    document.addLargeText("termVector", "termVector");
+    for(int i=0;i<10;i++) {
       writer.addDocument(document);
+    }
     writer.close();
 
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
@@ -497,9 +473,12 @@ public class TestTermVectorsWriter extends LuceneTestCase {
         .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setMergeScheduler(new SerialMergeScheduler())
         .setMergePolicy(new LogDocMergePolicy()));
-    for(int i=0;i<6;i++)
+    document = writer.newDocument();
+    document.addStored("stored", "stored");
+    document.addLargeText("termVector", "termVector");
+    for(int i=0;i<6;i++) {
       writer.addDocument(document);
-
+    }
     writer.forceMerge(1);
     writer.close();
 
@@ -516,143 +495,29 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testNoTermVectorAfterTermVector() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document document = new Document();
-    FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
-    customType2.setStoreTermVectors(true);
-    customType2.setStoreTermVectorPositions(true);
-    customType2.setStoreTermVectorOffsets(true);
-    document.add(newField("tvtest", "a b c", customType2));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableTermVectors("tvtest");
+    fieldTypes.enableTermVectorOffsets("tvtest");
+    fieldTypes.enableTermVectorPositions("tvtest");
+
+    Document2 document = iw.newDocument();
+    document.addLargeText("tvtest", "a b c");
     iw.addDocument(document);
-    document = new Document();
-    document.add(newTextField("tvtest", "x y z", Field.Store.NO));
+    document = iw.newDocument();
+    document.addLargeText("tvtest", "x y z");
     iw.addDocument(document);
     // Make first segment
     iw.commit();
 
     FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
-    document = new Document();
-    document.add(newField("tvtest", "a b c", customType));
+    document = iw.newDocument();
+    document.addStored("tvtest", "a b c");
     iw.addDocument(document);
     // Make 2nd segment
     iw.commit();
 
     iw.forceMerge(1);
-    iw.close();
-    dir.close();
-  }
-
-  // LUCENE-1010
-  public void testNoTermVectorAfterTermVectorMerge() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document document = new Document();
-    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    document.add(newField("tvtest", "a b c", customType));
-    iw.addDocument(document);
-    iw.commit();
-
-    document = new Document();
-    document.add(newTextField("tvtest", "x y z", Field.Store.NO));
-    iw.addDocument(document);
-    // Make first segment
-    iw.commit();
-
-    iw.forceMerge(1);
-
-    FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
-    customType2.setStoreTermVectors(true);
-    document.add(newField("tvtest", "a b c", customType2));
-    document = new Document();
-    iw.addDocument(document);
-    // Make 2nd segment
-    iw.commit();
-    iw.forceMerge(1);
-
-    iw.close();
-    dir.close();
-  }
-  
-  /** 
-   * In a single doc, for the same field, mix the term vectors up 
-   */
-  public void testInconsistentTermVectorOptions() throws IOException {
-    FieldType a, b;
-    
-    // no vectors + vectors
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
-    b = new FieldType(TextField.TYPE_NOT_STORED);
-    b.setStoreTermVectors(true);
-    doTestMixup(a, b);
-    
-    // vectors + vectors with pos
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
-    a.setStoreTermVectors(true);
-    b = new FieldType(TextField.TYPE_NOT_STORED);
-    b.setStoreTermVectors(true);
-    b.setStoreTermVectorPositions(true);
-    doTestMixup(a, b);
-    
-    // vectors + vectors with off
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
-    a.setStoreTermVectors(true);
-    b = new FieldType(TextField.TYPE_NOT_STORED);
-    b.setStoreTermVectors(true);
-    b.setStoreTermVectorOffsets(true);
-    doTestMixup(a, b);
-    
-    // vectors with pos + vectors with pos + off
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
-    a.setStoreTermVectors(true);
-    a.setStoreTermVectorPositions(true);
-    b = new FieldType(TextField.TYPE_NOT_STORED);
-    b.setStoreTermVectors(true);
-    b.setStoreTermVectorPositions(true);
-    b.setStoreTermVectorOffsets(true);
-    doTestMixup(a, b);
-    
-    // vectors with pos + vectors with pos + pay
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
-    a.setStoreTermVectors(true);
-    a.setStoreTermVectorPositions(true);
-    b = new FieldType(TextField.TYPE_NOT_STORED);
-    b.setStoreTermVectors(true);
-    b.setStoreTermVectorPositions(true);
-    b.setStoreTermVectorPayloads(true);
-    doTestMixup(a, b);
-  }
-  
-  private void doTestMixup(FieldType ft1, FieldType ft2) throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    
-    // add 3 good docs
-    for (int i = 0; i < 3; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
-      iw.addDocument(doc);
-    }
-    
-    // add broken doc
-    Document doc = new Document();
-    doc.add(new Field("field", "value1", ft1));
-    doc.add(new Field("field", "value2", ft2));
-    
-    // ensure broken doc hits exception
-    try {
-      iw.addDocument(doc);
-      fail("didn't hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      assertNotNull(iae.getMessage());
-      assertTrue(iae.getMessage().startsWith("all instances of a given field name must have the same term vectors settings"));
-    }
-    
-    // ensure good docs are still ok
-    IndexReader ir = iw.getReader();
-    assertEquals(3, ir.numDocs());
-    
-    ir.close();
     iw.close();
     dir.close();
   }
@@ -663,18 +528,16 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     // Don't use RandomIndexWriter because we want to be sure both docs go to 1 seg:
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter iw = new IndexWriter(dir, iwc);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
 
-    Document doc = new Document();
+    Document2 doc = iw.newDocument();
     iw.addDocument(doc);
-    FieldType ft = new FieldType(StoredField.TYPE);
-    ft.setStoreTermVectors(true);
-    ft.freeze();
-    doc.add(new Field("field", "value", ft));
     try {
-      iw.addDocument(doc);
+      doc.addStored("field", "value");
       fail("should have hit exc");
-    } catch (IllegalArgumentException iae) {
-      // expected
+    } catch (IllegalStateException ise) {
+      assertEquals("field \"field\": cannot enable term vectors when indexOptions is NONE", ise.getMessage());
     }
     IndexReader r = DirectoryReader.open(iw, true);
 
@@ -684,4 +547,5 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     r.close();
     dir.close();
   }
+
 }

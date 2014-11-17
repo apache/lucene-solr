@@ -22,11 +22,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -54,14 +55,14 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addUniqueAtom("id", "0");
+    doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = w.newDocument();
+    doc.addUniqueAtom("id", "1");
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
+    doc.addLargeText("field", "wizard oz the the the the the the");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
@@ -112,14 +113,14 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addUniqueAtom("id", "0");
+    doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = w.newDocument();
+    doc.addUniqueAtom("id", "1");
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
+    doc.addLargeText("field", "wizard oz the the the the the the");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
@@ -151,14 +152,14 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addUniqueAtom("id", "0");
+    doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = w.newDocument();
+    doc.addUniqueAtom("id", "1");
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
+    doc.addLargeText("field", "wizard oz the the the the the the");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
@@ -205,14 +206,14 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addUniqueAtom("id", "0");
+    doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = w.newDocument();
+    doc.addUniqueAtom("id", "1");
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
+    doc.addLargeText("field", "wizard oz the the the the the the");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
@@ -283,14 +284,14 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addUniqueAtom("id", "0");
+    doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = w.newDocument();
+    doc.addUniqueAtom("id", "1");
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
+    doc.addLargeText("field", "wizard oz the the the the the the");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
@@ -342,16 +343,16 @@ public class TestQueryRescorer extends LuceneTestCase {
     final int[] idToNum = new int[numDocs];
     int maxValue = TestUtil.nextInt(random(), 10, 1000000);
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", ""+i, Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addUniqueInt("id", i);
       int numTokens = TestUtil.nextInt(random(), 1, 10);
       StringBuilder b = new StringBuilder();
       for(int j=0;j<numTokens;j++) {
         b.append("a ");
       }
-      doc.add(newTextField("field", b.toString(), Field.Store.NO));
+      doc.addLargeText("field", b.toString());
       idToNum[i] = random().nextInt(maxValue);
-      doc.add(new NumericDocValuesField("num", idToNum[i]));
+      doc.addInt("num", idToNum[i]);
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();
@@ -383,8 +384,8 @@ public class TestQueryRescorer extends LuceneTestCase {
                   @Override
                   public int compare(Integer a, Integer b) {
                     try {
-                      int av = idToNum[Integer.parseInt(r.document(a).getString("id"))];
-                      int bv = idToNum[Integer.parseInt(r.document(b).getString("id"))];
+                      int av = idToNum[r.document(a).getInt("id")];
+                      int bv = idToNum[r.document(b).getInt("id")];
                       if (av < bv) {
                         return -reverseInt;
                       } else if (bv < av) {

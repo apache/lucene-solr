@@ -22,10 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -52,9 +53,8 @@ public class TestTermScorer extends LuceneTestCase {
         .setMergePolicy(newLogMergePolicy())
         .setSimilarity(new DefaultSimilarity()));
     for (int i = 0; i < values.length; i++) {
-      Document doc = new Document();
-      doc
-          .add(newTextField(FIELD, values[i], Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText(FIELD, values[i]);
       writer.addDocument(doc);
     }
     indexReader = SlowCompositeReaderWrapper.wrap(writer.getReader());

@@ -1142,7 +1142,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // Create 500 segments:
     for(int i=0;i<500;i++) {
       Document2 doc = w.newDocument();
-      doc.addAtom("id", ""+i);
+      doc.addUniqueInt("id", i);
       w.addDocument(doc);
       IndexReader r = DirectoryReader.open(w, true);
       // Make sure segment count never exceeds 100:

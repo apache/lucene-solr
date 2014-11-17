@@ -36,23 +36,20 @@ public class TestStressAdvance extends LuceneTestCase {
       Directory dir = newDirectory();
       RandomIndexWriter w = new RandomIndexWriter(random(), dir);
       final Set<Integer> aDocs = new HashSet<>();
-      final Document doc = new Document();
-      final Field f = newStringField("field", "", Field.Store.NO);
-      doc.add(f);
-      final Field idField = newStringField("id", "", Field.Store.YES);
-      doc.add(idField);
       int num = atLeast(4097);
       if (VERBOSE) {
         System.out.println("\nTEST: numDocs=" + num);
       }
       for(int id=0;id<num;id++) {
+        Document2 doc = w.newDocument();
         if (random().nextInt(4) == 3) {
-          f.setStringValue("a");
+          doc.addAtom("field", "a");
           aDocs.add(id);
         } else {
-          f.setStringValue("b");
+          doc.addAtom("field", "b");
         }
-        idField.setStringValue(""+id);
+        
+        doc.addUniqueInt("id", id);
         w.addDocument(doc);
         if (VERBOSE) {
           System.out.println("\nTEST: doc upto " + id);
@@ -67,7 +64,7 @@ public class TestStressAdvance extends LuceneTestCase {
       final DirectoryReader r = w.getReader();
       final int[] idToDocID = new int[r.maxDoc()];
       for(int docID=0;docID<idToDocID.length;docID++) {
-        int id = Integer.parseInt(r.document(docID).getString("id"));
+        int id = r.document(docID).getInt("id");
         if (aDocs.contains(id)) {
           aDocIDs.add(docID);
         } else {

@@ -81,14 +81,11 @@ public class TestNorms extends LuceneTestCase {
     IndexWriterConfig config = newIndexWriterConfig(analyzer);
     config.setSimilarity(new CustomNormEncodingSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    Document doc = new Document();
-    Field foo = newTextField("foo", "", Field.Store.NO);
-    Field bar = newTextField("bar", "", Field.Store.NO);
-    doc.add(foo);
-    doc.add(bar);
     
     for (int i = 0; i < 100; i++) {
-      bar.setStringValue("singleton");
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("foo", "");
+      doc.addLargeText("bar", "singleton");
       writer.addDocument(doc);
     }
     

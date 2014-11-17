@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -96,11 +97,10 @@ public class TestTransactionRollback extends LuceneTestCase {
     final Bits liveDocs = MultiFields.getLiveDocs(r);
     for (int i = 0; i < r.maxDoc(); i++) {
       if (liveDocs == null || liveDocs.get(i)) {
-        String sval=r.document(i).getString(FIELD_RECORD_ID);
-        if(sval!=null) {
-          int val=Integer.parseInt(sval);
+        Integer val = r.document(i).getInt(FIELD_RECORD_ID);
+        if (val != null) {
           assertTrue("Did not expect document #"+val, expecteds.get(val));
-          expecteds.set(val,false);
+          expecteds.set(val, false);
         }
       }
     }
@@ -135,8 +135,8 @@ public class TestTransactionRollback extends LuceneTestCase {
                                           .setIndexDeletionPolicy(sdp));
 
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
-      Document doc=new Document();
-      doc.add(newTextField(FIELD_RECORD_ID, ""+currentRecordId, Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addUniqueInt(FIELD_RECORD_ID, currentRecordId);
       w.addDocument(doc);
 
       if (currentRecordId%10 == 0) {

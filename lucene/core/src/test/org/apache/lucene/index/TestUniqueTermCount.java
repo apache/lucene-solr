@@ -23,6 +23,7 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.CollectionStatistics;
@@ -50,11 +51,9 @@ public class TestUniqueTermCount extends LuceneTestCase {
     config.setMergePolicy(newLogMergePolicy());
     config.setSimilarity(new TestSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    Document doc = new Document();
-    Field foo = newTextField("foo", "", Field.Store.NO);
-    doc.add(foo);
     for (int i = 0; i < 100; i++) {
-      foo.setStringValue(addValue());
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("foo", addValue());
       writer.addDocument(doc);
     }
     reader = writer.getReader();

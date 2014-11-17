@@ -235,11 +235,11 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   public void testEmbeddedFFFF() throws Throwable {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    doc.add(newTextField("field", "a a\uffffb", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "a a\uffffb");
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(newTextField("field", "a", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "a");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     assertEquals(1, r.docFreq(new Term("field", "a\uffffb")));
@@ -252,11 +252,12 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   public void testInvalidUTF16() throws Throwable {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new TestIndexWriter.StringSplitAnalyzer()));
-    Document doc = new Document();
+    Document2 doc = w.newDocument();
 
     final int count = utf8Data.length/2;
-    for(int i=0;i<count;i++)
-      doc.add(newTextField("f" + i, utf8Data[2*i], Field.Store.YES));
+    for(int i=0;i<count;i++) {
+      doc.addLargeText("f" + i, utf8Data[2*i]);
+    }
     w.addDocument(doc);
     w.close();
 
@@ -276,10 +277,6 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     Random rnd = random();
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
-    Document d = new Document();
-    // Single segment
-    Field f = newStringField("f", "", Field.Store.NO);
-    d.add(f);
     char[] chars = new char[2];
     final Set<String> allTerms = new HashSet<>();
 
@@ -305,8 +302,10 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
         s = new String(chars, 0, 2);
       }
       allTerms.add(s);
-      f.setStringValue(s);
 
+      // Single segment
+      Document2 d = writer.newDocument();
+      d.addAtom("f", s);
       writer.addDocument(d);
 
       if ((1+i) % 42 == 0) {

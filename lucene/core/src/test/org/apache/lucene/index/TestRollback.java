@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -30,8 +31,8 @@ public class TestRollback extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter rw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 5; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("pk", Integer.toString(i), Field.Store.YES));
+      Document2 doc = rw.newDocument();
+      doc.addAtom("pk", Integer.toString(i));
       rw.addDocument(doc);
     }
     rw.close();
@@ -42,10 +43,10 @@ public class TestRollback extends LuceneTestCase {
                                            .setOpenMode(IndexWriterConfig.OpenMode.APPEND));
 
     for (int i = 0; i < 3; i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String value = Integer.toString(i);
-      doc.add(newStringField("pk", value, Field.Store.YES));
-      doc.add(newStringField("text", "foo", Field.Store.YES));
+      doc.addAtom("pk", value);
+      doc.addAtom("text", "foo");
       w.updateDocument(new Term("pk", value), doc);
     }
     w.rollback();

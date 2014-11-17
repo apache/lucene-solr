@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -152,20 +154,21 @@ public class TestTransactions extends LuceneTestCase {
 
     public void update(IndexWriter writer) throws IOException {
       // Add 10 docs:
-      FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
+      FieldTypes fieldTypes = writer.getFieldTypes();
+      fieldTypes.enableTermVectors("id");
+
       for(int j=0; j<10; j++) {
-        Document d = new Document();
+        Document2 d = writer.newDocument();
         int n = random().nextInt();
-        d.add(newField("id", Integer.toString(nextID++), customType));
-        d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
+        d.addUniqueInt("id", nextID++);
+        d.addLargeText("contents", English.intToEnglish(n));
         writer.addDocument(d);
       }
 
       // Delete 5 docs:
       int deleteID = nextID-1;
       for(int j=0; j<5; j++) {
-        writer.deleteDocuments(new Term("id", ""+deleteID));
+        writer.deleteDocuments(fieldTypes.newIntTerm("id", deleteID));
         deleteID -= 2;
       }
     }
@@ -214,9 +217,9 @@ public class TestTransactions extends LuceneTestCase {
   public void initIndex(Directory dir) throws Throwable {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     for(int j=0; j<7; j++) {
-      Document d = new Document();
+      Document2 d = writer.newDocument();
       int n = random().nextInt();
-      d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
+      d.addLargeText("contents", English.intToEnglish(n));
       writer.addDocument(d);
     }
     writer.close();
@@ -259,8 +262,9 @@ public class TestTransactions extends LuceneTestCase {
     for(int i=0;i<numThread;i++)
       threads[i].join();
 
-    for(int i=0;i<numThread;i++)
+    for(int i=0;i<numThread;i++) {
       assertTrue(!threads[i].failed);
+    }
     dir1.close();
     dir2.close();
   }

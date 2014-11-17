@@ -542,6 +542,7 @@ public class CheckIndex implements Closeable {
     result.userData = sis.getUserData();
     String userDataString;
     if (sis.getUserData().size() > 0) {
+      // nocommit don't print fieldTypes string?  it's huge and ugly?
       userDataString = " userData=" + sis.getUserData();
     } else {
       userDataString = "";
@@ -744,7 +745,7 @@ public class CheckIndex implements Closeable {
         int nonUniqueCount = 0;
         String nonUniqueMessage = null;
         for(String fieldName : fieldTypes.getFieldNames()) {
-          if (fieldTypes.isUniqueAtom(fieldName)) {
+          if (fieldTypes.getIsUnique(fieldName)) {
             Terms terms = MultiFields.getTerms(topReader, fieldName);
             if (terms != null) {
               Bits liveDocs = MultiFields.getLiveDocs(topReader);
@@ -760,7 +761,7 @@ public class CheckIndex implements Closeable {
                       if (nonUniqueCount == 0) {
                         // nocommit should "isUnique" be in low schema?
                         // nocommit have -fix delete the offenders:
-                        nonUniqueMessage = "UNIQUE_ATOM field=\"" + fieldName + "\" is not unique: e.g. term=" + termsEnum.term() + " matches both docID=" + docID + " and docID=" + docID2;
+                        nonUniqueMessage = "field=\"" + fieldName + "\" is supposed to be unique, but isn't: e.g. term=" + termsEnum.term() + " matches both docID=" + docID + " and docID=" + docID2;
                         if (failFast) {
                           msg(infoStream, "FAILED");
                           msg(infoStream, nonUniqueMessage);

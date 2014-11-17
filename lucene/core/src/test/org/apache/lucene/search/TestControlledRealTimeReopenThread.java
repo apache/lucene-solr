@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -310,8 +311,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     LatchedIndexWriter _writer = new LatchedIndexWriter(d, conf, latch, signal);
     final TrackingIndexWriter writer = new TrackingIndexWriter(_writer);
     final SearcherManager manager = new SearcherManager(_writer, false, null);
-    Document doc = new Document();
-    doc.add(newTextField("test", "test", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("test", "test");
     writer.addDocument(doc);
     manager.maybeRefresh();
     Thread t = new Thread() {
@@ -445,7 +446,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         }
       }
     });
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     iw.commit();
     assertFalse(afterRefreshCalled.get());
     sm.maybeRefreshBlocking();
@@ -511,9 +512,9 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         commitThread.start();
         commitThreads.add(commitThread);
       }
-      Document d = new Document();
-      d.add(new TextField("count", i + "", Field.Store.NO));
-      d.add(new TextField("content", content, Field.Store.YES));
+      Document2 d = iw.newDocument();
+      d.addLargeText("count", i + "");
+      d.addLargeText("content", content);
       long start = System.currentTimeMillis();
       long l = tiw.addDocument(d);
       controlledRealTimeReopenThread.waitForGeneration(l);

@@ -21,12 +21,13 @@ package org.apache.lucene.search;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -59,8 +60,8 @@ public class TestBoolean2 extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
-      Document doc = new Document();
-      doc.add(newTextField(field, docFields[i], Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText(field, docFields[i]);
       writer.addDocument(doc);
     }
     writer.close();
@@ -93,13 +94,13 @@ public class TestBoolean2 extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir2, 
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    Document doc = new Document();
-    doc.add(newTextField("field2", "xxx", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field2", "xxx");
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
-    doc = new Document();
-    doc.add(newTextField("field2", "big bad bug", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field2", "big bad bug");
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
@@ -13,8 +14,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -50,7 +51,7 @@ public class TestScorerPerf extends LuceneTestCase {
     // This could possibly fail if Lucene starts checking for docid ranges...
     d = newDirectory();
     IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     iw.close();
     r = DirectoryReader.open(d);
     s = newSearcher(r);
@@ -67,10 +68,10 @@ public class TestScorerPerf extends LuceneTestCase {
 
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     for (int i=0; i<nDocs; i++) {
-      Document d = new Document();
+      Document2 d = iw.newDocument();
       for (int j=0; j<nTerms; j++) {
         if (random().nextInt(freq[j]) == 0) {
-          d.add(newStringField("f", terms[j].text(), Field.Store.NO));
+          d.addAtom("f", terms[j].text());
           //System.out.println(d);
         }
       }

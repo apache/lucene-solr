@@ -57,18 +57,14 @@ public class Test4GBStoredFields extends LuceneTestCase {
      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
     }
 
-    final Document doc = new Document();
-    final FieldType ft = new FieldType();
-    ft.setStored(true);
-    ft.freeze();
+    final Document2 doc = w.newDocument();
     final int valueLength = RandomInts.randomIntBetween(random(), 1 << 13, 1 << 20);
     final byte[] value = new byte[valueLength];
     for (int i = 0; i < valueLength; ++i) {
       // random so that even compressing codecs can't compress it
       value[i] = (byte) random().nextInt(256);
     }
-    final Field f = new Field("fld", value, ft);
-    doc.add(f);
+    doc.addStored("fld", value);
 
     final int numDocs = (int) ((1L << 32) / valueLength + 100);
     for (int i = 0; i < numDocs; ++i) {

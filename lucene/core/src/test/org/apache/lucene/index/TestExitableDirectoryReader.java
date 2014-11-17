@@ -17,7 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.ExitableDirectoryReader.ExitingReaderException;
@@ -27,8 +30,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 /**
  * Test that uses a default/lucene Implementation of {@link QueryTimeout}
@@ -96,16 +97,16 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
 
-    Document d1 = new Document();
-    d1.add(newTextField("default", "one two", Field.Store.YES));
+    Document2 d1 = writer.newDocument();
+    d1.addLargeText("default", "one two");
     writer.addDocument(d1);
 
-    Document d2 = new Document();
-    d2.add(newTextField("default", "one three", Field.Store.YES));
+    Document2 d2 = writer.newDocument();
+    d2.addLargeText("default", "one three");
     writer.addDocument(d2);
 
-    Document d3 = new Document();
-    d3.add(newTextField("default", "ones two four", Field.Store.YES));
+    Document2 d3 = writer.newDocument();
+    d3.addLargeText("default", "ones two four");
     writer.addDocument(d3);
 
     writer.commit();

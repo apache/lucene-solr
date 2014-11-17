@@ -30,9 +30,11 @@ import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -61,22 +63,27 @@ public class TestPostingsOffsets extends LuceneTestCase {
     Directory dir = newDirectory();
     
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
 
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document2 doc = w.newDocument();
+
     if (random().nextBoolean()) {
-      ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorPositions(random().nextBoolean());
-      ft.setStoreTermVectorOffsets(random().nextBoolean());
+      fieldTypes.enableTermVectors("content");
+      if (random().nextBoolean()) {
+        fieldTypes.enableTermVectorPositions("content");
+      }
+      if (random().nextBoolean()) {
+        fieldTypes.enableTermVectorOffsets("content");
+      }
     }
+
     Token[] tokens = new Token[] {
       makeToken("a", 1, 0, 6),
       makeToken("b", 1, 8, 9),
       makeToken("a", 1, 9, 17),
       makeToken("c", 1, 19, 50),
     };
-    doc.add(new Field("content", new CannedTokenStream(tokens), ft));
+    doc.addLargeText("content", new CannedTokenStream(tokens));
 
     w.addDocument(doc);
     IndexReader r = w.getReader();
@@ -130,21 +137,27 @@ public class TestPostingsOffsets extends LuceneTestCase {
     iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
     
-    FieldType ft = new FieldType(TextField.TYPE_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     if (random().nextBoolean()) {
-      ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorOffsets(random().nextBoolean());
-      ft.setStoreTermVectorPositions(random().nextBoolean());
+      fieldTypes.enableTermVectors("numbers");
+      fieldTypes.enableTermVectors("oddeven");
+      if (random().nextBoolean()) {
+        fieldTypes.enableTermVectorOffsets("numbers");
+        fieldTypes.enableTermVectorOffsets("oddeven");
+      }
+      if (random().nextBoolean()) {
+        fieldTypes.enableTermVectorPositions("numbers");
+        fieldTypes.enableTermVectorPositions("oddeven");
+      }
     }
     
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(new Field("numbers", English.intToEnglish(i), ft));
-      doc.add(new Field("oddeven", (i % 2) == 0 ? "even" : "odd", ft));
-      doc.add(new StringField("id", "" + i, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addLargeText("numbers", English.intToEnglish(i));
+      doc.addLargeText("oddeven", (i % 2) == 0 ? "even" : "odd");
+      doc.addAtom("id", "" + i);
       w.addDocument(doc);
     }
     
@@ -222,6 +235,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
 
     final int numDocs = atLeast(20);
     //final int numDocs = atLeast(5);
@@ -230,17 +244,19 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     // TODO: randomize what IndexOptions we use; also test
     // changing this up in one IW buffered segment...:
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     if (random().nextBoolean()) {
-      ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorOffsets(random().nextBoolean());
-      ft.setStoreTermVectorPositions(random().nextBoolean());
+      fieldTypes.enableTermVectors("content");
+      if (random().nextBoolean()) {
+        fieldTypes.enableTermVectorOffsets("content");
+      }
+      if (random().nextBoolean()) {
+        fieldTypes.enableTermVectorPositions("content");
+      }
     }
 
     for(int docCount=0;docCount<numDocs;docCount++) {
-      Document doc = new Document();
-      doc.add(new IntField("id", docCount, Field.Store.YES));
-      doc.add(new NumericDocValuesField("id", docCount));
+      Document2 doc = w.newDocument();
+      doc.addInt("id", docCount);
       List<Token> tokens = new ArrayList<>();
       final int numTokens = atLeast(100);
       //final int numTokens = atLeast(20);
@@ -282,7 +298,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
         offset += offIncr + tokenOffset;
         //System.out.println("  " + token + " posIncr=" + token.getPositionIncrement() + " pos=" + pos + " off=" + token.startOffset() + "/" + token.endOffset() + " (freq=" + postingsByDoc.get(docCount).size() + ")");
       }
-      doc.add(new Field("content", new CannedTokenStream(tokens.toArray(new Token[tokens.size()])), ft));
+      doc.addLargeText("content", new CannedTokenStream(tokens.toArray(new Token[tokens.size()])));
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();
@@ -352,51 +368,17 @@ public class TestPostingsOffsets extends LuceneTestCase {
     dir.close();
   }
   
-  public void testWithUnindexedFields() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-    for (int i = 0; i < 100; i++) {
-      Document doc = new Document();
-      // ensure at least one doc is indexed with offsets
-      if (i < 99 && random().nextInt(2) == 0) {
-        // stored only
-        FieldType ft = new FieldType();
-        ft.setStored(true);
-        doc.add(new Field("foo", "boo!", ft));
-      } else {
-        FieldType ft = new FieldType(TextField.TYPE_STORED);
-        ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-        if (random().nextBoolean()) {
-          // store some term vectors for the checkindex cross-check
-          ft.setStoreTermVectors(true);
-          ft.setStoreTermVectorPositions(true);
-          ft.setStoreTermVectorOffsets(true);
-        }
-        doc.add(new Field("foo", "bar", ft));
-      }
-      riw.addDocument(doc);
-    }
-    CompositeReader ir = riw.getReader();
-    LeafReader slow = SlowCompositeReaderWrapper.wrap(ir);
-    FieldInfos fis = slow.getFieldInfos();
-    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
-    slow.close();
-    ir.close();
-    riw.close();
-    dir.close();
-  }
-  
   public void testAddFieldTwice() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    FieldType customType3 = new FieldType(TextField.TYPE_STORED);
-    customType3.setStoreTermVectors(true);
-    customType3.setStoreTermVectorPositions(true);
-    customType3.setStoreTermVectorOffsets(true);    
-    customType3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
-    doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableTermVectors("content3");
+    fieldTypes.enableTermVectorPositions("content3");
+    fieldTypes.enableTermVectorOffsets("content3");
+
+    Document2 doc = iw.newDocument();
+    doc.addLargeText("content3", "here is more content with aaa aaa aaa");
+    doc.addLargeText("content3", "here is more content with aaa aaa aaa");
     iw.addDocument(doc);
     iw.close();
     dir.close(); // checkindex
@@ -471,13 +453,11 @@ public class TestPostingsOffsets extends LuceneTestCase {
     };
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     // add good document
-    Document doc = new Document();
+    Document2 doc = iw.newDocument();
     iw.addDocument(doc);
     try {
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-      doc.add(new Field("foo", "bar", ft));
-      doc.add(new Field("foo", "bar", ft));
+      doc.addLargeText("foo", "bar");
+      doc.addLargeText("foo", "bar");
       iw.addDocument(doc);
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {}
@@ -493,7 +473,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
   public void testLegalbutVeryLargeOffsets() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
+    Document2 doc = iw.newDocument();
     Token t1 = new Token("foo", 0, Integer.MAX_VALUE-500);
     if (random().nextBoolean()) {
       t1.setPayload(new BytesRef("test"));
@@ -502,14 +482,12 @@ public class TestPostingsOffsets extends LuceneTestCase {
     TokenStream tokenStream = new CannedTokenStream(
         new Token[] { t1, t2 }
     );
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    FieldTypes fieldTypes = iw.getFieldTypes();
     // store some term vectors for the checkindex cross-check
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorPositions(true);
-    ft.setStoreTermVectorOffsets(true);
-    Field field = new Field("foo", tokenStream, ft);
-    doc.add(field);
+    fieldTypes.enableTermVectors("foo");
+    fieldTypes.enableTermVectorPositions("foo");
+    fieldTypes.enableTermVectorOffsets("foo");
+    doc.addLargeText("foo", tokenStream);
     iw.addDocument(doc);
     iw.close();
     dir.close();
@@ -519,18 +497,18 @@ public class TestPostingsOffsets extends LuceneTestCase {
   private void checkTokens(Token[] field1, Token[] field2) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = riw.getFieldTypes();
+
     boolean success = false;
     try {
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
       // store some term vectors for the checkindex cross-check
-      ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorPositions(true);
-      ft.setStoreTermVectorOffsets(true);
+      fieldTypes.enableTermVectors("body");
+      fieldTypes.enableTermVectorPositions("body");
+      fieldTypes.enableTermVectorOffsets("body");
      
-      Document doc = new Document();
-      doc.add(new Field("body", new CannedTokenStream(field1), ft));
-      doc.add(new Field("body", new CannedTokenStream(field2), ft));
+      Document2 doc = riw.newDocument();
+      doc.addLargeText("body", new CannedTokenStream(field1));
+      doc.addLargeText("body", new CannedTokenStream(field2));
       riw.addDocument(doc);
       riw.close();
       success = true;
@@ -546,17 +524,16 @@ public class TestPostingsOffsets extends LuceneTestCase {
   private void checkTokens(Token[] tokens) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = riw.getFieldTypes();
     boolean success = false;
     try {
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
       // store some term vectors for the checkindex cross-check
-      ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorPositions(true);
-      ft.setStoreTermVectorOffsets(true);
+      fieldTypes.enableTermVectors("body");
+      fieldTypes.enableTermVectorPositions("body");
+      fieldTypes.enableTermVectorOffsets("body");
      
-      Document doc = new Document();
-      doc.add(new Field("body", new CannedTokenStream(tokens), ft));
+      Document2 doc = riw.newDocument();
+      doc.addLargeText("body", new CannedTokenStream(tokens));
       riw.addDocument(doc);
       riw.close();
       success = true;

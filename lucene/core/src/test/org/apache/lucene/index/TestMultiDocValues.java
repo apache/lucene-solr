@@ -20,8 +20,10 @@ package org.apache.lucene.index;
 import java.util.ArrayList;
 
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -37,9 +39,6 @@ public class TestMultiDocValues extends LuceneTestCase {
   
   public void testNumerics() throws Exception {
     Directory dir = newDirectory();
-    Document doc = new Document();
-    Field field = new NumericDocValuesField("numbers", 0);
-    doc.add(field);
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -47,7 +46,8 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      field.setLongValue(random().nextLong());
+      Document2 doc = iw.newDocument();
+      doc.addLong("numbers", random().nextLong());
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -71,18 +71,17 @@ public class TestMultiDocValues extends LuceneTestCase {
   
   public void testBinary() throws Exception {
     Directory dir = newDirectory();
-    Document doc = new Document();
-    Field field = new BinaryDocValuesField("bytes", new BytesRef());
-    doc.add(field);
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("bytes");
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      BytesRef ref = new BytesRef(TestUtil.randomUnicodeString(random()));
-      field.setBytesValue(ref);
+      Document2 doc = iw.newDocument();
+      doc.addBinary("bytes", new BytesRef(TestUtil.randomUnicodeString(random())));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -108,9 +107,6 @@ public class TestMultiDocValues extends LuceneTestCase {
   
   public void testSorted() throws Exception {
     Directory dir = newDirectory();
-    Document doc = new Document();
-    Field field = new SortedDocValuesField("bytes", new BytesRef());
-    doc.add(field);
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -118,10 +114,10 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      BytesRef ref = new BytesRef(TestUtil.randomUnicodeString(random()));
-      field.setBytesValue(ref);
+      Document2 doc = iw.newDocument();
+      doc.addAtom("bytes", TestUtil.randomUnicodeString(random()));
       if (random().nextInt(7) == 0) {
-        iw.addDocument(new Document());
+        iw.addDocument(iw.newDocument());
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -153,9 +149,6 @@ public class TestMultiDocValues extends LuceneTestCase {
   // tries to make more dups than testSorted
   public void testSortedWithLotsOfDups() throws Exception {
     Directory dir = newDirectory();
-    Document doc = new Document();
-    Field field = new SortedDocValuesField("bytes", new BytesRef());
-    doc.add(field);
     
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -163,8 +156,8 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      BytesRef ref = new BytesRef(TestUtil.randomSimpleString(random(), 2));
-      field.setBytesValue(ref);
+      Document2 doc = iw.newDocument();
+      doc.addAtom("bytes", TestUtil.randomSimpleString(random(), 2));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -198,13 +191,15 @@ public class TestMultiDocValues extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("bytes");
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = iw.newDocument();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
-        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(TestUtil.randomUnicodeString(random()))));
+        doc.addAtom("bytes", TestUtil.randomUnicodeString(random()));
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -260,13 +255,15 @@ public class TestMultiDocValues extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("bytes");
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = iw.newDocument();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
-        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
+        doc.addAtom("bytes", TestUtil.randomSimpleString(random(), 2));
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -321,13 +318,15 @@ public class TestMultiDocValues extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(random(), null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("nums");
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = iw.newDocument();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
-        doc.add(new SortedNumericDocValuesField("nums", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
+        doc.addLong("nums", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE));
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -375,11 +374,11 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = iw.newDocument();
       if (random().nextInt(4) >= 0) {
-        doc.add(new NumericDocValuesField("numbers", random().nextLong()));
+        doc.addLong("numbers", random().nextLong());
       }
-      doc.add(new NumericDocValuesField("numbersAlways", random().nextLong()));
+      doc.addLong("numbersAlways", random().nextLong());
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();

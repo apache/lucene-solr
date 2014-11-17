@@ -971,8 +971,8 @@ public class TestAddIndexes extends LuceneTestCase {
       dirs[i] = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
       IndexWriter writer = new IndexWriter(dirs[i], conf);
-      Document doc = new Document();
-      doc.add(new StringField("id", "myid", Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", "myid");
       writer.addDocument(doc);
       writer.close();
     }
@@ -1001,9 +1001,9 @@ public class TestAddIndexes extends LuceneTestCase {
   // just like addDocs but with ID, starting from docStart
   private void addDocsWithID(IndexWriter writer, int numDocs, int docStart) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa", Field.Store.NO));
-      doc.add(newTextField("id", "" + (docStart + i), Field.Store.YES));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("content", "aaa");
+      doc.addLargeText("id", "" + (docStart + i));
       writer.addDocument(doc);
     }
   }
@@ -1093,10 +1093,10 @@ public class TestAddIndexes extends LuceneTestCase {
     for (int i = 0; i < dirs.length; i++) {
       dirs[i] = new RAMDirectory();
       IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(new MockAnalyzer(random())));
-      Document d = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setStoreTermVectors(true);
-      d.add(new Field("c", "v", customType));
+      Document2 d = w.newDocument();
+      FieldTypes fieldTypes = w.getFieldTypes();
+      fieldTypes.enableTermVectors("c");
+      d.addLargeText("c", "v");
       w.addDocument(d);
       w.close();
     }
@@ -1139,10 +1139,8 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
       conf.setCodec(new UnRegisteredCodec());
       IndexWriter w = new IndexWriter(toAdd, conf);
-      Document doc = new Document();
-      FieldType customType = new FieldType();
-      customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); 
-      doc.add(newField("foo", "bar", customType));
+      Document2 doc = w.newDocument();
+      doc.addLargeText("foo", "bar");
       w.addDocument(doc);
       w.close();
     }
@@ -1178,18 +1176,18 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testFieldNamesChanged() throws IOException {
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
-    Document doc = new Document();
-    doc.add(newStringField("f1", "doc1 field1", Field.Store.YES));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    Document2 doc = w.newDocument();
+    doc.addAtom("f1", "doc1 field1");
+    doc.addAtom("id", "1");
     w.addDocument(doc);
     IndexReader r1 = w.getReader();
     w.close();
 
     Directory d2 = newDirectory();
     w = new RandomIndexWriter(random(), d2);
-    doc = new Document();
-    doc.add(newStringField("f2", "doc2 field2", Field.Store.YES));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    doc = w.newDocument();
+    doc.addAtom("f2", "doc2 field2");
+    doc.addAtom("id", "2");
     w.addDocument(doc);
     IndexReader r2 = w.getReader();
     w.close();
@@ -1238,7 +1236,7 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testFakeAllDeleted() throws Exception {
     Directory src = newDirectory(), dest = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), src);
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     IndexReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
     w.close();
     
@@ -1260,7 +1258,7 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testLocksBlock() throws Exception {
     Directory src = newDirectory();
     RandomIndexWriter w1 = new RandomIndexWriter(random(), src);
-    w1.addDocument(new Document());
+    w1.addDocument(w1.newDocument());
     w1.commit();
 
     Directory dest = newDirectory();
