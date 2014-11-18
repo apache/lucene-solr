@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,6 +63,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -75,6 +77,7 @@ import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.data.Stat;
+import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -1922,15 +1925,17 @@ public final class ZkController {
 
     Map<String,Object> stateObj = null;
     if (stateData != null && stateData.length > 0) {
-      Object parsedJson = ZkStateReader.fromJSON(stateData);
-      if (parsedJson instanceof Map) {
-        stateObj = (Map<String,Object>)parsedJson;
-      } else if (parsedJson instanceof String) {
-        // old format still in ZK
-        stateObj = new LinkedHashMap<>();
-        stateObj.put("state", (String)parsedJson);
+      // TODO: Remove later ... this is for upgrading from 4.8.x to 4.10.3 (see: SOLR-6732)
+      if (stateData[0] == (byte)'{') {
+        Object parsedJson = ZkStateReader.fromJSON(stateData);
+        if (parsedJson instanceof Map) {
+          stateObj = (Map<String,Object>)parsedJson;
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Leader-initiated recovery state data is invalid! "+parsedJson);
+        }
       } else {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Leader-initiated recovery state data is invalid! "+parsedJson);
+        // old format still in ZK
+        stateObj = ZkNodeProps.makeMap("state", new String(stateData, StandardCharsets.UTF_8));
       }
     }
 
@@ -1963,7 +1968,7 @@ public final class ZkController {
       log.warn(exc.getMessage(), exc);
     }
     if (stateObj == null)
-      stateObj = new LinkedHashMap<String,Object>();
+      stateObj = ZkNodeProps.makeMap();
 
     stateObj.put("state", state);
     // only update the createdBy value if its not set
