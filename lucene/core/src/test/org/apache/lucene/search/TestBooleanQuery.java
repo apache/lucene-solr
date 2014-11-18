@@ -30,11 +30,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -390,4 +390,23 @@ public class TestBooleanQuery extends LuceneTestCase {
     dir.close();
   }
 
+  public void testMinShouldMatchLeniency() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(newTextField("field", "a b c d", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "b")), BooleanClause.Occur.SHOULD);
+
+    // No doc can match: BQ has only 2 clauses and we are asking for minShouldMatch=4
+    bq.setMinimumNumberShouldMatch(4);
+    assertEquals(0, s.search(bq, 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
 }
