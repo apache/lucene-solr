@@ -42,12 +42,15 @@ Bug Fixes
 * SOLR-6323: ReRankingQParserPlugin cleaner paging and fix bug with fuzzy, range and other queries
   that need to be re-written. (Adair Kovac, Joel Bernstein)
 
+* SOLR-6684: Fix-up /export JSON. (Joel Bernstein)
+
 Other Changes
 ----------------------
 
 * SOLR-6661: Adjust all example configurations to allow overriding error-prone
   relative paths for solrconfig.xml <lib> references with solr.install.dir
   system property; bin/solr scripts will set it appropriately. (ehatcher)
+
 
 ==================  4.10.2 ==================
 
