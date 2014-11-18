@@ -44,6 +44,10 @@ Bug Fixes
 
 * SOLR-6684: Fix-up /export JSON. (Joel Bernstein)
 
+* SOLR-6732: Fix handling of leader-initiated recovery state was String in older versions
+  and is now a JSON map, caused backwards compatibility issues when doing rolling upgrades of
+  a live cluster while indexing (Timothy Potter)
+
 Other Changes
 ----------------------
 
