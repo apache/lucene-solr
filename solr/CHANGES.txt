@@ -411,6 +411,8 @@ Bug Fixes
 * SOLR-6323: ReRankingQParserPlugin cleaner paging and fix bug with fuzzy, range and other queries 
   that need to be re-written. (Adair Kovac, Joel Bernstein)
 
+* SOLR-6684: Fix-up /export JSON. (Joel Bernstein)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
