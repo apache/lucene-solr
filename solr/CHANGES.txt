@@ -408,6 +408,9 @@ Bug Fixes
 
 * SOLR-6085: Suggester crashes when prefixToken is longer than surface form (janhoy)
 
+* SOLR-6323: ReRankingQParserPlugin cleaner paging and fix bug with fuzzy, range and other queries 
+  that need to be re-written. (Adair Kovac, Joel Bernstein)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
