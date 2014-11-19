@@ -238,12 +238,14 @@ public class TestJoinUtil extends LuceneTestCase {
     doc.add(new TextField("description", "random text", Field.Store.NO));
     doc.add(new TextField("name", "name1", Field.Store.NO));
     doc.add(new TextField(idField, "7", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("7")));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     doc.add(new TextField("price", "10.0", Field.Store.NO));
     doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("2")));
     doc.add(new TextField(toField, "7", Field.Store.NO));
     w.addDocument(doc);
 
@@ -251,6 +253,7 @@ public class TestJoinUtil extends LuceneTestCase {
     doc = new Document();
     doc.add(new TextField("price", "20.0", Field.Store.NO));
     doc.add(new TextField(idField, "3", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("3")));
     doc.add(new TextField(toField, "7", Field.Store.NO));
     w.addDocument(doc);
 
@@ -266,6 +269,7 @@ public class TestJoinUtil extends LuceneTestCase {
     doc = new Document();
     doc.add(new TextField("price", "10.0", Field.Store.NO));
     doc.add(new TextField(idField, "5", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("5")));
     doc.add(new TextField(toField, "0", Field.Store.NO));
     w.addDocument(doc);
 
@@ -273,6 +277,7 @@ public class TestJoinUtil extends LuceneTestCase {
     doc = new Document();
     doc.add(new TextField("price", "20.0", Field.Store.NO));
     doc.add(new TextField(idField, "6", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("6")));
     doc.add(new TextField(toField, "0", Field.Store.NO));
     w.addDocument(doc);
 

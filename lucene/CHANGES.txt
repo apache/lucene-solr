@@ -206,6 +206,10 @@ API Changes
   instance based on a Directory implementation passed to the factory method.
   See MIGRATE.txt for more details.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-6062: Throw exception instead of silently doing nothing if you try to 
+  sort/group/etc on a misconfigured field (e.g. no docvalues, no UninvertingReader, etc).  
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

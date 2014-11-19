@@ -38,6 +38,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -162,6 +163,7 @@ public class LineFileDocs implements Closeable {
     final Field body;
     final Field id;
     final Field idNum;
+    final Field idNumDV;
     final Field date;
 
     public DocState(boolean useDocValues) {
@@ -193,9 +195,12 @@ public class LineFileDocs implements Closeable {
 
       if (useDocValues) {
         titleDV = new SortedDocValuesField("titleDV", new BytesRef());
+        idNumDV = new NumericDocValuesField("docid_intDV", 0);
         doc.add(titleDV);
+        doc.add(idNumDV);
       } else {
         titleDV = null;
+        idNumDV = null;
       }
     }
   }
@@ -244,6 +249,9 @@ public class LineFileDocs implements Closeable {
     final int i = id.getAndIncrement();
     docState.id.setStringValue(Integer.toString(i));
     docState.idNum.setIntValue(i);
+    if (docState.idNumDV != null) {
+      docState.idNumDV.setLongValue(i);
+    }
     return docState.doc;
   }
 }
