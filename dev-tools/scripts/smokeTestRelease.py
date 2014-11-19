@@ -859,8 +859,13 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
+
   # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
-  subprocess.call(['bin/solr','stop','-p','8983'])
+  try:
+      subprocess.call(['bin/solr','stop','-p','8983'])
+  except:
+      print('      Stop failed due to: '+sys.exc_info()[0])
+
   print('      starting Solr on port 8983 from %s' % unpackPath)
   server = subprocess.Popen(['bin/solr', '-f', '-p', '8983'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
 
