@@ -78,10 +78,16 @@ public class InitParams {
 
   }
 
-  public void apply(NamedList initArgs) {
-    merge( (NamedList) initArgs.get(PluginInfo.DEFAULTS), defaults,initArgs, PluginInfo.DEFAULTS, false);
-    merge((NamedList) initArgs.get(PluginInfo.INVARIANTS), invariants, initArgs, PluginInfo.INVARIANTS, false);
-    merge((NamedList) initArgs.get(PluginInfo.APPENDS), appends, initArgs, PluginInfo.APPENDS, true);
+  public void apply(PluginInfo info) {
+    if (info.isFromSolrConfig) {
+      //if this is a component implicitly defined in code it should be overridden by initPrams
+      merge(defaults, (NamedList) info.initArgs.get(PluginInfo.DEFAULTS) ,info.initArgs, PluginInfo.DEFAULTS, false);
+    } else {
+      //if the args is initialized from solrconfig.xml inside the requesthHandler it should be taking precedence over  initParams
+      merge( (NamedList) info.initArgs.get(PluginInfo.DEFAULTS), defaults,info.initArgs, PluginInfo.DEFAULTS, false);
+    }
+    merge((NamedList) info.initArgs.get(PluginInfo.INVARIANTS), invariants, info.initArgs, PluginInfo.INVARIANTS, false);
+    merge((NamedList) info.initArgs.get(PluginInfo.APPENDS), appends, info.initArgs, PluginInfo.APPENDS, true);
   }
 
   private static  void merge(NamedList first, NamedList second, NamedList sink, String name, boolean appends) {
