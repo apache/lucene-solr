@@ -263,6 +263,9 @@ Bug Fixes
 
 * LUCENE-6060: Remove dangerous IndexWriter.unlock method (Simon
   Willnauer, Mike McCandless)
+
+* LUCENE-6062: Pass correct fieldinfos to docvalues producer when the
+  segment has updates. (Mike McCandless, Shai Erera, Robert Muir)
   
 Documentation
 
