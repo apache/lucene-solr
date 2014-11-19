@@ -143,7 +143,7 @@ public class SolrZkClient implements Closeable {
         + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect);
 
     try {
-      strat.connect(zkServerAddress, zkClientTimeout, connManager,
+      strat.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),
           new ZkUpdate() {
             @Override
             public void update(SolrZooKeeper zooKeeper) {
