@@ -19,6 +19,13 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -778,6 +785,92 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     }
     reader.close();
 
+    dir.close();
+  }
+  
+  @Test
+  public void testUpdateSegmentWithNoDocValues2() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    // prevent merges, otherwise by the time updates are applied
+    // (writer.close()), the segments might have merged and that update becomes
+    // legit.
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    // first segment with NDV
+    Document doc = new Document();
+    doc.add(new StringField("id", "doc0", Store.NO));
+    doc.add(new NumericDocValuesField("ndv", 3));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "doc4", Store.NO)); // document without 'ndv' field
+    writer.addDocument(doc);
+    writer.commit();
+    
+    // second segment with no NDV, but another dv field "foo"
+    doc = new Document();
+    doc.add(new StringField("id", "doc1", Store.NO));
+    doc.add(new NumericDocValuesField("foo", 3));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "doc2", Store.NO)); // document that isn't updated
+    writer.addDocument(doc);
+    writer.commit();
+    
+    // update document in the first segment - should not affect docsWithField of
+    // the document without NDV field
+    writer.updateNumericDocValue(new Term("id", "doc0"), "ndv", 5L);
+    
+    // update document in the second segment - field should be added and we should
+    // be able to handle the other document correctly (e.g. no NPE)
+    writer.updateNumericDocValue(new Term("id", "doc1"), "ndv", 5L);
+    writer.close();
+
+    DirectoryReader reader = DirectoryReader.open(dir);
+    for (LeafReaderContext context : reader.leaves()) {
+      LeafReader r = context.reader();
+      NumericDocValues ndv = r.getNumericDocValues("ndv");
+      Bits docsWithField = r.getDocsWithField("ndv");
+      assertNotNull(docsWithField);
+      assertTrue(docsWithField.get(0));
+      assertEquals(5L, ndv.get(0));
+      assertFalse(docsWithField.get(1));
+      assertEquals(0L, ndv.get(1));
+    }
+    reader.close();
+    
+    TestUtil.checkIndex(dir);
+    
+    conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    writer = new IndexWriter(dir, conf);
+    writer.forceMerge(1);
+    writer.close();
+    
+    reader = DirectoryReader.open(dir);
+    LeafReader ar = getOnlySegmentReader(reader);
+    assertEquals(DocValuesType.NUMERIC, ar.getFieldInfos().fieldInfo("foo").getDocValuesType());
+    IndexSearcher searcher = new IndexSearcher(reader);
+    TopFieldDocs td;
+    // doc0
+    td = searcher.search(new TermQuery(new Term("id", "doc0")), 1, 
+                         new Sort(new SortField("ndv", SortField.Type.LONG)));
+    assertEquals(5L, ((FieldDoc)td.scoreDocs[0]).fields[0]);
+    // doc1
+    td = searcher.search(new TermQuery(new Term("id", "doc1")), 1, 
+                         new Sort(new SortField("ndv", SortField.Type.LONG), new SortField("foo", SortField.Type.LONG)));
+    assertEquals(5L, ((FieldDoc)td.scoreDocs[0]).fields[0]);
+    assertEquals(3L, ((FieldDoc)td.scoreDocs[0]).fields[1]);
+    // doc2
+    td = searcher.search(new TermQuery(new Term("id", "doc2")), 1, 
+        new Sort(new SortField("ndv", SortField.Type.LONG)));
+    assertEquals(0L, ((FieldDoc)td.scoreDocs[0]).fields[0]);
+    // doc4
+    td = searcher.search(new TermQuery(new Term("id", "doc4")), 1, 
+        new Sort(new SortField("ndv", SortField.Type.LONG)));
+    assertEquals(0L, ((FieldDoc)td.scoreDocs[0]).fields[0]);
+    reader.close();
+    
     dir.close();
   }
   

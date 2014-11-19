@@ -26,10 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
@@ -48,26 +46,35 @@ class SegmentDocValuesProducer extends DocValuesProducer {
   final Set<DocValuesProducer> dvProducers = Collections.newSetFromMap(new IdentityHashMap<DocValuesProducer,Boolean>());
   final List<Long> dvGens = new ArrayList<>();
   
-  SegmentDocValuesProducer(SegmentCommitInfo si, Directory dir, FieldInfos fieldInfos, SegmentDocValues segDocValues, DocValuesFormat dvFormat) throws IOException {
+  /**
+   * Creates a new producer that handles updated docvalues fields
+   * @param si commit point
+   * @param dir directory
+   * @param coreInfos fieldinfos for the segment
+   * @param allInfos all fieldinfos including updated ones
+   * @param segDocValues producer map
+   */
+  SegmentDocValuesProducer(SegmentCommitInfo si, Directory dir, FieldInfos coreInfos, FieldInfos allInfos, SegmentDocValues segDocValues) throws IOException {
     boolean success = false;
     try {
       DocValuesProducer baseProducer = null;
-      for (FieldInfo fi : fieldInfos) {
+      for (FieldInfo fi : allInfos) {
         if (fi.getDocValuesType() == DocValuesType.NONE) {
           continue;
         }
         long docValuesGen = fi.getDocValuesGen();
         if (docValuesGen == -1) {
           if (baseProducer == null) {
-            // the base producer gets all the fields, so the Codec can validate properly
-            baseProducer = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos);
+            // the base producer gets the original fieldinfos it wrote
+            baseProducer = segDocValues.getDocValuesProducer(docValuesGen, si, dir, coreInfos);
             dvGens.add(docValuesGen);
             dvProducers.add(baseProducer);
           }
           dvProducersByField.put(fi.name, baseProducer);
         } else {
           assert !dvGens.contains(docValuesGen);
-          final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(new FieldInfo[] { fi }));
+          // otherwise, producer sees only the one fieldinfo it wrote
+          final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, dir, new FieldInfos(new FieldInfo[] { fi }));
           dvGens.add(docValuesGen);
           dvProducers.add(dvp);
           dvProducersByField.put(fi.name, dvp);
