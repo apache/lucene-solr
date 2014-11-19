@@ -24,6 +24,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
@@ -35,6 +36,7 @@ import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -65,21 +67,25 @@ public class TestFilteredQuery extends LuceneTestCase {
     Document doc = new Document();
     doc.add (newTextField("field", "one two three four five", Field.Store.YES));
     doc.add (newTextField("sorter", "b", Field.Store.YES));
+    doc.add (new SortedDocValuesField("sorter", new BytesRef("b")));
     writer.addDocument (doc);
 
     doc = new Document();
     doc.add (newTextField("field", "one two three four", Field.Store.YES));
     doc.add (newTextField("sorter", "d", Field.Store.YES));
+    doc.add (new SortedDocValuesField("sorter", new BytesRef("d")));
     writer.addDocument (doc);
 
     doc = new Document();
     doc.add (newTextField("field", "one two three y", Field.Store.YES));
     doc.add (newTextField("sorter", "a", Field.Store.YES));
+    doc.add (new SortedDocValuesField("sorter", new BytesRef("a")));
     writer.addDocument (doc);
 
     doc = new Document();
     doc.add (newTextField("field", "one two x", Field.Store.YES));
     doc.add (newTextField("sorter", "c", Field.Store.YES));
+    doc.add (new SortedDocValuesField("sorter", new BytesRef("c")));
     writer.addDocument (doc);
 
     // tests here require single segment (eg try seed

@@ -1284,6 +1284,7 @@ public class TestBlockJoin extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document parent = new Document();
     parent.add(new StoredField("parentID", "0"));
+    parent.add(new SortedDocValuesField("parentID", new BytesRef("0")));
     parent.add(newTextField("parentText", "text", Field.Store.NO));
     parent.add(newStringField("isParent", "yes", Field.Store.NO));
 
@@ -1304,6 +1305,7 @@ public class TestBlockJoin extends LuceneTestCase {
     parent.add(newTextField("parentText", "text", Field.Store.NO));
     parent.add(newStringField("isParent", "yes", Field.Store.NO));
     parent.add(new StoredField("parentID", "1"));
+    parent.add(new SortedDocValuesField("parentID", new BytesRef("1")));
 
     // parent last:
     docs.add(parent);
@@ -1348,6 +1350,7 @@ public class TestBlockJoin extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document parent = new Document();
     parent.add(new StoredField("parentID", "0"));
+    parent.add(new SortedDocValuesField("parentID", new BytesRef("0")));
     parent.add(newTextField("parentText", "text", Field.Store.NO));
     parent.add(newStringField("isParent", "yes", Field.Store.NO));
 
@@ -1368,6 +1371,8 @@ public class TestBlockJoin extends LuceneTestCase {
     parent.add(newTextField("parentText", "text", Field.Store.NO));
     parent.add(newStringField("isParent", "yes", Field.Store.NO));
     parent.add(new StoredField("parentID", "1"));
+    parent.add(new SortedDocValuesField("parentID", new BytesRef("1")));
+    
 
     // parent last:
     docs.add(parent);

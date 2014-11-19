@@ -21,12 +21,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.IndexReader;
@@ -68,16 +65,10 @@ public class TestExpressionSorts extends LuceneTestCase {
       Document document = new Document();
       document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
       document.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
-      document.add(newStringField("byte", "" + ((byte) random().nextInt()), Field.Store.NO));
-      document.add(newStringField("short", "" + ((short) random().nextInt()), Field.Store.NO));
-      document.add(new IntField("int", random().nextInt(), Field.Store.NO));
-      document.add(new LongField("long", random().nextLong(), Field.Store.NO));
-
-      document.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
-      document.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
-
-      document.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
-      document.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
+      document.add(new NumericDocValuesField("int", random().nextInt()));
+      document.add(new NumericDocValuesField("long", random().nextLong()));
+      document.add(new FloatDocValuesField("float", random().nextFloat()));
+      document.add(new DoubleDocValuesField("double", random().nextDouble()));
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -119,8 +110,6 @@ public class TestExpressionSorts extends LuceneTestCase {
           new SortField("long", SortField.Type.LONG, reversed),
           new SortField("float", SortField.Type.FLOAT, reversed),
           new SortField("double", SortField.Type.DOUBLE, reversed),
-          new SortField("intdocvalues", SortField.Type.INT, reversed),
-          new SortField("floatdocvalues", SortField.Type.FLOAT, reversed),
           new SortField("score", SortField.Type.SCORE)
       };
       Collections.shuffle(Arrays.asList(fields), random());

@@ -21,15 +21,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -63,22 +61,12 @@ public class TestSearchAfter extends LuceneTestCase {
           new SortField("double", SortField.Type.DOUBLE, false),
           new SortField("bytes", SortField.Type.STRING, false),
           new SortField("bytesval", SortField.Type.STRING_VAL, false),
-          new SortField("intdocvalues", SortField.Type.INT, false),
-          new SortField("floatdocvalues", SortField.Type.FLOAT, false),
-          new SortField("sortedbytesdocvalues", SortField.Type.STRING, false),
-          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, false),
-          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, false),
           new SortField("int", SortField.Type.INT, true),
           new SortField("long", SortField.Type.LONG, true),
           new SortField("float", SortField.Type.FLOAT, true),
           new SortField("double", SortField.Type.DOUBLE, true),
           new SortField("bytes", SortField.Type.STRING, true),
           new SortField("bytesval", SortField.Type.STRING_VAL, true),
-          new SortField("intdocvalues", SortField.Type.INT, true),
-          new SortField("floatdocvalues", SortField.Type.FLOAT, true),
-          new SortField("sortedbytesdocvalues", SortField.Type.STRING, true),
-          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, true),
-          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, true),
           SortField.FIELD_SCORE,
           SortField.FIELD_DOC,
         }));
@@ -136,26 +124,19 @@ public class TestSearchAfter extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(200);
+    Random r = random();
     for (int i = 0; i < numDocs; i++) {
       List<Field> fields = new ArrayList<>();
       fields.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
       fields.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
-      fields.add(newStringField("byte", "" + ((byte) random().nextInt()), Field.Store.NO));
-      fields.add(newStringField("short", "" + ((short) random().nextInt()), Field.Store.NO));
-      fields.add(new IntField("int", random().nextInt(), Field.Store.NO));
-      fields.add(new LongField("long", random().nextLong(), Field.Store.NO));
-
-      fields.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
-      fields.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
-      fields.add(newStringField("bytes", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
-      fields.add(newStringField("bytesval", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
-      fields.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
-
-      fields.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
-      fields.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
-      fields.add(new SortedDocValuesField("sortedbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-      fields.add(new SortedDocValuesField("sortedbytesdocvaluesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-      fields.add(new BinaryDocValuesField("straightbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(new NumericDocValuesField("byte", (byte) r.nextInt()));
+      fields.add(new NumericDocValuesField("short", (short) r.nextInt()));
+      fields.add(new NumericDocValuesField("int", r.nextInt()));
+      fields.add(new NumericDocValuesField("long", r.nextLong()));
+      fields.add(new FloatDocValuesField("float", r.nextFloat()));
+      fields.add(new DoubleDocValuesField("double", r.nextDouble()));
+      fields.add(new SortedDocValuesField("bytes", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(new BinaryDocValuesField("bytesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
 
       Document document = new Document();
       document.add(new StoredField("id", ""+i));

@@ -28,10 +28,12 @@ import java.util.TreeMap;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Unit test for sorting code. */
@@ -58,7 +60,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
       Document doc = new Document();
       if ((i % 5) != 0) { // some documents must not have an entry in the first
                           // sort field
-        doc.add(newStringField("publicationDate_", random.getLuceneDate(), Field.Store.YES));
+        doc.add(new SortedDocValuesField("publicationDate_", new BytesRef(random.getLuceneDate())));
       }
       if ((i % 7) == 0) { // some documents to match the query (see below)
         doc.add(newTextField("content", "test", Field.Store.YES));

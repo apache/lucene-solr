@@ -128,6 +128,7 @@ public class TestSearch extends LuceneTestCase {
         Document d = new Document();
         d.add(newTextField("contents", docs[j], Field.Store.YES));
         d.add(new IntField("id", j, Field.Store.NO));
+        d.add(new NumericDocValuesField("id", j));
         writer.addDocument(d);
       }
       writer.close();
