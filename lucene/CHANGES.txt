@@ -98,6 +98,10 @@ New Features
 * LUCENE-5929: Also extract terms to highlight from block join
   queries. (Julie Tibshirani via Mike McCandless)
 
+* LUCENE-6063: Allow overriding whether/how ConcurrentMergeScheduler
+  stalls incoming threads when merges are falling behind (Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
