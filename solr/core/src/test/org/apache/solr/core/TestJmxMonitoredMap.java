@@ -32,9 +32,9 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnectorServer;
+
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.RMIServerSocketFactory;
 import java.util.Set;
@@ -173,53 +173,6 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
         "MBean for mock object found in MBeanServer even after clear has been called",
         objects.isEmpty());
 
-  }
-
-  private class MockInfoMBean implements SolrInfoMBean {
-    @Override
-    public String getName() {
-      return "mock";
-    }
-
-    @Override
-    public Category getCategory() {
-      return Category.OTHER;
-    }
-
-    @Override
-    public String getDescription() {
-      return "mock";
-    }
-
-    @Override
-    public URL[] getDocs() {
-      // TODO Auto-generated method stub
-      return null;
-    }
-
-    @Override
-    public String getVersion() {
-      return "mock";
-    }
-
-    @Override
-    public String getSource() {
-      return "mock";
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public NamedList getStatistics() {
-      NamedList myList = new NamedList<Integer>();
-      myList.add("Integer", 123);
-      myList.add("Double",567.534);
-      myList.add("Long", 32352463l);
-      myList.add("Short", (short) 32768);
-      myList.add("Byte", (byte) 254);
-      myList.add("Float", 3.456f);
-      myList.add("String","testing");
-      return myList;
-    }
   }
 
 }
