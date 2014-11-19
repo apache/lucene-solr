@@ -869,7 +869,7 @@ public class SolrCLI {
       String collectionName = cli.getOptionValue("name");
       String createCollectionUrl =
           String.format(Locale.ROOT,
-              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&configSet=%s",
+              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&collection.configName=%s",
               baseUrl,
               collectionName,
               numShards,
