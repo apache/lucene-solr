@@ -397,6 +397,9 @@ Other Changes
 
 * SOLR-6740: Admin UI - improve Files View (steffkes)
 
+* SOLR-6570: Run SolrZkClient session watch asynchronously. 
+ (Ramkumar Aiyengar via Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
