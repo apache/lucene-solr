@@ -34,6 +34,7 @@ public class PluginInfo {
   public final NamedList initArgs;
   public final Map<String, String> attributes;
   public final List<PluginInfo> children;
+  public final boolean isFromSolrConfig;
 
   public PluginInfo(String type, Map<String, String> attrs ,NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
@@ -42,6 +43,7 @@ public class PluginInfo {
     this.initArgs = initArgs;
     attributes = unmodifiableMap(attrs);
     this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
+    isFromSolrConfig = false;
   }
 
 
@@ -52,6 +54,7 @@ public class PluginInfo {
     initArgs = DOMUtil.childNodesToNamedList(node);
     attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
     children = loadSubPlugins(node);
+    isFromSolrConfig = true;
   }
 
   private List<PluginInfo> loadSubPlugins(Node node) {

@@ -212,7 +212,7 @@ public final class RequestHandlers {
     if(!ags.isEmpty()){
       info = new PluginInfo(info.type, info.attributes, info.initArgs.clone(), info.children);
       for (InitParams initParam : ags) {
-        initParam.apply(info.initArgs);
+        initParam.apply(info);
       }
     }
     return info;
