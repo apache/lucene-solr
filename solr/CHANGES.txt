@@ -399,6 +399,9 @@ Other Changes
 
 * SOLR-6570: Run SolrZkClient session watch asynchronously. 
  (Ramkumar Aiyengar via Mark Miller)
+ 
+* SOLR-6747: Add an optional caching option as a workaround for SOLR-6586.
+  (Mark Miller, Gregory Chanan)
 
 ==================  4.10.3 ==================
 
