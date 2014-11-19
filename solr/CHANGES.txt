@@ -291,6 +291,9 @@ Bug Fixes
 
 * SOLR-6738: Admin UI - Escape Data on Plugins-View (steffkes)
 
+* SOLR-3774: Solr adds RequestHandler SolrInfoMBeans twice to the JMX server.
+  (Tomás Fernández Löbbe, hossman, Mark Miller)
+
 Optimizations
 ----------------------
 
