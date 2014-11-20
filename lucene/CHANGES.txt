@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.0.0 =======================
 
+System Requirements
+
+* LUCENE-5950: Move to Java 8 as minimum Java version.
+  (Ryan Ernst)
+
 New Features
 
 API Changes

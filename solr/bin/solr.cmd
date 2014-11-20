@@ -1052,11 +1052,11 @@ IF "%FIRST_ARG%"=="start" (
 )
 
 :need_java_home
-@echo Please set the JAVA_HOME environment variable to the path where you installed Java 1.7+
+@echo Please set the JAVA_HOME environment variable to the path where you installed Java 1.8+
 goto done
 
 :need_java_vers
-@echo Java 1.7 or later is required to run Solr.
+@echo Java 1.8 or later is required to run Solr.
 goto done
 
 :err

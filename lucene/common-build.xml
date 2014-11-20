@@ -162,13 +162,13 @@
 
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
-  <property name="javac.source" value="1.7"/>
-  <property name="javac.target" value="1.7"/>
+  <property name="javac.source" value="1.8"/>
+  <property name="javac.target" value="1.8"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
-  <property name="javadoc.link" value="http://download.oracle.com/javase/7/docs/api/"/>
+  <property name="javadoc.link" value="http://download.oracle.com/javase/8/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
-  <available file="${javadoc.packagelist.dir}/java7/package-list" property="javadoc.java7.packagelist.exists"/>
+  <available file="${javadoc.packagelist.dir}/java8/package-list" property="javadoc.java8.packagelist.exists"/>
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.charset" value="utf-8"/>
   <property name="javadoc.dir" location="${common.dir}/build/docs"/>
@@ -287,7 +287,7 @@
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
-              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java7/**,tools/clover/**"
+              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java8/**,tools/clover/**"
   />
 
   <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
@@ -304,9 +304,9 @@
     </condition>
   </fail>
 
-  <fail message="Minimum supported Java version is 1.7.">
+  <fail message="Minimum supported Java version is 1.8.">
     <condition>
-      <not><hasmethod classname="java.lang.Throwable" method="getSuppressed"/></not>
+      <not><hasmethod classname="java.util.Arrays" method="parallelSort"/></not>
     </condition>
   </fail>
 
@@ -332,7 +332,6 @@
    -->
   <condition property="build.java.runtime" value="${-cleaned.specification.version}" else="unknown">
     <or>
-      <equals arg1="${-cleaned.specification.version}" arg2="1.7"/>
       <equals arg1="${-cleaned.specification.version}" arg2="1.8"/>
       <equals arg1="${-cleaned.specification.version}" arg2="1.9"/>
     </or>
@@ -350,10 +349,7 @@
         <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
         <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
       </or>
-      <or>
-        <equals arg1="${build.java.runtime}" arg2="1.7"/>
-        <equals arg1="${build.java.runtime}" arg2="1.8"/>
-      </or>
+      <equals arg1="${build.java.runtime}" arg2="1.8"/>
       <!-- TODO: Fix this! For now only run this on 64bit, because jTIDY OOMs with default heap size: -->
       <contains string="${os.arch}" substring="64"/>
     </and>
@@ -361,15 +357,10 @@
 
   <!-- workaround for https://issues.apache.org/bugzilla/show_bug.cgi?id=53347 -->
   <condition property="build.compiler" value="javac1.7">
-    <and>
-      <not>
-        <equals arg1="${build.java.runtime}" arg2="1.7"/>
-      </not>
-      <or>
-        <antversion exactly="1.8.3" />
-        <antversion exactly="1.8.4" />
-      </or>
-    </and>
+    <or>
+      <antversion exactly="1.8.3" />
+      <antversion exactly="1.8.4" />
+    </or>
   </condition>
 
   <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
@@ -381,12 +372,8 @@
     <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
 
-  <!-- for now disable doclint on JDK 8+: -->
-  <condition property="javadoc.args" value="-Xdoclint:none" else="">
-    <not>
-      <equals arg1="${build.java.runtime}" arg2="1.7"/>
-    </not>
-  </condition>
+  <!-- for now disable doclint: -->
+  <property name="javadoc.args" value="-Xdoclint:none"/>
 
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
@@ -919,7 +906,7 @@
             <value><!-- empty/ default encoding. --></value>
 
             <!--
-            Disabled because of Java 1.7 bug on Linux/ Unix:
+            Disabled because of Java 1.8 bug on Linux/ Unix:
             http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7181721
 
             <value>UTF-16</value>     
@@ -1875,10 +1862,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- ECJ Javadoc linting: -->
   
   <condition property="ecj-javadoc-lint.supported">
-    <or>
-      <equals arg1="${build.java.runtime}" arg2="1.7"/>
-      <equals arg1="${build.java.runtime}" arg2="1.8"/>
-    </or>
+    <equals arg1="${build.java.runtime}" arg2="1.8"/>
   </condition>
 
   <condition property="ecj-javadoc-lint-tests.supported">
@@ -1974,7 +1958,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <attribute name="overview" default="${src.dir}/overview.html"/>
     <attribute name="linksource" default="no"/>
     <sequential>
-      <antcall target="download-java7-javadoc-packagelist"/>
+      <antcall target="download-java8-javadoc-packagelist"/>
       <delete file="@{destdir}/stylesheet.css" failonerror="false"/>
       <copy todir="@{destdir}" file="${prettify.dir}/prettify.js" overwrite="false" />
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
@@ -2004,7 +1988,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <tag name="lucene.internal"
         description="NOTE: This API is for internal purposes only and might change in incompatible ways in the next release."/>
       	<link offline="true" packagelistLoc="${javadoc.dir}"/>
-        <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java7"/>
+        <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java8"/>
         <bottom><![CDATA[
           <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
           <script src='{@docRoot}/prettify.js' type='text/javascript'></script>
@@ -2144,10 +2128,10 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </sequential>
   </macrodef>
 
-  <target name="download-java7-javadoc-packagelist" unless="javadoc.java7.packagelist.exists">
-    <mkdir dir="${javadoc.packagelist.dir}/java7"/>
+  <target name="download-java8-javadoc-packagelist" unless="javadoc.java8.packagelist.exists">
+    <mkdir dir="${javadoc.packagelist.dir}/java8"/>
     <get src="${javadoc.link}/package-list"
-         dest="${javadoc.packagelist.dir}/java7/package-list" ignoreerrors="true"/>
+         dest="${javadoc.packagelist.dir}/java8/package-list" ignoreerrors="true"/>
   </target>
 
   <!-- VALIDATION work -->

@@ -29,6 +29,11 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 
+System Requirements
+----------------------
+* LUCENE-5950: Move to Java 8 as minimum Java version.
+  (Ryan Ernst)
+
 Upgrading from Solr 5.x
 ----------------------
 

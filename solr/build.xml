@@ -380,7 +380,7 @@
     <svn-export-source source.dir=".."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/lucene/tools/javadoc/java7"/>
+    <delete dir="${svn.export.dir}/lucene/tools/javadoc/java8"/>
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 

@@ -171,15 +171,15 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
-      # Make sure 1.7 compiler was used to build release bits:
-      'X-Compile-Source-JDK: 1.7',
+      # Make sure 1.8 compiler was used to build release bits:
+      'X-Compile-Source-JDK: 1.8',
       # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
       'Ant-Version: Apache Ant 1.8',
-      # Make sure .class files are 1.7 format:
-      'X-Compile-Target-JDK: 1.7',
+      # Make sure .class files are 1.8 format:
+      'X-Compile-Target-JDK: 1.8',
       'Specification-Version: %s' % version,
-      # Make sure the release was compiled with 1.7:
-      'Created-By: 1.7'):
+      # Make sure the release was compiled with 1.8:
+      'Created-By: 1.8'):
       if s.find(verify) == -1:
         raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
                            (desc, verify))
@@ -705,54 +705,32 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       raise RuntimeError('source release has WARs...')
 
     print('    run "ant validate"')
-    java.run_java7('ant validate', '%s/validate.log' % unpackPath)
+    java.run_java8('ant validate', '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
-      print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
-      java.run_java7('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
-      java.run_java7('ant jar', '%s/compile.log' % unpackPath)
-      testDemo(java.run_java7, isSrc, version, '1.7')
+      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+      java.run_java8('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+      java.run_java8('ant jar', '%s/compile.log' % unpackPath)
+      testDemo(java.run_java8, isSrc, version, '1.8')
 
-      print('    generate javadocs w/ Java 7...')
-      java.run_java7('ant javadocs', '%s/javadocs.log' % unpackPath)
+      print('    generate javadocs w/ Java 8...')
+      java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
-
-      if java.run_java8:
-        print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
-        java.run_java8('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
-        java.run_java8('ant jar', '%s/compile.log' % unpackPath)
-        testDemo(java.run_java8, isSrc, version, '1.8')
-
-        print('    generate javadocs w/ Java 8...')
-        java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
-        checkJavadocpathFull('%s/build/docs' % unpackPath)
 
     else:
       os.chdir('solr')
 
-      print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
-      java.run_java7('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+      java.run_java8('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
 
       # test javadocs
-      print('    generate javadocs w/ Java 7...')
-      java.run_java7('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+      print('    generate javadocs w/ Java 8...')
+      java.run_java8('ant clean javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
-      print('    test solr example w/ Java 7...')
-      java.run_java7('ant clean example', '%s/antexample.log' % unpackPath)
-      testSolrExample(unpackPath, java.java7_home, True)
-
-      if java.run_java8:
-        print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
-        java.run_java8('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
-
-        print('    generate javadocs w/ Java 8...')
-        java.run_java8('ant clean javadocs', '%s/javadocs.log' % unpackPath)
-        checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
-
-        print('    test solr example w/ Java 8...')
-        java.run_java8('ant clean example', '%s/antexample.log' % unpackPath)
-        testSolrExample(unpackPath, java.java8_home, True)
+      print('    test solr example w/ Java 8...')
+      java.run_java8('ant clean example', '%s/antexample.log' % unpackPath)
+      testSolrExample(unpackPath, java.java8_home, True)
 
       os.chdir('..')
       print('    check NOTICE')
@@ -763,9 +741,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
     checkAllJARs(os.getcwd(), project, svnRevision, version, tmpDir, baseURL)
 
     if project == 'lucene':
-      testDemo(java.run_java7, isSrc, version, '1.7')
-      if java.run_java8:
-        testDemo(java.run_java8, isSrc, version, '1.8')
+      testDemo(java.run_java8, isSrc, version, '1.8')
 
       print('    check Lucene\'s javadoc JAR')
       checkJavadocpath('%s/docs' % unpackPath)
@@ -773,24 +749,14 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
     else:
       checkSolrWAR('%s/server/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
 
-      print('    copying unpacked distribution for Java 7 ...')
-      java7UnpackPath = '%s-java7' % unpackPath
-      if os.path.exists(java7UnpackPath):
-        shutil.rmtree(java7UnpackPath)
-      shutil.copytree(unpackPath, java7UnpackPath)
-      os.chdir(java7UnpackPath)
-      print('    test solr example w/ Java 7...')
-      testSolrExample(java7UnpackPath, java.java7_home, False)
-
-      if java.run_java8:
-        print('    copying unpacked distribution for Java 8 ...')
-        java8UnpackPath = '%s-java8' % unpackPath
-        if os.path.exists(java8UnpackPath):
-          shutil.rmtree(java8UnpackPath)
-        shutil.copytree(unpackPath, java8UnpackPath)
-        os.chdir(java8UnpackPath)
-        print('    test solr example w/ Java 8...')
-        testSolrExample(java8UnpackPath, java.java8_home, False)
+      print('    copying unpacked distribution for Java 8 ...')
+      java8UnpackPath = '%s-java8' % unpackPath
+      if os.path.exists(java8UnpackPath):
+        shutil.rmtree(java8UnpackPath)
+      shutil.copytree(unpackPath, java8UnpackPath)
+      os.chdir(java8UnpackPath)
+      print('    test solr example w/ Java 8...')
+      testSolrExample(java8UnpackPath, java.java8_home, False)
 
       os.chdir(unpackPath)
 
@@ -1302,16 +1268,13 @@ def make_java_config(parser, java8_home):
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
     return run_java
-  java7_home =  os.environ.get('JAVA_HOME')
-  if java7_home is None:
+  java8_home =  os.environ.get('JAVA_HOME')
+  if java8_home is None:
     parser.error('JAVA_HOME must be set')
-  run_java7 = _make_runner(java7_home, '1.7')
-  run_java8 = None
-  if java8_home is not None:
-    run_java8 = _make_runner(java8_home, '1.8')
+  run_java8 = _make_runner(java8_home, '1.8')
 
-  jc = namedtuple('JavaConfig', 'run_java7 java7_home run_java8 java8_home')
-  return jc(run_java7, java7_home, run_java8, java8_home)
+  jc = namedtuple('JavaConfig', 'run_java8 java8_home')
+  return jc(run_java8, java8_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev(\d+)')
