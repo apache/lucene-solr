@@ -133,7 +133,7 @@ New Features
   (Timothy Potter)
 
 * SOLR-5473 : Split clusterstate.json per collection and watch states selectively
-              (Noble Paul, Mark Miller, shalin, Jessica Cheng Mallet, Timothy Potter, Ashum Gupta)
+  (Noble Paul, Mark Miller, shalin, Jessica Cheng Mallet, Timothy Potter, Anshum Gupta)
 
 * SOLR-5474 : Support for SOLR-5473 in SolrJ (Timothy Potter, Noble Paul, Mark Miller)
 
