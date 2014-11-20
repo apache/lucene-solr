@@ -41,7 +41,7 @@ New Features
 * LUCENE-5889: Add commit method to AnalyzingInfixSuggester, and allow just using .add
   to build up the suggester.  (Varun Thacker via Mike McCandless)
 
-* LUCENE-5123: Add a "push" option to the postings writing API, so
+* LUCENE-5123: Add a "pull" option to the postings writing API, so
   that a PostingsFormat now receives a Fields instance and it is
   responsible for iterating through all fields, terms, documents and
   positions.  (Robert Muir, Mike McCandless)
