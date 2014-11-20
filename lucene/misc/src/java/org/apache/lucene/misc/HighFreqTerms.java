@@ -96,19 +96,17 @@ public class HighFreqTerms {
     TermStatsQueue tiq = null;
     
     if (field != null) {
-      Fields fields = MultiFields.getFields(reader);
-      if (fields == null) {
+      Terms terms = MultiFields.getTerms(reader, field);
+      if (terms == null) {
         throw new RuntimeException("field " + field + " not found");
       }
-      Terms terms = fields.terms(field);
-      if (terms != null) {
-        TermsEnum termsEnum = terms.iterator(null);
-        tiq = new TermStatsQueue(numTerms, comparator);
-        tiq.fill(field, termsEnum);
-      }
+
+      TermsEnum termsEnum = terms.iterator(null);
+      tiq = new TermStatsQueue(numTerms, comparator);
+      tiq.fill(field, termsEnum);
     } else {
       Fields fields = MultiFields.getFields(reader);
-      if (fields == null) {
+      if (fields.size() == 0) {
         throw new RuntimeException("no fields found for this index");
       }
       tiq = new TermStatsQueue(numTerms, comparator);

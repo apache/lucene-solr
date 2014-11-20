@@ -124,9 +124,9 @@ public class TermsComponent extends SearchComponent {
       NamedList<Integer> fieldTerms = new NamedList<>();
       termsResult.add(field, fieldTerms);
 
-      Terms terms = lfields == null ? null : lfields.terms(field);
+      Terms terms = lfields.terms(field);
       if (terms == null) {
-        // no terms for this field
+        // field does not exist
         continue;
       }
 

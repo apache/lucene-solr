@@ -128,10 +128,7 @@ public class MergeState {
         termVectorsReaders[i] = termVectorsReaders[i].getMergeInstance();
       }
       
-      fieldsProducers[i] = coreReader.getPostingsReader();
-      if (fieldsProducers[i] != null) {
-        fieldsProducers[i] = fieldsProducers[i].getMergeInstance();
-      }
+      fieldsProducers[i] = coreReader.getPostingsReader().getMergeInstance();
     }
 
     this.segmentInfo = segmentInfo;

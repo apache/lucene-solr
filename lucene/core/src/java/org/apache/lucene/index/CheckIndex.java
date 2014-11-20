@@ -892,11 +892,6 @@ public class CheckIndex implements Closeable {
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
     int computedFieldCount = 0;
     
-    if (fields == null) {
-      msg(infoStream, "OK [no fields/terms]");
-      return status;
-    }
-    
     DocsEnum docs = null;
     DocsEnum docsAndFreqs = null;
     DocsAndPositionsEnum postings = null;
