@@ -304,7 +304,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
     System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
-    System.setProperty("solr.tests.mergeScheduler", iwc.getMergeScheduler().getClass().getName());
+
+    String mergeSchedulerClass = iwc.getMergeScheduler().getClass().getName();
+    if (mergeSchedulerClass.contains("$")) {
+      // anonymous subclass - we can't instantiate via the resource loader, so use CMS instead
+      mergeSchedulerClass = "org.apache.lucene.index.ConcurrentMergeScheduler";
+    }
+    System.setProperty("solr.tests.mergeScheduler", mergeSchedulerClass);
 
     // don't ask iwc.getMaxThreadStates(), sometimes newIWC uses 
     // RandomDocumentsWriterPerThreadPool and all hell breaks loose
