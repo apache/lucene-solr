@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -67,8 +65,7 @@ final class SegmentCoreReaders implements Accountable {
   final FieldInfos coreFieldInfos;
 
   // TODO: make a single thread local w/ a
-  // Thingy class holding fieldsReader, termVectorsReader,
-  // normsProducer
+  // Thingy class holding fieldsReader, termVectorsReader
 
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
     @Override
@@ -81,13 +78,6 @@ final class SegmentCoreReaders implements Accountable {
     @Override
     protected TermVectorsReader initialValue() {
       return (termVectorsReaderOrig == null) ? null : termVectorsReaderOrig.clone();
-    }
-  };
-
-  final CloseableThreadLocal<Map<String,Object>> normsLocal = new CloseableThreadLocal<Map<String,Object>>() {
-    @Override
-    protected Map<String,Object> initialValue() {
-      return new HashMap<>();
     }
   };
 
@@ -157,32 +147,13 @@ final class SegmentCoreReaders implements Accountable {
     throw new AlreadyClosedException("SegmentCoreReaders is already closed");
   }
 
-  NumericDocValues getNormValues(FieldInfos infos, String field) throws IOException {
-    Map<String,Object> normFields = normsLocal.get();
-
-    NumericDocValues norms = (NumericDocValues) normFields.get(field);
-    if (norms != null) {
-      return norms;
-    } else {
-      FieldInfo fi = infos.fieldInfo(field);
-      if (fi == null || !fi.hasNorms()) {
-        // Field does not exist or does not index norms
-        return null;
-      }
-      assert normsProducer != null;
-      norms = normsProducer.getNorms(fi);
-      normFields.put(field, norms);
-      return norms;
-    }
-  }
-
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
 //      System.err.println("--- closing core readers");
       Throwable th = null;
       try {
-        IOUtils.close(termVectorsLocal, fieldsReaderLocal, normsLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
-            cfsReader, normsProducer);
+        IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
+                      cfsReader, normsProducer);
       } catch (Throwable throwable) {
         th = throwable;
       } finally {

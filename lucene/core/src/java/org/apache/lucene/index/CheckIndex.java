@@ -31,7 +31,12 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -632,11 +637,6 @@ public class CheckIndex implements Closeable {
 
         segInfoStat.openReaderPassed = true;
         
-        if (infoStream != null)
-          infoStream.print("    test: check integrity.....");
-        reader.checkIntegrity();
-        msg(infoStream, "OK");
-
         if (reader.maxDoc() != info.info.getDocCount()) {
           throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
         }
@@ -846,6 +846,16 @@ public class CheckIndex implements Closeable {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
+      
+      // nocommit: remove instanceof
+      // nocommit: use producer for everything from here, to not load up all norms into RAM!
+      if (reader instanceof LeafReader2) {
+        NormsProducer producer = ((LeafReader2)reader).getNormsReader();
+        if (producer != null) {
+          producer.checkIntegrity();
+        }
+      }
+      
       for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
           checkNorms(info, reader, infoStream);
@@ -1451,6 +1461,15 @@ public class CheckIndex implements Closeable {
       if (infoStream != null) {
         infoStream.print("    test: terms, freq, prox...");
       }
+      
+      // nocommit: remove instanceof
+      // nocommit: use producer for everything from here, to not load up all fields into RAM!
+      if (reader instanceof LeafReader2) {
+        FieldsProducer producer = ((LeafReader2)reader).getPostingsReader();
+        if (producer != null) {
+          producer.checkIntegrity();
+        }
+      }
 
       final Fields fields = reader.fields();
       final FieldInfos fieldInfos = reader.getFieldInfos();
@@ -1486,6 +1505,15 @@ public class CheckIndex implements Closeable {
     try {
       if (infoStream != null) {
         infoStream.print("    test: stored fields.......");
+      }
+      
+      // nocommit: remove instanceof
+      // nocommit: use producer for everything from here, to not load up all fields into RAM!
+      if (reader instanceof LeafReader2) {
+        StoredFieldsReader producer = ((LeafReader2)reader).getFieldsReader();
+        if (producer != null) {
+          producer.checkIntegrity();
+        }
       }
 
       // Scan stored fields for all documents
@@ -1533,6 +1561,16 @@ public class CheckIndex implements Closeable {
       if (infoStream != null) {
         infoStream.print("    test: docvalues...........");
       }
+      
+      // nocommit: remove instanceof
+      // nocommit: use producer for everything from here, to not load up all fields into RAM!
+      if (reader instanceof LeafReader2) {
+        DocValuesProducer producer = ((LeafReader2)reader).getDocValuesReader();
+        if (producer != null) {
+          producer.checkIntegrity();
+        }
+      }
+      
       for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.getDocValuesType() != DocValuesType.NONE) {
           status.totalValueFields++;
@@ -1727,6 +1765,7 @@ public class CheckIndex implements Closeable {
     } else if (docsWithField.length() != reader.maxDoc()) {
       throw new RuntimeException(fi.name + " docsWithField has incorrect length: " + docsWithField.length() + ",expected: " + reader.maxDoc());
     }
+    // nocommit: move these checks to TestUtil.checkReader
     switch(fi.getDocValuesType()) {
       case SORTED:
         status.totalSortedFields++;
@@ -1809,6 +1848,15 @@ public class CheckIndex implements Closeable {
     try {
       if (infoStream != null) {
         infoStream.print("    test: term vectors........");
+      }
+      
+      // nocommit: remove instanceof
+      // nocommit: use producer for everything from here, to not load up all fields into RAM!
+      if (reader instanceof LeafReader2) {
+        TermVectorsReader producer = ((LeafReader2)reader).getTermVectorsReader();
+        if (producer != null) {
+          producer.checkIntegrity();
+        }
       }
 
       DocsEnum docs = null;

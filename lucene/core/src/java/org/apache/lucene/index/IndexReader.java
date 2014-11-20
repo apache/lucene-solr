@@ -110,8 +110,6 @@ public abstract class IndexReader implements Closeable {
 
   /** Expert: adds a {@link ReaderClosedListener}.  The
    * provided listener will be invoked when this reader is closed.
-   * At this point, it is safe for apps to evict this reader from
-   * any caches keyed on {@link #getCombinedCoreAndDeletesKey()}.
    *
    * @lucene.experimental */
   public final void addReaderClosedListener(ReaderClosedListener listener) {
@@ -283,8 +281,7 @@ public abstract class IndexReader implements Closeable {
   /** {@inheritDoc}
    * <p>For caching purposes, {@code IndexReader} subclasses are not allowed
    * to implement equals/hashCode, so methods are declared final.
-   * To lookup instances from caches use {@link #getCoreCacheKey} and 
-   * {@link #getCombinedCoreAndDeletesKey}.
+   * To lookup instances from caches use {@link #getCoreCacheKey}.
    */
   @Override
   public final boolean equals(Object obj) {
@@ -294,8 +291,7 @@ public abstract class IndexReader implements Closeable {
   /** {@inheritDoc}
    * <p>For caching purposes, {@code IndexReader} subclasses are not allowed
    * to implement equals/hashCode, so methods are declared final.
-   * To lookup instances from caches use {@link #getCoreCacheKey} and 
-   * {@link #getCombinedCoreAndDeletesKey}.
+   * To lookup instances from caches use {@link #getCoreCacheKey}.
    */
   @Override
   public final int hashCode() {
@@ -447,15 +443,6 @@ public abstract class IndexReader implements Closeable {
     return this;
   }
 
-  /** Expert: Returns a key for this IndexReader that also includes deletions,
-   * so CachingWrapperFilter can find it again.
-   * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
-  public Object getCombinedCoreAndDeletesKey() {
-    // Don't call ensureOpen since FC calls this (to evict)
-    // on close
-    return this;
-  }
-  
   /** Returns the number of documents containing the 
    * <code>term</code>.  This method returns 0 if the term or
    * field does not exists.  This method does not take into

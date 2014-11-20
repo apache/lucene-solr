@@ -22,10 +22,10 @@ import org.apache.lucene.util.Bits;
 /**
  * Filters the incoming reader and makes all documents appear deleted.
  */
-public class AllDeletedFilterReader extends FilterLeafReader {
+public class AllDeletedFilterReader extends FilterLeafReader2 {
   final Bits liveDocs;
   
-  public AllDeletedFilterReader(LeafReader in) {
+  public AllDeletedFilterReader(LeafReader2 in) {
     super(in);
     liveDocs = new Bits.MatchNoBits(in.maxDoc());
     assert maxDoc() == 0 || hasDeletions();

@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -28,7 +26,6 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.packed.PackedInts;
@@ -108,47 +105,33 @@ public class MergeState {
       liveDocs[i] = reader.getLiveDocs();
       fieldInfos[i] = reader.getFieldInfos();
 
-      NormsProducer normsProducer;
-      DocValuesProducer docValuesProducer;
-      StoredFieldsReader storedFieldsReader;
-      TermVectorsReader termVectorsReader;
-      FieldsProducer fieldsProducer;
-      if (reader instanceof SegmentReader) {
-        SegmentReader segmentReader = (SegmentReader) reader;
-        normsProducer = segmentReader.getNormsReader();
-        if (normsProducer != null) {
-          normsProducer = normsProducer.getMergeInstance();
-        }
-        docValuesProducer = segmentReader.getDocValuesReader();
-        if (docValuesProducer != null) {
-          docValuesProducer = docValuesProducer.getMergeInstance();
-        }
-        storedFieldsReader = segmentReader.getFieldsReader();
-        if (storedFieldsReader != null) {
-          storedFieldsReader = storedFieldsReader.getMergeInstance();
-        }
-        termVectorsReader = segmentReader.getTermVectorsReader();
-        if (termVectorsReader != null) {
-          termVectorsReader = termVectorsReader.getMergeInstance();
-        }
-        fieldsProducer = segmentReader.fields();
-        if (fieldsProducer != null) {
-          fieldsProducer = fieldsProducer.getMergeInstance();
-        }
-      } else {
-        // A "foreign" reader
-        normsProducer = readerToNormsProducer(reader);
-        docValuesProducer = readerToDocValuesProducer(reader);
-        storedFieldsReader = readerToStoredFieldsReader(reader);
-        termVectorsReader = readerToTermVectorsReader(reader);
-        fieldsProducer = readerToFieldsProducer(reader);
+      // nocommit
+      LeafReader2 coreReader = LeafReader2.hack(reader);
+      
+      normsProducers[i] = coreReader.getNormsReader();
+      if (normsProducers[i] != null) {
+        normsProducers[i] = normsProducers[i].getMergeInstance();
       }
-
-      normsProducers[i] = normsProducer;
-      docValuesProducers[i] = docValuesProducer;
-      storedFieldsReaders[i] = storedFieldsReader;
-      termVectorsReaders[i] = termVectorsReader;
-      fieldsProducers[i] = fieldsProducer;
+      
+      docValuesProducers[i] = coreReader.getDocValuesReader();
+      if (docValuesProducers[i] != null) {
+        docValuesProducers[i] = docValuesProducers[i].getMergeInstance();
+      }
+      
+      storedFieldsReaders[i] = coreReader.getFieldsReader();
+      if (storedFieldsReaders[i] != null) {
+        storedFieldsReaders[i] = storedFieldsReaders[i].getMergeInstance();
+      }
+      
+      termVectorsReaders[i] = coreReader.getTermVectorsReader();
+      if (termVectorsReaders[i] != null) {
+        termVectorsReaders[i] = termVectorsReaders[i].getMergeInstance();
+      }
+      
+      fieldsProducers[i] = coreReader.getPostingsReader();
+      if (fieldsProducers[i] != null) {
+        fieldsProducers[i] = fieldsProducers[i].getMergeInstance();
+      }
     }
 
     this.segmentInfo = segmentInfo;
@@ -158,193 +141,7 @@ public class MergeState {
     setDocMaps(readers);
   }
 
-  private NormsProducer readerToNormsProducer(final LeafReader reader) {
-    return new NormsProducer() {
 
-      @Override
-      public NumericDocValues getNorms(FieldInfo field) throws IOException {
-        return reader.getNormValues(field.name);
-      }
-
-      @Override
-      public void checkIntegrity() throws IOException {
-        // We already checkIntegrity the entire reader up front in SegmentMerger
-      }
-
-      @Override
-      public void close() {
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
-    };
-  }
-
-  private DocValuesProducer readerToDocValuesProducer(final LeafReader reader) {
-    return new DocValuesProducer() {
-
-      @Override
-      public NumericDocValues getNumeric(FieldInfo field) throws IOException {  
-        return reader.getNumericDocValues(field.name);
-      }
-
-      @Override
-      public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-        return reader.getBinaryDocValues(field.name);
-      }
-
-      @Override
-      public SortedDocValues getSorted(FieldInfo field) throws IOException {
-        return reader.getSortedDocValues(field.name);
-      }
-
-      @Override
-      public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
-        return reader.getSortedNumericDocValues(field.name);
-      }
-
-      @Override
-      public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-        return reader.getSortedSetDocValues(field.name);
-      }
-
-      @Override
-      public Bits getDocsWithField(FieldInfo field) throws IOException {
-        return reader.getDocsWithField(field.name);
-      }
-
-      @Override
-      public void checkIntegrity() throws IOException {
-        // We already checkIntegrity the entire reader up front in SegmentMerger
-      }
-
-      @Override
-      public void close() {
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
-    };
-  }
-
-  private StoredFieldsReader readerToStoredFieldsReader(final LeafReader reader) {
-    return new StoredFieldsReader() {
-      @Override
-      public void visitDocument(int docID, StoredFieldVisitor visitor) throws IOException {
-        reader.document(docID, visitor);
-      }
-
-      @Override
-      public StoredFieldsReader clone() {
-        return readerToStoredFieldsReader(reader);
-      }
-
-      @Override
-      public void checkIntegrity() throws IOException {
-        // We already checkIntegrity the entire reader up front in SegmentMerger
-      }
-
-      @Override
-      public void close() {
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
-    };
-  }
-
-  private TermVectorsReader readerToTermVectorsReader(final LeafReader reader) {
-    return new TermVectorsReader() {
-      @Override
-      public Fields get(int docID) throws IOException {
-        return reader.getTermVectors(docID);
-      }
-
-      @Override
-      public TermVectorsReader clone() {
-        return readerToTermVectorsReader(reader);
-      }
-
-      @Override
-      public void checkIntegrity() throws IOException {
-        // We already checkIntegrity the entire reader up front in SegmentMerger
-      }
-
-      @Override
-      public void close() {
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
-    };
-  }
-
-  private FieldsProducer readerToFieldsProducer(final LeafReader reader) throws IOException {
-    final Fields fields = reader.fields();
-    return new FieldsProducer() {
-      @Override
-      public Iterator<String> iterator() {
-        return fields.iterator();
-      }
-
-      @Override
-      public Terms terms(String field) throws IOException {
-        return fields.terms(field);
-      }
-
-      @Override
-      public int size() {
-        return fields.size();
-      }
-
-      @Override
-      public void checkIntegrity() throws IOException {
-        // We already checkIntegrity the entire reader up front in SegmentMerger
-      }
-
-      @Override
-      public void close() {
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
-    };
-  }
 
   // NOTE: removes any "all deleted" readers from mergeState.readers
   private void setDocMaps(List<LeafReader> readers) throws IOException {

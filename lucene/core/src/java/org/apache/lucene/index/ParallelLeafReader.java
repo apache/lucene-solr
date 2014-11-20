@@ -316,12 +316,4 @@ public class ParallelLeafReader extends LeafReader {
     NumericDocValues values = reader == null ? null : reader.getNormValues(field);
     return values;
   }
-
-  @Override
-  public void checkIntegrity() throws IOException {
-    ensureOpen();
-    for (LeafReader reader : completeReaderSet) {
-      reader.checkIntegrity();
-    }
-  }
 }

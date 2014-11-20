@@ -44,7 +44,7 @@ public class TestIndexReaderClose extends LuceneTestCase {
       DirectoryReader open = DirectoryReader.open(dir);
       final boolean throwOnClose = !rarely();
       LeafReader wrap = SlowCompositeReaderWrapper.wrap(open);
-      FilterLeafReader reader = new FilterLeafReader(wrap) {
+      FilterLeafReader2 reader = new FilterLeafReader2(LeafReader2.hack(wrap)) {
         @Override
         protected void doClose() throws IOException {
           super.doClose();

@@ -814,11 +814,6 @@ public class AssertingLeafReader extends FilterLeafReader {
   public Object getCoreCacheKey() {
     return cacheKey;
   }
-
-  @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return cacheKey;
-  }
   
   private final Object cacheKey = new Object();
 }

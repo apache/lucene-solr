@@ -39,14 +39,12 @@ import org.apache.lucene.util.BytesRef;
  * content the contained reader, you could consider overriding
  * {@link #getCoreCacheKey()} so that
  * {@link CachingWrapperFilter} shares the same entries for this atomic reader
- * and the wrapped one. {@link #getCombinedCoreAndDeletesKey()} could be
- * overridden as well if the {@link #getLiveDocs() live docs} are not changed
- * either.
+ * and the wrapped one.
  */
-public class FilterLeafReader extends LeafReader {
+public abstract class FilterLeafReader extends LeafReader {
 
   /** Get the wrapped instance by <code>reader</code> as long as this reader is
-   *  an intance of {@link FilterLeafReader}.  */
+   *  an instance of {@link FilterLeafReader}.  */
   public static LeafReader unwrap(LeafReader reader) {
     while (reader instanceof FilterLeafReader) {
       reader = ((FilterLeafReader) reader).in;
@@ -461,11 +459,5 @@ public class FilterLeafReader extends LeafReader {
   public Bits getDocsWithField(String field) throws IOException {
     ensureOpen();
     return in.getDocsWithField(field);
-  }
-
-  @Override
-  public void checkIntegrity() throws IOException {
-    ensureOpen();
-    in.checkIntegrity();
   }
 }

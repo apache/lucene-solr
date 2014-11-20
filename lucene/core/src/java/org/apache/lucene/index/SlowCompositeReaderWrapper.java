@@ -243,21 +243,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
-  }
-
-  @Override
   protected void doClose() throws IOException {
     // TODO: as this is a wrapper, should we really close the delegate?
     in.close();
-  }
-
-  @Override
-  public void checkIntegrity() throws IOException {
-    ensureOpen();
-    for (LeafReaderContext ctx : in.leaves()) {
-      ctx.reader().checkIntegrity();
-    }
   }
 }

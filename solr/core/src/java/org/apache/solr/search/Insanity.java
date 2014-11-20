@@ -115,16 +115,11 @@ public class Insanity {
       return fieldInfos;
     }
 
-    // important to override these, so fieldcaches are shared on what we wrap
+    // important to override this, so fieldcaches are shared on what we wrap
     
     @Override
     public Object getCoreCacheKey() {
       return in.getCoreCacheKey();
-    }
-
-    @Override
-    public Object getCombinedCoreAndDeletesKey() {
-      return in.getCombinedCoreAndDeletesKey();
     }
   }
 }

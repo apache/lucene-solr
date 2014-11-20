@@ -90,13 +90,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     @Override
     public Object getCoreCacheKey() {
       return in.getCoreCacheKey();  
-    }
-    
-    @Override
-    public Object getCombinedCoreAndDeletesKey() {
-      return in.getCombinedCoreAndDeletesKey();
-    }
-    
+    }    
   }
 
   /**

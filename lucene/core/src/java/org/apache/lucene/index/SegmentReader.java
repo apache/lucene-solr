@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -36,8 +34,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -47,7 +43,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * may share the same core data.
  * @lucene.experimental
  */
-public final class SegmentReader extends LeafReader implements Accountable {
+public final class SegmentReader extends LeafReader2 implements Accountable {
 
   private static final long BASE_RAM_BYTES_USED =
         RamUsageEstimator.shallowSizeOfInstance(SegmentReader.class)
@@ -63,21 +59,6 @@ public final class SegmentReader extends LeafReader implements Accountable {
 
   final SegmentCoreReaders core;
   final SegmentDocValues segDocValues;
-  
-  final CloseableThreadLocal<Map<String,Object>> docValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
-    @Override
-    protected Map<String,Object> initialValue() {
-      return new HashMap<>();
-    }
-  };
-
-  final CloseableThreadLocal<Map<String,Bits>> docsWithFieldLocal = new CloseableThreadLocal<Map<String,Bits>>() {
-    @Override
-    protected Map<String,Bits> initialValue() {
-      return new HashMap<>();
-    }
-  };
-
   final DocValuesProducer docValuesProducer;
   final FieldInfos fieldInfos;
   
@@ -196,7 +177,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
       core.decRef();
     } finally {
       try {
-        IOUtils.close(docValuesLocal, docsWithFieldLocal);
+        super.doClose();
       } finally {
         if (docValuesProducer instanceof SegmentDocValuesProducer) {
           segDocValues.decRef(((SegmentDocValuesProducer)docValuesProducer).dvGens);
@@ -212,18 +193,6 @@ public final class SegmentReader extends LeafReader implements Accountable {
     ensureOpen();
     return fieldInfos;
   }
-  
-  @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
-    checkBounds(docID);
-    getFieldsReader().visitDocument(docID, visitor);
-  }
-
-  @Override
-  public FieldsProducer fields() {
-    ensureOpen();
-    return core.fields;
-  }
 
   @Override
   public int numDocs() {
@@ -237,50 +206,34 @@ public final class SegmentReader extends LeafReader implements Accountable {
     return si.info.getDocCount();
   }
 
-  /** Expert: retrieve thread-private {@link
-   *  TermVectorsReader}
-   *  @lucene.internal */
-  public TermVectorsReader getTermVectorsReader() {
+  @Override
+  protected TermVectorsReader getTermVectorsReader() {
     ensureOpen();
     return core.termVectorsLocal.get();
   }
 
-  /** Expert: retrieve thread-private {@link
-   *  StoredFieldsReader}
-   *  @lucene.internal */
-  public StoredFieldsReader getFieldsReader() {
+  @Override
+  protected StoredFieldsReader getFieldsReader() {
     ensureOpen();
     return core.fieldsReaderLocal.get();
   }
   
-  /** Expert: retrieve underlying NormsProducer
-   *  @lucene.internal */
-  public NormsProducer getNormsReader() {
+  @Override
+  protected NormsProducer getNormsReader() {
     ensureOpen();
     return core.normsProducer;
   }
   
-  /** Expert: retrieve underlying DocValuesProducer
-   *  @lucene.internal */
-  public DocValuesProducer getDocValuesReader() {
+  @Override
+  protected DocValuesProducer getDocValuesReader() {
     ensureOpen();
     return docValuesProducer;
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
-    TermVectorsReader termVectorsReader = getTermVectorsReader();
-    if (termVectorsReader == null) {
-      return null;
-    }
-    checkBounds(docID);
-    return termVectorsReader.get(docID);
-  }
-  
-  private void checkBounds(int docID) {
-    if (docID < 0 || docID >= maxDoc()) {       
-      throw new IndexOutOfBoundsException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
-    }
+  public FieldsProducer getPostingsReader() {
+    ensureOpen();
+    return core.fields;
   }
 
   @Override
@@ -321,157 +274,6 @@ public final class SegmentReader extends LeafReader implements Accountable {
     // SegmentCoreReader.notifyCoreClosedListeners to match!
     // Today it passes "this" as its coreCacheKey:
     return core;
-  }
-
-  @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return this;
-  }
-
-  // returns the FieldInfo that corresponds to the given field and type, or
-  // null if the field does not exist, or not indexed as the requested
-  // DovDocValuesType.
-  private FieldInfo getDVField(String field, DocValuesType type) {
-    FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null) {
-      // Field does not exist
-      return null;
-    }
-    if (fi.getDocValuesType() == DocValuesType.NONE) {
-      // Field was not indexed with doc values
-      return null;
-    }
-    if (fi.getDocValuesType() != type) {
-      // Field DocValues are different than requested type
-      return null;
-    }
-
-    return fi;
-  }
-  
-  @Override
-  public NumericDocValues getNumericDocValues(String field) throws IOException {
-    ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
-
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof NumericDocValues) {
-      return (NumericDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.NUMERIC);
-      if (fi == null) {
-        return null;
-      }
-      NumericDocValues dv = docValuesProducer.getNumeric(fi);
-      dvFields.put(field, dv);
-      return dv;
-    }
-  }
-
-  @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    ensureOpen();
-    Map<String,Bits> dvFields = docsWithFieldLocal.get();
-
-    Bits previous = dvFields.get(field);
-    if (previous != null) {
-      return previous;
-    } else {
-      FieldInfo fi = fieldInfos.fieldInfo(field);
-      if (fi == null) {
-        // Field does not exist
-        return null;
-      }
-      if (fi.getDocValuesType() == DocValuesType.NONE) {
-        // Field was not indexed with doc values
-        return null;
-      }
-      Bits dv = docValuesProducer.getDocsWithField(fi);
-      dvFields.put(field, dv);
-      return dv;
-    }
-  }
-
-  @Override
-  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
-    ensureOpen();
-    FieldInfo fi = getDVField(field, DocValuesType.BINARY);
-    if (fi == null) {
-      return null;
-    }
-
-    Map<String,Object> dvFields = docValuesLocal.get();
-
-    BinaryDocValues dvs = (BinaryDocValues) dvFields.get(field);
-    if (dvs == null) {
-      dvs = docValuesProducer.getBinary(fi);
-      dvFields.put(field, dvs);
-    }
-
-    return dvs;
-  }
-
-  @Override
-  public SortedDocValues getSortedDocValues(String field) throws IOException {
-    ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
-    
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof SortedDocValues) {
-      return (SortedDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.SORTED);
-      if (fi == null) {
-        return null;
-      }
-      SortedDocValues dv = docValuesProducer.getSorted(fi);
-      dvFields.put(field, dv);
-      return dv;
-    }
-  }
-  
-  @Override
-  public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
-    ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
-
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof SortedNumericDocValues) {
-      return (SortedNumericDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.SORTED_NUMERIC);
-      if (fi == null) {
-        return null;
-      }
-      SortedNumericDocValues dv = docValuesProducer.getSortedNumeric(fi);
-      dvFields.put(field, dv);
-      return dv;
-    }
-  }
-
-  @Override
-  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-    ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
-    
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof SortedSetDocValues) {
-      return (SortedSetDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.SORTED_SET);
-      if (fi == null) {
-        return null;
-      }
-      SortedSetDocValues dv = docValuesProducer.getSortedSet(fi);
-      dvFields.put(field, dv);
-      return dv;
-    }
-  }
-
-  @Override
-  public NumericDocValues getNormValues(String field) throws IOException {
-    ensureOpen();
-    return core.getNormValues(fieldInfos, field);
   }
   
   @Override
@@ -519,34 +321,5 @@ public final class SegmentReader extends LeafReader implements Accountable {
       resources.add(Accountables.namedAccountable("term vectors", getTermVectorsReader()));
     }
     return resources;
-  }
-
-  @Override
-  public void checkIntegrity() throws IOException {
-    ensureOpen();
-
-    // stored fields
-    getFieldsReader().checkIntegrity();
-    
-    // term vectors
-    TermVectorsReader termVectorsReader = getTermVectorsReader();
-    if (termVectorsReader != null) {
-      termVectorsReader.checkIntegrity();
-    }
-    
-    // terms/postings
-    if (core.fields != null) {
-      core.fields.checkIntegrity();
-    }
-    
-    // norms
-    if (core.normsProducer != null) {
-      core.normsProducer.checkIntegrity();
-    }
-    
-    // docvalues
-    if (docValuesProducer != null) {
-      docValuesProducer.checkIntegrity();
-    }
   }
 }

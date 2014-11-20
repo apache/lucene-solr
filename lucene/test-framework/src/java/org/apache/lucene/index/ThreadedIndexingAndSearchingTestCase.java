@@ -445,9 +445,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     final IndexWriterConfig conf = newIndexWriterConfig(analyzer).setCommitOnClose(false);
     conf.setInfoStream(new FailOnNonBulkMergesInfoStream());
-    if (conf.getMergePolicy() instanceof MockRandomMergePolicy) {
-      ((MockRandomMergePolicy)conf.getMergePolicy()).setDoNonBulkMerges(false);
-    }
 
     if (LuceneTestCase.TEST_NIGHTLY) {
       // newIWConfig makes smallish max seg size, which

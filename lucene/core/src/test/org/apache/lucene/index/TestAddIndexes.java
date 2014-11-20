@@ -1239,7 +1239,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory src = newDirectory(), dest = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), src);
     w.addDocument(new Document());
-    IndexReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
+    IndexReader allDeletedReader = new AllDeletedFilterReader(LeafReader2.hack(w.getReader().leaves().get(0).reader()));
     w.close();
     
     w = new RandomIndexWriter(random(), dest);

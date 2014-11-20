@@ -141,11 +141,6 @@ public class QueryUtils {
     public Object getCoreCacheKey() {
       return cacheKey;
     }
-    
-    @Override
-    public Object getCombinedCoreAndDeletesKey() {
-      return cacheKey;
-    }
   }
 
   /**

@@ -304,11 +304,6 @@ public class UninvertingReader extends FilterLeafReader {
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
-  }
-
-  @Override
   public String toString() {
     return "Uninverting(" + in.toString() + ")";
   }
