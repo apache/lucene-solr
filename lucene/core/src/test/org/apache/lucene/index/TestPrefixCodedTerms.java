@@ -113,9 +113,7 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     }
     
     Iterator<Term> expected = superSet.iterator();
-    // NOTE: currenlty using diamond operator on MergedIterator (without explicit Term class) causes
-    // errors on ecj used for javadoc lint
-    Iterator<Term> actual = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
+    Iterator<Term> actual = new MergedIterator<>(subs.toArray(new Iterator[0]));
     while (actual.hasNext()) {
       assertTrue(expected.hasNext());
       assertEquals(expected.next(), actual.next());

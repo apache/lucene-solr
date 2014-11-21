@@ -101,7 +101,7 @@ public abstract class LiveFieldValues<S,T> implements ReferenceManager.RefreshLi
     if (value == missingValue) {
       // Deleted but the deletion is not yet reflected in
       // the reader:
-      return (T)null;
+      return null;
     } else if (value != null) {
       return value;
     } else {

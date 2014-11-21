@@ -59,9 +59,7 @@ public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetU
   public Collection pickSubset(Collection values) {
     Collection result = values;
     try {
-      // NOTE: min must be put into a temp local in order to avoid ecj errors for javadoc lint
-      Object min = Collections.min(values);
-      result = Collections.singletonList(min);
+      result = Collections.singletonList(Collections.min(values));
     } catch (ClassCastException e) {
       throw new SolrException
         (BAD_REQUEST, 

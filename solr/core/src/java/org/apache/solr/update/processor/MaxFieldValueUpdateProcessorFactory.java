@@ -59,9 +59,7 @@ public final class MaxFieldValueUpdateProcessorFactory extends FieldValueSubsetU
   public Collection pickSubset(Collection values) {
     Collection result = values;
     try {
-      // NOTE: max must be put into a temp local in order to avoid ecj errors for javadoc lint
-      Object max = Collections.max(values);
-      result = Collections.singletonList(max);
+      result = Collections.singletonList(Collections.max(values));
     } catch (ClassCastException e) {
       throw new SolrException
         (BAD_REQUEST, 
