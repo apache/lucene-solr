@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -28,7 +27,6 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.packed.PackedInts;
@@ -179,11 +177,6 @@ public class MergeState {
       public long ramBytesUsed() {
         return 0;
       }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
     };
   }
 
@@ -233,11 +226,6 @@ public class MergeState {
       public long ramBytesUsed() {
         return 0;
       }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
     };
   }
 
@@ -266,11 +254,6 @@ public class MergeState {
       public long ramBytesUsed() {
         return 0;
       }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
     };
   }
 
@@ -298,11 +281,6 @@ public class MergeState {
       @Override
       public long ramBytesUsed() {
         return 0;
-      }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
       }
     };
   }
@@ -337,11 +315,6 @@ public class MergeState {
       @Override
       public long ramBytesUsed() {
         return 0;
-      }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
       }
     };
   }

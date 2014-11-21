@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
@@ -92,10 +91,5 @@ public abstract class DocIdSet implements Accountable {
    */
   public boolean isCacheable() {
     return false;
-  }
-
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 }

@@ -227,9 +227,4 @@ final class SegmentCoreReaders implements Accountable {
         ((fieldsReaderOrig!=null)? fieldsReaderOrig.ramBytesUsed() : 0) + 
         ((termVectorsReaderOrig!=null) ? termVectorsReaderOrig.ramBytesUsed() : 0);
   }
-
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
-  }
 }

@@ -238,11 +238,6 @@ public class BlockTermsReader extends FieldsProducer {
     public long ramBytesUsed() {
       return FIELD_READER_RAM_BYTES_USED;
     }
-    
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
 
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {

@@ -20,7 +20,6 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
@@ -181,11 +180,6 @@ public class DocTermOrds implements Accountable {
     }
     memsz = sz;
     return sz;
-  }
-
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   /** Inverts all terms */

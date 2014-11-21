@@ -22,6 +22,9 @@ API Changes
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+* LUCENE-6067: Accountable.getChildResources has a default
+  implementation returning the empty list.  (Robert Muir)
+
 ======================= Lucene 5.0.0 =======================
 
 New Features

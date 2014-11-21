@@ -18,7 +18,6 @@
 package org.apache.lucene.util.packed;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.FixedBitSet; // for javadocs
@@ -362,11 +361,6 @@ public class EliasFanoEncoder implements Accountable {
         + RamUsageEstimator.sizeOf(lowerLongs)
         + RamUsageEstimator.sizeOf(upperLongs)
         + RamUsageEstimator.sizeOf(upperZeroBitPositionIndex);
-  }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 }
 
