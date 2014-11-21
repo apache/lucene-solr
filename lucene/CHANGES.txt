@@ -107,6 +107,11 @@ New Features
   stalls incoming threads when merges are falling behind (Mike
   McCandless)
 
+* LUCENE-5833: DocumentDictionary now enumerates each value separately
+  in a multi-valued field (not just the first value), so you can build
+  suggesters from multi-valued fields.  (Varun Thacker via Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

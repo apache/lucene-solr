@@ -5,6 +5,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -298,4 +299,89 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  @Test
+  public void testMultiValuedField() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    List<Suggestion> suggestions = indexMultiValuedDocuments(atLeast(1000), writer);
+    writer.commit();
+    writer.close();
+
+    IndexReader ir = DirectoryReader.open(dir);
+    Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME, CONTEXT_FIELD_NAME);
+    InputIterator inputIterator = dictionary.getEntryIterator();
+    BytesRef f;
+    Iterator<Suggestion> suggestionsIter = suggestions.iterator();
+    while((f = inputIterator.next())!=null) {
+      Suggestion nextSuggestion = suggestionsIter.next();
+      assertTrue(f.equals(nextSuggestion.term));
+      long weight = nextSuggestion.weight;
+      assertEquals(inputIterator.weight(), (weight != -1) ? weight : 0);
+      assertTrue(inputIterator.payload().equals(nextSuggestion.payload));
+      assertTrue(inputIterator.contexts().equals(nextSuggestion.contexts));
+    }
+    assertFalse(suggestionsIter.hasNext());
+    ir.close();
+    dir.close();
+  }
+
+  private List<Suggestion> indexMultiValuedDocuments(int numDocs, RandomIndexWriter writer) throws IOException {
+    List<Suggestion> suggestionList = new ArrayList<>(numDocs);
+
+    for(int i=0; i<numDocs; i++) {
+      Document doc = new Document();
+      Field field;
+      BytesRef payloadValue;
+      Set<BytesRef> contextValues = new HashSet<>();
+      long numericValue = -1; //-1 for missing weight
+      BytesRef term;
+
+      payloadValue = new BytesRef("payload_" + i);
+      field = new StoredField(PAYLOAD_FIELD_NAME, payloadValue);
+      doc.add(field);
+
+      if (usually()) {
+        numericValue = 100 + i;
+        field = new NumericDocValuesField(WEIGHT_FIELD_NAME, numericValue);
+        doc.add(field);
+      }
+
+      int numContexts = atLeast(1);
+      for (int j=0; j<numContexts; j++) {
+        BytesRef contextValue = new BytesRef("context_" + i + "_" + j);
+        field = new StoredField(CONTEXT_FIELD_NAME, contextValue);
+        doc.add(field);
+        contextValues.add(contextValue);
+      }
+
+      int numSuggestions = atLeast(2);
+      for (int j=0; j<numSuggestions; j++) {
+        term = new BytesRef("field_" + i + "_" + j);
+        field = new StoredField(FIELD_NAME, term);
+        doc.add(field);
+
+        Suggestion suggestionValue = new Suggestion();
+        suggestionValue.payload = payloadValue;
+        suggestionValue.contexts = contextValues;
+        suggestionValue.weight = numericValue;
+        suggestionValue.term = term;
+        suggestionList.add(suggestionValue);
+      }
+      writer.addDocument(doc);
+    }
+    return suggestionList;
+  }
+
+  private class Suggestion {
+    private long weight;
+    private BytesRef payload;
+    private Set<BytesRef> contexts;
+    private BytesRef term;
+  }
+
+
 }
