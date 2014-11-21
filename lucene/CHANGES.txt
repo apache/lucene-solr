@@ -8,7 +8,7 @@ http://s.apache.org/luceneversions
 System Requirements
 
 * LUCENE-5950: Move to Java 8 as minimum Java version.
-  (Ryan Ernst)
+  (Ryan Ernst, Uwe Schindler)
 
 New Features
 

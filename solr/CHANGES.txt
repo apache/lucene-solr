@@ -32,7 +32,7 @@ Apache ZooKeeper 3.4.6
 System Requirements
 ----------------------
 * LUCENE-5950: Move to Java 8 as minimum Java version.
-  (Ryan Ernst)
+  (Ryan Ernst, Uwe Schindler)
 
 Upgrading from Solr 5.x
 ----------------------
