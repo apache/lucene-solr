@@ -2042,70 +2042,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
           </and>
         </condition>
       </fail>
-
-      <patch-javadoc dir="@{destdir}" docencoding="${javadoc.charset}"/>
    </sequential>
-  </macrodef>
-
-  <!--
-    Patch frame injection bugs in javadoc generated files - see CVE-2013-1571, http://www.kb.cert.org/vuls/id/225657
-    
-    Feel free to use this macro in your own Ant build file. This macro works together with the javadoc task on Ant
-    and should be invoked directly after its execution to patch broken javadocs, e.g.:
-      <patch-javadoc dir="..." docencoding="UTF-8"/>
-    Please make sure that the docencoding parameter uses the same charset like javadoc's docencoding. Default
-    is the platform default encoding (like the javadoc task).
-    The specified dir is the destination directory of the javadoc task.
-  -->
-  <macrodef name="patch-javadoc">
-    <attribute name="dir"/>
-    <attribute name="docencoding" default="${file.encoding}"/>
-    <sequential>
-      <replace encoding="@{docencoding}" summary="true" taskname="patch-javadoc">
-        <fileset dir="@{dir}" casesensitive="false" includes="**/index.html,**/index.htm,**/toc.html,**/toc.htm">
-          <!-- TODO: add encoding="@{docencoding}" to contains check, when we are on ANT 1.9.0: -->
-          <not><contains text="function validURL(url) {" casesensitive="true" /></not>
-        </fileset>
-        <replacetoken><![CDATA[function loadFrames() {]]></replacetoken>
-        <replacevalue expandProperties="false"><![CDATA[if (targetPage != "" && !validURL(targetPage))
-        targetPage = "undefined";
-    function validURL(url) {
-        var pos = url.indexOf(".html");
-        if (pos == -1 || pos != url.length - 5)
-            return false;
-        var allowNumber = false;
-        var allowSep = false;
-        var seenDot = false;
-        for (var i = 0; i < url.length - 5; i++) {
-            var ch = url.charAt(i);
-            if ('a' <= ch && ch <= 'z' ||
-                    'A' <= ch && ch <= 'Z' ||
-                    ch == '$' ||
-                    ch == '_') {
-                allowNumber = true;
-                allowSep = true;
-            } else if ('0' <= ch && ch <= '9'
-                    || ch == '-') {
-                if (!allowNumber)
-                     return false;
-            } else if (ch == '/' || ch == '.') {
-                if (!allowSep)
-                    return false;
-                allowNumber = false;
-                allowSep = false;
-                if (ch == '.')
-                     seenDot = true;
-                if (ch == '/' && seenDot)
-                     return false;
-            } else {
-                return false;
-            }
-        }
-        return true;
-    }
-    function loadFrames() {]]></replacevalue>
-      </replace>
-    </sequential>
   </macrodef>
 
   <target name="check-javadocs-uptodate">
