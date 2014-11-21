@@ -111,10 +111,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
     }
 
-    public ZkByteArrayInputStream(byte[] buf, int offset, int length, Stat stat) {
-      super(buf, offset, length);
-      this.stat = stat;
-    }
     public Stat getStat(){
       return stat;
     }

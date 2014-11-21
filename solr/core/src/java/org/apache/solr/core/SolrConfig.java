@@ -328,7 +328,7 @@ public class SolrConfig extends Config implements MapSerializable{
     }
   }
 
-  private static  ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
+  public static  ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
     try {
       in = loader.openResource(ConfigOverlay.RESOURCE_NAME);
@@ -712,6 +712,7 @@ public class SolrConfig extends Config implements MapSerializable{
   @Override
   public Map<String, Object> toMap() {
     LinkedHashMap result = new LinkedHashMap();
+    if(getZnodeVersion() > -1) result.put("znodeVersion",getZnodeVersion());
     result.put("luceneMatchVersion",luceneMatchVersion);
     result.put("updateHandler", getUpdateHandlerInfo().toMap());
     Map m = new LinkedHashMap();
@@ -780,6 +781,7 @@ public class SolrConfig extends Config implements MapSerializable{
   public ConfigOverlay getOverlay() {
     if(overlay ==null) {
       overlay = getConfigOverlay(getResourceLoader());
+      log.info("$$$overlay_version "+ overlay.getZnodeVersion());
     }
     return overlay;
   }

@@ -67,7 +67,6 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   @Override
   public void doTest() throws Exception {
-
     Map editable_prop_map = (Map) new ObjectBuilder(new JSONParser(new StringReader(
         ConfigOverlay.MAPPING))).getObject();
     Map caches = (Map) editable_prop_map.get("query");
@@ -147,7 +146,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       RestTestHarness harness = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
       long startTime = System.nanoTime();
       boolean success = false;
-      long maxTimeoutSeconds = 10;
+      long maxTimeoutSeconds = 20;
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
@@ -155,19 +154,19 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         Map m = (Map) respMap.get("overlay");
         if(m!= null) m = (Map) m.get("props");
         if(m == null) {
-          errmessages.add(MessageFormat.format( "overlay does not exist for cache: {} , iteration: {} response {} ", cacheName, i, respMap.toString()));
+          errmessages.add(MessageFormat.format( "overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
           continue;
         }
 
 
         Object o = getObjectByPath(m, true, asList("query", cacheName, "size"));
-        if(!val1.equals(o)) errmessages.add(MessageFormat.format("'size' property not set, expected = {}, actual {}", val1,o));
+        if(!val1.equals(o)) errmessages.add(MessageFormat.format("'size' property not set, expected = {0}, actual {1}", val1,o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "initialSize"));
-        if(!val2.equals(o)) errmessages.add(MessageFormat.format("'initialSize' property not set, expected = {}, actual {}", val2,o));
+        if(!val2.equals(o)) errmessages.add(MessageFormat.format("'initialSize' property not set, expected = {0}, actual {1}", val2,o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "autowarmCount"));
-        if(!val3.equals(o)) errmessages.add(MessageFormat.format("'autowarmCount' property not set, expected = {}, actual {}", val3,o));
+        if(!val3.equals(o)) errmessages.add(MessageFormat.format("'autowarmCount' property not set, expected = {0}, actual {1}", val3,o));
         if(errmessages.isEmpty()) break;
       }
       if(!errmessages.isEmpty()) {

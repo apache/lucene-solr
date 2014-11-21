@@ -34,7 +34,7 @@ import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 
-public class ConfigOverlay {
+public class ConfigOverlay implements MapSerializable{
   private final int znodeVersion ;
   private Map<String, Object> data;
   private Map<String,Object> props;
@@ -177,13 +177,6 @@ public class ConfigOverlay {
     return out.toString();
   }
 
-  public  Map toOutputFormat() {
-    Map result = new LinkedHashMap();
-    result.put("version",znodeVersion);
-    result.putAll(data);
-    return result;
-  }
-
 
   public static final String RESOURCE_NAME = "configoverlay.json";
 
@@ -253,5 +246,13 @@ public class ConfigOverlay {
 
   public Map<String, Object> getUserProps() {
     return userProps;
+  }
+
+  @Override
+  public Map<String, Object> toMap() {
+    Map result = new LinkedHashMap();
+    result.put("znodeVersion",znodeVersion);
+    result.putAll(data);
+    return result;
   }
 }
