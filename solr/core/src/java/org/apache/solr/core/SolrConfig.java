@@ -781,7 +781,6 @@ public class SolrConfig extends Config implements MapSerializable{
   public ConfigOverlay getOverlay() {
     if(overlay ==null) {
       overlay = getConfigOverlay(getResourceLoader());
-      log.info("$$$overlay_version "+ overlay.getZnodeVersion());
     }
     return overlay;
   }
