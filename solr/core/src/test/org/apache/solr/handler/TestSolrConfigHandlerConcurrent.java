@@ -28,10 +28,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -142,15 +148,23 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         return;
       }
 
+      DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+      List<String> urls = new ArrayList<>();
+      for (Slice slice : coll.getSlices()) {
+        for (Replica replica : slice.getReplicas())
+          urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+      }
+
+
       //get another node
-      RestTestHarness harness = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
+      String url = urls.get(urls.size());
+
       long startTime = System.nanoTime();
-      boolean success = false;
       long maxTimeoutSeconds = 20;
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
-        Map respMap = getAsMap("/config/overlay?wt=json", harness);
+        Map respMap = getAsMap(url+"/config/overlay?wt=json");
         Map m = (Map) respMap.get("overlay");
         if(m!= null) m = (Map) m.get("props");
         if(m == null) {
@@ -177,5 +191,15 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   }
 
-
+  private  Map getAsMap(String uri) throws Exception {
+    HttpGet get = new HttpGet(uri) ;
+    HttpEntity entity = null;
+    try {
+      entity = cloudClient.getLbServer().getHttpClient().execute(get).getEntity();
+      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    } finally {
+      EntityUtils.consumeQuietly(entity);
+    }
+  }
 }
