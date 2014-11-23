@@ -411,6 +411,9 @@ Other Changes
 * SOLR-6747: Add an optional caching option as a workaround for SOLR-6586.
   (Mark Miller, Gregory Chanan)
 
+* SOLR-6459: Normalize logging of operations in Overseer and log current queue size.
+  (Ramkumar Aiyengar via Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
