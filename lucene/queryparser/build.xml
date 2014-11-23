@@ -142,7 +142,7 @@ import org.apache.lucene.queryparser.flexible.core.messages.*;"
 
   <target name="resolve-javacc" xmlns:ivy="antlib:org.apache.ivy.ant">
     <!-- setup a "fake" JavaCC distribution folder in ${build.dir} to make JavaCC ANT task happy: -->
-    <ivy:retrieve organisation="net.java.dev.javacc" module="javacc" revision="5.0"
+    <ivy:retrieve organisation="net.java.dev.javacc" module="javacc" revision="5.0" symlink="${ivy.symlink}"
       inline="true" conf="default" transitive="false" type="jar" sync="true"
       pattern="${build.dir}/javacc/bin/lib/[artifact].[ext]"/>
   </target>

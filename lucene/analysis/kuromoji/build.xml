@@ -58,7 +58,7 @@
 
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
   <target name="download-dict" depends="ivy-availability-check,ivy-fail,ivy-configure" unless="dict.available">
-     <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${ipadic.type}"/>
+     <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${ipadic.type}" symlink="${ivy.symlink}"/>
      <!-- TODO: we should checksum too -->
      <gunzip src="${build.dir}/${dict.src.file}"/>
      <untar src="${build.dir}/${ipadic.version}.tar" dest="${build.dir}"/>

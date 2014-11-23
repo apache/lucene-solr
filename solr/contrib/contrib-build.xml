@@ -49,8 +49,8 @@
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <sequential>
-      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
-      <ivy:retrieve conf="test" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
+      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only" symlink="${ivy.symlink}"/>
+      <ivy:retrieve conf="test" type="jar,bundle,test" sync="${ivy.sync}" log="download-only" symlink="${ivy.symlink}"
                     pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
     </sequential>
   </target>

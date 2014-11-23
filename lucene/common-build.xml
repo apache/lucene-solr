@@ -398,10 +398,14 @@
     <!-- <property name="ivy.settings.uptodate" value="true"/> -->
   </target>
 
+  <condition property="ivy.symlink">
+    <os family="unix"/>
+  </condition>
+
   <target name="resolve" depends="ivy-availability-check,ivy-configure">
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
-    <ivy:retrieve type="jar,bundle,test,test-jar,tests" log="download-only"
+    <ivy:retrieve type="jar,bundle,test,test-jar,tests" log="download-only" symlink="${ivy.symlink}"
                   conf="${ivy.default.configuration}" sync="${ivy.sync}"/>
   </target>
 
