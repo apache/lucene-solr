@@ -60,9 +60,7 @@ public class SumTotalTermFreqValueSource extends ValueSource {
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long sumTotalTermFreq = 0;
     for (LeafReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
-      Fields fields = readerContext.reader().fields();
-      if (fields == null) continue;
-      Terms terms = fields.terms(indexedField);
+      Terms terms = readerContext.reader().terms(indexedField);
       if (terms == null) continue;
       long v = terms.getSumTotalTermFreq();
       if (v == -1) {

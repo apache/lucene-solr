@@ -330,7 +330,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
     
     Fields fields = MultiFields.getFields(r2);
-    if (fields == null) {
+    if (fields.size() == 0) {
       // make sure r1 is in fact empty (eg has only all
       // deleted docs):
       Bits liveDocs = MultiFields.getLiveDocs(r1);

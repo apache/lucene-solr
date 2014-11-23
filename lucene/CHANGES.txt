@@ -223,6 +223,8 @@ API Changes
   sort/group/etc on a misconfigured field (e.g. no docvalues, no UninvertingReader, etc).  
   (Robert Muir)
 
+* LUCENE-6068: LeafReader.fields() never returns null. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

@@ -129,10 +129,7 @@ public class MergeState {
         if (termVectorsReader != null) {
           termVectorsReader = termVectorsReader.getMergeInstance();
         }
-        fieldsProducer = segmentReader.fields();
-        if (fieldsProducer != null) {
-          fieldsProducer = fieldsProducer.getMergeInstance();
-        }
+        fieldsProducer = segmentReader.fields().getMergeInstance();
       } else {
         // A "foreign" reader
         normsProducer = readerToNormsProducer(reader);

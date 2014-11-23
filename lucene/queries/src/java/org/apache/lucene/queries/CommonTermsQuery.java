@@ -239,10 +239,6 @@ public class CommonTermsQuery extends Query {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : leaves) {
       final Fields fields = context.reader().fields();
-      if (fields == null) {
-        // reader has no fields
-        continue;
-      }
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
         TermContext termContext = contextArray[i];

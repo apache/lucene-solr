@@ -126,9 +126,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
 
 
   protected int getFirstMatch(IndexReader r, Term t) throws IOException {
-    Fields fields = MultiFields.getFields(r);
-    if (fields == null) return -1;
-    Terms terms = fields.terms(t.field());
+    Terms terms = MultiFields.getTerms(r, t.field());
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
     final TermsEnum termsEnum = terms.iterator(null);
