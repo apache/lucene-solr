@@ -597,14 +597,8 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     final CharsRefBuilder spare = new CharsRefBuilder();
 
-    Fields fields = MultiFields.getFields(req.getSearcher().getIndexReader());
-
-    if (fields == null) { // No indexed fields
-      return;
-    }
-
-    Terms terms = fields.terms(field);
-    if (terms == null) {  // No terms in the field.
+    Terms terms = MultiFields.getTerms(req.getSearcher().getIndexReader(), field);
+    if (terms == null) {  // field does not exist
       return;
     }
     TermsEnum termsEnum = terms.iterator(null);

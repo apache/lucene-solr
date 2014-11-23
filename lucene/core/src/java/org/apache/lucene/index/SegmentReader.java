@@ -503,9 +503,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
   public Iterable<? extends Accountable> getChildResources() {
     ensureOpen();
     List<Accountable> resources = new ArrayList<>();
-    if (core.fields != null) {
-      resources.add(Accountables.namedAccountable("postings", core.fields));
-    }
+    resources.add(Accountables.namedAccountable("postings", core.fields));
     if (core.normsProducer != null) {
       resources.add(Accountables.namedAccountable("norms", core.normsProducer));
     }

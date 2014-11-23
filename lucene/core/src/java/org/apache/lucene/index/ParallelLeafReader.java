@@ -120,12 +120,10 @@ public class ParallelLeafReader extends LeafReader {
     // build Fields instance
     for (final LeafReader reader : this.parallelReaders) {
       final Fields readerFields = reader.fields();
-      if (readerFields != null) {
-        for (String field : readerFields) {
-          // only add if the reader responsible for that field name is the current:
-          if (fieldToReader.get(field) == reader) {
-            this.fields.addField(field, readerFields.terms(field));
-          }
+      for (String field : readerFields) {
+        // only add if the reader responsible for that field name is the current:
+        if (fieldToReader.get(field) == reader) {
+          this.fields.addField(field, readerFields.terms(field));
         }
       }
     }
