@@ -1,0 +1,24 @@
+#set($docId = $doc.getFieldValue('id'))
+
+<div class="result-document">
+
+  <table>
+    #foreach( $fieldName in $doc.fieldNames )
+      #foreach( $value in $doc.getFieldValues($fieldName) )
+        <tr>
+          <th align="right" valign="top">
+            #if( $foreach.count == 1 )
+              $fieldName:
+            #end
+          </th>
+
+          <td align="left" valign="top">
+            $esc.html($value) <br/>
+          </td>
+        </tr>
+      #end
+    #end
+  </table>
+
+
+</div>
