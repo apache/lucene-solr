@@ -51,14 +51,14 @@
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure,sync-hack">
     <sequential>
     <!-- jetty libs in lib/ -->
-    <ivy:retrieve conf="jetty" type="jar" log="download-only"/>
-    <ivy:retrieve conf="logging" type="jar,bundle" log="download-only"
+    <ivy:retrieve conf="jetty" type="jar" log="download-only" symlink="${ivy.symlink}"/>
+    <ivy:retrieve conf="logging" type="jar,bundle" log="download-only" symlink="${ivy.symlink}"
                   pattern="lib/ext/[artifact]-[revision].[ext]"/>
     <!-- start.jar -->
-    <ivy:retrieve conf="start" type="jar" log="download-only" 
+    <ivy:retrieve conf="start" type="jar" log="download-only" symlink="${ivy.symlink}" 
                   pattern="start.jar"/>
     <!-- servlet-api.jar -->
-    <ivy:retrieve conf="servlet" log="download-only" type="orbit"
+    <ivy:retrieve conf="servlet" log="download-only" type="orbit" symlink="${ivy.symlink}"
                   pattern="lib/servlet-api-3.0.jar"/>
     </sequential>
   </target>
