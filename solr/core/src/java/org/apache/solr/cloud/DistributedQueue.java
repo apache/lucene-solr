@@ -90,6 +90,7 @@ public class DistributedQueue {
     TreeMap<Long,String> orderedChildren = new TreeMap<>();
 
     List<String> childNames = zookeeper.getChildren(dir, watcher, true);
+    stats.setQueueLength(childNames.size());
     for (String childName : childNames) {
       try {
         // Check format
@@ -117,6 +118,7 @@ public class DistributedQueue {
       throws KeeperException, InterruptedException {
 
     List<String> childNames = zookeeper.getChildren(dir, null, true);
+    stats.setQueueLength(childNames.size());
     for (String childName : childNames) {
       if (childName != null) {
         try {
