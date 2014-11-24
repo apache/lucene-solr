@@ -24,7 +24,9 @@ import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.MapSerializable;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.schema.IndexSchema;
@@ -36,12 +38,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This config object encapsulates IndexWriter config params,
  * defined in the &lt;indexConfig&gt; section of solrconfig.xml
  */
-public class SolrIndexConfig {
+public class SolrIndexConfig implements MapSerializable {
   public static final Logger log = LoggerFactory.getLogger(SolrIndexConfig.class);
   
   final String defaultMergePolicyClassName;
@@ -172,6 +175,19 @@ public class SolrIndexConfig {
     }
 
     checkIntegrityAtMerge = solrConfig.getBool(prefix + "/checkIntegrityAtMerge", def.checkIntegrityAtMerge);
+  }
+  @Override
+  public Map<String, Object> toMap() {
+    Map<String, Object> m = ZkNodeProps.makeMap("maxBufferedDocs", maxBufferedDocs,
+        "maxMergeDocs", maxMergeDocs,
+        "maxIndexingThreads", maxIndexingThreads,
+        "mergeFactor", mergeFactor,
+        "ramBufferSizeMB", ramBufferSizeMB,
+        "writeLockTimeout", writeLockTimeout,
+        "lockType", lockType);
+    if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo.toMap());
+    if(mergePolicyInfo != null) m.put("mergeScheduler",mergePolicyInfo.toMap());
+    return m;
   }
 
   /*

@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
@@ -48,10 +49,12 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -73,6 +76,7 @@ public class Config {
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
+  private int zkVersion = -1;
 
   /**
    * Builds a config from a resource name with no xpath prefix.
@@ -102,7 +106,7 @@ public class Config {
    * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be preprended to all non-absolute xpath expressions
    */
-  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean subProps) throws ParserConfigurationException, IOException, SAXException 
+  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
     if( loader == null ) {
       loader = new SolrResourceLoader( null );
@@ -112,9 +116,14 @@ public class Config {
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
     try {
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      
+
       if (is == null) {
-        is = new InputSource(loader.openConfig(name));
+        InputStream in = loader.openConfig(name);
+        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+          zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+          log.info("loaded config {} with version {} ",name,zkVersion);
+        }
+        is = new InputSource(in);
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       }
 
@@ -138,8 +147,8 @@ public class Config {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(is.getByteStream());
       }
-      if (subProps) {
-        DOMUtil.substituteProperties(doc, loader.getCoreProperties());
+      if (substituteProps) {
+        DOMUtil.substituteProperties(doc, getSubstituteProperties());
       }
     } catch (ParserConfigurationException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
@@ -152,7 +161,11 @@ public class Config {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
-  
+
+  protected Properties getSubstituteProperties() {
+    return loader.getCoreProperties();
+  }
+
   public Config(SolrResourceLoader loader, String name, Document doc) {
     this.prefix = null;
     this.doc = doc;
@@ -207,7 +220,7 @@ public class Config {
   }
   
   public void substituteProperties() {
-    DOMUtil.substituteProperties(doc, loader.getCoreProperties());
+    DOMUtil.substituteProperties(doc, getSubstituteProperties());
   }
 
 
@@ -457,6 +470,12 @@ public class Config {
     }
     
     return version;
+  }
+
+  /**If this config is loaded from zk the version is relevant other wise -1 is returned
+   */
+  public int getZnodeVersion(){
+    return zkVersion;
   }
 
   public Config getOriginalConfig() {

@@ -43,7 +43,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
     this.managedIndexSchemaFactory = managedIndexSchemaFactory;
     ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)managedIndexSchemaFactory.getResourceLoader();
     this.zkClient = zkLoader.getZkController().getZkClient();
-    managedSchemaPath = zkLoader.getCollectionZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
+    managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
     createSchemaWatcher();
     zkLoader.getZkController().addOnReconnectListener(this);
   }

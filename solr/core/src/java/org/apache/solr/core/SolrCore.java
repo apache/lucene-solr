@@ -77,6 +77,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapPuller;
+import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
@@ -808,6 +809,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       reqHandlers = new RequestHandlers(this);
       List<PluginInfo> implicitReqHandlerInfo = new ArrayList<>();
       UpdateRequestHandler.addImplicits(implicitReqHandlerInfo);
+      SolrConfigHandler.addImplicits(implicitReqHandlerInfo);
+
       reqHandlers.initHandlersFromConfig(solrConfig, implicitReqHandlerInfo);
 
       // Handle things that should eventually go away

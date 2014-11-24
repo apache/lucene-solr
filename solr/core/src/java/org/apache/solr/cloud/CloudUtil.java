@@ -88,7 +88,7 @@ public class CloudUtil {
 
   /**
    * Returns a displayable unified path to the given resource. For non-solrCloud that will be the
-   * same as getConfigDir, but for Cloud it will be getCollectionZkPath ending in a /
+   * same as getConfigDir, but for Cloud it will be getConfigSetZkPath ending in a /
    * <p/>
    * <b>Note:</b> Do not use this to generate a valid file path, but for debug printing etc
    * @param loader Resource loader instance
@@ -96,7 +96,7 @@ public class CloudUtil {
    */
   public static String unifiedResourcePath(SolrResourceLoader loader) {
     return (loader instanceof ZkSolrResourceLoader) ?
-            ((ZkSolrResourceLoader) loader).getCollectionZkPath() + "/" :
+            ((ZkSolrResourceLoader) loader).getConfigSetZkPath() + "/" :
             loader.getConfigDir();
   }
 }
