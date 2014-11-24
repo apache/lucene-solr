@@ -38,13 +38,13 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Failure;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 
 /** 
@@ -77,7 +77,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
     
     MockDirectoryWrapper dir = null;
     
-    final int numIterations = TEST_NIGHTLY ? atLeast(500) : atLeast(20);
+    final int numIterations = TEST_NIGHTLY ? atLeast(100) : atLeast(20);
     
     STARTOVER:
     for (int iter = 0; iter < numIterations; iter++) {
@@ -253,8 +253,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
     doTest(new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        Exception e = new Exception();
-        StackTraceElement stack[] = e.getStackTrace();
+        StackTraceElement stack[] = Thread.currentThread().getStackTrace();
         boolean ok = false;
         for (int i = 0; i < stack.length; i++) {
           if (stack[i].getClassName().equals(IndexFileDeleter.class.getName()) && stack[i].getMethodName().equals("checkpoint")) {
