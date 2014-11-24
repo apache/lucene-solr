@@ -354,6 +354,8 @@ Build
 
 * LUCENE-5995: Upgrade ICU to 54.1 (Robert Muir)
 
+* LUCENE-6070: Upgrade forbidden-apis to 1.7 (Uwe Schindler)
+
 Other
 
 * LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
