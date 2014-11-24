@@ -414,6 +414,9 @@ Other Changes
 * SOLR-6459: Normalize logging of operations in Overseer and log current queue size.
   (Ramkumar Aiyengar via Mark Miller)
 
+* SOLR-6754: ZkController.publish doesn't use the updateLastState parameter.
+  (shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

@@ -1079,7 +1079,7 @@ public final class ZkController {
   }
   
   public void publish(final CoreDescriptor cd, final String state, boolean updateLastState) throws KeeperException, InterruptedException {
-    publish(cd, state, true, false);
+    publish(cd, state, updateLastState, false);
   }
   
   /**
