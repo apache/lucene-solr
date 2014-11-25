@@ -28,16 +28,28 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements SchemaAware {
   private static final String PARAM_QUERY_TARGET_PROPORTION = "queryTargetProportion";
   private static final String PARAM_MIN_SIDE_LENGTH = "minSideLength";
+
+  //score modes:
+  private static final String OVERLAP_RATIO = "overlapRatio";
+  private static final String AREA = "area";
+  private static final String AREA2D = "area2D";
+
   private String numberTypeName;//required
   private String booleanTypeName = "boolean";
 
   private IndexSchema schema;
+
+  public BBoxField() {
+    super(new HashSet<>(Arrays.asList(OVERLAP_RATIO, AREA, AREA2D)));
+  }
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -125,9 +137,12 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
 
   @Override
   protected ValueSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String scoreParam, BBoxStrategy strategy) {
+    if (scoreParam == null) {
+      return null;
+    }
     switch (scoreParam) {
       //TODO move these to superclass after LUCENE-5804 ?
-      case "overlapRatio":
+      case OVERLAP_RATIO:
         double queryTargetProportion = 0.25;//Suggested default; weights towards target area
 
         String v = parser.getParam(PARAM_QUERY_TARGET_PROPORTION);
@@ -144,10 +159,10 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
             (Rectangle) spatialArgs.getShape(),
             queryTargetProportion, minSideLength);
 
-      case "area":
+      case AREA:
         return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, ctx.isGeo());
 
-      case "area2D":
+      case AREA2D:
         return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, false);
 
       default:

@@ -50,13 +50,14 @@ Bug Fixes
 
 * SOLR-6781: BBoxField didn't support dynamic fields. (David Smiley)
 
+* SOLR-6784: BBoxField's 'score' mode should have been optional. (David Smiley)
+
 Other Changes
 ----------------------
 
 * SOLR-6661: Adjust all example configurations to allow overriding error-prone
   relative paths for solrconfig.xml <lib> references with solr.install.dir
   system property; bin/solr scripts will set it appropriately. (ehatcher)
-
 
 ==================  4.10.2 ==================
 

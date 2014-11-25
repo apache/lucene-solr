@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -89,6 +90,15 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         "/response/docs/[0]/id=='1'" ,
         "/response/docs/[0]/score==" + 146.39793f + "]"//a bit less than 150
     );
+  }
+
+  @Test
+  public void testBadScoreParam() throws Exception {
+    String fieldName = "bbox";
+    assertQEx("expect friendly error message",
+        "area2D",
+        req("{!field f="+fieldName+" filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
 }
