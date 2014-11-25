@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
@@ -353,7 +354,7 @@ public class SolrConfig extends Config implements MapSerializable{
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
       }
-      Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in)));
+      Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, Charsets.UTF_8)));
       return new ConfigOverlay(m,version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading config overlay",e);
