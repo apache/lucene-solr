@@ -1,14 +1,21 @@
 package org.apache.lucene.util;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
+import org.apache.lucene.mockfile.DisableFsyncFS;
+import org.apache.lucene.mockfile.LeakFS;
+import org.apache.lucene.mockfile.VerboseFS;
+import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -52,6 +59,11 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
    * Per-test class temporary folder.
    */
   private Path tempDirBase;
+  
+  /**
+   * Per-test filesystem
+   */
+  private FileSystem fileSystem;
 
   /**
    * Suite failure marker.
@@ -90,11 +102,34 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     super.before();
 
     assert tempDirBase == null;
+    fileSystem = initializeFileSystem();
     javaTempDir = initializeJavaTempDir();
+  }
+  
+  private FileSystem initializeFileSystem() {
+    FileSystem fs = FileSystems.getDefault();
+    if (LuceneTestCase.VERBOSE) {
+      fs = new VerboseFS(fs, new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out)).getFileSystem(null);
+    }
+    Random random = RandomizedContext.current().getRandom();
+    // sometimes just use a bare filesystem
+    if (random.nextInt(10) > 0) {
+      fs = new DisableFsyncFS(fs).getFileSystem(null);
+      fs = new LeakFS(fs).getFileSystem(null);
+      // windows is currently slow
+      if (random.nextInt(10) == 0) {
+        fs = new WindowsFS(fs).getFileSystem(null);
+      }
+    }
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("filesystem: " + fs.provider());
+    }
+    return fs.provider().getFileSystem(URI.create("file:///"));
   }
 
   private Path initializeJavaTempDir() throws IOException {
-    Path javaTempDir = Paths.get(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
+    Path javaTempDir = fileSystem.getPath(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
+    
     Files.createDirectories(javaTempDir);
 
     assert Files.isDirectory(javaTempDir) &&
@@ -134,6 +169,9 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
         }
         throw e;
       }
+      if (fileSystem != FileSystems.getDefault()) {
+        fileSystem.close();
+      }
     } else {
       if (tempDirBasePath != null) {
         System.err.println("NOTE: leaving temporary files on disk at: " + tempDirBasePath);
@@ -171,7 +209,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     }
     return tempDirBase;
   }
-
+  
   /**
    * @see LuceneTestCase#createTempDir()
    */
