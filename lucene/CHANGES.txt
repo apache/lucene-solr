@@ -281,6 +281,9 @@ Bug Fixes
 
 * LUCENE-6062: Pass correct fieldinfos to docvalues producer when the
   segment has updates. (Mike McCandless, Shai Erera, Robert Muir)
+
+* LUCENE-6075: Don't overflow int in SimpleRateLimiter (Boaz Leskes
+  via Mike McCandless)
   
 Documentation
 
