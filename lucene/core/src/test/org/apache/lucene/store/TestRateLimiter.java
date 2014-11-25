@@ -42,6 +42,24 @@ public final class TestRateLimiter extends LuceneTestCase {
     assertTrue("we should sleep at least 1 second but did only: " + convert + " millis", convert > 1000l); 
   }
 
+  // LUCENE-6075
+  public void testOverflowInt() throws Exception {
+    Thread t = new Thread() {
+        @Override
+        public void run() {
+          try {
+            new SimpleRateLimiter(1).pause((long) (1.5*Integer.MAX_VALUE*1024*1024/1000));
+            fail("should have been interrupted");
+          } catch (ThreadInterruptedException tie) {
+            // expected
+          }
+        }
+      };
+    t.start();
+    Thread.sleep(10);
+    t.interrupt();
+  }
+
   public void testThreads() throws Exception {
 
     double targetMBPerSec = 10.0 + 20 * random().nextDouble();
