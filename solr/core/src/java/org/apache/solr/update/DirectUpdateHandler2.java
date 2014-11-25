@@ -165,7 +165,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     } catch (SolrException e) {
       throw e;
     } catch (RuntimeException t) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "Exception writing document id %s to the index; possible analysis error.",
           cmd.getPrintableId()), t);
     }

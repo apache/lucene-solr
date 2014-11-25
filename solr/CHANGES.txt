@@ -417,6 +417,9 @@ Other Changes
 * SOLR-6754: ZkController.publish doesn't use the updateLastState parameter.
   (shalin)
 
+* SOLR-6751: Exceptions thrown in the analysis chain in DirectUpdateHandler2
+  should return a BAD_REQUEST status (Alan Woodward)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
