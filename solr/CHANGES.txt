@@ -441,6 +441,8 @@ Bug Fixes
 
 * SOLR-6781: BBoxField didn't support dynamic fields. (David Smiley)
 
+* SOLR-6784: BBoxField's 'score' mode should have been optional. (David Smiley)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
