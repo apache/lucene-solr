@@ -299,6 +299,9 @@ Bug Fixes
 * SOLR-3774: Solr adds RequestHandler SolrInfoMBeans twice to the JMX server.
   (Tomás Fernández Löbbe, hossman, Mark Miller)
 
+* SOLR-6763: Shard leader elections should not persist across session expiry
+  (Alan Woodward, Mark Miller)
+
 Optimizations
 ----------------------
 
