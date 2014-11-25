@@ -48,6 +48,8 @@ Bug Fixes
   and is now a JSON map, caused backwards compatibility issues when doing rolling upgrades of
   a live cluster while indexing (Timothy Potter)
 
+* SOLR-6781: BBoxField didn't support dynamic fields. (David Smiley)
+
 Other Changes
 ----------------------
 
