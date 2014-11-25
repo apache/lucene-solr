@@ -433,6 +433,8 @@ Bug Fixes
 
 * SOLR-6684: Fix-up /export JSON. (Joel Bernstein)
 
+* SOLR-6781: BBoxField didn't support dynamic fields. (David Smiley)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
