@@ -458,7 +458,6 @@ IF NOT "%SOLR_HOST%"=="" (
   set SOLR_HOST_ARG=
 )
 
-REM TODO: Change this to "server" when we resolve SOLR-3619
 IF "%SOLR_SERVER_DIR%"=="" set SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%
 
 IF NOT EXIST "%SOLR_SERVER_DIR%" (
@@ -660,6 +659,11 @@ IF NOT "%SOLR_HOST_ARG%"=="" set START_OPTS=%START_OPTS% %SOLR_HOST_ARG%
 IF NOT "%SOLR_OPTS%"=="" set START_OPTS=%START_OPTS% %SOLR_OPTS%
 
 cd "%SOLR_SERVER_DIR%"
+
+IF NOT EXIST "%SOLR_SERVER_DIR%\logs" (
+  mkdir "%SOLR_SERVER_DIR%\logs"
+)
+
 @echo.
 @echo Starting Solr on port %SOLR_PORT% from %SOLR_SERVER_DIR%
 @echo.
@@ -685,21 +689,17 @@ IF "%EXAMPLE%"=="techproducts" (
 )
 
 IF NOT "!CREATE_EXAMPLE_CONFIG!"=="" (
-  timeout /T 5
+  timeout /T 10
   IF "%SOLR_MODE%"=="solrcloud" (
     "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
       org.apache.solr.util.SolrCLI create_collection -name !EXAMPLE! -shards 1 -replicationFactor 1 ^
       -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl http://localhost:%SOLR_PORT%/solr
   ) ELSE (
-    set "CREATE_URL=http://localhost:%SOLR_PORT%/solr/admin/cores?action=CREATE&name=%EXAMPLE%&configSet=!CREATE_EXAMPLE_CONFIG!"
-    @echo.
-    @echo Creating new core using command:
-    @echo !CREATE_URL!
-    @echo.
     "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI api -get "!CREATE_URL!"
+      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE! -solrUrl http://localhost:%SOLR_PORT%/solr ^
+      -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
   )
 )
 
@@ -750,6 +750,30 @@ IF NOT DEFINED CLOUD_NUM_NODES (
 @echo Ok, let's start up %CLOUD_NUM_NODES% Solr nodes for your example SolrCloud cluster.
 
 :start_cloud_nodes
+
+@echo Cloning %DEFAULT_SERVER_DIR% into %SOLR_TIP%\node1
+mkdir "%SOLR_TIP%\node1"
+xcopy /Q /E /I "%DEFAULT_SERVER_DIR%\contexts" "%SOLR_TIP%\node1\contexts"
+xcopy /Q /E /I "%DEFAULT_SERVER_DIR%\etc" "%SOLR_TIP%\node1\etc"
+xcopy /Q /E /I "%DEFAULT_SERVER_DIR%\lib" "%SOLR_TIP%\node1\lib"
+xcopy /Q /E /I "%DEFAULT_SERVER_DIR%\resources" "%SOLR_TIP%\node1\resources"
+xcopy /Q /E /I "%DEFAULT_SERVER_DIR%\scripts" "%SOLR_TIP%\node1\scripts"
+xcopy /Q /E /I "%DEFAULT_SERVER_DIR%\webapps" "%SOLR_TIP%\node1\webapps"
+copy "%DEFAULT_SERVER_DIR%\start.jar" "%SOLR_TIP%\node1\start.jar"
+mkdir "%SOLR_TIP%\node1\solr-webapp"
+mkdir "%SOLR_TIP%\node1\solr"
+mkdir "%SOLR_TIP%\node1\logs"
+xcopy /Q /E /I "%DEFAULT_SERVER_DIR%\solr\configsets" "%SOLR_TIP%\node1\solr\configsets"
+copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "%SOLR_TIP%\node1\solr\solr.xml"
+copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "%SOLR_TIP%\node1\solr\zoo.cfg"
+
+for /l %%x in (2, 1, !CLOUD_NUM_NODES!) do (
+  IF NOT EXIST "%SOLR_TIP%\node%%x" (
+    @echo Cloning %SOLR_TIP%\node1 into %SOLR_TIP%\node%%x
+    xcopy /Q /E /I "%SOLR_TIP%\node1" "%SOLR_TIP%\node%%x"
+  )
+)
+
 for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
   set USER_INPUT=
   set /A idx=%%x-1
@@ -774,11 +798,6 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
     set NODE_PORT=!USER_INPUT!
     echo node%%x port: !NODE_PORT!
     @echo.
-  )
-
-  IF NOT EXIST "%SOLR_TIP%\node%%x" (
-    @echo Cloning %DEFAULT_SERVER_DIR% into %SOLR_TIP%\node%%x
-    xcopy /Q /E /I "%DEFAULT_SERVER_DIR%" "%SOLR_TIP%\node%%x"
   )
 
   IF NOT "!SOLR_HEAP!"=="" (
@@ -928,6 +947,7 @@ IF "%1"=="-n" goto set_create_name
 IF "%1"=="-name" goto set_create_name
 IF "%1"=="-shards" goto set_create_shards
 IF "%1"=="-replicationFactor" goto set_create_rf
+IF "%1"=="-p" goto set_create_port
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
@@ -941,6 +961,12 @@ goto parse_create_args
 
 :set_create_name
 set CREATE_NAME=%~2
+SHIFT
+SHIFT
+goto parse_create_args
+
+:set_create_port
+set CREATE_PORT=%~2
 SHIFT
 SHIFT
 goto parse_create_args
@@ -967,61 +993,34 @@ IF "!CREATE_NUM_SHARDS!"=="" set CREATE_NUM_SHARDS=1
 IF "!CREATE_REPFACT!"=="" set CREATE_REPFACT=1
 
 REM Find a port that Solr is running on
-set CREATE_PORT=0
-for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
-  set SOME_SOLR_PORT=
-  For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
-  if NOT "!SOME_SOLR_PORT!"=="" (
-    for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find /i "!SOME_SOLR_PORT!"') do (
-      set CREATE_PORT=!SOME_SOLR_PORT!
+if "!CREATE_PORT!"=="" (
+  for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
+    set SOME_SOLR_PORT=
+    For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
+    if NOT "!SOME_SOLR_PORT!"=="" (
+      for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find /i "!SOME_SOLR_PORT!"') do (
+        set CREATE_PORT=!SOME_SOLR_PORT!
+      )
     )
   )
 )
-if "!CREATE_PORT!" EQU "0" (
-  set "SCRIPT_ERROR=Could not find a running Solr instance on this host!"
+if "!CREATE_PORT!"=="" (
+  set "SCRIPT_ERROR=Could not find a running Solr instance on this host! Please use the -p option to specify the port."
   goto err
 )
 
 @echo Found Solr node running on port !CREATE_PORT!
 
-@REM Determine if the Solr node is in cloud or standalone server mode
-"%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI status -solr http://localhost:!CREATE_PORT!/solr > solr_status.txt
-set /p VAR=<solr_status.txt
-del solr_status.txt
-if "!VAR!"=="!VAR:ZooKeeper=!" (
-  @REM Not in CloudMode - create core
-  if "%SCRIPT_CMD%"=="create_core" (
-    set "CREATE_URL=http://localhost:!CREATE_PORT!/solr/admin/cores?action=CREATE&name=!CREATE_NAME!&configSet=!CREATE_CONFIGSET!"
-    @echo.
-    @echo Creating new core using command:
-    @echo !CREATE_URL!
-    @echo.
-    "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-      -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI api -get "!CREATE_URL!"
-  ) else (
-    @echo.
-    @echo ERROR: Solr running on port !CREATE_PORT! is running in standalone server mode, please use the create_core command instead.
-    @echo %SCRIPT_CMD% can only be used when running in SolrCloud mode.
-    @echo.
-    goto done
-  )
-) ELSE (
-  @REM In CloudMode - create collection
-  if "%SCRIPT_CMD%"=="create_collection" (
-    "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-      -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI create_collection -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^
-      -config !CREATE_CONFIGSET! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl http://localhost:!CREATE_PORT!/solr
-  ) else (
-    @echo.
-    @echo ERROR: Solr running on port !CREATE_PORT! is running in SolrCloud mode, please use the create_collection command instead.
-    @echo %SCRIPT_CMD% can only be used when running in standalone server mode.
-    @echo.
-    goto done
-  )
+if "%SCRIPT_CMD%"=="create_core" (
+  "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME!  -solrUrl http://localhost:!CREATE_PORT!/solr ^
+    -config !CREATE_CONFIGSET! -configsetsDir "%SOLR_TIP%\server\solr\configsets"
+) else (
+  "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    org.apache.solr.util.SolrCLI create_collection -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^
+    -config !CREATE_CONFIGSET! -configsetsDir "%SOLR_TIP%\server\solr\configsets" -solrUrl http://localhost:!CREATE_PORT!/solr
 )
 goto done
 
