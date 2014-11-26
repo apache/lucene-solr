@@ -296,7 +296,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
   }
 
   public void testMockGraphTokenFilterRandom() throws Exception {
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    for(int iter=0;iter<3*RANDOM_MULTIPLIER;iter++) {
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
@@ -320,7 +320,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
 
   // Two MockGraphTokenFilters
   public void testDoubleMockGraphTokenFilterRandom() throws Exception {
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    for(int iter=0;iter<3*RANDOM_MULTIPLIER;iter++) {
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
@@ -344,7 +344,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
   }
 
   public void testMockGraphTokenFilterBeforeHolesRandom() throws Exception {
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    for(int iter=0;iter<3*RANDOM_MULTIPLIER;iter++) {
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
@@ -368,7 +368,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
   }
 
   public void testMockGraphTokenFilterAfterHolesRandom() throws Exception {
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    for(int iter=0;iter<3*RANDOM_MULTIPLIER;iter++) {
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
