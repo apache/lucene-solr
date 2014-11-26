@@ -237,6 +237,11 @@ public class FilterPath implements Path {
       public Path next() {
         return new FilterPath(iterator.next(), fileSystem);
       }
+
+      @Override
+      public void remove() {
+        iterator.remove();
+      }
     };
   }
 
