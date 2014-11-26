@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -123,6 +124,7 @@ public class TestMockFilesystems extends LuceneTestCase {
   }
  
   public void testDeleteOpenFile() throws IOException {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path dir = FilterPath.unwrap(createTempDir());
     FileSystem fs = new WindowsFS(dir.getFileSystem()).getFileSystem(URI.create("file:///"));
     Path wrapped = new FilterPath(dir, fs);
@@ -141,6 +143,7 @@ public class TestMockFilesystems extends LuceneTestCase {
   }
   
   public void testDeleteIfExistsOpenFile() throws IOException {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path dir = FilterPath.unwrap(createTempDir());
     FileSystem fs = new WindowsFS(dir.getFileSystem()).getFileSystem(URI.create("file:///"));
     Path wrapped = new FilterPath(dir, fs);
@@ -159,6 +162,7 @@ public class TestMockFilesystems extends LuceneTestCase {
   }
   
   public void testRenameOpenFile() throws IOException {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path dir = FilterPath.unwrap(createTempDir());
     FileSystem fs = new WindowsFS(dir.getFileSystem()).getFileSystem(URI.create("file:///"));
     Path wrapped = new FilterPath(dir, fs);
