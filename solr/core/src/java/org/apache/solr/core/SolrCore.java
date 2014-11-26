@@ -423,18 +423,21 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     return responseWriters.put(name, responseWriter);
   }
 
-  public SolrCore reload(ConfigSet coreConfig, SolrCore prev) throws IOException,
+  public SolrCore reload(ConfigSet coreConfig) throws IOException,
       ParserConfigurationException, SAXException {
     
     solrCoreState.increfSolrCoreState();
+    SolrCore currentCore;
     boolean indexDirChange = !getNewIndexDir().equals(getIndexDir());
     if (indexDirChange || !coreConfig.getSolrConfig().nrtMode) {
       // the directory is changing, don't pass on state
-      prev = null;
+      currentCore = null;
+    } else {
+      currentCore = this;
     }
     
     SolrCore core = new SolrCore(getName(), getDataDir(), coreConfig.getSolrConfig(),
-        coreConfig.getIndexSchema(), coreDescriptor, updateHandler, this.solrDelPolicy, prev);
+        coreConfig.getIndexSchema(), coreDescriptor, updateHandler, this.solrDelPolicy, currentCore);
     core.solrDelPolicy = this.solrDelPolicy;
     
 
