@@ -332,6 +332,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
             in.seek(posStart);
+            if (!omitTF)
+              tf = termFreq;
             return docID;
           }
           return docID = NO_MORE_DOCS;
@@ -347,9 +349,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public int nextPosition() throws IOException {
-      if (posPending == 0)
-        return NO_MORE_POSITIONS;
-
+      final int pos;
       if (readPositions) {
         SimpleTextUtil.readLine(in, scratch);
         assert StringHelper.startsWith(scratch.get(), POS): "got line=" + scratch.get().utf8ToString();
@@ -383,7 +383,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
         payload = null;
         in.seek(fp);
       }
-      posPending--;
       return pos;
     }
 
