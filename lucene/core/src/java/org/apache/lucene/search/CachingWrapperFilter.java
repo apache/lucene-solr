@@ -149,10 +149,9 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   @Override
   public Iterable<? extends Accountable> getChildResources() {
     // Sync to pull the current set of values:
-    final Map<Object, DocIdSet> copy;
     synchronized (cache) {
-      copy = new HashMap<>(cache);
+      // no need to clone, Accountable#namedAccountables already copies the data
+      return Accountables.namedAccountables("segment", cache);
     }
-    return Accountables.namedAccountables("segment", copy);
   }
 }
