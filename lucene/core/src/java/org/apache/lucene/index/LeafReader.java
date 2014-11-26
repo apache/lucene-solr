@@ -80,7 +80,7 @@ public abstract class LeafReader extends IndexReader {
   public static interface CoreClosedListener {
     /** Invoked when the shared core of the original {@code
      *  SegmentReader} has closed. */
-    public void onClose(Object ownerCoreCacheKey);
+    public void onClose(Object ownerCoreCacheKey) throws IOException;
   }
 
   private static class CoreClosedListenerWrapper implements ReaderClosedListener {
@@ -92,7 +92,7 @@ public abstract class LeafReader extends IndexReader {
     }
 
     @Override
-    public void onClose(IndexReader reader) {
+    public void onClose(IndexReader reader) throws IOException {
       listener.onClose(reader.getCoreCacheKey());
     }
 

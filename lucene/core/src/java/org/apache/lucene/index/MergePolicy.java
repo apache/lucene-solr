@@ -129,6 +129,10 @@ public abstract class MergePolicy {
       totalDocCount = count;
     }
 
+    /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
+    public void mergeFinished() throws IOException {
+    }
+
     /** Expert: Get the list of readers to merge. Note that this list does not
      *  necessarily match the list of segments to merge and should only be used
      *  to feed SegmentMerger to initialize a merge. When a {@link OneMerge}

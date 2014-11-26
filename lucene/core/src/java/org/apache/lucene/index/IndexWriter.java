@@ -3836,6 +3836,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         merge.readers.set(i, null);
       }
     }
+
+    try {
+      merge.mergeFinished();
+    } catch (Throwable t) {
+      if (th == null) {
+        th = t;
+      }
+    }
     
     // If any error occured, throw it.
     if (!suppressExceptions) {
