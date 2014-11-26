@@ -2620,6 +2620,10 @@ public class TestIndexWriter extends LuceneTestCase {
     assumeFalse("this test can't run on Windows", Constants.WINDOWS);
 
     MockDirectoryWrapper dir = newMockDirectory();
+    if (TestUtil.isWindowsFS(dir)) {
+      dir.close();
+      assumeFalse("this test can't run on Windows", true);
+    }
     
     // don't act like windows either, or the test won't simulate the condition
     dir.setEnableVirusScanner(false);
