@@ -312,14 +312,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
   }
 
-
-  public static void addImplicits(List<PluginInfo> infoList){
-    Map m = makeMap("name", "/config", "class", SolrConfigHandler.class.getName());
-    infoList.add(new PluginInfo(SolrRequestHandler.TYPE, m, new NamedList<>(singletonMap(DEFAULTS, new NamedList())), null));
-  }
-
-
-
   @Override
   public SolrRequestHandler getSubHandler(String path) {
     if(subPaths.contains(path)) return this;

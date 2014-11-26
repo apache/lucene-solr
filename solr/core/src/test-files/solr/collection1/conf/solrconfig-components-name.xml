@@ -50,8 +50,6 @@
     </arr>
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >
     <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />

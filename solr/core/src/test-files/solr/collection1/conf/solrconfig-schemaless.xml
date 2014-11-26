@@ -39,21 +39,14 @@
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-    <lst name="defaults">
-      <str name="omitHeader">true</str>
-    </lst>
-  </requestHandler>
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+
   <requestHandler name="/update" class="solr.UpdateRequestHandler">
     <lst name="defaults">
       <str name="update.chain">add-unknown-fields-to-the-schema</str>
     </lst>
   </requestHandler>
 
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
-
-  <!-- Add unknown fields to the schema 
+  <!-- Add unknown fields to the schema
   
        An example field type guessing update processor that will
        attempt to parse string-typed field values as Booleans, Longs,

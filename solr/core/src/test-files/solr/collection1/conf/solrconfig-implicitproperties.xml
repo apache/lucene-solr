@@ -48,8 +48,6 @@
 
   </query>
 
-  <requestHandler name="/admin/" class="solr.admin.AdminHandlers" />
-
   <requestDispatcher handleSelect="false">
     <httpCaching never304="true"/>
   </requestDispatcher>
@@ -65,8 +63,6 @@
       <str name="dummy5">${solr.core.transient}</str>
     </lst>
 
-  </requestHandler>
-  <requestHandler name="/update" class="solr.UpdateRequestHandler">
   </requestHandler>
 
   <queryResponseWriter name="json" class="solr.JSONResponseWriter">

@@ -423,6 +423,10 @@ Other Changes
 * SOLR-6751: Exceptions thrown in the analysis chain in DirectUpdateHandler2
   should return a BAD_REQUEST status (Alan Woodward)
 
+* SOLR-SOLR-6792 : deprecate AdminHandlers, Clean up solrconfig.xml of
+  unnecessary plugin definitions, implicit registration of /replication,
+  /get and /admin/* handlers (Noble Paul)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
