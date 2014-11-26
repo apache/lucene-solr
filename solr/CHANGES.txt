@@ -59,6 +59,9 @@ Other Changes
   relative paths for solrconfig.xml <lib> references with solr.install.dir
   system property; bin/solr scripts will set it appropriately. (ehatcher)
 
+* SOLR-5864: SolrCore.reload(ConfigSet coreConfig, SolrCore prev) deprecated.
+  Use SolrCore.reload(ConfigSet coreConfig) instead. (Tomás Fernández Löbbe)
+
 ==================  4.10.2 ==================
 
 Bug Fixes

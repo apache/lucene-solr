@@ -416,6 +416,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     return responseWriters.put(name, responseWriter);
   }
 
+  public SolrCore reload(ConfigSet coreConfig) throws IOException,
+      ParserConfigurationException, SAXException {
+    return reload(coreConfig, this);
+  }
+  
+  /**
+   * @deprecated Use {@link #reload(ConfigSet)}
+   */
   public SolrCore reload(ConfigSet coreConfig, SolrCore prev) throws IOException,
       ParserConfigurationException, SAXException {
     
