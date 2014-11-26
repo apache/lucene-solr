@@ -17,6 +17,7 @@ package org.apache.lucene.mockfile;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,9 +29,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -205,5 +209,30 @@ public class TestMockFilesystems extends LuceneTestCase {
     OutputStream file = Files.newOutputStream(wrapped.resolve("output"));
     assertTrue(seenMessage.get());
     file.close();
+  }
+  
+  public void testTooManyOpenFiles() throws IOException {
+    int n = 60;
+
+    Path dir = FilterPath.unwrap(createTempDir());
+    FileSystem fs = new HandleLimitFS(dir.getFileSystem(), n).getFileSystem(URI.create("file:///"));
+    dir = new FilterPath(dir, fs);
+    
+    // create open files to exact limit
+    List<Closeable> toClose = new ArrayList<>();
+    for (int i = 0; i < n; i++) {
+      Path p = Files.createTempFile(dir, null, null);
+      toClose.add(Files.newOutputStream(p));
+    }
+    
+    // now exceed
+    try {
+      Files.newOutputStream(Files.createTempFile(dir, null, null));
+      fail("didn't hit exception");
+    } catch (IOException e) {
+      assertTrue(e.getMessage().contains("Too many open files"));
+    }
+    
+    IOUtils.close(toClose);
   }
 }

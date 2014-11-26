@@ -17,6 +17,7 @@ package org.apache.lucene.mockfile;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +34,8 @@ import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+
+import org.apache.lucene.util.IOUtils;
 
 /** 
  * Base class for tracking file handles.
@@ -63,7 +66,6 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
    * @throws IOException if an I/O error occurs.
    */
   protected abstract void onOpen(Path path, Object stream) throws IOException;
-
   
   /**
    * Called when {@code path} is closed via {@code stream}. 
@@ -73,6 +75,21 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
    */
   protected abstract void onClose(Path path, Object stream) throws IOException;
 
+  /**
+   * Helper method, to deal with onOpen() throwing exception
+   */
+  final void callOpenHook(Path path, Closeable stream) throws IOException {
+    boolean success = false;
+    try {
+      onOpen(path, stream);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(stream);
+      }
+    }
+  }
+  
   @Override
   public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
     InputStream stream = new FilterInputStream2(super.newInputStream(path, options)) {
@@ -97,7 +114,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
         return this == obj;
       }
     };
-    onOpen(path, stream);
+    callOpenHook(path, stream);
     return stream;
   }
 
@@ -125,7 +142,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
         return this == obj;
       }
     };
-    onOpen(path, stream);
+    callOpenHook(path, stream);
     return stream;
   }
   
@@ -153,7 +170,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
         return this == obj;
       }
     };
-    onOpen(path, channel);
+    callOpenHook(path, channel);
     return channel;
   }
 
@@ -181,7 +198,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
         return this == obj;
       }
     };
-    onOpen(path, channel);
+    callOpenHook(path, channel);
     return channel;
   }
 
@@ -209,7 +226,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
         return this == obj;
       }
     };
-    onOpen(path, channel);
+    callOpenHook(path, channel);
     return channel;
   }
 
@@ -242,7 +259,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
         }
       };
     }
-    onOpen(dir, stream);
+    callOpenHook(dir, stream);
     return stream;
   }
   
@@ -279,7 +296,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
     @Override
     public SecureDirectoryStream<Path> newDirectoryStream(Path path, LinkOption... options) throws IOException {
       SecureDirectoryStream<Path> stream = new TrackingSecureDirectoryStream(super.newDirectoryStream(path, options), path);
-      onOpen(path, stream);
+      callOpenHook(path, stream);
       return stream;
     }
 
@@ -307,7 +324,7 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
           return this == obj;
         }
       };
-      onOpen(path, channel);
+      callOpenHook(path, channel);
       return channel;
     }
   }

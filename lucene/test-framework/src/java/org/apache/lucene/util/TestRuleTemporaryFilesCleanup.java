@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.mockfile.DisableFsyncFS;
+import org.apache.lucene.mockfile.HandleLimitFS;
 import org.apache.lucene.mockfile.LeakFS;
 import org.apache.lucene.mockfile.VerboseFS;
 import org.apache.lucene.mockfile.WindowsFS;
@@ -106,6 +107,10 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     javaTempDir = initializeJavaTempDir();
   }
   
+  // os/config-independent limit for too many open files
+  // TODO: can we make this lower?
+  private static final int MAX_OPEN_FILES = 2048;
+  
   private FileSystem initializeFileSystem() {
     FileSystem fs = FileSystems.getDefault();
     if (LuceneTestCase.VERBOSE) {
@@ -116,6 +121,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     if (random.nextInt(10) > 0) {
       fs = new DisableFsyncFS(fs).getFileSystem(null);
       fs = new LeakFS(fs).getFileSystem(null);
+      fs = new HandleLimitFS(fs, MAX_OPEN_FILES).getFileSystem(null);
       // windows is currently slow
       if (random.nextInt(10) == 0) {
         fs = new WindowsFS(fs).getFileSystem(null);
