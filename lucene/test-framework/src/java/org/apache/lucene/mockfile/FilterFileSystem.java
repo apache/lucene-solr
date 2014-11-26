@@ -181,4 +181,14 @@ public class FilterFileSystem extends FileSystem {
   public WatchService newWatchService() throws IOException {
     return delegate.newWatchService();
   }
+
+  /** Returns the {@code FileSystem} we wrap. */
+  public FileSystem getDelegate() {
+    return delegate;
+  }
+
+  /** Returns the {@code FilterFileSystemProvider} sent to this on init. */
+  public FileSystemProvider getParent() {
+    return parent;
+  }
 }
