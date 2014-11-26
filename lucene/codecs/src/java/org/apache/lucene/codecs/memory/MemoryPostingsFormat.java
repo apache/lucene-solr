@@ -841,6 +841,10 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
+
+      if ((flags & DocsEnum.FLAG_POSITIONS) >= DocsEnum.FLAG_POSITIONS)
+        return docsAndPositions(liveDocs, reuse, flags);
+
       decodeMetaData();
       FSTDocsEnum docsEnum;
 
