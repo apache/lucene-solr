@@ -409,17 +409,17 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
       case $1 in
           -c|-collection)
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Expected collection name but found $2 instead!"
-                exit 1            
+                print_usage "$SCRIPT_CMD" "Collection name is required when using the $1 option!"
+                exit 1
               fi
               HEALTHCHECK_COLLECTION=$2
               shift 2
           ;;
           -z|-zkhost)          
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Expected a ZooKeeper connection string but found $2 instead!"
-                exit 1            
-              fi          
+                print_usage "$SCRIPT_CMD" "ZooKeepeer connection string is required when using the $1 option!"
+                exit 1
+              fi
               ZK_HOST="$2"
               shift 2
           ;;
@@ -473,7 +473,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
       case $1 in
           -n|-name)
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Expected $CREATE_TYPE name but found $2 instead!"
+                print_usage "$SCRIPT_CMD" "$CREATE_TYPE name is required when using the $1 option!"
                 exit 1
               fi
               CREATE_NAME=$2
@@ -481,7 +481,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
           ;;
           -c|-configset)
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Expected configset name but found $2 instead!"
+                print_usage "$SCRIPT_CMD" "Configset name is required when using the $1 option!"
                 exit 1
               fi
               CREATE_CONFIGSET="$2"
@@ -489,7 +489,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
           ;;
           -shards)
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Expected shard count but found $2 instead!"
+                print_usage "$SCRIPT_CMD" "Shard count is required when using the $1 option!"
                 exit 1
               fi
               CREATE_NUM_SHARDS="$2"
@@ -497,10 +497,18 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
           ;;
           -replicationFactor)
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Expected replication factor but found $2 instead!"
+                print_usage "$SCRIPT_CMD" "Replication factor is required when using the $1 option!"
                 exit 1
               fi
               CREATE_REPFACT="$2"
+              shift 2
+          ;;
+          -p|-port)
+              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
+                exit 1
+              fi
+              CREATE_PORT="$2"
               shift 2
           ;;
           -help|-usage)
@@ -533,41 +541,28 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
     exit 1
   fi
 
-  for ID in `ps auxww | grep java | grep start.jar | awk '{print $2}' | sort -r`
-    do
-      port=`jetty_port "$ID"`
-      if [ "$port" != "" ]; then
-        CREATE_PORT=$port
-        break
-      fi
-  done
-
   if [ "$CREATE_PORT" == "" ]; then
-    echo "Failed to determine the port of a local Solr instance, cannot create $CREATE_TYPE!"
-    exit 1
+    for ID in `ps auxww | grep java | grep start.jar | awk '{print $2}' | sort -r`
+      do
+        port=`jetty_port "$ID"`
+        if [ "$port" != "" ]; then
+          CREATE_PORT=$port
+          break
+        fi
+    done
   fi
 
-  STATUS_INFO=`run_tool status -solr http://localhost:$CREATE_PORT/solr | tr -d ' '`
-  IS_CLOUD=`echo $STATUS_INFO | grep $'"cloud":' | tr -d ' '`
-  if [ "$IS_CLOUD" != "" ]; then
-    if [ "$SCRIPT_CMD" == "create_core" ]; then
-      echo -e "\nERROR: Solr running on port $CREATE_PORT is running in SolrCloud mode, please use create_collection command instead.\n"
-      exit 1
-    fi
-  else
-    if [ "$SCRIPT_CMD" == "create_collection" ]; then
-      echo -e "\nERROR: Solr running on port $CREATE_PORT is running in standalone server mode, please use the create_core command instead\ncreate_collection can only be used when running in SolrCloud mode.\n"
-      exit 1
-    fi
+  if [ "$CREATE_PORT" == "" ]; then
+    echo "Failed to determine the port of a local Solr instance, cannot create $CREATE_TYPE $CREATE_NAME"
+    exit 1
   fi
 
   if [ "$SCRIPT_CMD" == "create_collection" ]; then
     run_tool create_collection -name $CREATE_NAME -shards $CREATE_NUM_SHARDS -replicationFactor $CREATE_REPFACT \
       -config $CREATE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$CREATE_PORT/solr
   else
-    CREATE_URL="http://localhost:$CREATE_PORT/solr/admin/cores?action=CREATE&name=$CREATE_NAME&configSet=$CREATE_CONFIGSET"
-    echo -e "Creating new core using command:\n$CREATE_URL\n"
-    run_tool api -get $CREATE_URL
+    run_tool create_core -name $CREATE_NAME -solrUrl http://localhost:$CREATE_PORT/solr \
+      -config $CREATE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets
   fi
 
   exit $?
@@ -576,7 +571,7 @@ fi
 
 # verify the command given is supported
 if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ]; then
-  print_usage "" "$SCRIPT_CMD not supported!"
+  print_usage "" "$SCRIPT_CMD is not a valid command!"
   exit 1
 fi
 
@@ -593,8 +588,8 @@ if [ $# -gt 0 ]; then
         ;;
         -d|-dir)
             if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Expected directory but found $2 instead!"
-              exit 1            
+              print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
+              exit 1
             fi
 
             # see if the arg value is relative to the tip vs full path
@@ -607,7 +602,7 @@ if [ $# -gt 0 ]; then
         ;;
         -s|-solr.home)
             if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Expected directory but found $2 instead!"
+              print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
               exit 1
             fi
 
@@ -616,8 +611,8 @@ if [ $# -gt 0 ]; then
         ;;
         -e|-example)
             if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Expected example name but found $2 instead!"
-              exit 1            
+              print_usage "$SCRIPT_CMD" "Example name is required when using the $1 option!"
+              exit 1
             fi
             EXAMPLE="$2"
             shift 2
@@ -628,34 +623,33 @@ if [ $# -gt 0 ]; then
         ;;
         -h|-host)
             if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Expected hostname but found $2 instead!"
-              exit 1            
+              print_usage "$SCRIPT_CMD" "Hostname is required when using the $1 option!"
+              exit 1
             fi
             SOLR_HOST="$2"
             shift 2
         ;;
         -m|-memory)
             if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Expected memory setting but found $2 instead!"
-              exit 1            
-            fi            
+              print_usage "$SCRIPT_CMD" "Memory setting is required when using the $1 option!"
+              exit 1
+            fi
             SOLR_HEAP="$2"
             shift 2
         ;;
         -p|-port)
             if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Expected port number but found $2 instead!"
-              exit 1            
-            fi            
+              print_usage "$SCRIPT_CMD" "Port number is required when using the $1 option!"
+              exit 1
+            fi
             SOLR_PORT="$2"
             shift 2
         ;;
         -z|-zkhost)
             if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Expected ZooKeeper connection string but found $2 instead!"
-              exit 1            
+              print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
+              exit 1
             fi
-
             ZK_HOST="$2"
             shift 2
         ;;
@@ -689,7 +683,7 @@ if [ $# -gt 0 ]; then
         ;;
         *)
             if [ "$1" != "" ]; then            
-              print_usage "$SCRIPT_CMD" "Error parsing argument $1!"
+              print_usage "$SCRIPT_CMD" "$1 is not supported by this script"
               exit 1
             else
               break # out-of-args, stop looping
@@ -782,15 +776,32 @@ if [ "$EXAMPLE" != "" ]; then
                 done
               done
             fi       
-            
-            for (( s=0; s<$CLOUD_NUM_NODES; s++ ))
+
+            # first, clone the server directory (w/o pulling over existing cores)
+            if [ ! -d "$SOLR_TIP/node1" ]; then
+              echo "Cloning $DEFAULT_SERVER_DIR into $SOLR_TIP/node1"
+              mkdir -p $SOLR_TIP/node1
+              cp -r $DEFAULT_SERVER_DIR/contexts $SOLR_TIP/node1/
+              cp -r $DEFAULT_SERVER_DIR/etc $SOLR_TIP/node1/
+              cp -r $DEFAULT_SERVER_DIR/lib $SOLR_TIP/node1/
+              cp -r $DEFAULT_SERVER_DIR/resources $SOLR_TIP/node1/
+              cp -r $DEFAULT_SERVER_DIR/scripts $SOLR_TIP/node1/
+              cp -r $DEFAULT_SERVER_DIR/webapps $SOLR_TIP/node1/
+              cp $DEFAULT_SERVER_DIR/start.jar $SOLR_TIP/node1/
+              mkdir -p $SOLR_TIP/node1/solr-webapp
+              mkdir -p $SOLR_TIP/node1/solr
+              cp -r $DEFAULT_SERVER_DIR/solr/configsets $SOLR_TIP/node1/solr/
+              cp $DEFAULT_SERVER_DIR/solr/solr.xml $SOLR_TIP/node1/solr/
+              cp $DEFAULT_SERVER_DIR/solr/zoo.cfg $SOLR_TIP/node1/solr/
+            fi
+
+            for (( s=1; s<$CLOUD_NUM_NODES; s++ ))
             do
               ndx=$[$s+1]
               if [ ! -d "$SOLR_TIP/node$ndx" ]; then
-                echo "Cloning $DEFAULT_SERVER_DIR into $SOLR_TIP/node$ndx"                 
-                cp -r $DEFAULT_SERVER_DIR $SOLR_TIP/node$ndx
-                rm -rf $SOLR_TIP/node$ndx/solr/zoo_data
-              fi              
+                echo "Cloning $SOLR_TIP/node1 into $SOLR_TIP/node$ndx"
+                cp -r $SOLR_TIP/node1 $SOLR_TIP/node$ndx
+              fi
             done
             SOLR_MODE="solrcloud"
             SOLR_SERVER_DIR="$SOLR_TIP/node1"
@@ -1094,9 +1105,8 @@ if [ "$EXAMPLE" != "cloud" ]; then
       run_tool create_collection -name $EXAMPLE -shards 1 -replicationFactor 1 \
         -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
     else
-      CREATE_URL="http://localhost:$SOLR_PORT/solr/admin/cores?action=CREATE&name=$EXAMPLE&configSet=$EXAMPLE_CONFIGSET"
-      echo -e "Creating new core using command:\n$CREATE_URL\n"
-      run_tool api -get $CREATE_URL
+      run_tool create_core -name $EXAMPLE -solrUrl http://localhost:$SOLR_PORT/solr \
+        -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets
     fi
 
     if [ "$EXAMPLE" == "techproducts" ]; then
