@@ -109,6 +109,11 @@ public class FilterFileSystem extends FileSystem {
         public Path next() {
           return new FilterPath(iterator.next(), FilterFileSystem.this);
         }
+        
+        @Override
+        public void remove() {
+          iterator.remove();
+        }
       };
     };
   }
@@ -127,6 +132,11 @@ public class FilterFileSystem extends FileSystem {
         @Override
         public FileStore next() {
           return new FilterFileStore(iterator.next(), parent.getScheme());
+        }
+        
+        @Override
+        public void remove() {
+          iterator.remove();
         }
       };
     };
