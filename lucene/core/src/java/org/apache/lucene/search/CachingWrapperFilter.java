@@ -22,6 +22,7 @@ import static org.apache.lucene.search.DocIdSet.EMPTY;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -146,8 +147,12 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   }
 
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
-    // Sync only to pull the current set of values:
-    return Accountables.namedAccountables("segment", cache);
+  public Iterable<? extends Accountable> getChildResources() {
+    // Sync to pull the current set of values:
+    final Map<Object, DocIdSet> copy;
+    synchronized (cache) {
+      copy = new HashMap<>(cache);
+    }
+    return Accountables.namedAccountables("segment", copy);
   }
 }
