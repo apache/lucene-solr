@@ -767,7 +767,7 @@ public abstract class TFIDFSimilarity extends Similarity {
 
   private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
     Explanation result = new Explanation();
-    result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
+    result.setDescription("score(doc="+doc+",freq="+freq.getValue()+"), product of:");
 
     // explain query weight
     Explanation queryExpl = new Explanation();
