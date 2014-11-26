@@ -33,6 +33,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
@@ -1248,7 +1249,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     dir.close();
   }
 
-  @Test
+  @Test @Nightly
   public void testTonsOfUpdates() throws Exception {
     // LUCENE-5248: make sure that when there are many updates, we don't use too much RAM
     Directory dir = newDirectory();
