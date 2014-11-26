@@ -184,7 +184,7 @@ public class TestPhraseQuery extends LuceneTestCase {
    * slop is the total number of positional moves allowed
    * to line up a phrase
    */
-  public void testMulipleTerms() throws Exception {
+  public void testMultipleTerms() throws Exception {
     query.setSlop(2);
     query.add(new Term("field", "one"));
     query.add(new Term("field", "three"));

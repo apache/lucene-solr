@@ -34,7 +34,8 @@ import org.apache.lucene.util.FixedBitSet;
 final class SloppyPhraseScorer extends Scorer {
   private PhrasePositions min, max;
 
-  private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
+  private int freq;
+  private float sloppyFreq;
 
   private final Similarity.SimScorer docScorer;
   private final PhraseQuery.PostingsAndFreq[] postings;
@@ -151,6 +152,8 @@ final class SloppyPhraseScorer extends Scorer {
     if (!initPhrasePositions())
       return NO_MORE_POSITIONS;
 
+    freq = -1;
+    sloppyFreq = -1;
     cached = false;
     int pos = nextPosition();
     cached = true;
@@ -544,11 +547,13 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public int freq() throws IOException {
-    int f = 0;
-    while (nextPosition() != NO_MORE_POSITIONS) {
-      f++;
+    if (freq == -1) {
+      freq = 0;
+      while (nextPosition() != NO_MORE_POSITIONS) {
+        freq++;
+      }
     }
-    return f;
+    return freq;
   }
 
   /**
@@ -570,11 +575,13 @@ final class SloppyPhraseScorer extends Scorer {
    * We may want to fix this in the future (currently not, for performance reasons).
    */
   float sloppyFreq() throws IOException {
-    float f = 0.0f;
-    while (nextPosition() != NO_MORE_POSITIONS) {
-      f += docScorer.computeSlopFactor(matchLength);
+    if (sloppyFreq == -1) {
+      sloppyFreq = 0.0f;
+      while (nextPosition() != NO_MORE_POSITIONS) {
+        sloppyFreq += docScorer.computeSlopFactor(matchLength);
+      }
     }
-    return f;
+    return sloppyFreq;
   }
 
   @Override

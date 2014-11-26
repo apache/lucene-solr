@@ -59,6 +59,8 @@ final class ExactPhraseScorer extends Scorer {
 
   private int docID = -1;
 
+  private int freq = -1;
+
   private final Similarity.SimScorer docScorer;
 
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
@@ -126,9 +128,11 @@ final class ExactPhraseScorer extends Scorer {
   
   @Override
   public int freq() throws IOException {
-    int freq = 0;
-    while (nextPosition() != NO_MORE_DOCS) {
-      freq++;
+    if (freq == -1) {
+      freq = 0;
+      while (nextPosition() != NO_MORE_DOCS) {
+        freq++;
+      }
     }
     return freq;
   }
@@ -151,6 +155,7 @@ final class ExactPhraseScorer extends Scorer {
   private boolean cached = false;
 
   private void resetPositions() throws IOException {
+    freq = -1;
     chunkStart = 0;
     chunkEnd = CHUNK;
     posRemaining = 0;
