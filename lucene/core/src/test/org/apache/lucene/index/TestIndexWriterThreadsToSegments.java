@@ -190,7 +190,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     CheckSegmentCount checker = new CheckSegmentCount(w, maxThreadCount, indexingCount);
 
     // We spin up 10 threads up front, but then in between flushes we limit how many can run on each iteration
-    final int ITERS = 100;
+    final int ITERS = TEST_NIGHTLY ? 300 : 10;
     Thread[] threads = new Thread[MAX_THREADS_AT_ONCE];
 
     // We use this to stop all threads once they've indexed their docs in the current iter, and pull a new NRT reader, and verify the
