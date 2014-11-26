@@ -108,6 +108,9 @@ Upgrading from Solr 4.x
 * AdminHandlers is deprecated , /admin/* are implicitly defined, /get ,/replacation and
    handlers are also implicitly registered (refer to SOLR-6792)
 
+* SolrCore.reload(ConfigSet coreConfig, SolrCore prev) was deprecated in 4.10.3 and
+  removed in 5.0. use SolrCore.reload(ConfigSet coreConfig). See SOLR-5864.
+
 Detailed Change List
 ----------------------
 
@@ -426,9 +429,12 @@ Other Changes
 * SOLR-6751: Exceptions thrown in the analysis chain in DirectUpdateHandler2
   should return a BAD_REQUEST status (Alan Woodward)
 
-* SOLR-SOLR-6792 : deprecate AdminHandlers, Clean up solrconfig.xml of
+* SOLR-6792 : deprecate AdminHandlers, Clean up solrconfig.xml of
   unnecessary plugin definitions, implicit registration of /replication,
   /get and /admin/* handlers (Noble Paul)
+
+* SOLR-5864: Remove previous SolrCore as parameter on reload.
+  (Tomás Fernández Löbbe) 
 
 ==================  4.10.3 ==================
 
