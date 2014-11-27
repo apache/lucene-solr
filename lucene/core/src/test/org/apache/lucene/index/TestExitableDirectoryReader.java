@@ -70,8 +70,8 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
       @Override
       public BytesRef next() throws IOException {
         try {
-          // Sleep for 1s before each .next() call.
-          Thread.sleep(1000);
+          // Sleep for 100ms before each .next() call.
+          Thread.sleep(100);
         } catch (InterruptedException e) {
         }
         return in.next();
@@ -118,10 +118,10 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
 
     Query query = new PrefixQuery(new Term("default", "o"));
 
-    // Set a fairly high timeout value (10 seconds) and expect the query to complete in that time frame.
+    // Set a fairly high timeout value (1 second) and expect the query to complete in that time frame.
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.
     directoryReader = DirectoryReader.open(directory);
-    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(10000));
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(1000));
     reader = new TestReader(exitableDirectoryReader);
     searcher = new IndexSearcher(reader);
     searcher.search(query, 10);

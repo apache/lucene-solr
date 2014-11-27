@@ -1330,7 +1330,7 @@ public abstract class LuceneTestCase extends Assert {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
     
-    if (rarely(random) && !bare) { 
+    if (TEST_NIGHTLY && rarely(random) && !bare) { 
       final double maxMBPerSec = TestUtil.nextInt(random, 20, 40);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
