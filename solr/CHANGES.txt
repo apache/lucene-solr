@@ -376,6 +376,27 @@ Other Changes
 * SOLR-6715: ZkSolrResourceLoader constructors accept a parameter called 'collection'
   but it should be 'configName'. (shalin)
 
+* SOLR-6697: bin/solr start scripts allow setting SOLR_OPTS in solr.in.* (janhoy)
+
+* SOLR-6739: Admin UI - Sort list of command line args (steffkes)
+
+* SOLR-6740: Admin UI - improve Files View (steffkes)
+
+* SOLR-6570: Run SolrZkClient session watch asynchronously. 
+ (Ramkumar Aiyengar via Mark Miller)
+ 
+* SOLR-6747: Add an optional caching option as a workaround for SOLR-6586.
+  (Mark Miller, Gregory Chanan)
+
+* SOLR-6459: Normalize logging of operations in Overseer and log current queue size.
+  (Ramkumar Aiyengar, shalin via Mark Miller)
+
+* SOLR-6754: ZkController.publish doesn't use the updateLastState parameter.
+  (shalin)
+
+* SOLR-6715: ZkSolrResourceLoader constructors accept a parameter called 'collection'
+  but it should be 'configName'. (shalin)
+
 * SOLR-6751: Exceptions thrown in the analysis chain in DirectUpdateHandler2
   should return a BAD_REQUEST status (Alan Woodward)
 
