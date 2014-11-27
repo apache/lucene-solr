@@ -115,6 +115,8 @@ New Features
   suggesters from multi-valued fields.  (Varun Thacker via Mike
   McCandless)
 
+* LUCENE-6077: Added a filter cache. (Adrien Grand, Robert Muir)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

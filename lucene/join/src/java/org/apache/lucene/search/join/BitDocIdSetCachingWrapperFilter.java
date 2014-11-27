@@ -25,6 +25,7 @@ import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilterCachingPolicy;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitDocIdSet;
 
@@ -39,7 +40,7 @@ public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter implement
   /** Sole constructor. */
   public BitDocIdSetCachingWrapperFilter(Filter filter) {
     super();
-    this.filter = new CachingWrapperFilter(filter) {
+    this.filter = new CachingWrapperFilter(filter, FilterCachingPolicy.ALWAYS_CACHE) {
       @Override
       protected BitDocIdSet docIdSetToCache(DocIdSet docIdSet, LeafReader reader) throws IOException {
         if (docIdSet == null || docIdSet instanceof BitDocIdSet) {

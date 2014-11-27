@@ -22,7 +22,6 @@ import static org.apache.lucene.search.DocIdSet.EMPTY;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -41,13 +40,23 @@ import org.apache.lucene.util.RoaringDocIdSet;
  */
 public class CachingWrapperFilter extends Filter implements Accountable {
   private final Filter filter;
+  private final FilterCachingPolicy policy;
   private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,DocIdSet>());
 
-  /** Wraps another filter's result and caches it.
+  /** Wraps another filter's result and caches it according to the provided policy.
    * @param filter Filter to cache results of
+   * @param policy policy defining which filters should be cached on which segments
    */
-  public CachingWrapperFilter(Filter filter) {
+  public CachingWrapperFilter(Filter filter, FilterCachingPolicy policy) {
     this.filter = filter;
+    this.policy = policy;
+  }
+
+  /** Same as {@link CachingWrapperFilter#CachingWrapperFilter(Filter, FilterCachingPolicy)}
+   *  but enforces the use of the
+   *  {@link FilterCachingPolicy.CacheOnLargeSegments#DEFAULT} policy. */
+  public CachingWrapperFilter(Filter filter) {
+    this(filter, FilterCachingPolicy.CacheOnLargeSegments.DEFAULT);
   }
 
   /**
@@ -99,14 +108,17 @@ public class CachingWrapperFilter extends Filter implements Accountable {
     if (docIdSet != null) {
       hitCount++;
     } else {
-      missCount++;
-      docIdSet = docIdSetToCache(filter.getDocIdSet(context, null), reader);
-      if (docIdSet == null) {
-        // We use EMPTY as a sentinel for the empty set, which is cacheable
-        docIdSet = EMPTY;
+      docIdSet = filter.getDocIdSet(context, null);
+      if (policy.shouldCache(filter, context, docIdSet)) {
+        missCount++;
+        docIdSet = docIdSetToCache(docIdSet, reader);
+        if (docIdSet == null) {
+          // We use EMPTY as a sentinel for the empty set, which is cacheable
+          docIdSet = EMPTY;
+        }
+        assert docIdSet.isCacheable();
+        cache.put(key, docIdSet);
       }
-      assert docIdSet.isCacheable();
-      cache.put(key, docIdSet);
     }
 
     return docIdSet == EMPTY ? null : BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
