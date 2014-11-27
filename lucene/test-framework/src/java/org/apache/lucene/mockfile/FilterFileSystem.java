@@ -74,6 +74,7 @@ public class FilterFileSystem extends FileSystem {
       parent.onClose();
     } else {
       try (FileSystem d = delegate) {
+        assert d != null; // avoid stupid compiler warning
         parent.onClose();
       }
     }
