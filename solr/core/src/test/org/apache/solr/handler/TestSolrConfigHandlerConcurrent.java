@@ -33,6 +33,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -164,7 +165,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
-        Map respMap = getAsMap(url+"/config/overlay?wt=json");
+        Map respMap = getAsMap(url+"/config/overlay?wt=json", cloudClient);
         Map m = (Map) respMap.get("overlay");
         if(m!= null) m = (Map) m.get("props");
         if(m == null) {
@@ -191,7 +192,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   }
 
-  private  Map getAsMap(String uri) throws Exception {
+  public static Map getAsMap(String uri, CloudSolrServer cloudClient) throws Exception {
     HttpGet get = new HttpGet(uri) ;
     HttpEntity entity = null;
     try {

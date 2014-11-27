@@ -2236,17 +2236,19 @@ public final class ZkController {
               log.info("Watcher on {} is removed ", zkDir);
               return;
             }
-            final Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
+            Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
             if (listeners != null && !listeners.isEmpty()) {
+              final Set<Runnable> listenersCopy = new HashSet<>(listeners);
               new Thread() {
                 //run these in a separate thread because this can be long running
                 public void run() {
-                  for (final Runnable listener : listeners)
+                  for (final Runnable listener : listenersCopy) {
                     try {
                       listener.run();
                     } catch (Exception e) {
                       log.warn("listener throws error", e);
                     }
+                  }
                 }
               }.start();
             }
