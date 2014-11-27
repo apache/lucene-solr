@@ -61,6 +61,8 @@ public class TestPhraseQuery extends LuceneTestCase {
       }
     };
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, analyzer);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("repeated");
     
     Document2 doc = writer.newDocument();
     doc.addLargeText("field", "one two three four five");

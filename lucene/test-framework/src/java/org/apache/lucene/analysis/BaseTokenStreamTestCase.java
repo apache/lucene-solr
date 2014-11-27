@@ -44,6 +44,7 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LineFileDocsText;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
@@ -551,9 +552,9 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) throws IOException {
 
-    final LineFileDocs docs = new LineFileDocs(random);
     StringReader bogus = new StringReader("");
     Document2 doc = null;
+    final LineFileDocsText docs = new LineFileDocsText(random);
     if (iw != null) {
       FieldTypes fieldTypes = iw.getFieldTypes();
       doc = iw.newDocument();
@@ -598,6 +599,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       fieldTypes.disableHighlighting("dummy");
       fieldTypes.disableStored("dummy");
       fieldTypes.setIndexOptions("dummy", indexOptions);
+      fieldTypes.setMultiValued("dummy");
     }
     
     try {
@@ -606,7 +608,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         
         if (random.nextInt(10) == 7) {
           // real data from linedocs
-          text = docs.nextDoc().get("body");
+          text = docs.nextDoc().body;
           if (text.length() > maxWordLength) {
             
             // Take a random slice from the text...:

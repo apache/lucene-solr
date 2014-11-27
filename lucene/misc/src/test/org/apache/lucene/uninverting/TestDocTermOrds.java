@@ -18,27 +18,27 @@ package org.apache.lucene.uninverting;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -46,8 +46,8 @@ import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -133,14 +133,17 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, conf);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting("id");
+    fieldTypes.disableSorting("field");
+    fieldTypes.setMultiValued("field");
 
     final int[][] idToOrds = new int[NUM_DOCS][];
     final Set<Integer> ordsForDocSet = new HashSet<>();
 
     for(int id=0;id<NUM_DOCS;id++) {
-      Document doc = new Document();
-
-      doc.add(new IntField("id", id, Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addInt("id", id);
       
       final int termCount = TestUtil.nextInt(random(), 0, 20 * RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -153,11 +156,10 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
-        doc.add(field);
+        doc.addAtom("field", termsArray[ord].utf8ToString());
       }
       ordsForDocSet.clear();
       Arrays.sort(ordsForDoc);
@@ -230,14 +232,18 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, conf);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting("id");
+    fieldTypes.disableSorting("field");
+    fieldTypes.setMultiValued("field");
 
     final int[][] idToOrds = new int[NUM_DOCS][];
     final Set<Integer> ordsForDocSet = new HashSet<>();
 
     for(int id=0;id<NUM_DOCS;id++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
 
-      doc.add(new IntField("id", id, Field.Store.YES));
+      doc.addInt("id", id);
       
       final int termCount = TestUtil.nextInt(random(), 0, 20 * RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -250,11 +256,10 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
-        doc.add(field);
+        doc.addAtom("field", termsArray[ord].utf8ToString());
       }
       ordsForDocSet.clear();
       Arrays.sort(ordsForDoc);
@@ -321,7 +326,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                             TestUtil.nextInt(random(), 2, 10));
                                             
 
-    final NumericDocValues docIDToID = FieldCache.DEFAULT.getNumerics(r, "id", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
+    final NumericDocValues docIDToID = FieldCache.DEFAULT.getNumerics(r, "id", FieldCache.DOCUMENT2_INT_PARSER, false);
     /*
       for(int docID=0;docID<subR.maxDoc();docID++) {
       System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
@@ -427,14 +432,17 @@ public class TestDocTermOrds extends LuceneTestCase {
   public void testNumericEncoded32() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    
-    Document doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("foo");
+    fieldTypes.setMultiValued("foo");
+
+    Document2 doc = iw.newDocument();
+    doc.addInt("foo", 5);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
-    doc.add(new IntField("foo", -3, Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addInt("foo", 5);
+    doc.addInt("foo", -3);
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -443,7 +451,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(dir);
     LeafReader ar = getOnlySegmentReader(ir);
     
-    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT32_TERM_PREFIX);
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", null);
     assertEquals(2, v.getValueCount());
     
     v.setDocument(0);
@@ -456,10 +464,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToInt(value));
+    assertEquals(-3, Document2.bytesToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToInt(value));
+    assertEquals(5, Document2.bytesToInt(value));
     
     ir.close();
     dir.close();
@@ -468,14 +476,17 @@ public class TestDocTermOrds extends LuceneTestCase {
   public void testNumericEncoded64() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("foo");
+    fieldTypes.setMultiValued("foo");
     
-    Document doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addLong("foo", 5);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
-    doc.add(new LongField("foo", -3, Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addLong("foo", 5);
+    doc.addLong("foo", -3);
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -484,7 +495,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(dir);
     LeafReader ar = getOnlySegmentReader(ir);
     
-    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT64_TERM_PREFIX);
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", null);
     assertEquals(2, v.getValueCount());
     
     v.setDocument(0);
@@ -497,10 +508,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToLong(value));
+    assertEquals(-3, Document2.bytesToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToLong(value));
+    assertEquals(5, Document2.bytesToLong(value));
     
     ir.close();
     dir.close();

@@ -354,6 +354,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("upd");
+    fieldTypes.setMultiValued("upd");
 
     final int numUpdates = atLeast(100);
     for(int i=0;i<numUpdates;i++) {

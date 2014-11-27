@@ -27,8 +27,10 @@ import org.apache.lucene.analysis.NumericTokenStream.NumericTermAttribute;
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -71,34 +73,35 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
   }
   
   public void testNumericReuse() throws IOException {
-    IntField intField = new IntField("foo", 5, Field.Store.NO);
+    Directory dir = newDirectory();
+    IndexWriter w = newIndexWriter(dir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+
+    Document2 doc = w.newDocument();
+    doc.addInt("foo", 5);
+    IndexableField intField = doc.getField("foo");
     
     // passing null
-    TokenStream ts = intField.tokenStream(null, null);
-    assertTrue(ts instanceof NumericTokenStream);
-    assertEquals(NumericUtils.PRECISION_STEP_DEFAULT_32, ((NumericTokenStream)ts).getPrecisionStep());
-    assertNumericContents(5, ts);
+    TokenStream ts = intField.tokenStream(fieldTypes.getIndexAnalyzer(), null);
 
     // now reuse previous stream
-    intField = new IntField("foo", 20, Field.Store.NO);
-    TokenStream ts2 = intField.tokenStream(null, ts);
+    doc = w.newDocument();
+    doc.addInt("foo", 20);
+    intField = doc.getField("foo");
+    TokenStream ts2 = intField.tokenStream(fieldTypes.getIndexAnalyzer(), ts);
     assertSame(ts, ts2);
     assertNumericContents(20, ts);
     
     // pass a bogus stream and ensure its still ok
-    intField = new IntField("foo", 2343, Field.Store.NO);
+    doc = w.newDocument();
+    doc.addInt("foo", 2343);
+    intField = doc.getField("foo");
     TokenStream bogus = new CannedTokenStream(new Token("bogus", 0, 5));
-    ts = intField.tokenStream(null, bogus);
+    ts = intField.tokenStream(fieldTypes.getIndexAnalyzer(), bogus);
     assertNotSame(bogus, ts);
     assertNumericContents(2343, ts);
-    
-    // pass another bogus stream (numeric, but different precision step!)
-    intField = new IntField("foo", 42, Field.Store.NO);
-    assert 3 != NumericUtils.PRECISION_STEP_DEFAULT;
-    bogus = new NumericTokenStream(3);
-    ts = intField.tokenStream(null, bogus);
-    assertNotSame(bogus, ts);
-    assertNumericContents(42, ts);
+    w.close();
+    dir.close();
   }
   
   static class MyField implements IndexableField {
@@ -169,18 +172,13 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
   }
   
   private void assertNumericContents(int value, TokenStream ts) throws IOException {
-    assertTrue(ts instanceof NumericTokenStream);
-    NumericTermAttribute numericAtt = ts.getAttribute(NumericTermAttribute.class);
+    TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
     ts.reset();
-    boolean seen = false;
-    while (ts.incrementToken()) {
-      if (numericAtt.getShift() == 0) {
-        assertEquals(value, numericAtt.getRawValue());
-        seen = true;
-      }
-    }
+    assertTrue(ts.incrementToken());
+    termAtt.fillBytesRef();
+    assertEquals(value, Document2.bytesToInt(termAtt.getBytesRef()));
+    assertFalse(ts.incrementToken());
     ts.end();
     ts.close();
-    assertTrue(seen);
   }
 }

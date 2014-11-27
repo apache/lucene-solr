@@ -609,6 +609,8 @@ public class TestAddIndexes extends LuceneTestCase {
     fieldTypes.enableTermVectors("content");
     fieldTypes.enableTermVectorPositions("content");
     fieldTypes.enableTermVectorOffsets("content");
+    fieldTypes.setMultiValued("content");
+
     doc.addLargeText("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
     for(int i=0;i<60;i++) {
       writer.addDocument(doc);

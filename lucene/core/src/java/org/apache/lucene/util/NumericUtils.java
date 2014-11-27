@@ -20,10 +20,6 @@ package org.apache.lucene.util;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.document.DoubleField; // javadocs
-import org.apache.lucene.document.FloatField; // javadocs
-import org.apache.lucene.document.IntField; // javadocs
-import org.apache.lucene.document.LongField; // javadocs
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;

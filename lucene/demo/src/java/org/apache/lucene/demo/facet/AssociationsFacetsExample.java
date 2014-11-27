@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
@@ -37,8 +38,8 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -68,14 +69,14 @@ public class AssociationsFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    Document doc = new Document();
+    Document2 doc = indexWriter.newDocument();
     // 3 occurrences for tag 'lucene'
     doc.add(new IntAssociationFacetField(3, "tags", "lucene"));
     // 87% confidence level of genre 'computing'
     doc.add(new FloatAssociationFacetField(0.87f, "genre", "computing"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     // 1 occurrence for tag 'lucene'
     doc.add(new IntAssociationFacetField(1, "tags", "lucene"));
     // 2 occurrence for tag 'solr'

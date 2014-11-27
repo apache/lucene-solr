@@ -21,9 +21,10 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
@@ -34,8 +35,9 @@ import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -48,6 +50,7 @@ public class RangeFacetsExample implements Closeable {
 
   private final Directory indexDir = new RAMDirectory();
   private IndexSearcher searcher;
+  private FieldTypes fieldTypes;
   private final long nowSec = System.currentTimeMillis();
 
   final LongRange PAST_HOUR = new LongRange("Past hour", nowSec-3600, true, nowSec, true);
@@ -65,17 +68,16 @@ public class RangeFacetsExample implements Closeable {
     // Add documents with a fake timestamp, 1000 sec before
     // "now", 2000 sec before "now", ...:
     for(int i=0;i<100;i++) {
-      Document doc = new Document();
+      Document2 doc = indexWriter.newDocument();
       long then = nowSec - i * 1000;
-      // Add as doc values field, so we can compute range facets:
-      doc.add(new NumericDocValuesField("timestamp", then));
-      // Add as numeric field so we can drill-down:
-      doc.add(new LongField("timestamp", then, Field.Store.NO));
+      // Add as numeric field, so we can compute range facets and drill down:
+      doc.addLong("timestamp", then);
       indexWriter.addDocument(doc);
     }
 
     // Open near-real-time searcher
     searcher = new IndexSearcher(DirectoryReader.open(indexWriter, true));
+    fieldTypes = searcher.getFieldTypes();
     indexWriter.close();
   }
 
@@ -108,7 +110,7 @@ public class RangeFacetsExample implements Closeable {
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(getConfig());
 
-    q.add("timestamp", NumericRangeQuery.newLongRange("timestamp", range.min, range.max, range.minInclusive, range.maxInclusive));
+    q.add("timestamp", new ConstantScoreQuery(fieldTypes.newRangeFilter("timestamp", range.min, range.minInclusive, range.max, range.maxInclusive)));
 
     return searcher.search(q, 10);
   }

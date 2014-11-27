@@ -17,12 +17,13 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.text.ParseException;
+import java.util.HashMap;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -34,9 +35,9 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Test;
-
-import java.text.ParseException;
-import java.util.HashMap;
+import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 public class JtsPolygonTest extends StrategyTestCase {
 
@@ -67,7 +68,7 @@ public class JtsPolygonTest extends StrategyTestCase {
             "-93.16315546122038 45.23742639412364," +
             "-93.18100824442227 45.25676372469945))",
         LUCENE_4464_distErrPct);
-    SearchResults got = executeQuery(strategy.makeQuery(args), 100);
+    SearchResults got = executeQuery(strategy.makeQuery(fieldTypes, args), 100);
     assertEquals(1, got.numFound);
     assertEquals("poly2", got.results.get(0).document.get("id"));
     //did not find poly 1 !
@@ -91,19 +92,15 @@ public class JtsPolygonTest extends StrategyTestCase {
     
     SpatialPrefixTree trie = new QuadPrefixTree(ctx, 12);
     TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");
-    Document doc = new Document();
-    doc.add(new TextField("id", "1", Store.YES));
-
-    Field[] fields = strategy.createIndexableFields(area, 0.025);
-    for (Field field : fields) {
-      doc.add(field);  
-    }
+    Document2 doc = indexWriter.newDocument();
+    doc.addAtom("id", "1");
+    strategy.addFields(doc, area, 0.025);
     addDocument(doc);
 
     Point upperleft = ctx.makePoint(-122.88, 48.54);
     Point lowerright = ctx.makePoint(-122.82, 48.62);
     
-    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(upperleft, lowerright)));
+    Query query = strategy.makeQuery(fieldTypes, new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(upperleft, lowerright)));
     commit();
     
     TopDocs search = indexSearcher.search(query, 10);

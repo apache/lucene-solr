@@ -30,7 +30,11 @@ import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -89,17 +93,23 @@ public class ExtractWikipedia {
   }
 
   public void extract() throws Exception {
-    Document doc = null;
+    Document2 doc = null;
     System.out.println("Starting Extraction");
     long start = System.currentTimeMillis();
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     try {
-      while ((doc = docMaker.makeDocument()) != null) {
-        create(doc.get(DocMaker.ID_FIELD), doc.get(DocMaker.TITLE_FIELD), doc
-            .get(DocMaker.DATE_FIELD), doc.get(DocMaker.BODY_FIELD));
+      while ((doc = docMaker.makeDocument(iw)) != null) {
+        create(doc.getString(DocMaker.ID_FIELD),
+               doc.getString(DocMaker.TITLE_FIELD),
+               doc.getString(DocMaker.DATE_FIELD),
+               doc.getString(DocMaker.BODY_FIELD));
       }
     } catch (NoMoreDataException e) {
       //continue
     }
+    iw.close();
+    dir.close();
     long finish = System.currentTimeMillis();
     System.out.println("Extraction took " + (finish - start) + " ms");
   }

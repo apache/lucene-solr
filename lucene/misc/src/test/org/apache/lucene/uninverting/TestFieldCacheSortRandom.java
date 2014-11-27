@@ -28,13 +28,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -50,9 +51,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -74,6 +75,10 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
     final int NUM_DOCS = atLeast(100);
     final Directory dir = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableSorting("stringdv");
+    fieldTypes.disableSorting("id");
+
     final boolean allowDups = random.nextBoolean();
     final Set<String> seen = new HashSet<>();
     final int maxLength = TestUtil.nextInt(random, 5, 100);
@@ -85,7 +90,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
     final List<BytesRef> docValues = new ArrayList<>();
     // TODO: deletions
     while (numDocs < NUM_DOCS) {
-      final Document doc = new Document();
+      final Document2 doc = writer.newDocument();
 
       // 10% of the time, the document is missing the value:
       final BytesRef br;
@@ -108,7 +113,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
           System.out.println("  " + numDocs + ": s=" + s);
         }
 
-        doc.add(new StringField("stringdv", s, Field.Store.NO));
+        doc.addAtom("stringdv", s);
         docValues.add(new BytesRef(s));
 
       } else {
@@ -119,7 +124,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
         docValues.add(null);
       }
 
-      doc.add(new IntField("id", numDocs, Field.Store.YES));
+      doc.addInt("id", numDocs);
       writer.addDocument(doc);
       numDocs++;
 

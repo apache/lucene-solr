@@ -107,7 +107,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   }
 
   private void checkHits(SpatialArgs args, int assertNumFound, int[] assertIds) {
-    SearchResults got = executeQuery(strategy.makeQuery(args), 100);
+    SearchResults got = executeQuery(strategy.makeQuery(fieldTypes, args), 100);
     assertEquals("" + args, assertNumFound, got.numFound);
     if (assertIds != null) {
       Set<Integer> gotIds = new HashSet<>();

@@ -17,20 +17,20 @@ package org.apache.lucene.sandbox.queries.regex;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.index.TermsEnum;
-
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -46,8 +46,8 @@ public class TestRegexQuery extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
-    Document doc = new Document();
-    doc.add(newTextField(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText(FN, "the quick brown fox jumps over the lazy dog");
     writer.addDocument(doc);
     reader = writer.getReader();
     writer.close();

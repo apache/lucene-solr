@@ -17,13 +17,14 @@ package org.apache.lucene.spatial.prefix.tree;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
-
-import java.util.Collection;
 
 /** The base for the original two SPT's: Geohash & Quad. Don't subclass this for new SPTs.
  * @lucene.internal */

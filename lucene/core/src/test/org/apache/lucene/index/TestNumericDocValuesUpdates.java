@@ -1195,6 +1195,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("upd");
+    fieldTypes.setMultiValued("upd");
 
     // test data: lots of documents (few 10Ks) and lots of update terms (few hundreds)
     final int numDocs = atLeast(20000);
@@ -1265,6 +1266,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("upd");
+    fieldTypes.setMultiValued("upd");
     
     Document2 doc = writer.newDocument();
     doc.addAtom("upd", "t1");

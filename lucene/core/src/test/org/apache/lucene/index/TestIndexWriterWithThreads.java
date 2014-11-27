@@ -573,7 +573,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     writerRef.set(new IndexWriter(d, newIndexWriterConfig(analyzer)));
     // Make initial commit so the test doesn't trip "corrupt first commit" when virus checker refuses to delete partial segments_N file:
     writerRef.get().commit();
-    final LineFileDocs docs = new LineFileDocs(random());
+    final LineFileDocs docs = new LineFileDocs(writerRef.get(), random());
     final Thread[] threads = new Thread[threadCount];
     final int iters = atLeast(100);
     final AtomicBoolean failed = new AtomicBoolean();
@@ -584,7 +584,6 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           @Override
           public void run() {
             for(int iter=0;iter<iters && !failed.get();iter++) {
-              //final int x = random().nextInt(5);
               final int x = random().nextInt(3);
               try {
                 switch(x) {
@@ -599,6 +598,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
                       System.out.println("TEST: " + Thread.currentThread().getName() + ": rollback done; now open new writer");
                     }
                     writerRef.set(new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random()))));
+                    docs.setIndexWriter(writerRef.get());
                   } finally {
                     rollbackLock.unlock();
                   }

@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -60,7 +61,12 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+
+    fieldTypes.setMultiValued("gender");
+    fieldTypes.setMultiValued("first");
+    fieldTypes.setMultiValued("last");
     
     writer.addDocument(doc(writer,
                            "id", "0",

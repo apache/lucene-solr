@@ -17,15 +17,16 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.text.ParseException;
+
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
-
-import java.text.ParseException;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 /** A PrefixTree based on Number/Date ranges. This isn't very "spatial" on the surface (to the user) but
  * it's implemented using spatial so that's why it's here extending a SpatialStrategy.
@@ -48,11 +49,9 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
   }
 
   @Override
-  public Field[] createIndexableFields(Shape shape) {
+  public void addFields(Document2 doc, Shape shape) {
     //levels doesn't actually matter; NumberRange based Shapes have their own "level".
-    TokenStream tokenStream = createTokenStream(shape, grid.getMaxLevels());
-    Field field = new Field(getFieldName(), tokenStream, FIELD_TYPE);
-    return new Field[]{field};
+    doc.addLargeText(getFieldName(), createTokenStream(shape, grid.getMaxLevels()));
   }
 
   /** For a Date based tree, pass in a Calendar, with unspecified fields marked as cleared.

@@ -22,8 +22,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.queries.function.ValueSource;
@@ -115,9 +117,9 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   @Override
-  public Field[] createIndexableFields(Shape shape) {
+  public void addFields(Document2 doc, Shape shape) {
     double distErr = SpatialArgs.calcDistanceFromErrPct(shape, distErrPct, ctx);
-    return createIndexableFields(shape, distErr);
+    addFields(doc, shape, distErr);
   }
 
   /**
@@ -127,26 +129,19 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
    * simply/aggregate sets of complete leaves in a cell to its parent, resulting in ~20-25%
    * fewer cells. It will likely be removed in the future.
    */
-  public Field[] createIndexableFields(Shape shape, double distErr) {
+  public void addFields(Document2 doc, Shape shape, double distErr) {
     int detailLevel = grid.getLevelForDistance(distErr);
-    TokenStream tokenStream = createTokenStream(shape, detailLevel);
-    Field field = new Field(getFieldName(), tokenStream, FIELD_TYPE);
-    return new Field[]{field};
+    FieldTypes fieldTypes = doc.getFieldTypes();
+    fieldTypes.disableNorms(getFieldName());
+    fieldTypes.disableHighlighting(getFieldName());
+    fieldTypes.setIndexOptions(getFieldName(), IndexOptions.DOCS);
+    fieldTypes.setMultiValued(getFieldName());
+    doc.addLargeText(getFieldName(), createTokenStream(shape, detailLevel));
   }
 
   protected TokenStream createTokenStream(Shape shape, int detailLevel) {
     Iterator<Cell> cells = grid.getTreeCellIterator(shape, detailLevel);
     return new CellTokenStream().setCells(cells);
-  }
-
-  /* Indexed, tokenized, not stored. */
-  public static final FieldType FIELD_TYPE = new FieldType();
-
-  static {
-    FIELD_TYPE.setTokenized(true);
-    FIELD_TYPE.setOmitNorms(true);
-    FIELD_TYPE.setIndexOptions(IndexOptions.DOCS);
-    FIELD_TYPE.freeze();
   }
 
   @Override

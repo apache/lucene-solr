@@ -131,16 +131,13 @@ public class TestNorms extends LuceneTestCase {
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
-    final LineFileDocs docs = new LineFileDocs(random, true);
+    final LineFileDocs docs = new LineFileDocs(writer.w, random);
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      Document doc = docs.nextDoc();
+      Document2 doc = docs.nextDoc();
       int boost = random().nextInt(255);
-      Field f = new TextField(byteTestField, "" + boost, Field.Store.YES);
-      f.setBoost(boost);
-      doc.add(f);
+      doc.addLargeText(byteTestField, "" + boost, boost);
       writer.addDocument(doc);
-      doc.removeField(byteTestField);
       if (rarely()) {
         writer.commit();
       }

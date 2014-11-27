@@ -50,17 +50,13 @@ public class TestCustomNorms extends LuceneTestCase {
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    final LineFileDocs docs = new LineFileDocs(random());
+    final LineFileDocs docs = new LineFileDocs(writer.w, random());
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      Document doc = docs.nextDoc();
+      Document2 doc = docs.nextDoc();
       float nextFloat = random().nextFloat();
-      Field f = new TextField(floatTestField, "" + nextFloat, Field.Store.YES);
-      f.setBoost(nextFloat);
-
-      doc.add(f);
+      doc.addLargeText(floatTestField, "" + nextFloat, nextFloat);
       writer.addDocument(doc);
-      doc.removeField(floatTestField);
       if (rarely()) {
         writer.commit();
       }

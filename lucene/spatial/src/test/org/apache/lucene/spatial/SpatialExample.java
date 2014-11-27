@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -107,32 +107,32 @@ public class SpatialExample extends LuceneTestCase {
     IndexWriter indexWriter = new IndexWriter(directory, iwConfig);
 
     //Spatial4j is x-y order for arguments
-    indexWriter.addDocument(newSampleDocument(
+    indexWriter.addDocument(newSampleDocument(indexWriter,
         2, ctx.makePoint(-80.93, 33.77)));
 
     //Spatial4j has a WKT parser which is also "x y" order
-    indexWriter.addDocument(newSampleDocument(
+    indexWriter.addDocument(newSampleDocument(indexWriter,
         4, ctx.readShapeFromWkt("POINT(60.9289094 -50.7693246)")));
 
-    indexWriter.addDocument(newSampleDocument(
+    indexWriter.addDocument(newSampleDocument(indexWriter,
         20, ctx.makePoint(0.1,0.1), ctx.makePoint(0, 0)));
 
     indexWriter.close();
   }
 
-  private Document newSampleDocument(int id, Shape... shapes) {
-    Document doc = new Document();
-    doc.add(new IntField("id", id, Field.Store.YES));
+  private Document2 newSampleDocument(IndexWriter indexWriter, int id, Shape... shapes) {
+    Document2 doc = indexWriter.newDocument();
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.setMultiValued(strategy.getFieldName() + "_stored");
+    doc.addInt("id", id);
     //Potentially more than one shape in this field is supported by some
     // strategies; see the javadocs of the SpatialStrategy impl to see.
     for (Shape shape : shapes) {
-      for (Field f : strategy.createIndexableFields(shape)) {
-        doc.add(f);
-      }
+      strategy.addFields(doc, shape);
       //store it too; the format is up to you
       //  (assume point in this example)
       Point pt = (Point) shape;
-      doc.add(new StoredField(strategy.getFieldName(), pt.getX()+" "+pt.getY()));
+      doc.addStored(strategy.getFieldName() + "_stored", pt.getX()+" "+pt.getY());
     }
 
     return doc;
@@ -140,6 +140,7 @@ public class SpatialExample extends LuceneTestCase {
 
   private void search() throws Exception {
     IndexReader indexReader = DirectoryReader.open(directory);
+    FieldTypes fieldTypes = indexReader.getFieldTypes();
     IndexSearcher indexSearcher = new IndexSearcher(indexReader);
     Sort idSort = new Sort(new SortField("id", SortField.Type.INT));
 
@@ -149,13 +150,13 @@ public class SpatialExample extends LuceneTestCase {
       //note: SpatialArgs can be parsed from a string
       SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,
           ctx.makeCircle(-80.0, 33.0, DistanceUtils.dist2Degrees(200, DistanceUtils.EARTH_MEAN_RADIUS_KM)));
-      Filter filter = strategy.makeFilter(args);
+      Filter filter = strategy.makeFilter(fieldTypes, args);
       TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), filter, 10, idSort);
       assertDocMatchedIds(indexSearcher, docs, 2);
       //Now, lets get the distance for the 1st doc via computing from stored point value:
       // (this computation is usually not redundant)
       Document2 doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
-      String doc1Str = doc1.getField(strategy.getFieldName()).stringValue();
+      String doc1Str = doc1.getString(strategy.getFieldName() + "_stored");
       //assume doc1Str is "x y" as written in newSampleDocument()
       int spaceIdx = doc1Str.indexOf(' ');
       double x = Double.parseDouble(doc1Str.substring(0, spaceIdx));

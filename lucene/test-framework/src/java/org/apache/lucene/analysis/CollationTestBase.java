@@ -62,9 +62,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
-    Document doc = new Document();
-    doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
-    doc.add(new StringField("body", "body", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "\u0633\u0627\u0628");
+    doc.addAtom("body", "body");
     writer.addDocument(doc);
     writer.close();
     IndexReader reader = DirectoryReader.open(dir);
@@ -93,13 +93,13 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
     // orders the U+0698 character before the U+0633 character, so the single
     // index Term below should NOT be returned by a TermRangeQuery with a Farsi
     // Collator (or an Arabic one for the case when Farsi is not supported).
-    doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
+    doc.addLargeText("content", "\u0633\u0627\u0628");
     writer.addDocument(doc);
     writer.close();
     IndexReader reader = DirectoryReader.open(dir);
@@ -121,9 +121,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     Directory farsiIndex = newDirectory();
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(analyzer));
-    Document doc = new Document();
-    doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
-    doc.add(new StringField("body", "body", Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("content", "\u0633\u0627\u0628");
+    doc.addAtom("body", "body");
     writer.addDocument(doc);
     writer.close();
 

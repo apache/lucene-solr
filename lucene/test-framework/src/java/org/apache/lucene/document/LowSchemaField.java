@@ -29,7 +29,8 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A minimal implementation of Lucene's low-schema API, for abusing your schema.
+ * A minimal implementation of Lucene's low-schema API, that does absolutely no "user space" validation, for abusing your schema and
+ * stressing out Lucene's IndexWriter to ensure it never corrupts the index on abuse.
  */
 
 public class LowSchemaField implements IndexableFieldType, IndexableField {

@@ -29,9 +29,9 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
@@ -220,29 +220,6 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           newIndexWriterConfig(new MockAnalyzer(random())));
       DocValuesType valueType = DocValuesType.SORTED;
 
-      Document doc = new Document();
-      Document docNoGroup = new Document();
-      Field valuesField = null;
-      valuesField = new SortedDocValuesField("group", new BytesRef());
-      doc.add(valuesField);
-      Field sort1 = new SortedDocValuesField("sort1", new BytesRef());
-      doc.add(sort1);
-      docNoGroup.add(sort1);
-      Field sort2 = new SortedDocValuesField("sort2", new BytesRef());
-      doc.add(sort2);
-      docNoGroup.add(sort2);
-      Field sort3 = new SortedDocValuesField("sort3", new BytesRef());
-      doc.add(sort3);
-      docNoGroup.add(sort3);
-      Field content = newTextField("content", "", Field.Store.NO);
-      doc.add(content);
-      docNoGroup.add(content);
-      IntField id = new IntField("id", 0, Field.Store.NO);
-      doc.add(id);
-      docNoGroup.add(id);
-      NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
-      doc.add(idDV);
-      docNoGroup.add(idDV);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for (int i = 0; i < numDocs; i++) {
         final BytesRef groupValue;
@@ -268,20 +245,17 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         }
 
         groupDocs[i] = groupDoc;
+
+        Document2 doc = w.newDocument();
         if (groupDoc.group != null) {
-          valuesField.setBytesValue(new BytesRef(groupDoc.group.utf8ToString()));
+          doc.addAtom("group", new BytesRef(groupDoc.group.utf8ToString()));
         }
-        sort1.setBytesValue(groupDoc.sort1);
-        sort2.setBytesValue(groupDoc.sort2);
-        sort3.setBytesValue(groupDoc.sort3);
-        content.setStringValue(groupDoc.content);
-        id.setIntValue(groupDoc.id);
-        idDV.setLongValue(groupDoc.id);
-        if (groupDoc.group == null) {
-          w.addDocument(docNoGroup);
-        } else {
-          w.addDocument(doc);
-        }
+        doc.addAtom("sort1", groupDoc.sort1);
+        doc.addAtom("sort2", groupDoc.sort2);
+        doc.addAtom("sort3", groupDoc.sort3);
+        doc.addLargeText("content", groupDoc.content);
+        doc.addInt("id", groupDoc.id);
+        w.addDocument(doc);
       }
 
       final DirectoryReader r = w.getReader();

@@ -17,9 +17,10 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -30,9 +31,8 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * A basic implementation of {@link PrefixTreeStrategy} using a large
@@ -55,7 +55,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args) {
+  public Filter makeFilter(FieldTypes fieldTypes, SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
     if (op != SpatialOperation.Intersects)
       throw new UnsupportedSpatialOperation(op);

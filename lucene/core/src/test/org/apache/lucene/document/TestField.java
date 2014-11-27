@@ -28,30 +28,6 @@ import org.apache.lucene.util.LuceneTestCase;
 // sanity check some basics of fields
 public class TestField extends LuceneTestCase {
   
-  public void testDoubleField() throws Exception {
-    Field fields[] = new Field[] {
-        new DoubleField("foo", 5d, Field.Store.NO),
-        new DoubleField("foo", 5d, Field.Store.YES)
-    };
-
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      field.setDoubleValue(6d); // ok
-      trySetIntValue(field);
-      trySetFloatValue(field);
-      trySetLongValue(field);
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-    
-      assertEquals(6d, field.numericValue().doubleValue(), 0.0d);
-    }
-  }
-  
   public void testDoubleDocValuesField() throws Exception {
     DoubleDocValuesField field = new DoubleDocValuesField("foo", 5d);
 
@@ -90,54 +66,6 @@ public class TestField extends LuceneTestCase {
     assertEquals(6f, Float.intBitsToFloat(field.numericValue().intValue()), 0.0f);
   }
   
-  public void testFloatField() throws Exception {
-    Field fields[] = new Field[] {
-        new FloatField("foo", 5f, Field.Store.NO),
-        new FloatField("foo", 5f, Field.Store.YES)
-    };
-
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      trySetDoubleValue(field);
-      trySetIntValue(field);
-      field.setFloatValue(6f); // ok
-      trySetLongValue(field);
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-      
-      assertEquals(6f, field.numericValue().floatValue(), 0.0f);
-    }
-  }
-  
-  public void testIntField() throws Exception {
-    Field fields[] = new Field[] {
-        new IntField("foo", 5, Field.Store.NO),
-        new IntField("foo", 5, Field.Store.YES)
-    };
-
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      trySetDoubleValue(field);
-      field.setIntValue(6); // ok
-      trySetFloatValue(field);
-      trySetLongValue(field);
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-      
-      assertEquals(6, field.numericValue().intValue());
-    }
-  }
-  
   public void testNumericDocValuesField() throws Exception {
     NumericDocValuesField field = new NumericDocValuesField("foo", 5L);
 
@@ -155,30 +83,6 @@ public class TestField extends LuceneTestCase {
     trySetTokenStreamValue(field);
     
     assertEquals(6L, field.numericValue().longValue());
-  }
-  
-  public void testLongField() throws Exception {
-    Field fields[] = new Field[] {
-        new LongField("foo", 5L, Field.Store.NO),
-        new LongField("foo", 5L, Field.Store.YES)
-    };
-
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      trySetDoubleValue(field);
-      trySetIntValue(field);
-      trySetFloatValue(field);
-      field.setLongValue(6); // ok
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-      
-      assertEquals(6L, field.numericValue().longValue());
-    }
   }
   
   public void testSortedBytesDocValuesField() throws Exception {

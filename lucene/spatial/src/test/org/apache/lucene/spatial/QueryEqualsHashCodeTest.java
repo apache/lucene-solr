@@ -17,8 +17,13 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Shape;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -29,18 +34,18 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Shape;
 
 public class QueryEqualsHashCodeTest extends LuceneTestCase {
 
   private final SpatialContext ctx = SpatialContext.GEO;
 
   @Test
-  public void testEqualsHashCode() {
+  public void testEqualsHashCode() throws Exception {
 
     final SpatialPrefixTree gridQuad = new QuadPrefixTree(ctx,10);
     final SpatialPrefixTree gridGeohash = new GeohashPrefixTree(ctx,10);
@@ -56,19 +61,26 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     }
   }
 
-  private void testEqualsHashcode(final SpatialStrategy strategy) {
+  private void testEqualsHashcode(final SpatialStrategy strategy) throws Exception {
     final SpatialArgs args1 = makeArgs1();
     final SpatialArgs args2 = makeArgs2();
+    IndexWriterConfig iwConfig = new IndexWriterConfig(null);
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, iwConfig);
+    Document2 doc = writer.newDocument();
+    strategy.addFields(doc, SpatialContext.GEO.makePoint(0, 0));
+    writer.addDocument(doc);
+    final FieldTypes fieldTypes = writer.getFieldTypes();
     testEqualsHashcode(args1, args2, new ObjGenerator() {
       @Override
       public Object gen(SpatialArgs args) {
-        return strategy.makeQuery(args);
+        return strategy.makeQuery(fieldTypes, args);
       }
     });
     testEqualsHashcode(args1, args2, new ObjGenerator() {
       @Override
       public Object gen(SpatialArgs args) {
-        return strategy.makeFilter(args);
+        return strategy.makeFilter(fieldTypes, args);
       }
     });
     testEqualsHashcode(args1, args2, new ObjGenerator() {
@@ -77,6 +89,8 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
         return strategy.makeDistanceValueSource(args.getShape().getCenter());
       }
     });
+    writer.close();
+    dir.close();
   }
 
   private void testEqualsHashcode(SpatialArgs args1, SpatialArgs args2, ObjGenerator generator) {

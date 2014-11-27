@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -46,13 +47,13 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
-    LineFileDocs docs = new LineFileDocs(random());
+    LineFileDocs docs = new LineFileDocs(w.w, random());
     int charsToIndex = atLeast(100000);
     int charsIndexed = 0;
     //System.out.println("bytesToIndex=" + charsToIndex);
     while(charsIndexed < charsToIndex) {
-      Document doc = docs.nextDoc();
-      charsIndexed += doc.get("body").length();
+      Document2 doc = docs.nextDoc();
+      charsIndexed += doc.getString("body").length();
       w.addDocument(doc);
       //System.out.println("  bytes=" + charsIndexed + " add: " + doc);
     }

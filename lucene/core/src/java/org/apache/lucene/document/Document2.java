@@ -22,9 +22,11 @@ import java.io.Reader;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -46,8 +48,9 @@ public class Document2 implements Iterable<IndexableField> {
   private static final float DEFAULT_BOOST = 1.0f;
 
   private final FieldTypes fieldTypes;
-  private final List<FieldValue> fields = new ArrayList<>();
+  private final List<IndexableField> fields = new ArrayList<>();
   private final boolean changeSchema;
+  private final Set<String> seenFields;
 
   // nocommit make private again and somehow deal w/ generics
   public class FieldValue implements IndexableField {
@@ -85,6 +88,10 @@ public class Document2 implements Iterable<IndexableField> {
         curFieldType = fieldTypes.getFieldType(fieldName);
       }
       this.fieldType = curFieldType;
+      if (seenFields != null && seenFields.add(fieldName) == false && fieldType.multiValued != Boolean.TRUE) {
+        // nocommit testme
+        throw new IllegalArgumentException("field=\"" + fieldName + "\": this field is added more than once but is not multiValued");
+      }
     }
     
     @Override
@@ -142,16 +149,17 @@ public class Document2 implements Iterable<IndexableField> {
       assert fieldTypes.getIndexOptions(fieldName) != IndexOptions.NONE;
 
       FieldTypes.FieldType fieldType = fieldTypes.getFieldType(fieldName);
+      // nocommit should we be using Double.doubleToRawLongBits / Float.floatToRawIntBits?
 
       switch (fieldType.valueType) {
       case INT:
         return getReusedBinaryTokenStream(intToBytes(((Number) value).intValue()), reuse);
       case FLOAT:
-        return getReusedBinaryTokenStream(intToBytes(sortableFloatBits(Float.floatToIntBits(((Number) value).floatValue()))), reuse);
+        return getReusedBinaryTokenStream(floatToBytes(((Number) value).floatValue()), reuse);
       case LONG:
         return getReusedBinaryTokenStream(longToBytes(((Number) value).longValue()), reuse);
       case DOUBLE:
-        return getReusedBinaryTokenStream(longToBytes(sortableDoubleBits(Double.doubleToLongBits(((Number) value).doubleValue()))), reuse);
+        return getReusedBinaryTokenStream(doubleToBytes(((Number) value).doubleValue()), reuse);
       case DATE:
         return getReusedBinaryTokenStream(longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
@@ -213,6 +221,8 @@ public class Document2 implements Iterable<IndexableField> {
       case TEXT:
         if (value instanceof TokenStream) {
           return (TokenStream) value;
+        } else if (value instanceof StringAndTokenStream) {
+          return ((StringAndTokenStream) value).tokens;
         } else if (value instanceof Reader) {
           return analyzer.tokenStream(name(), (Reader) value);
         } else {
@@ -274,10 +284,22 @@ public class Document2 implements Iterable<IndexableField> {
         return (Number) value;
       case FLOAT:
         // nocommit i shouldn't do sortableFloatBits?  but why does ot TestSortedNumericSortField.testFloat fail?
-        return Integer.valueOf(sortableFloatBits(Float.floatToIntBits((Float) value)));
+        int intBits = Float.floatToIntBits((Float) value);
+        if (fieldType.multiValued) {
+          // nocommit this is weird?
+          intBits = sortableFloatBits(intBits);
+        }
+        return Integer.valueOf(intBits);
+        //return Integer.valueOf(Float.floatToRawIntBits((Float) value));
       case DOUBLE:
         // nocommit i shouldn't do sortableDoubleBits?
-        return Long.valueOf(sortableDoubleBits(Double.doubleToLongBits((Double) value)));
+        long longBits = Double.doubleToLongBits((Double) value);
+        if (fieldType.multiValued) {
+          // nocommit this is weird?
+          longBits = sortableDoubleBits(longBits);
+        }
+        return Long.valueOf(longBits);
+        //return Long.valueOf(Double.doubleToRawLongBits((Double) value));
       case DATE:
         return Long.valueOf(((Date) value).getTime());
       case BOOLEAN:
@@ -306,6 +328,8 @@ public class Document2 implements Iterable<IndexableField> {
       case TEXT:
         if (value instanceof String) {
           return (String) value;
+        } else if (value instanceof StringAndTokenStream) {
+          return ((StringAndTokenStream) value).value;
         } else {
           return null;
         }
@@ -362,13 +386,38 @@ public class Document2 implements Iterable<IndexableField> {
     }
   }
 
+  private static class StringAndTokenStream {
+    public final String value;
+    public final TokenStream tokens;
+    public StringAndTokenStream(String value, TokenStream tokens) {
+      this.value = value;
+      this.tokens = tokens;
+    }
+  }
+
   public Document2(FieldTypes fieldTypes) {
     this(fieldTypes, true);
+  }
+
+  public Document2(Document2 other) {
+    this.fieldTypes = other.fieldTypes;
+    this.changeSchema = other.changeSchema;
+    if (changeSchema) {
+      seenFields = new HashSet<>();
+    } else {
+      seenFields = null;
+    }
+    addAll(other);
   }
 
   Document2(FieldTypes fieldTypes, boolean changeSchema) {
     this.fieldTypes = fieldTypes;
     this.changeSchema = changeSchema;
+    if (changeSchema) {
+      seenFields = new HashSet<>();
+    } else {
+      seenFields = null;
+    }
   }
 
   private boolean enableExistsField = true;
@@ -402,7 +451,7 @@ public class Document2 implements Iterable<IndexableField> {
         } else if (enableExistsField && fieldTypes != null && changeSchema && fieldTypes.enableExistsFilters && fieldNamesIndex < fields.size()) {
           // nocommit make a more efficient version?  e.g. a single field that takes a list and iterates each via TokenStream.  maybe we
           // should addAtom(String...)?
-          return new FieldValue(FieldTypes.FIELD_NAMES_FIELD, fields.get(fieldNamesIndex++).fieldName);
+          return new FieldValue(FieldTypes.FIELD_NAMES_FIELD, fields.get(fieldNamesIndex++).name());
         } else {
           throw new NoSuchElementException();
         }
@@ -410,18 +459,18 @@ public class Document2 implements Iterable<IndexableField> {
     };
   }
 
+  /*
   public List<FieldValue> getFieldValues() {
     return fields;
   }
+  */
 
   public List<IndexableField> getFields() {
-    List<IndexableField> result = new ArrayList<>();
-    result.addAll(fields);
-    return result;
+    return fields;
   }
 
   public IndexableField getField(String name) {
-    for (FieldValue field : fields) {
+    for (IndexableField field : fields) {
       if (field.name().equals(name)) {
         return field;
       }
@@ -431,7 +480,7 @@ public class Document2 implements Iterable<IndexableField> {
 
   public List<IndexableField> getFields(String name) {
     List<IndexableField> result = new ArrayList<>();
-    for (FieldValue field : fields) {
+    for (IndexableField field : fields) {
       if (field.name().equals(name)) {
         result.add(field);
       }
@@ -490,6 +539,7 @@ public class Document2 implements Iterable<IndexableField> {
     fields.add(new FieldValue(fieldName, value));
   }
 
+  // nocommit throw exc if this field was already indexed/dvd?
   /** Default: store this value. */
   public void addStored(String fieldName, BytesRef value) {
     // nocommit akward we inferred binary here?
@@ -499,16 +549,29 @@ public class Document2 implements Iterable<IndexableField> {
     fields.add(new FieldValue(fieldName, value));
   }
 
+  // nocommit throw exc if this field was already indexed/dvd?
   /** Default: store this value. */
   public void addStored(String fieldName, byte[] value) {
     addStored(fieldName, new BytesRef(value));
   }
 
+  // nocommit throw exc if this field was already indexed/dvd?
   /** Default: store this value. */
   public void addStored(String fieldName, String value) {
     // nocommit akward we inferred large_text here?
     if (changeSchema) {
       fieldTypes.recordLargeTextType(fieldName, true, false);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  // nocommit throw exc if this field was already indexed/dvd?
+  /** Default: store this value. */
+  // nocommit testme, or remove?
+  public void addStoredInt(String fieldName, int value) {
+    // nocommit akward we inferred large_text here?
+    if (changeSchema) {
+      fieldTypes.recordStoredValueType(fieldName, FieldTypes.ValueType.INT);
     }
     fields.add(new FieldValue(fieldName, value));
   }
@@ -550,6 +613,13 @@ public class Document2 implements Iterable<IndexableField> {
       fieldTypes.recordLargeTextType(fieldName, false, true);
     }
     fields.add(new FieldValue(fieldName, value, boost));
+  }
+
+  public void addLargeText(String fieldName, String value, TokenStream tokens, float boost) {
+    if (changeSchema) {
+      fieldTypes.recordLargeTextType(fieldName, true, true);
+    }
+    fields.add(new FieldValue(fieldName, new StringAndTokenStream(value, tokens), boost));
   }
 
   /** E.g. a "body" field.  Default: indexes this value as multiple tokens from analyzer. */
@@ -638,6 +708,11 @@ public class Document2 implements Iterable<IndexableField> {
     fields.add(new FieldValue(fieldName, value));
   }
 
+  // nocommit mmmmmm
+  public void add(IndexableField field) {
+    fields.add(field);
+  }
+
   static {
     // nocommit is there a cleaner/general way to detect missing enum value in case switch statically?  must we use ecj?
     assert FieldTypes.ValueType.values().length == 12: "missing case for switch statement below";
@@ -646,61 +721,66 @@ public class Document2 implements Iterable<IndexableField> {
   /** Note: this FieldTypes must already know about all the fields in the incoming doc. */
   public void addAll(Document2 other) {
     // nocommit should we insist other.fieldTypes == this.fieldTypes?  or, that they are "congruent"?
-    for (FieldValue field : other.fields) {
-      String fieldName = field.name();
-      FieldType fieldType = fieldTypes.getFieldType(fieldName);
-      // nocommit need more checking here ... but then, we should somehow remove StoredDocument, sicne w/ FieldTypes we can now fully
-      // reconstruct (as long as all fields were stored) what was indexed:
-      switch (fieldType.valueType) {
-      case TEXT:
-        addLargeText(fieldName, field.stringValue());
-        break;
-      case SHORT_TEXT:
-        addShortText(fieldName, field.stringValue());
-        break;
-      case ATOM:
-        if (field.value instanceof BytesRef) {
-          addAtom(fieldName, (BytesRef) field.value);
-        } else {
-          addAtom(fieldName, (String) field.value);
+    for (IndexableField indexableField : other.fields) {
+      String fieldName = indexableField.name();
+      if (indexableField instanceof FieldValue) {
+        FieldValue field = (FieldValue) indexableField;
+        FieldType fieldType = fieldTypes.getFieldType(fieldName);
+        // nocommit need more checking here ... but then, we should somehow remove StoredDocument, sicne w/ FieldTypes we can now fully
+        // reconstruct (as long as all fields were stored) what was indexed:
+        switch (fieldType.valueType) {
+        case TEXT:
+          addLargeText(fieldName, field.stringValue());
+          break;
+        case SHORT_TEXT:
+          addShortText(fieldName, field.stringValue());
+          break;
+        case ATOM:
+          if (field.value instanceof BytesRef) {
+            addAtom(fieldName, (BytesRef) field.value);
+          } else {
+            addAtom(fieldName, (String) field.value);
+          }
+          break;
+        case INT:
+          addInt(fieldName, field.numericValue().intValue());
+          break;
+        case FLOAT:
+          addFloat(fieldName, field.numericValue().floatValue());
+          break;
+        case LONG:
+          addLong(fieldName, field.numericValue().longValue());
+          break;
+        case DOUBLE:
+          addDouble(fieldName, field.numericValue().doubleValue());
+          break;
+        case BINARY:
+          addStored(fieldName, field.binaryValue());
+          break;
+        case BOOLEAN:
+          addBoolean(fieldName, ((Boolean) field.value).booleanValue());
+          break;
+        case DATE:
+          addDate(fieldName, (Date) field.value);
+          break;
+        case INET_ADDRESS:
+          addInetAddress(fieldName, (InetAddress) field.value);
+          break;
+        default:
+          // BUG:
+          throw new AssertionError("missing valueType=" + fieldType.valueType + " in switch");
         }
-        break;
-      case INT:
-        addInt(fieldName, field.numericValue().intValue());
-        break;
-      case FLOAT:
-        addFloat(fieldName, field.numericValue().floatValue());
-        break;
-      case LONG:
-        addLong(fieldName, field.numericValue().longValue());
-        break;
-      case DOUBLE:
-        addDouble(fieldName, field.numericValue().doubleValue());
-        break;
-      case BINARY:
-        addStored(fieldName, field.binaryValue());
-        break;
-      case BOOLEAN:
-        addBoolean(fieldName, ((Boolean) field.value).booleanValue());
-        break;
-      case DATE:
-        addDate(fieldName, (Date) field.value);
-        break;
-      case INET_ADDRESS:
-        addInetAddress(fieldName, (InetAddress) field.value);
-        break;
-      default:
-        // BUG:
-        throw new AssertionError("missing valueType=" + fieldType.valueType + " in switch");
+      } else {
+        add(indexableField);
       }
     }
   }
 
   // nocommit i don't like that we have this ... it's linear cost, and this class is not supposed to be a generic container
   public void removeField(String name) {
-    Iterator<FieldValue> it = fields.iterator();
+    Iterator<IndexableField> it = fields.iterator();
     while (it.hasNext()) {
-      FieldValue field = it.next();
+      IndexableField field = it.next();
       if (field.name().equals(name)) {
         it.remove();
         return;
@@ -708,7 +788,8 @@ public class Document2 implements Iterable<IndexableField> {
     }
   }
 
-  static BytesRef intToBytes(int v) {
+  // nocommit public just for TestBlockJoin ...
+  public static BytesRef intToBytes(int v) {
     int sortableBits = v ^ 0x80000000;
     BytesRef token = new BytesRef(4);
     token.length = 4;
@@ -719,6 +800,30 @@ public class Document2 implements Iterable<IndexableField> {
       sortableBits >>>= 8;
     }
     return token;
+  }
+
+  public static BytesRef floatToBytes(float value) {
+    return intToBytes(sortableFloatBits(Float.floatToIntBits(value)));
+  }
+
+  /** Converts numeric DV field back to double. */
+  public static double sortableLongToDouble(long v) {
+    return Double.longBitsToDouble(sortableDoubleBits(v));
+  }
+
+  /** Converts numeric DV field back to double. */
+  public static double longToDouble(long v) {
+    return Double.longBitsToDouble(v);
+  }
+
+  /** Converts numeric DV field back to float. */
+  public static float sortableIntToFloat(int v) {
+    return Float.intBitsToFloat(sortableFloatBits(v));
+  }
+
+  /** Converts numeric DV field back to float. */
+  public static float intToFloat(int v) {
+    return Float.intBitsToFloat(v);
   }
 
   // nocommit move elsewhere?
@@ -734,7 +839,7 @@ public class Document2 implements Iterable<IndexableField> {
     return sortableBits ^ 0x80000000;
   }
 
-  static BytesRef longToBytes(long v) {
+  public static BytesRef longToBytes(long v) {
     long sortableBits = v ^ 0x8000000000000000L;
     BytesRef token = new BytesRef(8);
     token.length = 8;
@@ -745,6 +850,10 @@ public class Document2 implements Iterable<IndexableField> {
       sortableBits >>>= 8;
     }
     return token;
+  }
+
+  public static BytesRef doubleToBytes(double value) {
+    return longToBytes(sortableDoubleBits(Double.doubleToLongBits(value)));
   }
 
   // nocommit move elsewhere?
@@ -782,56 +891,52 @@ public class Document2 implements Iterable<IndexableField> {
 
   public Boolean getBoolean(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return (Boolean) fieldValue.value;
-      }
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (Boolean) fieldValue.value;
     }
-
-    return null;
   }
 
   // nocommit getFloat, getDouble, getLong
 
   public Date getDate(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return (Date) fieldValue.value;
-      }
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (Date) fieldValue.value;
     }
-
-    return null;
   }
 
   public InetAddress getInetAddress(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return (InetAddress) fieldValue.value;
-      }
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (InetAddress) fieldValue.value;
     }
-
-    return null;
   }
 
   public String getString(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return fieldValue.value.toString();
-      }
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (String) fieldValue.value;
     }
-
-    return null;
   }
 
   public String[] getStrings(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
     List<String> values = new ArrayList<>();
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        values.add(fieldValue.value.toString());
+    for(IndexableField fieldValue : fields) {
+      if (fieldValue.name().equals(fieldName) && fieldValue instanceof FieldValue) {
+        values.add((String) ((FieldValue) fieldValue).value);
       }
     }
 
@@ -840,55 +945,85 @@ public class Document2 implements Iterable<IndexableField> {
 
   public BytesRef getBinary(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return (BytesRef) fieldValue.value;
-      }
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (BytesRef) fieldValue.value;
     }
-
-    return null;
   }
 
   public Integer getInt(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return (Integer) fieldValue.value;
-      }
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (Integer) fieldValue.value;
     }
+  }
 
-    return null;
+  public Long getLong(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is correct?
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (Long) fieldValue.value;
+    }
+  }
+
+  public Float getFloat(String fieldName) {
+    // nocommit can we assert this is a known field and that its type is correct?
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (Float) fieldValue.value;
+    }
   }
 
   public Double getDouble(String fieldName) {
     // nocommit can we assert this is a known field and that its type is correct?
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return (Double) fieldValue.value;
-      }
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return (Double) fieldValue.value;
     }
-
-    return null;
   }
 
   public Object get(String fieldName) {
-    for(FieldValue fieldValue : fields) {
-      if (fieldValue.fieldName.equals(fieldName)) {
-        return fieldValue.value;
+    FieldValue fieldValue = getFirstFieldValue(fieldName);
+    if (fieldValue == null) {
+      return null;
+    } else {
+      return fieldValue.value;
+    }
+  }
+
+  private FieldValue getFirstFieldValue(String name) {
+    for(IndexableField fieldValue : fields) {
+      if (fieldValue.name().equals(name) && fieldValue instanceof FieldValue) {
+        return (FieldValue) fieldValue;
       }
     }
-
     return null;
   }
 
   @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
-    for(FieldValue fieldValue : fields) {
+    for(IndexableField field : fields) {
       b.append("\n  ");
-      b.append(fieldValue.fieldName);
+      b.append(field.name());
       b.append(": ");
-      String s = fieldValue.value.toString();
+      String s;
+      if (field instanceof FieldValue) {
+        s = ((FieldValue) field).value.toString();
+      } else {
+        s = field.toString();
+      }
       if (s.length() > 20) {
         b.append(s.substring(0, 20));
         b.append("...");

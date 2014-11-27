@@ -130,7 +130,7 @@ public final class DrillDownQuery extends Query {
     String indexedField = config.getDimConfig(dim).indexFieldName;
 
     BooleanQuery bq = (BooleanQuery) q.getQuery();
-    bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
+    bq.add(new TermQuery(term(FacetsConfig.drillDownFieldName(indexedField), dim, path)), Occur.SHOULD);
   }
 
   /** Adds one dimension of drill downs; if you pass the same
@@ -146,7 +146,7 @@ public final class DrillDownQuery extends Query {
     String indexedField = config.getDimConfig(dim).indexFieldName;
 
     BooleanQuery bq = new BooleanQuery(true); // disable coord
-    bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
+    bq.add(new TermQuery(term(FacetsConfig.drillDownFieldName(indexedField), dim, path)), Occur.SHOULD);
 
     add(dim, bq);
   }
@@ -286,7 +286,6 @@ public final class DrillDownQuery extends Query {
       for(Filter filter : filters) {
         wrapped = new FilteredQuery(wrapped, filter, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
       }
-
       return wrapped;
     }
   }

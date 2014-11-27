@@ -22,13 +22,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
@@ -44,10 +43,10 @@ import org.apache.lucene.facet.MultiFacets;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -56,6 +55,7 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -76,16 +76,15 @@ public class TestRangeFacetCounts extends FacetTestCase {
   public void testBasicLong() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
-    doc.add(field);
     for(long l=0;l<100;l++) {
-      field.setLongValue(l);
+      Document2 doc = w.newDocument();
+      doc.addLong("field", l);
       w.addDocument(doc);
     }
 
     // Also add Long.MAX_VALUE
-    field.setLongValue(Long.MAX_VALUE);
+    Document2 doc = w.newDocument();
+    doc.addLong("field", Long.MAX_VALUE);
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -142,14 +141,17 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
-    doc.add(field);
-    field.setLongValue(Long.MIN_VALUE);
+
+    Document2 doc = w.newDocument();
+    doc.addLong("field", Long.MIN_VALUE);
     w.addDocument(doc);
-    field.setLongValue(0);
+
+    doc = w.newDocument();
+    doc.addLong("field", 0L);
     w.addDocument(doc);
-    field.setLongValue(Long.MAX_VALUE);
+
+    doc = w.newDocument();
+    doc.addLong("field", Long.MAX_VALUE);
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -178,14 +180,13 @@ public class TestRangeFacetCounts extends FacetTestCase {
   public void testOverlappedEndStart() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
-    doc.add(field);
     for(long l=0;l<100;l++) {
-      field.setLongValue(l);
+      Document2 doc = w.newDocument();
+      doc.addLong("field", l);
       w.addDocument(doc);
     }
-    field.setLongValue(Long.MAX_VALUE);
+    Document2 doc = w.newDocument();
+    doc.addLong("field", Long.MAX_VALUE);
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -220,11 +221,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
 
     for (long l = 0; l < 100; l++) {
-      Document doc = new Document();
-      // For computing range facet counts:
-      doc.add(new NumericDocValuesField("field", l));
-      // For drill down by numeric range:
-      doc.add(new LongField("field", l, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      // For computing range facet counts and drill down by numeric range:
+      doc.addLong("field", l);
 
       if ((l&3) == 0) {
         doc.add(new FacetField("dim", "a"));
@@ -235,6 +234,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     }
 
     final IndexReader r = w.getReader();
+    FieldTypes fieldTypes = r.getFieldTypes();
 
     final TaxonomyReader tr = new DirectoryTaxonomyReader(tw);
 
@@ -300,7 +300,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     // Third search, drill down on "less than or equal to 10":
     ddq = new DrillDownQuery(config);
-    ddq.add("field", NumericRangeQuery.newLongRange("field", 0L, 10L, true, true));
+    ddq.add("field", new ConstantScoreQuery(fieldTypes.newRangeFilter("field", 0L, true, 10L, true)));
     dsr = ds.search(null, ddq, 10);
 
     assertEquals(11, dsr.hits.totalHits);
@@ -314,11 +314,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
   public void testBasicDouble() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    DoubleDocValuesField field = new DoubleDocValuesField("field", 0.0);
-    doc.add(field);
     for(long l=0;l<100;l++) {
-      field.setDoubleValue(l);
+      Document2 doc = w.newDocument();
+      doc.addDouble("field", l);
       w.addDocument(doc);
     }
 
@@ -344,11 +342,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
   public void testBasicFloat() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    FloatDocValuesField field = new FloatDocValuesField("field", 0.0f);
-    doc.add(field);
     for(long l=0;l<100;l++) {
-      field.setFloatValue(l);
+      Document2 doc = w.newDocument();
+      doc.addFloat("field", l);
       w.addDocument(doc);
     }
 
@@ -384,16 +380,16 @@ public class TestRangeFacetCounts extends FacetTestCase {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       long v = random().nextLong();
       values[i] = v;
-      doc.add(new NumericDocValuesField("field", v));
-      doc.add(new LongField("field", v, Field.Store.NO));
+      doc.addLong("field", v);
       w.addDocument(doc);
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
     }
     IndexReader r = w.getReader();
+    FieldTypes fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
     FacetsConfig config = new FacetsConfig();
@@ -480,9 +476,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Filter fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = NumericRangeFilter.newLongRange("field", minValue, maxValue, true, true);
+          fastMatchFilter = fieldTypes.newRangeFilter("field", minValue, true, maxValue, true);
         } else {
-          fastMatchFilter = NumericRangeFilter.newLongRange("field", minAcceptedValue, maxAcceptedValue, true, true);
+          fastMatchFilter = fieldTypes.newRangeFilter("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchFilter = null;
@@ -505,9 +501,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
           if (random().nextBoolean()) {
-            ddq.add("field", NumericRangeFilter.newLongRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
+            ddq.add("field", fieldTypes.newRangeFilter("field", range.min, range.minInclusive, range.max, range.maxInclusive));
           } else {
-            ddq.add("field", NumericRangeQuery.newLongRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
+            ddq.add("field", new ConstantScoreQuery(fieldTypes.newRangeFilter("field", range.min, range.minInclusive, range.max, range.maxInclusive)));
           }
         } else {
           ddq.add("field", range.getFilter(fastMatchFilter, vs));
@@ -529,16 +525,16 @@ public class TestRangeFacetCounts extends FacetTestCase {
     float minValue = Float.POSITIVE_INFINITY;
     float maxValue = Float.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       float v = random().nextFloat();
       values[i] = v;
-      doc.add(new FloatDocValuesField("field", v));
-      doc.add(new FloatField("field", v, Field.Store.NO));
+      doc.addFloat("field", v);
       w.addDocument(doc);
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
     }
     IndexReader r = w.getReader();
+    FieldTypes fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
     FacetsConfig config = new FacetsConfig();
@@ -639,9 +635,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Filter fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = NumericRangeFilter.newFloatRange("field", minValue, maxValue, true, true);
+          fastMatchFilter = fieldTypes.newRangeFilter("field", minValue, true, maxValue, true);
         } else {
-          fastMatchFilter = NumericRangeFilter.newFloatRange("field", minAcceptedValue, maxAcceptedValue, true, true);
+          fastMatchFilter = fieldTypes.newRangeFilter("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchFilter = null;
@@ -664,9 +660,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
           if (random().nextBoolean()) {
-            ddq.add("field", NumericRangeFilter.newFloatRange("field", (float) range.min, (float) range.max, range.minInclusive, range.maxInclusive));
+            ddq.add("field", fieldTypes.newRangeFilter("field", (float) range.min, range.minInclusive, (float) range.max, range.maxInclusive));
           } else {
-            ddq.add("field", NumericRangeQuery.newFloatRange("field", (float) range.min, (float) range.max, range.minInclusive, range.maxInclusive));
+            ddq.add("field", new ConstantScoreQuery(fieldTypes.newRangeFilter("field", (float) range.min, range.minInclusive, (float) range.max, range.maxInclusive)));
           }
         } else {
           ddq.add("field", range.getFilter(fastMatchFilter, vs));
@@ -688,16 +684,16 @@ public class TestRangeFacetCounts extends FacetTestCase {
     double minValue = Double.POSITIVE_INFINITY;
     double maxValue = Double.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       double v = random().nextDouble();
       values[i] = v;
-      doc.add(new DoubleDocValuesField("field", v));
-      doc.add(new DoubleField("field", v, Field.Store.NO));
+      doc.addDouble("field", v);
       w.addDocument(doc);
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
     }
     IndexReader r = w.getReader();
+    FieldTypes fieldTypes = r.getFieldTypes();
 
     IndexSearcher s = newSearcher(r);
     FacetsConfig config = new FacetsConfig();
@@ -782,9 +778,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Filter fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = NumericRangeFilter.newDoubleRange("field", minValue, maxValue, true, true);
+          fastMatchFilter = fieldTypes.newRangeFilter("field", minValue, true, maxValue, true);
         } else {
-          fastMatchFilter = NumericRangeFilter.newDoubleRange("field", minAcceptedValue, maxAcceptedValue, true, true);
+          fastMatchFilter = fieldTypes.newRangeFilter("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchFilter = null;
@@ -807,9 +803,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
           if (random().nextBoolean()) {
-            ddq.add("field", NumericRangeFilter.newDoubleRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
+            ddq.add("field", fieldTypes.newRangeFilter("field", range.min, range.minInclusive, range.max, range.maxInclusive));
           } else {
-            ddq.add("field", NumericRangeQuery.newDoubleRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
+            ddq.add("field", new ConstantScoreQuery(fieldTypes.newRangeFilter("field", range.min, range.minInclusive, range.max, range.maxInclusive)));
           }
         } else {
           ddq.add("field", range.getFilter(fastMatchFilter, vs));
@@ -827,16 +823,14 @@ public class TestRangeFacetCounts extends FacetTestCase {
   public void testMissingValues() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document doc = new Document();
-    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
-    doc.add(field);
     for(long l=0;l<100;l++) {
+      // Every 5th doc is missing the value:
       if (l % 5 == 0) {
-        // Every 5th doc is missing the value:
-        w.addDocument(new Document());
+        w.addDocument(w.newDocument());
         continue;
       }
-      field.setLongValue(l);
+      Document2 doc = w.newDocument();
+      doc.addLong("field", l);
       w.addDocument(doc);
     }
 
@@ -864,7 +858,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.addDocument(doc);

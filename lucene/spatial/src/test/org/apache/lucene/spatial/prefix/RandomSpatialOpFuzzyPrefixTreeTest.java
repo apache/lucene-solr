@@ -17,15 +17,19 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.ShapeCollection;
-import com.spatial4j.core.shape.SpatialRelation;
-import com.spatial4j.core.shape.impl.RectangleImpl;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -40,18 +44,15 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.ShapeCollection;
+import com.spatial4j.core.shape.SpatialRelation;
+import com.spatial4j.core.shape.impl.RectangleImpl;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
@@ -144,7 +145,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     setupQuadGrid(3);
     adoc("0", new ShapePair(ctx.makeRectangle(0, 33, -128, 128), ctx.makeRectangle(33, 128, -128, 128), true));
     commit();
-    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Contains,
+    Query query = strategy.makeQuery(fieldTypes, new SpatialArgs(SpatialOperation.Contains,
         ctx.makeRectangle(0, 128, -16, 128)));
     SearchResults searchResults = executeQuery(query, 1);
     assertEquals(1, searchResults.numFound);
@@ -157,7 +158,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     adoc("0", new ShapePair(ctx.makeRectangle(0, 10, -120, -100), ctx.makeRectangle(220, 240, 110, 125), false));
     commit();
     //query surrounds only the second part of the indexed shape
-    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.IsWithin,
+    Query query = strategy.makeQuery(fieldTypes, new SpatialArgs(SpatialOperation.IsWithin,
         ctx.makeRectangle(210, 245, 105, 128)));
     SearchResults searchResults = executeQuery(query, 1);
     //we shouldn't find it because it's not completely within
@@ -176,13 +177,13 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     //query does NOT contain it; both indexed cells are leaves to the query, and
     // when expanded to the full grid cells, the top one's top row is disjoint
     // from the query and thus not a match.
-    assertTrue(executeQuery(strategy.makeQuery(
+    assertTrue(executeQuery(strategy.makeQuery(fieldTypes, 
         new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(38, 192, -72, 56))
     ), 1).numFound==0);//no-match
 
     //this time the rect is a little bigger and is considered a match. It's a
     // an acceptable false-positive because of the grid approximation.
-    assertTrue(executeQuery(strategy.makeQuery(
+    assertTrue(executeQuery(strategy.makeQuery(fieldTypes, 
         new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(38, 192, -72, 80))
     ), 1).numFound==1);//match
   }
@@ -200,9 +201,10 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
   //Override so we can index parts of a pair separately, resulting in the detailLevel
   // being independent for each shape vs the whole thing
   @Override
-  protected Document newDoc(String id, Shape shape) {
-    Document doc = new Document();
-    doc.add(new StringField("id", id, Field.Store.YES));
+  protected Document2 newDoc(String id, Shape shape) {
+    Document2 doc = indexWriter.newDocument();
+    fieldTypes.setMultiValued(strategy.getFieldName());
+    doc.addAtom("id", id);
     if (shape != null) {
       Collection<Shape> shapes;
       if (shape instanceof ShapePair) {
@@ -213,12 +215,10 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
         shapes = Collections.singleton(shape);
       }
       for (Shape shapei : shapes) {
-        for (Field f : strategy.createIndexableFields(shapei)) {
-          doc.add(f);
-        }
+        strategy.addFields(doc, shapei);
       }
       if (storeShape)//just for diagnostics
-        doc.add(new StoredField(strategy.getFieldName(), shape.toString()));
+        doc.addStored(strategy.getFieldName() + "_stored", shape.toString());
     }
     return doc;
   }
@@ -226,7 +226,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
   private void doTest(final SpatialOperation operation) throws IOException {
     //first show that when there's no data, a query will result in no results
     {
-      Query query = strategy.makeQuery(new SpatialArgs(operation, randomRectangle()));
+      Query query = strategy.makeQuery(fieldTypes, new SpatialArgs(operation, randomRectangle()));
       SearchResults searchResults = executeQuery(query, 1);
       assertEquals(0, searchResults.numFound);
     }
@@ -342,7 +342,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
       SpatialArgs args = new SpatialArgs(operation, queryShape);
       if (queryShape instanceof ShapePair)
         args.setDistErrPct(0.0);//a hack; we want to be more detailed than gridSnap(queryShape)
-      Query query = strategy.makeQuery(args);
+      Query query = strategy.makeQuery(fieldTypes, args);
       SearchResults got = executeQuery(query, 100);
       Set<String> remainingExpectedIds = new LinkedHashSet<>(expectedIds);
       for (SearchResult result : got.results) {

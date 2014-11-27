@@ -67,6 +67,11 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     assert producer != null;
     return new AssertingDocValuesProducer(producer, state.segmentInfo.getDocCount());
   }
+
+  @Override
+  public String toString() {
+    return "AssertingDocValuesFormat(" + in + ")";
+  }
   
   static class AssertingDocValuesConsumer extends DocValuesConsumer {
     private final DocValuesConsumer in;

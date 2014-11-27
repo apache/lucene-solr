@@ -56,6 +56,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -155,6 +156,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMultiValued("sortedset");
     fieldTypes.setDocValuesType("sortedset", DocValuesType.SORTED_SET);
 
     Document2 doc = w.newDocument();
@@ -190,6 +192,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setDocValuesType("sortednumeric", DocValuesType.SORTED_NUMERIC);
+    fieldTypes.setMultiValued("sortednumeric");
 
     Document2 doc = w.newDocument();
     doc.addInt("sortednumeric", 3);
@@ -1792,12 +1795,29 @@ public class TestDocument2 extends LuceneTestCase {
   public void testExcStoredThenIndexed() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = newIndexWriter(dir);
-
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMultiValued("field");
     Document2 doc = w.newDocument();
     doc.addStored("field", "bar");
     // nocommit why no exc here?
     doc.addLargeText("field", "bar");
     w.addDocument(doc);
+    w.close();
+    dir.close();
+  }
+
+  public void testDoubleTermQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = newIndexWriter(dir);
+    Document2 doc = w.newDocument();
+    doc.addDouble("double", 180.0);
+    w.addDocument(doc);
+    DirectoryReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(1, s.search(new TermQuery(new Term("double",
+                                                    Document2.longToBytes(Document2.sortableDoubleBits(Double.doubleToLongBits(180.0))))),
+                             1).totalHits);
+    r.close();
     w.close();
     dir.close();
   }

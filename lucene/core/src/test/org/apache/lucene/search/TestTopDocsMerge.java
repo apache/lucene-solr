@@ -25,8 +25,6 @@ import java.util.List;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;

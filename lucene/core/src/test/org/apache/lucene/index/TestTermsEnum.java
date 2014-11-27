@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -44,11 +43,11 @@ public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, true);
     final Directory d = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     final RandomIndexWriter w = new RandomIndexWriter(random(), d, analyzer);
+    final LineFileDocs docs = new LineFileDocs(w.w, random);
     final int numDocs = atLeast(10);
     for(int docCount=0;docCount<numDocs;docCount++) {
       w.addDocument(docs.nextDoc());
@@ -830,6 +829,7 @@ public class TestTermsEnum extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableSorting("field");
+    fieldTypes.setMultiValued("field");
 
     Document2 doc = w.newDocument();
     doc.addAtom("field", "");

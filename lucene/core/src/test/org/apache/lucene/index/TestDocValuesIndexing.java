@@ -97,12 +97,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
-    doc.addInt("field", 16);
     try {
-      w.addDocument(doc);
+      doc.addInt("field", 16);
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
+      assertEquals("field=\"field\": this field is added more than once but is not multiValued", iae.getMessage());
     }
 
     DirectoryReader r = w.getReader();
@@ -276,16 +276,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.addAtom("dv", new BytesRef("foo!"));
     iwriter.addDocument(doc);
     
-    doc.addAtom("dv", new BytesRef("bar!"));
     try {
-      iwriter.addDocument(doc);
+      doc.addAtom("dv", new BytesRef("bar!"));
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException expected) {
       // expected
-      if (VERBOSE) {
-        System.out.println("hit exc:");
-        expected.printStackTrace(System.out);
-      }
+      assertEquals("field=\"dv\": this field is added more than once but is not multiValued", expected.getMessage());
     }
     IndexReader ir = iwriter.getReader();
     assertEquals(1, ir.numDocs());
@@ -306,12 +302,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.addBinary("dv", new BytesRef("foo!"));
     iwriter.addDocument(doc);
     
-    doc.addBinary("dv", new BytesRef("bar!"));
     try {
-      iwriter.addDocument(doc);
+      doc.addBinary("dv", new BytesRef("bar!"));
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException expected) {
       // expected
+      assertEquals("field=\"dv\": this field is added more than once but is not multiValued", expected.getMessage());
     }
     
     IndexReader ir = iwriter.getReader();
@@ -334,12 +330,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.addInt("dv", 1);
     iwriter.addDocument(doc);
     
-    doc.addInt("dv", 2);
     try {
-      iwriter.addDocument(doc);
+      doc.addInt("dv", 2);
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException expected) {
-      // expected
+      assertEquals("field=\"dv\": this field is added more than once but is not multiValued", expected.getMessage());
+      // EXPECTED
     }
     IndexReader ir = iwriter.getReader();
     assertEquals(1, ir.numDocs());
@@ -797,34 +793,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       doc.addAtom("dv", new BytesRef("foo"));
       fail("did not hit exception");
     } catch (IllegalStateException ise) {
-      // expected
-    }
-    writer.close();
-    dir2.close();
-    dir.close();
-  }
-
-  public void testTypeChangeViaAddIndexesIR2() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
-    doc.addLong("dv", 0L);
-    writer.addDocument(doc);
-    writer.close();
-
-    Directory dir2 = newDirectory();
-    conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    writer = new IndexWriter(dir2, conf);
-    IndexReader[] readers = new IndexReader[] {DirectoryReader.open(dir)};
-    writer.addIndexes(readers);
-    readers[0].close();
-    doc = writer.newDocument();
-    doc.addAtom("dv", new BytesRef("foo"));
-    try {
-      writer.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
       // expected
     }
     writer.close();

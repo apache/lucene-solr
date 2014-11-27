@@ -159,8 +159,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     Document2 newDoc = writer.newDocument();
     newDoc.addAll(r1.document(10));
-      
-    newDoc.removeField("id");
+
+    newDoc = writer.newDocument();
     newDoc.addAtom("id", Integer.toString(8000));
     writer.updateDocument(new Term("id", id10), newDoc);
     assertFalse(r1.isCurrent());

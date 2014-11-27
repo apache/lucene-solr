@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
@@ -39,10 +39,10 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -209,7 +209,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
-    doc.add(new IntField("num", 10, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 10));
     doc.add(new FacetField("a", "foo1"));
     writer.addDocument(config.build(taxoWriter, doc));
 

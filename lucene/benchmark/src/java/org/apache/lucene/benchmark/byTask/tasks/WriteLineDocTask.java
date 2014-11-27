@@ -32,8 +32,12 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * A task which writes documents, one line per document. Each line is in the
@@ -155,10 +159,24 @@ public class WriteLineDocTask extends PerfTask {
   protected String getLogMessage(int recsCount) {
     return "Wrote " + recsCount + " line docs";
   }
+
+  private IndexWriter privateWriter;
+
+  private IndexWriter getPrivateWriter() throws Exception {
+    if (privateWriter == null) {
+      RAMDirectory dir = new RAMDirectory();
+      privateWriter = new IndexWriter(dir, new IndexWriterConfig(null));
+    }
+    return privateWriter;
+  }
   
   @Override
   public int doLogic() throws Exception {
-    Document doc = docSize > 0 ? docMaker.makeDocument(docSize) : docMaker.makeDocument();
+    IndexWriter iw = getRunData().getIndexWriter();
+    if (iw == null) {
+      iw = getPrivateWriter();
+    }
+    Document2 doc = docSize > 0 ? docMaker.makeDocument(iw,docSize) : docMaker.makeDocument(iw);
 
     Matcher matcher = threadNormalizer.get();
     if (matcher == null) {
@@ -193,7 +211,7 @@ public class WriteLineDocTask extends PerfTask {
    * Selects output line file by written doc.
    * Default: original output line file.
    */
-  protected PrintWriter lineFileOut(Document doc) {
+  protected PrintWriter lineFileOut(Document2 doc) {
     return lineFileOut;
   }
 

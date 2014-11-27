@@ -105,6 +105,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     fieldTypes.disableSorting("dv2");
     fieldTypes.setMultiValued("dv4");
     fieldTypes.setMultiValued("dv5");
+    fieldTypes.setMultiValued("stored1");
 
     try {
       for (int i = 0; i < numDocs; i++) {

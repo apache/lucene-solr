@@ -27,6 +27,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -58,6 +59,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   protected RandomIndexWriter indexWriter;
   private Directory directory;
   protected IndexSearcher indexSearcher;
+  protected FieldTypes fieldTypes;
 
   protected SpatialContext ctx;//subclass must initialize
 
@@ -77,6 +79,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     indexWriter = new RandomIndexWriter(random,directory, newIndexWriterConfig(random));
     indexReader = UninvertingReader.wrap(indexWriter.getReader(), uninvertMap);
     indexSearcher = newSearcher(indexReader);
+    fieldTypes = indexWriter.getFieldTypes();
   }
 
   protected IndexWriterConfig newIndexWriterConfig(Random random) {
@@ -102,12 +105,12 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   // ================================================= Helper Methods ================================================
 
-  protected void addDocument(Document doc) throws IOException {
+  protected void addDocument(Document2 doc) throws IOException {
     indexWriter.addDocument(doc);
   }
 
-  protected void addDocumentsAndCommit(List<Document> documents) throws IOException {
-    for (Document document : documents) {
+  protected void addDocumentsAndCommit(List<Document2> documents) throws IOException {
+    for (Document2 document : documents) {
       indexWriter.addDocument(document);
     }
     commit();

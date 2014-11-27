@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
@@ -37,8 +38,8 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -64,27 +65,27 @@ public class SimpleFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    Document doc = new Document();
+    Document2 doc = indexWriter.newDocument();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     doc.add(new FacetField("Author", "Susan"));
     doc.add(new FacetField("Publish Date", "2012", "1", "7"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
     indexWriter.addDocument(config.build(taxoWriter, doc));

@@ -45,38 +45,37 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 
-/** Minimal port of benchmark's LneDocSource +
- * DocMaker, so tests can enum docs from a line file created
- * by benchmark's WriteLineDoc task */
-public class LineFileDocs implements Closeable {
+/** Just provides the parsed body, title, date, id from the line file docs. */
+public class LineFileDocsText implements Closeable {
 
   private BufferedReader reader;
   private final static int BUFFER_SIZE = 1 << 16;     // 64K
   private final AtomicInteger id = new AtomicInteger();
   private final String path;
-  private IndexWriter w;
+  
+  public static class DocText {
+    public final String body;
+    public final String title;
+    public final String date;
+    public final String docid;
+
+    DocText(String body, String title, String date, String docid) {
+      this.body = body;
+      this.title = title;
+      this.date = date;
+      this.docid = docid;
+    }
+  }
 
   /** If forever is true, we rewind the file at EOF (repeat
    * the docs over and over) */
-  public LineFileDocs(IndexWriter w, Random random, String path) throws IOException {
-    this.w = w;
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableTermVectors("body");
-    fieldTypes.enableTermVectorPositions("body");
-    fieldTypes.enableTermVectorOffsets("body");
-    fieldTypes.disableHighlighting("body");
-    fieldTypes.disableSorting("docid_int");
-
+  public LineFileDocsText(Random random, String path) throws IOException {
     this.path = path;
     open(random);
   }
 
-  public LineFileDocs(IndexWriter w, Random random) throws IOException {
-    this(w, random, LuceneTestCase.TEST_LINE_DOCS_FILE);
-  }
-
-  public void setIndexWriter(IndexWriter w) {
-    this.w = w;
+  public LineFileDocsText(Random random) throws IOException {
+    this(random, LuceneTestCase.TEST_LINE_DOCS_FILE);
   }
 
   @Override
@@ -164,7 +163,7 @@ public class LineFileDocs implements Closeable {
   private final static char SEP = '\t';
 
   /** Note: Document instance is re-used per-thread */
-  public Document2 nextDoc() throws IOException {
+  public DocText nextDoc() throws IOException {
     String line;
     synchronized(this) {
       line = reader.readLine();
@@ -188,18 +187,9 @@ public class LineFileDocs implements Closeable {
       throw new RuntimeException("line: [" + line + "] is in an invalid format !");
     }
 
-    Document2 doc = w.newDocument();
-    doc.addLargeText("body", line.substring(1+spot2, line.length()));
-
-    final String title = line.substring(0, spot);
-    doc.addLargeText("titleTokenized", title);
-    doc.addAtom("title", title);
-    doc.addShortText("titleDV", title);
-
-    doc.addAtom("date", line.substring(1+spot, spot2));
-    int i = id.getAndIncrement();
-    doc.addAtom("docid", Integer.toString(i));
-    doc.addInt("docid_int", i);
-    return doc;
+    return new DocText(line.substring(1+spot2, line.length()),
+                       line.substring(0, spot),
+                       line.substring(1+spot, spot2),
+                       Integer.toString(id.getAndIncrement()));
   }
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.sandbox.queries.regex;
 
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
@@ -54,15 +55,11 @@ public class TestSpanRegexQuery extends LuceneTestCase {
   public void testSpanRegex() throws Exception {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    // doc.add(newField("field", "the quick brown fox jumps over the lazy dog",
-    // Field.Store.NO, Field.Index.ANALYZED));
-    // writer.addDocument(doc);
-    // doc = new Document();
-    doc.add(newTextField("field", "auto update", Field.Store.NO));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "auto update");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newTextField("field", "first auto update", Field.Store.NO));
+    doc = writer.newDocument();
+    doc.addLargeText("field", "first auto update");
     writer.addDocument(doc);
     writer.forceMerge(1);
     writer.close();

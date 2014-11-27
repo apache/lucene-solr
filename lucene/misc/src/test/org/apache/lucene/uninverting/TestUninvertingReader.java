@@ -20,13 +20,13 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.util.Collections;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
@@ -36,18 +36,22 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestUninvertingReader extends LuceneTestCase {
-  
+
+  // nocommit also make back-compat variants of these
   public void testSortedSetInteger() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    
-    Document doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("foo");
+    fieldTypes.setMultiValued("foo");
+
+    Document2 doc = iw.newDocument();
+    doc.addInt("foo", 5);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
-    doc.add(new IntField("foo", -3, Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addInt("foo", 5);
+    doc.addInt("foo", -3);
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -69,10 +73,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToInt(value));
+    assertEquals(-3, Document2.bytesToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToInt(value));
+    assertEquals(5, Document2.bytesToInt(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -81,14 +85,17 @@ public class TestUninvertingReader extends LuceneTestCase {
   public void testSortedSetFloat() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("foo");
+    fieldTypes.setMultiValued("foo");
     
-    Document doc = new Document();
-    doc.add(new IntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addFloat("foo", 5f);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new IntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
-    doc.add(new IntField("foo", Float.floatToRawIntBits(-3f), Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addFloat("foo", 5f);
+    doc.addFloat("foo", -3f);
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -111,10 +118,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(Float.floatToRawIntBits(-3f), NumericUtils.prefixCodedToInt(value));
+    assertEquals(-3f, Document2.bytesToFloat(value), 0.0f);
     
     value = v.lookupOrd(1);
-    assertEquals(Float.floatToRawIntBits(5f), NumericUtils.prefixCodedToInt(value));
+    assertEquals(5f, Document2.bytesToFloat(value), 0.0f);
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -123,14 +130,17 @@ public class TestUninvertingReader extends LuceneTestCase {
   public void testSortedSetLong() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("foo");
+    fieldTypes.setMultiValued("foo");
     
-    Document doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addLong("foo", 5);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
-    doc.add(new LongField("foo", -3, Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addLong("foo", 5);
+    doc.addLong("foo", -3);
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -152,10 +162,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToLong(value));
+    assertEquals(-3, Document2.bytesToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToLong(value));
+    assertEquals(5, Document2.bytesToLong(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -164,14 +174,17 @@ public class TestUninvertingReader extends LuceneTestCase {
   public void testSortedSetDouble() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("foo");
+    fieldTypes.setMultiValued("foo");
     
-    Document doc = new Document();
-    doc.add(new LongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
+    Document2 doc = iw.newDocument();
+    doc.addDouble("foo", 5d);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new LongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
-    doc.add(new LongField("foo", Double.doubleToRawLongBits(-3d), Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addDouble("foo", 5d);
+    doc.addDouble("foo", -3d);
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -193,10 +206,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(Double.doubleToRawLongBits(-3d), NumericUtils.prefixCodedToLong(value));
+    assertEquals(-3d, Document2.bytesToDouble(value), 0.0);
     
     value = v.lookupOrd(1);
-    assertEquals(Double.doubleToRawLongBits(5d), NumericUtils.prefixCodedToLong(value));
+    assertEquals(5d, Document2.bytesToDouble(value), 0.0);
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();

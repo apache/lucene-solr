@@ -197,6 +197,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
   protected final class NodeState implements Closeable {
     public final Directory dir;
     public final IndexWriter writer;
+    public final LineFileDocs docs;
     public final SearcherLifetimeManager searchers;
     public final SearcherManager mgr;
     public final int myNodeID;
@@ -457,6 +458,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         iwc.setInfoStream(new PrintStreamInfoStream(System.out));
       }
       writer = new IndexWriter(dir, iwc);
+      docs = new LineFileDocs(writer, random());
       mgr = new SearcherManager(writer, true, null);
       searchers = new SearcherLifetimeManager();
 
@@ -549,17 +551,16 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        final LineFileDocs docs = new LineFileDocs(random(), true);
         int numDocs = 0;
         while (System.nanoTime() < endTimeNanos) {
           final int what = random().nextInt(3);
           final NodeState node = nodes[random().nextInt(nodes.length)];
           if (numDocs == 0 || what == 0) {
-            node.writer.addDocument(docs.nextDoc());
+            node.writer.addDocument(node.docs.nextDoc());
             numDocs++;
           } else if (what == 1) {
             node.writer.updateDocument(new Term("docid", ""+random().nextInt(numDocs)),
-                                        docs.nextDoc());
+                                       node.docs.nextDoc());
             numDocs++;
           } else {
             node.writer.deleteDocuments(new Term("docid", ""+random().nextInt(numDocs)));

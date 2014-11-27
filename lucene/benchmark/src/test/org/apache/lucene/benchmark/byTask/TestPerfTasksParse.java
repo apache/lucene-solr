@@ -34,10 +34,11 @@ import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Algorithm;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.LuceneTestCase;
 
 import conf.ConfLoader;
 
@@ -105,7 +106,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
 
   public static class MockQueryMaker extends AbstractQueryMaker {
     @Override
-    protected Query[] prepareQueries() throws Exception {
+    protected Query[] prepareQueries(FieldTypes fieldTypes) throws Exception {
       return new Query[0];
     }
   }

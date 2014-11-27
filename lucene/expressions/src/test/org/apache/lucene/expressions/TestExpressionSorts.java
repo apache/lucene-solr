@@ -20,13 +20,10 @@ package org.apache.lucene.expressions;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.IndexReader;
@@ -51,7 +48,7 @@ import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests some basic expressions against different queries,
- * and fieldcache/docvalues fields against an equivalent sort.
+ * and docvalues fields against an equivalent sort.
  */
 public class TestExpressionSorts extends LuceneTestCase {
   private Directory dir;
@@ -65,19 +62,13 @@ public class TestExpressionSorts extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = TestUtil.nextInt(random(), 2049, 4000);
     for (int i = 0; i < numDocs; i++) {
-      Document document = new Document();
-      document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
-      document.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
-      document.add(newStringField("byte", "" + ((byte) random().nextInt()), Field.Store.NO));
-      document.add(newStringField("short", "" + ((short) random().nextInt()), Field.Store.NO));
-      document.add(new IntField("int", random().nextInt(), Field.Store.NO));
-      document.add(new LongField("long", random().nextLong(), Field.Store.NO));
-
-      document.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
-      document.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
-
-      document.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
-      document.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
+      Document2 document = iw.newDocument();
+      document.addLargeText("english", English.intToEnglish(i));
+      document.addLargeText("oddeven", (i % 2 == 0) ? "even" : "odd");
+      document.addAtom("byte", "" + ((byte) random().nextInt()));
+      document.addAtom("short", "" + ((short) random().nextInt()));
+      document.addInt("intdocvalues", random().nextInt());
+      document.addFloat("floatdocvalues", random().nextFloat());
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -115,10 +106,6 @@ public class TestExpressionSorts extends LuceneTestCase {
     for (int i = 0; i < 10; i++) {
       boolean reversed = random().nextBoolean();
       SortField fields[] = new SortField[] {
-          new SortField("int", SortField.Type.INT, reversed),
-          new SortField("long", SortField.Type.LONG, reversed),
-          new SortField("float", SortField.Type.FLOAT, reversed),
-          new SortField("double", SortField.Type.DOUBLE, reversed),
           new SortField("intdocvalues", SortField.Type.INT, reversed),
           new SortField("floatdocvalues", SortField.Type.FLOAT, reversed),
           new SortField("score", SortField.Type.SCORE)

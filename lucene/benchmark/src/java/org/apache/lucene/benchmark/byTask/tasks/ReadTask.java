@@ -108,7 +108,7 @@ public abstract class ReadTask extends PerfTask {
 
     if (withSearch()) {
       res++;
-      Query q = queryMaker.makeQuery();
+      Query q = queryMaker.makeQuery(searcher.getIndexReader().getFieldTypes());
       Sort sort = getSort();
       TopDocs hits = null;
       final int numHits = numHits();

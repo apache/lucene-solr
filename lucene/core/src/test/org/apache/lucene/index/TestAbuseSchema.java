@@ -18,19 +18,23 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.LowSchemaField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -517,6 +521,271 @@ public class TestAbuseSchema extends LuceneTestCase {
         writer.close();
       }
     }
+    dir.close();
+  }
+
+  public void testIndexStoreCombos() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    byte[] b = new byte[50];
+    for(int i=0;i<50;i++) {
+      b[i] = (byte) (i+77);
+    }
+
+    List<LowSchemaField> doc = new ArrayList<>();
+
+    LowSchemaField f = new LowSchemaField("binary", new BytesRef(b, 10, 17), IndexOptions.DOCS, true);
+    final MockTokenizer doc1field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc1field1.setReader(new StringReader("doc1field1"));
+    f.setTokenStream(doc1field1);
+
+    LowSchemaField f2 = new LowSchemaField("string", "value", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    final MockTokenizer doc1field2 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc1field2.setReader(new StringReader("doc1field2"));
+    f2.setTokenStream(doc1field2);
+    doc.add(f);
+    doc.add(f2);
+    w.addDocument(doc);
+
+    // add 2 docs to test in-memory merging
+    final MockTokenizer doc2field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc2field1.setReader(new StringReader("doc2field1"));
+    f.setTokenStream(doc2field1);
+    final MockTokenizer doc2field2 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc2field2.setReader(new StringReader("doc2field2"));
+    f2.setTokenStream(doc2field2);
+    w.addDocument(doc);
+
+    // force segment flush so we can force a segment merge with doc3 later.
+    w.commit();
+
+    final MockTokenizer doc3field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc3field1.setReader(new StringReader("doc3field1"));
+    f.setTokenStream(doc3field1);
+    final MockTokenizer doc3field2 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    doc3field2.setReader(new StringReader("doc3field2"));
+    f2.setTokenStream(doc3field2);
+
+    w.addDocument(doc);
+    w.commit();
+    w.forceMerge(1);   // force segment merge.
+    w.close();
+
+    IndexReader ir = DirectoryReader.open(dir);
+    Document2 doc2 = ir.document(0);
+    IndexableField f3 = doc2.getField("binary");
+    b = f3.binaryValue().bytes;
+    assertTrue(b != null);
+    assertEquals(17, b.length, 17);
+    assertEquals(87, b[0]);
+
+    assertTrue(ir.document(0).getField("binary").binaryValue()!=null);
+    assertTrue(ir.document(1).getField("binary").binaryValue()!=null);
+    assertTrue(ir.document(2).getField("binary").binaryValue()!=null);
+
+    assertEquals("value", ir.document(0).get("string"));
+    assertEquals("value", ir.document(1).get("string"));
+    assertEquals("value", ir.document(2).get("string"));
+
+
+    // test that the terms were indexed.
+    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+
+    ir.close();
+    dir.close();
+  }
+
+  // Tests whether the DocumentWriter correctly enable the
+  // omitTermFreqAndPositions bit in the FieldInfo
+  public void testPositions() throws Exception {
+    Directory ram = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
+    List<LowSchemaField> d = new ArrayList<>();
+        
+    // f1,f2,f3: docs only
+    d.add(new LowSchemaField("f1", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField("f2", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField("f3", "This field has docs only", IndexOptions.DOCS, true));
+
+    d.add(new LowSchemaField("f4", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField("f5", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField("f6", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    
+    d.add(new LowSchemaField("f7", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField("f8", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField("f9", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+        
+    writer.addDocument(d);
+    writer.forceMerge(1);
+
+    // now we add another document which has docs-only for f1, f4, f7, docs/freqs for f2, f5, f8, 
+    // and docs/freqs/positions for f3, f6, f9
+    d = new ArrayList<>();
+    
+    // f1,f4,f7: docs only
+    d.add(new LowSchemaField("f1", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField("f4", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField("f7", "This field has docs only", IndexOptions.DOCS, true));
+
+    // f2, f5, f8: docs and freqs
+    d.add(new LowSchemaField("f2", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField("f5", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField("f8", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    
+    // f3, f6, f9: docs and freqs and positions
+    d.add(new LowSchemaField("f3", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField("f6", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField("f9", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    writer.addDocument(d);
+
+    // force merge
+    writer.forceMerge(1);
+    // flush
+    writer.close();
+
+    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    FieldInfos fi = reader.getFieldInfos();
+    // docs + docs = docs
+    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f1").getIndexOptions());
+    // docs + docs/freqs = docs
+    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
+    // docs + docs/freqs/pos = docs
+    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f3").getIndexOptions());
+    // docs/freqs + docs = docs
+    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f4").getIndexOptions());
+    // docs/freqs + docs/freqs = docs/freqs
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f5").getIndexOptions());
+    // docs/freqs + docs/freqs/pos = docs/freqs
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f6").getIndexOptions());
+    // docs/freqs/pos + docs = docs
+    assertEquals(IndexOptions.DOCS, fi.fieldInfo("f7").getIndexOptions());
+    // docs/freqs/pos + docs/freqs = docs/freqs
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f8").getIndexOptions());
+    // docs/freqs/pos + docs/freqs/pos = docs/freqs/pos
+    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f9").getIndexOptions());
+    
+    reader.close();
+    ram.close();
+  }
+  
+  // Verifies no *.prx exists when all fields omit term positions:
+  public void testNoPrxFile() throws Throwable {
+    Directory ram = newDirectory();
+    if (ram instanceof MockDirectoryWrapper) {
+      // we verify some files get deleted
+      ((MockDirectoryWrapper)ram).setEnableVirusScanner(false);
+    }
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
+                                                .setMaxBufferedDocs(3)
+                                                .setMergePolicy(newLogMergePolicy()));
+    LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
+    lmp.setMergeFactor(2);
+    lmp.setNoCFSRatio(0.0);
+
+    List<LowSchemaField> d = new ArrayList<>();
+    d.add(new LowSchemaField("f1", "This field has term freqs", IndexOptions.DOCS_AND_FREQS, true));
+    for(int i=0;i<30;i++) {
+      writer.addDocument(d);
+    }
+
+    writer.commit();
+
+    assertNoPrx(ram);
+    
+    // now add some documents with positions, and check there is no prox after optimization
+    d = new ArrayList<>();
+    d.add(new LowSchemaField("f1", "This field has term freqs", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    
+    for(int i=0;i<30;i++) {
+      writer.addDocument(d);
+    }
+
+    // force merge
+    writer.forceMerge(1);
+    // flush
+    writer.close();
+
+    assertNoPrx(ram);
+    ram.close();
+  }
+
+  private void assertNoPrx(Directory dir) throws Throwable {
+    final String[] files = dir.listAll();
+    for(int i=0;i<files.length;i++) {
+      assertFalse(files[i].endsWith(".prx"));
+      assertFalse(files[i].endsWith(".pos"));
+    }
+  }
+  
+  /** make sure we downgrade positions and payloads correctly */
+  public void testMixing() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    
+    for (int i = 0; i < 20; i++) {
+      List<LowSchemaField> doc = new ArrayList<>();
+      if (i < 19 && random().nextBoolean()) {
+        for (int j = 0; j < 50; j++) {
+          doc.add(new LowSchemaField("foo", "i have positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+        }
+      } else {
+        for (int j = 0; j < 50; j++) {
+          doc.add(new LowSchemaField("foo", "i have no positions", IndexOptions.DOCS_AND_FREQS, true));
+        }
+      }
+      iw.addDocument(doc);
+      iw.commit();
+    }
+    
+    if (random().nextBoolean()) {
+      iw.forceMerge(1);
+    }
+    
+    DirectoryReader ir = iw.getReader();
+    FieldInfos fis = MultiFields.getMergedFieldInfos(ir);
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fis.fieldInfo("foo").getIndexOptions());
+    assertFalse(fis.fieldInfo("foo").hasPayloads());
+    iw.close();
+    ir.close();
+    dir.close(); // checkindex
+  }
+
+  public void testTypeChangeViaAddIndexesIR2() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    LowSchemaField field = new LowSchemaField("dv", 0L, IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.NUMERIC);
+    List<LowSchemaField> doc = new ArrayList<>();
+    doc.add(field);
+    writer.addDocument(doc);
+    writer.close();
+
+    Directory dir2 = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    writer = new IndexWriter(dir2, conf);
+    IndexReader[] readers = new IndexReader[] {DirectoryReader.open(dir)};
+    writer.addIndexes(readers);
+    readers[0].close();
+    field = new LowSchemaField("dv", new BytesRef("foo"), IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.BINARY);
+    doc = new ArrayList<>();
+    doc.add(field);
+    try {
+      writer.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    writer.close();
+    dir2.close();
     dir.close();
   }
 

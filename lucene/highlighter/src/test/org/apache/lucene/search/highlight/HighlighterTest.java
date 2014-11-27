@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -499,7 +498,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testNumericRangeQuery() throws Exception {
     // doesn't currently highlight, but make sure it doesn't cause exception either
-    query = NumericRangeQuery.newIntRange(NUMERIC_FIELD_NAME, 2, 6, true, true);
+    query = new ConstantScoreQuery(reader.getFieldTypes().newRangeFilter(NUMERIC_FIELD_NAME, 2, true, 6, true));
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
@@ -1938,29 +1937,25 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     dir = newDirectory();
     ramDir = newDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
+    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(analyzer));
     for (String text : texts) {
       addDoc(writer, text);
     }
-    Document doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 1, Field.Store.NO));
-    doc.add(new StoredField(NUMERIC_FIELD_NAME, 1));
-    writer.addDocument(doc, analyzer);
+    Document2 doc = writer.newDocument();
+    doc.addInt(NUMERIC_FIELD_NAME, 1);
+    writer.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 3, Field.Store.NO));
-    doc.add(new StoredField(NUMERIC_FIELD_NAME, 3));
-    writer.addDocument(doc, analyzer);
+    doc = writer.newDocument();
+    doc.addInt(NUMERIC_FIELD_NAME, 3);
+    writer.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 5, Field.Store.NO));
-    doc.add(new StoredField(NUMERIC_FIELD_NAME, 5));
-    writer.addDocument(doc, analyzer);
+    doc = writer.newDocument();
+    doc.addInt(NUMERIC_FIELD_NAME, 5);
+    writer.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 7, Field.Store.NO));
-    doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
-    writer.addDocument(doc, analyzer);
+    doc = writer.newDocument();
+    doc.addInt(NUMERIC_FIELD_NAME, 7);
+    writer.addDocument(doc);
 
     Document childDoc = doc(FIELD_NAME, "child document");
     Document parentDoc = doc(FIELD_NAME, "parent document");

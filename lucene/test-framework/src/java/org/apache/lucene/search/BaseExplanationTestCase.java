@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -71,15 +72,12 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassTestExplanations() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField(KEY, ""+i, Field.Store.NO));
-      doc.add(new SortedDocValuesField(KEY, new BytesRef(""+i)));
-      Field f = newTextField(FIELD, docFields[i], Field.Store.NO);
-      f.setBoost(i);
-      doc.add(f);
-      doc.add(newTextField(ALTFIELD, docFields[i], Field.Store.NO));
+      Document2 doc = writer.newDocument();
+      doc.addAtom(KEY, ""+i);
+      doc.addLargeText(FIELD, docFields[i], (float) i);
+      doc.addLargeText(ALTFIELD, docFields[i]);
       writer.addDocument(doc);
     }
     reader = writer.getReader();

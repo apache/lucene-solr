@@ -42,9 +42,11 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -60,8 +62,8 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStrings;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -1411,8 +1413,10 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(newStringField("", "something", Field.Store.NO));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    Document2 doc = iw.newDocument();
+    doc.addAtom("", "something");
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     LeafReader ar = getOnlySegmentReader(ir);
@@ -1436,15 +1440,17 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setCodec(getCodec());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(newStringField("", "", Field.Store.NO));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    Document2 doc = iw.newDocument();
+    doc.addAtom("", "");
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     LeafReader ar = getOnlySegmentReader(ir);
     Fields fields = ar.fields();
     int fieldCount = fields.size();
     // -1 is allowed, if the codec doesn't implement fields.size():
-    assertTrue(fieldCount == 1 || fieldCount == -1);
+    assertTrue("got fieldCount=" + fieldCount, fieldCount == 1 || fieldCount == -1);
     Terms terms = ar.terms("");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator(null);
@@ -1464,9 +1470,11 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iwc.setCodec(getCodec());
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    Document2 doc = iw.newDocument();
     iw.addDocument(doc);
-    doc.add(newStringField("ghostField", "something", Field.Store.NO));
+    doc.addAtom("ghostField", "something");
     iw.addDocument(doc);
     iw.forceMerge(1);
     iw.deleteDocuments(new Term("ghostField", "something")); // delete the only term for the field
@@ -1689,11 +1697,11 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    LineFileDocs docs = new LineFileDocs(random());
+    LineFileDocs docs = new LineFileDocs(w.w, random());
     int bytesToIndex = atLeast(100) * 1024;
     int bytesIndexed = 0;
     while (bytesIndexed < bytesToIndex) {
-      Document doc = docs.nextDoc();
+      Document2 doc = docs.nextDoc();
       w.addDocument(doc);
       bytesIndexed += RamUsageTester.sizeOf(doc);
     }
@@ -1733,17 +1741,18 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
 
   @Override
-  protected void addRandomFields(Document doc) {
+  protected void addRandomFields(Document2 doc) {
+    FieldTypes fieldTypes = doc.getFieldTypes();
     for (IndexOptions opts : IndexOptions.values()) {
       if (opts == IndexOptions.NONE) {
         continue;
       }
-      FieldType ft = new FieldType();
-      ft.setIndexOptions(opts);
-      ft.freeze();
+      fieldTypes.setIndexOptions("f_" + opts, opts);
+      fieldTypes.disableHighlighting("f_" + opts);
+      fieldTypes.setMultiValued("f_" + opts);
       final int numFields = random().nextInt(5);
       for (int j = 0; j < numFields; ++j) {
-        doc.add(new Field("f_" + opts, TestUtil.randomSimpleString(random(), 2), ft));
+        doc.addLargeText("f_" + opts, TestUtil.randomSimpleString(random(), 2));
       }
     }
   }

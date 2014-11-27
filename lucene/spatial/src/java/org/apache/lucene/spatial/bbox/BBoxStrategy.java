@@ -17,12 +17,14 @@ package org.apache.lucene.spatial.bbox;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -92,9 +94,6 @@ public class BBoxStrategy extends SpatialStrategy {
   protected final String field_maxY;
   protected final String field_xdl; // crosses dateline
 
-  protected FieldType fieldType;//for the 4 numbers
-  protected FieldType xdlFieldType;
-
   public BBoxStrategy(SpatialContext ctx, String fieldNamePrefix) {
     super(ctx, fieldNamePrefix);
     field_bbox = fieldNamePrefix;
@@ -103,35 +102,6 @@ public class BBoxStrategy extends SpatialStrategy {
     field_minY = fieldNamePrefix + SUFFIX_MINY;
     field_maxY = fieldNamePrefix + SUFFIX_MAXY;
     field_xdl = fieldNamePrefix + SUFFIX_XDL;
-
-    FieldType fieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
-    fieldType.setNumericPrecisionStep(8);//Solr's default
-    fieldType.setDocValuesType(DocValuesType.NUMERIC);
-    setFieldType(fieldType);
-  }
-
-  private int getPrecisionStep() {
-    return fieldType.numericPrecisionStep();
-  }
-
-  public FieldType getFieldType() {
-    return fieldType;
-  }
-
-  /** Used to customize the indexing options of the 4 number fields, and to a lesser degree the XDL field too. Search
-   * requires indexed=true, and relevancy requires docValues. If these features aren't needed then disable them.
-   * {@link FieldType#freeze()} is called on the argument. */
-  public void setFieldType(FieldType fieldType) {
-    fieldType.freeze();
-    this.fieldType = fieldType;
-    //only double's supported right now
-    if (fieldType.numericType() != FieldType.NumericType.DOUBLE)
-      throw new IllegalArgumentException("BBoxStrategy only supports doubles at this time.");
-    //for xdlFieldType, copy some similar options. Don't do docValues since it isn't needed here.
-    xdlFieldType = new FieldType(StringField.TYPE_NOT_STORED);
-    xdlFieldType.setStored(fieldType.stored());
-    xdlFieldType.setIndexOptions(fieldType.indexOptions());
-    xdlFieldType.freeze();
   }
 
   //---------------------------------
@@ -139,42 +109,32 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public Field[] createIndexableFields(Shape shape) {
-    return createIndexableFields(shape.getBoundingBox());
+  public void addFields(Document2 doc, Shape shape) {
+    addFields(doc, shape.getBoundingBox());
   }
 
-  public Field[] createIndexableFields(Rectangle bbox) {
-    Field[] fields = new Field[5];
-    fields[0] = new ComboField(field_minX, bbox.getMinX(), fieldType);
-    fields[1] = new ComboField(field_maxX, bbox.getMaxX(), fieldType);
-    fields[2] = new ComboField(field_minY, bbox.getMinY(), fieldType);
-    fields[3] = new ComboField(field_maxY, bbox.getMaxY(), fieldType);
-    fields[4] = new ComboField(field_xdl, bbox.getCrossesDateLine()?"T":"F", xdlFieldType);
-    return fields;
+  public void addFields(Document2 doc, Rectangle bbox) {
+    doc.addDouble(field_minX, bbox.getMinX());
+    doc.addDouble(field_maxX, bbox.getMaxX());
+    doc.addDouble(field_minY, bbox.getMinY());
+    doc.addDouble(field_maxY, bbox.getMaxY());
+    doc.addAtom(field_xdl, bbox.getCrossesDateLine()?"T":"F");
   }
 
-  /** Field subclass circumventing Field limitations. This one instance can have any combination of indexed, stored,
-   * and docValues.
-   */
-  private static class ComboField extends Field {
-    private ComboField(String name, Object value, FieldType type) {
-      super(name, type);//this expert constructor allows us to have a field that has docValues & indexed/stored
-      super.fieldsData = value;
-    }
+  public void setDocValuesType(FieldTypes fieldTypes, DocValuesType dvType) {
+    fieldTypes.setDocValuesType(field_minX, dvType);
+    fieldTypes.setDocValuesType(field_minY, dvType);
+    fieldTypes.setDocValuesType(field_maxX, dvType);
+    fieldTypes.setDocValuesType(field_maxY, dvType);
+    fieldTypes.setDocValuesType(field_xdl, dvType);
+  }
 
-    //Is this a hack?  We assume that numericValue() is only called for DocValues purposes.
-    @Override
-    public Number numericDocValue() {
-      //Numeric DocValues only supports Long,
-      final Number number = super.numericValue();
-      if (number == null)
-        return null;
-      if (fieldType().numericType() == FieldType.NumericType.DOUBLE)
-        return Double.doubleToLongBits(number.doubleValue());
-      if (fieldType().numericType() == FieldType.NumericType.FLOAT)
-        return Float.floatToIntBits(number.floatValue());
-      return number.longValue();
-    }
+  public void setIndexOptions(FieldTypes fieldTypes, IndexOptions indexOptions) {
+    fieldTypes.setIndexOptions(field_minX, indexOptions);
+    fieldTypes.setIndexOptions(field_maxX, indexOptions);
+    fieldTypes.setIndexOptions(field_minY, indexOptions);
+    fieldTypes.setIndexOptions(field_maxY, indexOptions);
+    fieldTypes.setIndexOptions(field_xdl, indexOptions);
   }
 
   //---------------------------------
@@ -208,13 +168,13 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public Filter makeFilter(SpatialArgs args) {
-    return new QueryWrapperFilter(makeSpatialQuery(args));
+  public Filter makeFilter(FieldTypes fieldTypes, SpatialArgs args) {
+    return new QueryWrapperFilter(makeSpatialQuery(fieldTypes, args));
   }
 
   @Override
-  public ConstantScoreQuery makeQuery(SpatialArgs args) {
-    return new ConstantScoreQuery(makeSpatialQuery(args));
+  public ConstantScoreQuery makeQuery(FieldTypes fieldTypes, SpatialArgs args) {
+    return new ConstantScoreQuery(makeSpatialQuery(fieldTypes, args));
   }
 
 //  Utility on SpatialStrategy?
@@ -222,7 +182,7 @@ public class BBoxStrategy extends SpatialStrategy {
 //    return new FilteredQuery(new FunctionQuery(valueSource), makeFilter(args));
 //  }
 
-  private Query makeSpatialQuery(SpatialArgs args) {
+  private Query makeSpatialQuery(FieldTypes fieldTypes, SpatialArgs args) {
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle))
       throw new UnsupportedOperationException("Can only query by Rectangle, not " + shape);
@@ -233,13 +193,14 @@ public class BBoxStrategy extends SpatialStrategy {
     // Useful for understanding Relations:
     // http://edndoc.esri.com/arcsde/9.1/general_topics/understand_spatial_relations.htm
     SpatialOperation op = args.getOperation();
-         if( op == SpatialOperation.BBoxIntersects ) spatial = makeIntersects(bbox);
-    else if( op == SpatialOperation.BBoxWithin     ) spatial = makeWithin(bbox);
-    else if( op == SpatialOperation.Contains       ) spatial = makeContains(bbox);
-    else if( op == SpatialOperation.Intersects     ) spatial = makeIntersects(bbox);
-    else if( op == SpatialOperation.IsEqualTo      ) spatial = makeEquals(bbox);
-    else if( op == SpatialOperation.IsDisjointTo   ) spatial = makeDisjoint(bbox);
-    else if( op == SpatialOperation.IsWithin       ) spatial = makeWithin(bbox);
+
+    if( op == SpatialOperation.BBoxIntersects      ) spatial = makeIntersects(fieldTypes, bbox);
+    else if( op == SpatialOperation.BBoxWithin     ) spatial = makeWithin(fieldTypes, bbox);
+    else if( op == SpatialOperation.Contains       ) spatial = makeContains(fieldTypes, bbox);
+    else if( op == SpatialOperation.Intersects     ) spatial = makeIntersects(fieldTypes, bbox);
+    else if( op == SpatialOperation.IsEqualTo      ) spatial = makeEquals(fieldTypes, bbox);
+    else if( op == SpatialOperation.IsDisjointTo   ) spatial = makeDisjoint(fieldTypes, bbox);
+    else if( op == SpatialOperation.IsWithin       ) spatial = makeWithin(fieldTypes, bbox);
     else { //no Overlaps support yet
         throw new UnsupportedSpatialOperation(op);
     }
@@ -251,15 +212,15 @@ public class BBoxStrategy extends SpatialStrategy {
    *
    * @return the spatial query
    */
-  Query makeContains(Rectangle bbox) {
+  Query makeContains(FieldTypes fieldTypes, Rectangle bbox) {
 
     // general case
     // docMinX <= queryExtent.getMinX() AND docMinY <= queryExtent.getMinY() AND docMaxX >= queryExtent.getMaxX() AND docMaxY >= queryExtent.getMaxY()
 
     // Y conditions
     // docMinY <= queryExtent.getMinY() AND docMaxY >= queryExtent.getMaxY()
-    Query qMinY = NumericRangeQuery.newDoubleRange(field_minY, getPrecisionStep(), null, bbox.getMinY(), false, true);
-    Query qMaxY = NumericRangeQuery.newDoubleRange(field_maxY, getPrecisionStep(), bbox.getMaxY(), null, true, false);
+    Query qMinY = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minY, null, false, bbox.getMinY(), true));
+    Query qMaxY = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxY, bbox.getMaxY(), true, null, false));
     Query yConditions = this.makeQuery(BooleanClause.Occur.MUST, qMinY, qMaxY);
 
     // X conditions
@@ -271,8 +232,8 @@ public class BBoxStrategy extends SpatialStrategy {
       // X Conditions for documents that do not cross the date line,
       // documents that contain the min X and max X of the query envelope,
       // docMinX <= queryExtent.getMinX() AND docMaxX >= queryExtent.getMaxX()
-      Query qMinX = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), null, bbox.getMinX(), false, true);
-      Query qMaxX = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), bbox.getMaxX(), null, true, false);
+      Query qMinX = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, null, false, bbox.getMinX(), true));
+      Query qMaxX = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, bbox.getMaxX(), true, null, false));
       Query qMinMax = this.makeQuery(BooleanClause.Occur.MUST, qMinX, qMaxX);
       Query qNonXDL = this.makeXDL(false, qMinMax);
 
@@ -283,8 +244,8 @@ public class BBoxStrategy extends SpatialStrategy {
         // the left portion of the document contains the min X of the query
         // OR the right portion of the document contains the max X of the query,
         // docMinXLeft <= queryExtent.getMinX() OR docMaxXRight >= queryExtent.getMaxX()
-        Query qXDLLeft = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), null, bbox.getMinX(), false, true);
-        Query qXDLRight = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), bbox.getMaxX(), null, true, false);
+        Query qXDLLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, null, false, bbox.getMinX(), true));
+        Query qXDLRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, bbox.getMaxX(), true, null, false));
         Query qXDLLeftRight = this.makeQuery(BooleanClause.Occur.SHOULD, qXDLLeft, qXDLRight);
         Query qXDL = this.makeXDL(true, qXDLLeftRight);
 
@@ -292,7 +253,7 @@ public class BBoxStrategy extends SpatialStrategy {
         if (bbox.getMinX() == bbox.getMaxX() && Math.abs(bbox.getMinX()) == 180) {
           double edge = bbox.getMinX() * -1;//opposite dateline edge
           qEdgeDL = makeQuery(BooleanClause.Occur.SHOULD,
-              makeNumberTermQuery(field_minX, edge), makeNumberTermQuery(field_maxX, edge));
+              makeNumberTermQuery(fieldTypes, field_minX, edge), makeNumberTermQuery(fieldTypes, field_maxX, edge));
         }
 
         // apply the non-XDL and XDL conditions
@@ -307,12 +268,12 @@ public class BBoxStrategy extends SpatialStrategy {
       // the left portion of the document contains the min X of the query
       // AND the right portion of the document contains the max X of the query,
       // docMinXLeft <= queryExtent.getMinX() AND docMaxXRight >= queryExtent.getMaxX()
-      Query qXDLLeft = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), null, bbox.getMinX(), false, true);
-      Query qXDLRight = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), bbox.getMaxX(), null, true, false);
+      Query qXDLLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, null, false, bbox.getMinX(), true));
+      Query qXDLRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, bbox.getMaxX(), true, null, false));
       Query qXDLLeftRight = this.makeXDL(true, this.makeQuery(BooleanClause.Occur.MUST, qXDLLeft, qXDLRight));
 
       Query qWorld = makeQuery(BooleanClause.Occur.MUST,
-          makeNumberTermQuery(field_minX, -180), makeNumberTermQuery(field_maxX, 180));
+          makeNumberTermQuery(fieldTypes, field_minX, -180), makeNumberTermQuery(fieldTypes, field_maxX, 180));
 
       xConditions = makeQuery(BooleanClause.Occur.SHOULD, qXDLLeftRight, qWorld);
     }
@@ -326,15 +287,15 @@ public class BBoxStrategy extends SpatialStrategy {
    *
    * @return the spatial query
    */
-  Query makeDisjoint(Rectangle bbox) {
+  Query makeDisjoint(FieldTypes fieldTypes, Rectangle bbox) {
 
     // general case
     // docMinX > queryExtent.getMaxX() OR docMaxX < queryExtent.getMinX() OR docMinY > queryExtent.getMaxY() OR docMaxY < queryExtent.getMinY()
 
     // Y conditions
     // docMinY > queryExtent.getMaxY() OR docMaxY < queryExtent.getMinY()
-    Query qMinY = NumericRangeQuery.newDoubleRange(field_minY, getPrecisionStep(), bbox.getMaxY(), null, false, false);
-    Query qMaxY = NumericRangeQuery.newDoubleRange(field_maxY, getPrecisionStep(), null, bbox.getMinY(), false, false);
+    Query qMinY = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minY, bbox.getMaxY(), false, null, false));
+    Query qMaxY = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxY, null, false, bbox.getMinY(), false));
     Query yConditions = this.makeQuery(BooleanClause.Occur.SHOULD, qMinY, qMaxY);
 
     // X conditions
@@ -345,18 +306,18 @@ public class BBoxStrategy extends SpatialStrategy {
 
       // X Conditions for documents that do not cross the date line,
       // docMinX > queryExtent.getMaxX() OR docMaxX < queryExtent.getMinX()
-      Query qMinX = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), bbox.getMaxX(), null, false, false);
+      Query qMinX = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, bbox.getMaxX(), false, null, false));
       if (bbox.getMinX() == -180.0 && ctx.isGeo()) {//touches dateline; -180 == 180
         BooleanQuery bq = new BooleanQuery();
         bq.add(qMinX, BooleanClause.Occur.MUST);
-        bq.add(makeNumberTermQuery(field_maxX, 180.0), BooleanClause.Occur.MUST_NOT);
+        bq.add(makeNumberTermQuery(fieldTypes, field_maxX, 180.0), BooleanClause.Occur.MUST_NOT);
         qMinX = bq;
       }
-      Query qMaxX = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, bbox.getMinX(), false, false);
+      Query qMaxX = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false, bbox.getMinX(), false));
       if (bbox.getMaxX() == 180.0 && ctx.isGeo()) {//touches dateline; -180 == 180
         BooleanQuery bq = new BooleanQuery();
         bq.add(qMaxX, BooleanClause.Occur.MUST);
-        bq.add(makeNumberTermQuery(field_minX, -180.0), BooleanClause.Occur.MUST_NOT);
+        bq.add(makeNumberTermQuery(fieldTypes, field_minX, -180.0), BooleanClause.Occur.MUST_NOT);
         qMaxX = bq;
       }
       Query qMinMax = this.makeQuery(BooleanClause.Occur.SHOULD, qMinX, qMaxX);
@@ -373,8 +334,8 @@ public class BBoxStrategy extends SpatialStrategy {
         // where: docMaxXLeft = 180.0, docMinXRight = -180.0
         // (docMaxXLeft  < queryExtent.getMinX()) equates to (180.0  < queryExtent.getMinX()) and is ignored
         // (docMinXRight > queryExtent.getMaxX()) equates to (-180.0 > queryExtent.getMaxX()) and is ignored
-        Query qMinXLeft = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), bbox.getMaxX(), null, false, false);
-        Query qMaxXRight = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, bbox.getMinX(), false, false);
+        Query qMinXLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, bbox.getMaxX(), false, null, false));
+        Query qMaxXRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false, bbox.getMinX(), false));
         Query qLeftRight = this.makeQuery(BooleanClause.Occur.MUST, qMinXLeft, qMaxXRight);
         Query qXDL = this.makeXDL(true, qLeftRight);
 
@@ -388,10 +349,10 @@ public class BBoxStrategy extends SpatialStrategy {
       // the document must be disjoint to both the left and right query portions
       // (docMinX > queryExtent.getMaxX()Left OR docMaxX < queryExtent.getMinX()) AND (docMinX > queryExtent.getMaxX() OR docMaxX < queryExtent.getMinX()Left)
       // where: queryExtent.getMaxX()Left = 180.0, queryExtent.getMinX()Left = -180.0
-      Query qMinXLeft = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), 180.0, null, false, false);
-      Query qMaxXLeft = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, bbox.getMinX(), false, false);
-      Query qMinXRight = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), bbox.getMaxX(), null, false, false);
-      Query qMaxXRight = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, -180.0, false, false);
+      Query qMinXLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, 180.0, false, null, false));
+      Query qMaxXLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false,bbox.getMinX(), false));
+      Query qMinXRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, bbox.getMaxX(), false, null, false));
+      Query qMaxXRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false, -180.0, false));
       Query qLeft = this.makeQuery(BooleanClause.Occur.SHOULD, qMinXLeft, qMaxXLeft);
       Query qRight = this.makeQuery(BooleanClause.Occur.SHOULD, qMinXRight, qMaxXRight);
       Query qLeftRight = this.makeQuery(BooleanClause.Occur.MUST, qLeft, qRight);
@@ -410,13 +371,13 @@ public class BBoxStrategy extends SpatialStrategy {
    *
    * @return the spatial query
    */
-  Query makeEquals(Rectangle bbox) {
+  Query makeEquals(FieldTypes fieldTypes, Rectangle bbox) {
 
     // docMinX = queryExtent.getMinX() AND docMinY = queryExtent.getMinY() AND docMaxX = queryExtent.getMaxX() AND docMaxY = queryExtent.getMaxY()
-    Query qMinX = makeNumberTermQuery(field_minX, bbox.getMinX());
-    Query qMinY = makeNumberTermQuery(field_minY, bbox.getMinY());
-    Query qMaxX = makeNumberTermQuery(field_maxX, bbox.getMaxX());
-    Query qMaxY = makeNumberTermQuery(field_maxY, bbox.getMaxY());
+    Query qMinX = makeNumberTermQuery(fieldTypes, field_minX, bbox.getMinX());
+    Query qMinY = makeNumberTermQuery(fieldTypes, field_minY, bbox.getMinY());
+    Query qMaxX = makeNumberTermQuery(fieldTypes, field_maxX, bbox.getMaxX());
+    Query qMaxY = makeNumberTermQuery(fieldTypes, field_maxY, bbox.getMaxY());
     return makeQuery(BooleanClause.Occur.MUST, qMinX, qMinY, qMaxX, qMaxY);
   }
 
@@ -425,7 +386,7 @@ public class BBoxStrategy extends SpatialStrategy {
    *
    * @return the spatial query
    */
-  Query makeIntersects(Rectangle bbox) {
+  Query makeIntersects(FieldTypes fieldTypes, Rectangle bbox) {
 
     // the original intersects query does not work for envelopes that cross the date line,
     // switch to a NOT Disjoint query
@@ -445,7 +406,7 @@ public class BBoxStrategy extends SpatialStrategy {
 
     BooleanQuery qNotDisjoint = new BooleanQuery();
     qNotDisjoint.add(qHasEnv, BooleanClause.Occur.MUST);
-    Query qDisjoint = makeDisjoint(bbox);
+    Query qDisjoint = makeDisjoint(fieldTypes, bbox);
     qNotDisjoint.add(qDisjoint, BooleanClause.Occur.MUST_NOT);
 
     //Query qDisjoint = makeDisjoint();
@@ -476,15 +437,15 @@ public class BBoxStrategy extends SpatialStrategy {
    *
    * @return the spatial query
    */
-  Query makeWithin(Rectangle bbox) {
+  Query makeWithin(FieldTypes fieldTypes, Rectangle bbox) {
 
     // general case
     // docMinX >= queryExtent.getMinX() AND docMinY >= queryExtent.getMinY() AND docMaxX <= queryExtent.getMaxX() AND docMaxY <= queryExtent.getMaxY()
 
     // Y conditions
     // docMinY >= queryExtent.getMinY() AND docMaxY <= queryExtent.getMaxY()
-    Query qMinY = NumericRangeQuery.newDoubleRange(field_minY, getPrecisionStep(), bbox.getMinY(), null, true, false);
-    Query qMaxY = NumericRangeQuery.newDoubleRange(field_maxY, getPrecisionStep(), null, bbox.getMaxY(), false, true);
+    Query qMinY = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minY, bbox.getMinY(), true, null, false));
+    Query qMaxY = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxY, null, false, bbox.getMaxY(), true));
     Query yConditions = this.makeQuery(BooleanClause.Occur.MUST, qMinY, qMaxY);
 
     // X conditions
@@ -498,8 +459,8 @@ public class BBoxStrategy extends SpatialStrategy {
       // queries that do not cross the date line
 
       // docMinX >= queryExtent.getMinX() AND docMaxX <= queryExtent.getMaxX()
-      Query qMinX = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), bbox.getMinX(), null, true, false);
-      Query qMaxX = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, bbox.getMaxX(), false, true);
+      Query qMinX = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, bbox.getMinX(), true, null, false));
+      Query qMaxX = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false, bbox.getMaxX(), true));
       Query qMinMax = this.makeQuery(BooleanClause.Occur.MUST, qMinX, qMaxX);
 
       double edge = 0;//none, otherwise opposite dateline of query
@@ -509,7 +470,7 @@ public class BBoxStrategy extends SpatialStrategy {
         edge = -180;
       if (edge != 0 && ctx.isGeo()) {
         Query edgeQ = makeQuery(BooleanClause.Occur.MUST,
-            makeNumberTermQuery(field_minX, edge), makeNumberTermQuery(field_maxX, edge));
+            makeNumberTermQuery(fieldTypes, field_minX, edge), makeNumberTermQuery(fieldTypes, field_maxX, edge));
         qMinMax = makeQuery(BooleanClause.Occur.SHOULD, qMinMax, edgeQ);
       }
 
@@ -522,14 +483,14 @@ public class BBoxStrategy extends SpatialStrategy {
 
       // the document should be within the left portion of the query
       // docMinX >= queryExtent.getMinX() AND docMaxX <= 180.0
-      Query qMinXLeft = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), bbox.getMinX(), null, true, false);
-      Query qMaxXLeft = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, 180.0, false, true);
+      Query qMinXLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, bbox.getMinX(), true, null, false));
+      Query qMaxXLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false, 180.0, true));
       Query qLeft = this.makeQuery(BooleanClause.Occur.MUST, qMinXLeft, qMaxXLeft);
 
       // the document should be within the right portion of the query
       // docMinX >= -180.0 AND docMaxX <= queryExtent.getMaxX()
-      Query qMinXRight = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), -180.0, null, true, false);
-      Query qMaxXRight = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, bbox.getMaxX(), false, true);
+      Query qMinXRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, -180.0, true, null, false));
+      Query qMaxXRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false, bbox.getMaxX(), true));
       Query qRight = this.makeQuery(BooleanClause.Occur.MUST, qMinXRight, qMaxXRight);
 
       // either left or right conditions should occur,
@@ -542,8 +503,8 @@ public class BBoxStrategy extends SpatialStrategy {
       // AND the right portion of the document must be within the right portion of the query
       // docMinXLeft >= queryExtent.getMinX() AND docMaxXLeft <= 180.0
       // AND docMinXRight >= -180.0 AND docMaxXRight <= queryExtent.getMaxX()
-      Query qXDLLeft = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), bbox.getMinX(), null, true, false);
-      Query qXDLRight = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, bbox.getMaxX(), false, true);
+      Query qXDLLeft = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_minX, bbox.getMinX(), true, null, false));
+      Query qXDLRight = new ConstantScoreQuery(fieldTypes.newRangeFilter(field_maxX, null, false, bbox.getMaxX(), true));
       Query qXDLLeftRight = this.makeQuery(BooleanClause.Occur.MUST, qXDLLeft, qXDLRight);
       Query qXDL = this.makeXDL(true, qXDLLeftRight);
 
@@ -585,12 +546,9 @@ public class BBoxStrategy extends SpatialStrategy {
     return bq;
   }
 
-  private Query makeNumberTermQuery(String field, double number) {
-    BytesRefBuilder bytes = new BytesRefBuilder();
-    NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(number), 0, bytes);
-    return new TermQuery(new Term(field, bytes.get()));
+  private Query makeNumberTermQuery(FieldTypes fieldTypes, String field, double number) {
+    return new TermQuery(new Term(field, Document2.doubleToBytes(number)));
   }
-
 }
 
 

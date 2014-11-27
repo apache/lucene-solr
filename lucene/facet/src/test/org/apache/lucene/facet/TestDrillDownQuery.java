@@ -22,8 +22,10 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -68,6 +70,9 @@ public class TestDrillDownQuery extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(r, dir, 
         newIndexWriterConfig(new MockAnalyzer(r, MockTokenizer.KEYWORD, false)));
     
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("content");
+
     taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     config = new FacetsConfig();
@@ -88,12 +93,12 @@ public class TestDrillDownQuery extends FacetTestCase {
     config.setRequireDimCount("b", true);
 
     for (int i = 0; i < 100; i++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       if (i % 2 == 0) { // 50
-        doc.add(new TextField("content", "foo", Field.Store.NO));
+        doc.addLargeText("content", "foo");
       }
       if (i % 3 == 0) { // 33
-        doc.add(new TextField("content", "bar", Field.Store.NO));
+        doc.addLargeText("content", "bar");
       }
       if (i % 4 == 0) { // 25
         if (r.nextBoolean()) {

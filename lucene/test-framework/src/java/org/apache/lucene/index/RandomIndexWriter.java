@@ -116,11 +116,6 @@ public class RandomIndexWriter implements Closeable {
    */
   public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    addDocument(doc, w.getAnalyzer());
-  }
-
-  public <T extends IndexableField> void addDocument(final Iterable<T> doc, Analyzer a) throws IOException {
-    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
       // (but we need to clone them), and only when
@@ -153,9 +148,9 @@ public class RandomIndexWriter implements Closeable {
             }
           };
         }
-        }, a);
+        });
     } else {
-      w.addDocument(doc, a);
+      w.addDocument(doc);
     }
     
     maybeCommit();

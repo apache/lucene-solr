@@ -21,7 +21,9 @@ import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
 
 /**
  * Add a document, optionally of a certain size.
@@ -36,29 +38,6 @@ public class AddDocTask extends PerfTask {
 
   private int docSize = 0;
   
-  /** 
-   * volatile data passed between setup(), doLogic(), tearDown().
-   * the doc is created at setup() and added at doLogic(). 
-   */
-  protected Document doc = null;
-
-  @Override
-  public void setup() throws Exception {
-    super.setup();
-    DocMaker docMaker = getRunData().getDocMaker();
-    if (docSize > 0) {
-      doc = docMaker.makeDocument(docSize);
-    } else {
-      doc = docMaker.makeDocument();
-    }
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    doc = null;
-    super.tearDown();
-  }
-
   @Override
   protected String getLogMessage(int recsCount) {
     return String.format(Locale.ROOT, "added %9d docs",recsCount);
@@ -66,7 +45,19 @@ public class AddDocTask extends PerfTask {
   
   @Override
   public int doLogic() throws Exception {
-    getRunData().getIndexWriter().addDocument(doc);
+    Document2 doc;
+    DocMaker docMaker = getRunData().getDocMaker();
+    IndexWriter iw = getRunData().getIndexWriter();
+    if (docSize > 0) {
+      doc = docMaker.makeDocument(iw, docSize);
+    } else {
+      doc = docMaker.makeDocument(iw);
+    }
+    final String docID = doc.getString(DocMaker.ID_FIELD);
+    if (docID == null) {
+      throw new IllegalStateException("document must define the docid field");
+    }
+    iw.addDocument(doc);
     return 1;
   }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.facet.taxonomy;
  */
 
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetTestCase;
@@ -64,7 +65,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
 
     // index documents, 50% have only 'b' and all have 'a'
     for (int i = 0; i < 110; i++) {
-      Document doc = new Document();
+      Document2 doc = writer.newDocument();
       // every 11th document is added empty, this used to cause the association
       // aggregators to go into an infinite loop
       if (i % 11 != 0) {
@@ -235,5 +236,4 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     assertEquals("Wrong count for category 'a'!", 100, facets.getSpecificValue("int", "a").intValue());
     assertEquals("Wrong count for category 'b'!", 150, facets.getSpecificValue("int", "b").intValue());
   }
-
 }

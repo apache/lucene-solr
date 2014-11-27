@@ -17,10 +17,16 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -35,11 +41,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 
 public class TermFilterTest extends LuceneTestCase {
 
@@ -56,8 +57,8 @@ public class TermFilterTest extends LuceneTestCase {
     String fieldName = "field1";
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
-    Document doc = new Document();
-    doc.add(newStringField(fieldName, "value1", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addAtom(fieldName, "value1");
     w.addDocument(doc);
     IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
     assertTrue(reader.getContext() instanceof LeafReaderContext);
@@ -89,8 +90,8 @@ public class TermFilterTest extends LuceneTestCase {
       String field = "field" + i;
       String string = TestUtil.randomRealisticUnicodeString(random());
       terms.add(new Term(field, string));
-      Document doc = new Document();
-      doc.add(newStringField(field, string, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom(field, string);
       w.addDocument(doc);
     }
     IndexReader reader = w.getReader();

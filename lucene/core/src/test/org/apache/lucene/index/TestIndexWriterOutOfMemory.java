@@ -110,6 +110,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
         fieldTypes.enableSorting("dv4");
         fieldTypes.setMultiValued("dv4");
         fieldTypes.setMultiValued("dv5");
+        fieldTypes.setMultiValued("stored1");
         fieldTypes.enableTermVectors("text_vectors");
 
         // nocommit we could just set our analyzer for the payload field?

@@ -36,12 +36,14 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
@@ -422,7 +424,6 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
   }
   
   public void testDuellMemIndex() throws IOException {
-    LineFileDocs lineFileDocs = new LineFileDocs(random());
     int numDocs = atLeast(10);
     MemoryIndex memory = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     for (int i = 0; i < numDocs; i++) {
@@ -430,21 +431,23 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
       mockAnalyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
-      Document nextDoc = lineFileDocs.nextDoc();
+      LineFileDocs lineFileDocs = new LineFileDocs(writer, random());
+      Document2 nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
       for (IndexableField field : nextDoc.getFields()) {
-        if (field.fieldType().indexOptions() != IndexOptions.NONE) {
+        if (field.fieldType().indexOptions() != IndexOptions.NONE && field.stringValue() != null && field.fieldType().docValuesType() == DocValuesType.NONE) {
           doc.add(field);
           if (random().nextInt(3) == 0) {
             doc.add(field);  // randomly add the same field twice
           }
         }
       }
+      lineFileDocs.close();
       
       writer.addDocument(doc);
       writer.close();
       for (IndexableField field : doc) {
-        memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
+        memory.addField(field.name(), field.stringValue(), mockAnalyzer);  
       }
       DirectoryReader competitor = DirectoryReader.open(dir);
       LeafReader memIndexReader= (LeafReader) memory.createSearcher().getIndexReader();
@@ -453,7 +456,6 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       memory.reset();
       dir.close();
     }
-    lineFileDocs.close();
   }
   
   // LUCENE-4880

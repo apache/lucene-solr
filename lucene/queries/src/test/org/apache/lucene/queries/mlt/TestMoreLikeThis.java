@@ -26,8 +26,10 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -70,15 +72,17 @@ public class TestMoreLikeThis extends LuceneTestCase {
   }
   
   private void addDoc(RandomIndexWriter writer, String text) throws IOException {
-    Document doc = new Document();
-    doc.add(newTextField("text", text, Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("text", text);
     writer.addDocument(doc);
   }
 
   private void addDoc(RandomIndexWriter writer, String[] texts) throws IOException {
-    Document doc = new Document();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("text");
+    Document2 doc = writer.newDocument();
     for (String text : texts) {
-      doc.add(newTextField("text", text, Field.Store.YES));
+      doc.addLargeText("text", text);
     }
     writer.addDocument(doc);
   }

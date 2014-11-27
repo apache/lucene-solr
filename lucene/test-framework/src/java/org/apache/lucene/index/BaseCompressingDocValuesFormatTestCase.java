@@ -22,13 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /** Extends {@link BaseDocValuesFormatTestCase} to add compression checks. */
@@ -46,13 +47,14 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
     final Directory dir = new RAMDirectory();
     final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter iwriter = new IndexWriter(dir, iwc);
+    FieldTypes fieldTypes = iwriter.getFieldTypes();
+    fieldTypes.setIndexOptions("dv", IndexOptions.NONE);
+    fieldTypes.disableStored("dv");
+
 
     final int uniqueValueCount = TestUtil.nextInt(random(), 1, 256);
     final List<Long> values = new ArrayList<>();
 
-    final Document doc = new Document();
-    final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
-    doc.add(dvf);
     for (int i = 0; i < 300; ++i) {
       final long value;
       if (values.size() < uniqueValueCount) {
@@ -61,13 +63,15 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
       } else {
         value = RandomPicks.randomFrom(random(), values);
       }
-      dvf.setLongValue(value);
+      final Document2 doc = iwriter.newDocument();
+      doc.addLong("dv", value);
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
     final long size1 = dirSize(dir);
     for (int i = 0; i < 20; ++i) {
-      dvf.setLongValue(RandomPicks.randomFrom(random(), values));
+      final Document2 doc = iwriter.newDocument();
+      doc.addLong("dv", RandomPicks.randomFrom(random(), values));
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
@@ -80,21 +84,23 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
     final Directory dir = new RAMDirectory();
     final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter iwriter = new IndexWriter(dir, iwc);
+    FieldTypes fieldTypes = iwriter.getFieldTypes();
+    fieldTypes.setIndexOptions("dv", IndexOptions.NONE);
+    fieldTypes.disableStored("dv");
 
     final long base = 13; // prime
     final long day = 1000L * 60 * 60 * 24;
 
-    final Document doc = new Document();
-    final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
-    doc.add(dvf);
     for (int i = 0; i < 300; ++i) {
-      dvf.setLongValue(base + random().nextInt(1000) * day);
+      final Document2 doc = iwriter.newDocument();
+      doc.addLong("dv", base + random().nextInt(1000) * day);
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
     final long size1 = dirSize(dir);
     for (int i = 0; i < 50; ++i) {
-      dvf.setLongValue(base + random().nextInt(1000) * day);
+      final Document2 doc = iwriter.newDocument();
+      doc.addLong("dv", base + random().nextInt(1000) * day);
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
@@ -107,17 +113,19 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
     final Directory dir = new RAMDirectory();
     final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter iwriter = new IndexWriter(dir, iwc);
+    FieldTypes fieldTypes = iwriter.getFieldTypes();
+    fieldTypes.setIndexOptions("dv", IndexOptions.NONE);
+    fieldTypes.disableStored("dv");
 
-    final Document doc = new Document();
-    final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
-    doc.add(dvf);
     for (int i = 0; i < 20000; ++i) {
-      dvf.setLongValue(i & 1023);
+      final Document2 doc = iwriter.newDocument();
+      doc.addLong("dv", i & 1023);
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
     final long size1 = dirSize(dir);
-    dvf.setLongValue(Long.MAX_VALUE);
+    final Document2 doc = iwriter.newDocument();
+    doc.addLong("dv", Long.MAX_VALUE);
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     final long size2 = dirSize(dir);

@@ -3,6 +3,7 @@ package org.apache.lucene.sandbox.queries;
 import java.text.Collator;
 import java.util.Locale;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -56,12 +57,9 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = iw.newDocument();
       String value = TestUtil.randomUnicodeString(random());
-      Field field = newStringField("field", value, Field.Store.YES);
-      doc.add(field);
-      Field dvField = new SortedDocValuesField("field", new BytesRef(value));
-      doc.add(dvField);
+      doc.addAtom("field", value);
       iw.addDocument(doc);
     }
     splitDoc = TestUtil.randomUnicodeString(random());
@@ -165,10 +163,9 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document2 doc = iw.newDocument();
       String value = TestUtil.randomUnicodeString(random());
-      Field field = newStringField("field", value, Field.Store.YES);
-      doc.add(field);
+      doc.addAtom("field", value);
       iw.addDocument(doc);
     }
     IndexReader reader = iw.getReader();

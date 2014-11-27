@@ -17,18 +17,19 @@ package org.apache.lucene.spatial.bbox;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Rectangle;
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Map;
+import com.spatial4j.core.shape.Rectangle;
 
 /**
  * A ValueSource in which the indexed Rectangle is returned from
@@ -68,8 +69,10 @@ class BBoxValueSource extends ValueSource {
           return null;
         } else {
           rect.reset(
-              Double.longBitsToDouble(minX.get(doc)), Double.longBitsToDouble(maxX.get(doc)),
-              Double.longBitsToDouble(minY.get(doc)), Double.longBitsToDouble(maxY.get(doc)));
+                     Document2.longToDouble(minX.get(doc)),
+                     Document2.longToDouble(maxX.get(doc)),
+                     Document2.longToDouble(minY.get(doc)),
+                     Document2.longToDouble(maxY.get(doc)));
           return rect;
         }
       }

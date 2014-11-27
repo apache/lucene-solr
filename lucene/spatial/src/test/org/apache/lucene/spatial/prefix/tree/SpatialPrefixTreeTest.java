@@ -17,13 +17,13 @@ package org.apache.lucene.spatial.prefix.tree;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -34,9 +34,10 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 
 public class SpatialPrefixTreeTest extends SpatialTestCase {
 
@@ -85,21 +86,18 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
 
     trie = new QuadPrefixTree(ctx, 12);
     TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");
-    Document doc = new Document();
-    doc.add(new TextField("id", "1", Store.YES));
+    Document2 doc = indexWriter.newDocument();
+    doc.addAtom("id", "1");
 
     Shape area = ctx.makeRectangle(-122.82, -122.78, 48.54, 48.56);
 
-    Field[] fields = strategy.createIndexableFields(area, 0.025);
-    for (Field field : fields) {
-      doc.add(field);
-    }
+    strategy.addFields(doc, area, 0.025);
     addDocument(doc);
 
     Point upperleft = ctx.makePoint(-122.88, 48.54);
     Point lowerright = ctx.makePoint(-122.82, 48.62);
 
-    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(upperleft, lowerright)));
+    Query query = strategy.makeQuery(fieldTypes, new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(upperleft, lowerright)));
 
     commit();
 

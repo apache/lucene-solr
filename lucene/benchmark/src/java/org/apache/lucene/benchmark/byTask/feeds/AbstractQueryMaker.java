@@ -15,8 +15,9 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.search.Query;
 
 /**
  * Abstract base query maker. 
@@ -33,12 +34,11 @@ public abstract class AbstractQueryMaker implements QueryMaker {
     qnum = 0;
   }
 
-  protected abstract Query[] prepareQueries() throws Exception;
+  protected abstract Query[] prepareQueries(FieldTypes fieldTypes) throws Exception;
 
   @Override
   public void setConfig(Config config) throws Exception {
     this.config = config;
-    queries = prepareQueries();
   }
 
   @Override
@@ -55,7 +55,10 @@ public abstract class AbstractQueryMaker implements QueryMaker {
   }
 
   @Override
-  public Query makeQuery() throws Exception {
+  public Query makeQuery(FieldTypes fieldTypes) throws Exception {
+    if (queries == null) {
+      queries = prepareQueries(fieldTypes);
+    }
     return queries[nextQnum()];
   }
   
@@ -71,7 +74,7 @@ public abstract class AbstractQueryMaker implements QueryMaker {
   * @see org.apache.lucene.benchmark.byTask.feeds.QueryMaker#makeQuery(int)
   */
   @Override
-  public Query makeQuery(int size) throws Exception {
+  public Query makeQuery(FieldTypes fieldTypes, int size) throws Exception {
     throw new Exception(this+".makeQuery(int size) is not supported!");
   }
 }

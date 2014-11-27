@@ -17,18 +17,19 @@ package org.apache.lucene.spatial.vector;
  * limitations under the License.
  */
 
-import com.spatial4j.core.distance.DistanceCalculator;
-import com.spatial4j.core.shape.Point;
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Map;
+import com.spatial4j.core.distance.DistanceCalculator;
+import com.spatial4j.core.shape.Point;
 
 /**
  * An implementation of the Lucene ValueSource model that returns the distance
@@ -88,7 +89,7 @@ public class DistanceValueSource extends ValueSource {
         // make sure it has minX and area
         if (validX.get(doc)) {
           assert validY.get(doc);
-          return calculator.distance(from, Double.longBitsToDouble(ptX.get(doc)), Double.longBitsToDouble(ptY.get(doc))) * multiplier;
+          return calculator.distance(from, Document2.longToDouble(ptX.get(doc)), Document2.longToDouble(ptY.get(doc))) * multiplier;
         }
         return nullValue;
       }

@@ -44,8 +44,6 @@ public class TestRollingUpdates extends LuceneTestCase {
       ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
     
-    final LineFileDocs docs = new LineFileDocs(random, true);
-
     //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
       Codec.setDefault(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
@@ -66,7 +64,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     int updateCount = 0;
     // TODO: sometimes update ids not in order...
     for(int docIter=0;docIter<numUpdates;docIter++) {
-      final Document doc = docs.nextDoc();
+      final Document2 doc = w.newDocument();
       final String myID = Integer.toString(id);
       if (id == SIZE-1) {
         id = 0;
@@ -76,7 +74,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  docIter=" + docIter + " id=" + id);
       }
-      ((Field) doc.getField("docid")).setStringValue(myID);
+      doc.addAtom("docid", myID);
 
       Term idTerm = new Term("docid", myID);
 
@@ -140,8 +138,6 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     TestIndexWriter.assertNoUnreferencedFiles(dir, "leftover files after rolling updates");
 
-    docs.close();
-    
     // LUCENE-4455:
     SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     long totalBytes = 0;
@@ -162,10 +158,10 @@ public class TestRollingUpdates extends LuceneTestCase {
   public void testUpdateSameDoc() throws Exception {
     final Directory dir = newDirectory();
 
-    final LineFileDocs docs = new LineFileDocs(random());
     for (int r = 0; r < 3; r++) {
       final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                    .setMaxBufferedDocs(2));
+      final LineFileDocs docs = new LineFileDocs(w, random());
       final int numUpdates = atLeast(20);
       int numThreads = TestUtil.nextInt(random(), 2, 6);
       IndexingThread[] threads = new IndexingThread[numThreads];
@@ -179,12 +175,12 @@ public class TestRollingUpdates extends LuceneTestCase {
       }
 
       w.close();
+      docs.close();
     }
 
     IndexReader open = DirectoryReader.open(dir);
     assertEquals(1, open.numDocs());
     open.close();
-    docs.close();
     dir.close();
   }
   

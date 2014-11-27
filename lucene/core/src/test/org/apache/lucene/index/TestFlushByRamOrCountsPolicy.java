@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
@@ -34,19 +35,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
-
-  private static LineFileDocs lineDocFile;
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    lineDocFile = new LineFileDocs(random(), true);
-  }
-  
-  @AfterClass
-  public static void afterClass() throws Exception {
-    lineDocFile.close();
-    lineDocFile = null;
-  }
 
   public void testFlushByRam() throws IOException, InterruptedException {
     final double ramBuffer = (TEST_NIGHTLY ? 1 : 10) + atLeast(2)
@@ -78,6 +66,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     IndexWriter writer = new IndexWriter(dir, iwc);
+    LineFileDocs docs = new LineFileDocs(writer, random());
     flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
     assertFalse(flushPolicy.flushOnDocCount());
     assertFalse(flushPolicy.flushOnDeleteTerms());
@@ -89,7 +78,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     IndexThread[] threads = new IndexThread[numThreads];
     for (int x = 0; x < threads.length; x++) {
-      threads[x] = new IndexThread(numDocs, numThreads, writer, lineDocFile,
+      threads[x] = new IndexThread(numDocs, numThreads, writer, docs,
           false);
       threads[x].start();
     }
@@ -97,6 +86,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     for (int x = 0; x < threads.length; x++) {
       threads[x].join();
     }
+    docs.close();
     final long maxRAMBytes = (long) (iwc.getRAMBufferSizeMB() * 1024. * 1024.);
     assertEquals(" all flushes must be due numThreads=" + numThreads, 0,
         flushControl.flushBytes());
@@ -137,6 +127,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       iwc.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       IndexWriter writer = new IndexWriter(dir, iwc);
+      LineFileDocs docs = new LineFileDocs(writer, random());
       flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
       assertTrue(flushPolicy.flushOnDocCount());
       assertFalse(flushPolicy.flushOnDeleteTerms());
@@ -149,14 +140,14 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       IndexThread[] threads = new IndexThread[numThreads[i]];
       for (int x = 0; x < threads.length; x++) {
         threads[x] = new IndexThread(numDocs, numThreads[i], writer,
-            lineDocFile, false);
+            docs, false);
         threads[x].start();
       }
 
       for (int x = 0; x < threads.length; x++) {
         threads[x].join();
       }
-
+      docs.close();
       assertEquals(" all flushes must be due numThreads=" + numThreads[i], 0,
           flushControl.flushBytes());
       assertEquals(numDocumentsToIndex, writer.numDocs());
@@ -187,6 +178,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     iwc.setIndexerThreadPool(threadPool);
 
     IndexWriter writer = new IndexWriter(dir, iwc);
+    LineFileDocs docs = new LineFileDocs(writer, random());
     flushPolicy = (MockDefaultFlushPolicy) writer.getConfig().getFlushPolicy();
     DocumentsWriter docsWriter = writer.getDocsWriter();
     assertNotNull(docsWriter);
@@ -196,7 +188,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     IndexThread[] threads = new IndexThread[numThreads];
     for (int x = 0; x < threads.length; x++) {
-      threads[x] = new IndexThread(numDocs, numThreads, writer, lineDocFile,
+      threads[x] = new IndexThread(numDocs, numThreads, writer, docs,
           true);
       threads[x].start();
     }
@@ -204,6 +196,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     for (int x = 0; x < threads.length; x++) {
       threads[x].join();
     }
+    docs.close();
+
     assertEquals(" all flushes must be due", 0, flushControl.flushBytes());
     assertEquals(numDocumentsToIndex, writer.numDocs());
     assertEquals(numDocumentsToIndex, writer.maxDoc());
@@ -255,16 +249,18 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       // with such a small ram buffer we should be stalled quiet quickly
       iwc.setRAMBufferSizeMB(0.25);
       IndexWriter writer = new IndexWriter(dir, iwc);
+      LineFileDocs docs = new LineFileDocs(writer, random());
       IndexThread[] threads = new IndexThread[numThreads[i]];
       for (int x = 0; x < threads.length; x++) {
         threads[x] = new IndexThread(numDocs, numThreads[i], writer,
-            lineDocFile, false);
+            docs, false);
         threads[x].start();
       }
 
       for (int x = 0; x < threads.length; x++) {
         threads[x].join();
       }
+      docs.close();
       DocumentsWriter docsWriter = writer.getDocsWriter();
       assertNotNull(docsWriter);
       DocumentsWriterFlushControl flushControl = docsWriter.flushControl;
@@ -318,7 +314,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       try {
         long ramSize = 0;
         while (pendingDocs.decrementAndGet() > -1) {
-          Document doc = docs.nextDoc();
+          Document2 doc = docs.nextDoc();
           writer.addDocument(doc);
           long newRamSize = writer.ramBytesUsed();
           if (newRamSize != ramSize) {

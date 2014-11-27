@@ -195,6 +195,7 @@ public class CreateIndexTask extends PerfTask {
       }
     }
     IndexWriter writer = new IndexWriter(runData.getDirectory(), iwc);
+    writer.getFieldTypes().disableExistsFilters();
     return writer;
   }
 }

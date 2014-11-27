@@ -548,35 +548,26 @@ public class TestGrouping extends LuceneTestCase {
                                                 dir,
                                                 newIndexWriterConfig(new MockAnalyzer(random())));
 
-    final List<List<Document>> updateDocs = new ArrayList<>();
-
-    FieldType groupEndType = new FieldType(StringField.TYPE_NOT_STORED);
-    groupEndType.setIndexOptions(IndexOptions.DOCS);
-    groupEndType.setOmitNorms(true);
+    final List<List<Document2>> updateDocs = new ArrayList<>();
 
     //System.out.println("TEST: index groups");
     for(BytesRef group : groupValues) {
-      final List<Document> docs = new ArrayList<>();
+      final List<Document2> docs = new ArrayList<>();
       //System.out.println("TEST:   group=" + (group == null ? "null" : group.utf8ToString()));
       for(GroupDoc groupValue : groupMap.get(group)) {
-        Document doc = new Document();
+        Document2 doc = w.newDocument();
         docs.add(doc);
         if (groupValue.group != null) {
-          doc.add(newStringField("group", groupValue.group.utf8ToString(), Field.Store.YES));
-          doc.add(new SortedDocValuesField("group", BytesRef.deepCopyOf(groupValue.group)));
+          doc.addAtom("group", groupValue.group.utf8ToString());
         }
-        doc.add(newStringField("sort1", groupValue.sort1.utf8ToString(), Field.Store.NO));
-        doc.add(new SortedDocValuesField("sort1", BytesRef.deepCopyOf(groupValue.sort1)));
-        doc.add(newStringField("sort2", groupValue.sort2.utf8ToString(), Field.Store.NO));
-        doc.add(new SortedDocValuesField("sort2", BytesRef.deepCopyOf(groupValue.sort2)));
-        doc.add(new IntField("id", groupValue.id, Field.Store.NO));
-        doc.add(new NumericDocValuesField("id", groupValue.id));
-        doc.add(newTextField("content", groupValue.content, Field.Store.NO));
+        doc.addAtom("sort1", groupValue.sort1.utf8ToString());
+        doc.addAtom("sort2", groupValue.sort2.utf8ToString());
+        doc.addInt("id", groupValue.id);
+        doc.addLargeText("content", groupValue.content);
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
       // So we can pull filter marking last doc in block:
-      final Field groupEnd = newField("groupend", "x", groupEndType);
-      docs.get(docs.size()-1).add(groupEnd);
+      docs.get(docs.size()-1).addAtom("groupend", "x");
       // Add as a doc block:
       w.addDocuments(docs);
       if (group != null && random().nextInt(7) == 4) {
@@ -584,9 +575,9 @@ public class TestGrouping extends LuceneTestCase {
       }
     }
 
-    for(List<Document> docs : updateDocs) {
+    for(List<Document2> docs : updateDocs) {
       // Just replaces docs w/ same docs:
-      w.updateDocuments(new Term("group", docs.get(0).get("group")), docs);
+      w.updateDocuments(new Term("group", docs.get(0).getString("group")), docs);
     }
 
     final DirectoryReader r = w.getReader();
@@ -667,29 +658,6 @@ public class TestGrouping extends LuceneTestCase {
                                                   random(),
                                                   dir,
                                                   newIndexWriterConfig(new MockAnalyzer(random())));
-      Document doc = new Document();
-      Document docNoGroup = new Document();
-      Field idvGroupField = new SortedDocValuesField("group", new BytesRef());
-      doc.add(idvGroupField);
-      docNoGroup.add(idvGroupField);
-
-      Field group = newStringField("group", "", Field.Store.NO);
-      doc.add(group);
-      Field sort1 = new SortedDocValuesField("sort1", new BytesRef());
-      doc.add(sort1);
-      docNoGroup.add(sort1);
-      Field sort2 = new SortedDocValuesField("sort2", new BytesRef());
-      doc.add(sort2);
-      docNoGroup.add(sort2);
-      Field content = newTextField("content", "", Field.Store.NO);
-      doc.add(content);
-      docNoGroup.add(content);
-      IntField id = new IntField("id", 0, Field.Store.NO);
-      doc.add(id);
-      NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
-      doc.add(idDV);
-      docNoGroup.add(id);
-      docNoGroup.add(idDV);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for(int i=0;i<numDocs;i++) {
         final BytesRef groupValue;
@@ -710,23 +678,16 @@ public class TestGrouping extends LuceneTestCase {
         }
 
         groupDocs[i] = groupDoc;
+        Document2 doc = w.newDocument();
         if (groupDoc.group != null) {
-          group.setStringValue(groupDoc.group.utf8ToString());
-          idvGroupField.setBytesValue(BytesRef.deepCopyOf(groupDoc.group));
-        } else {
-          // TODO: not true
-          // Must explicitly set empty string, else eg if
-          // the segment has all docs missing the field then
-          // we get null back instead of empty BytesRef:
-          idvGroupField.setBytesValue(new BytesRef());
+          doc.addAtom("group", groupDoc.group.utf8ToString());
         }
-        sort1.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort1));
-        sort2.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort2));
-        content.setStringValue(groupDoc.content);
-        id.setIntValue(groupDoc.id);
-        idDV.setLongValue(groupDoc.id);
+        doc.addAtom("sort1", BytesRef.deepCopyOf(groupDoc.sort1));
+        doc.addAtom("sort2", BytesRef.deepCopyOf(groupDoc.sort2));
+        doc.addLargeText("content", groupDoc.content);
+        doc.addInt("id", groupDoc.id);
         if (groupDoc.group == null) {
-          w.addDocument(docNoGroup);
+          w.addDocument(doc);
         } else {
           w.addDocument(doc);
         }
@@ -1253,7 +1214,7 @@ public class TestGrouping extends LuceneTestCase {
       final GroupDocs<BytesRef> actualGroup = actual.groups[groupIDX];
       if (verifyGroupValues) {
         if (idvBasedImplsUsed) {
-          if (actualGroup.groupValue.length == 0) {
+          if (actualGroup.groupValue == null || actualGroup.groupValue.length == 0) {
             assertNull(expectedGroup.groupValue);
           } else {
             assertEquals(expectedGroup.groupValue, actualGroup.groupValue);

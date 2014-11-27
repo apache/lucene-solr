@@ -21,10 +21,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.document.DoubleField; // for javadocs
-import org.apache.lucene.document.FloatField; // for javadocs
-import org.apache.lucene.document.IntField; // for javadocs
-import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.Attribute;

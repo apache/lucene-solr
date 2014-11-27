@@ -17,17 +17,18 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.query.SpatialArgs;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * The SpatialStrategy encapsulates an approach to indexing and searching based
@@ -98,7 +99,7 @@ public abstract class SpatialStrategy {
    * @return Not null nor will it have null elements.
    * @throws UnsupportedOperationException if given a shape incompatible with the strategy
    */
-  public abstract Field[] createIndexableFields(Shape shape);
+  public abstract void addFields(Document2 doc, Shape shape);
 
   /**
    * See {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point, double)} called with
@@ -126,8 +127,8 @@ public abstract class SpatialStrategy {
    * @throws org.apache.lucene.spatial.query.UnsupportedSpatialOperation If the strategy does not support the {@link
    * org.apache.lucene.spatial.query.SpatialOperation} in {@code args}.
    */
-  public Query makeQuery(SpatialArgs args) {
-    return new ConstantScoreQuery(makeFilter(args));
+  public Query makeQuery(FieldTypes fieldTypes, SpatialArgs args) {
+    return new ConstantScoreQuery(makeFilter(fieldTypes, args));
   }
 
   /**
@@ -143,7 +144,7 @@ public abstract class SpatialStrategy {
    * @throws org.apache.lucene.spatial.query.UnsupportedSpatialOperation If the strategy does not support the {@link
    * org.apache.lucene.spatial.query.SpatialOperation} in {@code args}.
    */
-  public abstract Filter makeFilter(SpatialArgs args);
+  public abstract Filter makeFilter(FieldTypes fieldTypes, SpatialArgs args);
 
   /**
    * Returns a ValueSource with values ranging from 1 to 0, depending inversely

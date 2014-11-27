@@ -21,10 +21,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.DoubleField; // for javadocs
-import org.apache.lucene.document.FloatField; // for javadocs
-import org.apache.lucene.document.IntField; // for javadocs
-import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;

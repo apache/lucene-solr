@@ -18,12 +18,13 @@ package org.apache.lucene.uninverting;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -42,15 +43,18 @@ public class TestFieldCacheReopen extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(10))
     );
-    Document doc = new Document();
-    doc.add(new IntField("number", 17, Field.Store.NO));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableSorting("number");
+
+    Document2 doc = writer.newDocument();
+    doc.addInt("number", 17);
     writer.addDocument(doc);
     writer.commit();
   
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
     LeafReader r1 = getOnlySegmentReader(r);
-    final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(r1, "number", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
+    final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(r1, "number", FieldCache.DOCUMENT2_INT_PARSER, false);
     assertEquals(17, ints.get(0));
   
     // Add new segment
@@ -62,7 +66,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
     assertNotNull(r2);
     r.close();
     LeafReader sub0 = r2.leaves().get(0).reader();
-    final NumericDocValues ints2 = FieldCache.DEFAULT.getNumerics(sub0, "number", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
+    final NumericDocValues ints2 = FieldCache.DEFAULT.getNumerics(sub0, "number", FieldCache.DOCUMENT2_INT_PARSER, false);
     r2.close();
     assertTrue(ints == ints2);
   

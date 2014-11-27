@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LowSchemaField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -75,7 +76,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     int maxThreadStates = 1+random().nextInt(10);
     boolean doReaderPooling = random().nextBoolean();
-    Map<String,Document> docs = indexRandom(5, 3, 100, dir1, maxThreadStates, doReaderPooling);
+    Map<String,List<LowSchemaField>> docs = indexRandom(5, 3, 100, dir1, maxThreadStates, doReaderPooling);
     indexSerial(random(), docs, dir2);
 
     // verifying verify
@@ -110,7 +111,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  nThreads=" + nThreads + " iter=" + iter + " range=" + range + " doPooling=" + doReaderPooling + " maxThreadStates=" + maxThreadStates + " sameFieldOrder=" + sameFieldOrder + " mergeFactor=" + mergeFactor + " maxBufferedDocs=" + maxBufferedDocs);
       }
-      Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates, doReaderPooling);
+      Map<String,List<LowSchemaField>> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates, doReaderPooling);
       if (VERBOSE) {
         System.out.println("TEST: index serial");
       }
@@ -139,12 +140,12 @@ public class TestStressIndexing2 extends LuceneTestCase {
   // everything.
   
   public static class DocsAndWriter {
-    Map<String,Document> docs;
+    Map<String,List<LowSchemaField>> docs;
     IndexWriter writer;
   }
   
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
-    Map<String,Document> docs = new HashMap<>();
+    Map<String,List<LowSchemaField>> docs = new HashMap<>();
     IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
             .setOpenMode(OpenMode.CREATE)
             .setRAMBufferSizeMB(0.1)
@@ -195,9 +196,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
     return dw;
   }
   
-  public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir, int maxThreadStates,
-                                          boolean doReaderPooling) throws IOException, InterruptedException {
-    Map<String,Document> docs = new HashMap<>();
+  public Map<String,List<LowSchemaField>> indexRandom(int nThreads, int iterations, int range, Directory dir, int maxThreadStates,
+                                                      boolean doReaderPooling) throws IOException, InterruptedException {
+    Map<String,List<LowSchemaField>> docs = new HashMap<>();
     IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
              .setOpenMode(OpenMode.CREATE)
              .setRAMBufferSizeMB(0.1)
@@ -243,23 +244,17 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
 
   
-  public static void indexSerial(Random random, Map<String,Document> docs, Directory dir) throws IOException {
+  public static void indexSerial(Random random, Map<String,List<LowSchemaField>> docs, Directory dir) throws IOException {
     IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
     // index all docs in a single thread
-    Iterator<Document> iter = docs.values().iterator();
+    Iterator<List<LowSchemaField>> iter = docs.values().iterator();
     while (iter.hasNext()) {
-      Document d = iter.next();
-      ArrayList<IndexableField> fields = new ArrayList<>();
-      fields.addAll(d.getFields());
+      List<LowSchemaField> d = iter.next();
+      List<LowSchemaField> fields = new ArrayList<>(d);
       // put fields in same order each time
       Collections.sort(fields, fieldNameComparator);
-      
-      Document d1 = new Document();
-      for (int i=0; i<fields.size(); i++) {
-        d1.add(fields.get(i));
-      }
-      w.addDocument(d1);
+      w.addDocument(fields);
       // System.out.println("indexing "+d1);
     }
     
@@ -694,7 +689,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     int base;
     int range;
     int iterations;
-    Map<String,Document> docs = new HashMap<>();
+    Map<String,List<LowSchemaField>> docs = new HashMap<>();
     Random r;
 
     public int nextInt(int lim) {
@@ -765,19 +760,40 @@ public class TestStressIndexing2 extends LuceneTestCase {
       return Integer.toString(base + nextInt(range));
     }
 
-    public void indexDoc() throws IOException {
-      Document d = new Document();
+    private void setTermVectors(LowSchemaField field, Map<String,LowSchemaField> prevFields) {
+      LowSchemaField prev = prevFields.get(field.name());
+      if (prev == null) {
+        // First time we see this field name in in this doc: randomize TV settings:
+        switch (nextInt(4)) {
+        case 0:
+          break;
+        case 1:
+          field.enableTermVectors(false, false, false);
+          break;
+        case 2:
+          field.enableTermVectors(true, false, false);
+          break;
+        case 3:
+          field.enableTermVectors(false, true, false);
+          break;
+        }
+        prevFields.put(field.name(), field);
+      } else {
+        field.enableTermVectors(prev.storeTermVectorPositions(),
+                                prev.storeTermVectorOffsets(),
+                                prev.storeTermVectorPayloads());
+      }
+    }
 
-      FieldType customType1 = new FieldType(TextField.TYPE_STORED);
-      customType1.setTokenized(false);
-      customType1.setOmitNorms(true);
-      
-      ArrayList<Field> fields = new ArrayList<>();
+    public void indexDoc() throws IOException {
+
+      List<LowSchemaField> fields = new ArrayList<>();
       String idString = getIdString();
-      Field idField =  newField("id", idString, customType1);
+      LowSchemaField idField = new LowSchemaField("id", idString, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, false);
+      idField.disableNorms();
       fields.add(idField);
 
-      Map<String,FieldType> tvTypes = new HashMap<>();
+      Map<String,LowSchemaField> prevField = new HashMap<>();
 
       int nFields = nextInt(maxFields);
       for (int i=0; i<nFields; i++) {
@@ -785,61 +801,26 @@ public class TestStressIndexing2 extends LuceneTestCase {
         String fieldName = "f" + nextInt(100);
         FieldType customType;
 
-        // Use the same term vector settings if we already
-        // added this field to the doc:
-        FieldType oldTVType = tvTypes.get(fieldName);
-        if (oldTVType != null) {
-          customType = new FieldType(oldTVType);
-        } else {
-          customType = new FieldType();
-          switch (nextInt(4)) {
-          case 0:
-            break;
-          case 1:
-            customType.setStoreTermVectors(true);
-            break;
-          case 2:
-            customType.setStoreTermVectors(true);
-            customType.setStoreTermVectorPositions(true);
-            break;
-          case 3:
-            customType.setStoreTermVectors(true);
-            customType.setStoreTermVectorOffsets(true);
-            break;
-          }
-          FieldType newType = new FieldType(customType);
-          newType.freeze();
-          tvTypes.put(fieldName, newType);
-        }
+        LowSchemaField field;
         
         switch (nextInt(4)) {
           case 0:
-            customType.setStored(true);
-            customType.setOmitNorms(true);
-            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(1), customType));
+            field = new LowSchemaField(fieldName, getString(1), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            field.disableNorms();
+            setTermVectors(field, prevField);
             break;
           case 1:
-            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-            customType.setTokenized(true);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(0), customType));
+            field = new LowSchemaField(fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            field.doNotStore();
+            setTermVectors(field, prevField);
             break;
           case 2:
-            customType.setStored(true);
-            customType.setStoreTermVectors(false);
-            customType.setStoreTermVectorOffsets(false);
-            customType.setStoreTermVectorPositions(false);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(0), customType));
+            field = new LowSchemaField(fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            // no term vectors
             break;
           case 3:
-            customType.setStored(true);
-            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-            customType.setTokenized(true);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(bigFieldSize), customType));
+            field = new LowSchemaField(fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            setTermVectors(field, prevField);
             break;
         }
       }
@@ -848,18 +829,15 @@ public class TestStressIndexing2 extends LuceneTestCase {
         Collections.sort(fields, fieldNameComparator);
       } else {
         // random placement of id field also
-        Collections.swap(fields,nextInt(fields.size()), 0);
+        Collections.swap(fields, nextInt(fields.size()), 0);
       }
 
-      for (int i=0; i<fields.size(); i++) {
-        d.add(fields.get(i));
-      }
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": indexing id:" + idString);
       }
-      w.updateDocument(new Term("id", idString), d);
+      w.updateDocument(new Term("id", idString), fields);
       //System.out.println(Thread.currentThread().getName() + ": indexing "+d);
-      docs.put(idString, d);
+      docs.put(idString, fields);
     }
 
     public void deleteDoc() throws IOException {

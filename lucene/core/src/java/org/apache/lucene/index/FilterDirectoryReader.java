@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.document.FieldTypes;
+
 /**
  * A FilterDirectoryReader wraps another DirectoryReader, allowing implementations
  * to transform or extend it.
@@ -125,4 +127,8 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
     in.doClose();
   }
 
+  @Override
+  public FieldTypes getFieldTypes() {
+    return in.getFieldTypes();
+  }
 }

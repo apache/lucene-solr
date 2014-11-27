@@ -17,9 +17,11 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
@@ -28,9 +30,8 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeFilter}.
@@ -162,7 +163,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args) {
+  public Filter makeFilter(FieldTypes fieldTypes, SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
 
     Shape shape = args.getShape();

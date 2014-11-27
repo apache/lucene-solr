@@ -19,9 +19,9 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -47,17 +47,11 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy()); // depends on docid order
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
 
-    Document doc = new Document();
-    Field field = new IntField("value", 0, Field.Store.YES);
-    Field dvField = new NumericDocValuesField("value", 0);
-    doc.add(field);
-    doc.add(dvField);
-
     // Save docs unsorted (decreasing value n, n-1, ...)
     final int NUM_VALS = 5;
     for (int val = NUM_VALS; val > 0; val--) {
-      field.setIntValue(val);
-      dvField.setLongValue(val);
+      Document2 doc = writer.newDocument();
+      doc.addInt("value", val);
       writer.addDocument(doc);
     }
 
@@ -79,7 +73,7 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     // Verify that sorting works in general
     int i = 0;
     for (ScoreDoc hit : hits.scoreDocs) {
-      int valueFromDoc = Integer.parseInt(reader.document(hit.doc).getString("value"));
+      int valueFromDoc = reader.document(hit.doc).getInt("value");
       assertEquals(++i, valueFromDoc);
     }
 
@@ -94,7 +88,7 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     // Verify that hits are actually "after"
     int afterValue = ((Double) afterHit.fields[0]).intValue();
     for (ScoreDoc hit : hits.scoreDocs) {
-      int val = Integer.parseInt(reader.document(hit.doc).getString("value"));
+      int val = reader.document(hit.doc).getInt("value");
       assertTrue(afterValue <= val);
       assertFalse(hit.doc == afterHit.doc);
     }

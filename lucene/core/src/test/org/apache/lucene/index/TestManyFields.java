@@ -70,6 +70,9 @@ public class TestManyFields extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                  .setRAMBufferSizeMB(0.5));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("field");
+
     int n = atLeast(1);
     for(int i=0;i<n;i++) {
       // First, docs where every term is unique (heavy on

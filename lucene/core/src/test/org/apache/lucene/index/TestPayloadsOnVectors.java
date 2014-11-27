@@ -99,6 +99,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     if (random().nextBoolean()) {
       fieldTypes.enableTermVectorOffsets("field");
     }
+    fieldTypes.setMultiValued("field");
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
     Document2 doc = writer.newDocument();

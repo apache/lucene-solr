@@ -34,16 +34,15 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexWriter;
 
 /**
  * Creates {@link Document} objects. Uses a {@link ContentSource} to generate
@@ -73,8 +72,6 @@ import org.apache.lucene.document.TextField;
  * stored with offsets (default <b>false</b>).
  * <li><b>doc.store.body.bytes</b> - specifies whether to store the raw bytes of
  * the document's content in the document (default <b>false</b>).
- * <li><b>doc.reuse.fields</b> - specifies whether Field and Document objects
- * should be reused (default <b>true</b>).
  * <li><b>doc.index.props</b> - specifies whether the properties returned by
  * <li><b>doc.random.id.limit</b> - if specified, docs will be assigned random
  * IDs from 0 to this limit.  This is useful with UpdateDoc
@@ -93,92 +90,10 @@ public class DocMaker implements Closeable {
   private int updateDocIDLimit;
 
   /**
-   * Document state, supports reuse of field instances
-   * across documents (see <code>reuseFields</code> parameter).
+   * Document state.
    */
   protected static class DocState {
-    
-    private final Map<String,Field> fields;
-    private final Map<String,Field> numericFields;
-    private final boolean reuseFields;
-    final Document doc;
     DocData docData = new DocData();
-    
-    public DocState(boolean reuseFields, FieldType ft, FieldType bodyFt) {
-
-      this.reuseFields = reuseFields;
-      
-      if (reuseFields) {
-        fields =  new HashMap<>();
-        numericFields = new HashMap<>();
-        
-        // Initialize the map with the default fields.
-        fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyFt));
-        fields.put(TITLE_FIELD, new Field(TITLE_FIELD, "", ft));
-        fields.put(DATE_FIELD, new Field(DATE_FIELD, "", ft));
-        fields.put(ID_FIELD, new StringField(ID_FIELD, "", Field.Store.YES));
-        fields.put(NAME_FIELD, new Field(NAME_FIELD, "", ft));
-
-        numericFields.put(DATE_MSEC_FIELD, new LongField(DATE_MSEC_FIELD, 0L, Field.Store.NO));
-        numericFields.put(TIME_SEC_FIELD, new IntField(TIME_SEC_FIELD, 0, Field.Store.NO));
-        
-        doc = new Document();
-      } else {
-        numericFields = null;
-        fields = null;
-        doc = null;
-      }
-    }
-
-    /**
-     * Returns a field corresponding to the field name. If
-     * <code>reuseFields</code> was set to true, then it attempts to reuse a
-     * Field instance. If such a field does not exist, it creates a new one.
-     */
-    Field getField(String name, FieldType ft) {
-      if (!reuseFields) {
-        return new Field(name, "", ft);
-      }
-      
-      Field f = fields.get(name);
-      if (f == null) {
-        f = new Field(name, "", ft);
-        fields.put(name, f);
-      }
-      return f;
-    }
-
-    Field getNumericField(String name, NumericType type) {
-      Field f;
-      if (reuseFields) {
-        f = numericFields.get(name);
-      } else {
-        f = null;
-      }
-      
-      if (f == null) {
-        switch(type) {
-        case INT:
-          f = new IntField(name, 0, Field.Store.NO);
-          break;
-        case LONG:
-          f = new LongField(name, 0L, Field.Store.NO);
-          break;
-        case FLOAT:
-          f = new FloatField(name, 0.0F, Field.Store.NO);
-          break;
-        case DOUBLE:
-          f = new DoubleField(name, 0.0, Field.Store.NO);
-          break;
-        default:
-          throw new AssertionError("Cannot get here");
-        }
-        if (reuseFields) {
-          numericFields.put(name, f);
-        }
-      }
-      return f;
-    }
   }
   
   private boolean storeBytes = false;
@@ -193,7 +108,7 @@ public class DocMaker implements Closeable {
   }
 
   // leftovers are thread local, because it is unsafe to share residues between threads
-  private ThreadLocal<LeftOver> leftovr = new ThreadLocal<>();
+  private ThreadLocal<LeftOver> leftover = new ThreadLocal<>();
   private ThreadLocal<DocState> docState = new ThreadLocal<>();
   private ThreadLocal<DateUtil> dateParsers = new ThreadLocal<>();
 
@@ -208,14 +123,14 @@ public class DocMaker implements Closeable {
 
   protected Config config;
 
-  protected FieldType valType;
-  protected FieldType bodyValType;
-    
   protected ContentSource source;
   protected boolean reuseFields;
   protected boolean indexProperties;
-  
+  private boolean tokenized;
+  private boolean bodyTokenized;
+
   private final AtomicInteger numDocsCreated = new AtomicInteger();
+  private IndexWriter schemaApplied;
 
   public DocMaker() {
   }
@@ -223,17 +138,12 @@ public class DocMaker implements Closeable {
   // create a doc
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
-  private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
+  private Document2 createDocument(IndexWriter w, DocData docData, int size, int cnt) throws UnsupportedEncodingException {
+    applySchema(w);
 
     final DocState ds = getDocState();
-    final Document doc = reuseFields ? ds.doc : new Document();
-    doc.clear();
+    final Document2 doc = w.newDocument();
     
-    // Set ID_FIELD
-    FieldType ft = new FieldType(valType);
-    ft.setStored(true);
-
-    Field idField = ds.getField(ID_FIELD, ft);
     int id;
     if (r != null) {
       id = r.nextInt(updateDocIDLimit);
@@ -243,16 +153,21 @@ public class DocMaker implements Closeable {
         id = numDocsCreated.getAndIncrement();
       }
     }
-    idField.setStringValue(Integer.toString(id));
-    doc.add(idField);
+    if (tokenized) {
+      doc.addLargeText(ID_FIELD, Integer.toString(id));
+    } else {
+      doc.addAtom(ID_FIELD, Integer.toString(id));
+    }
     
     // Set NAME_FIELD
     String name = docData.getName();
     if (name == null) name = "";
     name = cnt < 0 ? name : name + "_" + cnt;
-    Field nameField = ds.getField(NAME_FIELD, valType);
-    nameField.setStringValue(name);
-    doc.add(nameField);
+    if (tokenized) {
+      doc.addLargeText(NAME_FIELD, name);
+    } else {
+      doc.addAtom(NAME_FIELD, name);
+    }
     
     // Set DATE_FIELD
     DateUtil util = dateParsers.get();
@@ -269,31 +184,30 @@ public class DocMaker implements Closeable {
     } else {
       dateString = "";
     }
-    Field dateStringField = ds.getField(DATE_FIELD, valType);
-    dateStringField.setStringValue(dateString);
-    doc.add(dateStringField);
+    if (tokenized) {
+      doc.addLargeText(DATE_FIELD, dateString);
+    } else {
+      doc.addAtom(DATE_FIELD, dateString);
+    }
 
     if (date == null) {
       // just set to right now
       date = new Date();
     }
 
-    Field dateField = ds.getNumericField(DATE_MSEC_FIELD, NumericType.LONG);
-    dateField.setLongValue(date.getTime());
-    doc.add(dateField);
+    doc.addLong(DATE_MSEC_FIELD, date.getTime());
 
     util.cal.setTime(date);
     final int sec = util.cal.get(Calendar.HOUR_OF_DAY)*3600 + util.cal.get(Calendar.MINUTE)*60 + util.cal.get(Calendar.SECOND);
-
-    Field timeSecField = ds.getNumericField(TIME_SEC_FIELD, NumericType.INT);
-    timeSecField.setIntValue(sec);
-    doc.add(timeSecField);
+    doc.addLong(TIME_SEC_FIELD, sec);
     
     // Set TITLE_FIELD
     String title = docData.getTitle();
-    Field titleField = ds.getField(TITLE_FIELD, valType);
-    titleField.setStringValue(title == null ? "" : title);
-    doc.add(titleField);
+    if (tokenized) {
+      doc.addShortText(TITLE_FIELD, title == null ? "" : title);
+    } else {
+      doc.addAtom(TITLE_FIELD, title == null ? "" : title);
+    }
     
     String body = docData.getBody();
     if (body != null && body.length() > 0) {
@@ -312,14 +226,14 @@ public class DocMaker implements Closeable {
         bdy = body.substring(0, size); // use part
         docData.setBody(body.substring(size)); // some left
       }
-      Field bodyField = ds.getField(BODY_FIELD, bodyValType);
-      bodyField.setStringValue(bdy);
-      doc.add(bodyField);
+      if (bodyTokenized) {
+        doc.addLargeText(BODY_FIELD, bdy);
+      } else {
+        doc.addAtom(BODY_FIELD, bdy);
+      }
       
       if (storeBytes) {
-        Field bytesField = ds.getField(BYTES_FIELD, StringField.TYPE_STORED);
-        bytesField.setBytesValue(bdy.getBytes(StandardCharsets.UTF_8));
-        doc.add(bytesField);
+        doc.addBinary(BYTES_FIELD, bdy.getBytes(StandardCharsets.UTF_8));
       }
     }
 
@@ -327,9 +241,11 @@ public class DocMaker implements Closeable {
       Properties props = docData.getProps();
       if (props != null) {
         for (final Map.Entry<Object,Object> entry : props.entrySet()) {
-          Field f = ds.getField((String) entry.getKey(), valType);
-          f.setStringValue((String) entry.getValue());
-          doc.add(f);
+          if (tokenized) {
+            doc.addLargeText((String) entry.getKey(), (String) entry.getValue());
+          } else {
+            doc.addAtom((String) entry.getKey(), (String) entry.getValue());
+          }
         }
         docData.setProps(null);
       }
@@ -340,13 +256,13 @@ public class DocMaker implements Closeable {
   }
 
   private void resetLeftovers() {
-    leftovr.set(null);
+    leftover.set(null);
   }
 
   protected DocState getDocState() {
     DocState ds = docState.get();
     if (ds == null) {
-      ds = new DocState(reuseFields, valType, bodyValType);
+      ds = new DocState();
       docState.set(ds);
     }
     return ds;
@@ -369,10 +285,10 @@ public class DocMaker implements Closeable {
    * <code>reuseFields</code> was set to true, it will reuse {@link Document}
    * and {@link Field} instances.
    */
-  public Document makeDocument() throws Exception {
+  public Document2 makeDocument(IndexWriter w) throws Exception {
     resetLeftovers();
     DocData docData = source.getNextDocData(getDocState().docData);
-    Document doc = createDocument(docData, 0, -1);
+    Document2 doc = createDocument(w, docData, 0, -1);
     return doc;
   }
 
@@ -380,8 +296,8 @@ public class DocMaker implements Closeable {
    * Same as {@link #makeDocument()}, only this method creates a document of the
    * given size input by <code>size</code>.
    */
-  public Document makeDocument(int size) throws Exception {
-    LeftOver lvr = leftovr.get();
+  public Document2 makeDocument(IndexWriter w, int size) throws Exception {
+    LeftOver lvr = leftover.get();
     if (lvr == null || lvr.docdata == null || lvr.docdata.getBody() == null
         || lvr.docdata.getBody().length() == 0) {
       resetLeftovers();
@@ -395,13 +311,13 @@ public class DocMaker implements Closeable {
       cnt = 0;
       dd.setBody(dd2.getBody() + dd.getBody());
     }
-    Document doc = createDocument(dd, size, cnt);
+    Document2 doc = createDocument(w, dd, size, cnt);
     if (dd.getBody() == null || dd.getBody().length() == 0) {
       resetLeftovers();
     } else {
       if (lvr == null) {
         lvr = new LeftOver();
-        leftovr.set(lvr);
+        leftover.set(lvr);
       }
       lvr.docdata = dd;
       lvr.cnt = ++cnt;
@@ -418,43 +334,101 @@ public class DocMaker implements Closeable {
     numDocsCreated.set(0);
     resetLeftovers();
   }
+
+  private void applySchema(IndexWriter w) {
+    if (schemaApplied == w) {
+      return;
+    }
+    schemaApplied = w;
+
+    boolean stored = config.get("doc.stored", false);
+    boolean bodyStored = config.get("doc.body.stored", stored);
+    boolean norms = config.get("doc.tokenized.norms", false);
+    boolean bodyNorms = config.get("doc.body.tokenized.norms", true);
+    boolean termVec = config.get("doc.term.vector", false);
+    boolean termVecPositions = config.get("doc.term.vector.positions", false);
+    boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
+    tokenized = config.get("doc.tokenized", true);
+    bodyTokenized = config.get("doc.body.tokenized", tokenized);
+    if (bodyTokenized == false) {
+      bodyNorms = false;
+    }
+
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+
+    for(String fieldName : new String[] {ID_FIELD,
+                                         NAME_FIELD,
+                                         DATE_FIELD,
+                                         TITLE_FIELD}) {
+      if (stored) {
+        fieldTypes.enableStored(fieldName);
+      } else {
+        fieldTypes.disableStored(fieldName);
+      }
+
+      if (norms) {
+        fieldTypes.enableNorms(fieldName);
+      } else {
+        fieldTypes.disableNorms(fieldName);
+      }
+
+      if (termVec) {
+        fieldTypes.enableTermVectors(fieldName);
+        if (termVecPositions) {
+          fieldTypes.enableTermVectorPositions(fieldName);
+        } else {
+          fieldTypes.disableTermVectorPositions(fieldName);
+        }
+        if (termVecOffsets) {
+          fieldTypes.enableTermVectorOffsets(fieldName);
+        } else {
+          fieldTypes.disableTermVectorOffsets(fieldName);
+        }
+      } else {
+        fieldTypes.disableTermVectors(fieldName);
+      }
+    }
+
+    if (bodyStored) {
+      fieldTypes.enableStored(BODY_FIELD);
+    } else {
+      fieldTypes.disableStored(BODY_FIELD);
+    }
+
+    if (bodyNorms) {
+      fieldTypes.enableNorms(BODY_FIELD);
+    } else {
+      fieldTypes.disableNorms(BODY_FIELD);
+    }
+
+    if (termVec) {
+      fieldTypes.enableTermVectors(BODY_FIELD);
+      if (termVecPositions) {
+        fieldTypes.enableTermVectorPositions(BODY_FIELD);
+      } else {
+        fieldTypes.disableTermVectorPositions(BODY_FIELD);
+      }
+      if (termVecOffsets) {
+        fieldTypes.enableTermVectorOffsets(BODY_FIELD);
+      } else {
+        fieldTypes.disableTermVectorOffsets(BODY_FIELD);
+      }
+    } else {
+      fieldTypes.disableTermVectors(BODY_FIELD);
+    }
+  }
   
   /** Set the configuration parameters of this doc maker. */
   public void setConfig(Config config, ContentSource source) {
     this.config = config;
     this.source = source;
 
-    boolean stored = config.get("doc.stored", false);
-    boolean bodyStored = config.get("doc.body.stored", stored);
-    boolean tokenized = config.get("doc.tokenized", true);
-    boolean bodyTokenized = config.get("doc.body.tokenized", tokenized);
-    boolean norms = config.get("doc.tokenized.norms", false);
-    boolean bodyNorms = config.get("doc.body.tokenized.norms", true);
-    boolean termVec = config.get("doc.term.vector", false);
-    boolean termVecPositions = config.get("doc.term.vector.positions", false);
-    boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
-    
-    valType = new FieldType(TextField.TYPE_NOT_STORED);
-    valType.setStored(stored);
-    valType.setTokenized(tokenized);
-    valType.setOmitNorms(!norms);
-    valType.setStoreTermVectors(termVec);
-    valType.setStoreTermVectorPositions(termVecPositions);
-    valType.setStoreTermVectorOffsets(termVecOffsets);
-    valType.freeze();
-
-    bodyValType = new FieldType(TextField.TYPE_NOT_STORED);
-    bodyValType.setStored(bodyStored);
-    bodyValType.setTokenized(bodyTokenized);
-    bodyValType.setOmitNorms(!bodyNorms);
-    bodyValType.setStoreTermVectors(termVec);
-    bodyValType.setStoreTermVectorPositions(termVecPositions);
-    bodyValType.setStoreTermVectorOffsets(termVecOffsets);
-    bodyValType.freeze();
-
     storeBytes = config.get("doc.store.body.bytes", false);
     
-    reuseFields = config.get("doc.reuse.fields", true);
+    if (config.get("doc.reuse.fields", false)) {
+      throw new IllegalStateException("field reuse is no longer supported");
+    }
 
     // In a multi-rounds run, it is important to reset DocState since settings
     // of fields may change between rounds, and this is the only way to reset

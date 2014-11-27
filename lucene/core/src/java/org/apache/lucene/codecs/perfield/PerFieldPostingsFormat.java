@@ -129,7 +129,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(field);
 
         final PostingsFormat format = getPostingsFormatForField(field);
-  
         if (format == null) {
           throw new IllegalStateException("invalid null PostingsFormat for field=\"" + field + "\"");
         }
@@ -192,7 +191,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
                 return group.fields.iterator();
               }
             };
-
           FieldsConsumer consumer = format.fieldsConsumer(group.state);
           toClose.add(consumer);
           consumer.write(maskedFields);

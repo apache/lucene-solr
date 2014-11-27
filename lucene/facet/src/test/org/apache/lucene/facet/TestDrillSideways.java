@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
@@ -39,9 +41,10 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
@@ -56,9 +59,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -80,27 +83,27 @@ public class TestDrillSideways extends FacetTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("Author", "Susan"));
     doc.add(new FacetField("Publish Date", "2012", "1", "7"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -257,12 +260,12 @@ public class TestDrillSideways extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setHierarchical("Publish Date", true);
 
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("Author", "Lisa"));
     doc.add(new FacetField("Publish Date", "2010", "10", "20"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -270,7 +273,7 @@ public class TestDrillSideways extends FacetTestCase {
     writer.commit();
 
     // 2nd segment has no Author:
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("Foobar", "Lisa"));
     doc.add(new FacetField("Publish Date", "2012", "1", "1"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -312,27 +315,27 @@ public class TestDrillSideways extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setHierarchical("dim", true);
 
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     doc.add(new FacetField("dim", "a", "x"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("dim", "a", "y"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("dim", "a", "z"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("dim", "b"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("dim", "c"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("dim", "d"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -480,22 +483,29 @@ public class TestDrillSideways extends FacetTestCase {
     Directory d = newDirectory();
     Directory td = newDirectory();
 
+    boolean doUseDV = random().nextBoolean();
+
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setInfoStream(InfoStream.NO_OUTPUT);
     RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    for(int dim=0;dim<numDims;dim++) {
+      fieldTypes.setMultiValued("dim" + dim);
+      if (doUseDV == false) {
+        fieldTypes.setDocValuesType("dim" + dim, DocValuesType.NONE);
+      }
+    }
+
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(td, IndexWriterConfig.OpenMode.CREATE);
     FacetsConfig config = new FacetsConfig();
     for(int i=0;i<numDims;i++) {
       config.setMultiValued("dim"+i, true);
     }
 
-    boolean doUseDV = random().nextBoolean();
-
     for(Doc rawDoc : docs) {
-      Document doc = new Document();
-      doc.add(newStringField("id", rawDoc.id, Field.Store.YES));
-      doc.add(new SortedDocValuesField("id", new BytesRef(rawDoc.id)));
-      doc.add(newStringField("content", rawDoc.contentToken, Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("id", rawDoc.id);
+      doc.addAtom("content", rawDoc.contentToken);
 
       if (VERBOSE) {
         System.out.println("  doc id=" + rawDoc.id + " token=" + rawDoc.contentToken);
@@ -503,30 +513,29 @@ public class TestDrillSideways extends FacetTestCase {
       for(int dim=0;dim<numDims;dim++) {
         int dimValue = rawDoc.dims[dim];
         if (dimValue != -1) {
+          doc.addAtom("dim" + dim, dimValues[dim][dimValue]);
           if (doUseDV) {
             doc.add(new SortedSetDocValuesFacetField("dim" + dim, dimValues[dim][dimValue]));
           } else {
             doc.add(new FacetField("dim" + dim, dimValues[dim][dimValue]));
           }
-          doc.add(new StringField("dim" + dim, dimValues[dim][dimValue], Field.Store.YES));
           if (VERBOSE) {
             System.out.println("    dim" + dim + "=" + new BytesRef(dimValues[dim][dimValue]));
           }
         }
         int dimValue2 = rawDoc.dims2[dim];
         if (dimValue2 != -1) {
+          doc.addAtom("dim" + dim, dimValues[dim][dimValue2]);
           if (doUseDV) {
             doc.add(new SortedSetDocValuesFacetField("dim" + dim, dimValues[dim][dimValue2]));
           } else {
             doc.add(new FacetField("dim" + dim, dimValues[dim][dimValue2]));
           }
-          doc.add(new StringField("dim" + dim, dimValues[dim][dimValue2], Field.Store.YES));
           if (VERBOSE) {
             System.out.println("      dim" + dim + "=" + new BytesRef(dimValues[dim][dimValue2]));
           }
         }
       }
-
       w.addDocument(config.build(tw, doc));
     }
 

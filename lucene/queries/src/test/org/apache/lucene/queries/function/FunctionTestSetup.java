@@ -2,15 +2,14 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
@@ -125,31 +124,14 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   }
 
   private static void addDoc(RandomIndexWriter iw, int i) throws Exception {
-    Document d = new Document();
+    Document2 d = iw.newDocument();
     Field f;
     int scoreAndID = i + 1;
 
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
-    customType.setOmitNorms(true);
-    
-    f = newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
-    d.add(f);
-    d.add(new SortedDocValuesField(ID_FIELD, new BytesRef(id2String(scoreAndID))));
-
-    FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType2.setOmitNorms(true);
-    f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
-    d.add(f);
-
-    f = new IntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
-    d.add(f);
-    d.add(new NumericDocValuesField(INT_FIELD, scoreAndID));
-
-    f = new FloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
-    d.add(f);
-    d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
-
+    d.addAtom(ID_FIELD, id2String(scoreAndID)); // for debug purposes
+    d.addLargeText(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i));
+    d.addInt(INT_FIELD, scoreAndID); // for function scoring
+    d.addFloat(FLOAT_FIELD, scoreAndID); // for function scoring
     iw.addDocument(d);
     log("added: " + d);
   }

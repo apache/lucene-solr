@@ -21,11 +21,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
@@ -62,49 +64,18 @@ public class TestNumericTerms64 extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableSorting("field");
 
-    final FieldType storedLong = new FieldType(LongField.TYPE_NOT_STORED);
-    storedLong.setStored(true);
-    storedLong.freeze();
-
-    final FieldType storedLong8 = new FieldType(storedLong);
-    storedLong8.setNumericPrecisionStep(8);
-
-    final FieldType storedLong4 = new FieldType(storedLong);
-    storedLong4.setNumericPrecisionStep(4);
-
-    final FieldType storedLong6 = new FieldType(storedLong);
-    storedLong6.setNumericPrecisionStep(6);
-
-    final FieldType storedLong2 = new FieldType(storedLong);
-    storedLong2.setNumericPrecisionStep(2);
-
-    LongField
-      field8 = new LongField("field8", 0L, storedLong8),
-      field6 = new LongField("field6", 0L, storedLong6),
-      field4 = new LongField("field4", 0L, storedLong4),
-      field2 = new LongField("field2", 0L, storedLong2);
-
-    Document doc = new Document();
-    // add fields, that have a distance to test general functionality
-    doc.add(field8); doc.add(field6); doc.add(field4); doc.add(field2);
-    
     // Add a series of noDocs docs with increasing long values, by updating the fields
     for (int l=0; l<noDocs; l++) {
+      Document2 doc = writer.newDocument();
       long val=distance*l+startOffset;
-      field8.setLongValue(val);
-      field6.setLongValue(val);
-      field4.setLongValue(val);
-      field2.setLongValue(val);
-
-      val=l-(noDocs/2);
+      doc.addLong("field", val);
       writer.addDocument(doc);
     }
     Map<String,Type> map = new HashMap<>();
-    map.put("field2", Type.LONG);
-    map.put("field4", Type.LONG);
-    map.put("field6", Type.LONG);
-    map.put("field8", Type.LONG);
+    map.put("field", Type.LONG);
     reader = UninvertingReader.wrap(writer.getReader(), map);
     searcher=newSearcher(reader);
     writer.close();
@@ -120,8 +91,9 @@ public class TestNumericTerms64 extends LuceneTestCase {
     directory = null;
   }
   
-  private void testSorting(int precisionStep) throws Exception {
-    String field="field"+precisionStep;
+  public void testSorting() throws Exception {
+    FieldTypes fieldTypes = reader.getFieldTypes();
+    String field="field";
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
     int num = TestUtil.nextInt(random(), 10, 20);
@@ -131,7 +103,7 @@ public class TestNumericTerms64 extends LuceneTestCase {
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
-      Query tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
+      Query tq = new ConstantScoreQuery(fieldTypes.newRangeFilter(field, lower, true, upper, true));
       TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
@@ -143,25 +115,5 @@ public class TestNumericTerms64 extends LuceneTestCase {
         last=act;
       }
     }
-  }
-
-  @Test
-  public void testSorting_8bit() throws Exception {
-    testSorting(8);
-  }
-  
-  @Test
-  public void testSorting_6bit() throws Exception {
-    testSorting(6);
-  }
-  
-  @Test
-  public void testSorting_4bit() throws Exception {
-    testSorting(4);
-  }
-  
-  @Test
-  public void testSorting_2bit() throws Exception {
-    testSorting(2);
   }
 }

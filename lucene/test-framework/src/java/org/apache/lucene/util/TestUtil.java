@@ -54,12 +54,8 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.CheckIndex;
@@ -884,57 +880,6 @@ public final class TestUtil {
         Assert.assertFalse(actualSD instanceof FieldDoc);
       }
     }
-  }
-
-  // NOTE: this is likely buggy, and cannot clone fields
-  // with tokenStreamValues, etc.  Use at your own risk!!
-
-  // TODO: is there a pre-existing way to do this!!!
-  public static Document cloneDocument(Document doc1) {
-    final Document doc2 = new Document();
-    for(IndexableField f : doc1.getFields()) {
-      final Field field1 = (Field) f;
-      final Field field2;
-      final DocValuesType dvType = field1.fieldType().docValuesType();
-      final NumericType numType = field1.fieldType().numericType();
-      if (dvType != DocValuesType.NONE) {
-        switch(dvType) {
-          case NUMERIC:
-            field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());
-            break;
-          case BINARY:
-            field2 = new BinaryDocValuesField(field1.name(), field1.binaryValue());
-            break;
-          case SORTED:
-            field2 = new SortedDocValuesField(field1.name(), field1.binaryValue());
-            break;
-          default:
-            throw new IllegalStateException("unknown Type: " + dvType);
-        }
-      } else if (numType != null) {
-        switch (numType) {
-          case INT:
-            field2 = new IntField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case FLOAT:
-            field2 = new FloatField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case LONG:
-            field2 = new LongField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case DOUBLE:
-            field2 = new DoubleField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          default:
-            throw new IllegalStateException("unknown Type: " + numType);
-        }
-      } else {
-        field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());
-      }
-      doc2.add(field2);
-    }
-
-    return doc2;
   }
 
   // Returns a DocsEnum, but randomly sometimes uses a

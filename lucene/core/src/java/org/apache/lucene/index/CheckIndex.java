@@ -1982,55 +1982,52 @@ public class CheckIndex implements Closeable {
       case SORTED:
         status.totalSortedFields++;
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkMoreThanOneDocValuesType(fi.name, reader);
         break;
       case SORTED_NUMERIC:
         status.totalSortedNumericFields++;
         checkSortedNumericDocValues(fi.name, reader, reader.getSortedNumericDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkMoreThanOneDocValuesType(fi.name, reader);
         break;
       case SORTED_SET:
         status.totalSortedSetFields++;
         checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkMoreThanOneDocValuesType(fi.name, reader);
         break;
       case BINARY:
         status.totalBinaryFields++;
         checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name), docsWithField);
-        if (reader.getNumericDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkMoreThanOneDocValuesType(fi.name, reader);
         break;
       case NUMERIC:
         status.totalNumericFields++;
         checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name), docsWithField);
-        if (reader.getBinaryDocValues(fi.name) != null ||
-            reader.getSortedDocValues(fi.name) != null ||
-            reader.getSortedNumericDocValues(fi.name) != null ||
-            reader.getSortedSetDocValues(fi.name) != null) {
-          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
-        }
+        checkMoreThanOneDocValuesType(fi.name, reader);
         break;
       default:
         throw new AssertionError();
+    }
+  }
+  
+  private static void checkMoreThanOneDocValuesType(String fieldName, LeafReader reader) throws IOException {
+    List<String> docValues = new ArrayList<>();
+    if (reader.getBinaryDocValues(fieldName) != null) {
+      docValues.add("BINARY");
+    }
+    if (reader.getNumericDocValues(fieldName) != null) {
+      docValues.add("NUMERIC");
+    }
+    if (reader.getSortedDocValues(fieldName) != null) {
+      docValues.add("SORTED");
+    }
+    if (reader.getSortedSetDocValues(fieldName) != null) {
+      docValues.add("SORTED_SET");
+    }
+    if (reader.getSortedNumericDocValues(fieldName) != null) {
+      docValues.add("SORTED_NUMERIC");
+    }
+    if (docValues.size() > 1) {
+      throw new RuntimeException("field=\"" + fieldName + "\" returns multiple docvalues types: " + docValues);
     }
   }
   

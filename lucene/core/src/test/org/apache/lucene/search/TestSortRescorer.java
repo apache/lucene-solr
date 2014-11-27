@@ -150,8 +150,8 @@ public class TestSortRescorer extends LuceneTestCase {
                   @Override
                   public int compare(Integer a, Integer b) {
                     try {
-                      int av = idToNum[Integer.parseInt(r.document(a).getString("id"))];
-                      int bv = idToNum[Integer.parseInt(r.document(b).getString("id"))];
+                      int av = idToNum[r.document(a).getInt("id")];
+                      int bv = idToNum[r.document(b).getInt("id")];
                       if (av < bv) {
                         return -reverseInt;
                       } else if (bv < av) {

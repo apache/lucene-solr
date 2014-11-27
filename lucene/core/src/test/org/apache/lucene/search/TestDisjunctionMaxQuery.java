@@ -24,10 +24,11 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
@@ -104,6 +105,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
                              .setSimilarity(sim).setMergePolicy(newLogMergePolicy()));
     
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("dek");
+    fieldTypes.setMultiValued("hed");
+
     // hed is the most important field, dek is secondary
     
     // d1 is an "ok" match for: albino elephant

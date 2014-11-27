@@ -22,9 +22,10 @@ import java.io.IOException;
 import java.text.ParseException;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
@@ -40,8 +41,8 @@ import org.apache.lucene.facet.range.DoubleRangeFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -93,25 +94,19 @@ public class DistanceFacetsExample implements Closeable {
 
     // Add documents with latitude/longitude location:
     // we index these both as DoubleFields (for bounding box/ranges) and as NumericDocValuesFields (for scoring)
-    Document doc = new Document();
-    doc.add(new DoubleField("latitude", 40.759011, Field.Store.NO));
-    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.759011)));
-    doc.add(new DoubleField("longitude", -73.9844722, Field.Store.NO));
-    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-73.9844722)));
+    Document2 doc = writer.newDocument();
+    doc.addDouble("latitude", 40.759011);
+    doc.addDouble("longitude", -73.9844722);
     writer.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new DoubleField("latitude", 40.718266, Field.Store.NO));
-    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.718266)));
-    doc.add(new DoubleField("longitude", -74.007819, Field.Store.NO));
-    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.007819)));
+    doc = writer.newDocument();
+    doc.addDouble("latitude", 40.718266);
+    doc.addDouble("longitude", -74.007819);
     writer.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new DoubleField("latitude", 40.7051157, Field.Store.NO));
-    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.7051157)));
-    doc.add(new DoubleField("longitude", -74.0088305, Field.Store.NO));
-    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.0088305)));
+    doc = writer.newDocument();
+    doc.addDouble("latitude", 40.7051157);
+    doc.addDouble("longitude", -74.0088305);
     writer.addDocument(doc);
 
     // Open near-real-time searcher
@@ -139,7 +134,7 @@ public class DistanceFacetsExample implements Closeable {
    *  maximum great circle (surface of the earth) distance,
    *  returns a simple Filter bounding box to "fast match"
    *  candidates. */
-  public static Filter getBoundingBoxFilter(double originLat, double originLng, double maxDistanceKM) {
+  public static Filter getBoundingBoxFilter(FieldTypes fieldTypes, double originLat, double originLng, double maxDistanceKM) {
 
     // Basic bounding box geo math from
     // http://JanMatuschek.de/LatitudeLongitudeBoundingCoordinates,
@@ -182,7 +177,7 @@ public class DistanceFacetsExample implements Closeable {
     BooleanFilter f = new BooleanFilter();
 
     // Add latitude range filter:
-    f.add(NumericRangeFilter.newDoubleRange("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat), true, true),
+    f.add(fieldTypes.newRangeFilter("latitude", Math.toDegrees(minLat), true, Math.toDegrees(maxLat), true),
           BooleanClause.Occur.MUST);
 
     // Add longitude range filter:
@@ -190,13 +185,13 @@ public class DistanceFacetsExample implements Closeable {
       // The bounding box crosses the international date
       // line:
       BooleanFilter lonF = new BooleanFilter();
-      lonF.add(NumericRangeFilter.newDoubleRange("longitude", Math.toDegrees(minLng), null, true, true),
+      lonF.add(fieldTypes.newRangeFilter("longitude", Math.toDegrees(minLng), true, null, true),
                BooleanClause.Occur.SHOULD);
-      lonF.add(NumericRangeFilter.newDoubleRange("longitude", null, Math.toDegrees(maxLng), true, true),
+      lonF.add(fieldTypes.newRangeFilter("longitude", null, true, Math.toDegrees(maxLng), true),
                BooleanClause.Occur.SHOULD);
       f.add(lonF, BooleanClause.Occur.MUST);
     } else {
-      f.add(NumericRangeFilter.newDoubleRange("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng), true, true),
+      f.add(fieldTypes.newRangeFilter("longitude", Math.toDegrees(minLng), true, Math.toDegrees(maxLng), true),
             BooleanClause.Occur.MUST);
     }
 
@@ -211,7 +206,7 @@ public class DistanceFacetsExample implements Closeable {
     searcher.search(new MatchAllDocsQuery(), fc);
 
     Facets facets = new DoubleRangeFacetCounts("field", getDistanceValueSource(), fc,
-                                               getBoundingBoxFilter(ORIGIN_LATITUDE, ORIGIN_LONGITUDE, 10.0),
+                                               getBoundingBoxFilter(searcher.getFieldTypes(), ORIGIN_LATITUDE, ORIGIN_LONGITUDE, 10.0),
                                                ONE_KM,
                                                TWO_KM,
                                                FIVE_KM,
@@ -227,7 +222,7 @@ public class DistanceFacetsExample implements Closeable {
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(null);
     final ValueSource vs = getDistanceValueSource();
-    q.add("field", range.getFilter(getBoundingBoxFilter(ORIGIN_LATITUDE, ORIGIN_LONGITUDE, range.max), vs));
+    q.add("field", range.getFilter(getBoundingBoxFilter(searcher.getFieldTypes(), ORIGIN_LATITUDE, ORIGIN_LONGITUDE, range.max), vs));
     DrillSideways ds = new DrillSideways(searcher, config, (TaxonomyReader) null) {
         @Override
         protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {        

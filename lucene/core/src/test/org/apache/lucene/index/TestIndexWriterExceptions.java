@@ -74,35 +74,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     private final Document2 doc;
     private final int count;
     
-    /* private field types */
-    /* private field types */
-
-    private static final FieldType custom1 = new FieldType(TextField.TYPE_NOT_STORED);
-    private static final FieldType custom2 = new FieldType();
-    private static final FieldType custom3 = new FieldType();
-    private static final FieldType custom4 = new FieldType(StringField.TYPE_NOT_STORED);
-    private static final FieldType custom5 = new FieldType(TextField.TYPE_STORED);
-    
-    static {
-
-      custom1.setStoreTermVectors(true);
-      custom1.setStoreTermVectorPositions(true);
-      custom1.setStoreTermVectorOffsets(true);
-      
-      custom2.setStored(true);
-      custom2.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-      
-      custom3.setStored(true);
-
-      custom4.setStoreTermVectors(true);
-      custom4.setStoreTermVectorPositions(true);
-      custom4.setStoreTermVectorOffsets(true);
-      
-      custom5.setStoreTermVectors(true);
-      custom5.setStoreTermVectorPositions(true);
-      custom5.setStoreTermVectorOffsets(true);
-    }
-
     public DocCopyIterator(Document2 doc, int count) {
       this.count = count;
       this.doc = doc;
@@ -630,18 +601,24 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
                                                   .setMergePolicy(newLogMergePolicy()));
+      FieldTypes fieldTypes = writer.getFieldTypes();
+      for(String fieldName : new String[] {"contents", "crash", "other"}) {
+        fieldTypes.enableTermVectors(fieldName);
+        fieldTypes.enableTermVectorPositions(fieldName);
+        fieldTypes.enableTermVectorOffsets(fieldName);
+      }
 
       // don't allow a sudden merge to clean up the deleted
       // doc below:
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setMergeFactor(Math.max(lmp.getMergeFactor(), 5));
 
-      Document doc = new Document();
-      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("contents", "here are some contents");
       writer.addDocument(doc);
       writer.addDocument(doc);
-      doc.add(newField("crash", "this should crash after 4 terms", DocCopyIterator.custom5));
-      doc.add(newField("other", "this will not get indexed", DocCopyIterator.custom5));
+      doc.addLargeText("crash", "this should crash after 4 terms");
+      doc.addLargeText("other", "this will not get indexed");
       try {
         writer.addDocument(doc);
         fail("did not hit expected exception");
@@ -653,8 +630,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
 
       if (0 == i) {
-        doc = new Document();
-        doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
+        doc = writer.newDocument();
+        doc.addLargeText("contents", "here are some contents");
         writer.addDocument(doc);
         writer.addDocument(doc);
       }
@@ -685,10 +662,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
                                       .setMaxBufferedDocs(10));
-      doc = new Document();
-      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
-      for(int j=0;j<17;j++)
+      doc = writer.newDocument();
+      doc.addLargeText("contents", "here are some contents");
+      for(int j=0;j<17;j++) {
         writer.addDocument(doc);
+      }
       writer.forceMerge(1);
       writer.close();
 
@@ -731,6 +709,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             .setMergePolicy(NoMergePolicy.INSTANCE));
         // don't use a merge policy here they depend on the DWPThreadPool and its max thread states etc.
         final int finalI = i;
+        FieldTypes fieldTypes = writer.getFieldTypes();
+        for(String fieldName : new String[] {"contents", "crash", "other"}) {
+          fieldTypes.enableTermVectors(fieldName);
+          fieldTypes.enableTermVectorPositions(fieldName);
+          fieldTypes.enableTermVectorOffsets(fieldName);
+        }
 
         Thread[] threads = new Thread[NUM_THREAD];
         for(int t=0;t<NUM_THREAD;t++) {
@@ -739,12 +723,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
               public void run() {
                 try {
                   for(int iter=0;iter<NUM_ITER;iter++) {
-                    Document doc = new Document();
-                    doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
+                    Document2 doc = writer.newDocument();
+                    doc.addLargeText("contents", "here are some contents");
                     writer.addDocument(doc);
                     writer.addDocument(doc);
-                    doc.add(newField("crash", "this should crash after 4 terms", DocCopyIterator.custom5));
-                    doc.add(newField("other", "this will not get indexed", DocCopyIterator.custom5));
+                    doc.addLargeText("crash", "this should crash after 4 terms");
+                    doc.addLargeText("other", "this will not get indexed");
                     try {
                       writer.addDocument(doc);
                       fail("did not hit expected exception");
@@ -752,8 +736,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                     }
 
                     if (0 == finalI) {
-                      doc = new Document();
-                      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
+                      doc = writer.newDocument();
+                      doc.addLargeText("contents", "here are some contents");
                       writer.addDocument(doc);
                       writer.addDocument(doc);
                     }
@@ -770,8 +754,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           threads[t].start();
         }
 
-        for(int t=0;t<NUM_THREAD;t++)
+        for(int t=0;t<NUM_THREAD;t++) {
           threads[t].join();
+        }
 
         writer.close();
       }
@@ -797,10 +782,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
                                                   .setMaxBufferedDocs(10));
-      Document doc = new Document();
-      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
-      for(int j=0;j<17;j++)
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("contents", "here are some contents");
+      for(int j=0;j<17;j++) {
         writer.addDocument(doc);
+      }
       writer.forceMerge(1);
       writer.close();
 
@@ -1583,6 +1569,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     // add good document
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("foo");
     Document2 doc = iw.newDocument();
     iw.addDocument(doc);
 

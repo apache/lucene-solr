@@ -47,7 +47,7 @@ public class SerializedStrategyTest extends StrategyTestCase {
   //called by StrategyTestCase; we can't let it call our makeQuery which will UOE ex.
   @Override
   protected Query makeQuery(SpatialTestQuery q) {
-    return new FilteredQuery(new MatchAllDocsQuery(), strategy.makeFilter(q.args),
+    return new FilteredQuery(new MatchAllDocsQuery(), strategy.makeFilter(fieldTypes, q.args),
         FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
   }
 

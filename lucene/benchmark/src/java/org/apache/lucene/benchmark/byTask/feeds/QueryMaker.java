@@ -18,8 +18,9 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.search.Query;
 
 
 /**
@@ -32,13 +33,13 @@ public interface QueryMaker {
    * @param size the size of the query - number of terms, etc.
    * @exception Exception if cannot make the query, or if size>0 was specified but this feature is not supported.
    */ 
-  public Query makeQuery (int size) throws Exception;
+  public Query makeQuery(FieldTypes fieldTypes, int size) throws Exception;
 
   /** Create the next query */ 
-  public Query makeQuery () throws Exception;
+  public Query makeQuery(FieldTypes fieldTypes) throws Exception;
 
   /** Set the properties */
-  public void setConfig (Config config) throws Exception;
+  public void setConfig(Config config) throws Exception;
   
   /** Reset inputs so that the test run would behave, input wise, as if it just started. */
   public void resetInputs();

@@ -96,9 +96,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
     super.setUp();
     if (strategy instanceof BBoxStrategy && random().nextBoolean()) {//disable indexing sometimes
       BBoxStrategy bboxStrategy = (BBoxStrategy)strategy;
-      final FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setIndexOptions(IndexOptions.NONE);
-      bboxStrategy.setFieldType(fieldType);
+      bboxStrategy.setIndexOptions(fieldTypes, IndexOptions.NONE);
     }
   }
 
@@ -109,6 +107,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
   @Test
   public void testDistanceOrder() throws IOException {
+    System.out.println("TEST: strategy=" + strategy);
     adoc("100", ctx.makePoint(2, 1));
     adoc("101", ctx.makePoint(-1, 4));
     adoc("103", (Shape)null);//test score for nothing

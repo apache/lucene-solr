@@ -44,8 +44,6 @@ import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -141,7 +139,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(analyzer)
       .setMergePolicy(mp).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
-    LineFileDocs docs = new LineFileDocs(null, true);
+    LineFileDocs docs = new LineFileDocs(writer, null);
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }
@@ -875,8 +873,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
     // add numeric fields, to test if flex preserves encoding
-    doc.add(new IntField("trieInt", id, Field.Store.NO));
-    doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
+    // nocommit get these into back compat index
+    //doc.add(new IntField("trieInt", id, Field.Store.NO));
+    //doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
     // add docvalues fields
     doc.add(new NumericDocValuesField("dvByte", (byte) id));
     byte bytes[] = new byte[] {

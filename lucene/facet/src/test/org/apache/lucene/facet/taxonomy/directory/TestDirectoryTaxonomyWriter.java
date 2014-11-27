@@ -8,17 +8,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
-import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -448,7 +449,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     FacetField ff = new FacetField("dim", bigs);
     FacetLabel cp = new FacetLabel("dim", bigs);
     ordinal = taxoWriter.addCategory(cp);
-    Document doc = new Document();
+    Document2 doc = indexWriter.newDocument();
     doc.add(ff);
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
@@ -456,7 +457,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     for (int i = 0; i < 3; i++) {
       String s = TestUtil.randomSimpleString(random(), 1, 10);
       taxoWriter.addCategory(new FacetLabel("dim", s));
-      doc = new Document();
+      doc = indexWriter.newDocument();
       doc.add(new FacetField("dim", s));
       indexWriter.addDocument(config.build(taxoWriter, doc));
     }

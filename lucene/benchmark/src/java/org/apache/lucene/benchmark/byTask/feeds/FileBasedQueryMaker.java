@@ -1,12 +1,5 @@
 package org.apache.lucene.benchmark.byTask.feeds;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
-import org.apache.lucene.util.IOUtils;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,6 +7,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -49,7 +50,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
 
 
   @Override
-  protected Query[] prepareQueries() throws Exception {
+  protected Query[] prepareQueries(FieldTypes fieldTypes) throws Exception {
 
     Analyzer anlzr = NewAnalyzerTask.createAnalyzer(config.get("analyzer",
             "org.apache.lucene.analysis.standard.StandardAnalyzer"));

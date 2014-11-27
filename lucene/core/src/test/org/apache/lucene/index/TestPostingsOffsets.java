@@ -35,7 +35,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -375,6 +374,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     fieldTypes.enableTermVectors("content3");
     fieldTypes.enableTermVectorPositions("content3");
     fieldTypes.enableTermVectorOffsets("content3");
+    fieldTypes.setMultiValued("content3");
 
     Document2 doc = iw.newDocument();
     doc.addLargeText("content3", "here is more content with aaa aaa aaa");

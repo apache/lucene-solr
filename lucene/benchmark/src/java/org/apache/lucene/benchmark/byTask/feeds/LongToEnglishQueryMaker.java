@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
 import com.ibm.icu.text.RuleBasedNumberFormat;
@@ -40,12 +41,12 @@ public class LongToEnglishQueryMaker implements QueryMaker {
                                                                        RuleBasedNumberFormat.SPELLOUT);
 
   @Override
-  public Query makeQuery(int size) throws Exception {
+  public Query makeQuery(FieldTypes fieldTypes, int size) throws Exception {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public synchronized Query makeQuery() throws Exception {
+  public synchronized Query makeQuery(FieldTypes fieldTypes) throws Exception {
     return parser.parse("" + rnbf.format(getNextCounter()) + "");
   }
 

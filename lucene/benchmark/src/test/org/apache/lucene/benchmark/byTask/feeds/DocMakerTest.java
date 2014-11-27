@@ -30,13 +30,17 @@ import org.apache.lucene.benchmark.byTask.tasks.CloseIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.CreateIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 
 /** Tests the functionality of {@link DocMaker}. */
@@ -98,7 +102,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     reader.close();
   }
   
-  private Document createTestNormsDocument(boolean setNormsProp,
+  private Document2 createTestNormsDocument(boolean setNormsProp,
       boolean normsPropVal, boolean setBodyNormsProp, boolean bodyNormsVal)
       throws Exception {
     Properties props = new Properties();
@@ -117,8 +121,13 @@ public class DocMakerTest extends BenchmarkTestCase {
     Config config = new Config(props);
     
     DocMaker dm = new DocMaker();
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
     dm.setConfig(config, new OneDocSource());
-    return dm.makeDocument();
+    Document2 doc = dm.makeDocument(w);
+    w.close();
+    dir.close();
+    return doc;
   }
   
   /* Tests doc.index.props property. */
@@ -136,7 +145,7 @@ public class DocMakerTest extends BenchmarkTestCase {
   /* Tests doc.tokenized.norms and doc.body.tokenized.norms properties. */
   public void testNorms() throws Exception {
     
-    Document doc;
+    Document2 doc;
     
     // Don't set anything, use the defaults
     doc = createTestNormsDocument(false, false, false, false);

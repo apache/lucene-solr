@@ -18,10 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.DoubleField; // for javadocs
-import org.apache.lucene.document.FloatField; // for javadocs
-import org.apache.lucene.document.IntField; // for javadocs
-import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
 /**

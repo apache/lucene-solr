@@ -114,6 +114,7 @@ public class PortedSolr3Test extends StrategyTestCase {
     setupDocs();
     //Try some edge cases
       //NOTE: 2nd arg is distance in kilometers
+    System.out.println("STRAT=" + strategy);
     checkHitsCircle(ctx.makePoint(1, 1), 175, 3, 5, 6, 7);
     checkHitsCircle(ctx.makePoint(179.8, 0), 200, 2, 8, 9);
     checkHitsCircle(ctx.makePoint(50, 89.8), 200, 2, 10, 11);//this goes over the north pole
@@ -169,10 +170,11 @@ public class PortedSolr3Test extends StrategyTestCase {
     //args.setDistPrecision(0.025);
     Query query;
     if (random().nextBoolean()) {
-      query = strategy.makeQuery(args);
+      query = strategy.makeQuery(fieldTypes, args);
     } else {
-      query = new FilteredQuery(new MatchAllDocsQuery(),strategy.makeFilter(args));
+      query = new FilteredQuery(new MatchAllDocsQuery(),strategy.makeFilter(fieldTypes, args));
     }
+    System.out.println("query=" + query);
     SearchResults results = executeQuery(query, 100);
     assertEquals(""+shape,assertNumFound,results.numFound);
     if (assertIds != null) {

@@ -56,6 +56,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     Document2 doc = w.newDocument();
     doc.addAtom("field", "abcd");
     doc.addAtom("field", "abcd");
@@ -113,6 +114,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     Document2 doc = w.newDocument();
     doc.addLargeText("field", "abcd");
     doc.addLargeText("field", "abcd");
@@ -147,6 +149,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     Document2 doc = w.newDocument();
     doc.addLargeText("field", "abcd   ");
     doc.addLargeText("field", "abcd   ");
@@ -182,6 +185,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     Document2 doc = w.newDocument();
     try (TokenStream stream = analyzer.tokenStream("field", "abcd   ")) {
       stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
@@ -220,6 +224,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     Document2 doc = w.newDocument();
     doc.addLargeText("field", "abcd the");
     doc.addLargeText("field", "abcd the");
@@ -254,6 +259,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     Document2 doc = w.newDocument();
     doc.addLargeText("field", "abcd the  ");
     doc.addLargeText("field", "crunch man");
@@ -297,6 +303,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     doc.addLargeText("field", "");
     doc.addLargeText("field", "crunch man");
     w.addDocument(doc);
@@ -333,6 +340,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.setMultiValued("field");
     doc.addLargeText("field", "abcd");
     doc.addLargeText("field", "");
     doc.addLargeText("field", "crunch");

@@ -35,18 +35,20 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -59,14 +61,14 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testBasic1() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
+    Document2 doc = w.newDocument();
     // matches
-    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
 
-    doc = new Document();
+    doc = w.newDocument();
     // doesn't match
-    doc.add(newTextField("field", "here comes the other sun", Field.Store.NO));
+    doc.addLargeText("field", "here comes the other sun");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
@@ -93,12 +95,12 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testBasicSynonym() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "here comes the moon", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "here comes the moon");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
@@ -126,16 +128,16 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testBasicSlop() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "here comes sun", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "here comes sun");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "here comes the other sun", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "here comes the other sun");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
@@ -167,25 +169,25 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testPosLengthAtQueryTimeMock() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "speedy wifi network", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "speedy wifi network");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "speedy wi fi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "speedy wi fi network");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "fast wifi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "fast wifi network");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "fast wi fi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "fast wi fi network");
     w.addDocument(doc);
 
     // doesn't match:
-    doc = new Document();
-    doc.add(newTextField("field", "slow wi fi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "slow wi fi network");
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -218,25 +220,25 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testPosLengthAtQueryTimeTrueish() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "speedy wifi network", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "speedy wifi network");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "speedy wi fi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "speedy wi fi network");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "fast wifi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "fast wifi network");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "fast wi fi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "fast wi fi network");
     w.addDocument(doc);
 
     // doesn't match:
-    doc = new Document();
-    doc.add(newTextField("field", "slow wi fi network", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "slow wi fi network");
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -263,14 +265,14 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testFreq() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
+    Document2 doc = w.newDocument();
     // matches freq == 3
-    doc.add(newTextField("field", "here comes the sun foo bar here comes another sun here comes shiny sun", Field.Store.NO));
+    doc.addLargeText("field", "here comes the sun foo bar here comes another sun here comes shiny sun");
     w.addDocument(doc);
 
-    doc = new Document();
+    doc = w.newDocument();
     // doesn't match
-    doc.add(newTextField("field", "here comes the other sun", Field.Store.NO));
+    doc.addLargeText("field", "here comes the other sun");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
@@ -314,13 +316,13 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testSegsMissingTerms() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
     w.commit();
 
-    doc = new Document();
-    doc.add(newTextField("field", "here comes the moon", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "here comes the moon");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
@@ -378,21 +380,21 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testAnyFromTokenStream() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "here comes the moon", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "here comes the moon");
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("field", "here comes sun", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "here comes sun");
     w.addDocument(doc);
 
     // Should not match:
-    doc = new Document();
-    doc.add(newTextField("field", "here comes the other sun", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("field", "here comes the other sun");
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -476,9 +478,10 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("field");
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       int numTokens = atLeast(10);
 
       StringBuilder sb = new StringBuilder();
@@ -487,8 +490,8 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         sb.append((char) (97 + random().nextInt(3)));
       }
       String contents = sb.toString();
-      doc.add(newTextField("field", contents, Field.Store.NO));
-      doc.add(new StoredField("id", ""+i));
+      doc.addLargeText("field", contents);
+      doc.addStored("id", ""+i);
       if (VERBOSE) {
         System.out.println("  doc " + i + " -> " + contents);
       }

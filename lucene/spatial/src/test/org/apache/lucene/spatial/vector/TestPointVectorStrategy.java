@@ -41,10 +41,11 @@ public class TestPointVectorStrategy extends StrategyTestCase {
   }
 
   @Test
-  public void testCircleShapeSupport() {
+  public void testCircleShapeSupport() throws Exception {
+    adoc("1", ctx.makePoint(0, 0));
     Circle circle = ctx.makeCircle(ctx.makePoint(0, 0), 10);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, circle);
-    Query query = this.strategy.makeQuery(args);
+    Query query = this.strategy.makeQuery(fieldTypes, args);
 
     assertNotNull(query);
   }
@@ -53,7 +54,7 @@ public class TestPointVectorStrategy extends StrategyTestCase {
   public void testInvalidQueryShape() {
     Point point = ctx.makePoint(0, 0);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, point);
-    this.strategy.makeQuery(args);
+    this.strategy.makeQuery(fieldTypes, args);
   }
 
   @Test

@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
@@ -646,7 +645,6 @@ final class DefaultIndexingChain extends DocConsumer {
           // will be marked as deleted, but still
           // consume a docID since we will have already
           // written some if its postings into our RAM buffer.
-
           int posIncr = invertState.posIncrAttribute.getPositionIncrement();
           invertState.position += posIncr;
           if (invertState.position < invertState.lastPosition) {

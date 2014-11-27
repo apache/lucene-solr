@@ -25,14 +25,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Simple task to test performance of tokenizers.  It just
@@ -47,52 +47,50 @@ public class ReadTokensTask extends PerfTask {
 
   private int totalTokenCount = 0;
   
-  // volatile data passed between setup(), doLogic(), tearDown().
-  private Document doc = null;
-  
-  @Override
-  public void setup() throws Exception {
-    super.setup();
-    DocMaker docMaker = getRunData().getDocMaker();
-    doc = docMaker.makeDocument();
-  }
-
   @Override
   protected String getLogMessage(int recsCount) {
     return "read " + recsCount + " docs; " + totalTokenCount + " tokens";
   }
   
-  @Override
-  public void tearDown() throws Exception {
-    doc = null;
-    super.tearDown();
+  private IndexWriter privateWriter;
+
+  private IndexWriter getPrivateWriter() throws Exception {
+    if (privateWriter == null) {
+      RAMDirectory dir = new RAMDirectory();
+      privateWriter = new IndexWriter(dir, new IndexWriterConfig(getRunData().getAnalyzer()));
+    }
+    return privateWriter;
   }
 
   @Override
   public int doLogic() throws Exception {
+    DocMaker docMaker = getRunData().getDocMaker();
+    IndexWriter iw = getRunData().getIndexWriter();
+    if (iw == null) {
+      iw = getPrivateWriter();
+    }
+    Document2 doc = docMaker.makeDocument(iw);
+
     List<IndexableField> fields = doc.getFields();
-    Analyzer analyzer = getRunData().getAnalyzer();
+    Analyzer analyzer = iw.getFieldTypes().getIndexAnalyzer();
     int tokenCount = 0;
     for(final IndexableField field : fields) {
-      if (!((FieldType) field.fieldType()).tokenized() ||
-          field instanceof IntField ||
-          field instanceof LongField ||
-          field instanceof FloatField ||
-          field instanceof DoubleField) {
-        continue;
-      }
+      if (field.name().equals(DocMaker.BODY_FIELD) ||
+          field.name().equals(DocMaker.DATE_FIELD) ||
+          field.name().equals(DocMaker.TITLE_FIELD)) {
       
-      final TokenStream stream = field.tokenStream(analyzer, null);
-      // reset the TokenStream to the first token
-      stream.reset();
+        final TokenStream stream = field.tokenStream(analyzer, null);
+        // reset the TokenStream to the first token
+        stream.reset();
 
-      TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-      while(stream.incrementToken()) {
-        termAtt.fillBytesRef();
-        tokenCount++;
+        TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+        while(stream.incrementToken()) {
+          termAtt.fillBytesRef();
+          tokenCount++;
+        }
+        stream.end();
+        stream.close();
       }
-      stream.end();
-      stream.close();
     }
     totalTokenCount += tokenCount;
     return tokenCount;

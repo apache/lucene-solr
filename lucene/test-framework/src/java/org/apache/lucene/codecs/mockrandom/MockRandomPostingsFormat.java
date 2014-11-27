@@ -98,7 +98,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     int skipInterval = TestUtil.nextInt(seedRandom, minSkipInterval, 10);
     
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: skipInterval=" + skipInterval);
+      System.out.println("MockRandomCodec: skipInterval=" + skipInterval + " seedRandom=" + seedRandom);
     }
     
     final long seed = seedRandom.nextLong();

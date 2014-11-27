@@ -90,17 +90,6 @@ import org.apache.lucene.util.Version;
 //   - move analyzer out of IW/IWC into Field/FieldType/s only?
 //   - why does STS fill offset...
 
-// Lucene's secret schemas
-//   StoredFieldsVisitor
-//   FieldInfos/GlobalFieldNumbers
-//   SortField.type
-//   DocValuesType
-//   subclassing QueryParsers
-//   PerFieldPF/DVF
-//   PerFieldSimilarityWrapper
-//   PerFieldAnalyzerWrapper
-//   oal.document
-
 // tie into query parser
 //   default operators?
 //   default search field
@@ -108,6 +97,12 @@ import org.apache.lucene.util.Version;
 // tie into highlighter
 // tie into faceting
 // tie into index sorting
+
+// nocommit a segment should store the field type as of when it was written?  on upgrade/reindex we can use that?
+
+// nocommit addStored should take numbers too?
+
+// nocommit should we detect if we are used to change schema after the IW holding us is closed?
 
 // nocommit run all monster tests
 
@@ -166,6 +161,8 @@ import org.apache.lucene.util.Version;
 
 // nocommit sort proxy field?
 
+// nocommit highlight proxy field (LUCENE-6061)
+
 // nocommit controlling compression of stored fields, norms
 
 // nocommit can we somehow detect at search time if the field types you are using doesn't match the searcher you are now searching against?
@@ -201,8 +198,6 @@ import org.apache.lucene.util.Version;
 // nocommit Index class?  enforcing unique id, xlog?
 
 // nocommit how to randomize IWC?  RIW?
-
-// nocommit unique/primary key ?
 
 // nocommit fix all change methods to call validate / rollback
 
@@ -367,7 +362,7 @@ public class FieldTypes {
     private volatile Boolean fastRanges;
 
     // Whether this field may appear more than once per document:
-    private volatile Boolean multiValued;
+    volatile Boolean multiValued;
 
     // Whether this field's norms are indexed:
     private volatile Boolean indexNorms;
@@ -713,14 +708,16 @@ public class FieldTypes {
       b.append("  sortable: ");
       if (sortable != null) {
         b.append(sortable);
-        if (sortReversed != null) {
-          b.append(" reversed=");
-          b.append(sortReversed);
-        }
-        if (sortMissingLast == Boolean.TRUE) {
-          b.append(" (missing: last)");
-        } else if (sortMissingLast == Boolean.FALSE) {
-          b.append(" (missing: first)");
+        if (sortable == Boolean.TRUE) {
+          if (sortReversed != null) {
+            b.append(" reversed=");
+            b.append(sortReversed);
+          }
+          if (sortMissingLast == Boolean.TRUE) {
+            b.append(" (missing: last)");
+          } else if (sortMissingLast == Boolean.FALSE) {
+            b.append(" (missing: first)");
+          }
         }
       } else {
         b.append("unset");
@@ -776,7 +773,7 @@ public class FieldTypes {
           b.append("\n  termVectors: yes");
           if (storeTermVectorPositions == Boolean.TRUE) {
             b.append(" positions");
-            if (storeTermVectorPayloads) {
+            if (storeTermVectorPayloads == Boolean.TRUE) {
               b.append(" payloads");
             }
           }
@@ -1176,6 +1173,8 @@ public class FieldTypes {
     }
   }
 
+  // nocommit need test that you cannot .addStored after already .addLargeText(TokenStream)?
+
   // nocommit move to oal.index and remove these ctors, so you must ask IW or IR for the FieldTypes
 
   /** Only invoked by IndexWriter directly.
@@ -1310,6 +1309,10 @@ public class FieldTypes {
       current.postingsFormat = postingsFormat;
       changed();
     }
+  }
+
+  public IndexableFieldType getIndexableFieldType(String fieldName) {
+    return getFieldType(fieldName);
   }
 
   public String getFieldTypeString(String fieldName) {
@@ -2438,6 +2441,55 @@ public class FieldTypes {
     }
   }
 
+  synchronized void recordStoredValueType(String fieldName, ValueType valueType) {
+    ensureWritable();
+    indexedDocs = true;
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = newFieldType(fieldName);
+      current.valueType = valueType;
+      current.isUnique = Boolean.FALSE;
+      current.indexOptionsSet = true;
+      current.indexOptions = IndexOptions.NONE;
+      current.docValuesTypeSet = true;
+      current.docValuesType = DocValuesType.NONE;
+      fields.put(fieldName, current);
+      setDefaults(current);
+      changed();
+    } else {
+
+      if (current.indexOptionsSet && current.indexOptions != IndexOptions.NONE) {
+        // nocommit testme
+        illegalState(fieldName, "cannot addStored: field is already indexed with indexOptions=" + current.indexOptions);
+      }
+
+      if (current.docValuesTypeSet && current.docValuesType != DocValuesType.NONE) {
+        // nocommit testme
+        illegalState(fieldName, "cannot addStored: field already has docValuesType=" + current.docValuesType);
+      }
+
+      if (current.valueType == ValueType.NONE) {
+        FieldType sav = new FieldType(current);
+        boolean success = false;
+        try {
+          current.valueType = valueType;
+          current.indexOptions = IndexOptions.NONE;
+          current.docValuesType = DocValuesType.NONE;
+          current.validate();
+          success = true;
+        } finally {
+          if (success == false) {
+            fields.put(fieldName, sav);
+          }
+        }
+        setDefaults(current);
+        changed();
+      } else if (current.valueType != valueType) {
+        illegalState(fieldName, "cannot change from value type " + current.valueType + " to " + valueType);
+      }
+    }
+  }
+
   synchronized void recordLargeTextType(String fieldName, boolean allowStored, boolean indexed) {
     ensureWritable();
     indexedDocs = true;
@@ -2962,6 +3014,9 @@ public class FieldTypes {
     return new TermQuery(new Term(fieldName, new BytesRef(token.getAddress())));
   }
 
+  // nocommit split to newInt/Float/etc./Range
+
+  // nocommit not great that the toString of the filter returned here is ... not easy to understand
   public Filter newRangeFilter(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
 
     // Field must exist:
@@ -2990,8 +3045,8 @@ public class FieldTypes {
       break;
 
     case FLOAT:
-      minTerm = min == null ? null : Document2.intToBytes(Float.floatToIntBits(min.floatValue()));
-      maxTerm = max == null ? null : Document2.intToBytes(Float.floatToIntBits(max.floatValue()));
+      minTerm = min == null ? null : Document2.intToBytes(Document2.sortableFloatBits(Float.floatToIntBits(min.floatValue())));
+      maxTerm = max == null ? null : Document2.intToBytes(Document2.sortableFloatBits(Float.floatToIntBits(max.floatValue())));
       break;
 
     case LONG:
@@ -3000,8 +3055,8 @@ public class FieldTypes {
       break;
 
     case DOUBLE:
-      minTerm = min == null ? null : Document2.longToBytes(Double.doubleToLongBits(min.doubleValue()));
-      maxTerm = max == null ? null : Document2.longToBytes(Double.doubleToLongBits(max.doubleValue()));
+      minTerm = min == null ? null : Document2.longToBytes(Document2.sortableDoubleBits(Double.doubleToLongBits(min.doubleValue())));
+      maxTerm = max == null ? null : Document2.longToBytes(Document2.sortableDoubleBits(Double.doubleToLongBits(max.doubleValue())));
       break;
 
     default:
@@ -3010,8 +3065,24 @@ public class FieldTypes {
       // Dead code but javac disagrees:
       return null;
     }
+    StringBuilder sb = new StringBuilder();
+    sb.append(fieldType.valueType);
+    sb.append(':');
+    if (min != null) {
+      sb.append(min);
+      sb.append(" (");
+      sb.append(minInclusive ? "incl" : "excl");
+      sb.append(')');
+    }
+    sb.append(" to ");
+    if (max != null) {
+      sb.append(max);
+      sb.append(" (");
+      sb.append(maxInclusive ? "incl" : "excl");
+      sb.append(')');
+    }
 
-    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive, sb.toString());
   }
 
   public Filter newRangeFilter(String fieldName, byte[] minTerm, boolean minInclusive, byte[] maxTerm, boolean maxInclusive) {
@@ -3466,4 +3537,6 @@ public class FieldTypes {
     indexedDocs = false;
     addFieldNamesField();
   }
+
+  // nocommit add sugar to wrap long NDVs as float/double?
 }

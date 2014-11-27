@@ -17,16 +17,25 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -36,13 +45,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   
@@ -149,13 +151,13 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   
   protected void makeUnstoredIndex() throws Exception {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzerW).setOpenMode(OpenMode.CREATE));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorOffsets(true);
-    customType.setStoreTermVectorPositions(true);
-    doc.add( new Field( F, "aaa", customType) );
-    //doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors(F);
+    fieldTypes.enableTermVectorOffsets(F);
+    fieldTypes.enableTermVectorPositions(F);
+    fieldTypes.disableStored(F);
+    Document2 doc = writer.newDocument();
+    doc.addLargeText(F, "aaa");
     writer.addDocument( doc );
     writer.close();
     if (reader != null) reader.close();
@@ -238,19 +240,20 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
         dir,
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorOffsets(true);
-    customType.setStoreTermVectorPositions(true);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors(F);
+    fieldTypes.enableTermVectorOffsets(F);
+    fieldTypes.enableTermVectorPositions(F);
+    fieldTypes.setMultiValued(F);
 
     int numDocs = randomValues.length * 5;
     int numFields = 2 + random().nextInt(5);
     int numTerms = 2 + random().nextInt(3);
     List<Doc> docs = new ArrayList<>(numDocs);
-    List<Document> documents = new ArrayList<>(numDocs);
+    List<Document2> documents = new ArrayList<>(numDocs);
     Map<String, Set<Integer>> valueToDocId = new HashMap<>();
     for (int i = 0; i < numDocs; i++) {
-      Document document = new Document();
+      Document2 document = writer.newDocument();
       String[][] fields = new String[numFields][numTerms];
       for (int j = 0; j < numFields; j++) {
         String[] fieldValues = new String[numTerms];
@@ -260,7 +263,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
           fieldValues[k] = getRandomValue(randomValues, valueToDocId, i);
           builder.append(' ').append(fieldValues[k]);
         }
-        document.add(new Field(F, builder.toString(), customType));
+        document.addLargeText(F, builder.toString());
         fields[j] = fieldValues;
       }
       docs.add(new Doc(fields));

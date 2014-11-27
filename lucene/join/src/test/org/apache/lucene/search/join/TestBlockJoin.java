@@ -37,28 +37,27 @@ import org.apache.lucene.util.*;
 public class TestBlockJoin extends LuceneTestCase {
 
   // One resume...
-  private Document makeResume(String name, String country) {
-    Document resume = new Document();
-    resume.add(newStringField("docType", "resume", Field.Store.NO));
-    resume.add(newStringField("name", name, Field.Store.YES));
-    resume.add(newStringField("country", country, Field.Store.NO));
+  private Document2 makeResume(IndexWriter w, String name, String country) {
+    Document2 resume = w.newDocument();
+    resume.addAtom("docType", "resume");
+    resume.addAtom("name", name);
+    resume.addAtom("country", country);
     return resume;
   }
 
   // ... has multiple jobs
-  private Document makeJob(String skill, int year) {
-    Document job = new Document();
-    job.add(newStringField("skill", skill, Field.Store.YES));
-    job.add(new IntField("year", year, Field.Store.NO));
-    job.add(new StoredField("year", year));
+  private Document2 makeJob(IndexWriter w, String skill, int year) {
+    Document2 job = w.newDocument();
+    job.addAtom("skill", skill);
+    job.addInt("year", year);
     return job;
   }
 
   // ... has multiple qualifications
-  private Document makeQualification(String qualification, int year) {
-    Document job = new Document();
-    job.add(newStringField("qualification", qualification, Field.Store.YES));
-    job.add(new IntField("year", year, Field.Store.NO));
+  private Document2 makeQualification(IndexWriter w, String qualification, int year) {
+    Document2 job = w.newDocument();
+    job.addAtom("qualification", qualification);
+    job.addInt("year", year);
     return job;
   }
   
@@ -69,23 +68,23 @@ public class TestBlockJoin extends LuceneTestCase {
     // we don't want to merge - since we rely on certain segment setup
     final IndexWriter w = new IndexWriter(dir, config);
 
-    final List<Document> docs = new ArrayList<>();
+    final List<Document2> docs = new ArrayList<>();
 
-    docs.add(makeJob("java", 2007));
-    docs.add(makeJob("python", 2010));
-    docs.add(makeResume("Lisa", "United Kingdom"));
+    docs.add(makeJob(w, "java", 2007));
+    docs.add(makeJob(w, "python", 2010));
+    docs.add(makeResume(w, "Lisa", "United Kingdom"));
     w.addDocuments(docs);
 
     docs.clear();
-    docs.add(makeJob("ruby", 2005));
-    docs.add(makeJob("java", 2006));
-    docs.add(makeResume("Frank", "United States"));
+    docs.add(makeJob(w, "ruby", 2005));
+    docs.add(makeJob(w, "java", 2006));
+    docs.add(makeResume(w, "Frank", "United States"));
     w.addDocuments(docs);
     w.commit();
     int num = atLeast(10); // produce a segment that doesn't have a value in the docType field
     for (int i = 0; i < num; i++) {
       docs.clear();
-      docs.add(makeJob("java", 2007));
+      docs.add(makeJob(w, "java", 2007));
       w.addDocuments(docs);
     }
     
@@ -93,11 +92,13 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
     assertTrue(r.leaves().size() > 1);
     IndexSearcher s = new IndexSearcher(r);
+    FieldTypes fieldTypes = s.getFieldTypes();
+
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
@@ -127,22 +128,23 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<>();
+    final List<Document2> docs = new ArrayList<>();
 
-    docs.add(makeJob("java", 2007));
-    docs.add(makeJob("python", 2010));
-    docs.add(makeResume("Lisa", "United Kingdom"));
+    docs.add(makeJob(w.w, "java", 2007));
+    docs.add(makeJob(w.w, "python", 2010));
+    docs.add(makeResume(w.w, "Lisa", "United Kingdom"));
     w.addDocuments(docs);
 
     docs.clear();
-    docs.add(makeJob("ruby", 2005));
-    docs.add(makeJob("java", 2006));
-    docs.add(makeResume("Frank", "United States"));
+    docs.add(makeJob(w.w, "ruby", 2005));
+    docs.add(makeJob(w.w, "java", 2006));
+    docs.add(makeResume(w.w, "Frank", "United States"));
     w.addDocuments(docs);
     
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = newSearcher(r);
+    FieldTypes fieldTypes = s.getFieldTypes();
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
@@ -150,7 +152,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     // Define parent document criteria (find a resident in the UK)
     Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
@@ -217,21 +219,22 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<>();
+    final List<Document2> docs = new ArrayList<>();
 
     for (int i=0;i<10;i++) {
       docs.clear();
-      docs.add(makeJob("ruby", i));
-      docs.add(makeJob("java", 2007));
-      docs.add(makeResume("Frank", "United States"));
+      docs.add(makeJob(w.w, "ruby", i));
+      docs.add(makeJob(w.w, "java", 2007));
+      docs.add(makeResume(w.w, "Frank", "United States"));
       w.addDocuments(docs);
     }
 
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = newSearcher(r);
+    FieldTypes fieldTypes = s.getFieldTypes();
 
-    MultiTermQuery qc = NumericRangeQuery.newIntRange("year", 2007, 2007, true, true);
+    MultiTermQuery qc = new TermRangeQuery("year", Document2.intToBytes(2007), Document2.intToBytes(2007), true, true);
     // Hacky: this causes the query to need 2 rewrite
     // iterations: 
     qc.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
@@ -270,17 +273,17 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<>();
-    docs.add(makeJob("java", 2007));
-    docs.add(makeJob("python", 2010));
+    final List<Document2> docs = new ArrayList<>();
+    docs.add(makeJob(w.w, "java", 2007));
+    docs.add(makeJob(w.w, "python", 2010));
     Collections.shuffle(docs, random());
-    docs.add(makeResume("Lisa", "United Kingdom"));
+    docs.add(makeResume(w.w, "Lisa", "United Kingdom"));
 
-    final List<Document> docs2 = new ArrayList<>();
-    docs2.add(makeJob("ruby", 2005));
-    docs2.add(makeJob("java", 2006));
+    final List<Document2> docs2 = new ArrayList<>();
+    docs2.add(makeJob(w.w, "ruby", 2005));
+    docs2.add(makeJob(w.w, "java", 2006));
     Collections.shuffle(docs2, random());
-    docs2.add(makeResume("Frank", "United States"));
+    docs2.add(makeResume(w.w, "Frank", "United States"));
     
     addSkillless(w);
     boolean turn = random().nextBoolean();
@@ -295,6 +298,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = newSearcher(r);
+    FieldTypes fieldTypes = s.getFieldTypes();
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
@@ -302,7 +306,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     // Define parent document criteria (find a resident in the UK)
     Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
@@ -351,7 +355,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
   private void addSkillless(final RandomIndexWriter w) throws IOException {
     if (random().nextBoolean()) {
-      w.addDocument(makeResume("Skillless", random().nextBoolean() ? "United Kingdom":"United States"));
+      w.addDocument(makeResume(w.w, "Skillless", random().nextBoolean() ? "United Kingdom":"United States"));
     }
   }
   
@@ -391,24 +395,25 @@ public class TestBlockJoin extends LuceneTestCase {
     // Cannot assert this since we use NoMergePolicy:
     w.setDoRandomForceMergeAssert(false);
 
-    List<Document> docs = new ArrayList<>();
-    docs.add(makeJob("java", 2007));
-    docs.add(makeJob("python", 2010));
-    docs.add(makeResume("Lisa", "United Kingdom"));
+    List<Document2> docs = new ArrayList<>();
+    docs.add(makeJob(w.w, "java", 2007));
+    docs.add(makeJob(w.w, "python", 2010));
+    docs.add(makeResume(w.w, "Lisa", "United Kingdom"));
     w.addDocuments(docs);
 
     docs.clear();
-    docs.add(makeJob("c", 1999));
-    docs.add(makeJob("ruby", 2005));
-    docs.add(makeJob("java", 2006));
-    docs.add(makeResume("Frank", "United States"));
+    docs.add(makeJob(w.w, "c", 1999));
+    docs.add(makeJob(w.w, "ruby", 2005));
+    docs.add(makeJob(w.w, "java", 2006));
+    docs.add(makeResume(w.w, "Frank", "United States"));
     w.addDocuments(docs);
 
     w.commit();
     IndexSearcher s = newSearcher(DirectoryReader.open(dir));
+    FieldTypes fieldTypes = s.getFieldTypes();
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(
-        NumericRangeQuery.newIntRange("year", 1990, 2010, true, true),
+        new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 1990, true, 2010, true)),
         new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume")))),
         ScoreMode.Total
     );
@@ -504,41 +509,43 @@ public class TestBlockJoin extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final RandomIndexWriter joinW = new RandomIndexWriter(random(), joinDir);
     for(int parentDocID=0;parentDocID<numParentDocs;parentDocID++) {
-      Document parentDoc = new Document();
-      Document parentJoinDoc = new Document();
-      Field id = new IntField("parentID", parentDocID, Field.Store.YES);
-      parentDoc.add(id);
-      parentJoinDoc.add(id);
-      parentJoinDoc.add(newStringField("isParent", "x", Field.Store.NO));
-      id = new NumericDocValuesField("parentID", parentDocID);
-      parentDoc.add(id);
-      parentJoinDoc.add(id);
-      parentJoinDoc.add(newStringField("isParent", "x", Field.Store.NO));
-      for(int field=0;field<parentFields.length;field++) {
-        if (random().nextDouble() < 0.9) {
-          String s = parentFields[field][random().nextInt(parentFields[field].length)];
-          Field f = newStringField("parent" + field, s, Field.Store.NO);
-          parentDoc.add(f);
-          parentJoinDoc.add(f);
+      Document2 parentDoc = w.newDocument();
+      Document2 parentJoinDoc = joinW.newDocument();
+      parentDoc.addInt("parentID", parentDocID);
+      parentJoinDoc.addInt("parentID", parentDocID);
+      parentJoinDoc.addAtom("isParent", "x");
 
-          f = new SortedDocValuesField("parent" + field, new BytesRef(s));
-          parentDoc.add(f);
-          parentJoinDoc.add(f);
+      String[] randomFields = new String[parentFields.length];
+      for(int field=0;field<parentFields.length;field++) {
+        String s;
+        if (random().nextDouble() < 0.9) {
+          s = parentFields[field][random().nextInt(parentFields[field].length)];
+        } else {
+          s = null;
+        }
+        randomFields[field] = s;
+      }
+
+      for(int i=0;i<randomFields.length;i++) {
+        String s = randomFields[i];
+        if (s != null) {
+          parentDoc.addAtom("parent" + i, s);
+          parentJoinDoc.addAtom("parent" + i, s);
         }
       }
 
       if (doDeletes) {
-        parentDoc.add(new IntField("blockID", parentDocID, Field.Store.NO));
-        parentJoinDoc.add(new IntField("blockID", parentDocID, Field.Store.NO));
+        parentDoc.addInt("blockID", parentDocID);
+        parentJoinDoc.addInt("blockID", parentDocID);
       }
 
-      final List<Document> joinDocs = new ArrayList<>();
+      final List<Document2> joinDocs = new ArrayList<>();
 
       if (VERBOSE) {
         StringBuilder sb = new StringBuilder();
         sb.append("parentID=").append(parentDoc.get("parentID"));
         for(int fieldID=0;fieldID<parentFields.length;fieldID++) {
-          String s = parentDoc.get("parent" + fieldID);
+          String s = parentDoc.getString("parent" + fieldID);
           if (s != null) {
             sb.append(" parent" + fieldID + "=" + s);
           }
@@ -549,27 +556,30 @@ public class TestBlockJoin extends LuceneTestCase {
       final int numChildDocs = TestUtil.nextInt(random(), 1, 20);
       for(int childDocID=0;childDocID<numChildDocs;childDocID++) {
         // Denormalize: copy all parent fields into child doc:
-        Document childDoc = TestUtil.cloneDocument(parentDoc);
-        Document joinChildDoc = new Document();
+        Document2 childDoc = w.newDocument();
+        childDoc.addInt("parentID", parentDocID);
+        for(int i=0;i<randomFields.length;i++) {
+          String s = randomFields[i];
+          if (s != null) {
+            childDoc.addAtom("parent" + i, s);
+          }
+        }
+        if (doDeletes) {
+          childDoc.addInt("blockID", parentDocID);
+        }
+
+        Document2 joinChildDoc = joinW.newDocument();
         joinDocs.add(joinChildDoc);
 
-        Field childID = new IntField("childID", childDocID, Field.Store.YES);
-        childDoc.add(childID);
-        joinChildDoc.add(childID);
-        childID = new NumericDocValuesField("childID", childDocID);
-        childDoc.add(childID);
-        joinChildDoc.add(childID);
+        childDoc.addInt("childID", childDocID);
+        joinChildDoc.addInt("childID", childDocID);
 
         for(int childFieldID=0;childFieldID<childFields.length;childFieldID++) {
           if (random().nextDouble() < 0.9) {
             String s = childFields[childFieldID][random().nextInt(childFields[childFieldID].length)];
-            Field f = newStringField("child" + childFieldID, s, Field.Store.NO);
-            childDoc.add(f);
-            joinChildDoc.add(f);
 
-            f = new SortedDocValuesField("child" + childFieldID, new BytesRef(s));
-            childDoc.add(f);
-            joinChildDoc.add(f);
+            childDoc.addAtom("child" + childFieldID, s);
+            joinChildDoc.addAtom("child" + childFieldID, s);
           }
         }
 
@@ -577,7 +587,7 @@ public class TestBlockJoin extends LuceneTestCase {
           StringBuilder sb = new StringBuilder();
           sb.append("childID=").append(joinChildDoc.get("childID"));
           for(int fieldID=0;fieldID<childFields.length;fieldID++) {
-            String s = joinChildDoc.get("child" + fieldID);
+            String s = joinChildDoc.getString("child" + fieldID);
             if (s != null) {
               sb.append(" child" + fieldID + "=" + s);
             }
@@ -586,7 +596,7 @@ public class TestBlockJoin extends LuceneTestCase {
         }
 
         if (doDeletes) {
-          joinChildDoc.add(new IntField("blockID", parentDocID, Field.Store.NO));
+          joinChildDoc.addInt("blockID", parentDocID);
         }
 
         w.addDocument(childDoc);
@@ -606,9 +616,8 @@ public class TestBlockJoin extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("DELETE parentID=" + deleteID);
       }
-      NumericUtils.intToPrefixCodedBytes(deleteID, 0, term);
-      w.deleteDocuments(new Term("blockID", term.toBytesRef()));
-      joinW.deleteDocuments(new Term("blockID", term.toBytesRef()));
+      w.deleteDocuments(w.getFieldTypes().newIntTerm("blockID", deleteID));
+      joinW.deleteDocuments(joinW.getFieldTypes().newIntTerm("blockID", deleteID));
     }
 
     final IndexReader r = w.getReader();
@@ -825,7 +834,7 @@ public class TestBlockJoin extends LuceneTestCase {
         for (ScoreDoc hit : b.scoreDocs) {
           Explanation explanation = joinS.explain(childJoinQuery, hit.doc);
           Document2 document = joinS.doc(hit.doc - 1);
-          int childId = Integer.parseInt(document.getString("childID"));
+          int childId = document.getInt("childID");
           //System.out.println("  hit docID=" + hit.doc + " childId=" + childId + " parentId=" + document.get("parentID"));
           assertTrue(explanation.isMatch());
           assertEquals(hit.score, explanation.getValue(), 0.0f);
@@ -991,7 +1000,7 @@ public class TestBlockJoin extends LuceneTestCase {
       Document2 doc1 = r.document(hit.doc);
       Document2 doc2 = joinR.document(joinHit.doc);
       assertEquals("hit " + hitCount + " differs",
-                   doc1.getString("childID"), doc2.getString("childID"));
+                   doc1.getInt("childID"), doc2.getInt("childID"));
       // don't compare scores -- they are expected to differ
 
 
@@ -1017,7 +1026,7 @@ public class TestBlockJoin extends LuceneTestCase {
       final ScoreDoc[] groupHits = group.scoreDocs;
       assertNotNull(group.groupValue);
       final Document2 parentDoc = joinR.document(group.groupValue);
-      final String parentID = parentDoc.getString("parentID");
+      final String parentID = Integer.toString(parentDoc.getInt("parentID"));
       //System.out.println("GROUP groupDoc=" + group.groupDoc + " parent=" + parentDoc);
       assertNotNull(parentID);
       assertTrue(groupHits.length > 0);
@@ -1025,9 +1034,9 @@ public class TestBlockJoin extends LuceneTestCase {
         final Document2 nonJoinHit = r.document(hits[resultUpto++].doc);
         final Document2 joinHit = joinR.document(groupHits[hitIDX].doc);
         assertEquals(parentID,
-                     nonJoinHit.getString("parentID"));
-        assertEquals(joinHit.getString("childID"),
-                     nonJoinHit.getString("childID"));
+                     Integer.toString(nonJoinHit.getInt("parentID")));
+        assertEquals(joinHit.getInt("childID"),
+                     nonJoinHit.getInt("childID"));
       }
 
       if (joinGroupUpto < groupDocs.length) {
@@ -1035,7 +1044,7 @@ public class TestBlockJoin extends LuceneTestCase {
         //System.out.println("  next joingroupUpto=" + joinGroupUpto + " gd.length=" + groupDocs.length + " parentID=" + parentID);
         while(true) {
           assertTrue(resultUpto < hits.length);
-          if (!parentID.equals(r.document(hits[resultUpto].doc).getString("parentID"))) {
+          if (!parentID.equals(Integer.toString(r.document(hits[resultUpto].doc).getInt("parentID")))) {
             break;
           }
           resultUpto++;
@@ -1049,17 +1058,18 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<>();
+    final List<Document2> docs = new ArrayList<>();
 
-    docs.add(makeJob("java", 2007));
-    docs.add(makeJob("python", 2010));
-    docs.add(makeQualification("maths", 1999));
-    docs.add(makeResume("Lisa", "United Kingdom"));
+    docs.add(makeJob(w.w, "java", 2007));
+    docs.add(makeJob(w.w, "python", 2010));
+    docs.add(makeQualification(w.w, "maths", 1999));
+    docs.add(makeResume(w.w, "Lisa", "United Kingdom"));
     w.addDocuments(docs);
 
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = newSearcher(r);
+    FieldTypes fieldTypes = s.getFieldTypes();
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
@@ -1067,11 +1077,11 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childJobQuery = new BooleanQuery();
     childJobQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childJobQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childJobQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     BooleanQuery childQualificationQuery = new BooleanQuery();
     childQualificationQuery.add(new BooleanClause(new TermQuery(new Term("qualification", "maths")), Occur.MUST));
-    childQualificationQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 1980, 2000, true, true), Occur.MUST));
+    childQualificationQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 1980, true, 2000, true)), Occur.MUST));
 
 
     // Define parent document criteria (find a resident in the UK)
@@ -1193,13 +1203,13 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<>();
-    docs.add(makeJob("ruby", 2005));
-    docs.add(makeJob("java", 2006));
-    docs.add(makeJob("java", 2010));
-    docs.add(makeJob("java", 2012));
+    final List<Document2> docs = new ArrayList<>();
+    docs.add(makeJob(w.w, "ruby", 2005));
+    docs.add(makeJob(w.w, "java", 2006));
+    docs.add(makeJob(w.w, "java", 2010));
+    docs.add(makeJob(w.w, "java", 2012));
     Collections.shuffle(docs, random());
-    docs.add(makeResume("Frank", "United States"));
+    docs.add(makeResume(w.w, "Frank", "United States"));
 
     addSkillless(w);
     w.addDocuments(docs);
@@ -1208,6 +1218,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = new IndexSearcher(r);
+    FieldTypes fieldTypes = s.getFieldTypes();
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
@@ -1215,7 +1226,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
@@ -1247,7 +1258,7 @@ public class TestBlockJoin extends LuceneTestCase {
       for (ScoreDoc scoreDoc : group.scoreDocs) {
         Document2 childDoc = s.doc(scoreDoc.doc);
         assertEquals("java", childDoc.getString("skill"));
-        int year = Integer.parseInt(childDoc.getString("year"));
+        int year = childDoc.getInt("year");
         assertTrue(year >= 2006 && year <= 2011);
       }
     }
@@ -1270,7 +1281,7 @@ public class TestBlockJoin extends LuceneTestCase {
     for (ScoreDoc scoreDoc : group.scoreDocs) {
       Document2 childDoc = s.doc(scoreDoc.doc);
       assertEquals("java", childDoc.getString("skill"));
-      int year = Integer.parseInt(childDoc.getString("year"));
+      int year = childDoc.getInt("year");
       assertTrue(year >= 2006 && year <= 2011);
     }
 

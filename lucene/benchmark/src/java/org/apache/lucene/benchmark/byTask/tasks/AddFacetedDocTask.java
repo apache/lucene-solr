@@ -73,14 +73,17 @@ public class AddFacetedDocTask extends AddDocTask {
   
   @Override
   public int doLogic() throws Exception {
+    // nocommit fixme
+    /*
     if (config != null) {
       List<FacetField> facets = new ArrayList<>();
       getRunData().getFacetSource().getNextFacets(facets);
       for(FacetField ff : facets) {
-        doc.add(ff);
+        doc.addIndexableField(ff);
       }
       doc = config.build(getRunData().getTaxonomyWriter(), doc);
     }
+    */
     return super.doLogic();
   }
 }

@@ -19,12 +19,14 @@ package org.apache.lucene.queries.function;
 
 import java.util.Collections;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -34,14 +36,16 @@ public class TestSortedSetFieldSource extends LuceneTestCase {
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("baz")));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("value");
+    Document2 doc = writer.newDocument();
+    doc.addBinary("value", new BytesRef("baz"));
+    doc.addAtom("id", "2");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("foo")));
-    doc.add(new SortedSetDocValuesField("value", new BytesRef("bar")));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addBinary("value", new BytesRef("foo"));
+    doc.addBinary("value", new BytesRef("bar"));
+    doc.addAtom("id", "1");
     writer.addDocument(doc);
     writer.forceMerge(1);
     writer.close();

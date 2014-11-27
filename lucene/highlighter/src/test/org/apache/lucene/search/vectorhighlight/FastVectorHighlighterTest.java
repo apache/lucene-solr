@@ -28,9 +28,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -60,15 +62,12 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   public void testSimpleHighlightTest() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType type = new FieldType(TextField.TYPE_STORED);
-    type.setStoreTermVectorOffsets(true);
-    type.setStoreTermVectorPositions(true);
-    type.setStoreTermVectors(true);
-    type.freeze();
-    Field field = new Field("field", "This is a test where foo is highlighed and should be highlighted", type);
-    
-    doc.add(field);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("field", "This is a test where foo is highlighed and should be highlighted");
     writer.addDocument(doc);
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
     
@@ -90,15 +89,13 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   public void testPhraseHighlightLongTextTest() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType type = new FieldType(TextField.TYPE_STORED);
-    type.setStoreTermVectorOffsets(true);
-    type.setStoreTermVectorPositions(true);
-    type.setStoreTermVectors(true);
-    type.freeze();
-    Field text = new Field("text", 
-        "Netscape was the general name for a series of web browsers originally produced by Netscape Communications Corporation, now a subsidiary of AOL The original browser was once the dominant browser in terms of usage share, but as a result of the first browser war it lost virtually all of its share to Internet Explorer Netscape was discontinued and support for all Netscape browsers and client products was terminated on March 1, 2008 Netscape Navigator was the name of Netscape\u0027s web browser from versions 1.0 through 4.8 The first beta release versions of the browser were released in 1994 and known as Mosaic and then Mosaic Netscape until a legal challenge from the National Center for Supercomputing Applications (makers of NCSA Mosaic, which many of Netscape\u0027s founders used to develop), led to the name change to Netscape Navigator The company\u0027s name also changed from Mosaic Communications Corporation to Netscape Communications Corporation The browser was easily the most advanced...", type);
-    doc.add(text);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("text");
+    fieldTypes.enableTermVectorPositions("text");
+    fieldTypes.enableTermVectorOffsets("text");
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("text", 
+        "Netscape was the general name for a series of web browsers originally produced by Netscape Communications Corporation, now a subsidiary of AOL The original browser was once the dominant browser in terms of usage share, but as a result of the first browser war it lost virtually all of its share to Internet Explorer Netscape was discontinued and support for all Netscape browsers and client products was terminated on March 1, 2008 Netscape Navigator was the name of Netscape\u0027s web browser from versions 1.0 through 4.8 The first beta release versions of the browser were released in 1994 and known as Mosaic and then Mosaic Netscape until a legal challenge from the National Center for Supercomputing Applications (makers of NCSA Mosaic, which many of Netscape\u0027s founders used to develop), led to the name change to Netscape Navigator The company\u0027s name also changed from Mosaic Communications Corporation to Netscape Communications Corporation The browser was easily the most advanced...");
     writer.addDocument(doc);
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
     IndexReader reader = DirectoryReader.open(writer, true);
@@ -136,17 +133,15 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   public void testPhraseHighlightTest() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType type = new FieldType(TextField.TYPE_STORED);
-    type.setStoreTermVectorOffsets(true);
-    type.setStoreTermVectorPositions(true);
-    type.setStoreTermVectors(true);
-    type.freeze();
-    Field longTermField = new Field("long_term", "This is a test thisisaverylongwordandmakessurethisfails where foo is highlighed and should be highlighted", type);
-    Field noLongTermField = new Field("no_long_term", "This is a test where foo is highlighed and should be highlighted", type);
-
-    doc.add(longTermField);
-    doc.add(noLongTermField);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(String fieldName : new String[] {"long_term", "no_long_term"}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+    }
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("long_term", "This is a test thisisaverylongwordandmakessurethisfails where foo is highlighed and should be highlighted");
+    doc.addLargeText("no_long_term", "This is a test where foo is highlighed and should be highlighted");
     writer.addDocument(doc);
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
     IndexReader reader = DirectoryReader.open(writer, true);
@@ -263,12 +258,13 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   public void testBoostedPhraseHighlightTest() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(new MockAnalyzer( random() ) ) );
-    Document doc = new Document();
-    FieldType type = new FieldType( TextField.TYPE_STORED  );
-    type.setStoreTermVectorOffsets( true );
-    type.setStoreTermVectorPositions( true );
-    type.setStoreTermVectors( true );
-    type.freeze();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(String fieldName : new String[] {"text"}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+    }
+    Document2 doc = writer.newDocument();
     StringBuilder text = new StringBuilder();
     text.append("words words junk junk junk junk junk junk junk junk highlight junk junk junk junk together junk ");
     for ( int i = 0; i<10; i++ ) {
@@ -278,7 +274,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     for ( int i = 0; i<10; i++ ) {
       text.append("junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk junk ");
     }
-    doc.add( new Field( "text", text.toString().trim(), type ) );
+    doc.addLargeText("text", text.toString().trim() );
     writer.addDocument(doc);
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
     IndexReader reader = DirectoryReader.open(writer, true);
@@ -308,11 +304,12 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   public void testCommonTermsQueryHighlight() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
-    FieldType type = new FieldType(TextField.TYPE_STORED);
-    type.setStoreTermVectorOffsets(true);
-    type.setStoreTermVectorPositions(true);
-    type.setStoreTermVectors(true);
-    type.freeze();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(String fieldName : new String[] {"field"}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+    }
     String[] texts = {
         "Hello this is a piece of text that is very long and contains too much preamble and the meat is really here which says kennedy has been shot",
         "This piece of text refers to Kennedy at the beginning then has a longer piece of text that is very long in the middle and finally ends with another reference to Kennedy",
@@ -320,9 +317,8 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
         "This text has a typo in referring to Keneddy",
         "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
     for (int i = 0; i < texts.length; i++) {
-      Document doc = new Document();
-      Field field = new Field("field", texts[i], type);
-      doc.add(field);
+      Document2 doc = writer.newDocument();
+      doc.addLargeText("field", texts[i]);
       writer.addDocument(doc);
     }
     CommonTermsQuery query = new CommonTermsQuery(Occur.MUST, Occur.SHOULD, 2);
@@ -462,16 +458,18 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   public void testMultiValuedSortByScore() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(new MockAnalyzer( random() ) ) );
-    Document doc = new Document();
-    FieldType type = new FieldType( TextField.TYPE_STORED );
-    type.setStoreTermVectorOffsets( true );
-    type.setStoreTermVectorPositions( true );
-    type.setStoreTermVectors( true );
-    type.freeze();
-    doc.add( new Field( "field", "zero if naught", type ) ); // The first two fields contain the best match
-    doc.add( new Field( "field", "hero of legend", type ) ); // but total a lower score (3) than the bottom
-    doc.add( new Field( "field", "naught of hero", type ) ); // two fields (4)
-    doc.add( new Field( "field", "naught of hero", type ) );
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(String fieldName : new String[] {"field"}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      fieldTypes.setMultiValued(fieldName);
+    }
+    Document2 doc = writer.newDocument();
+    doc.addLargeText( "field", "zero if naught"); // The first two fields contain the best match
+    doc.addLargeText( "field", "hero of legend" ); // but total a lower score (3) than the bottom
+    doc.addLargeText( "field", "naught of hero" ); // two fields (4)
+    doc.addLargeText( "field", "naught of hero" );
     writer.addDocument(doc);
 
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
@@ -510,12 +508,14 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   public void testBooleanPhraseWithSynonym() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
-    FieldType type = new FieldType(TextField.TYPE_NOT_STORED);
-    type.setStoreTermVectorOffsets(true);
-    type.setStoreTermVectorPositions(true);
-    type.setStoreTermVectors(true);
-    type.freeze();
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(String fieldName : new String[] {"field"}) {
+      fieldTypes.disableHighlighting(fieldName);
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+    }
+    Document2 doc = writer.newDocument();
     Token syn = new Token("httpwwwfacebookcom", 6, 29);
     syn.setPositionIncrement(0);
     CannedTokenStream ts = new CannedTokenStream(
@@ -526,9 +526,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
         new Token("facebook", 17, 25),
         new Token("com", 26, 29)
     );
-    Field field = new Field("field", ts, type);
-    doc.add(field);
-    doc.add(new StoredField("field", "Test: http://www.facebook.com"));
+    doc.addLargeText("field", "Test: http://www.facebook.com", ts, 1.0f);
     writer.addDocument(doc);
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
     
@@ -542,6 +540,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     pq.add(new Term("field", "www"));
     pq.add(new Term("field", "facebook"));
     pq.add(new Term("field", "com"));
+    TopDocs hits = newSearcher(reader).search(pq, 1);
     FieldQuery fieldQuery  = highlighter.getFieldQuery(pq, reader);
     String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
     assertEquals("<b>Test: http://www.facebook.com</b>", bestFragments[0]);
@@ -575,29 +574,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
   }
 
   private void matchedFieldsTestCase( boolean useMatchedFields, boolean fieldMatch, String fieldValue, String expected, Query... queryClauses ) throws IOException {
-    Document doc = new Document();
-    FieldType stored = new FieldType( TextField.TYPE_STORED );
-    stored.setStoreTermVectorOffsets( true );
-    stored.setStoreTermVectorPositions( true );
-    stored.setStoreTermVectors( true );
-    stored.freeze();
-    FieldType matched = new FieldType( TextField.TYPE_NOT_STORED );
-    matched.setStoreTermVectorOffsets( true );
-    matched.setStoreTermVectorPositions( true );
-    matched.setStoreTermVectors( true );
-    matched.freeze();
-    doc.add( new Field( "field", fieldValue, stored ) );               // Whitespace tokenized with English stop words
-    doc.add( new Field( "field_exact", fieldValue, matched ) );        // Whitespace tokenized without stop words
-    doc.add( new Field( "field_super_exact", fieldValue, matched ) );  // Whitespace tokenized without toLower
-    doc.add( new Field( "field_characters", fieldValue, matched ) );   // Each letter is a token
-    doc.add( new Field( "field_tripples", fieldValue, matched ) );     // Every three letters is a token
-    doc.add( new Field( "field_sliced", fieldValue.substring( 0,       // Sliced at 10 chars then analyzed just like field
-      Math.min( fieldValue.length() - 1 , 10 ) ), matched ) );
-    doc.add( new Field( "field_der_red", new CannedTokenStream(        // Hacky field containing "der" and "red" at pos = 0
-          token( "der", 1, 0, 3 ),
-          token( "red", 0, 0, 3 )
-        ), matched ) );
-
+    Directory dir = newDirectory();
     final Map<String, Analyzer> fieldAnalyzers = new TreeMap<>();
     fieldAnalyzers.put( "field", new MockAnalyzer( random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET ) );
     fieldAnalyzers.put( "field_exact", new MockAnalyzer( random() ) );
@@ -612,8 +589,31 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       }
     };
 
-    Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter( dir, newIndexWriterConfig(analyzer));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    for(String fieldName : new String[] {"field", "field_exact", "field_super_exact", "field_characters", "field_tripples", "field_sliced", "field_der_red"}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      fieldTypes.setMultiValued(fieldName);
+      if (fieldName.equals("field") == false) {
+        fieldTypes.disableStored(fieldName);
+      }
+    }
+    Document2 doc = writer.newDocument();
+    doc.addLargeText( "field", fieldValue );               // Whitespace tokenized with English stop words
+    doc.addLargeText( "field_exact", fieldValue );        // Whitespace tokenized without stop words
+    doc.addLargeText( "field_super_exact", fieldValue );  // Whitespace tokenized without toLower
+    doc.addLargeText( "field_characters", fieldValue );   // Each letter is a token
+    doc.addLargeText( "field_tripples", fieldValue );     // Every three letters is a token
+    doc.addLargeText( "field_sliced", fieldValue.substring( 0,       // Sliced at 10 chars then analyzed just like field
+      Math.min( fieldValue.length() - 1 , 10 ) ) );
+    doc.addLargeText( "field_der_red", new CannedTokenStream(        // Hacky field containing "der" and "red" at pos = 0
+          token( "der", 1, 0, 3 ),
+          token( "red", 0, 0, 3 )
+        ) );
+
     writer.addDocument( doc );
 
     FastVectorHighlighter highlighter = new FastVectorHighlighter();

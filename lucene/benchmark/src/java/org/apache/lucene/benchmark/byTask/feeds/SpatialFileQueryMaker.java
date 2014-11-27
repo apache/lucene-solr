@@ -17,8 +17,12 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Shape;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -29,10 +33,7 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * Reads spatial data from the body field docs from an internally created {@link LineDocSource}.
@@ -64,7 +65,7 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
   }
 
   @Override
-  protected Query[] prepareQueries() throws Exception {
+  protected Query[] prepareQueries(FieldTypes fieldTypes) throws Exception {
     final int maxQueries = config.get("query.file.maxQueries", 1000);
     Config srcConfig = new Config(new Properties());
     srcConfig.set("docs.file", config.get("query.file", null));
@@ -82,7 +83,7 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
         Shape shape = SpatialDocMaker.makeShapeFromString(strategy, docData.getName(), docData.getBody());
         if (shape != null) {
           shape = shapeConverter.convert(shape);
-          queries.add(makeQueryFromShape(shape));
+          queries.add(makeQueryFromShape(fieldTypes, shape));
         } else {
           i--;//skip
         }
@@ -95,20 +96,19 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
     return queries.toArray(new Query[queries.size()]);
   }
 
-
-  protected Query makeQueryFromShape(Shape shape) {
+  protected Query makeQueryFromShape(FieldTypes fieldTypes, Shape shape) {
     SpatialArgs args = new SpatialArgs(operation, shape);
     if (!Double.isNaN(distErrPct))
       args.setDistErrPct(distErrPct);
 
     if (score) {
       ValueSource valueSource = strategy.makeDistanceValueSource(shape.getCenter());
-      return new CustomScoreQuery(strategy.makeQuery(args), new FunctionQuery(valueSource));
+      return new CustomScoreQuery(strategy.makeQuery(fieldTypes, args), new FunctionQuery(valueSource));
     } else {
       //strategy.makeQuery() could potentially score (isn't well defined) so instead we call
       // makeFilter() and wrap
 
-      Filter filter = strategy.makeFilter(args);
+      Filter filter = strategy.makeFilter(fieldTypes, args);
       if (filter instanceof QueryWrapperFilter) {
         return ((QueryWrapperFilter)filter).getQuery();
       } else {

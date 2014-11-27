@@ -305,7 +305,6 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    final LineFileDocs docs = new LineFileDocs(random(), true);
     final int RUN_TIME_MSEC = atLeast(500);
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
@@ -314,8 +313,9 @@ public class TestFSTs extends LuceneTestCase {
     final Path tempDir = createTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
+    final LineFileDocs docs = new LineFileDocs(writer, random());
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
-    Document doc;
+    Document2 doc;
     int docCount = 0;
     while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
       writer.addDocument(doc);

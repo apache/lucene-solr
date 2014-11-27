@@ -34,10 +34,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.idversion.StringAndPayloadField.SingleTokenWithPayloadTokenStream;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -69,11 +72,14 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(makeIDField("id0", 100));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id0", 100));
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(makeIDField("id1", 110));
+    doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id1", 110));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IDVersionSegmentTermsEnum termsEnum = (IDVersionSegmentTermsEnum) r.leaves().get(0).reader().fields().terms("id").iterator(null);
@@ -194,6 +200,9 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     int maxItemsInBlock = 2*(minItemsInBlock-1) + random().nextInt(50);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat(minItemsInBlock, maxItemsInBlock)));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
     //IndexWriter w = new IndexWriter(dir, iwc);
     int numDocs = atLeast(1000);
     Map<String,Long> idValues = new HashMap<String,Long>();
@@ -235,8 +244,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  " + idValue + " -> " + version);
       }
-      Document doc = new Document();
-      doc.add(makeIDField(idValue, version));
+      Document2 doc = w.newDocument();
+      doc.addLargeText("id", makeIDTokenStream(idValue, version));
       w.addDocument(doc);
       idsList.add(idValue);
 
@@ -249,8 +258,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           } else {
             version = random().nextLong() & 0x3fffffffffffffffL;
           }
-          doc = new Document();
-          doc.add(makeIDField(idValue, version));
+          doc = w.newDocument();
+          doc.addLargeText("id", makeIDTokenStream(idValue, version));
           if (VERBOSE) {
             System.out.println("  update " + idValue + " -> " + version);
           }
@@ -349,11 +358,13 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     }
   }
 
-  private static Field makeIDField(String id, long version) {
+  private static TokenStream makeIDTokenStream(String idValue, long version) {
     BytesRef payload = new BytesRef(8);
     payload.length = 8;
     IDVersionPostingsFormat.longToBytes(version, payload);
-    return new StringAndPayloadField("id", id, payload);
+    SingleTokenWithPayloadTokenStream ts = new SingleTokenWithPayloadTokenStream();
+    ts.setValue(idValue, payload);
+    return ts;
   }
 
   public void testMoreThanOneDocPerIDOneSegment() throws Exception {
@@ -361,11 +372,14 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(makeIDField("id", 17));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(makeIDField("id", 17));
+    doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     try {
       w.addDocument(doc);
       w.commit();
@@ -392,12 +406,15 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
         });
     }
     IndexWriter w = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    doc.add(makeIDField("id", 17));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     w.commit();
-    doc = new Document();
-    doc.add(makeIDField("id", 17));
+    doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     try {
       w.addDocument(doc);
       w.commit();
@@ -418,11 +435,14 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(makeIDField("id", 17));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(makeIDField("id", 17));
+    doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     // Replaces the doc we just indexed:
     w.updateDocument(new Term("id", "id"), doc);
     w.commit();
@@ -435,12 +455,15 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(makeIDField("id", 17));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     w.deleteDocuments(new Term("id", "id"));
-    doc = new Document();
-    doc.add(makeIDField("id", 17));
+    doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     w.commit();
     w.close();
@@ -463,7 +486,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(a);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
     doc.add(newTextField("id", "id", Field.Store.NO));
     try {
       w.addDocument(doc);
@@ -482,7 +508,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
     doc.add(newStringField("id", "id", Field.Store.NO));
     try {
       w.addDocument(doc);
@@ -501,7 +530,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
     doc.add(new StringAndPayloadField("id", "id", new BytesRef("foo")));
     try {
       w.addDocument(doc);
@@ -520,12 +552,15 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(makeIDField("id", 17));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     w.commit();
-    doc = new Document();
-    doc.add(makeIDField("id", 17));
+    doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     // Replaces the doc we just indexed:
     w.updateDocument(new Term("id", "id"), doc);
     w.forceMerge(1);
@@ -540,17 +575,12 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-
-    FieldType ft = new FieldType(StringAndPayloadField.TYPE);
-    ft.setStoreTermVectors(true);
-    SingleTokenWithPayloadTokenStream ts = new SingleTokenWithPayloadTokenStream();
-    BytesRef payload = new BytesRef(8);
-    payload.length = 8;
-    IDVersionPostingsFormat.longToBytes(17, payload);
-    ts.setValue("foo", payload);
-    Field field = new Field("id", ts, ft);
-    doc.add(new Field("id", ts, ft));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    fieldTypes.enableTermVectors("id");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("foo", 17));
     try {
       w.addDocument(doc);
       w.commit();
@@ -568,9 +598,13 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
-    doc.add(makeIDField("id", 17));
-    doc.add(makeIDField("id", 17));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    fieldTypes.setMultiValued("id");
+    Document2 doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
+    doc.addLargeText("id", makeIDTokenStream("id", 17));
     try {
       w.addDocument(doc);
       w.commit();
@@ -587,7 +621,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
+    Document2 doc = w.newDocument();
     // -1
     doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
     try {
@@ -598,7 +635,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       // expected
     }
 
-    doc = new Document();
+    doc = w.newDocument();
     // Long.MAX_VALUE:
     doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
     try {
@@ -618,6 +655,9 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableHighlighting("id");
+    fieldTypes.disableExistsFilters();
 
     IDSource idsSource = getRandomIDs();
     int numIDs = atLeast(100);
@@ -767,8 +807,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
                       System.out.println(Thread.currentThread() + ": now fail!");
                     }
                     assertTrue(passes);
-                    Document doc = new Document();
-                    doc.add(makeIDField(id, newVersion));
+                    Document2 doc = w.newDocument();
+                    doc.addLargeText("id", makeIDTokenStream(id, newVersion));
                     w.updateDocument(new Term("id", id), doc);
                     truth.put(id, newVersion);
                     versionValues.add(id, newVersion);

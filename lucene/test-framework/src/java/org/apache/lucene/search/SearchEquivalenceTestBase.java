@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -60,17 +61,13 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     CharacterRunAutomaton stopset = new CharacterRunAutomaton(Automata.makeString(stopword));
     analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopset);
     RandomIndexWriter iw = new RandomIndexWriter(random, directory, analyzer);
-    Document doc = new Document();
-    Field id = new StringField("id", "", Field.Store.NO);
-    Field field = new TextField("field", "", Field.Store.NO);
-    doc.add(id);
-    doc.add(field);
     
     // index some docs
     int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; i++) {
-      id.setStringValue(Integer.toString(i));
-      field.setStringValue(randomFieldContents());
+      Document2 doc = iw.newDocument();
+      doc.addUniqueAtom("id", Integer.toString(i));
+      doc.addLargeText("field", randomFieldContents());
       iw.addDocument(doc);
     }
     

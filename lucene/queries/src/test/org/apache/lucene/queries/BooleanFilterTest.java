@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.LeafReader;
@@ -36,8 +37,8 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -69,11 +70,11 @@ public class BooleanFilterTest extends LuceneTestCase {
   }
 
   private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException {
-    Document doc = new Document();
-    doc.add(newTextField("accessRights", accessRights, Field.Store.YES));
-    doc.add(newTextField("price", price, Field.Store.YES));
-    doc.add(newTextField("date", date, Field.Store.YES));
-    doc.add(newTextField("inStock", inStock, Field.Store.YES));
+    Document2 doc = writer.newDocument();
+    doc.addLargeText("accessRights", accessRights);
+    doc.addLargeText("price", price);
+    doc.addLargeText("date", date);
+    doc.addLargeText("inStock", inStock);
     writer.addDocument(doc);
   }
 

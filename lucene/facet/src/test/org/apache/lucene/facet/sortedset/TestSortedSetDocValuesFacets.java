@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.DrillDownQuery;
@@ -55,7 +56,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     config.setMultiValued("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
+    Document2 doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
     doc.add(new SortedSetDocValuesFacetField("a", "zoo"));
@@ -65,7 +66,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       writer.commit();
     }
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
     writer.addDocument(config.build(doc));
 

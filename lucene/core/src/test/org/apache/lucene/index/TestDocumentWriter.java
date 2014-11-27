@@ -113,7 +113,9 @@ public class TestDocumentWriter extends LuceneTestCase {
     };
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
+    FieldTypes fieldTypes = writer.getFieldTypes();
 
+    fieldTypes.setMultiValued("repeated");
     Document2 doc = writer.newDocument();
     doc.addLargeText("repeated", "repeated one");
     doc.addLargeText("repeated", "repeated two");
@@ -267,13 +269,15 @@ public class TestDocumentWriter extends LuceneTestCase {
    */
   public void testLUCENE_1590() throws Exception {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = writer.newDocument();
     FieldTypes fieldTypes = writer.getFieldTypes();
-
     // f1 has no norms
     fieldTypes.disableNorms("f1");
     fieldTypes.disableHighlighting("f1");
     fieldTypes.setIndexOptions("f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    fieldTypes.setMultiValued("f1");
+    fieldTypes.setMultiValued("f2");
+
+    Document2 doc = writer.newDocument();
     doc.addLargeText("f1", "v1");
     doc.addStored("f1", "v2");
 

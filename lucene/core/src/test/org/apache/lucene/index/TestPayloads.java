@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -62,7 +63,11 @@ public class TestPayloads extends LuceneTestCase {
     Directory ram = newDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("f2");
+
     Document2 d = writer.newDocument();
+
     // this field won't have any payloads
     d.addLargeText("f1", "This field has no payloads");
     // this field will have payloads in all docs, however not for all term positions,
@@ -91,6 +96,8 @@ public class TestPayloads extends LuceneTestCase {
     analyzer = new PayloadAnalyzer(); // Clear payload state for each field
     writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
                              .setOpenMode(OpenMode.CREATE));
+    fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("f2");
     d = writer.newDocument();
     d.addLargeText("f1", "This field has no payloads");
     d.addLargeText("f2", "This field has payloads in all docs");
@@ -607,6 +614,8 @@ public class TestPayloads extends LuceneTestCase {
   public void testMixupMultiValued() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("field");
     Document2 doc = writer.newDocument();
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));

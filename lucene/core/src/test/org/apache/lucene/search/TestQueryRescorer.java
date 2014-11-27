@@ -481,7 +481,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
             @Override
             public float score() throws IOException {
-              int num = idToNum[Integer.parseInt(context.reader().document(docID).getString("id"))];
+              int num = idToNum[context.reader().document(docID).getInt("id")];
               if (reverse) {
                 //System.out.println("score doc=" + docID + " num=" + num);
                 return num;

@@ -17,27 +17,24 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
@@ -76,8 +73,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -112,49 +109,16 @@ public class TestValueSources extends LuceneTestCase {
     IndexWriterConfig iwConfig = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
-    Document document = new Document();
-    Field idField = new StringField("id", "", Field.Store.NO);
-    document.add(idField);
-    Field idDVField = new SortedDocValuesField("id", new BytesRef());
-    document.add(idDVField);
-    Field doubleField = new DoubleField("double", 0d, Field.Store.NO);
-    document.add(doubleField);
-    Field doubleDVField = new NumericDocValuesField("double", 0);
-    document.add(doubleDVField);
-    Field floatField = new FloatField("float", 0f, Field.Store.NO);
-    document.add(floatField);
-    Field floatDVField = new NumericDocValuesField("float", 0);
-    document.add(floatDVField);
-    Field intField = new IntField("int", 0, Field.Store.NO);
-    document.add(intField);
-    Field intDVField = new NumericDocValuesField("int", 0);
-    document.add(intDVField);
-    Field longField = new LongField("long", 0L, Field.Store.NO);
-    document.add(longField);
-    Field longDVField = new NumericDocValuesField("long", 0);
-    document.add(longDVField);
-    Field stringField = new StringField("string", "", Field.Store.NO);
-    document.add(stringField);
-    Field stringDVField = new SortedDocValuesField("string", new BytesRef());
-    document.add(stringDVField);
-    Field textField = new TextField("text", "", Field.Store.NO);
-    document.add(textField);
-    
-    for (String [] doc : documents) {
-      idField.setStringValue(doc[0]);
-      idDVField.setBytesValue(new BytesRef(doc[0]));
-      doubleField.setDoubleValue(Double.valueOf(doc[1]));
-      doubleDVField.setLongValue(Double.doubleToRawLongBits(Double.valueOf(doc[1])));
-      floatField.setFloatValue(Float.valueOf(doc[2]));
-      floatDVField.setLongValue(Float.floatToRawIntBits(Float.valueOf(doc[2])));
-      intField.setIntValue(Integer.valueOf(doc[3]));
-      intDVField.setLongValue(Integer.valueOf(doc[3]));
-      longField.setLongValue(Long.valueOf(doc[4]));
-      longDVField.setLongValue(Long.valueOf(doc[4]));
-      stringField.setStringValue(doc[5]);
-      stringDVField.setBytesValue(new BytesRef(doc[5]));
-      textField.setStringValue(doc[6]);
-      iw.addDocument(document);
+    for (String [] data : documents) {
+      Document2 doc = iw.newDocument();
+      doc.addAtom("id", data[0]);
+      doc.addDouble("double", Double.valueOf(data[1]));
+      doc.addFloat("float", Float.valueOf(data[2]));
+      doc.addInt("int", Integer.valueOf(data[3]));
+      doc.addLong("long", Long.valueOf(data[4]));
+      doc.addAtom("string", data[5]);
+      doc.addLargeText("text", data[6]);
+      iw.addDocument(doc);
     }
     
     reader = iw.getReader();

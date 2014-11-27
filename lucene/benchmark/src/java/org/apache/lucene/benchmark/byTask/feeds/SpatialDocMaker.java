@@ -17,23 +17,26 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.spatial.SpatialStrategy;
-import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
-import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTreeFactory;
-
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.spatial.SpatialStrategy;
+import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
+import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTreeFactory;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * Indexes spatial data according to a configured {@link SpatialStrategy} with optional
@@ -162,23 +165,20 @@ public class SpatialDocMaker extends DocMaker {
   }
 
   @Override
-  public Document makeDocument() throws Exception {
+  public Document2 makeDocument(IndexWriter w) throws Exception {
 
     DocState docState = getDocState();
 
-    Document doc = super.makeDocument();
+    Document2 doc = super.makeDocument(w);
 
     // Set SPATIAL_FIELD from body
     DocData docData = docState.docData;
     //   makeDocument() resets docState.getBody() so we can't look there; look in Document
-    String shapeStr = doc.getField(DocMaker.BODY_FIELD).stringValue();
+    String shapeStr = doc.getString(DocMaker.BODY_FIELD);
     Shape shape = makeShapeFromString(strategy, docData.getName(), shapeStr);
     if (shape != null) {
       shape = shapeConverter.convert(shape);
-      //index
-      for (Field f : strategy.createIndexableFields(shape)) {
-        doc.add(f);
-      }
+      strategy.addFields(doc, shape);
     }
 
     return doc;
@@ -197,7 +197,7 @@ public class SpatialDocMaker extends DocMaker {
   }
 
   @Override
-  public Document makeDocument(int size) throws Exception {
+  public Document2 makeDocument(IndexWriter w, int size) throws Exception {
     //TODO consider abusing the 'size' notion to number of shapes per document
     throw new UnsupportedOperationException();
   }

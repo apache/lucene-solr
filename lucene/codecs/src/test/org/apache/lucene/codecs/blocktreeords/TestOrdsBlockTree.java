@@ -24,8 +24,10 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -49,8 +51,8 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c", Field.Store.NO));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "a b c");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     TermsEnum te = MultiFields.getTerms(r, "field").iterator(null);
@@ -90,23 +92,23 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
       }
-      doc.add(newTextField("field", term, Field.Store.NO));
+      doc.addLargeText("field", term);
       w.addDocument(doc);
     }
     for(int i=0;i<36;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "m" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
       }
-      doc.add(newTextField("field", term, Field.Store.NO));
+      doc.addLargeText("field", term);
       w.addDocument(doc);
     }
     if (VERBOSE) {
@@ -159,33 +161,33 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
       }
-      doc.add(newTextField("field", term, Field.Store.NO));
+      doc.addLargeText("field", term);
       w.addDocument(doc);
     }
     for(int i=0;i<36;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "m" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
       }
-      doc.add(newTextField("field", term, Field.Store.NO));
+      doc.addLargeText("field", term);
       w.addDocument(doc);
     }
     for(int i=0;i<36;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "mo" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
       }
-      doc.add(newTextField("field", term, Field.Store.NO));
+      doc.addLargeText("field", term);
       w.addDocument(doc);
     }
     w.forceMerge(1);
@@ -215,7 +217,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     Collections.sort(terms);
     for(int i=terms.size()-1;i>=0;i--) {
       if (VERBOSE) {
-        System.out.println("TEST: seek to ord=" + i);
+        System.out.println("TEST: seek to ord=" + i + " term=" + terms.get(i));
       }
       te.seekExact(i);
       assertEquals(i, te.ord());
@@ -240,12 +242,12 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     for(int i=0;i<128;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "" + (char) i;
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term + " bytes=" + new BytesRef(term));
       }
-      doc.add(newStringField("field", term, Field.Store.NO));
+      doc.addAtom("field", term);
       w.addDocument(doc);
     }
     w.forceMerge(1);
@@ -279,23 +281,23 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
       }
-      doc.add(newTextField("field", term, Field.Store.NO));
+      doc.addAtom("field", term);
       w.addDocument(doc);
     }
     for(int i=0;i<128;i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       String term = "m" + (char) i;
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term + " bytes=" + new BytesRef(term));
       }
-      doc.add(newStringField("field", term, Field.Store.NO));
+      doc.addAtom("field", term);
       w.addDocument(doc);
     }
     w.forceMerge(1);
@@ -326,13 +328,13 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     List<String> terms = new ArrayList<>();
     for(int i=0;i<30;i++) {
       for(int j=0;j<30;j++) {
-        Document doc = new Document();
+        Document2 doc = w.newDocument();
         String term = "" + (char) (97+i) + (char) (97+j);
         terms.add(term);
         if (VERBOSE) {
           System.out.println("term=" + term);
         }
-        doc.add(newTextField("body", term, Field.Store.NO));
+        doc.addLargeText("body", term);
         w.addDocument(doc);
       }
     }
@@ -364,16 +366,19 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
   public void testSeekCeilNotFound() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMultiValued("field");
+    Document2 doc = w.newDocument();
     // Get empty string in there!
-    doc.add(newStringField("field", "", Field.Store.NO));
+    doc.addAtom("field", "");
     w.addDocument(doc);
     
     for(int i=0;i<36;i++) {
-      doc = new Document();
+      doc = w.newDocument();
       String term = "" + (char) (97+i);
       String term2 = "a" + (char) (97+i);
-      doc.add(newTextField("field", term + " " + term2, Field.Store.NO));
+      doc.addAtom("field", term);
+      doc.addAtom("field", term2);
       w.addDocument(doc);
     }
 

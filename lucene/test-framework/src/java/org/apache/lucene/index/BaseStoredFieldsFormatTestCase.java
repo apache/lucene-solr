@@ -35,15 +35,11 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
@@ -71,10 +67,12 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormatTestCase {
 
   @Override
-  protected void addRandomFields(Document d) {
+  protected void addRandomFields(Document2 d) {
+    FieldTypes fieldTypes = d.getFieldTypes();
+    fieldTypes.setMultiValued("f");
     final int numValues = random().nextInt(3);
     for (int i = 0; i < numValues; ++i) {
-      d.add(new StoredField("f", TestUtil.randomSimpleString(random(), 100)));
+      d.addStored("f", TestUtil.randomSimpleString(random(), 100));
     }
   }
 
@@ -175,13 +173,13 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
   public void testStoredFieldsOrder() throws Throwable {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = new Document();
+    Document2 doc = w.newDocument();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMultiValued("zzz");
 
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-    doc.add(newField("zzz", "a b c", customType));
-    doc.add(newField("aaa", "a b c", customType));
-    doc.add(newField("zzz", "1 2 3", customType));
+    doc.addStored("zzz", "a b c");
+    doc.addStored("aaa", "a b c");
+    doc.addStored("zzz", "1 2 3");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     Document2 doc2 = r.document(0);
@@ -214,14 +212,11 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     for(int i=0;i<50;i++)
       b[i] = (byte) (i+77);
 
-    Document doc = new Document();
-    Field f = new StoredField("binary", b, 10, 17);
-    byte[] bx = f.binaryValue().bytes;
-    assertTrue(bx != null);
-    assertEquals(50, bx.length);
-    assertEquals(10, f.binaryValue().offset);
-    assertEquals(17, f.binaryValue().length);
-    doc.add(f);
+    Document2 doc = w.newDocument();
+    doc.addBinary("binary", new BytesRef(b, 10, 17));
+    BytesRef binaryValue = doc.getBinary("binary");
+    assertEquals(10, binaryValue.offset);
+    assertEquals(17, binaryValue.length);
     w.addDocument(doc);
     w.close();
 
@@ -268,35 +263,45 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     final float f = random().nextFloat();
     final double d = random().nextDouble();
 
-    List<Field> fields = Arrays.asList(
-        new Field("bytes", bytes, ft),
-        new Field("string", string, ft),
-        new LongField("long", l, Store.YES),
-        new IntField("int", i, Store.YES),
-        new FloatField("float", f, Store.YES),
-        new DoubleField("double", d, Store.YES)
-    );
-
     for (int k = 0; k < 100; ++k) {
-      Document doc = new Document();
-      for (Field fld : fields) {
-        doc.add(fld);
-      }
+      Document2 doc = iw.newDocument();
+      doc.addStored("bytes", bytes);
+      doc.addStored("string", string);
+      doc.addInt("int", i);
+      doc.addLong("long", l);
+      doc.addFloat("float", f);
+      doc.addDouble("double", d);
       iw.w.addDocument(doc);
     }
     iw.commit();
 
     final DirectoryReader reader = DirectoryReader.open(dir);
     final int docID = random().nextInt(100);
-    for (Field fld : fields) {
-      String fldName = fld.name();
+    for (String fldName : new String[] {"bytes", "string", "int", "long", "float", "double"}) {
       final Document2 sDoc = reader.document(docID, Collections.singleton(fldName));
+
       final IndexableField sField = sDoc.getField(fldName);
-      if (Field.class.equals(fld.getClass())) {
-        assertEquals(fld.binaryValue(), sField.binaryValue());
-        assertEquals(fld.stringValue(), sField.stringValue());
-      } else {
-        assertEquals(fld.numericValue(), sField.numericValue());
+      switch (fldName) {
+      case "bytes":
+        assertEquals(new BytesRef(bytes), sField.binaryValue());
+        break;
+      case "string":
+        assertEquals(string, sField.stringValue());
+        break;
+      case "int":
+        assertEquals(i, sField.numericValue().intValue());
+        break;
+      case "long":
+        assertEquals(l, sField.numericValue().longValue());
+        break;
+      case "float":
+        assertEquals(f, sField.numericValue().floatValue(), 0.0f);
+        break;
+      case "double":
+        assertEquals(d, sField.numericValue().doubleValue(), 0.0);
+        break;
+      default:
+        assert false;
       }
     }
     reader.close();
@@ -311,7 +316,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
     
     // make sure that the fact that documents might be empty is not a problem
-    final Document emptyDoc = new Document();
+    final Document2 emptyDoc = iw.newDocument();
     final int numDocs = random().nextBoolean() ? 1 : atLeast(1000);
     for (int i = 0; i < numDocs; ++i) {
       iw.addDocument(emptyDoc);

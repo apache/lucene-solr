@@ -17,16 +17,17 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
-
-import java.util.ArrayList;
 
 /**
  * A QueryMaker that makes queries for a collection created 
@@ -42,7 +43,7 @@ public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
    * @throws Exception if cannot prepare the queries.
    */
   @Override
-  protected Query[] prepareQueries() throws Exception {
+  protected Query[] prepareQueries(FieldTypes fieldTypes) throws Exception {
     // analyzer (default is standard analyzer)
     Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",
         "org.apache.lucene.analysis.standard.StandardAnalyzer")); 

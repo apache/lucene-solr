@@ -181,6 +181,10 @@ public class IndexSearcher {
     return reader;
   }
 
+  public FieldTypes getFieldTypes() {
+    return reader.getFieldTypes();
+  }
+
   /** 
    * Sugar for <code>.getIndexReader().document2(docID)</code> 
    * @see IndexReader#document2(int) 

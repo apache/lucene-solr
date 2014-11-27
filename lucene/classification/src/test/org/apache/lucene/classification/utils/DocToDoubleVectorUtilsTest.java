@@ -18,9 +18,11 @@ package org.apache.lucene.classification.utils;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -49,20 +51,20 @@ public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter indexWriter = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors("id");
+    fieldTypes.enableTermVectorPositions("id");
+    fieldTypes.enableTermVectorOffsets("id");
 
-    FieldType ft = new FieldType(TextField.TYPE_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    ft.setStoreTermVectorPositions(true);
+    fieldTypes.enableTermVectors("text");
+    fieldTypes.enableTermVectorPositions("text");
+    fieldTypes.enableTermVectorOffsets("text");
 
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    Document doc;
     for (int i = 0; i < 10; i++) {
-      doc = new Document();
-      doc.add(new Field("id", Integer.toString(i), ft));
-      doc.add(new Field("text", random().nextInt(10) + " " + random().nextInt(10) + " " + random().nextInt(10), ft));
-      indexWriter.addDocument(doc, analyzer);
+      Document2 doc = indexWriter.newDocument();
+      doc.addAtom("id", Integer.toString(i));
+      doc.addLargeText("text", random().nextInt(10) + " " + random().nextInt(10) + " " + random().nextInt(10));
+      indexWriter.addDocument(doc);
     }
 
     indexWriter.commit();

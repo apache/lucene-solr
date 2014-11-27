@@ -26,9 +26,11 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -349,13 +351,16 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   // make 1 doc with multi valued field
   protected void make1dmfIndex( Analyzer analyzer, String... values ) throws Exception {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorOffsets(true);
-    customType.setStoreTermVectorPositions(true);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors(F);
+    fieldTypes.enableTermVectorOffsets(F);
+    fieldTypes.enableTermVectorPositions(F);
+    fieldTypes.setMultiValued(F);
+
+    Document2 doc = writer.newDocument();
+
     for( String value: values ) {
-      doc.add( new Field( F, value, customType) );
+      doc.addLargeText(F, value);
     }
     writer.addDocument( doc );
     writer.close();
@@ -366,13 +371,14 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   // make 1 doc with multi valued & not analyzed field
   protected void make1dmfIndexNA( String... values ) throws Exception {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzerK).setOpenMode(OpenMode.CREATE));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorOffsets(true);
-    customType.setStoreTermVectorPositions(true);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors(F);
+    fieldTypes.enableTermVectorOffsets(F);
+    fieldTypes.enableTermVectorPositions(F);
+    fieldTypes.setMultiValued(F);
+    Document2 doc = writer.newDocument();
     for( String value: values ) {
-      doc.add( new Field( F, value, customType));
+      doc.addLargeText(F, value);
       //doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     }
     writer.addDocument( doc );

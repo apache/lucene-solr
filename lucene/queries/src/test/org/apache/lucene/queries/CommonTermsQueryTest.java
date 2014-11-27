@@ -26,12 +26,13 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -66,9 +67,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
         "this is the end of the universe as we know it",
         "there is the famous restaurant at the end of the universe",};
     for (int i = 0; i < docs.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + i, Field.Store.YES));
-      doc.add(newTextField("field", docs[i], Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("id", "" + i);
+      doc.addLargeText("field", docs[i]);
       w.addDocument(doc);
     }
     
@@ -196,9 +197,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
         "this is the end of the universe as we know it",
         "there is the famous restaurant at the end of the universe",};
     for (int i = 0; i < docs.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + i, Field.Store.YES));
-      doc.add(newTextField("field", docs[i], Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("id", "" + i);
+      doc.addLargeText("field", docs[i]);
       w.addDocument(doc);
     }
     
@@ -355,9 +356,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
         "this is the end of the universe as we know it",
         "there is the famous restaurant at the end of the universe",};
     for (int i = 0; i < docs.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + i, Field.Store.YES));
-      doc.add(newTextField("field", docs[i], Field.Store.NO));
+      Document2 doc = w.newDocument();
+      doc.addAtom("id", "" + i);
+      doc.addLargeText("field", docs[i]);
       w.addDocument(doc);
     }
 
@@ -532,7 +533,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       long seed) throws IOException {
     Random random = new Random(seed);
     // primary source for our data is from linefiledocs, its realistic.
-    LineFileDocs lineFileDocs = new LineFileDocs(random);
+    LineFileDocs lineFileDocs = new LineFileDocs(writer.w, random);
     
     // TODO: we should add other fields that use things like docs&freqs but omit
     // positions,

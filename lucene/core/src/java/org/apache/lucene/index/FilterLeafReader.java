@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
@@ -467,5 +468,11 @@ public class FilterLeafReader extends LeafReader {
   public void checkIntegrity() throws IOException {
     ensureOpen();
     in.checkIntegrity();
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    ensureOpen();
+    return in.getFieldTypes();
   }
 }

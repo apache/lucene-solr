@@ -22,7 +22,9 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -126,29 +128,30 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public static void createRandomIndex(int numdocs, RandomIndexWriter writer, long seed) throws IOException {
     Random random = new Random(seed);
     // primary source for our data is from linefiledocs, its realistic.
-    LineFileDocs lineFileDocs = new LineFileDocs(random);
+    LineFileDocs lineFileDocs = new LineFileDocs(writer.w, random);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("sortedset");
+    fieldTypes.setMultiValued("sparsesortednum");
 
     // TODO: we should add other fields that use things like docs&freqs but omit positions,
     // because linefiledocs doesn't cover all the possibilities.
     for (int i = 0; i < numdocs; i++) {
-      Document document = lineFileDocs.nextDoc();
+      Document2 document = lineFileDocs.nextDoc();
       // grab the title and add some SortedSet instances for fun
-      String title = document.get("titleTokenized");
+      String title = document.getString("titleTokenized");
       String split[] = title.split("\\s+");
       for (String trash : split) {
-        document.add(new SortedSetDocValuesField("sortedset", new BytesRef(trash)));
+        document.addAtom("sortedset", new BytesRef(trash));
       }
       // add a numeric dv field sometimes
-      document.removeFields("sparsenumeric");
       if (random.nextInt(4) == 2) {
-        document.add(new NumericDocValuesField("sparsenumeric", random.nextInt()));
+        document.addInt("sparsenumeric", random.nextInt());
       }
       // add sortednumeric sometimes
-      document.removeFields("sparsesortednum");
       if (random.nextInt(5) == 1) {
-        document.add(new SortedNumericDocValuesField("sparsesortednum", random.nextLong()));
+        document.addLong("sparsesortednum", random.nextLong());
         if (random.nextBoolean()) {
-          document.add(new SortedNumericDocValuesField("sparsesortednum", random.nextLong()));
+          document.addLong("sparsesortednum", random.nextLong());
         }
       }
       writer.addDocument(document);

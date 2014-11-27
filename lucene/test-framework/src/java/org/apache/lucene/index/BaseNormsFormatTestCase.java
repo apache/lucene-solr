@@ -22,10 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -35,6 +35,7 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 
 /**
  * Abstract class to do basic tests for a norms format.
@@ -222,16 +223,12 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setSimilarity(new CannedNormSimilarity(norms));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    Document doc = new Document();
-    Field idField = new StringField("id", "", Field.Store.NO);
-    Field storedField = newTextField("stored", "", Field.Store.YES);
-    doc.add(idField);
-    doc.add(storedField);
     
     for (int i = 0; i < numDocs; i++) {
-      idField.setStringValue(Integer.toString(i));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", Integer.toString(i));
       long value = norms[i];
-      storedField.setStringValue(Long.toString(value));
+      doc.addLargeText("stored", Long.toString(value));
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
         writer.commit();
@@ -307,10 +304,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   }
 
   @Override
-  protected void addRandomFields(Document doc) {
+  protected void addRandomFields(Document2 doc) {
     // TODO: improve
-    doc.add(new TextField("foobar", TestUtil.randomSimpleString(random()), Field.Store.NO));
-    
+    doc.addLargeText("foobar", TestUtil.randomSimpleString(random()));
   }
 
   @Override
@@ -352,11 +348,11 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int numDocs = atLeast(1000);
     List<Integer> toDelete = new ArrayList<>();
     for(int i=0;i<numDocs;i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", ""+i, Field.Store.NO));
+      Document2 doc = w.newDocument();
       if (random().nextInt(5) == 1) {
         toDelete.add(i);
-        doc.add(new TextField("content", "some content", Field.Store.NO));
+        doc.addAtom("id", ""+i);
+        doc.addLargeText("content", "some content");
       }
       w.addDocument(doc);
     }

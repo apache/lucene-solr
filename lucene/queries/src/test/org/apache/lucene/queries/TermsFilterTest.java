@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -34,8 +35,8 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
@@ -46,8 +47,8 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -70,9 +71,9 @@ public class TermsFilterTest extends LuceneTestCase {
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
     for (int i = 0; i < 100; i++) {
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       int term = i * 10; //terms are units of 10;
-      doc.add(newStringField(fieldName, "" + term, Field.Store.YES));
+      doc.addAtom(fieldName, "" + term);
       w.addDocument(doc);
     }
     IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
@@ -105,8 +106,8 @@ public class TermsFilterTest extends LuceneTestCase {
     String fieldName = "field1";
     Directory rd1 = newDirectory();
     RandomIndexWriter w1 = new RandomIndexWriter(random(), rd1);
-    Document doc = new Document();
-    doc.add(newStringField(fieldName, "content1", Field.Store.YES));
+    Document2 doc = w1.newDocument();
+    doc.addAtom(fieldName, "content1");
     w1.addDocument(doc);
     IndexReader reader1 = w1.getReader();
     w1.close();
@@ -114,8 +115,8 @@ public class TermsFilterTest extends LuceneTestCase {
     fieldName = "field2";
     Directory rd2 = newDirectory();
     RandomIndexWriter w2 = new RandomIndexWriter(random(), rd2);
-    doc = new Document();
-    doc.add(newStringField(fieldName, "content2", Field.Store.YES));
+    doc = w2.newDocument();
+    doc.addAtom(fieldName, "content2");
     w2.addDocument(doc);
     IndexReader reader2 = w2.getReader();
     w2.close();
@@ -146,11 +147,11 @@ public class TermsFilterTest extends LuceneTestCase {
     List<Term> terms = new ArrayList<>();
     for (int i = 0; i < num; i++) {
       terms.add(new Term("field" + i, "content1"));
-      Document doc = new Document();
+      Document2 doc = w.newDocument();
       if (skip == i) {
         continue;
       }
-      doc.add(newStringField("field" + i, "content1", Field.Store.YES));
+      doc.addAtom("field" + i, "content1");
       w.addDocument(doc);  
     }
     
@@ -178,8 +179,8 @@ public class TermsFilterTest extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       String field = "field" + random().nextInt(100);
       terms.add(new Term(field, "content1"));
-      Document doc = new Document();
-      doc.add(newStringField(field, "content1", Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addAtom(field, "content1");
       w.addDocument(doc);
     }
     int randomFields = random().nextInt(10);
@@ -216,8 +217,8 @@ public class TermsFilterTest extends LuceneTestCase {
       String field = "field" + (singleField ? "1" : random().nextInt(100));
       String string = TestUtil.randomRealisticUnicodeString(random());
       terms.add(new Term(field, string));
-      Document doc = new Document();
-      doc.add(newStringField(field, string, Field.Store.YES));
+      Document2 doc = w.newDocument();
+      doc.addAtom(field, string);
       w.addDocument(doc);
     }
     IndexReader reader = w.getReader();

@@ -17,15 +17,20 @@ package org.apache.lucene.spatial.serialized;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.io.BinaryCodec;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
@@ -40,14 +45,10 @@ import org.apache.lucene.spatial.util.ShapePredicateValueSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FilterOutputStream;
-import java.io.IOException;
-import java.util.Map;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.io.BinaryCodec;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 
 
 /**
@@ -76,7 +77,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   }
 
   @Override
-  public Field[] createIndexableFields(Shape shape) {
+  public void addFields(Document2 doc, Shape shape) {
     int bufSize = Math.max(128, (int) (this.indexLastBufSize * 1.5));//50% headroom over last
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream(bufSize);
     final BytesRef bytesRef = new BytesRef();//receiver of byteStream's bytes
@@ -95,7 +96,8 @@ public class SerializedDVStrategy extends SpatialStrategy {
       throw new RuntimeException(e);
     }
     this.indexLastBufSize = bytesRef.length;//cache heuristic
-    return new Field[]{new BinaryDocValuesField(getFieldName(), bytesRef)};
+    doc.getFieldTypes().disableSorting(getFieldName());
+    doc.addBinary(getFieldName(), bytesRef);
   }
 
   @Override
@@ -105,7 +107,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   }
 
   @Override
-  public Query makeQuery(SpatialArgs args) {
+  public Query makeQuery(FieldTypes fieldTypes, SpatialArgs args) {
     throw new UnsupportedOperationException("This strategy can't return a query that operates" +
         " efficiently. Instead try a Filter or ValueSource.");
   }
@@ -116,7 +118,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
    * to prevent misuse because the filter can't efficiently work via iteration.
    */
   @Override
-  public Filter makeFilter(final SpatialArgs args) {
+  public Filter makeFilter(FieldTypes fieldTypes, final SpatialArgs args) {
     ValueSource shapeValueSource = makeShapeValueSource();
     ShapePredicateValueSource predicateValueSource = new ShapePredicateValueSource(
         shapeValueSource, args.getOperation(), args.getShape());

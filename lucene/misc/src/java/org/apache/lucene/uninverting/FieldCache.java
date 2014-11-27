@@ -22,14 +22,11 @@ import java.io.PrintStream;
 import java.util.Collections;
 
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -114,6 +111,24 @@ interface FieldCache {
     }
   };
 
+  // nocommit rename
+  public static final Parser DOCUMENT2_INT_PARSER = new Parser() {
+    @Override
+    public long parseValue(BytesRef term) {
+      return Document2.bytesToInt(term);
+    }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".DOCUMENT2_INT_PARSER"; 
+    }
+  };
+
   /**
    * A parser instance for float values encoded with {@link NumericUtils}, e.g. when indexed
    * via {@link FloatField}/{@link NumericTokenStream}.
@@ -137,6 +152,24 @@ interface FieldCache {
     }
   };
 
+  // nocommit rename
+  public static final Parser DOCUMENT2_FLOAT_PARSER = new Parser() {
+    @Override
+    public long parseValue(BytesRef term) {
+      return Document2.sortableFloatBits(Document2.bytesToInt(term));
+    }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".DOCUMENT2_FLOAT_PARSER"; 
+    }
+  };
+
   /**
    * A parser instance for long values encoded by {@link NumericUtils}, e.g. when indexed
    * via {@link LongField}/{@link NumericTokenStream}.
@@ -154,6 +187,24 @@ interface FieldCache {
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
       return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+    }
+  };
+
+  // nocommit rename
+  public static final Parser DOCUMENT2_LONG_PARSER = new Parser() {
+    @Override
+    public long parseValue(BytesRef term) {
+      return Document2.bytesToLong(term);
+    }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".DOCUMENT2_LONG_PARSER"; 
     }
   };
 
@@ -179,6 +230,24 @@ interface FieldCache {
     }
   };
   
+  // nocommit rename
+  public static final Parser DOCUMENT2_DOUBLE_PARSER = new Parser() {
+    @Override
+    public long parseValue(BytesRef term) {
+      return Document2.sortableDoubleBits(Document2.bytesToLong(term));
+    }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".DOCUMENT2_DOUBLE_PARSER"; 
+    }
+  };
+
   /** Checks the internal cache for an appropriate entry, and if none is found,
    *  reads the terms in <code>field</code> and returns a bit set at the size of
    *  <code>reader.maxDoc()</code>, with turned on bits for each docid that 

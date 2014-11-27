@@ -17,14 +17,10 @@ package org.apache.lucene.spatial.vector;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Circle;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -42,6 +38,11 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.CachingDoubleValueSource;
 import org.apache.lucene.spatial.util.ValueSourceFilter;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Circle;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * Simple {@link SpatialStrategy} which represents Points in two numeric {@link
@@ -103,20 +104,18 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   @Override
-  public Field[] createIndexableFields(Shape shape) {
-    if (shape instanceof Point)
-      return createIndexableFields((Point) shape);
+  public void addFields(Document2 doc, Shape shape) {
+    if (shape instanceof Point) {
+      addFields(doc, (Point) shape);
+      return;
+    }
     throw new UnsupportedOperationException("Can only index Point, not " + shape);
   }
 
   /** @see #createIndexableFields(com.spatial4j.core.shape.Shape) */
-  public Field[] createIndexableFields(Point point) {
-    FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
-    doubleFieldType.setNumericPrecisionStep(precisionStep);
-    Field[] f = new Field[2];
-    f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
-    f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
-    return f;
+  public void addFields(Document2 doc, Point point) {
+    doc.addDouble(fieldNameX, point.getX());
+    doc.addDouble(fieldNameY, point.getY());
   }
 
   @Override
@@ -125,9 +124,9 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args) {
+  public Filter makeFilter(FieldTypes fieldTypes, SpatialArgs args) {
     //unwrap the CSQ from makeQuery
-    ConstantScoreQuery csq = makeQuery(args);
+    ConstantScoreQuery csq = makeQuery(fieldTypes, args);
     Filter filter = csq.getFilter();
     if (filter != null)
       return filter;
@@ -136,7 +135,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ConstantScoreQuery makeQuery(SpatialArgs args) {
+  public ConstantScoreQuery makeQuery(FieldTypes fieldTypes, SpatialArgs args) {
     if(! SpatialOperation.is( args.getOperation(),
         SpatialOperation.Intersects,
         SpatialOperation.IsWithin ))
@@ -144,12 +143,12 @@ public class PointVectorStrategy extends SpatialStrategy {
     Shape shape = args.getShape();
     if (shape instanceof Rectangle) {
       Rectangle bbox = (Rectangle) shape;
-      return new ConstantScoreQuery(makeWithin(bbox));
+      return new ConstantScoreQuery(makeWithin(fieldTypes, bbox));
     } else if (shape instanceof Circle) {
       Circle circle = (Circle)shape;
       Rectangle bbox = circle.getBoundingBox();
       ValueSourceFilter vsf = new ValueSourceFilter(
-          new QueryWrapperFilter(makeWithin(bbox)),
+          new QueryWrapperFilter(makeWithin(fieldTypes, bbox)),
           makeDistanceValueSource(circle.getCenter()),
           0,
           circle.getRadius() );
@@ -161,7 +160,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   //TODO this is basically old code that hasn't been verified well and should probably be removed
-  public Query makeQueryDistanceScore(SpatialArgs args) {
+  public Query makeQueryDistanceScore(FieldTypes fieldTypes, SpatialArgs args) {
     // For starters, just limit the bbox
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle || shape instanceof Circle)) {
@@ -183,12 +182,12 @@ public class PointVectorStrategy extends SpatialStrategy {
     if( SpatialOperation.is( op,
         SpatialOperation.BBoxWithin,
         SpatialOperation.BBoxIntersects ) ) {
-        spatial = makeWithin(bbox);
+        spatial = makeWithin(fieldTypes, bbox);
     }
     else if( SpatialOperation.is( op,
       SpatialOperation.Intersects,
       SpatialOperation.IsWithin ) ) {
-      spatial = makeWithin(bbox);
+      spatial = makeWithin(fieldTypes, bbox);
       if( args.getShape() instanceof Circle) {
         Circle circle = (Circle)args.getShape();
 
@@ -202,7 +201,7 @@ public class PointVectorStrategy extends SpatialStrategy {
       }
     }
     else if( op == SpatialOperation.IsDisjointTo ) {
-      spatial =  makeDisjoint(bbox);
+      spatial =  makeDisjoint(fieldTypes, bbox);
     }
 
     if( spatial == null ) {
@@ -225,39 +224,39 @@ public class PointVectorStrategy extends SpatialStrategy {
   /**
    * Constructs a query to retrieve documents that fully contain the input envelope.
    */
-  private Query makeWithin(Rectangle bbox) {
+  private Query makeWithin(FieldTypes fieldTypes, Rectangle bbox) {
     BooleanQuery bq = new BooleanQuery();
     BooleanClause.Occur MUST = BooleanClause.Occur.MUST;
     if (bbox.getCrossesDateLine()) {
       //use null as performance trick since no data will be beyond the world bounds
-      bq.add(rangeQuery(fieldNameX, null/*-180*/, bbox.getMaxX()), BooleanClause.Occur.SHOULD );
-      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), null/*+180*/), BooleanClause.Occur.SHOULD );
+      bq.add(rangeQuery(fieldTypes, fieldNameX, null/*-180*/, bbox.getMaxX()), BooleanClause.Occur.SHOULD );
+      bq.add(rangeQuery(fieldTypes, fieldNameX, bbox.getMinX(), null/*+180*/), BooleanClause.Occur.SHOULD );
       bq.setMinimumNumberShouldMatch(1);//must match at least one of the SHOULD
     } else {
-      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX()), MUST);
+      bq.add(rangeQuery(fieldTypes, fieldNameX, bbox.getMinX(), bbox.getMaxX()), MUST);
     }
-    bq.add(rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY()), MUST);
+    bq.add(rangeQuery(fieldTypes, fieldNameY, bbox.getMinY(), bbox.getMaxY()), MUST);
+
     return bq;
   }
 
-  private NumericRangeQuery<Double> rangeQuery(String fieldName, Double min, Double max) {
-    return NumericRangeQuery.newDoubleRange(
+  private Query rangeQuery(FieldTypes fieldTypes, String fieldName, Double min, Double max) {
+    return new ConstantScoreQuery(fieldTypes.newRangeFilter(
         fieldName,
-        precisionStep,
         min,
-        max,
         true,
-        true);//inclusive
+        max,
+        true));//inclusive
   }
 
   /**
    * Constructs a query to retrieve documents that fully contain the input envelope.
    */
-  private Query makeDisjoint(Rectangle bbox) {
+  private Query makeDisjoint(FieldTypes fieldTypes, Rectangle bbox) {
     if (bbox.getCrossesDateLine())
       throw new UnsupportedOperationException("makeDisjoint doesn't handle dateline cross");
-    Query qX = rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX());
-    Query qY = rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY());
+    Query qX = rangeQuery(fieldTypes, fieldNameX, bbox.getMinX(), bbox.getMaxX());
+    Query qY = rangeQuery(fieldTypes, fieldNameY, bbox.getMinY(), bbox.getMaxY());
 
     BooleanQuery bq = new BooleanQuery();
     bq.add(qX,BooleanClause.Occur.MUST_NOT);

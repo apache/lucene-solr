@@ -40,13 +40,6 @@ public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
   //Note: this is partially redundant with StrategyTestCase.runTestQuery & testOperation
 
   protected void testOperationRandomShapes(final SpatialOperation operation) throws IOException {
-    //first show that when there's no data, a query will result in no results
-    {
-      Query query = strategy.makeQuery(new SpatialArgs(operation, randomQueryShape()));
-      SearchResults searchResults = executeQuery(query, 1);
-      assertEquals(0, searchResults.numFound);
-    }
-
     final int numIndexedShapes = randomIntBetween(1, 6);
     List<Shape> indexedShapes = new ArrayList<>(numIndexedShapes);
     for (int i = 0; i < numIndexedShapes; i++) {
@@ -64,6 +57,7 @@ public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
 
   protected void testOperation(final SpatialOperation operation,
                                List<Shape> indexedShapes, List<Shape> queryShapes, boolean havoc) throws IOException {
+
     //Main index loop:
     for (int i = 0; i < indexedShapes.size(); i++) {
       Shape shape = indexedShapes.get(i);
@@ -106,7 +100,7 @@ public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
 
       //Search and verify results
       SpatialArgs args = new SpatialArgs(operation, queryShape);
-      Query query = strategy.makeQuery(args);
+      Query query = strategy.makeQuery(fieldTypes, args);
       SearchResults got = executeQuery(query, 100);
       Set<String> remainingExpectedIds = new LinkedHashSet<>(expectedIds);
       for (SearchResult result : got.results) {

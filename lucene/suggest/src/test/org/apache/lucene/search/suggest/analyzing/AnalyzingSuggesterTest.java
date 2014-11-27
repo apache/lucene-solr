@@ -47,13 +47,17 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LineFileDocsText;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -159,14 +163,13 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   }
   
   public void testRandomRealisticKeys() throws IOException {
-    LineFileDocs lineFile = new LineFileDocs(random());
+    LineFileDocsText lineFile = new LineFileDocsText(random());
     Map<String, Long> mapping = new HashMap<>();
     List<Input> keys = new ArrayList<>();
     
     int howMany = atLeast(100); // this might bring up duplicates
     for (int i = 0; i < howMany; i++) {
-      Document nextDoc = lineFile.nextDoc();
-      String title = nextDoc.getField("title").stringValue();
+      String title = lineFile.nextDoc().title;
       int randomWeight = random().nextInt(100);
       keys.add(new Input(title, randomWeight));
       if (!mapping.containsKey(title) || mapping.get(title) < randomWeight) {

@@ -272,7 +272,6 @@ public class QuadPrefixTree extends LegacyPrefixTree {
       BytesRef token = getTokenBytesNoLeaf(null);
       double xmin = QuadPrefixTree.this.xmin;
       double ymin = QuadPrefixTree.this.ymin;
-
       for (int i = 0; i < token.length; i++) {
         byte c = token.bytes[token.offset + i];
         switch (c) {
@@ -289,7 +288,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
             xmin += levelW[i];
             break;
           default:
-            throw new RuntimeException("unexpected char: " + c);
+            throw new RuntimeException("unexpected char: " + (char) c);
         }
       }
       int len = token.length;

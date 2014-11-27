@@ -52,7 +52,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
     for (int i = 0; i < numSegments; ++i) {
       final int numDocs = TestUtil.nextInt(random(), 1, 5);
       for (int j = 0; j < numDocs; ++j) {
-        writer.addDocument(new Document());
+        writer.addDocument(writer.newDocument());
       }
       writer.getReader().close();
     }

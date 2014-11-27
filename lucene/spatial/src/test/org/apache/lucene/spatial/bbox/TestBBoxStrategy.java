@@ -111,10 +111,9 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     //test we can disable docValues for predicate tests
     if (random().nextBoolean()) {
       BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
-      FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setDocValuesType(DocValuesType.NONE);
-      bboxStrategy.setFieldType(fieldType);
+      bboxStrategy.setDocValuesType(fieldTypes, DocValuesType.NONE);
     }
+
     for (SpatialOperation operation : SpatialOperation.values()) {
       if (operation == SpatialOperation.Overlaps)
         continue;//unsupported
@@ -189,7 +188,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
     adoc("0", indexedShape);
     commit();
-    Query query = strategy.makeQuery(new SpatialArgs(operation, queryShape));
+    Query query = strategy.makeQuery(fieldTypes, new SpatialArgs(operation, queryShape));
     SearchResults got = executeQuery(query, 1);
     assert got.numFound <= 1 : "unclean test env";
     if ((got.numFound == 1) != match)
@@ -292,10 +291,9 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     setupGeo();
     //test we can disable indexed for this test
     BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
+    //test we can disable indexed for this test
     if (random().nextBoolean()) {
-      FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setIndexOptions(IndexOptions.NONE);
-      bboxStrategy.setFieldType(fieldType);
+      bboxStrategy.setIndexOptions(fieldTypes, IndexOptions.NONE);
     }
 
     adoc("100", ctx.makeRectangle(0, 20, 40, 80));

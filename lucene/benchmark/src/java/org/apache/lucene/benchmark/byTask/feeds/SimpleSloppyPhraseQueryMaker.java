@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -33,7 +34,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
    * @see org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker#prepareQueries()
    */
   @Override
-  protected Query[] prepareQueries() throws Exception {
+  protected Query[] prepareQueries(FieldTypes fieldTypes) throws Exception {
     // extract some 100 words from doc text to an array
     String words[];
     ArrayList<String> w = new ArrayList<>();

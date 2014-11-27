@@ -33,7 +33,8 @@ import org.apache.lucene.util.BytesRef;
  * @since 2.9
  */
 public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery> {
-    
+  private final String desc;
+
   /**
    * @param fieldName The field this range applies to
    * @param lowerTerm The lower bound on this range
@@ -45,8 +46,15 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery>
    *  and includeUpper)
    */
   public TermRangeFilter(String fieldName, BytesRef lowerTerm, BytesRef upperTerm,
-                     boolean includeLower, boolean includeUpper) {
-      super(new TermRangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper));
+                         boolean includeLower, boolean includeUpper) {
+    super(new TermRangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper));
+    this.desc = null;
+  }
+
+  public TermRangeFilter(String fieldName, BytesRef lowerTerm, BytesRef upperTerm,
+                         boolean includeLower, boolean includeUpper, String desc) {
+    super(new TermRangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper));
+    this.desc = desc;
   }
 
   /**
@@ -85,4 +93,13 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery>
   
   /** Returns <code>true</code> if the upper endpoint is inclusive */
   public boolean includesUpper() { return query.includesUpper(); }
+
+  @Override
+  public String toString() {
+    if (desc == null) {
+      return super.toString();
+    } else {
+      return "TermRangeFilter(field=" + getField() + " " + desc + ")";
+    }
+  }
 }

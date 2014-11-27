@@ -28,6 +28,7 @@ import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -246,9 +247,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(-1, searcher.doc(td.scoreDocs[0].doc).getInt("value").intValue());
+    assertEquals(4, searcher.doc(td.scoreDocs[1].doc).getInt("value").intValue());
+    assertEquals(300000, searcher.doc(td.scoreDocs[2].doc).getInt("value").intValue());
 
     ir.close();
     dir.close();
@@ -274,9 +275,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // reverse numeric order
-    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(300000, searcher.doc(td.scoreDocs[0].doc).getInt("value").intValue());
+    assertEquals(4, searcher.doc(td.scoreDocs[1].doc).getInt("value").intValue());
+    assertEquals(-1, searcher.doc(td.scoreDocs[2].doc).getInt("value").intValue());
 
     ir.close();
     dir.close();
@@ -303,8 +304,8 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // sort missing last by default:
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals(-1, searcher.doc(td.scoreDocs[0].doc).getInt("value").intValue());
+    assertEquals(4, searcher.doc(td.scoreDocs[1].doc).getInt("value").intValue());
     assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
@@ -332,8 +333,8 @@ public class TestSort extends LuceneTestCase {
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals(-1, searcher.doc(td.scoreDocs[0].doc).getInt("value").intValue());
+    assertEquals(4, searcher.doc(td.scoreDocs[1].doc).getInt("value").intValue());
     assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
@@ -359,9 +360,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(-1L, searcher.doc(td.scoreDocs[0].doc).getLong("value").longValue());
+    assertEquals(4L, searcher.doc(td.scoreDocs[1].doc).getLong("value").longValue());
+    assertEquals(3000000000L, searcher.doc(td.scoreDocs[2].doc).getLong("value").longValue());
 
     ir.close();
     dir.close();
@@ -386,9 +387,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // reverse numeric order
-    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(3000000000L, searcher.doc(td.scoreDocs[0].doc).getLong("value").longValue());
+    assertEquals(4L, searcher.doc(td.scoreDocs[1].doc).getLong("value").longValue());
+    assertEquals(-1L, searcher.doc(td.scoreDocs[2].doc).getLong("value").longValue());
 
     ir.close();
     dir.close();
@@ -415,8 +416,8 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // sort missing last by default:
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals(-1L, searcher.doc(td.scoreDocs[0].doc).getLong("value").longValue());
+    assertEquals(4L, searcher.doc(td.scoreDocs[1].doc).getLong("value").longValue());
     assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
@@ -444,8 +445,8 @@ public class TestSort extends LuceneTestCase {
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals(-1, searcher.doc(td.scoreDocs[0].doc).getLong("value").longValue());
+    assertEquals(4, searcher.doc(td.scoreDocs[1].doc).getLong("value").longValue());
     assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
@@ -472,9 +473,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(-1.3f, searcher.doc(td.scoreDocs[0].doc).getFloat("value").floatValue(), 0.0f);
+    assertEquals(4.2f, searcher.doc(td.scoreDocs[1].doc).getFloat("value").floatValue(), 0.0f);
+    assertEquals(30.1f, searcher.doc(td.scoreDocs[2].doc).getFloat("value").floatValue(), 0.0f);
 
     ir.close();
     dir.close();
@@ -500,9 +501,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
     // numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(30.1f, searcher.doc(td.scoreDocs[0].doc).getFloat("value").floatValue(), 0.0f);
+    assertEquals(4.2f, searcher.doc(td.scoreDocs[1].doc).getFloat("value").floatValue(), 0.0f);
+    assertEquals(-1.3f, searcher.doc(td.scoreDocs[2].doc).getFloat("value").floatValue(), 0.0f);
 
     ir.close();
     dir.close();
@@ -530,8 +531,8 @@ public class TestSort extends LuceneTestCase {
     assertEquals(3, td.totalHits);
 
     // sort missing last by default:
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
+    assertEquals(-1.3f, searcher.doc(td.scoreDocs[0].doc).getFloat("value").floatValue(), 0.0f);
+    assertEquals(4.2f, searcher.doc(td.scoreDocs[1].doc).getFloat("value").floatValue(), 0.0f);
     assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
 
     ir.close();
@@ -560,9 +561,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits);
 
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(-1.3f, searcher.doc(td.scoreDocs[0].doc).getFloat("value").floatValue(), 0.0f);
+    assertEquals(4.2f, searcher.doc(td.scoreDocs[1].doc).getFloat("value").floatValue(), 0.0f);
+    assertNull(searcher.doc(td.scoreDocs[2].doc).getFloat("value"));
 
     ir.close();
     dir.close();
@@ -588,10 +589,10 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // numeric order
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).getString("value"));
+    assertEquals(-1.3, searcher.doc(td.scoreDocs[0].doc).getDouble("value").doubleValue(), 0.0);
+    assertEquals(4.2333333333332, searcher.doc(td.scoreDocs[1].doc).getDouble("value").doubleValue(), 0.0);
+    assertEquals(4.2333333333333, searcher.doc(td.scoreDocs[2].doc).getDouble("value").doubleValue(), 0.0);
+    assertEquals(30.1, searcher.doc(td.scoreDocs[3].doc).getDouble("value").doubleValue(), 0.0);
 
     ir.close();
     dir.close();
@@ -644,10 +645,10 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
     // numeric order
-    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).getString("value"));
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).getString("value"));
+    assertEquals(30.1, searcher.doc(td.scoreDocs[0].doc).getDouble("value").doubleValue(), 0.0);
+    assertEquals(4.2333333333333, searcher.doc(td.scoreDocs[1].doc).getDouble("value").doubleValue(), 0.0);
+    assertEquals(4.2333333333332, searcher.doc(td.scoreDocs[2].doc).getDouble("value").doubleValue(), 0.0);
+    assertEquals(-1.3, searcher.doc(td.scoreDocs[3].doc).getDouble("value").doubleValue(), 0.0);
 
     ir.close();
     dir.close();
@@ -674,9 +675,9 @@ public class TestSort extends LuceneTestCase {
     assertEquals(4, td.totalHits);
 
     // sort missing last by default:
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(-1.3, searcher.doc(td.scoreDocs[0].doc).getDouble("value").doubleValue(), 0.0d);
+    assertEquals(4.2333333333332, searcher.doc(td.scoreDocs[1].doc).getDouble("value").doubleValue(), 0.0d);
+    assertEquals(4.2333333333333, searcher.doc(td.scoreDocs[2].doc).getDouble("value").doubleValue(), 0.0d);
     assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
 
     ir.close();
@@ -703,9 +704,9 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits);
 
-    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).getString("value"));
-    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).getString("value"));
-    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).getString("value"));
+    assertEquals(-1.3, searcher.doc(td.scoreDocs[0].doc).getDouble("value").doubleValue(), 0.0d);
+    assertEquals(4.2333333333332, searcher.doc(td.scoreDocs[1].doc).getDouble("value").doubleValue(), 0.0d);
+    assertEquals(4.2333333333333, searcher.doc(td.scoreDocs[2].doc).getDouble("value").doubleValue(), 0.0d);
     assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
 
     ir.close();

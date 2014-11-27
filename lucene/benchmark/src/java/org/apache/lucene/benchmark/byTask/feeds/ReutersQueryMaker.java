@@ -17,7 +17,13 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
@@ -26,11 +32,6 @@ import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -102,7 +103,7 @@ public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker 
   }
   
   @Override
-  protected Query[] prepareQueries() throws Exception {
+  protected Query[] prepareQueries(FieldTypes fieldTypes) throws Exception {
     // analyzer (default is standard analyzer)
     Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",
     "org.apache.lucene.analysis.standard.StandardAnalyzer")); 

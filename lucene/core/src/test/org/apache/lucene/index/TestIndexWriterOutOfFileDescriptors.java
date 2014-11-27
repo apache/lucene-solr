@@ -38,7 +38,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
     //System.out.println("rate=" + rate);
     dir.setRandomIOExceptionRateOnOpen(rate);
     int iters = atLeast(20);
-    LineFileDocs docs = new LineFileDocs(random());
+    LineFileDocs docs = null;
     IndexReader r = null;
     DirectoryReader r2 = null;
     boolean any = false;
@@ -65,6 +65,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
           ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
         }
         w = new IndexWriter(dir, iwc);
+        docs = new LineFileDocs(w, random());
         if (r != null && random().nextInt(5) == 3) {
           if (random().nextBoolean()) {
             if (VERBOSE) {
@@ -86,6 +87,9 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         dir.setRandomIOExceptionRateOnOpen(0.0);
         w.close();
         w = null;
+
+        docs.close();
+        docs = null;
 
         // NOTE: This is O(N^2)!  Only enable for temporary debugging:
         //dir.setRandomIOExceptionRateOnOpen(0.0);
@@ -124,6 +128,9 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
           // to verify that rollback does not try to write
           // anything:
           w.rollback();
+        }
+        if (docs != null) {
+          docs.close();
         }
       }
 

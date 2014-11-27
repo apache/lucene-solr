@@ -17,27 +17,29 @@ package org.apache.lucene.classification.utils;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Random;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Random;
 
 /**
  * Testcase for {@link org.apache.lucene.classification.utils.DatasetSplitter}
@@ -59,21 +61,26 @@ public class DataSplitterTest extends LuceneTestCase {
     dir = newDirectory();
     indexWriter = new RandomIndexWriter(random(), dir);
 
-    FieldType ft = new FieldType(TextField.TYPE_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    ft.setStoreTermVectorPositions(true);
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(idFieldName);
+    fieldTypes.enableTermVectorPositions(idFieldName);
+    fieldTypes.enableTermVectorOffsets(idFieldName);
 
-    Analyzer analyzer = new MockAnalyzer(random());
+    fieldTypes.enableTermVectors(textFieldName);
+    fieldTypes.enableTermVectorPositions(textFieldName);
+    fieldTypes.enableTermVectorOffsets(textFieldName);
 
-    Document doc;
+    fieldTypes.enableTermVectors(classFieldName);
+    fieldTypes.enableTermVectorPositions(classFieldName);
+    fieldTypes.enableTermVectorOffsets(classFieldName);
+
     Random rnd = random();
     for (int i = 0; i < 100; i++) {
-      doc = new Document();
-      doc.add(new Field(idFieldName, Integer.toString(i), ft));
-      doc.add(new Field(textFieldName, TestUtil.randomUnicodeString(rnd, 1024), ft));
-      doc.add(new Field(classFieldName, TestUtil.randomUnicodeString(rnd, 10), ft));
-      indexWriter.addDocument(doc, analyzer);
+      Document2 doc = indexWriter.newDocument();
+      doc.addAtom(idFieldName, Integer.toString(i));
+      doc.addLargeText(textFieldName, TestUtil.randomUnicodeString(rnd, 1024));
+      doc.addLargeText(classFieldName, TestUtil.randomUnicodeString(rnd, 10));
+      indexWriter.addDocument(doc);
     }
 
     indexWriter.commit();

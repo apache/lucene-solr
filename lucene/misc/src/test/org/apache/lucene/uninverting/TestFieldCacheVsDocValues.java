@@ -28,6 +28,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -135,6 +136,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       numDocs = TestUtil.nextInt(random(), 100, 200);
     }
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(analyzer));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting("field");
     List<byte[]> docBytes = new ArrayList<>();
     long totalBytes = 0;
     for(int docID=0;docID<numDocs;docID++) {
@@ -158,14 +161,16 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       byte[] bytes = new byte[numBytes];
       random().nextBytes(bytes);
       docBytes.add(bytes);
-      Document doc = new Document();      
+      Document2 doc = w.newDocument();      
       BytesRef b = new BytesRef(bytes);
       b.length = bytes.length;
-      doc.add(new BinaryDocValuesField("field", b));
-      doc.add(new StringField("id", ""+docID, Field.Store.YES));
+      doc.addBinary("field", b);
+      doc.addAtom("id", ""+docID);
       try {
         w.addDocument(doc);
       } catch (IllegalArgumentException iae) {
+        System.out.println("got:");
+        iae.printStackTrace(System.out);
         if (iae.getMessage().indexOf("is too large") == -1) {
           throw iae;
         } else {
@@ -234,6 +239,9 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       numDocs = TestUtil.nextInt(random(), 100, 200);
     }
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(analyzer));
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting("field");
+
     List<byte[]> docBytes = new ArrayList<>();
     long totalBytes = 0;
     for(int docID=0;docID<numDocs;docID++) {
@@ -257,11 +265,11 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       byte[] bytes = new byte[numBytes];
       random().nextBytes(bytes);
       docBytes.add(bytes);
-      Document doc = new Document();      
+      Document2 doc = w.newDocument();      
       BytesRef b = new BytesRef(bytes);
       b.length = bytes.length;
-      doc.add(new BinaryDocValuesField("field", b));
-      doc.add(new StringField("id", ""+docID, Field.Store.YES));
+      doc.addBinary("field", b);
+      doc.addAtom("id", ""+docID);
       w.addDocument(doc);
     }
     
@@ -287,18 +295,12 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    Document doc = new Document();
-    Field idField = new StringField("id", "", Field.Store.NO);
-    Field indexedField = new StringField("indexed", "", Field.Store.NO);
-    Field dvField = new SortedDocValuesField("dv", new BytesRef());
-    doc.add(idField);
-    doc.add(indexedField);
-    doc.add(dvField);
     
     // index some docs
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      idField.setStringValue(Integer.toString(i));
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", Integer.toString(i));
       final int length;
       if (minLength == maxLength) {
         length = minLength; // fixed length
@@ -306,8 +308,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
         length = TestUtil.nextInt(random(), minLength, maxLength);
       }
       String value = TestUtil.randomSimpleString(random(), length);
-      indexedField.setStringValue(value);
-      dvField.setBytesValue(new BytesRef(value));
+      doc.addAtom("indexed", value);
+      doc.addBinary("dv", new BytesRef(value));
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
         writer.commit();
@@ -342,9 +344,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     // index some docs
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      Field idField = new StringField("id", Integer.toString(i), Field.Store.YES);
-      doc.add(idField);
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", Integer.toString(i));
       final int length = TestUtil.nextInt(random(), minLength, maxLength);
       int numValues = random().nextInt(17);
       // create a random list of strings
@@ -411,10 +412,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    Field idField = new StringField("id", "", Field.Store.NO);
-    Field indexedField = newStringField("indexed", "", Field.Store.NO);
-    Field dvField = new NumericDocValuesField("dv", 0);
-
     
     // index some docs
     int numDocs = atLeast(300);
@@ -422,16 +419,13 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     // for numbers of values <= 256, all storage layouts are tested
     assert numDocs > 256;
     for (int i = 0; i < numDocs; i++) {
-      idField.setStringValue(Integer.toString(i));
       long value = longs.next();
-      indexedField.setStringValue(Long.toString(value));
-      dvField.setLongValue(value);
-      Document doc = new Document();
-      doc.add(idField);
+      Document2 doc = writer.newDocument();
+      doc.addAtom("id", Integer.toString(i));
       // 1/4 of the time we neglect to add the fields
       if (random().nextInt(4) > 0) {
-        doc.add(indexedField);
-        doc.add(dvField);
+        doc.addAtom("indexed", Long.toString(value));
+        doc.addLong("dv", value);
       }
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {

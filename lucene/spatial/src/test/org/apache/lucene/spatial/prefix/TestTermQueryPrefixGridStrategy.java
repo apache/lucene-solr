@@ -17,8 +17,10 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Shape;
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -27,9 +29,8 @@ import org.apache.lucene.spatial.SpatialTestCase;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Shape;
 
 
 public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
@@ -41,12 +42,12 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
     Shape point = ctx.makePoint(-118.243680, 34.052230);
 
-    Document losAngeles = new Document();
-    losAngeles.add(new StringField("name", "Los Angeles", Field.Store.YES));
-    for (Field field : prefixGridStrategy.createIndexableFields(point)) {
-      losAngeles.add(field);
-    }
-    losAngeles.add(new StoredField(prefixGridStrategy.getFieldName(), point.toString()));//just for diagnostics
+    Document2 losAngeles = indexWriter.newDocument();
+    losAngeles.addAtom("name", "Los Angeles");
+
+    fieldTypes.setMultiValued(prefixGridStrategy.getFieldName());
+    prefixGridStrategy.addFields(losAngeles, point);
+    losAngeles.addStored(prefixGridStrategy.getFieldName(), point.toString());//just for diagnostics
 
     addDocumentsAndCommit(Arrays.asList(losAngeles));
 

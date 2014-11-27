@@ -1,5 +1,6 @@
 package org.apache.lucene.expressions;
 
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -23,9 +24,9 @@ import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+import static org.apache.lucene.expressions.js.VariableContext.Type.INT_INDEX;
 import static org.apache.lucene.expressions.js.VariableContext.Type.MEMBER;
 import static org.apache.lucene.expressions.js.VariableContext.Type.STR_INDEX;
-import static org.apache.lucene.expressions.js.VariableContext.Type.INT_INDEX;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -56,28 +57,28 @@ public class  TestDemoExpressions extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     
-    Document doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
-    doc.add(newTextField("body", "some contents and more contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 5));
-    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.759011)));
-    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-73.9844722)));
+    Document2 doc = iw.newDocument();
+    doc.addUniqueAtom("id", "1");
+    doc.addLargeText("body", "some contents and more contents");
+    doc.addInt("popularity", 5);
+    doc.addDouble("latitude", 40.759011);
+    doc.addDouble("longitude", -73.9844722);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(newStringField("id", "2", Field.Store.YES));
-    doc.add(newTextField("body", "another document with different contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 20));
-    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.718266)));
-    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.007819)));
+    doc = iw.newDocument();
+    doc.addUniqueAtom("id", "2");
+    doc.addLargeText("body", "another document with different contents");
+    doc.addInt("popularity", 20);
+    doc.addDouble("latitude", 40.718266);
+    doc.addDouble("longitude", -74.007819);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
-    doc.add(newTextField("body", "crappy contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 2));
-    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.7051157)));
-    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.0088305)));
+    doc = iw.newDocument();
+    doc.addUniqueAtom("id", "3");
+    doc.addLargeText("body", "crappy contents");
+    doc.addInt("popularity", 2);
+    doc.addDouble("latitude", 40.7051157);
+    doc.addDouble("longitude", -74.0088305);
     iw.addDocument(doc);
     
     reader = iw.getReader();

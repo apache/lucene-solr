@@ -149,18 +149,11 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   }
                 }
 
-                Document doc = docs.nextDoc();
-                if (doc == null) {
-                  break;
-                }
-
+                Document2 doc = docs.nextDoc();
+                
                 // Maybe add randomly named field
-                final String addedField;
                 if (random().nextBoolean()) {
-                  addedField = "extra" + random().nextInt(40);
-                  doc.add(newTextField(addedField, "a random field", Field.Store.YES));
-                } else {
-                  addedField = null;
+                  doc.addLargeText("extra" + random().nextInt(40), "a random field");
                 }
 
                 if (random().nextBoolean()) {
@@ -181,24 +174,21 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                       packID = packCount.getAndIncrement() + "";
                     }
 
-                    final Field packIDField = newStringField("packID", packID, Field.Store.YES);
                     final List<String> docIDs = new ArrayList<>();
                     final SubDocs subDocs = new SubDocs(packID, docIDs);
-                    final List<Document> docsList = new ArrayList<>();
+                    final List<Document2> docsList = new ArrayList<>();
 
                     allSubDocs.add(subDocs);
-                    doc.add(packIDField);
-                    docsList.add(TestUtil.cloneDocument(doc));
-                    docIDs.add(doc.get("docid"));
+                    doc.addAtom("packID", packID);
+                    docsList.add(doc);
+                    docIDs.add(doc.getString("docid"));
 
                     final int maxDocCount = TestUtil.nextInt(random(), 1, 10);
                     while(docsList.size() < maxDocCount) {
                       doc = docs.nextDoc();
-                      if (doc == null) {
-                        break;
-                      }
-                      docsList.add(TestUtil.cloneDocument(doc));
-                      docIDs.add(doc.get("docid"));
+                      doc.addAtom("packID", packID);
+                      docsList.add(doc);
+                      docIDs.add(doc.getString("docid"));
                     }
                     addCount.addAndGet(docsList.size());
 
@@ -218,7 +208,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                       }
                       addDocuments(packIDTerm, docsList);
                     }
-                    doc.removeField("packID");
 
                     if (random().nextInt(5) == 2) {
                       if (VERBOSE) {
@@ -229,7 +218,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
                   } else {
                     // Add single doc
-                    final String docid = doc.get("docid");
+                    final String docid = doc.getString("docid");
                     if (VERBOSE) {
                       System.out.println(Thread.currentThread().getName() + ": add doc docid:" + docid);
                     }
@@ -251,7 +240,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   if (VERBOSE) {
                     System.out.println(Thread.currentThread().getName() + ": update doc id:" + doc.get("docid"));
                   }
-                  final String docid = doc.get("docid");
+                  final String docid = doc.getString("docid");
                   updateDocument(new Term("docid", docid), doc);
                   addCount.getAndIncrement();
 
@@ -292,9 +281,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     delCount.addAndGet(subDocs.subIDs.size());
                   }
                   toDeleteSubDocs.clear();
-                }
-                if (addedField != null) {
-                  doc.removeField(addedField);
                 }
               } catch (Throwable t) {
                 System.out.println(Thread.currentThread().getName() + ": hit exc");
@@ -436,7 +422,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     final long t0 = System.currentTimeMillis();
 
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, true);
     final Path tempDir = createTempDir(testName);
     dir = getDirectory(newMockFSDirectory(tempDir)); // some subclasses rely on this being MDW
     if (dir instanceof BaseDirectoryWrapper) {
@@ -503,6 +488,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
         });
     }
     writer = new IndexWriter(dir, conf);
+    final LineFileDocs docs = new LineFileDocs(writer, random);
     TestUtil.reduceOpenFiles(writer);
 
     final ExecutorService es = random().nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory(testName));
@@ -615,7 +601,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     // Verify: make sure all not-deleted docs are in fact
     // not deleted:
-    final int endID = Integer.parseInt(docs.nextDoc().get("docid"));
+    final int endID = Integer.parseInt(docs.nextDoc().getString("docid"));
     docs.close();
 
     for(int id=0;id<endID;id++) {

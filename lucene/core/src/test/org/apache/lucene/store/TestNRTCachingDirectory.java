@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -56,7 +57,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), cachedDir, conf);
-    final LineFileDocs docs = new LineFileDocs(random(), true);
+    final LineFileDocs docs = new LineFileDocs(w.w, random());
     final int numDocs = TestUtil.nextInt(random(), 100, 400);
 
     if (VERBOSE) {
@@ -66,8 +67,8 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     final List<BytesRef> ids = new ArrayList<>();
     DirectoryReader r = null;
     for(int docCount=0;docCount<numDocs;docCount++) {
-      final Document doc = docs.nextDoc();
-      ids.add(new BytesRef(doc.get("docid")));
+      final Document2 doc = docs.nextDoc();
+      ids.add(new BytesRef(doc.getString("docid")));
       w.addDocument(doc);
       if (random().nextInt(20) == 17) {
         if (r == null) {

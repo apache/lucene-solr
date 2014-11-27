@@ -23,6 +23,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
@@ -179,8 +180,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
   }
   
   @Override
-  protected void addRandomFields(Document doc) {
-    doc.add(new StoredField("foobar", TestUtil.randomSimpleString(random())));
+  protected void addRandomFields(Document2 doc) {
+    doc.addStored("foobar", TestUtil.randomSimpleString(random()));
   }
 
   @Override
