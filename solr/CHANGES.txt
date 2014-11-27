@@ -443,6 +443,8 @@ Other Changes
 
 * SOLR-4792: Stop shipping a .war. (Robert Muir, Ramkumar Aiyengar, Mark Miller)
 
+* SOLR-6799: Update Saxon-HE to 9.6.0-2. (Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
