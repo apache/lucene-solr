@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.idversion;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -29,7 +28,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 
 final class IDVersionPostingsReader extends PostingsReaderBase {
@@ -97,11 +95,6 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   @Override
   public long ramBytesUsed() {
     return 0;
-  }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   @Override

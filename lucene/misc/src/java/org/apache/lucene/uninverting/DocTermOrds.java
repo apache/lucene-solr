@@ -20,7 +20,6 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
@@ -29,7 +28,6 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
@@ -183,11 +181,6 @@ public class DocTermOrds implements Accountable {
     return sz;
   }
 
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
-  }
-
   /** Inverts all terms */
   public DocTermOrds(LeafReader reader, Bits liveDocs, String field) throws IOException {
     this(reader, liveDocs, field, null, Integer.MAX_VALUE);
@@ -240,11 +233,7 @@ public class DocTermOrds implements Accountable {
   public TermsEnum getOrdTermsEnum(LeafReader reader) throws IOException {
     if (indexedTermsArray == null) {
       //System.out.println("GET normal enum");
-      final Fields fields = reader.fields();
-      if (fields == null) {
-        return null;
-      }
-      final Terms terms = fields.terms(field);
+      final Terms terms = reader.terms(field);
       if (terms == null) {
         return null;
       } else {
@@ -295,12 +284,7 @@ public class DocTermOrds implements Accountable {
     final int[] lastTerm = new int[maxDoc];    // last term we saw for this document
     final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
 
-    final Fields fields = reader.fields();
-    if (fields == null) {
-      // No terms
-      return;
-    }
-    final Terms terms = fields.terms(field);
+    final Terms terms = reader.terms(field);
     if (terms == null) {
       // No terms
       return;

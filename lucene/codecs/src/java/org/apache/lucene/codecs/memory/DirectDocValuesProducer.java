@@ -686,11 +686,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
-    
-    @Override
     public String toString() {
       return getClass().getSimpleName();
     }

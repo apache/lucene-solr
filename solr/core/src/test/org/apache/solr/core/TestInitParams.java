@@ -18,6 +18,7 @@ package org.apache.solr.core;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -25,6 +26,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashMap;
+
+import static java.util.Collections.singletonMap;
 
 public class TestInitParams extends SolrTestCaseJ4 {
   @BeforeClass
@@ -46,6 +50,14 @@ public class TestInitParams extends SolrTestCaseJ4 {
       def = (NamedList) nl.get(PluginInfo.APPENDS);
       assertEquals("C", def.get("c"));
     }
+
+    InitParams initParams = h.getCore().getSolrConfig().getInitParams().get("a");
+
+    PluginInfo pluginInfo = new PluginInfo("requestHandler",
+        new HashMap<String, String>(),
+        new NamedList<>(singletonMap("defaults", new NamedList(ZkNodeProps.makeMap("a", "A1")))), null);
+    initParams.apply(pluginInfo);
+    assertEquals( "A",initParams.defaults.get("a"));
   }
 
   @Test

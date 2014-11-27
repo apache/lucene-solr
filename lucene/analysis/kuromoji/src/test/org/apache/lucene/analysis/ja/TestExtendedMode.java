@@ -28,9 +28,7 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 
-@Slow
 public class TestExtendedMode extends BaseTokenStreamTestCase {
   private final Analyzer analyzer = new Analyzer() {
     
@@ -66,12 +64,12 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random, analyzer, 500*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 30*RANDOM_MULTIPLIER, 8192);
   }
 }

@@ -1198,6 +1198,15 @@ public class FieldTypes {
     this.defaultSimilarity = defaultSimilarity;
   }
 
+  public FieldTypes(FieldTypes other) {
+    readOnly = true;
+    indexCreatedVersion = other.indexCreatedVersion;
+    this.defaultIndexAnalyzer = null;
+    this.defaultQueryAnalyzer = other.defaultQueryAnalyzer;
+    this.defaultSimilarity = other.defaultSimilarity;
+    addAll(other);
+  }
+
   // nocommit messy we steal this from commitdata namespace...
   /** Key used to store the field types inside {@link IndexWriter#setCommitData}. */
   public static final String FIELD_TYPES_KEY = "FieldTypes";

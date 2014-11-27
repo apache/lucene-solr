@@ -2499,6 +2499,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   /** Tests dv against stored fields with threads (all types + missing) */
+  @Slow
   public void testThreads2() throws Exception {
     assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
@@ -2665,6 +2666,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     dir.close();
   }
   
+  @Slow
   public void testThreads3() throws Exception {
     assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());

@@ -84,14 +84,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    */
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    final LeafReader reader = context.reader();
-    final Fields fields = reader.fields();
-    if (fields == null) {
-      // reader has no fields
-      return null;
-    }
-
-    final Terms terms = fields.terms(query.field);
+    final Terms terms = context.reader().terms(query.field);
     if (terms == null) {
       // field does not exist
       return null;

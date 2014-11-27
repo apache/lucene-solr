@@ -902,7 +902,16 @@ public abstract class LuceneTestCase extends Assert {
     } else if (rarely(r)) {
       int maxThreadCount = TestUtil.nextInt(r, 1, 4);
       int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
-      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      ConcurrentMergeScheduler cms;
+      if (r.nextBoolean()) {
+        cms = new ConcurrentMergeScheduler();
+      } else {
+        cms = new ConcurrentMergeScheduler() {
+            @Override
+            protected synchronized void maybeStall() {
+            }
+          };
+      }
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
     }
@@ -1316,7 +1325,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (rarely(random) && !bare) { 
-      final double maxMBPerSec = 10 + 5*(random.nextDouble()-0.5);
+      final double maxMBPerSec = TestUtil.nextInt(random, 20, 40);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
       }

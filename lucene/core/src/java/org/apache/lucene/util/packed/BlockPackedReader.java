@@ -27,7 +27,6 @@ import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -99,11 +98,6 @@ public final class BlockPackedReader extends LongValues implements Accountable {
       size += reader.ramBytesUsed();
     }
     return size;
-  }
-
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
   
   @Override

@@ -67,6 +67,19 @@ public final class ReaderManager extends ReferenceManager<DirectoryReader> {
     current = DirectoryReader.open(dir);
   }
 
+  /**
+   * Creates and returns a new ReaderManager from the given
+   * already-opened {@link DirectoryReader}, stealing
+   * the incoming reference.
+   *
+   * @param reader the directoryReader to use for future reopens
+   *        
+   * @throws IOException If there is a low-level I/O error
+   */
+  public ReaderManager(DirectoryReader reader) throws IOException {
+    current = reader;
+  }
+
   @Override
   protected void decRef(DirectoryReader reference) throws IOException {
     reference.decRef();

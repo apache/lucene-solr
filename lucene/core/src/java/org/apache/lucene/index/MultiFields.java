@@ -63,9 +63,6 @@ public final class MultiFields extends Fields {
   public static Fields getFields(IndexReader reader) throws IOException {
     final List<LeafReaderContext> leaves = reader.leaves();
     switch (leaves.size()) {
-      case 0:
-        // no fields
-        return null;
       case 1:
         // already an atomic reader / reader with one leave
         return leaves.get(0).reader().fields();
@@ -75,14 +72,10 @@ public final class MultiFields extends Fields {
         for (final LeafReaderContext ctx : leaves) {
           final LeafReader r = ctx.reader();
           final Fields f = r.fields();
-          if (f != null) {
-            fields.add(f);
-            slices.add(new ReaderSlice(ctx.docBase, r.maxDoc(), fields.size()-1));
-          }
+          fields.add(f);
+          slices.add(new ReaderSlice(ctx.docBase, r.maxDoc(), fields.size()-1));
         }
-        if (fields.isEmpty()) {
-          return null;
-        } else if (fields.size() == 1) {
+        if (fields.size() == 1) {
           return fields.get(0);
         } else {
           return new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
@@ -125,12 +118,7 @@ public final class MultiFields extends Fields {
 
   /**  This method may return null if the field does not exist.*/
   public static Terms getTerms(IndexReader r, String field) throws IOException {
-    final Fields fields = getFields(r);
-    if (fields == null) {
-      return null;
-    } else {
-      return fields.terms(field);
-    }
+    return getFields(r).terms(field);
   }
   
   /** Returns {@link DocsEnum} for the specified field &

@@ -16,8 +16,11 @@ package org.apache.lucene.search.suggest;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.document.Document2;
@@ -29,6 +32,8 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+
+
 
 /**
  * <p>
@@ -115,6 +120,8 @@ public class DocumentDictionary implements Dictionary {
     private BytesRef currentPayload = null;
     private Set<BytesRef> currentContexts;
     private final NumericDocValues weightValues;
+    List<IndexableField> currentDocFields = new ArrayList<>();
+    int nextFieldsPosition = 0;
 
     /**
      * Creates an iterator over term, weight and payload fields from the lucene
@@ -137,7 +144,24 @@ public class DocumentDictionary implements Dictionary {
 
     @Override
     public BytesRef next() throws IOException {
-      while (currentDocId < docCount) {
+      while (true) {
+        if (nextFieldsPosition < currentDocFields.size()) {
+          // Still values left from the document
+          IndexableField fieldValue =  currentDocFields.get(nextFieldsPosition++);
+          if (fieldValue.binaryValue() != null) {
+            return fieldValue.binaryValue();
+          } else if (fieldValue.stringValue() != null) {
+            return new BytesRef(fieldValue.stringValue());
+          } else {
+            continue;
+          }
+        }
+
+        if (currentDocId == docCount) {
+          // Iterated over all the documents.
+          break;
+        }
+
         currentDocId++;
         if (liveDocs != null && !liveDocs.get(currentDocId)) { 
           continue;
@@ -145,33 +169,50 @@ public class DocumentDictionary implements Dictionary {
 
         Document2 doc = reader.document(currentDocId, relevantFields);
 
-        BytesRef tempPayload = null;
-        BytesRef tempTerm = null;
         Set<BytesRef> tempContexts = new HashSet<>();
 
+        BytesRef tempPayload;
         if (hasPayloads) {
           IndexableField payload = doc.getField(payloadField);
-          if (payload == null || (payload.binaryValue() == null && payload.stringValue() == null)) {
+          if (payload == null) {
+            continue;
+          } else if (payload.binaryValue() != null) {
+            tempPayload =  payload.binaryValue();
+          } else if (payload.stringValue() != null) {
+            tempPayload = new BytesRef(payload.stringValue());
+          } else {
             continue;
           }
-          tempPayload = (payload.binaryValue() != null) ? payload.binaryValue() : new BytesRef(payload.stringValue());
+        } else {
+          tempPayload = null;
         }
 
         if (hasContexts) {
           for (IndexableField contextField : doc.getFields(contextsField)) {
-            if (contextField.binaryValue() == null && contextField.stringValue() == null) {
-              continue;
+            if (contextField.binaryValue() != null) {
+              tempContexts.add(contextField.binaryValue());
+            } else if (contextField.stringValue() != null) {
+              tempContexts.add(new BytesRef(contextField.stringValue()));
             } else {
-              tempContexts.add((contextField.binaryValue() != null) ? contextField.binaryValue() : new BytesRef(contextField.stringValue()));
+              continue;
             }
           }
         }
 
-        IndexableField fieldVal = doc.getField(field);
-        if (fieldVal == null || (fieldVal.binaryValue() == null && fieldVal.stringValue() == null)) {
+        currentDocFields = doc.getFields(field);
+        nextFieldsPosition = 0;
+        if (currentDocFields.size() == 0) { // no values in this document
           continue;
         }
-        tempTerm = (fieldVal.stringValue() != null) ? new BytesRef(fieldVal.stringValue()) : fieldVal.binaryValue();
+        IndexableField fieldValue = currentDocFields.get(nextFieldsPosition++);
+        BytesRef tempTerm;
+        if (fieldValue.binaryValue() != null) {
+          tempTerm = fieldValue.binaryValue();
+        } else if (fieldValue.stringValue() != null) {
+          tempTerm = new BytesRef(fieldValue.stringValue());
+        } else {
+          continue;
+        }
 
         currentPayload = tempPayload;
         currentContexts = tempContexts;
@@ -179,6 +220,7 @@ public class DocumentDictionary implements Dictionary {
 
         return tempTerm;
       }
+
       return null;
     }
 

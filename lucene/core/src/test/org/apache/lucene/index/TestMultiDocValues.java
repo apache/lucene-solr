@@ -44,7 +44,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       doc.addLong("numbers", random().nextLong());
@@ -78,7 +78,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableSorting("bytes");
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       doc.addBinary("bytes", new BytesRef(TestUtil.randomUnicodeString(random())));
@@ -112,7 +112,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       doc.addAtom("bytes", TestUtil.randomUnicodeString(random()));
@@ -154,7 +154,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       doc.addAtom("bytes", TestUtil.randomSimpleString(random(), 2));
@@ -194,7 +194,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.setMultiValued("bytes");
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       int numValues = random().nextInt(5);
@@ -258,7 +258,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.setMultiValued("bytes");
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       int numValues = random().nextInt(5);
@@ -321,7 +321,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.setMultiValued("nums");
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       int numValues = random().nextInt(5);
@@ -372,7 +372,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
-    int numDocs = atLeast(500);
+    int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
       Document2 doc = iw.newDocument();
       if (random().nextInt(4) >= 0) {

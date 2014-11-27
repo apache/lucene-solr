@@ -190,8 +190,6 @@
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
-
   <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).
        If the set cardinality <= maxSize elements, then HashDocSet will be used instead of the bitset
        based HashBitset. -->
@@ -204,12 +202,6 @@
   -->
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   	<bool name="httpCaching">true</bool>
-  </requestHandler>
-
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-     <lst name="defaults">
-       <str name="omitHeader">true</str>
-     </lst>
   </requestHandler>
 
   <requestHandler name="dismax" class="solr.SearchHandler" >
@@ -234,8 +226,6 @@
   </requestHandler>
 
   <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
-
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 
   <requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler" >
     <lst name="invariants">
@@ -267,7 +257,7 @@
     </lst>
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
+
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->

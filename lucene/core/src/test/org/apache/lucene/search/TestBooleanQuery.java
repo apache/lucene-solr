@@ -388,4 +388,23 @@ public class TestBooleanQuery extends LuceneTestCase {
     dir.close();
   }
 
+  public void testMinShouldMatchLeniency() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document2 doc = w.newDocument();
+    doc.addLargeText("field", "a b c d");
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "b")), BooleanClause.Occur.SHOULD);
+
+    // No doc can match: BQ has only 2 clauses and we are asking for minShouldMatch=4
+    bq.setMinimumNumberShouldMatch(4);
+    assertEquals(0, s.search(bq, 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
 }

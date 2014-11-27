@@ -43,7 +43,7 @@
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
     <specification.version>@spec.version@</specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>1.7</java.compat.version>
+    <java.compat.version>1.8</java.compat.version>
     <jetty.version>8.1.10.v20130312</jetty.version>
 
     <!-- RandomizedTesting library system properties -->

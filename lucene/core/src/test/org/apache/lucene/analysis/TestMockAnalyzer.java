@@ -232,7 +232,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through differently configured tokenizers */
   public void testRandomRegexps() throws Exception {
-    int iters = atLeast(30);
+    int iters = TEST_NIGHTLY ? atLeast(30) : atLeast(1);
     for (int i = 0; i < iters; i++) {
       final CharacterRunAutomaton dfa = new CharacterRunAutomaton(AutomatonTestUtil.randomAutomaton(random()), Integer.MAX_VALUE);
       final boolean lowercase = random().nextBoolean();
@@ -250,7 +250,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testForwardOffsets() throws Exception {
-    int num = atLeast(10000);
+    int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
       String s = TestUtil.randomHtmlishString(random(), 20);
       StringReader reader = new StringReader(s);

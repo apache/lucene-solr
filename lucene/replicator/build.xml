@@ -32,7 +32,7 @@
 	<target name="resolve" depends="common.resolve">
 		<sequential>
 	    <!-- javax.servlet jar -->
-	    <ivy:retrieve conf="servlet" log="download-only" type="orbit"/>
+	    <ivy:retrieve conf="servlet" log="download-only" type="orbit" symlink="${ivy.symlink}"/>
 		</sequential>
 	</target>
 

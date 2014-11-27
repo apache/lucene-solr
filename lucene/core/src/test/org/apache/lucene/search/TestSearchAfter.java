@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document2;
@@ -62,22 +63,12 @@ public class TestSearchAfter extends LuceneTestCase {
           new SortField("double", SortField.Type.DOUBLE, false),
           new SortField("bytes", SortField.Type.STRING, false),
           new SortField("bytesval", SortField.Type.STRING_VAL, false),
-          new SortField("intdocvalues", SortField.Type.INT, false),
-          new SortField("floatdocvalues", SortField.Type.FLOAT, false),
-          new SortField("sortedbytesdocvalues", SortField.Type.STRING, false),
-          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, false),
-          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, false),
           new SortField("int", SortField.Type.INT, true),
           new SortField("long", SortField.Type.LONG, true),
           new SortField("float", SortField.Type.FLOAT, true),
           new SortField("double", SortField.Type.DOUBLE, true),
           new SortField("bytes", SortField.Type.STRING, true),
           new SortField("bytesval", SortField.Type.STRING_VAL, true),
-          new SortField("intdocvalues", SortField.Type.INT, true),
-          new SortField("floatdocvalues", SortField.Type.FLOAT, true),
-          new SortField("sortedbytesdocvalues", SortField.Type.STRING, true),
-          new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, true),
-          new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, true),
           SortField.FIELD_SCORE,
           SortField.FIELD_DOC,
         }));
@@ -140,8 +131,8 @@ public class TestSearchAfter extends LuceneTestCase {
     fieldTypes.setIndexOptions("floatdocvalues", IndexOptions.NONE);
 
     int numDocs = atLeast(200);
+    Random r = random();
     for (int i = 0; i < numDocs; i++) {
-
       Document2 doc = iw.newDocument();
       if (random().nextInt(5) != 4) {
         doc.addLargeText("english", English.intToEnglish(i));
@@ -150,10 +141,10 @@ public class TestSearchAfter extends LuceneTestCase {
         doc.addLargeText("oddeven", (i % 2 == 0) ? "even" : "odd");
       }
       if (random().nextInt(5) != 4) {
-        doc.addAtom("byte", "" + ((byte) random().nextInt()));
+        doc.addInt("byte", (byte) random().nextInt());
       }
       if (random().nextInt(5) != 4) {
-        doc.addAtom("short", "" + ((short) random().nextInt()));
+        doc.addInt("short", (short) random().nextInt());
       }
       if (random().nextInt(5) != 4) {
         doc.addInt("int", random().nextInt());

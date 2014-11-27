@@ -27,14 +27,18 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A special Handler that registers all standard admin handlers
  * 
  * @since solr 1.3
  */
+@Deprecated
 public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
 {
+  public static Logger log = LoggerFactory.getLogger(AdminHandlers.class);
   NamedList initArgs = null;
   
   private static class StandardHandler {
@@ -100,6 +104,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
         }
       }
     }
+    log.warn("<requestHandler name=\"/admin/\" \n class=\"solr.admin.AdminHandlers\" /> is deprecated . It is not required anymore");
   }
 
   

@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -1080,7 +1079,7 @@ public final class ZkController {
   }
   
   public void publish(final CoreDescriptor cd, final String state, boolean updateLastState) throws KeeperException, InterruptedException {
-    publish(cd, state, true, false);
+    publish(cd, state, updateLastState, false);
   }
   
   /**
@@ -1222,9 +1221,9 @@ public final class ZkController {
     overseerJobQueue.offer(ZkStateReader.toJSON(m));
 
     if(configLocation != null) {
-      synchronized (confDirectoryWatchers) {
+      synchronized (confDirectoryListeners) {
         log.info("This conf directory is no more watched {0}",configLocation);
-        confDirectoryWatchers.remove(configLocation);
+        confDirectoryListeners.remove(configLocation);
       }
     }
   }
@@ -2115,29 +2114,42 @@ public final class ZkController {
    *
    * @return true on success
    */
-  public static boolean persistConfigResourceToZooKeeper( SolrResourceLoader loader, int znodeVersion , String resourceName, byte[] content, boolean createIfNotExists) {
+  public static boolean persistConfigResourceToZooKeeper( SolrResourceLoader loader, int znodeVersion ,
+                                                          String resourceName, byte[] content,
+                                                          boolean createIfNotExists) {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
-    String errMsg = "Failed to persist resource at {0} - version mismatch";
+    String errMsg = "Failed to persist resource at {0} - version mismatch {1}";
     try {
       try {
         zkClient.setData(resourceLocation , content,znodeVersion, true);
+        zkClient.setData(zkLoader.getConfigSetZkPath(),new byte[]{0},true);
       } catch (NoNodeException e) {
         if(createIfNotExists){
           try {
             zkClient.create(resourceLocation,content, CreateMode.PERSISTENT,true);
+            zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
           } catch (KeeperException.NodeExistsException nee) {
-            log.info(MessageFormat.format(errMsg,resourceLocation));
-            throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation) + ", retry.");
+            try {
+              Stat stat = zkClient.exists(resourceLocation, null, true);
+              log.info("failed to set data version in zk is {} and expected version is {} ", stat.getVersion(),znodeVersion);
+            } catch (Exception e1) {
+              log.warn("could not get stat");
+            }
+
+            log.info(MessageFormat.format(errMsg,resourceLocation,znodeVersion));
+            throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation,znodeVersion) + ", retry.");
           }
         }
       }
 
     } catch (KeeperException.BadVersionException bve){
       log.info(MessageFormat.format(errMsg,resourceLocation));
-      throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation) + ", retry.");
+      throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation,znodeVersion) + ", retry.");
+    }catch (ResourceModifiedInZkException e){
+      throw e;
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt(); // Restore the interrupted status
@@ -2157,9 +2169,13 @@ public final class ZkController {
 
   public void unRegisterConfListener(Runnable listener) {
     if(listener == null) return;
-    synchronized (confDirectoryWatchers){
-      for (Set<Runnable> runnables : confDirectoryWatchers.values()) {
-        if(runnables != null) runnables.remove(listener);
+    synchronized (confDirectoryListeners){
+      for (Set<Runnable> listeners : confDirectoryListeners.values()) {
+        if(listeners != null) {
+          if(listeners.remove(listener)) {
+            log.info(" a listener was removed because of core close");
+          }
+        }
       }
     }
 
@@ -2172,9 +2188,9 @@ public final class ZkController {
    */
   public void registerConfListenerForCore(String confDir,SolrCore core, final Runnable listener){
     if(listener==null) throw new NullPointerException("listener cannot be null");
-    synchronized (confDirectoryWatchers){
-      if(confDirectoryWatchers.containsKey(confDir)){
-        confDirectoryWatchers.get(confDir).add(listener);
+    synchronized (confDirectoryListeners){
+      if(confDirectoryListeners.containsKey(confDir)){
+        confDirectoryListeners.get(confDir).add(listener);
         core.addCloseHook(new CloseHook() {
           @Override
           public void preClose(SolrCore core) {
@@ -2184,69 +2200,76 @@ public final class ZkController {
           @Override
           public void postClose(SolrCore core) { }
         });
-
-
       } else {
         throw new SolrException(ErrorCode.SERVER_ERROR,"This conf directory is not valid");
       }
     }
   }
 
-  private Map<String , Set<Runnable>> confDirectoryWatchers =  new HashMap<>();
-  void watchZKConfDir(final String zkDir)  {
+  private final Map<String , Set<Runnable>> confDirectoryListeners =  new HashMap<>();
 
-      if(!confDirectoryWatchers.containsKey(zkDir)){
-        confDirectoryWatchers.put(zkDir,new HashSet<Runnable>());
-      }else{
-        //it's already watched
-        return;
-      }
+  void watchZKConfDir(final String zkDir) {
+    log.info("watch zkdir " + zkDir);
+    if (!confDirectoryListeners.containsKey(zkDir)) {
+      confDirectoryListeners.put(zkDir,  new HashSet<Runnable>());
+      setConfWatcher(zkDir, new WatcherImpl(zkDir));
 
-      Watcher watcher = new Watcher() {
-        @Override
-        public void process(WatchedEvent event) {
-          try {
-            synchronized (confDirectoryWatchers) {
-              // if this is not among directories to be watched then don't set the watcher anymore
-              if(!confDirectoryWatchers.containsKey(zkDir)) return;
-            }
+    }
 
-            if (event.getType() == Event.EventType.NodeChildrenChanged) {
-              synchronized (confDirectoryWatchers) {
-                final Set<Runnable> listeners = confDirectoryWatchers.get(zkDir);
-                if (listeners != null) {
-                  new Thread() {
-                    @Override
-                    public synchronized void run() {
-                    //running in a separate thread so that the zk event thread is not
-                    // unnecessarily held up
-                      for (Runnable listener : listeners) listener.run();
-                    }
-                  }.start();
-                }
-              }
 
-            }
-          } finally {
-            if (Event.EventType.None.equals(event.getType())) {
+  }
+  private class WatcherImpl implements Watcher{
+    private final String zkDir ;
+
+    private WatcherImpl(String dir) {
+      this.zkDir = dir;
+    }
+
+    @Override
+      public void process(WatchedEvent event) {
+        try {
+
+          synchronized (confDirectoryListeners) {
+            // if this is not among directories to be watched then don't set the watcher anymore
+            if( !confDirectoryListeners.containsKey(zkDir)) {
+              log.info("Watcher on {} is removed ", zkDir);
               return;
-            } else {
-              setConfWatcher(zkDir,this);
             }
+            final Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
+            if (listeners != null && !listeners.isEmpty()) {
+              new Thread() {
+                //run these in a separate thread because this can be long running
+                public void run() {
+                  for (final Runnable listener : listeners)
+                    try {
+                      listener.run();
+                    } catch (Exception e) {
+                      log.warn("listener throws error", e);
+                    }
+                }
+              }.start();
+            }
+
+          }
+
+        } finally {
+          if (Event.EventType.None.equals(event.getType())) {
+            log.info("A node got unwatched for {}", zkDir);
+            return;
+          } else {
+            setConfWatcher(zkDir,this);
           }
         }
-      };
-
-     setConfWatcher(zkDir,watcher);
+      }
     }
 
   private void setConfWatcher(String zkDir, Watcher watcher) {
     try {
-      zkClient.getChildren(zkDir,watcher,true);
+      zkClient.exists(zkDir,watcher,true);
     } catch (KeeperException e) {
       log.error("failed to set watcher for conf dir {} ", zkDir);
     } catch (InterruptedException e) {
-      Thread.interrupted();
+      Thread.currentThread().interrupt();
       log.error("failed to set watcher for conf dir {} ", zkDir);
     }
   }
@@ -2255,11 +2278,10 @@ public final class ZkController {
     return new OnReconnect() {
       @Override
       public void command() {
-        synchronized (confDirectoryWatchers){
-          for (String s : confDirectoryWatchers.keySet()) {
+        synchronized (confDirectoryListeners){
+          for (String s : confDirectoryListeners.keySet()) {
             watchZKConfDir(s);
           }
-
         }
       }
     };

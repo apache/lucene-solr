@@ -440,6 +440,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
       Document doc = new Document();
       doc.add(new StringField("id", String.format(Locale.ROOT, "%09d", i), Field.Store.YES));
+      doc.add(new SortedDocValuesField("id", new BytesRef(String.format(Locale.ROOT, "%09d", i))));
       if (groupValue != null) {
         addField(doc, groupField, groupValue);
       }

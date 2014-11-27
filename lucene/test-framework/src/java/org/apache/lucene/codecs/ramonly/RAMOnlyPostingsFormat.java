@@ -129,11 +129,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
-
-    @Override
     public long size() {
       return termToDocs.size();
     }
@@ -195,11 +190,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
-
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
   }
 
   static class RAMDoc implements Accountable {
@@ -227,11 +217,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         }
       }
       return sizeInBytes;
-    }
-    
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
     }
   }
 

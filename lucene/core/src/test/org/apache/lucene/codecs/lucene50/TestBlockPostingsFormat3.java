@@ -63,7 +63,8 @@ import org.apache.lucene.util.automaton.RegExp;
  * Tests partial enumeration (only pulling a subset of the indexed data) 
  */
 public class TestBlockPostingsFormat3 extends LuceneTestCase {
-  static final int MAXDOC = Lucene50PostingsFormat.BLOCK_SIZE * 20;
+  private final int MAXDOC = TEST_NIGHTLY ? Lucene50PostingsFormat.BLOCK_SIZE * 20 
+                                          : Lucene50PostingsFormat.BLOCK_SIZE * 3;
   
   // creates 8 fields with different options and does "duels" of fields against each other
   public void test() throws Exception {

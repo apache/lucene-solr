@@ -18,7 +18,6 @@ package org.apache.lucene.store;
  */
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import org.apache.lucene.util.Accountable;
 
@@ -81,11 +80,6 @@ public class RAMFile implements Accountable {
   @Override
   public synchronized long ramBytesUsed() {
     return sizeInBytes;
-  }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   @Override

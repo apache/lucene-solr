@@ -66,4 +66,9 @@ public final class LeafReaderContext extends IndexReaderContext {
   public LeafReader reader() {
     return reader;
   }
+
+  @Override
+  public String toString() {
+    return "LeafReaderContext(" + reader + " docBase=" + docBase + " ord=" + ord + ")";
+  }
 }

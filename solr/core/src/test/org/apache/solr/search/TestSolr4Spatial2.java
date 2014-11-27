@@ -18,6 +18,7 @@ package org.apache.solr.search;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @Test
   public void testBBox() throws Exception {
-    String fieldName = "bbox";
+    String fieldName = random().nextBoolean() ? "bbox" : "bboxD_dynamic";
     assertU(adoc("id", "0"));//nothing
     assertU(adoc("id", "1", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
     assertU(adoc("id", "2", fieldName, "ENVELOPE(22, 22, 10, 10)"));//pt
@@ -48,14 +49,16 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertJQ(req("q", "{!field f="+fieldName+" filter=false score=overlapRatio " +
                 "queryTargetProportion=0.25}" +
                 "Intersects(ENVELOPE(10,25,12,10))",
-            "fl", "id,score",
+            "fl", "*,score",
             "debug", "results"),//explain info
         "/response/docs/[0]/id=='2'",
         "/response/docs/[0]/score==0.75]",
         "/response/docs/[1]/id=='1'",
         "/response/docs/[1]/score==0.26666668]",
         "/response/docs/[2]/id=='0'",
-        "/response/docs/[2]/score==0.0"
+        "/response/docs/[2]/score==0.0",
+
+        "/response/docs/[1]/" + fieldName + "=='ENVELOPE(-10, 20, 15, 10)'"//stored value
         );
 
     //minSideLength with point query
@@ -84,6 +87,15 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         "/response/docs/[0]/id=='1'" ,
         "/response/docs/[0]/score==" + 146.39793f + "]"//a bit less than 150
     );
+  }
+
+  @Test
+  public void testBadScoreParam() throws Exception {
+    String fieldName = "bbox";
+    assertQEx("expect friendly error message",
+        "area2D",
+        req("{!field f="+fieldName+" filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
 }

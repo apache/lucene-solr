@@ -172,17 +172,6 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     return "Add documents using XML (with XSLT), CSV, JSON, or javabin";
   }
 
-  public static void addImplicits(List<PluginInfo> implicits) {
-    implicits.add(getPluginInfo("/update",Collections.emptyMap()));
-    implicits.add(getPluginInfo(JSON_PATH, singletonMap("update.contentType", "application/json")));
-    implicits.add(getPluginInfo(CSV_PATH, singletonMap("update.contentType", "application/csv")));
-    implicits.add(getPluginInfo(DOC_PATH, makeMap("update.contentType", "application/json", "json.command","false")));
-  }
-
-  static PluginInfo getPluginInfo(String name, Map defaults){
-    Map m = makeMap("name", name, "class", UpdateRequestHandler.class.getName());
-    return new PluginInfo("requestHandler", m, new NamedList<>( singletonMap("defaults", new NamedList(defaults))) ,null);
-  }
   public static final String DOC_PATH = "/update/json/docs";
   public static final String JSON_PATH = "/update/json";
   public static final String CSV_PATH = "/update/csv";

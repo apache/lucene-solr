@@ -65,10 +65,10 @@ public class TestExpressionSorts extends LuceneTestCase {
       Document2 document = iw.newDocument();
       document.addLargeText("english", English.intToEnglish(i));
       document.addLargeText("oddeven", (i % 2 == 0) ? "even" : "odd");
-      document.addAtom("byte", "" + ((byte) random().nextInt()));
-      document.addAtom("short", "" + ((short) random().nextInt()));
-      document.addInt("intdocvalues", random().nextInt());
-      document.addFloat("floatdocvalues", random().nextFloat());
+      document.addInt("int", random().nextInt());
+      document.addLong("long", random().nextLong());
+      document.addFloat("float", random().nextFloat());
+      document.addDouble("double", random().nextDouble());
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -106,8 +106,6 @@ public class TestExpressionSorts extends LuceneTestCase {
     for (int i = 0; i < 10; i++) {
       boolean reversed = random().nextBoolean();
       SortField fields[] = new SortField[] {
-          new SortField("intdocvalues", SortField.Type.INT, reversed),
-          new SortField("floatdocvalues", SortField.Type.FLOAT, reversed),
           new SortField("score", SortField.Type.SCORE)
       };
       Collections.shuffle(Arrays.asList(fields), random());

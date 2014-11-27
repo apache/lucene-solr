@@ -210,5 +210,8 @@ public  class CommandOperation {
     }
 
   }
+  public CommandOperation getCopy(){
+    return new CommandOperation(name,commandData);
+  }
 
 }

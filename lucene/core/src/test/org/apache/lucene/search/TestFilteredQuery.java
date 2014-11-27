@@ -37,6 +37,7 @@ import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -66,22 +67,22 @@ public class TestFilteredQuery extends LuceneTestCase {
 
     Document2 doc = writer.newDocument();
     doc.addLargeText("field", "one two three four five");
-    doc.addLargeText("sorter", "b");
+    doc.addAtom("sorter", new BytesRef("b"));
     writer.addDocument (doc);
 
     doc = writer.newDocument();
     doc.addLargeText("field", "one two three four");
-    doc.addLargeText("sorter", "d");
+    doc.addAtom("sorter", new BytesRef("d"));
     writer.addDocument (doc);
 
     doc = writer.newDocument();
     doc.addLargeText("field", "one two three y");
-    doc.addLargeText("sorter", "a");
+    doc.addAtom("sorter", new BytesRef("a"));
     writer.addDocument (doc);
 
     doc = writer.newDocument();
     doc.addLargeText("field", "one two x");
-    doc.addLargeText("sorter", "c");
+    doc.addAtom("sorter", new BytesRef("c"));
     writer.addDocument (doc);
 
     // tests here require single segment (eg try seed
@@ -94,7 +95,7 @@ public class TestFilteredQuery extends LuceneTestCase {
 
     searcher = newSearcher(reader);
 
-    query = new TermQuery (new Term ("field", "three"));
+    query = new TermQuery(new Term("field", "three"));
     filter = newStaticFilterB();
   }
 

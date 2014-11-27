@@ -900,7 +900,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   public void testRandomChains() throws Throwable {
-    int numIterations = atLeast(20);
+    int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
@@ -919,7 +919,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   
   // we might regret this decision...
   public void testRandomChainsWithLargeStrings() throws Throwable {
-    int numIterations = atLeast(20);
+    int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;
     Random random = random();
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());

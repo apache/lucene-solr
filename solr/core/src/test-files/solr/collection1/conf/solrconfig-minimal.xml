@@ -54,8 +54,5 @@
 
   </requestHandler>
 
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 </config>
 

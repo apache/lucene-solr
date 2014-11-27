@@ -36,7 +36,7 @@ A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
 
 B. How to generate Lucene/Solr Maven artifacts
 
-   Prerequisites: JDK 1.7+ and Ant 1.8.2+
+   Prerequisites: JDK 1.8+ and Ant 1.8.2+
 
    Run 'ant generate-maven-artifacts' to create an internal Maven
    repository, including POMs, binary .jars, source .jars, and javadoc
@@ -50,7 +50,7 @@ B. How to generate Lucene/Solr Maven artifacts
 
 C. How to deploy Maven artifacts to a repository
 
-   Prerequisites: JDK 1.7+ and Ant 1.8.2+
+   Prerequisites: JDK 1.8+ and Ant 1.8.2+
 
    You can deploy targets for all of Lucene/Solr, only Lucene, or only Solr,
    as in B. above.  To deploy to a Maven repository, the command is the same
@@ -77,7 +77,7 @@ D. How to use Maven to build Lucene/Solr
 
    The details, followed by some example Maven commands:
 
-   1. Prerequisites: JDK 1.7+ and Maven 2.2.1 or 3.X
+   1. Prerequisites: JDK 1.8+ and Maven 2.2.1 or 3.X
 
    2. Make sure your sources are up to date.  If you checked your sources out
       from the Apache Subversion repository, run "svn update" from the top

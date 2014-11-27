@@ -279,7 +279,7 @@
 
     <echo>
       SUCCESS: You must right-click your project and choose Refresh.
-               Your project must use a Java 7 JRE.
+               Your project must use a Java 8 JRE.
     </echo>
   </target>
 
@@ -326,7 +326,7 @@ following two XML attributes/values (adjust values according to
 JDKs you have defined locally - see 
 File | Project Structure | Platform Settings | SDKs):
 
-    idea.jdk = project-jdk-name="1.7" project-jdk-type="JavaSDK"
+    idea.jdk = project-jdk-name="1.8" project-jdk-type="JavaSDK"
     </echo>
   </target>
 
@@ -373,22 +373,13 @@ File | Project Structure | Platform Settings | SDKs):
     </subant>
   </target>
   
-  <target name="-nightly-smoke-java8params" if="smokeTestRelease.java8">
-    <!-- convert path to UNIX style, so windows backslashes don't hurt escaping: -->
-    <pathconvert targetos="unix" property="-smokeTestRelease.java8params">
-      <regexpmapper from="^(.*)$" to="--test-java8 '\1'"/>
-      <path location="${smokeTestRelease.java8}"/>
-    </pathconvert>
-  </target>
-
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it (pass '-DsmokeTestRelease.java8=/path/to/jdk1.8.0' to additionally test with Java 8)"
-    depends="clean,-nightly-smoke-java8params">
-    <fail message="To run nightly smoke, the JDK must be exactly Java 1.7, was: ${java.specification.version}">
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it"
+    depends="clean">
+    <fail message="To run nightly smoke, the JDK must be exactly Java 1.8, was: ${java.specification.version}">
       <condition>
-        <not><equals arg1="${java.specification.version}" arg2="1.7"/></not>
+        <not><equals arg1="${java.specification.version}" arg2="1.8"/></not>
       </condition>
     </fail>
-    <property name="-smokeTestRelease.java8params" value=""/><!-- (if not yet defined) -->
     <exec executable="${python32.exe}" failonerror="true" taskname="python32">
       <arg value="-V"/>
     </exec>
@@ -412,7 +403,6 @@ File | Project Structure | Platform Settings | SDKs):
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg file="dev-tools/scripts/smokeTestRelease.py"/>
-      <arg line="${-smokeTestRelease.java8params}"/>
       <arg value="--revision"/>
       <arg value="skip"/>
       <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->

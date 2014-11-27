@@ -35,12 +35,12 @@ import org.apache.lucene.util.TestUtil;
 public class TestIndexReaderClose extends LuceneTestCase {
 
   public void testCloseUnderException() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), new MockAnalyzer(random())));
+    writer.commit();
+    writer.close();
     final int iters = 1000 +  1 + random().nextInt(20);
     for (int j = 0; j < iters; j++) {
-      Directory dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), new MockAnalyzer(random())));
-      writer.commit();
-      writer.close();
       DirectoryReader open = DirectoryReader.open(dir);
       final boolean throwOnClose = !rarely();
       LeafReader wrap = SlowCompositeReaderWrapper.wrap(open);
@@ -90,8 +90,8 @@ public class TestIndexReaderClose extends LuceneTestCase {
       }
       assertEquals(0, count.get());
       wrap.close();
-      dir.close();
     }
+    dir.close();
   }
 
   public void testCoreListenerOnWrapper() throws IOException {

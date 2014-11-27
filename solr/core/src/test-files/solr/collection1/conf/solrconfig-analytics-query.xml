@@ -185,7 +185,6 @@
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
 
   <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).
 If the set cardinality <= maxSize elements, then HashDocSet will be used instead of the bitset
@@ -201,11 +200,6 @@ based HashBitset. -->
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-    <lst name="defaults">
-      <str name="omitHeader">true</str>
-    </lst>
-  </requestHandler>
 
   <requestHandler name="dismax" class="solr.SearchHandler" >
     <lst name="defaults">
@@ -229,8 +223,6 @@ based HashBitset. -->
   </requestHandler>
 
   <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
-
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">

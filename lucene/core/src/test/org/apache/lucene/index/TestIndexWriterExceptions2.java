@@ -49,11 +49,13 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /** 
  * Causes a bunch of non-aborting and aborting exceptions and checks that
  * no index corruption is ever created
  */
+@SuppressCodecs("SimpleText")
 public class TestIndexWriterExceptions2 extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
@@ -97,7 +99,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);
     
-    int numDocs = atLeast(2000);
+    int numDocs = atLeast(500);
     
     IndexWriter iw = new IndexWriter(dir, conf);
     FieldTypes fieldTypes = iw.getFieldTypes();

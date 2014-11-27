@@ -1,0 +1,331 @@
+package org.apache.lucene.mockfile;
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.SecureDirectoryStream;
+import java.nio.file.DirectoryStream.Filter;
+import java.nio.file.attribute.FileAttribute;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+
+import org.apache.lucene.util.IOUtils;
+
+/** 
+ * Base class for tracking file handles.
+ * <p>
+ * This class adds tracking to all streams/channels and 
+ * provides two hooks to handle file management:
+ * <ul>
+ *   <li>{@link #onOpen(Path, Object)}
+ *   <li>{@link #onClose(Path, Object)}
+ * </ul>
+ */
+public abstract class HandleTrackingFS extends FilterFileSystemProvider {
+  
+  /**
+   * Create a new instance, identified by {@code scheme} and passing
+   * through operations to {@code delegate}. 
+   * @param scheme URI scheme for this provider
+   * @param delegate delegate filesystem to wrap.
+   */
+  public HandleTrackingFS(String scheme, FileSystem delegate) {
+    super(scheme, delegate);
+  }
+  
+  /**
+   * Called when {@code path} is opened via {@code stream}. 
+   * @param path Path that was opened
+   * @param stream Stream or Channel opened against the path.
+   * @throws IOException if an I/O error occurs.
+   */
+  protected abstract void onOpen(Path path, Object stream) throws IOException;
+  
+  /**
+   * Called when {@code path} is closed via {@code stream}. 
+   * @param path Path that was closed
+   * @param stream Stream or Channel closed against the path.
+   * @throws IOException if an I/O error occurs.
+   */
+  protected abstract void onClose(Path path, Object stream) throws IOException;
+
+  /**
+   * Helper method, to deal with onOpen() throwing exception
+   */
+  final void callOpenHook(Path path, Closeable stream) throws IOException {
+    boolean success = false;
+    try {
+      onOpen(path, stream);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(stream);
+      }
+    }
+  }
+  
+  @Override
+  public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
+    InputStream stream = new FilterInputStream2(super.newInputStream(path, options)) {
+      @Override
+      public void close() throws IOException {
+        onClose(path, this);
+        super.close();
+      }
+
+      @Override
+      public String toString() {
+        return "InputStream(" + path.toString() + ")";
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return this == obj;
+      }
+    };
+    callOpenHook(path, stream);
+    return stream;
+  }
+
+  @Override
+  public OutputStream newOutputStream(final Path path, OpenOption... options) throws IOException {
+    OutputStream stream = new FilterOutputStream2(super.newOutputStream(path, options)) {
+      @Override
+      public void close() throws IOException {
+        onClose(path, this);
+        super.close();
+      }
+      
+      @Override
+      public String toString() {
+        return "OutputStream(" + path.toString() + ")";
+      }
+      
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return this == obj;
+      }
+    };
+    callOpenHook(path, stream);
+    return stream;
+  }
+  
+  @Override
+  public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+    FileChannel channel = new FilterFileChannel(super.newFileChannel(path, options, attrs)) {
+      @Override
+      protected void implCloseChannel() throws IOException {
+        onClose(path, this);
+        super.implCloseChannel();
+      }
+
+      @Override
+      public String toString() {
+        return "FileChannel(" + path.toString() + ")";
+      }
+      
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return this == obj;
+      }
+    };
+    callOpenHook(path, channel);
+    return channel;
+  }
+
+  @Override
+  public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
+    AsynchronousFileChannel channel = new FilterAsynchronousFileChannel(super.newAsynchronousFileChannel(path, options, executor, attrs)) {
+      @Override
+      public void close() throws IOException {
+        onClose(path, this);
+        super.close();
+      }
+
+      @Override
+      public String toString() {
+        return "AsynchronousFileChannel(" + path.toString() + ")";
+      }
+      
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return this == obj;
+      }
+    };
+    callOpenHook(path, channel);
+    return channel;
+  }
+
+  @Override
+  public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+    SeekableByteChannel channel = new FilterSeekableByteChannel(super.newByteChannel(path, options, attrs)) {
+      @Override
+      public void close() throws IOException {
+        onClose(path, this);
+        super.close();
+      }
+
+      @Override
+      public String toString() {
+        return "SeekableByteChannel(" + path.toString() + ")";
+      }
+      
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return this == obj;
+      }
+    };
+    callOpenHook(path, channel);
+    return channel;
+  }
+
+  @Override
+  public DirectoryStream<Path> newDirectoryStream(Path dir, Filter<? super Path> filter) throws IOException {
+    DirectoryStream<Path> stream = super.newDirectoryStream(dir, filter);
+    if (stream instanceof SecureDirectoryStream) {
+      stream = new TrackingSecureDirectoryStream((SecureDirectoryStream<Path>)stream, dir);
+    } else {
+      stream = new FilterDirectoryStream<Path>(stream) {
+        @Override
+        public void close() throws IOException {
+          onClose(dir, this);
+          super.close();
+        }
+        
+        @Override
+        public String toString() {
+          return "DirectoryStream(" + dir + ")";
+        }
+        
+        @Override
+        public int hashCode() {
+          return System.identityHashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+          return this == obj;
+        }
+      };
+    }
+    callOpenHook(dir, stream);
+    return stream;
+  }
+  
+  /** You can also open various things from SecureDirectoryStream, so we ensure we track those */
+  class TrackingSecureDirectoryStream extends FilterSecureDirectoryStream<Path> {
+    final Path dir;
+    
+    TrackingSecureDirectoryStream(SecureDirectoryStream<Path> delegate, Path dir) {
+      super(delegate);
+      this.dir = dir;
+    }
+
+    @Override
+    public void close() throws IOException {
+      onClose(dir, this);
+      super.close();
+    }
+    
+    @Override
+    public String toString() {
+      return "SecureDirectoryStream(" + dir + ")";
+    }
+    
+    @Override
+    public int hashCode() {
+      return System.identityHashCode(this);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return this == obj;
+    }
+
+    @Override
+    public SecureDirectoryStream<Path> newDirectoryStream(Path path, LinkOption... options) throws IOException {
+      SecureDirectoryStream<Path> stream = new TrackingSecureDirectoryStream(super.newDirectoryStream(path, options), path);
+      callOpenHook(path, stream);
+      return stream;
+    }
+
+    @Override
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+      SeekableByteChannel channel = new FilterSeekableByteChannel(super.newByteChannel(path, options, attrs)) {
+        @Override
+        public void close() throws IOException {
+          onClose(path, this);
+          super.close();
+        }
+
+        @Override
+        public String toString() {
+          return "SeekableByteChannel(" + path.toString() + ")";
+        }
+        
+        @Override
+        public int hashCode() {
+          return System.identityHashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+          return this == obj;
+        }
+      };
+      callOpenHook(path, channel);
+      return channel;
+    }
+  }
+}

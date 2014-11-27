@@ -65,6 +65,8 @@
     <field name="pointvector" type="pointvector" />
     <field name="bbox" type="bbox" />
 
+    <dynamicField name="bboxD_*" type="bbox" indexed="true" />
+
   </fields>
 
   <uniqueKey>id</uniqueKey>

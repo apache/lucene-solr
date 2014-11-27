@@ -53,7 +53,7 @@ public class ThrottledIndexOutput extends IndexOutput {
   }
 
   public static final int mBitsToBytes(int mbits) {
-    return mbits * 125000;
+    return mbits * 125000000;
   }
 
   public ThrottledIndexOutput(int bytesPerSecond, long flushDelayMillis,

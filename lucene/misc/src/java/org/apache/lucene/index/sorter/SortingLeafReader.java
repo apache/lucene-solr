@@ -770,12 +770,7 @@ public class SortingLeafReader extends FilterLeafReader {
   
   @Override
   public Fields fields() throws IOException {
-    Fields fields = in.fields();
-    if (fields == null) {
-      return null;
-    } else {
-      return new SortingFields(fields, in.getFieldInfos(), docMap);
-    }
+    return new SortingFields(in.fields(), in.getFieldInfos(), docMap);
   }
   
   @Override

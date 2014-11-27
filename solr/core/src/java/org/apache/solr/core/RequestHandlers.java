@@ -139,7 +139,8 @@ public final class RequestHandlers {
    * Handlers will be registered and initialized in the order they appear in solrconfig.xml
    */
 
-  void initHandlersFromConfig(SolrConfig config, List<PluginInfo> implicits){
+  void initHandlersFromConfig(SolrConfig config){
+    List<PluginInfo> implicits = PluginsRegistry.getHandlers(core);
     // use link map so we iterate in the same order
     Map<PluginInfo,SolrRequestHandler> handlers = new LinkedHashMap<>();
     Map<String, PluginInfo> implicitInfoMap= new HashMap<>();
@@ -212,7 +213,7 @@ public final class RequestHandlers {
     if(!ags.isEmpty()){
       info = new PluginInfo(info.type, info.attributes, info.initArgs.clone(), info.children);
       for (InitParams initParam : ags) {
-        initParam.apply(info.initArgs);
+        initParam.apply(info);
       }
     }
     return info;

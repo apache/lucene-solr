@@ -100,7 +100,7 @@ public abstract class IndexReader implements Closeable {
    */
   public static interface ReaderClosedListener {
     /** Invoked when the {@link IndexReader} is closed. */
-    public void onClose(IndexReader reader);
+    public void onClose(IndexReader reader) throws IOException;
   }
 
   // nocommit need getFieldTypes; how should MultiReader impl?
@@ -199,7 +199,7 @@ public abstract class IndexReader implements Closeable {
    */
   public final void incRef() {
     if (!tryIncRef()) {
-       ensureOpen();
+      ensureOpen();
     }
   }
   

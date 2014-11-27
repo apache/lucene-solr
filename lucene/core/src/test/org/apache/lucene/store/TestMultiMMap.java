@@ -240,7 +240,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   }
   
   public void testSeeking() throws Exception {
-    for (int i = 0; i < 10; i++) {
+    int numIters = TEST_NIGHTLY ? 10 : 1;
+    for (int i = 0; i < numIters; i++) {
       MMapDirectory mmapDir = new MMapDirectory(createTempDir("testSeeking"), 1<<i);
       IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
       byte bytes[] = new byte[1<<(i+1)]; // make sure we switch buffers
@@ -267,7 +268,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   // note instead of seeking to offset and reading length, this opens slices at the 
   // the various offset+length and just does readBytes.
   public void testSlicedSeeking() throws Exception {
-    for (int i = 0; i < 10; i++) {
+    int numIters = TEST_NIGHTLY ? 10 : 1;
+    for (int i = 0; i < numIters; i++) {
       MMapDirectory mmapDir = new MMapDirectory(createTempDir("testSlicedSeeking"), 1<<i);
       IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
       byte bytes[] = new byte[1<<(i+1)]; // make sure we switch buffers
@@ -327,7 +329,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   }
   
   public void testRandomChunkSizes() throws Exception {
-    int num = atLeast(10);
+    int num = TEST_NIGHTLY ? atLeast(10) : 3;
     for (int i = 0; i < num; i++) {
       assertChunking(random(), TestUtil.nextInt(random(), 20, 100));
     }

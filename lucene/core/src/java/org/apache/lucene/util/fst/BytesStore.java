@@ -19,7 +19,6 @@ package org.apache.lucene.util.fst;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.store.DataInput;
@@ -480,11 +479,6 @@ class BytesStore extends DataOutput implements Accountable {
       size += RamUsageEstimator.sizeOf(block);
     }
     return size;
-  }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   @Override

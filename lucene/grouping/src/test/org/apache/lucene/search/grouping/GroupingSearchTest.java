@@ -229,6 +229,7 @@ public class GroupingSearchTest extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     doc.add(newField("group", "foo", StringField.TYPE_NOT_STORED));
+    doc.add(new SortedDocValuesField("group", new BytesRef("foo")));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());

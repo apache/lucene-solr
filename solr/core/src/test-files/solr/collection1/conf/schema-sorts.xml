@@ -201,9 +201,10 @@ NOTE: Tests expect every field in this schema to be sortable.
     <fieldtype name="str_dv_last" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
     <fieldtype name="str_dv_first" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="bin" class="solr.SortableBinaryField" stored="true" indexed="true" />
-    <fieldtype name="bin_last" class="solr.SortableBinaryField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="bin_first" class="solr.SortableBinaryField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <!-- note: all 'binary' fields have docvalues, because this fieldtype doesnt support indexing -->
+    <fieldtype name="bin" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true"/>
+    <fieldtype name="bin_last" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true" sortMissingLast="true"/>
+    <fieldtype name="bin_first" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true" sortMissingFirst="true"/>
     <fieldtype name="bin_dv" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true"/>
     <fieldtype name="bin_dv_last" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
     <fieldtype name="bin_dv_first" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>

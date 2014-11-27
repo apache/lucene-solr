@@ -1,9 +1,5 @@
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -28,6 +24,7 @@ import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -136,13 +133,12 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     try {
       RetryUtil.retryOnThrowable(NodeExistsException.class, 15000, 1000,
           new RetryCmd() {
-            
             @Override
             public void execute() throws Throwable {
-              zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
-                  CreateMode.EPHEMERAL, true);
+              zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps), CreateMode.EPHEMERAL, true);
             }
-          });
+          }
+      );
     } catch (Throwable t) {
       if (t instanceof OutOfMemoryError) {
         throw (OutOfMemoryError) t;
@@ -407,13 +403,19 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
     int cnt = 0;
-    while (true && !isClosed && !cc.isShutDown()) {
+    while (!isClosed && !cc.isShutDown()) {
       // wait for everyone to be up
       if (slices != null) {
         int found = 0;
         try {
           found = zkClient.getChildren(shardsElectZkPath, null, true).size();
         } catch (KeeperException e) {
+          if (e instanceof KeeperException.SessionExpiredException) {
+            // if the session has expired, then another election will be launched, so
+            // quit here
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                                    "ZK session expired - cancelling election for " + collection + " " + shardId);
+          }
           SolrException.log(log,
               "Error checking for the number of election participants", e);
         }

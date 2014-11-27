@@ -475,11 +475,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     ensureOpen();
     return docWriter.ramBytesUsed();
   }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
-  }
 
   /** Holds shared SegmentReader instances. IndexWriter uses
    *  SegmentReaders for 1) applying deletes, 2) doing
@@ -3822,6 +3817,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         merge.readers.set(i, null);
       }
     }
+
+    try {
+      merge.mergeFinished();
+    } catch (Throwable t) {
+      if (th == null) {
+        th = t;
+      }
+    }
     
     // If any error occured, throw it.
     if (!suppressExceptions) {
@@ -4414,10 +4417,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {
     //System.out.println("IW.nrtIsCurrent " + (infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any()));
     ensureOpen();
+    boolean isCurrent = infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedUpdatesStream.any();
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "nrtIsCurrent: infoVersion matches: " + (infos.version == segmentInfos.version) + "; DW changes: " + docWriter.anyChanges() + "; BD changes: "+ bufferedUpdatesStream.any());
+      if (isCurrent == false) {
+        infoStream.message("IW", "nrtIsCurrent: infoVersion matches: " + (infos.version == segmentInfos.version) + "; DW changes: " + docWriter.anyChanges() + "; BD changes: "+ bufferedUpdatesStream.any());
+      }
     }
-    return infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedUpdatesStream.any();
+    return isCurrent;
   }
 
   synchronized boolean isClosed() {

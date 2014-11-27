@@ -325,30 +325,36 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
     // At this point the writer should have 2 thread states w/ docs; now we index with only 1 thread until we see all 1000 thread0 & thread1
     // docs flushed.  If the writer incorrectly holds onto previously indexed docs forever then this will run forever:
+    long counter = 0;
+    long checkAt = 100;
     while (thread0Count < 1000 || thread1Count < 1000) {
       Document2 doc = w.newDocument();
       doc.addAtom("field", "threadIDmain");
       w.addDocument(doc);
-
-      for(String fileName : dir.listAll()) {
-        if (fileName.endsWith(".si")) {
-          String segName = IndexFileNames.parseSegmentName(fileName);
-          if (segSeen.contains(segName) == false) {
-            segSeen.add(segName);
-            byte id[] = readSegmentInfoID(dir, fileName);
-            SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
-            si.setCodec(codec);
-            SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
-            SegmentReader sr = new SegmentReader(w.getFieldTypes(),
-                                                 sci, IOContext.DEFAULT);
-            try {
-              thread0Count += sr.docFreq(new Term("field", "threadID0"));
-              thread1Count += sr.docFreq(new Term("field", "threadID1"));
-            } finally {
-              sr.close();
+      if (counter++ == checkAt) {
+        for(String fileName : dir.listAll()) {
+          if (fileName.endsWith(".si")) {
+            String segName = IndexFileNames.parseSegmentName(fileName);
+            if (segSeen.contains(segName) == false) {
+              segSeen.add(segName);
+              byte id[] = readSegmentInfoID(dir, fileName);
+              SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
+              si.setCodec(codec);
+              SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
+              SegmentReader sr = new SegmentReader(w.getFieldTypes(),
+                                                   sci, IOContext.DEFAULT);
+              try {
+                thread0Count += sr.docFreq(new Term("field", "threadID0"));
+                thread1Count += sr.docFreq(new Term("field", "threadID1"));
+              } finally {
+                sr.close();
+              }
             }
           }
         }
+
+        checkAt = (long) (checkAt * 1.25);
+        counter = 0;
       }
     }
 

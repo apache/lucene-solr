@@ -60,17 +60,14 @@ public class PerThreadPKLookup {
     int numSegs = 0;
     boolean hasDeletions = false;
     for(int i=0;i<leaves.size();i++) {
-      Fields fields = leaves.get(i).reader().fields();
-      if (fields != null) {
-        Terms terms = fields.terms(idFieldName);
-        if (terms != null) {
-          termsEnums[numSegs] = terms.iterator(null);
-          assert termsEnums[numSegs] != null;
-          docBases[numSegs] = leaves.get(i).docBase;
-          liveDocs[numSegs] = leaves.get(i).reader().getLiveDocs();
-          hasDeletions |= leaves.get(i).reader().hasDeletions();
-          numSegs++;
-        }
+      Terms terms = leaves.get(i).reader().terms(idFieldName);
+      if (terms != null) {
+        termsEnums[numSegs] = terms.iterator(null);
+        assert termsEnums[numSegs] != null;
+        docBases[numSegs] = leaves.get(i).docBase;
+        liveDocs[numSegs] = leaves.get(i).reader().getLiveDocs();
+        hasDeletions |= leaves.get(i).reader().hasDeletions();
+        numSegs++;
       }
     }
     this.numSegs = numSegs;

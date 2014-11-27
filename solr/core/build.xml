@@ -62,8 +62,8 @@
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <sequential>
-      <ivy:retrieve conf="compile,compile.hadoop" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
-      <ivy:retrieve conf="test,test.DfsMiniCluster" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
+      <ivy:retrieve conf="compile,compile.hadoop" type="jar,bundle" sync="${ivy.sync}" log="download-only" symlink="${ivy.symlink}"/>
+      <ivy:retrieve conf="test,test.DfsMiniCluster" type="jar,bundle,test" sync="${ivy.sync}" log="download-only" symlink="${ivy.symlink}"
                     pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
     </sequential>
   </target>
@@ -92,7 +92,7 @@
   <target name="resolve-javacc" xmlns:ivy="antlib:org.apache.ivy.ant">
     <!-- setup a "fake" JavaCC distribution folder in ${build.dir} to make JavaCC ANT task happy: -->
     <ivy:retrieve organisation="net.java.dev.javacc" module="javacc" revision="5.0"
-      inline="true" transitive="false" type="jar" sync="true"
+      inline="true" transitive="false" type="jar" sync="true" symlink="${ivy.symlink}"
       pattern="${build.dir}/javacc/bin/lib/[artifact].[ext]"/>
   </target>
 
