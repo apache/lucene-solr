@@ -413,7 +413,7 @@ Other Changes
 * SOLR-6454: Suppress EOFExceptions in SolrDispatchFilter. 
   (Ramkumar Aiyengar via Mark Miller)
 
-* SOLR-6730: Allow tests to report/fail on many ZK watches being parallelly 
+* SOLR-6370: Allow tests to report/fail on many ZK watches being parallelly 
   requested on the same data (Ramkumar Aiyengar via Timothy Potter)
 
 ==================  4.10.3 ==================
