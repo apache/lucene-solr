@@ -77,7 +77,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       
       // beast it just a little, it shouldnt throw exceptions:
       // (it should have thrown them in initialize)
-      checkRandomData(random(), new FactoryAnalyzer(factory, null, null), 100, 20, false, false);
+      checkRandomData(random(), new FactoryAnalyzer(factory, null, null), 20, 20, false, false);
     }
   }
   
@@ -97,7 +97,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       
       // beast it just a little, it shouldnt throw exceptions:
       // (it should have thrown them in initialize)
-      checkRandomData(random(), new FactoryAnalyzer(assertingTokenizer, factory, null), 100, 20, false, false);
+      checkRandomData(random(), new FactoryAnalyzer(assertingTokenizer, factory, null), 20, 20, false, false);
     }
   }
   
@@ -117,7 +117,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       
       // beast it just a little, it shouldnt throw exceptions:
       // (it should have thrown them in initialize)
-      checkRandomData(random(), new FactoryAnalyzer(assertingTokenizer, null, factory), 100, 20, false, false);
+      checkRandomData(random(), new FactoryAnalyzer(assertingTokenizer, null, factory), 20, 20, false, false);
     }
   }
   

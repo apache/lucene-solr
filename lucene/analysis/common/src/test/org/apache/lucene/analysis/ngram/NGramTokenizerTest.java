@@ -110,7 +110,8 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    for (int i = 0; i < 10; i++) {
+    int numIters = TEST_NIGHTLY ? 10 : 1;
+    for (int i = 0; i < numIters; i++) {
       final int min = TestUtil.nextInt(random(), 2, 10);
       final int max = TestUtil.nextInt(random(), min, 20);
       Analyzer a = new Analyzer() {
