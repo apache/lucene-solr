@@ -176,7 +176,7 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     final int numBits = 1 + random().nextInt(100000);
     BitSet set1 = new JavaUtilBitSet(randomSet(numBits, 0), numBits);
     T set2 = copyOf(set1, numBits);
-    final int iters = 50 + random().nextInt(50);
+    final int iters = TEST_NIGHTLY ? 50 + random().nextInt(50) : 10 + random().nextInt(10);
     for (int i = 0; i < iters; ++i) {
       // make extreme percents more likely
       float percentSet2 = rarely() ? 0 : (float) Math.pow(random().nextDouble(), 2);

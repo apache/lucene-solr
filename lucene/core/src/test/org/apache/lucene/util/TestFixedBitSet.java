@@ -208,8 +208,9 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() throws IOException {
-    doRandomSets(atLeast(1200), atLeast(1000), 1);
-    doRandomSets(atLeast(1200), atLeast(1000), 2);
+    final int iters = TEST_NIGHTLY ? atLeast(1000) : 100;
+    doRandomSets(atLeast(1200), iters, 1);
+    doRandomSets(atLeast(1200), iters, 2);
   }
 
   // uncomment to run a bigger test (~2 minutes).
