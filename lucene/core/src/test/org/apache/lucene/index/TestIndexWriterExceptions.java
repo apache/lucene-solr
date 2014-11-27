@@ -65,7 +65,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+@SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterExceptions extends LuceneTestCase {
 
   private static class DocCopyIterator implements Iterable<Document> {
