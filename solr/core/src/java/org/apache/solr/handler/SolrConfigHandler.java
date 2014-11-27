@@ -51,6 +51,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -63,8 +64,10 @@ import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
+import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAware{
   public static final Logger log = LoggerFactory.getLogger(SolrConfigHandler.class);
@@ -106,7 +109,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     return new Runnable() {
           @Override
           public void run() {
-            log.info("config update_listener called");
+            log.info("config update listener called for core {}", coreName);
             SolrZkClient zkClient = cc.getZkController().getZkClient();
             int solrConfigversion,overlayVersion;
             try (SolrCore core = cc.getCore(coreName))  {
@@ -117,7 +120,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
             if (checkStale(zkClient, overlayPath, solrConfigversion) ||
                 checkStale(zkClient, solrConfigPath, overlayVersion)) {
-              log.info("core reload");
+              log.info("core reload {}",coreName);
               cc.reload(coreName);
             }
           }
@@ -128,7 +131,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     try {
       Stat stat = zkClient.exists(zkPath, null, true);
       if(stat == null){
-        if(currentVersion>0) return true;
+        if(currentVersion > -1) return true;
         return false;
       }
       if (stat.getVersion() >  currentVersion) {
@@ -198,7 +201,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           for (CommandOperation op : ops) opsCopy.add(op.getCopy());
           try {
             handleCommands(opsCopy, overlay);
-            break;
+            break;//succeeded . so no need to go over the loop again
           } catch (ZkController.ResourceModifiedInZkException e) {
             //retry
             log.info("Race condition, the node is modified in ZK by someone else " +e.getMessage());
@@ -226,6 +229,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         case UNSET_USER_PROPERTY:
           overlay = applyUnsetUserProp(op, overlay);
           break;
+        case UPDATE_REQHANDLER:
+        case CREATE_REQHANDLER:
+          overlay = applyRequestHandler(op, overlay);
+          break;
+        case DELETE_REQHANDLER:
+          overlay = applyDeleteHandler(op,overlay);
+          break;
       }
     }
     List errs = CommandOperation.captureErrors(ops);
@@ -245,6 +255,50 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
 
   }
+
+    private ConfigOverlay applyDeleteHandler(CommandOperation op, ConfigOverlay overlay) {
+      String name = op.getStr(CommandOperation.ROOT_OBJ);
+      if(op.hasError()) return overlay;
+      if(overlay.getReqHandlers().containsKey(name)){
+        return overlay.deleteHandler(name);
+      } else {
+        op.addError(MessageFormat.format("NO such requestHandler ''{0}'' ",name));
+        return overlay;
+      }
+
+    }
+
+    private ConfigOverlay applyRequestHandler(CommandOperation op, ConfigOverlay overlay) {
+      String name=op.getStr(NAME);
+      op.getStr(CLASS_NAME);
+      op.getMap(PluginInfo.DEFAULTS, null);
+      op.getMap(PluginInfo.INVARIANTS,null);
+      op.getMap(PluginInfo.APPENDS,null);
+      if(op.hasError()) return overlay;
+
+
+      if(CREATE_REQHANDLER.equals(op.name)) {
+        if (overlay.getReqHandlers().containsKey(name)) {
+          op.addError(MessageFormat.format(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, UPDATE_REQHANDLER));
+          return overlay;
+        } else {
+          return overlay.addReqHandler(op.getDataMap());
+        }
+      } else if(UPDATE_REQHANDLER.equals(op.name)){
+        if (!overlay.getReqHandlers().containsKey(name)) {
+          op.addError(MessageFormat.format(" ''{0}'' does not exist . Do an ''{1}'' , if you want to create it ", name, CREATE_REQHANDLER));
+          return overlay;
+        } else {
+          return overlay.addReqHandler(op.getDataMap());
+
+        }
+      }
+
+      return overlay;
+
+
+
+    }
 
     private ConfigOverlay applySetUserProp(CommandOperation op, ConfigOverlay overlay) {
       Map<String, Object> m = op.getDataMap();
@@ -351,7 +405,8 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final String UNSET_PROPERTY = "unset-property";
   public static final String SET_USER_PROPERTY = "set-user-property";
   public static final String UNSET_USER_PROPERTY = "unset-user-property";
-
-
+  public static final String CREATE_REQHANDLER = "create-requesthandler";
+  public static final String DELETE_REQHANDLER = "delete-requesthandler";
+  public static final String UPDATE_REQHANDLER = "update-requesthandler";
 
 }

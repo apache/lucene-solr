@@ -334,13 +334,14 @@ public class SolrConfig extends Config implements MapSerializable{
       in = loader.openResource(ConfigOverlay.RESOURCE_NAME);
     } catch (IOException e) {
       //no problem no overlay.json file
-      return new ConfigOverlay(Collections.EMPTY_MAP,0);
+      return new ConfigOverlay(Collections.EMPTY_MAP,-1);
     }
 
     try {
       int version = 0; //will be always 0 for file based resourceloader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.info("config overlay loaded . version : {} ", version);
       }
       Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
       return new ConfigOverlay(m,version);

@@ -28,17 +28,22 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.SolrRequestHandler;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
 
 public class ConfigOverlay implements MapSerializable{
   private final int znodeVersion ;
   private Map<String, Object> data;
   private Map<String,Object> props;
   private Map<String,Object> userProps;
+  private Map<String, Map> reqHandlers;
 
   public ConfigOverlay(Map<String,Object> jsonObj, int znodeVersion){
     if(jsonObj == null) jsonObj= Collections.EMPTY_MAP;
@@ -48,6 +53,8 @@ public class ConfigOverlay implements MapSerializable{
     if(props == null) props= Collections.EMPTY_MAP;
     userProps = (Map<String, Object>) data.get("userProps");
     if(userProps == null) userProps= Collections.EMPTY_MAP;
+    reqHandlers = (Map<String, Map>) data.get(SolrRequestHandler.TYPE);
+    if(reqHandlers == null) reqHandlers = new LinkedHashMap<>();
 
   }
   public Object getXPathProperty(String xpath){
@@ -254,5 +261,29 @@ public class ConfigOverlay implements MapSerializable{
     result.put("znodeVersion",znodeVersion);
     result.putAll(data);
     return result;
+  }
+
+  public Map<String, Map> getReqHandlers() {
+    return Collections.unmodifiableMap(reqHandlers);
+  }
+
+  public ConfigOverlay addReqHandler(Map<String, Object> info) {
+    ConfigOverlay copy = copyOverLayWithReqHandler();
+    copy.reqHandlers.put((String)info.get(NAME) , info);
+    return copy;
+  }
+
+  private ConfigOverlay copyOverLayWithReqHandler() {
+    LinkedHashMap<String, Object> newmap = new LinkedHashMap<>(data);
+    ConfigOverlay copy =  new ConfigOverlay(newmap, znodeVersion);
+    newmap.put(SolrRequestHandler.TYPE, copy.reqHandlers = new LinkedHashMap<>(reqHandlers));
+    return copy;
+  }
+
+  public ConfigOverlay deleteHandler(String name) {
+    ConfigOverlay copy = copyOverLayWithReqHandler();
+    copy.reqHandlers.remove(name);
+    return copy;
+
   }
 }

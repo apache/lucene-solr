@@ -217,6 +217,8 @@ New Features
 
 * SOLR-6533: Support editing common solrconfig.xml values (Noble Paul)
 
+* SOLR-6607: Managing requesthandlers throuh API (Noble Paul)
+
 Bug Fixes
 ----------------------
 
