@@ -195,7 +195,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-    if ((flags & DocsEnum.FLAG_POSITIONS) != DocsEnum.FLAG_POSITIONS) {
+    if ((flags & DocsEnum.FLAG_POSITIONS) < DocsEnum.FLAG_POSITIONS) {
       BlockDocsEnum docsEnum;
       if (reuse instanceof BlockDocsEnum) {
         docsEnum = (BlockDocsEnum) reuse;

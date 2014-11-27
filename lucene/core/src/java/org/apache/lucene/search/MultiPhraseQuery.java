@@ -243,7 +243,7 @@ public class MultiPhraseQuery extends Query {
             return null;
           }
           termsEnum.seekExact(term.bytes(), termState);
-          postingsEnum = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+          postingsEnum = termsEnum.docsAndPositions(liveDocs, null, flags);
 
           if (postingsEnum == null) {
             // term does exist, but has no positions
@@ -580,7 +580,7 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
         continue;
       }
       termsEnum.seekExact(term.bytes(), termState);
-      DocsEnum postings = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+      DocsEnum postings = termsEnum.docsAndPositions(liveDocs, null, flags);
       if (postings == null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");

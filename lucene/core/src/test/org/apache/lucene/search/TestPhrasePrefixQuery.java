@@ -17,19 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.store.Directory;
-
 import java.io.IOException;
 import java.util.LinkedList;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * This class tests PhrasePrefixQuery class.
