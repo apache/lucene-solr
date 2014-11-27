@@ -45,7 +45,6 @@ Detailed Change List
 Other Changes
 ----------------------
 
-* SOLR-4792: Stop shipping a .war. (Robert Muir)
 
 ==================  5.0.0 ==================
 
@@ -435,6 +434,8 @@ Other Changes
 
 * SOLR-5864: Remove previous SolrCore as parameter on reload.
   (Tomás Fernández Löbbe) 
+
+* SOLR-4792: Stop shipping a .war. (Robert Muir, Ramkumar Aiyengar, Mark Miller)
 
 ==================  4.10.3 ==================
 
