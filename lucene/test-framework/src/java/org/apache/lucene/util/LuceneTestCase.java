@@ -1291,6 +1291,10 @@ public abstract class LuceneTestCase extends Assert {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
+      if (fsdirClass.equals("SimpleFSDirectory")) {
+        // pick again
+        fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
+      }
     }
 
     Class<? extends FSDirectory> clazz;
@@ -1517,6 +1521,10 @@ public abstract class LuceneTestCase extends Assert {
     if (clazzName.equals("random")) {
       if (rarely(random)) {
         clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
+        if (clazzName.equals("SimpleFSDirectory")) {
+          // pick again
+          clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
+        }
       } else {
         clazzName = "RAMDirectory";
       }
