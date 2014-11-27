@@ -299,7 +299,7 @@ public class SolrConfig extends Config implements MapSerializable{
   }
 
   public static List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
-      .add(new SolrPluginInfo(SolrRequestHandler.class, "requestHandler", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(SolrRequestHandler.class, SolrRequestHandler.TYPE, REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QueryResponseWriter.class, "queryResponseWriter", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
@@ -744,6 +744,9 @@ public class SolrConfig extends Config implements MapSerializable{
       if(plugin.options.contains(PluginOpts.REQUIRE_NAME)){
         LinkedHashMap items = new LinkedHashMap();
         for (PluginInfo info : infos) items.put(info.name, info.toMap());
+        if(tag.equals(SolrRequestHandler.TYPE)){
+          for (Map.Entry e : overlay.getReqHandlers().entrySet())  items.put(e.getKey(),e.getValue());
+        }
         result.put(tag,items);
       } else {
         if(plugin.options.contains(MULTI_OK)){
