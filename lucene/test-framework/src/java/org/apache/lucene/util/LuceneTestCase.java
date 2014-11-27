@@ -1315,7 +1315,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (rarely(random) && !bare) { 
-      final double maxMBPerSec = 10 + 5*(random.nextDouble()-0.5);
+      final double maxMBPerSec = TestUtil.nextInt(random, 20, 40);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
       }
