@@ -41,10 +41,12 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.junit.Test;
 
+@SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterReader extends LuceneTestCase {
   
   private final int numThreads = TEST_NIGHTLY ? 5 : 3;
@@ -355,6 +357,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir1.close();
   }
 
+  @Slow
   public void testAddIndexesAndDoDeletesThreads() throws Throwable {
     final int numIter = 2;
     int numDirs = 3;
@@ -626,7 +629,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
-    int num = atLeast(100);
+    int num = TEST_NIGHTLY ? atLeast(100) : atLeast(10);
     for (int i = 0; i < num; i++) {
       writer.addDocument(DocHelper.createDocument(i, "test", 4));
     }
@@ -705,6 +708,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   }
 
   // Stress test reopen during addIndexes
+  @Nightly
   public void testDuringAddIndexes() throws Exception {
     Directory dir1 = getAssertNoDeletesDirectory(newDirectory());
     final IndexWriter writer = new IndexWriter(
@@ -724,19 +728,20 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     DirectoryReader r = writer.getReader();
 
-    final float SECONDS = 0.5f;
-
-    final long endTime = (long) (System.currentTimeMillis() + 1000.*SECONDS);
+    final int numIterations = 10;
     final List<Throwable> excs = Collections.synchronizedList(new ArrayList<Throwable>());
 
     // Only one thread can addIndexes at a time, because
     // IndexWriter acquires a write lock in each directory:
     final Thread[] threads = new Thread[1];
+    final AtomicBoolean threadDone = new AtomicBoolean(false);
     for(int i=0;i<threads.length;i++) {
       threads[i] = new Thread() {
           @Override
           public void run() {
+            int count = 0;
             do {
+              count++;
               try {
                 writer.addIndexes(dirs);
                 writer.maybeMerge();
@@ -744,7 +749,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 excs.add(t);
                 throw new RuntimeException(t);
               }
-            } while(System.currentTimeMillis() < endTime);
+            } while(count < numIterations);
+            threadDone.set(true);
           }
         };
       threads[i].setDaemon(true);
@@ -752,17 +758,17 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
 
     int lastCount = 0;
-    while(System.currentTimeMillis() < endTime) {
+    while(threadDone.get() == false) {
       DirectoryReader r2 = DirectoryReader.openIfChanged(r);
       if (r2 != null) {
         r.close();
         r = r2;
+        Query q = new TermQuery(new Term("indexname", "test"));
+        IndexSearcher searcher = newSearcher(r);
+        final int count = searcher.search(q, 10).totalHits;
+        assertTrue(count >= lastCount);
+        lastCount = count;
       }
-      Query q = new TermQuery(new Term("indexname", "test"));
-      IndexSearcher searcher = newSearcher(r);
-      final int count = searcher.search(q, 10).totalHits;
-      assertTrue(count >= lastCount);
-      lastCount = count;
     }
 
     for(int i=0;i<threads.length;i++) {
@@ -813,12 +819,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     DirectoryReader r = writer.getReader();
 
-    final float SECONDS = 0.5f;
-
-    final long endTime = (long) (System.currentTimeMillis() + 1000.*SECONDS);
+    final int iters = TEST_NIGHTLY ? 1000 : 10;
     final List<Throwable> excs = Collections.synchronizedList(new ArrayList<Throwable>());
 
     final Thread[] threads = new Thread[numThreads];
+    final AtomicInteger remainingThreads = new AtomicInteger(numThreads);
     for(int i=0;i<numThreads;i++) {
       threads[i] = new Thread() {
           final Random r = new Random(random().nextLong());
@@ -841,7 +846,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 excs.add(t);
                 throw new RuntimeException(t);
               }
-            } while(System.currentTimeMillis() < endTime);
+            } while(count < iters);
+            remainingThreads.decrementAndGet();
           }
         };
       threads[i].setDaemon(true);
@@ -849,15 +855,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
 
     int sum = 0;
-    while(System.currentTimeMillis() < endTime) {
+    while(remainingThreads.get() > 0) {
       DirectoryReader r2 = DirectoryReader.openIfChanged(r);
       if (r2 != null) {
         r.close();
         r = r2;
+        Query q = new TermQuery(new Term("indexname", "test"));
+        IndexSearcher searcher = newSearcher(r);
+        sum += searcher.search(q, 10).totalHits;
       }
-      Query q = new TermQuery(new Term("indexname", "test"));
-      IndexSearcher searcher = newSearcher(r);
-      sum += searcher.search(q, 10).totalHits;
     }
 
     for(int i=0;i<numThreads;i++) {
@@ -977,7 +983,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(didWarm.get());
   }
   
-  public void testSimpleMergedSegmentWramer() throws Exception {
+  public void testSimpleMergedSegmentWarmer() throws Exception {
     Directory dir = newDirectory();
     final AtomicBoolean didWarm = new AtomicBoolean();
     InfoStream infoStream = new InfoStream() {
@@ -1111,7 +1117,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   /** Make sure if all we do is open NRT reader against
    *  writer, we don't see merge starvation. */
   public void testTooManySegments() throws Exception {
-    Directory dir = getAssertNoDeletesDirectory(newDirectory());
+    Directory dir = getAssertNoDeletesDirectory(new RAMDirectory());
     // Don't use newIndexWriterConfig, because we need a
     // "sane" mergePolicy:
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
