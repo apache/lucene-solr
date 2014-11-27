@@ -689,7 +689,8 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public int nextPosition() {
       //System.out.println("    nextPos storePayloads=" + storePayloads + " this=" + this);
-      assert posPending > 0;
+      if (posPending <= 0)
+        return NO_MORE_POSITIONS;
       posPending--;
       if (!storePayloads) {
         pos += in.readVInt();

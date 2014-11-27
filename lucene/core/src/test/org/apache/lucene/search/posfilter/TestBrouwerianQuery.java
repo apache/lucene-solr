@@ -16,15 +16,12 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.posfilter.NonOverlappingQuery;
-import org.apache.lucene.search.posfilter.OrderedNearQuery;
-import org.apache.lucene.search.posfilter.UnorderedNearQuery;
-
-import java.io.IOException;
 
 public class TestBrouwerianQuery extends IntervalTestBase {
   
