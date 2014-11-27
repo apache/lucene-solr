@@ -448,7 +448,7 @@
     </sequential>
   </target>
   
-  <target name="test-modules" depends="compile-test">
+  <target name="test-modules">
     <modules-crawl target="test" failonerror="true"/>
   </target>
 
