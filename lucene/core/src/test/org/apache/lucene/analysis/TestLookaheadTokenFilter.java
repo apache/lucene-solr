@@ -32,8 +32,9 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
         TokenStream output = new MockRandomLookaheadTokenFilter(random, tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
-      };
-    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192);
+    };
+    int maxLength = TEST_NIGHTLY ? 8192 : 1024;
+    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, maxLength);
   }
 
   private static class NeverPeeksLookaheadTokenFilter extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
@@ -60,8 +61,9 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
         TokenStream output = new NeverPeeksLookaheadTokenFilter(tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
-      };
-    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192);
+    };
+    int maxLength = TEST_NIGHTLY ? 8192 : 1024;
+    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, maxLength);
   }
 
   public void testMissedFirstToken() throws Exception {
