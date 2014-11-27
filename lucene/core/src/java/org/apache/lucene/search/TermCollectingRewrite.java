@@ -47,13 +47,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
   final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
     IndexReaderContext topReaderContext = reader.getContext();
     for (LeafReaderContext context : topReaderContext.leaves()) {
-      final Fields fields = context.reader().fields();
-      if (fields == null) {
-        // reader has no fields
-        continue;
-      }
-
-      final Terms terms = fields.terms(query.field);
+      final Terms terms = context.reader().terms(query.field);
       if (terms == null) {
         // field does not exist
         continue;

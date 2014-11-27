@@ -59,6 +59,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
   // TODO: these big methods can easily blow up some of the other ram-hungry codecs...
   // for now just keep them here, as we want to test this for this format.
   
+  @Slow
   public void testSortedSetVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -74,6 +75,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
   
+  @Slow
   public void testSortedVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -89,6 +91,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
   
+  @Slow
   public void testTermsEnumFixedWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -96,6 +99,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
   
+  @Slow
   public void testTermsEnumVariableWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {

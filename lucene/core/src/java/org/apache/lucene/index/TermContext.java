@@ -87,16 +87,13 @@ public final class TermContext {
     //if (DEBUG) System.out.println("prts.build term=" + term);
     for (final LeafReaderContext ctx : context.leaves()) {
       //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
-      final Fields fields = ctx.reader().fields();
-      if (fields != null) {
-        final Terms terms = fields.terms(field);
-        if (terms != null) {
-          final TermsEnum termsEnum = terms.iterator(null);
-          if (termsEnum.seekExact(bytes)) { 
-            final TermState termState = termsEnum.termState();
-            //if (DEBUG) System.out.println("    found");
-            perReaderTermState.register(termState, ctx.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
-          }
+      final Terms terms = ctx.reader().terms(field);
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator(null);
+        if (termsEnum.seekExact(bytes)) { 
+          final TermState termState = termsEnum.termState();
+          //if (DEBUG) System.out.println("    found");
+          perReaderTermState.register(termState, ctx.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
         }
       }
     }

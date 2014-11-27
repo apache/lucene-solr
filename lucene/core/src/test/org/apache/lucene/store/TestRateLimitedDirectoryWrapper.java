@@ -19,6 +19,8 @@ package org.apache.lucene.store;
 
 import java.nio.file.Path;
 
+import org.apache.lucene.util.TestUtil;
+
 public class TestRateLimitedDirectoryWrapper extends BaseDirectoryTestCase {
 
   @Override
@@ -29,7 +31,7 @@ public class TestRateLimitedDirectoryWrapper extends BaseDirectoryTestCase {
       ((MockDirectoryWrapper)in).setEnableVirusScanner(false);
     }
     RateLimitedDirectoryWrapper dir = new RateLimitedDirectoryWrapper(in);
-    RateLimiter limiter = new RateLimiter.SimpleRateLimiter(.1 + 3*random().nextDouble());
+    RateLimiter limiter = new RateLimiter.SimpleRateLimiter(TestUtil.nextInt(random(), 10, 40));
     dir.setRateLimiter(limiter, IOContext.Context.MERGE);
     return dir;
   }

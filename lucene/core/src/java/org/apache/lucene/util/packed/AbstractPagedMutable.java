@@ -20,8 +20,6 @@ package org.apache.lucene.util.packed;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
-import java.util.Collections;
-
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
@@ -115,11 +113,6 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
       bytesUsed += gw.ramBytesUsed();
     }
     return bytesUsed;
-  }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   protected abstract T newUnfilledCopy(long newSize);

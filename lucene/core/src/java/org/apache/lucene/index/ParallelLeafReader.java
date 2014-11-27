@@ -28,7 +28,6 @@ import java.util.TreeMap;
 
 import org.apache.lucene.util.Bits;
 
-
 /** An {@link LeafReader} which reads multiple, parallel indexes.  Each index
  * added must have the same number of documents, but typically each contains
  * different fields. Deletions are taken from the first reader.
@@ -120,12 +119,10 @@ public class ParallelLeafReader extends LeafReader {
     // build Fields instance
     for (final LeafReader reader : this.parallelReaders) {
       final Fields readerFields = reader.fields();
-      if (readerFields != null) {
-        for (String field : readerFields) {
-          // only add if the reader responsible for that field name is the current:
-          if (fieldToReader.get(field) == reader) {
-            this.fields.addField(field, readerFields.terms(field));
-          }
+      for (String field : readerFields) {
+        // only add if the reader responsible for that field name is the current:
+        if (fieldToReader.get(field) == reader) {
+          this.fields.addField(field, readerFields.terms(field));
         }
       }
     }
@@ -323,5 +320,11 @@ public class ParallelLeafReader extends LeafReader {
     for (LeafReader reader : completeReaderSet) {
       reader.checkIntegrity();
     }
+  }
+
+  /** Returns the {@link LeafReader}s that were passed on init. */
+  public LeafReader[] getParallelReaders() {
+    ensureOpen();
+    return parallelReaders;
   }
 }

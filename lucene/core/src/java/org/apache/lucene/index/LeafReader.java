@@ -79,7 +79,7 @@ public abstract class LeafReader extends IndexReader {
   public static interface CoreClosedListener {
     /** Invoked when the shared core of the original {@code
      *  SegmentReader} has closed. */
-    public void onClose(Object ownerCoreCacheKey);
+    public void onClose(Object ownerCoreCacheKey) throws IOException;
   }
 
   private static class CoreClosedListenerWrapper implements ReaderClosedListener {
@@ -91,7 +91,7 @@ public abstract class LeafReader extends IndexReader {
     }
 
     @Override
-    public void onClose(IndexReader reader) {
+    public void onClose(IndexReader reader) throws IOException {
       listener.onClose(reader.getCoreCacheKey());
     }
 
@@ -135,18 +135,13 @@ public abstract class LeafReader extends IndexReader {
 
   /**
    * Returns {@link Fields} for this reader.
-   * This method may return null if the reader has no
-   * postings.
+   * This method will not return null.
    */
   public abstract Fields fields() throws IOException;
 
   @Override
   public final int docFreq(Term term) throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
-      return 0;
-    }
-    final Terms terms = fields.terms(term.field());
+    final Terms terms = terms(term.field());
     if (terms == null) {
       return 0;
     }
@@ -165,11 +160,7 @@ public abstract class LeafReader extends IndexReader {
    * away. */
   @Override
   public final long totalTermFreq(Term term) throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
-      return 0;
-    }
-    final Terms terms = fields.terms(term.field());
+    final Terms terms = terms(term.field());
     if (terms == null) {
       return 0;
     }
@@ -210,11 +201,7 @@ public abstract class LeafReader extends IndexReader {
 
   /** This may return null if the field does not exist.*/
   public final Terms terms(String field) throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
-      return null;
-    }
-    return fields.terms(field);
+    return fields().terms(field);
   }
 
   /** Returns {@link DocsEnum} for the specified term.
@@ -224,14 +211,11 @@ public abstract class LeafReader extends IndexReader {
   public final DocsEnum termDocsEnum(Term term) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(term.field());
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term.bytes())) {
-          return termsEnum.docs(getLiveDocs(), null);
-        }
+    final Terms terms = terms(term.field());
+    if (terms != null) {
+      final TermsEnum termsEnum = terms.iterator(null);
+      if (termsEnum.seekExact(term.bytes())) {
+        return termsEnum.docs(getLiveDocs(), null);
       }
     }
     return null;
@@ -244,14 +228,11 @@ public abstract class LeafReader extends IndexReader {
   public final DocsEnum termPositionsEnum(Term term) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(term.field());
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term.bytes())) {
-          return termsEnum.docsAndPositions(getLiveDocs(), null);
-        }
+    final Terms terms = terms(term.field());
+    if (terms != null) {
+      final TermsEnum termsEnum = terms.iterator(null);
+      if (termsEnum.seekExact(term.bytes())) {
+        return termsEnum.docsAndPositions(getLiveDocs(), null);
       }
     }
     return null;

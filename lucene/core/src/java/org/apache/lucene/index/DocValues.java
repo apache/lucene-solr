@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -199,12 +200,31 @@ public final class DocValues {
   // some helpers, for transition from fieldcache apis.
   // as opposed to the LeafReader apis (which must be strict for consistency), these are lenient
   
+  // helper method: to give a nice error when LeafReader.getXXXDocValues returns null.
+  private static void checkField(LeafReader in, String field, DocValuesType... expected) {
+    FieldInfo fi = in.getFieldInfos().fieldInfo(field);
+    if (fi != null) {
+      DocValuesType actual = fi.getDocValuesType();
+      throw new IllegalStateException("unexpected docvalues type " + actual + 
+                                        " for field '" + field + "' " +
+                                        (expected.length == 1 
+                                        ? "(expected=" + expected[0]
+                                        : "(expected one of " + Arrays.toString(expected)) + "). " +
+                                        "Use UninvertingReader or index with docvalues.");
+    }
+  }
+  
   /**
-   * Returns NumericDocValues for the reader, or {@link #emptyNumeric()} if it has none. 
+   * Returns NumericDocValues for the field, or {@link #emptyNumeric()} if it has none. 
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#NUMERIC}.
+   * @throws IOException if an I/O error occurs.
    */
-  public static NumericDocValues getNumeric(LeafReader in, String field) throws IOException {
-    NumericDocValues dv = in.getNumericDocValues(field);
+  public static NumericDocValues getNumeric(LeafReader reader, String field) throws IOException {
+    NumericDocValues dv = reader.getNumericDocValues(field);
     if (dv == null) {
+      checkField(reader, field, DocValuesType.NUMERIC);
       return emptyNumeric();
     } else {
       return dv;
@@ -212,13 +232,19 @@ public final class DocValues {
   }
   
   /**
-   * Returns BinaryDocValues for the reader, or {@link #emptyBinary} if it has none. 
+   * Returns BinaryDocValues for the field, or {@link #emptyBinary} if it has none. 
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#BINARY}
+   *                               or {@link DocValuesType#SORTED}.
+   * @throws IOException if an I/O error occurs.
    */
-  public static BinaryDocValues getBinary(LeafReader in, String field) throws IOException {
-    BinaryDocValues dv = in.getBinaryDocValues(field);
+  public static BinaryDocValues getBinary(LeafReader reader, String field) throws IOException {
+    BinaryDocValues dv = reader.getBinaryDocValues(field);
     if (dv == null) {
-      dv = in.getSortedDocValues(field);
+      dv = reader.getSortedDocValues(field);
       if (dv == null) {
+        checkField(reader, field, DocValuesType.BINARY, DocValuesType.SORTED);
         return emptyBinary();
       }
     }
@@ -226,11 +252,16 @@ public final class DocValues {
   }
   
   /**
-   * Returns SortedDocValues for the reader, or {@link #emptySorted} if it has none. 
+   * Returns SortedDocValues for the field, or {@link #emptySorted} if it has none. 
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED}.
+   * @throws IOException if an I/O error occurs.
    */
-  public static SortedDocValues getSorted(LeafReader in, String field) throws IOException {
-    SortedDocValues dv = in.getSortedDocValues(field);
+  public static SortedDocValues getSorted(LeafReader reader, String field) throws IOException {
+    SortedDocValues dv = reader.getSortedDocValues(field);
     if (dv == null) {
+      checkField(reader, field, DocValuesType.SORTED);
       return emptySorted();
     } else {
       return dv;
@@ -238,29 +269,41 @@ public final class DocValues {
   }
   
   /**
-   * Returns SortedNumericDocValues for the reader, or {@link #emptySortedNumeric} if it has none. 
+   * Returns SortedNumericDocValues for the field, or {@link #emptySortedNumeric} if it has none. 
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED_NUMERIC}
+   *                               or {@link DocValuesType#NUMERIC}.
+   * @throws IOException if an I/O error occurs.
    */
-  public static SortedNumericDocValues getSortedNumeric(LeafReader in, String field) throws IOException {
-    SortedNumericDocValues dv = in.getSortedNumericDocValues(field);
+  public static SortedNumericDocValues getSortedNumeric(LeafReader reader, String field) throws IOException {
+    SortedNumericDocValues dv = reader.getSortedNumericDocValues(field);
     if (dv == null) {
-      NumericDocValues single = in.getNumericDocValues(field);
+      NumericDocValues single = reader.getNumericDocValues(field);
       if (single == null) {
-        return emptySortedNumeric(in.maxDoc());
+        checkField(reader, field, DocValuesType.SORTED_NUMERIC, DocValuesType.NUMERIC);
+        return emptySortedNumeric(reader.maxDoc());
       }
-      Bits bits = in.getDocsWithField(field);
+      Bits bits = reader.getDocsWithField(field);
       return singleton(single, bits);
     }
     return dv;
   }
   
   /**
-   * Returns SortedSetDocValues for the reader, or {@link #emptySortedSet} if it has none. 
+   * Returns SortedSetDocValues for the field, or {@link #emptySortedSet} if it has none. 
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED_SET}
+   *                               or {@link DocValuesType#SORTED}.
+   * @throws IOException if an I/O error occurs.
    */
-  public static SortedSetDocValues getSortedSet(LeafReader in, String field) throws IOException {
-    SortedSetDocValues dv = in.getSortedSetDocValues(field);
+  public static SortedSetDocValues getSortedSet(LeafReader reader, String field) throws IOException {
+    SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv == null) {
-      SortedDocValues sorted = in.getSortedDocValues(field);
+      SortedDocValues sorted = reader.getSortedDocValues(field);
       if (sorted == null) {
+        checkField(reader, field, DocValuesType.SORTED, DocValuesType.SORTED_SET);
         return emptySortedSet();
       }
       return singleton(sorted);
@@ -269,12 +312,21 @@ public final class DocValues {
   }
   
   /**
-   * Returns Bits for the reader, or {@link Bits} matching nothing if it has none. 
+   * Returns Bits for the field, or {@link Bits} matching nothing if it has none. 
+   * @return bits instance, or an empty instance if {@code field} does not exist in this reader.
+   * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
+   * @throws IOException if an I/O error occurs.
    */
-  public static Bits getDocsWithField(LeafReader in, String field) throws IOException {
-    Bits dv = in.getDocsWithField(field);
+  public static Bits getDocsWithField(LeafReader reader, String field) throws IOException {
+    Bits dv = reader.getDocsWithField(field);
     if (dv == null) {
-      return new Bits.MatchNoBits(in.maxDoc());
+      assert DocValuesType.values().length == 6; // we just don't want NONE
+      checkField(reader, field, DocValuesType.BINARY, 
+                            DocValuesType.NUMERIC, 
+                            DocValuesType.SORTED, 
+                            DocValuesType.SORTED_NUMERIC, 
+                            DocValuesType.SORTED_SET);
+      return new Bits.MatchNoBits(reader.maxDoc());
     } else {
       return dv;
     }

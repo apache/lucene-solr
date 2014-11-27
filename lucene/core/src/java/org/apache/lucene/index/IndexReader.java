@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Bits;  // javadocs
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-// javadocs
 
 /**
  IndexReader is an abstract class, providing an interface for accessing a
@@ -99,7 +98,7 @@ public abstract class IndexReader implements Closeable {
    */
   public static interface ReaderClosedListener {
     /** Invoked when the {@link IndexReader} is closed. */
-    public void onClose(IndexReader reader);
+    public void onClose(IndexReader reader) throws IOException;
   }
 
   private final Set<ReaderClosedListener> readerClosedListeners = 
@@ -191,7 +190,7 @@ public abstract class IndexReader implements Closeable {
    */
   public final void incRef() {
     if (!tryIncRef()) {
-       ensureOpen();
+      ensureOpen();
     }
   }
   

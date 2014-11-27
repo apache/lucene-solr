@@ -19,7 +19,6 @@ package org.apache.lucene.util.packed;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.NumericDocValues;
@@ -478,11 +477,6 @@ public class PackedInts {
      * @return the number of values.
      */
     public abstract int size();
-
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
   }
 
   /**

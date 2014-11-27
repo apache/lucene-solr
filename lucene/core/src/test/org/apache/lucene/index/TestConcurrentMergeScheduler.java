@@ -339,7 +339,6 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     dir.close();
   }
 
-
   private static class TrackingCMS extends ConcurrentMergeScheduler {
     long totMergedBytes;
     CountDownLatch atLeastOneMerge;
@@ -453,5 +452,25 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     w.close();
     d.close();
+  }
+
+  // LUCENE-6063
+  public void testMaybeStallCalled() throws Exception {
+    final AtomicBoolean wasCalled = new AtomicBoolean();
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
+        @Override
+        protected void maybeStall() {
+          wasCalled.set(true);
+        }
+      });
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.addDocument(new Document());
+    w.forceMerge(1);
+    assertTrue(wasCalled.get());
+
+    w.close();
+    dir.close();
   }
 }

@@ -214,7 +214,7 @@
       
       if (!properties["lockverify.count"]) {
         int count = Boolean.parseBoolean(properties["tests.nightly"]) ?
-          30000 : 2000;
+          30000 : 500;
         count *= Integer.parseInt(properties["tests.multiplier"]);
         properties["lockverify.count"] = count;
       }

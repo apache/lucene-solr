@@ -38,19 +38,21 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Failure;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.Rethrow;
-import org.junit.Ignore;
+import org.apache.lucene.util.TestUtil;
 
 /** 
  * Causes a bunch of fake OOM and checks that no other exceptions are delivered instead,
  * no index corruption is ever created.
  */
+@SuppressCodecs("SimpleText")
 public class TestIndexWriterOutOfMemory extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
@@ -77,7 +79,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
     
     MockDirectoryWrapper dir = null;
     
-    final int numIterations = TEST_NIGHTLY ? atLeast(500) : atLeast(20);
+    final int numIterations = TEST_NIGHTLY ? atLeast(100) : atLeast(5);
     
     STARTOVER:
     for (int iter = 0; iter < numIterations; iter++) {
@@ -227,34 +229,35 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
       return null; // dead
     }
   }
-  
+
   public void testBasics() throws Exception {
     final Random r = new Random(random().nextLong());
     doTest(new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        Exception e = new Exception();
-        StackTraceElement stack[] = e.getStackTrace();
-        boolean ok = false;
-        for (int i = 0; i < stack.length; i++) {
-          if (stack[i].getClassName().equals(IndexWriter.class.getName())) {
-            ok = true;
+        if (r.nextInt(3000) == 0) {
+          StackTraceElement stack[] = Thread.currentThread().getStackTrace();
+          boolean ok = false;
+          for (int i = 0; i < stack.length; i++) {
+            if (stack[i].getClassName().equals(IndexWriter.class.getName())) {
+              ok = true;
+            }
           }
-        }
-        if (ok && r.nextInt(3000) == 0) {
-          throw new OutOfMemoryError("Fake OutOfMemoryError");
+          if (ok) {
+            throw new OutOfMemoryError("Fake OutOfMemoryError");
+          }
         }
       }
     });
   }
   
+  @Nightly
   public void testCheckpoint() throws Exception {
     final Random r = new Random(random().nextLong());
     doTest(new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        Exception e = new Exception();
-        StackTraceElement stack[] = e.getStackTrace();
+        StackTraceElement stack[] = Thread.currentThread().getStackTrace();
         boolean ok = false;
         for (int i = 0; i < stack.length; i++) {
           if (stack[i].getClassName().equals(IndexFileDeleter.class.getName()) && stack[i].getMethodName().equals("checkpoint")) {

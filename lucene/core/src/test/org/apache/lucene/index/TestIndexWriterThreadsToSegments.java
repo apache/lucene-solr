@@ -190,7 +190,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     CheckSegmentCount checker = new CheckSegmentCount(w, maxThreadCount, indexingCount);
 
     // We spin up 10 threads up front, but then in between flushes we limit how many can run on each iteration
-    final int ITERS = 100;
+    final int ITERS = TEST_NIGHTLY ? 300 : 10;
     Thread[] threads = new Thread[MAX_THREADS_AT_ONCE];
 
     // We use this to stop all threads once they've indexed their docs in the current iter, and pull a new NRT reader, and verify the
@@ -323,29 +323,35 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
     // At this point the writer should have 2 thread states w/ docs; now we index with only 1 thread until we see all 1000 thread0 & thread1
     // docs flushed.  If the writer incorrectly holds onto previously indexed docs forever then this will run forever:
+    long counter = 0;
+    long checkAt = 100;
     while (thread0Count < 1000 || thread1Count < 1000) {
       Document doc = new Document();
       doc.add(newStringField("field", "threadIDmain", Field.Store.NO));
       w.addDocument(doc);
-
-      for(String fileName : dir.listAll()) {
-        if (fileName.endsWith(".si")) {
-          String segName = IndexFileNames.parseSegmentName(fileName);
-          if (segSeen.contains(segName) == false) {
-            segSeen.add(segName);
-            byte id[] = readSegmentInfoID(dir, fileName);
-            SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
-            si.setCodec(codec);
-            SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
-            SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);
-            try {
-              thread0Count += sr.docFreq(new Term("field", "threadID0"));
-              thread1Count += sr.docFreq(new Term("field", "threadID1"));
-            } finally {
-              sr.close();
+      if (counter++ == checkAt) {
+        for(String fileName : dir.listAll()) {
+          if (fileName.endsWith(".si")) {
+            String segName = IndexFileNames.parseSegmentName(fileName);
+            if (segSeen.contains(segName) == false) {
+              segSeen.add(segName);
+              byte id[] = readSegmentInfoID(dir, fileName);
+              SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
+              si.setCodec(codec);
+              SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1, -1);
+              SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);
+              try {
+                thread0Count += sr.docFreq(new Term("field", "threadID0"));
+                thread1Count += sr.docFreq(new Term("field", "threadID1"));
+              } finally {
+                sr.close();
+              }
             }
           }
         }
+
+        checkAt = (long) (checkAt * 1.25);
+        counter = 0;
       }
     }
 

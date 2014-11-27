@@ -116,11 +116,6 @@ class BufferedUpdatesStream implements Accountable {
   public long ramBytesUsed() {
     return bytesUsed.get();
   }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
-  }
 
   public static class ApplyDeletesResult {
     
@@ -383,10 +378,6 @@ class BufferedUpdatesStream implements Accountable {
   private synchronized long applyTermDeletes(Iterable<Term> termsIter, ReadersAndUpdates rld, SegmentReader reader) throws IOException {
     long delCount = 0;
     Fields fields = reader.fields();
-    if (fields == null) {
-      // This reader has no postings
-      return 0;
-    }
 
     TermsEnum termsEnum = null;
 
@@ -456,10 +447,6 @@ class BufferedUpdatesStream implements Accountable {
   private synchronized void applyDocValuesUpdates(Iterable<? extends DocValuesUpdate> updates, 
       ReadersAndUpdates rld, SegmentReader reader, DocValuesFieldUpdates.Container dvUpdatesContainer) throws IOException {
     Fields fields = reader.fields();
-    if (fields == null) {
-      // This reader has no postings
-      return;
-    }
 
     // TODO: we can process the updates per DV field, from last to first so that
     // if multiple terms affect same document for the same field, we add an update

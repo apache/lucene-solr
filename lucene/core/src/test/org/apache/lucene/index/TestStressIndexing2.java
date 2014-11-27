@@ -330,7 +330,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
     
     Fields fields = MultiFields.getFields(r2);
-    if (fields == null) {
+    Terms terms2 = fields.terms(idField);
+    if (fields.size() == 0 || terms2 == null) {
       // make sure r1 is in fact empty (eg has only all
       // deleted docs):
       Bits liveDocs = MultiFields.getLiveDocs(r1);
@@ -343,7 +344,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
       return;
     }
-    Terms terms2 = fields.terms(idField);
     TermsEnum termsEnum2 = terms2.iterator(null);
 
     DocsEnum termDocs1 = null;

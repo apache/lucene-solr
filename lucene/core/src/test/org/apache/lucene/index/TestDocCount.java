@@ -58,9 +58,6 @@ public class TestDocCount extends LuceneTestCase {
   
   private void verifyCount(IndexReader ir) throws Exception {
     Fields fields = MultiFields.getFields(ir);
-    if (fields == null) {
-      return;
-    }
     for (String field : fields) {
       Terms terms = fields.terms(field);
       if (terms == null) {

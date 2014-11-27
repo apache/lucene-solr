@@ -37,12 +37,10 @@ import java.nio.file.Path;
 
  * <p>When this happens, a {@link LockObtainFailedException}
  * is hit when trying to create a writer, in which case you
- * need to explicitly clear the lock file first.  You can
- * either manually remove the file, or use the {@link
- * org.apache.lucene.index.IndexWriter#unlock(Directory)}
- * API.  But, first be certain that no writer is in fact
- * writing to the index otherwise you can easily corrupt
- * your index.</p>
+ * need to explicitly clear the lock file first by
+ * manually removing the file.  But, first be certain that
+ * no writer is in fact writing to the index otherwise you
+ * can easily corrupt your index.</p>
  *
  * <p>Special care needs to be taken if you change the locking
  * implementation: First be certain that no writer is in fact

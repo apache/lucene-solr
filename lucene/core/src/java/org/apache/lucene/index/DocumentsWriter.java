@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
@@ -303,12 +302,6 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   boolean anyChanges() {
-    if (infoStream.isEnabled("DW")) {
-      infoStream.message("DW", "anyChanges? numDocsInRam=" + numDocsInRAM.get()
-          + " deletes=" + anyDeletions() + " hasTickets:"
-          + ticketQueue.hasTickets() + " pendingChangesInFullFlush: "
-          + pendingChangesInCurrentFullFlush);
-    }
     /*
      * changes are either in a DWPT or in the deleteQueue.
      * yet if we currently flush deletes and / or dwpt there
@@ -316,7 +309,16 @@ final class DocumentsWriter implements Closeable, Accountable {
      * before they are published to the IW. ie we need to check if the 
      * ticket queue has any tickets.
      */
-    return numDocsInRAM.get() != 0 || anyDeletions() || ticketQueue.hasTickets() || pendingChangesInCurrentFullFlush;
+    boolean anyChanges = numDocsInRAM.get() != 0 || anyDeletions() || ticketQueue.hasTickets() || pendingChangesInCurrentFullFlush;
+    if (infoStream.isEnabled("DW")) {
+      if (anyChanges) {
+        infoStream.message("DW", "anyChanges? numDocsInRam=" + numDocsInRAM.get()
+                           + " deletes=" + anyDeletions() + " hasTickets:"
+                           + ticketQueue.hasTickets() + " pendingChangesInFullFlush: "
+                           + pendingChangesInCurrentFullFlush);
+      }
+    }
+    return anyChanges;
   }
   
   public int getBufferedDeleteTermsSize() {
@@ -669,11 +671,6 @@ final class DocumentsWriter implements Closeable, Accountable {
   @Override
   public long ramBytesUsed() {
     return flushControl.ramBytesUsed();
-  }
-  
-  @Override
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   static final class ApplyDeletesEvent implements Event {

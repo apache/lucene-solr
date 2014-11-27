@@ -431,11 +431,6 @@ public class MultiDocValues {
       public long ramBytesUsed() {
         return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(newToOld) + RamUsageEstimator.sizeOf(oldToNew);
       }
-
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
     }
 
     /**

@@ -65,7 +65,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+@SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterExceptions extends LuceneTestCase {
 
   private static class DocCopyIterator implements Iterable<Document> {
@@ -1895,11 +1897,19 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
         if (shouldFail.get() == false) {
+          // Only sometimes throw the exc, so we get
+          // it sometimes on creating the file, on
+          // flushing buffer, on closing the file:
           return;
         }
         
+        if (random().nextInt(3) != 2) {
+          return;
+        }
+
+        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+
         boolean sawSeal = false;
         boolean sawWrite = false;
         for (int i = 0; i < trace.length; i++) {
@@ -1914,10 +1924,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         
         // Don't throw exc if we are "flushing", else
         // the segment is aborted and docs are lost:
-        if (sawWrite && sawSeal == false && random().nextInt(3) == 2) {
-          // Only sometimes throw the exc, so we get
-          // it sometimes on creating the file, on
-          // flushing buffer, on closing the file:
+        if (sawWrite && sawSeal == false) {
           if (VERBOSE) {
             System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
             new Throwable().printStackTrace(System.out);
@@ -2233,8 +2240,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         
         @Override
         public void eval(MockDirectoryWrapper dir) throws IOException {
+          if (random().nextInt(10) != 0) {
+            return;
+          }
           boolean maybeFail = false;
-          StackTraceElement[] trace = new Exception().getStackTrace();
+          StackTraceElement[] trace = Thread.currentThread().getStackTrace();
           
           for (int i = 0; i < trace.length; i++) {
             if ("rollbackInternal".equals(trace[i].getMethodName())) {
@@ -2243,7 +2253,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             }
           }
           
-          if (maybeFail && random().nextInt(10) == 0) {
+          if (maybeFail) {
             if (VERBOSE) {
               System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
               new Throwable().printStackTrace(System.out);

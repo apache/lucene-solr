@@ -1122,8 +1122,8 @@ public class TestIndexWriter extends LuceneTestCase {
     // init this class (in servicing a first interrupt):
     assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
 
-    // issue 300 interrupts to child thread
-    final int numInterrupts = atLeast(300);
+    // issue 100 interrupts to child thread
+    final int numInterrupts = atLeast(100);
     int i = 0;
     while(i < numInterrupts) {
       // TODO: would be nice to also sometimes interrupt the
@@ -1143,52 +1143,6 @@ public class TestIndexWriter extends LuceneTestCase {
       fail(new String(t.bytesLog.toString("UTF-8")));
     }
   }
-  
-  /** testThreadInterruptDeadlock but with 2 indexer threads */
-  public void testTwoThreadsInterruptDeadlock() throws Exception {
-    IndexerThreadInterrupt t1 = new IndexerThreadInterrupt(1);
-    t1.setDaemon(true);
-    t1.start();
-    
-    IndexerThreadInterrupt t2 = new IndexerThreadInterrupt(2);
-    t2.setDaemon(true);
-    t2.start();
-
-    // Force class loader to load ThreadInterruptedException
-    // up front... else we can see a false failure if 2nd
-    // interrupt arrives while class loader is trying to
-    // init this class (in servicing a first interrupt):
-    assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
-
-    // issue 300 interrupts to child thread
-    final int numInterrupts = atLeast(300);
-    int i = 0;
-    while(i < numInterrupts) {
-      // TODO: would be nice to also sometimes interrupt the
-      // CMS merge threads too ...
-      Thread.sleep(10);
-      IndexerThreadInterrupt t = random().nextBoolean() ? t1 : t2;
-      if (t.allowInterrupt) {
-        i++;
-        t.interrupt();
-      }
-      if (!t1.isAlive() && !t2.isAlive()) {
-        break;
-      }
-    }
-    t1.finish = true;
-    t2.finish = true;
-    t1.join();
-    t2.join();
-    if (t1.failed) {
-      System.out.println("Thread1 failed:\n" + new String(t1.bytesLog.toString("UTF-8")));
-    }
-    if (t2.failed) {
-      System.out.println("Thread2 failed:\n" + new String(t2.bytesLog.toString("UTF-8")));
-    }
-    assertFalse(t1.failed || t2.failed);
-  }
-
 
   public void testIndexStoreCombos() throws Exception {
     Directory dir = newDirectory();
@@ -2620,6 +2574,10 @@ public class TestIndexWriter extends LuceneTestCase {
     assumeFalse("this test can't run on Windows", Constants.WINDOWS);
 
     MockDirectoryWrapper dir = newMockDirectory();
+    if (TestUtil.isWindowsFS(dir)) {
+      dir.close();
+      assumeFalse("this test can't run on Windows", true);
+    }
     
     // don't act like windows either, or the test won't simulate the condition
     dir.setEnableVirusScanner(false);
