@@ -45,8 +45,10 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
+@SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterDelete extends LuceneTestCase {
 
   // test the simple case
