@@ -217,6 +217,8 @@ New Features
 
 * SOLR-6533: Support editing common solrconfig.xml values (Noble Paul)
 
+* SOLR-6607: Managing requesthandlers throuh API (Noble Paul)
+
 Bug Fixes
 ----------------------
 
@@ -444,6 +446,12 @@ Other Changes
 * SOLR-4792: Stop shipping a .war. (Robert Muir, Ramkumar Aiyengar, Mark Miller)
 
 * SOLR-6799: Update Saxon-HE to 9.6.0-2. (Mark Miller)
+
+* SOLR-6454: Suppress EOFExceptions in SolrDispatchFilter. 
+  (Ramkumar Aiyengar via Mark Miller)
+
+* SOLR-6370: Allow tests to report/fail on many ZK watches being parallelly
+  requested on the same data (Ramkumar Aiyengar via Timothy Potter)
 
 ==================  4.10.3 ==================
 

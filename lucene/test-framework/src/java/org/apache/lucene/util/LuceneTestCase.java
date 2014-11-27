@@ -110,7 +110,10 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilterCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -140,6 +143,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
+
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -466,7 +470,20 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
     CORE_DIRECTORIES.add("RAMDirectory");
   };
-  
+
+  /** A {@link FilterCachingPolicy} that randomly caches. */
+  public static final FilterCachingPolicy MAYBE_CACHE_POLICY = new FilterCachingPolicy() {
+
+    @Override
+    public void onCache(Filter filter) {}
+
+    @Override
+    public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+      return random().nextBoolean();
+    }
+
+  };
+
   // -----------------------------------------------------------------
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------
@@ -1285,6 +1302,10 @@ public abstract class LuceneTestCase extends Assert {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
+      if (fsdirClass.equals("SimpleFSDirectory")) {
+        // pick again
+        fsdirClass = RandomPicks.randomFrom(random(), FS_DIRECTORIES); 
+      }
     }
 
     Class<? extends FSDirectory> clazz;
@@ -1324,7 +1345,7 @@ public abstract class LuceneTestCase extends Assert {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
     
-    if (rarely(random) && !bare) { 
+    if (TEST_NIGHTLY && rarely(random) && !bare) { 
       final double maxMBPerSec = TestUtil.nextInt(random, 20, 40);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
@@ -1513,6 +1534,10 @@ public abstract class LuceneTestCase extends Assert {
     if (clazzName.equals("random")) {
       if (rarely(random)) {
         clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
+        if (clazzName.equals("SimpleFSDirectory")) {
+          // pick again
+          clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
+        }
       } else {
         clazzName = "RAMDirectory";
       }

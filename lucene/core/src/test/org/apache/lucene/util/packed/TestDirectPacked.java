@@ -85,7 +85,8 @@ public class TestDirectPacked extends LuceneTestCase {
     
   private void doTestBpv(Directory directory, int bpv) throws Exception {
     MyRandom random = new MyRandom(random().nextLong());
-    for (int i = 0; i < 100; i++) {
+    int numIters = TEST_NIGHTLY ? 100 : 10;
+    for (int i = 0; i < numIters; i++) {
       long original[] = randomLongs(random, bpv);
       int bitsRequired = bpv == 64 ? 64 : DirectWriter.bitsRequired(1L<<(bpv-1));
       String name = "bpv" + bpv + "_" + i;

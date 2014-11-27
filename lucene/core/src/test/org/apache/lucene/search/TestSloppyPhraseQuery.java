@@ -33,6 +33,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
 
@@ -138,7 +140,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   private float checkPhraseQuery(String doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
     query.setSlop(slop);
 
-    Directory ramDir = newDirectory();
+    MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory());
     RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     addDocument(writer, doc);
 

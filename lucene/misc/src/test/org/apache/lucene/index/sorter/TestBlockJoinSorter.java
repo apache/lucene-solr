@@ -36,6 +36,7 @@ import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilterCachingPolicy;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -50,7 +51,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
   private static class FixedBitSetCachingWrapperFilter extends CachingWrapperFilter {
 
     public FixedBitSetCachingWrapperFilter(Filter filter) {
-      super(filter);
+      super(filter, FilterCachingPolicy.ALWAYS_CACHE);
     }
 
     @Override

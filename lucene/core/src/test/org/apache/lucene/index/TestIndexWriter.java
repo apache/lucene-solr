@@ -853,6 +853,12 @@ public class TestIndexWriter extends LuceneTestCase {
       // When interrupt arrives in w.close(), this can
       // lead to double-write of files:
       dir.setPreventDoubleWrite(false);
+      
+      // open/close slowly sometimes
+      dir.setUseSlowOpenClosers(true);
+      
+      // throttle a little
+      dir.setThrottling(MockDirectoryWrapper.Throttling.SOMETIMES);
 
       IndexWriter w = null;
       while(!finish) {

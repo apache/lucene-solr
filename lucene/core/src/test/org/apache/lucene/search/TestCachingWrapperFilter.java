@@ -91,7 +91,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testEmpty() throws Exception {
     Query query = new BooleanQuery();
     Filter expected = new QueryWrapperFilter(query);
-    Filter actual = new CachingWrapperFilter(expected);
+    Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }
   
@@ -101,14 +101,14 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     query.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST_NOT);
     Filter expected = new QueryWrapperFilter(query);
-    Filter actual = new CachingWrapperFilter(expected);
+    Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }
   
   /** test null docidset */
   public void testEmpty3() throws Exception {
     Filter expected = new PrefixFilter(new Term("bogusField", "bogusVal"));
-    Filter actual = new CachingWrapperFilter(expected);
+    Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }
   
@@ -118,7 +118,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       int id = random().nextInt(ir.maxDoc());
       Query query = new TermQuery(new Term("id", Integer.toString(id)));
       Filter expected = new QueryWrapperFilter(query);
-      Filter actual = new CachingWrapperFilter(expected);
+      Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
       assertFilterEquals(expected, actual);
     }
   }
@@ -131,7 +131,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
       Query query = TermRangeQuery.newStringRange("id",
           Integer.toString(id_start), Integer.toString(id_end), true, true);
       Filter expected = new QueryWrapperFilter(query);
-      Filter actual = new CachingWrapperFilter(expected);
+      Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
       assertFilterEquals(expected, actual);
     }
   }
@@ -140,7 +140,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testDense() throws Exception {
     Query query = new MatchAllDocsQuery();
     Filter expected = new QueryWrapperFilter(query);
-    Filter actual = new CachingWrapperFilter(expected);
+    Filter actual = new CachingWrapperFilter(expected, FilterCachingPolicy.ALWAYS_CACHE);
     assertFilterEquals(expected, actual);
   }
 
@@ -152,7 +152,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     LeafReaderContext context = (LeafReaderContext) reader.getContext();
     MockFilter filter = new MockFilter();
-    CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
+    CachingWrapperFilter cacher = new CachingWrapperFilter(filter, FilterCachingPolicy.ALWAYS_CACHE);
 
     // first time, nested filter is called
     DocIdSet strongRef = cacher.getDocIdSet(context, context.reader().getLiveDocs());
@@ -184,7 +184,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
         return null;
       }
     };
-    CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
+    CachingWrapperFilter cacher = new CachingWrapperFilter(filter, MAYBE_CACHE_POLICY);
 
     // the caching filter should return the empty set constant
     assertNull(cacher.getDocIdSet(context, context.reader().getLiveDocs()));
@@ -217,7 +217,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
         };
       }
     };
-    CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
+    CachingWrapperFilter cacher = new CachingWrapperFilter(filter, FilterCachingPolicy.ALWAYS_CACHE);
 
     // the caching filter should return the empty set constant
     assertNull(cacher.getDocIdSet(context, context.reader().getLiveDocs()));
@@ -229,7 +229,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
     assertTrue(reader.getContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext) reader.getContext();
-    final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
+    final CachingWrapperFilter cacher = new CachingWrapperFilter(filter, FilterCachingPolicy.ALWAYS_CACHE);
     final DocIdSet originalSet = filter.getDocIdSet(context, context.reader().getLiveDocs());
     final DocIdSet cachedSet = cacher.getDocIdSet(context, context.reader().getLiveDocs());
     if (originalSet == null) {
@@ -307,7 +307,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     final Filter startFilter = new QueryWrapperFilter(new TermQuery(new Term("id", "1")));
 
-    CachingWrapperFilter filter = new CachingWrapperFilter(startFilter);
+    CachingWrapperFilter filter = new CachingWrapperFilter(startFilter, FilterCachingPolicy.ALWAYS_CACHE);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertTrue(filter.ramBytesUsed() > 0);
@@ -355,7 +355,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertEquals("[just filter] Should *not* find a hit...", 0, docs.totalHits);
 
     // apply deletes dynamically:
-    filter = new CachingWrapperFilter(startFilter);
+    filter = new CachingWrapperFilter(startFilter, FilterCachingPolicy.ALWAYS_CACHE);
     writer.addDocument(doc);
     reader = refreshReader(reader);
     searcher = newSearcher(reader, false);
