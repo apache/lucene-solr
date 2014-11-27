@@ -314,7 +314,7 @@ public class Overseer implements Closeable {
 
                 final TimerContext timerContext = stats.time(operation);
                 try {
-                  clusterState = processMessage(clusterState, message, operation, workQueue.getStats().getQueueLength());
+                  clusterState = processMessage(clusterState, message, operation, stateUpdateQueue.getStats().getQueueLength());
                   stats.success(operation);
                 } catch (Exception e) {
                   // generally there is nothing we can do - in most cases, we have
