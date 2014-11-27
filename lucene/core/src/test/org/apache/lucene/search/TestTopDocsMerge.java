@@ -78,8 +78,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
     IndexReader reader = null;
     Directory dir = null;
 
-    final int numDocs = atLeast(1000);
-    //final int numDocs = atLeast(50);
+    final int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
 
     final String[] tokens = new String[] {"a", "b", "c", "d", "e"};
 
@@ -168,7 +167,8 @@ public class TestTopDocsMerge extends LuceneTestCase {
     sortFields.add(new SortField(null, SortField.Type.DOC, true));
     sortFields.add(new SortField(null, SortField.Type.DOC, false));
 
-    for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+    int numIters = atLeast(300); 
+    for(int iter=0;iter<numIters;iter++) {
 
       // TODO: custom FieldComp...
       final Query query = new TermQuery(new Term("text", tokens[random().nextInt(tokens.length)]));
