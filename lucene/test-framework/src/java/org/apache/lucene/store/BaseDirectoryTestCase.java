@@ -406,7 +406,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       
       @Override
       public void run() {
-        for (int i = 0; i < 3000; i++) {
+        for (int i = 0; i < 1000; i++) {
           String fileName = this.name + i;
           try {
             //System.out.println("create:" + fileName);
