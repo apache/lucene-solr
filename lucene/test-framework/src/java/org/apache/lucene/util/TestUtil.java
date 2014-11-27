@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,6 +95,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.junit.Assert;
+
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -111,6 +113,7 @@ public final class TestUtil {
    * Closes the given InputStream after extracting! 
    */
   public static void unzip(InputStream in, Path destDir) throws IOException {
+    in = new BufferedInputStream(in);
     IOUtils.rm(destDir);
     Files.createDirectory(destDir);
 

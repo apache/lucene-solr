@@ -41,6 +41,7 @@ import java.util.Random;
 public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
 
   // LUCENE-5440: extremely slow tokenization of text matching email <local-part> (before the '@')
+  @Slow
   public void testLongEMAILatomText() throws Exception {
     // EMAILatomText = [A-Za-z0-9!#$%&'*+-/=?\^_`{|}~]
     char[] emailAtomChars

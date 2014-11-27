@@ -32,6 +32,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
   // LUCENE-5897: slow tokenization of strings of the form (\p{WB:ExtendNumLet}[\p{WB:Format}\p{WB:Extend}]*)+
+  @Slow
   public void testLargePartiallyMatchingToken() throws Exception {
     // TODO: get these lists of chars matching a property from ICU4J
     // http://www.unicode.org/Public/6.3.0/ucd/auxiliary/WordBreakProperty.txt
