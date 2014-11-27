@@ -445,6 +445,9 @@ Other Changes
 
 * SOLR-6799: Update Saxon-HE to 9.6.0-2. (Mark Miller)
 
+* SOLR-6454: Suppress EOFExceptions in SolrDispatchFilter. 
+  (Ramkumar Aiyengar via Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
