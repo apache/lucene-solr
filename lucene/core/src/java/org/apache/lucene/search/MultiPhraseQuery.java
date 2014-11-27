@@ -193,6 +193,9 @@ public class MultiPhraseQuery extends Query {
       assert !termArrays.isEmpty();
       final LeafReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
+
+      if ((flags & DocsEnum.FLAG_POSITIONS) < DocsEnum.FLAG_POSITIONS)
+        flags = DocsEnum.FLAG_POSITIONS;
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
 
@@ -503,7 +506,7 @@ class UnionDocsAndPositionsEnum extends DocsEnum {
 
     final void sort() {
       //Arrays.sort(_array, _index, _lastIndex);
-      sorter.sort(_index, _lastIndex - 1);
+      sorter.sort(_index, _lastIndex);
     }
 
     final void clear() {

@@ -242,6 +242,13 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   
   /* MultiPhraseQuery */
+
+  /*
+      "w1 w2 w3 w4 w5",
+    "w1 w3 w2 w3 zz",
+    "w1 xx w2 yy w3",
+    "w1 w3 xx w2 yy w3 zz"
+   */
   
   public void testMPQ1() throws Exception {
     MultiPhraseQuery q = new MultiPhraseQuery();
