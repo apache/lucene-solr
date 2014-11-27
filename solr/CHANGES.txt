@@ -371,6 +371,9 @@ Other Changes
 
 * SOLR-6453: Stop throwing an error message from Overseer when node exits (Ramkumar Aiyengar, Noble Paul)
 
+* SOLR-6550: Provide simple mechanism for passing additional metadata / context about a server-side
+   SolrException back to the client-side (Timothy Potter)
+
 * SOLR-6249: Schema API changes return success before all cores are updated; client application
   can provide the optional updateTimeoutSecs parameter to cause the server handling the
   managed schema update to block until all replicas of the same collection have processed the
@@ -424,6 +427,9 @@ Other Changes
 
 * SOLR-6754: ZkController.publish doesn't use the updateLastState parameter.
   (shalin)
+
+* SOLR-6715: ZkSolrResourceLoader constructors accept a parameter called 'collection'
+  but it should be 'configName'. (shalin)
 
 * SOLR-6751: Exceptions thrown in the analysis chain in DirectUpdateHandler2
   should return a BAD_REQUEST status (Alan Woodward)
