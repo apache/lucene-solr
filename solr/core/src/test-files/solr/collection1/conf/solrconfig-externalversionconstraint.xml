@@ -34,10 +34,6 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
-
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
@@ -115,11 +111,5 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
 
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-    <lst name="defaults">
-      <str name="omitHeader">true</str>
-    </lst>
-  </requestHandler>
- 
 
 </config>

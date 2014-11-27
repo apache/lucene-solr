@@ -105,12 +105,14 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
     Set<String> handlerNames = h.getCore().getRequestHandlers().keySet();
     for (String handler : handlerNames) {
       try {
+
         if (handler.startsWith("/update")) {
           continue;
         }
         if (handler.startsWith("/mlt")) {
           continue;
         }
+        if(handler.startsWith("/admin/")) continue;
 
         assertQ("failure w/handler: '" + handler + "'",
                 req("qt", handler,

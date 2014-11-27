@@ -75,8 +75,8 @@ Upgrading from Solr 4.x
   in the "def()" function. Example: changing "fl=sum(fieldA,fieldB)" to 
   "fl=sum(def(fieldA,0.0),def(fieldB,0.0))".  See LUCENE-5961 for more details.
 
-* SolrCore.reload(ConfigSet coreConfig, SolrCore prev) was deprecated in 4.10.3 and
-  removed in 5.0. use SolrCore.reload(ConfigSet coreConfig). See SOLR-5864.
+* AdminHandlers is deprecated , /admin/* are implicitly defined, /get ,/replication and
+  handlers are also implicitly registered (refer to SOLR-6792)
 
 Detailed Change List
 ----------------------
@@ -400,8 +400,9 @@ Other Changes
 * SOLR-6751: Exceptions thrown in the analysis chain in DirectUpdateHandler2
   should return a BAD_REQUEST status (Alan Woodward)
 
-* SOLR-5864: Remove previous SolrCore as parameter on reload.
-  (Tomás Fernández Löbbe) 
+* SOLR-SOLR-6792 : deprecate AdminHandlers, Clean up solrconfig.xml of
+  unnecessary plugin definitions, implicit registration of /replication,
+  /get and /admin/* handlers (Noble Paul)
 
 * SOLR-4792: Stop shipping a .war. (Robert Muir, Ramkumar Aiyengar, Mark Miller)
 

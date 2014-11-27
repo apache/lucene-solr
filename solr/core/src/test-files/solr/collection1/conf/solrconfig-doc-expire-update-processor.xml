@@ -38,15 +38,7 @@
     </updateLog>
   </updateHandler>
 
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-    <lst name="defaults">
-      <str name="omitHeader">true</str>
-    </lst>
-  </requestHandler>
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
   <requestHandler name="/select" class="solr.SearchHandler" default="true" />
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-  <requestHandler name="/admin/" class="solr.admin.AdminHandlers"  />
 
   <updateRequestProcessorChain name="convert-ttl-defaults">
     <processor class="solr.processor.DocExpirationUpdateProcessorFactory">

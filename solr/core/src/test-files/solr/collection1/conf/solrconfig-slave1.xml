@@ -40,11 +40,6 @@
   <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
-  <requestHandler name="/replication" class="solr.ReplicationHandler">
-
-  </requestHandler>
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true">

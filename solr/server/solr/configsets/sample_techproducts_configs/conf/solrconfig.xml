@@ -903,24 +903,6 @@
   </requestHandler>
 
 
-  <!-- realtime get handler, guaranteed to return the latest stored fields of
-       any document, without the need to commit or open a new searcher.  The
-       current implementation relies on the updateLog feature being enabled.
-
-       ** WARNING **
-       Do NOT disable the realtime get handler at /get if you are using
-       SolrCloud otherwise any leader election will cause a full sync in ALL
-       replicas for the shard in question. Similarly, a replica recovery will
-       also always fetch the complete index from the leader because a partial
-       sync will not be possible in the absence of this handler.
-  -->
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
-     <lst name="defaults">
-       <str name="omitHeader">true</str>
-       <str name="wt">json</str>
-       <str name="indent">true</str>
-     </lst>
-  </requestHandler>
 
   <!--
     The export request handler is used to export full sorted result sets.
@@ -1171,13 +1153,6 @@
                   class="solr.DocumentAnalysisRequestHandler" 
                   startup="lazy" />
 
-  <!-- Admin Handlers
-
-       Admin Handlers - This will register all the standard admin
-       RequestHandlers.  
-    -->
-  <requestHandler name="/admin/" 
-                  class="solr.admin.AdminHandlers" />
   <!-- This single handler is equivalent to the following... -->
   <!--
      <requestHandler name="/admin/luke"       class="solr.admin.LukeRequestHandler" />
@@ -1215,21 +1190,6 @@
     </lst>
   </requestHandler>
   -->
-  <!-- ping/healthcheck -->
-  <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
-    <lst name="invariants">
-      <str name="q">solrpingquery</str>
-    </lst>
-    <lst name="defaults">
-      <str name="echoParams">all</str>
-    </lst>
-    <!-- An optional feature of the PingRequestHandler is to configure the 
-         handler with a "healthcheckFile" which can be used to enable/disable 
-         the PingRequestHandler.
-         relative paths are resolved against the data dir 
-      -->
-    <!-- <str name="healthcheckFile">server-enabled.txt</str> -->
-  </requestHandler>
 
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
@@ -1239,41 +1199,6 @@
     </lst>
   </requestHandler>
   
-  <!-- Solr Replication
-
-       The SolrReplicationHandler supports replicating indexes from a
-       "master" used for indexing and "slaves" used for queries.
-
-       http://wiki.apache.org/solr/SolrReplication 
-
-       It is also necessary for SolrCloud to function (in Cloud mode, the
-       replication handler is used to bulk transfer segments when nodes 
-       are added or need to recover).
-
-       https://wiki.apache.org/solr/SolrCloud/
-    -->
-  <requestHandler name="/replication" class="solr.ReplicationHandler" > 
-    <!--
-       To enable simple master/slave replication, uncomment one of the 
-       sections below, depending on whether this solr instance should be
-       the "master" or a "slave".  If this instance is a "slave" you will 
-       also need to fill in the masterUrl to point to a real machine.
-    -->
-    <!--
-       <lst name="master">
-         <str name="replicateAfter">commit</str>
-         <str name="replicateAfter">startup</str>
-         <str name="confFiles">schema.xml,stopwords.txt</str>
-       </lst>
-    -->
-    <!--
-       <lst name="slave">
-         <str name="masterUrl">http://your-master-hostname:8983/solr</str>
-         <str name="pollInterval">00:00:60</str>
-       </lst>
-    -->
-  </requestHandler>
-
   <!-- Search Components
 
        Search components are registered to SolrCore and used by 

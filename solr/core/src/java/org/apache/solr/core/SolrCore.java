@@ -810,11 +810,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // Processors initialized before the handlers
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
-      List<PluginInfo> implicitReqHandlerInfo = new ArrayList<>();
-      UpdateRequestHandler.addImplicits(implicitReqHandlerInfo);
-      SolrConfigHandler.addImplicits(implicitReqHandlerInfo);
-
-      reqHandlers.initHandlersFromConfig(solrConfig, implicitReqHandlerInfo);
+      reqHandlers.initHandlersFromConfig(solrConfig);
 
       // Handle things that should eventually go away
       initDeprecatedSupport();
