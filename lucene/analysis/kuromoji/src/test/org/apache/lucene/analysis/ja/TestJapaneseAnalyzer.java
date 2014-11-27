@@ -23,12 +23,10 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
  * Test Kuromoji Japanese morphological analyzer
  */
-@Slow
 public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
@@ -130,7 +128,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
-    checkRandomData(random, a, atLeast(10000));
+    checkRandomData(random, a, atLeast(1000));
   }
   
   /** blast some random large strings through the analyzer */
@@ -139,7 +137,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
         JapaneseAnalyzer.getDefaultStopSet(),
         JapaneseAnalyzer.getDefaultStopTags());
-    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 2*RANDOM_MULTIPLIER, 8192);
   }
 
   // Copied from TestJapaneseTokenizer, to make sure passing
