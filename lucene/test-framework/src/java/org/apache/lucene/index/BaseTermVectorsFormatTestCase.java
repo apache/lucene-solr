@@ -95,17 +95,6 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     return ft;
   }
 
-  protected BytesRef randomPayload() {
-    final int len = random().nextInt(5);
-    if (len == 0) {
-      return null;
-    }
-    final BytesRef payload = new BytesRef(len);
-    random().nextBytes(payload.bytes);
-    payload.length = len;
-    return payload;
-  }
-
   @Override
   protected void addRandomFields(Document doc) {
     for (Options opts : validOptions()) {
@@ -172,7 +161,9 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
   }
 
   // TODO: use CannedTokenStream?
-  protected class RandomTokenStream extends TokenStream {
+  // TODO: pull out and make top-level-utility, separate from TermVectors
+  /** Produces a random TokenStream based off of provided terms. */
+  public static class RandomTokenStream extends TokenStream {
 
     final String[] terms;
     final BytesRef[] termBytes;
@@ -191,11 +182,11 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     final PayloadAttribute pAtt;
     int i = 0;
 
-    protected RandomTokenStream(int len, String[] sampleTerms, BytesRef[] sampleTermBytes) {
+    public RandomTokenStream(int len, String[] sampleTerms, BytesRef[] sampleTermBytes) {
       this(len, sampleTerms, sampleTermBytes, rarely());
     }
 
-    protected RandomTokenStream(int len, String[] sampleTerms, BytesRef[] sampleTermBytes, boolean offsetsGoBackwards) {
+    public RandomTokenStream(int len, String[] sampleTerms, BytesRef[] sampleTermBytes, boolean offsetsGoBackwards) {
       terms = new String[len];
       termBytes = new BytesRef[len];
       positionsIncrements = new int[len];
@@ -266,6 +257,17 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       pAtt = addAttribute(PayloadAttribute.class);
     }
 
+    protected BytesRef randomPayload() {
+      final int len = random().nextInt(5);
+      if (len == 0) {
+        return null;
+      }
+      final BytesRef payload = new BytesRef(len);
+      random().nextBytes(payload.bytes);
+      payload.length = len;
+      return payload;
+    }
+
     public boolean hasPayloads() {
       for (BytesRef payload : payloads) {
         if (payload != null && payload.length > 0) {
@@ -275,9 +277,40 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       return false;
     }
 
+    public String[] getTerms() {
+      return terms;
+    }
+
+    public BytesRef[] getTermBytes() {
+      return termBytes;
+    }
+
+    public int[] getPositionsIncrements() {
+      return positionsIncrements;
+    }
+
+    public int[] getStartOffsets() {
+      return startOffsets;
+    }
+
+    public int[] getEndOffsets() {
+      return endOffsets;
+    }
+
+    public BytesRef[] getPayloads() {
+      return payloads;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      i = 0;
+      super.reset();
+    }
+
     @Override
     public final boolean incrementToken() throws IOException {
       if (i < terms.length) {
+        clearAttributes();
         termAtt.setLength(0).append(terms[i]);
         piAtt.setPositionIncrement(positionsIncrements[i]);
         oAtt.setOffset(startOffsets[i], endOffsets[i]);

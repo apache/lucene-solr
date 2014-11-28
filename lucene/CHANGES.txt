@@ -347,6 +347,11 @@ Optimizations
 * LUCENE-6033: CachingTokenFilter now uses ArrayList not LinkedList, and has new
   isCached() method. (David Smiley)
 
+* LUCENE-6031: TokenSources (in the default highlighter) converts term vectors into a
+  TokenStream much faster in linear time (not N*log(N) using less memory, and with reset()
+  implemented.  Only one of offsets or positions are required of the term vector.
+  (David Smiley)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
