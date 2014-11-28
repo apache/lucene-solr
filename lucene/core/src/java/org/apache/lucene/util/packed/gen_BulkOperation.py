@@ -57,16 +57,16 @@ FOOTER="""
    * For every number of bits per value, there is a minimum number of
    * blocks (b) / values (v) you need to write in order to reach the next block
    * boundary:
-   *  - 16 bits per value -> b=2, v=1
-   *  - 24 bits per value -> b=3, v=1
-   *  - 50 bits per value -> b=25, v=4
-   *  - 63 bits per value -> b=63, v=8
+   *  - 16 bits per value -&gt; b=2, v=1
+   *  - 24 bits per value -&gt; b=3, v=1
+   *  - 50 bits per value -&gt; b=25, v=4
+   *  - 63 bits per value -&gt; b=63, v=8
    *  - ...
    *
    * A bulk read consists in copying <code>iterations*v</code> values that are
    * contained in <code>iterations*b</code> blocks into a <code>long[]</code>
    * (higher values of <code>iterations</code> are likely to yield a better
-   * throughput) => this requires n * (b + 8v) bytes of memory.
+   * throughput): this requires n * (b + 8v) bytes of memory.
    *
    * This method computes <code>iterations</code> as
    * <code>ramBudget / (b + 8v)</code> (since a long is 8 bytes).
