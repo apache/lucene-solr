@@ -43,7 +43,7 @@ import org.apache.lucene.util.Version;
 /**
  * plain text segments file format.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {

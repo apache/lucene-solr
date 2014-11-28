@@ -173,12 +173,12 @@ public class AttributeSource {
   }
   
   /** <b>Expert:</b> Adds a custom AttributeImpl instance with one or more Attribute interfaces.
-   * <p><font color="red"><b>Please note:</b> It is not guaranteed, that <code>att</code> is added to
+   * <p><b>NOTE:</b> It is not guaranteed, that <code>att</code> is added to
    * the <code>AttributeSource</code>, because the provided attributes may already exist.
    * You should always retrieve the wanted attributes using {@link #getAttribute} after adding
    * with this method and cast to your class.
    * The recommended way to use custom implementations is using an {@link AttributeFactory}.
-   * </font></p>
+   * </p>
    */
   public final void addAttributeImpl(final AttributeImpl att) {
     final Class<? extends AttributeImpl> clazz = att.getClass();

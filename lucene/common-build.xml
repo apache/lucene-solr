@@ -372,8 +372,8 @@
     <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
 
-  <!-- for now disable doclint: -->
-  <property name="javadoc.args" value="-Xdoclint:none"/>
+  <!-- for now enable only some doclint: -->
+  <property name="javadoc.args" value="-Xdoclint:all -Xdoclint:-html -Xdoclint:-missing"/>
 
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />

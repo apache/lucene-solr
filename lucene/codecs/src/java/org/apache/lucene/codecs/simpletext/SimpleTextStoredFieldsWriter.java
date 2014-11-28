@@ -34,7 +34,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Writes plain-text stored fields.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
