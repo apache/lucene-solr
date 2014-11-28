@@ -734,12 +734,12 @@ public class FreeTextSuggester extends Lookup {
     }
   }
 
-  /** weight -> cost */
+  /** weight -&gt; cost */
   private long encodeWeight(long ngramCount) {
     return Long.MAX_VALUE - ngramCount;
   }
 
-  /** cost -> weight */
+  /** cost -&gt; weight */
   //private long decodeWeight(Pair<Long,BytesRef> output) {
   private long decodeWeight(Long output) {
     assert output != null;
