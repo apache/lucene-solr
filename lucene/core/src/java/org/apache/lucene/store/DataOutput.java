@@ -97,88 +97,88 @@ public abstract class DataOutput {
    * <col width="64*">
    * <col width="64*">
    * <tr valign="top">
-   *   <th align="left" width="25%">Value</th>
-   *   <th align="left" width="25%">Byte 1</th>
-   *   <th align="left" width="25%">Byte 2</th>
-   *   <th align="left" width="25%">Byte 3</th>
+   *   <th align="left">Value</th>
+   *   <th align="left">Byte 1</th>
+   *   <th align="left">Byte 2</th>
+   *   <th align="left">Byte 3</th>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">0</td>
-   *   <td width="25%"><kbd>00000000</kbd></td>
-   *   <td width="25%"></td>
-   *   <td width="25%"></td>
+   *   <td>0</td>
+   *   <td><kbd>00000000</kbd></td>
+   *   <td></td>
+   *   <td></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">1</td>
-   *   <td width="25%"><kbd>00000001</kbd></td>
-   *   <td width="25%"></td>
-   *   <td width="25%"></td>
+   *   <td>1</td>
+   *   <td><kbd>00000001</kbd></td>
+   *   <td></td>
+   *   <td></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">2</td>
-   *   <td width="25%"><kbd>00000010</kbd></td>
-   *   <td width="25%"></td>
-   *   <td width="25%"></td>
+   *   <td>2</td>
+   *   <td><kbd>00000010</kbd></td>
+   *   <td></td>
+   *   <td></td>
    * </tr>
    * <tr>
-   *   <td valign="top" width="25%">...</td>
-   *   <td valign="bottom" width="25%"></td>
-   *   <td valign="bottom" width="25%"></td>
-   *   <td valign="bottom" width="25%"></td>
+   *   <td valign="top">...</td>
+   *   <td valign="bottom"></td>
+   *   <td valign="bottom"></td>
+   *   <td valign="bottom"></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">127</td>
-   *   <td width="25%"><kbd>01111111</kbd></td>
-   *   <td width="25%"></td>
-   *   <td width="25%"></td>
+   *   <td>127</td>
+   *   <td><kbd>01111111</kbd></td>
+   *   <td></td>
+   *   <td></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">128</td>
-   *   <td width="25%"><kbd>10000000</kbd></td>
-   *   <td width="25%"><kbd>00000001</kbd></td>
-   *   <td width="25%"></td>
+   *   <td>128</td>
+   *   <td><kbd>10000000</kbd></td>
+   *   <td><kbd>00000001</kbd></td>
+   *   <td></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">129</td>
-   *   <td width="25%"><kbd>10000001</kbd></td>
-   *   <td width="25%"><kbd>00000001</kbd></td>
-   *   <td width="25%"></td>
+   *   <td>129</td>
+   *   <td><kbd>10000001</kbd></td>
+   *   <td><kbd>00000001</kbd></td>
+   *   <td></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">130</td>
-   *   <td width="25%"><kbd>10000010</kbd></td>
-   *   <td width="25%"><kbd>00000001</kbd></td>
-   *   <td width="25%"></td>
+   *   <td>130</td>
+   *   <td><kbd>10000010</kbd></td>
+   *   <td><kbd>00000001</kbd></td>
+   *   <td></td>
    * </tr>
    * <tr>
-   *   <td valign="top" width="25%">...</td>
-   *   <td width="25%"></td>
-   *   <td width="25%"></td>
-   *   <td width="25%"></td>
+   *   <td valign="top">...</td>
+   *   <td></td>
+   *   <td></td>
+   *   <td></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">16,383</td>
-   *   <td width="25%"><kbd>11111111</kbd></td>
-   *   <td width="25%"><kbd>01111111</kbd></td>
-   *   <td width="25%"></td>
+   *   <td>16,383</td>
+   *   <td><kbd>11111111</kbd></td>
+   *   <td><kbd>01111111</kbd></td>
+   *   <td></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">16,384</td>
-   *   <td width="25%"><kbd>10000000</kbd></td>
-   *   <td width="25%"><kbd>10000000</kbd></td>
-   *   <td width="25%"><kbd>00000001</kbd></td>
+   *   <td>16,384</td>
+   *   <td><kbd>10000000</kbd></td>
+   *   <td><kbd>10000000</kbd></td>
+   *   <td><kbd>00000001</kbd></td>
    * </tr>
    * <tr valign="bottom">
-   *   <td width="25%">16,385</td>
-   *   <td width="25%"><kbd>10000001</kbd></td>
-   *   <td width="25%"><kbd>10000000</kbd></td>
-   *   <td width="25%"><kbd>00000001</kbd></td>
+   *   <td>16,385</td>
+   *   <td><kbd>10000001</kbd></td>
+   *   <td><kbd>10000000</kbd></td>
+   *   <td><kbd>00000001</kbd></td>
    * </tr>
    * <tr>
-   *   <td valign="top" width="25%">...</td>
-   *   <td valign="bottom" width="25%"></td>
-   *   <td valign="bottom" width="25%"></td>
-   *   <td valign="bottom" width="25%"></td>
+   *   <td valign="top">...</td>
+   *   <td valign="bottom"></td>
+   *   <td valign="bottom"></td>
+   *   <td valign="bottom"></td>
    * </tr>
    * </table>
    * <p>This provides compression while still being efficient to decode.</p>

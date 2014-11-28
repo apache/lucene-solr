@@ -44,7 +44,7 @@ import org.apache.lucene.util.StringHelper;
 /**
  * plain text compound format.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextCompoundFormat extends CompoundFormat {

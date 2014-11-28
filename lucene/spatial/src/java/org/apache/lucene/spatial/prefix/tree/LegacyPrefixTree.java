@@ -25,7 +25,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.util.Arrays;
 
-/** The base for the original two SPT's: Geohash & Quad. Don't subclass this for new SPTs.
+/** The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
  * @lucene.internal */
 abstract class LegacyPrefixTree extends SpatialPrefixTree {
   public LegacyPrefixTree(SpatialContext ctx, int maxLevels) {

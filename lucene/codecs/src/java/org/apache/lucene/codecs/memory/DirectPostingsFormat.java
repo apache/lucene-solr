@@ -58,7 +58,7 @@ import org.apache.lucene.util.automaton.Transition;
  *  storage, but then at read time loads and stores all
  *  terms and postings directly in RAM as byte[], int[].
  *
- *  <p><b><font color=red>WARNING</font></b>: This is
+ *  <p><b>WARNING</b>: This is
  *  exceptionally RAM intensive: it makes no effort to
  *  compress the postings data, storing terms as separate
  *  byte[] and postings as separate int[], but as a result it 

@@ -49,7 +49,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextStoredFieldsWriter.*
 /**
  * reads plaintext stored fields
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
