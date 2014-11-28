@@ -53,7 +53,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
   static final String PAYLOAD_FIELD_NAME = "p1";
   static final String CONTEXT_FIELD_NAME = "c1";
   
-  /** Returns Pair(list of invalid document terms, Map of document term -> document) */
+  /** Returns Pair(list of invalid document terms, Map of document term -&gt; document) */
   private Map.Entry<List<String>, Map<String, Document>> generateIndexDocuments(int ndocs, boolean requiresPayload, boolean requiresContexts) {
     Map<String, Document> docs = new HashMap<>();
     List<String> invalidDocTerms = new ArrayList<>();

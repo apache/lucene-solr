@@ -247,12 +247,12 @@ public class WFSTCompletionLookup extends Lookup {
     }
   }
   
-  /** cost -> weight */
+  /** cost -&gt; weight */
   private static int decodeWeight(long encoded) {
     return (int)(Integer.MAX_VALUE - encoded);
   }
   
-  /** weight -> cost */
+  /** weight -&gt; cost */
   private static int encodeWeight(long value) {
     if (value < 0 || value > Integer.MAX_VALUE) {
       throw new UnsupportedOperationException("cannot encode value: " + value);

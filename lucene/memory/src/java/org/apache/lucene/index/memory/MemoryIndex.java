@@ -189,7 +189,7 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
  */
 public class MemoryIndex {
 
-  /** info for each field: Map<String fieldName, Info field> */
+  /** info for each field: Map&lt;String fieldName, Info field&gt; */
   private final HashMap<String,Info> fields = new HashMap<>();
   
   /** fields sorted ascending by fieldName; lazily computed on demand */
@@ -689,8 +689,8 @@ public class MemoryIndex {
   private static final class Info {
     
     /**
-     * Term strings and their positions for this field: Map <String
-     * termText, ArrayIntList positions>
+     * Term strings and their positions for this field: Map &lt;String
+     * termText, ArrayIntList positions&gt;
      */
     private final BytesRefHash terms; 
     
