@@ -1033,7 +1033,7 @@ public class TestFSTs extends LuceneTestCase {
    * Test state expansion (array format) on close-to-root states. Creates
    * synthetic input that has one expanded state on each level.
    *
-   * @see "https://issues.apache.org/jira/browse/LUCENE-2933"
+   * @see <a href="https://issues.apache.org/jira/browse/LUCENE-2933">LUCENE-2933</a>
    */
   public void testExpandedCloseToRoot() throws Exception {
     class SyntheticData {

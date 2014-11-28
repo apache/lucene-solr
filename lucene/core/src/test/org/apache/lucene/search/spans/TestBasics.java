@@ -664,7 +664,7 @@ public class TestBasics extends LuceneTestCase {
     boolean hasMore = true;
 
     do {
-      hasMore = skipToAccoringToJavaDocs(s1, s1.doc() + 1);
+      hasMore = skipToAccordingToJavaDocs(s1, s1.doc() + 1);
       assertEquals(hasMore, s2.skipTo(s2.doc() + 1));
       assertEquals(s1.doc(), s2.doc());
     } while (hasMore);
@@ -677,12 +677,12 @@ public class TestBasics extends LuceneTestCase {
    *     do {
    *       if (!next())
    *       return false;
-   *     } while (target > doc());
+   *     } while (target &gt; doc());
    *     return true;
    *   }
    * </pre>
    */
-  private boolean skipToAccoringToJavaDocs(Spans s, int target)
+  private boolean skipToAccordingToJavaDocs(Spans s, int target)
       throws Exception {
     do {
       if (!s.next())

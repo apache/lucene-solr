@@ -447,7 +447,7 @@ public class Dictionary {
    * @param reader BufferedReader to read the content of the rule from
    * @param conditionPattern {@link String#format(String, Object...)} pattern to be used to generate the condition regex
    *                         pattern
-   * @param seenPatterns map from condition -> index of patterns, for deduplication.
+   * @param seenPatterns map from condition -&gt; index of patterns, for deduplication.
    * @throws IOException Can be thrown while reading the rule
    */
   private void parseAffix(TreeMap<String,List<Integer>> affixes,

@@ -50,7 +50,7 @@ final class ForUtil {
    * Upper limit of the number of values that might be decoded in a single call to
    * {@link #readBlock(IndexInput, byte[], int[])}. Although values after
    * <code>BLOCK_SIZE</code> are garbage, it is necessary to allocate value buffers
-   * whose size is >= MAX_DATA_SIZE to avoid {@link ArrayIndexOutOfBoundsException}s.
+   * whose size is {@code >= MAX_DATA_SIZE} to avoid {@link ArrayIndexOutOfBoundsException}s.
    */
   static final int MAX_DATA_SIZE;
   static {

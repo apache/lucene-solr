@@ -47,7 +47,7 @@ import java.util.Collections;
  * <li>fields - The fields to highlight.  If not specified all fields will be highlighted (or at least attempted)</li>
  * </ul>
  * Example:
- * <pre>"SearchVecHlgtSameRdr" SearchTravRetVectorHighlight(size[10],highlight[10],maxFrags[3],fields[body]) > : 1000
+ * <pre>"SearchVecHlgtSameRdr" SearchTravRetVectorHighlight(size[10],highlight[10],maxFrags[3],fields[body]) &gt; : 1000
  * </pre>
  *
  * Fields must be stored and term vector offsets and positions in order must be true for this task to work.

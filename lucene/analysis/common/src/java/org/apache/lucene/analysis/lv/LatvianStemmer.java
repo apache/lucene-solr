@@ -87,10 +87,10 @@ public class LatvianStemmer {
   /**
    * Most cases are handled except for the ambiguous ones:
    * <ul>
-   *  <li> s -> š
-   *  <li> t -> š
-   *  <li> d -> ž
-   *  <li> z -> ž
+   *  <li> s -&gt; š
+   *  <li> t -&gt; š
+   *  <li> d -&gt; ž
+   *  <li> z -&gt; ž
    * </ul>
    */
   private int unpalatalize(char s[], int len) {

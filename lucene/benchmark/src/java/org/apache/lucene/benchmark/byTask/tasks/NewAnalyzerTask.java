@@ -99,7 +99,7 @@ public class NewAnalyzerTask extends PerfTask {
    * <p/>
    * Analyzer names may also refer to previously defined AnalyzerFactory's.
    * <p/>
-   * Example Declaration: {"NewAnalyzer" NewAnalyzer(WhitespaceAnalyzer, SimpleAnalyzer, StopAnalyzer, standard.StandardAnalyzer) >
+   * Example Declaration: {"NewAnalyzer" NewAnalyzer(WhitespaceAnalyzer, SimpleAnalyzer, StopAnalyzer, standard.StandardAnalyzer) &gt;
    * <p/>
    * Example AnalyzerFactory usage:
    * <pre>

@@ -266,7 +266,7 @@ public final class BytesRefHash {
    *         haven't been hashed before.
    * 
    * @throws MaxBytesLengthExceededException
-   *           if the given bytes are > 2 +
+   *           if the given bytes are {@code > 2 +}
    *           {@link ByteBlockPool#BYTE_BLOCK_SIZE}
    */
   public int add(BytesRef bytes) {
@@ -403,7 +403,7 @@ public final class BytesRefHash {
   }
 
   /**
-   * Called when hash is too small (> 50% occupied) or too large (< 20%
+   * Called when hash is too small ({@code > 50%} occupied) or too large ({@code < 20%}
    * occupied).
    */
   private void rehash(final int newSize, boolean hashOnData) {

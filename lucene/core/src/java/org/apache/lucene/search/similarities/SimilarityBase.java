@@ -216,7 +216,7 @@ public abstract class SimilarityBase extends Similarity {
 
   // ------------------------------ Norm handling ------------------------------
   
-  /** Norm -> document length map. */
+  /** Norm to document length map. */
   private static final float[] NORM_TABLE = new float[256];
 
   static {

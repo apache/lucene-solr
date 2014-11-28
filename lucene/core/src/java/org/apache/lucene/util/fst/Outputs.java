@@ -41,13 +41,13 @@ public abstract class Outputs<T> {
   // (new object per byte/char/int) if eg used during
   // analysis
 
-  /** Eg common("foobar", "food") -> "foo" */
+  /** Eg common("foobar", "food") -&gt; "foo" */
   public abstract T common(T output1, T output2);
 
-  /** Eg subtract("foobar", "foo") -> "bar" */
+  /** Eg subtract("foobar", "foo") -&gt; "bar" */
   public abstract T subtract(T output, T inc);
 
-  /** Eg add("foo", "bar") -> "foobar" */
+  /** Eg add("foo", "bar") -&gt; "foobar" */
   public abstract T add(T prefix, T output);
 
   /** Encode an output value into a {@link DataOutput}. */

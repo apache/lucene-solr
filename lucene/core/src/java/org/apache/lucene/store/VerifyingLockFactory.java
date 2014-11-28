@@ -29,7 +29,7 @@ import java.io.OutputStream;
  * external server ({@link LockVerifyServer}) to assert that
  * at most one process holds the lock at a time.  To use
  * this, you should also run {@link LockVerifyServer} on the
- * host & port matching what you pass to the constructor.
+ * host and port matching what you pass to the constructor.
  *
  * @see LockVerifyServer
  * @see LockStressTest

@@ -76,7 +76,7 @@ public class SpatialArgs {
    * looks at {@link #getDistErr()}, {@link #getDistErrPct()}, and {@code
    * defaultDistErrPct}.
    * @param defaultDistErrPct 0 to 0.5
-   * @return >= 0
+   * @return {@code >= 0}
    */
   public double resolveDistErr(SpatialContext ctx, double defaultDistErrPct) {
     if (distErr != null)
@@ -137,7 +137,7 @@ public class SpatialArgs {
    * The acceptable error of the shape.  This effectively inflates the
    * size of the shape but should not shrink it.
    *
-   * @return >= 0
+   * @return {@code >= 0}
    */
   public Double getDistErr() {
     return distErr;

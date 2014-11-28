@@ -30,7 +30,7 @@ import org.apache.lucene.util.LongValues;
  *   int bitsPerValue = 100;
  *   IndexInput in = dir.openInput("packed", IOContext.DEFAULT);
  *   LongValues values = DirectReader.getInstance(in.randomAccessSlice(start, end), bitsPerValue);
- *   for (int i = 0; i < numValues; i++) {
+ *   for (int i = 0; i &lt; numValues; i++) {
  *     long value = values.get(i);
  *   }
  * </pre>

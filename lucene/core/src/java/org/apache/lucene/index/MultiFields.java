@@ -120,14 +120,14 @@ public final class MultiFields extends Fields {
     return getFields(r).terms(field);
   }
   
-  /** Returns {@link DocsEnum} for the specified field &
+  /** Returns {@link DocsEnum} for the specified field and
    *  term.  This will return null if the field or term does
    *  not exist. */
   public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
     return getTermDocsEnum(r, liveDocs, field, term, DocsEnum.FLAG_FREQS);
   }
   
-  /** Returns {@link DocsEnum} for the specified field &
+  /** Returns {@link DocsEnum} for the specified field and
    *  term, with control over whether freqs are required.
    *  Some codecs may be able to optimize their
    *  implementation when freqs are not required.  This will
@@ -147,7 +147,7 @@ public final class MultiFields extends Fields {
   }
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term.  This will return null if the field or
+   *  field and term.  This will return null if the field or
    *  term does not exist or positions were not indexed. 
    *  @see #getTermPositionsEnum(IndexReader, Bits, String, BytesRef, int) */
   public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
@@ -155,7 +155,7 @@ public final class MultiFields extends Fields {
   }
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term, with control over whether offsets and payloads are
+   *  field and term, with control over whether offsets and payloads are
    *  required.  Some codecs may be able to optimize
    *  their implementation when offsets and/or payloads are not
    *  required. This will return null if the field or term does not

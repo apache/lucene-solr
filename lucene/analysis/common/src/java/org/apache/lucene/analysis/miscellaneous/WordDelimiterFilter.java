@@ -66,7 +66,7 @@ import java.util.Arrays;
  * <ul>
  * <li><code>"PowerShot"</code> &#8594;
  * <code>0:"Power", 1:"Shot" 1:"PowerShot"</code></li>
- * <li><code>"A's+B's&C's"</code> -gt; <code>0:"A", 1:"B", 2:"C", 2:"ABC"</code>
+ * <li><code>"A's+B's&amp;C's"</code> &gt; <code>0:"A", 1:"B", 2:"C", 2:"ABC"</code>
  * </li>
  * <li><code>"Super-Duper-XL500-42-AutoCoder!"</code> &#8594;
  * <code>0:"Super", 1:"Duper", 2:"XL", 2:"SuperDuperXL", 3:"500" 4:"42", 5:"Auto", 6:"Coder", 6:"AutoCoder"</code>
@@ -97,42 +97,42 @@ public final class WordDelimiterFilter extends TokenFilter {
   /**
    * Causes parts of words to be generated:
    * <p/>
-   * "PowerShot" => "Power" "Shot"
+   * "PowerShot" =&gt; "Power" "Shot"
    */
   public static final int GENERATE_WORD_PARTS = 1;
 
   /**
    * Causes number subwords to be generated:
    * <p/>
-   * "500-42" => "500" "42"
+   * "500-42" =&gt; "500" "42"
    */
   public static final int GENERATE_NUMBER_PARTS = 2;
 
   /**
    * Causes maximum runs of word parts to be catenated:
    * <p/>
-   * "wi-fi" => "wifi"
+   * "wi-fi" =&gt; "wifi"
    */
   public static final int CATENATE_WORDS = 4;
 
   /**
    * Causes maximum runs of word parts to be catenated:
    * <p/>
-   * "wi-fi" => "wifi"
+   * "wi-fi" =&gt; "wifi"
    */
   public static final int CATENATE_NUMBERS = 8;
 
   /**
    * Causes all subword parts to be catenated:
    * <p/>
-   * "wi-fi-4000" => "wifi4000"
+   * "wi-fi-4000" =&gt; "wifi4000"
    */
   public static final int CATENATE_ALL = 16;
 
   /**
    * Causes original words are preserved and added to the subword list (Defaults to false)
    * <p/>
-   * "500-42" => "500" "42" "500-42"
+   * "500-42" =&gt; "500" "42" "500-42"
    */
   public static final int PRESERVE_ORIGINAL = 32;
 
@@ -151,7 +151,7 @@ public final class WordDelimiterFilter extends TokenFilter {
   /**
    * Causes trailing "'s" to be removed for each subword
    * <p/>
-   * "O'Neil's" => "O", "Neil"
+   * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;
   

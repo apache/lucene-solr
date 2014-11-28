@@ -327,7 +327,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     indexDir.close();
   }
 
-  /**  Basic tests for TaxonomyReader's category <=> ordinal transformations
+  /**  Basic tests for TaxonomyReader's category &lt;=&gt; ordinal transformations
     (getSize(), getCategory() and getOrdinal()).
     We test that after writing the index, it can be read and all the
     categories and ordinals are there just as we expected them to be.
@@ -383,7 +383,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     We check it by comparing its results to those we could have gotten by
     looking at the category string paths (where the parentage is obvious).
     Note that after testReaderBasic(), we already know we can trust the
-    ordinal <=> category conversions.
+    ordinal &lt;=&gt; category conversions.
     
     Note: At the moment, the parent methods in the reader are deprecated,
     but this does not mean they should not be tested! Until they are
@@ -429,7 +429,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
    * its results to those we could have gotten by looking at the category
    * string paths using a TaxonomyReader (where the parentage is obvious).
    * Note that after testReaderBasic(), we already know we can trust the
-   * ordinal <=> category conversions from TaxonomyReader.
+   * ordinal &lt;=&gt; category conversions from TaxonomyReader.
    *
    * The difference between testWriterParent1 and testWriterParent2 is that
    * the former closes the taxonomy writer before reopening it, while the

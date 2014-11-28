@@ -53,7 +53,7 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
  * <p>
  * If {@link IndexWriterConfig#setRAMBufferSizeMB(double)} is enabled, the
  * largest ram consuming {@link DocumentsWriterPerThread} will be marked as
- * pending iff the global active RAM consumption is >= the configured max RAM
+ * pending iff the global active RAM consumption is {@code >=} the configured max RAM
  * buffer.
  */
 class FlushByRamOrCountsPolicy extends FlushPolicy {

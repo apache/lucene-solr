@@ -248,7 +248,7 @@ public class KStemmer {
                   * word, use the method wordLength, which returns (k+1).
                   */
   
-  /***
+  /*
    * private void initializeStemHash() { if (maxCacheSize > 0) cache = new
    * CharArrayMap<String>(maxCacheSize,false); }
    ***/

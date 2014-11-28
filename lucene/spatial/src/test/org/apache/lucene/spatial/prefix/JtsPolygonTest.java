@@ -82,7 +82,7 @@ public class JtsPolygonTest extends StrategyTestCase {
 
   /**
    * A PrefixTree pruning optimization gone bad.
-   * See <a href="https://issues.apache.org/jira/browse/LUCENE-4770>LUCENE-4770</a>.
+   * See <a href="https://issues.apache.org/jira/browse/LUCENE-4770">LUCENE-4770</a>.
    */
   @Test
   public void testBadPrefixTreePrune() throws Exception {

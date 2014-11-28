@@ -60,7 +60,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  or larger will never be merged.  @see setMaxMergeDocs */
   public static final int DEFAULT_MAX_MERGE_DOCS = Integer.MAX_VALUE;
 
-  /** Default noCFSRatio.  If a merge's size is >= 10% of
+  /** Default noCFSRatio.  If a merge's size is {@code >= 10%} of
    *  the index, then we disable compound file for it.
    *  @see MergePolicy#setNoCFSRatio */
   public static final double DEFAULT_NO_CFS_RATIO = 0.1;
@@ -124,8 +124,8 @@ public abstract class LogMergePolicy extends MergePolicy {
    * faster, but indexing speed is slower.  With larger
    * values, more RAM is used during indexing, and while
    * searches is slower, indexing is
-   * faster.  Thus larger values (> 10) are best for batch
-   * index creation, and smaller values (< 10) for indices
+   * faster.  Thus larger values ({@code > 10}) are best for batch
+   * index creation, and smaller values ({@code < 10}) for indices
    * that are interactively maintained. */
   public void setMergeFactor(int mergeFactor) {
     if (mergeFactor < 2)

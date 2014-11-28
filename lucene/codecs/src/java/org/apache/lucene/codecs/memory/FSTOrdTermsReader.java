@@ -753,7 +753,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       }
 
       /** Load frame for target arc(node) on fst, so that 
-       *  arc.label >= label and !fsa.reject(arc.label) */
+       *  arc.label &gt;= label and !fsa.reject(arc.label) */
       Frame loadCeilFrame(int label, Frame top, Frame frame) throws IOException {
         FST.Arc<Long> arc = frame.arc;
         arc = Util.readCeilArc(label, fst, top.arc, arc, fstReader);

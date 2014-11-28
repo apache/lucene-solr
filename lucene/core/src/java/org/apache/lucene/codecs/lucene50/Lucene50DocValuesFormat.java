@@ -131,7 +131,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *      <ul>
  *         <li>0 --&gt; delta-compressed. For each block of 16k integers, every integer is delta-encoded
  *             from the minimum value within the block. 
- *         <li>1 --&gt, gcd-compressed. When all integers share a common divisor, only quotients are stored
+ *         <li>1 --&gt; gcd-compressed. When all integers share a common divisor, only quotients are stored
  *             using blocks of delta-encoded ints.
  *         <li>2 --&gt; table-compressed. When the number of unique numeric values is small and it would save space,
  *             a lookup table of unique values is written, followed by the ordinal for each document.
@@ -141,7 +141,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *   <p>BinaryType indicates how Binary values will be stored:
  *      <ul>
  *         <li>0 --&gt; fixed-width. All values have the same length, addressing by multiplication. 
- *         <li>1 --&gt, variable-width. An address for each value is stored.
+ *         <li>1 --&gt; variable-width. An address for each value is stored.
  *         <li>2 --&gt; prefix-compressed. An address to the start of every interval'th value is stored.
  *      </ul>
  *   <p>MinLength and MaxLength represent the min and max byte[] value lengths for Binary values.

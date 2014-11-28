@@ -40,7 +40,7 @@ public enum DocValuesType {
    * A pre-sorted byte[]. Fields with this type only store distinct byte values 
    * and store an additional offset pointer per document to dereference the shared 
    * byte[]. The stored byte[] is presorted and allows access via document id, 
-   * ordinal and by-value.  Values must be <= 32766 bytes.
+   * ordinal and by-value.  Values must be {@code <= 32766} bytes.
    */
   SORTED,
   /** 
@@ -52,7 +52,7 @@ public enum DocValuesType {
    * A pre-sorted Set&lt;byte[]&gt;. Fields with this type only store distinct byte values 
    * and store additional offset pointers per document to dereference the shared 
    * byte[]s. The stored byte[] is presorted and allows access via document id, 
-   * ordinal and by-value.  Values must be <= 32766 bytes.
+   * ordinal and by-value.  Values must be {@code <= 32766} bytes.
    */
   SORTED_SET,
 }

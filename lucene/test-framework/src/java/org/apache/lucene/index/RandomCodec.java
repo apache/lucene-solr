@@ -73,7 +73,7 @@ public class RandomCodec extends AssertingCodec {
 
   public final Set<String> avoidCodecs;
 
-  /** memorized field->postingsformat mappings */
+  /** memorized field to postingsformat mappings */
   // note: we have to sync this map even though its just for debugging/toString, 
   // otherwise DWPT's .toString() calls that iterate over the map can 
   // cause concurrentmodificationexception if indexwriter's infostream is on

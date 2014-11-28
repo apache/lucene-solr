@@ -55,7 +55,7 @@ public class TestLatvianStemmer extends BaseTokenStreamTestCase {
   }
   
   /**
-   * decl II nouns with (s,t) -> š and (d,z) -> ž
+   * decl II nouns with (s,t) -&gt; š and (d,z) -&gt; ž
    * palatalization will generally conflate to two stems
    * due to the ambiguity (plural and singular).
    */
@@ -151,7 +151,7 @@ public class TestLatvianStemmer extends BaseTokenStreamTestCase {
   }
   
   /**
-   * Genitive plural forms with (s,t) -> š and (d,z) -> ž
+   * Genitive plural forms with (s,t) -&gt; š and (d,z) -&gt; ž
    * will not conflate due to ambiguity.
    */
   public void testNouns5() throws IOException {
@@ -240,7 +240,7 @@ public class TestLatvianStemmer extends BaseTokenStreamTestCase {
   
   /**
    * Note: we intentionally don't handle the ambiguous
-   * (s,t) -> š and (d,z) -> ž
+   * (s,t) -&gt; š and (d,z) -&gt; ž
    */
   public void testPalatalization() throws IOException {
     checkOneTerm(a, "krāsns", "krāsn"); // nom. sing.

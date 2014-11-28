@@ -676,7 +676,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     return dest;
   }
 
-  /** Writes & syncs to the Directory dir, taking care to
+  /** Writes and syncs to the Directory dir, taking care to
    *  remove the segments file on exception
    *  <p>
    *  Note: {@link #changed()} should be called prior to this

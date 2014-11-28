@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.util.StemmerUtil;
 import java.io.IOException;
 
 /**
- * This filter folds Scandinavian characters åÅäæÄÆ->a and öÖøØ->o.
+ * This filter folds Scandinavian characters åÅäæÄÆ-&gt;a and öÖøØ-&gt;o.
  * It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
  * <p/>
  * It's is a semantically more destructive solution than {@link ScandinavianNormalizationFilter} but

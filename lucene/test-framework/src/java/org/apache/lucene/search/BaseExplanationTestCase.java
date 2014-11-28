@@ -46,7 +46,6 @@ import org.junit.BeforeClass;
  * then anything that rewrites to a primitive will work well also.
  * </p>
  *
- * @see "Subclasses for actual tests"
  */
 public abstract class BaseExplanationTestCase extends LuceneTestCase {
   protected static IndexSearcher searcher;
