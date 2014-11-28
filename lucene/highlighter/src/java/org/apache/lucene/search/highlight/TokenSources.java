@@ -123,11 +123,11 @@ public class TokenSources {
 
     if (!tpv.hasOffsets()) {
       throw new IllegalArgumentException("Highlighting requires offsets from the TokenStream.");
-      //TokenStreamFromTermPositionVector can handle a lack of offsets if there are positions. But
+      //TokenStreamFromTermVector can handle a lack of offsets if there are positions. But
       // highlighters require offsets, so we insist here.
     }
 
-    return new TokenStreamFromTermPositionVector(tpv);
+    return new TokenStreamFromTermVector(tpv);
   }
 
   /**
