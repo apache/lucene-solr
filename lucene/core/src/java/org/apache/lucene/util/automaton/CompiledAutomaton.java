@@ -297,7 +297,7 @@ public class CompiledAutomaton {
   }
 
   /** Finds largest term accepted by this Automaton, that's
-   *  <= the provided input term.  The result is placed in
+   *  &lt;= the provided input term.  The result is placed in
    *  output; it's fine for output and input to point to
    *  the same bytes.  The returned result is either the
    *  provided output, or null if there is no floor term

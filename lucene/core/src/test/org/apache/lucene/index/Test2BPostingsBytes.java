@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Test indexes 2B docs with 65k freqs each, 
- * so you get > Integer.MAX_VALUE postings data for the term
+ * so you get &gt; Integer.MAX_VALUE postings data for the term
  * @lucene.experimental
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })

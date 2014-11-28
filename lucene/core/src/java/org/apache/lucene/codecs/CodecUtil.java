@@ -178,7 +178,7 @@ public final class CodecUtil {
    * @param maxVersion The maximum supported expected version number.
    * @return The actual version found, when a valid header is found 
    *         that matches <code>codec</code>, with an actual version 
-   *         where <code>minVersion <= actual <= maxVersion</code>.
+   *         where {@code minVersion <= actual <= maxVersion}.
    *         Otherwise an exception is thrown.
    * @throws CorruptIndexException If the first four bytes are not
    *         {@link #CODEC_MAGIC}, or if the actual codec found is
@@ -238,7 +238,7 @@ public final class CodecUtil {
    * @param expectedSuffix The expected auxiliary suffix for this file.
    * @return The actual version found, when a valid header is found 
    *         that matches <code>codec</code>, with an actual version 
-   *         where <code>minVersion <= actual <= maxVersion</code>, 
+   *         where {@code minVersion <= actual <= maxVersion}, 
    *         and matching <code>expectedID</code> and <code>expectedSuffix</code>
    *         Otherwise an exception is thrown.
    * @throws CorruptIndexException If the first four bytes are not

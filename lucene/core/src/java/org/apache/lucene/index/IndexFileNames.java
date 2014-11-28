@@ -56,7 +56,7 @@ public final class IndexFileNames {
   /**
    * Computes the full file name from base, extension and generation. If the
    * generation is -1, the file name is null. If it's 0, the file name is
-   * &lt;base&gt;.&lt;ext&gt;. If it's > 0, the file name is
+   * &lt;base&gt;.&lt;ext&gt;. If it's &gt; 0, the file name is
    * &lt;base&gt;_&lt;gen&gt;.&lt;ext&gt;.<br>
    * <b>NOTE:</b> .&lt;ext&gt; is added to the name only if <code>ext</code> is
    * not an empty string.

@@ -29,7 +29,7 @@ import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 /**
  * This listener listens for every field configuration request and assign a
  * {@link ConfigurationKeys#DATE_RESOLUTION} to the equivalent {@link FieldConfig} based
- * on a defined map: fieldName -> {@link Resolution} stored in
+ * on a defined map: fieldName -&gt; {@link Resolution} stored in
  * {@link ConfigurationKeys#FIELD_DATE_RESOLUTION_MAP}.
  * 
  * @see ConfigurationKeys#DATE_RESOLUTION

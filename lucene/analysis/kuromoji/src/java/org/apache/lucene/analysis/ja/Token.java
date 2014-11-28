@@ -158,7 +158,7 @@ public class Token {
 
   /**
    * Set the position length (in tokens) of this token.  For normal
-   * tokens this is 1; for compound tokens it's > 1.
+   * tokens this is 1; for compound tokens it's &gt; 1.
    */
   public void setPositionLength(int positionLength) {
     this.positionLength = positionLength;
@@ -166,7 +166,7 @@ public class Token {
   
   /**
    * Get the length (in tokens) of this token.  For normal
-   * tokens this is 1; for compound tokens it's > 1.
+   * tokens this is 1; for compound tokens it's &gt; 1.
    * @return position length of token
    */
   public int getPositionLength() {

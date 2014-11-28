@@ -375,7 +375,7 @@ public class EliasFanoDecoder {
 
   /** Decrement efindex and setBitForIndex and
    * shift curHighLong so that it does not contain the high bits after setBitForIndex.
-   * @return true iff efindex still >= 0
+   * @return true iff efindex still {@code >= 0}
    */
   private boolean toBeforeCurrentHighBit() {
     efIndex -= 1;

@@ -43,7 +43,7 @@ public abstract class CellIterator implements Iterator<Cell> {
   //public SpatialRelation getShapeRel()
 
   /**
-   * Gets the next cell that is >= {@code fromCell}, compared using non-leaf bytes. If it returns null then
+   * Gets the next cell that is &gt;= {@code fromCell}, compared using non-leaf bytes. If it returns null then
    * the iterator is exhausted.
    */
   public Cell nextFrom(Cell fromCell) {

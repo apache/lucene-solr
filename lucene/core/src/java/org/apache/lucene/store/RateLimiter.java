@@ -93,7 +93,7 @@ public abstract class RateLimiter {
     
     /** Pauses, if necessary, to keep the instantaneous IO
      *  rate at or below the target.  Be sure to only call
-     *  this method when bytes > {@link #getMinPauseCheckBytes},
+     *  this method when bytes &gt; {@link #getMinPauseCheckBytes},
      *  otherwise it will pause way too long!
      *
      *  @return the pause time in nano seconds */  

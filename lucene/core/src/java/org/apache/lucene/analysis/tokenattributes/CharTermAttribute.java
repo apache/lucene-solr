@@ -48,7 +48,7 @@ public interface CharTermAttribute extends Attribute, CharSequence, Appendable {
   /** Grows the termBuffer to at least size newSize, preserving the
    *  existing content.
    *  @param newSize minimum size of the new termBuffer
-   *  @return newly created termBuffer with length >= newSize
+   *  @return newly created termBuffer with {@code length >= newSize}
    */
   public char[] resizeBuffer(int newSize);
 

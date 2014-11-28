@@ -346,7 +346,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     }
   }
 
-  /** Returns ordinal -> label mapping, up to the provided
+  /** Returns ordinal -&gt; label mapping, up to the provided
    *  max ordinal or number of ordinals, whichever is
    *  smaller. */
   public String toString(int max) {

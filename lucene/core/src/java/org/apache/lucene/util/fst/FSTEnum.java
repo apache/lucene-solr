@@ -114,7 +114,7 @@ abstract class FSTEnum<T> {
   // TODO: should we return a status here (SEEK_FOUND / SEEK_NOT_FOUND /
   // SEEK_END)?  saves the eq check above?
 
-  /** Seeks to smallest term that's >= target. */
+  /** Seeks to smallest term that's &gt;= target. */
   protected void doSeekCeil() throws IOException {
 
     //System.out.println("    advance len=" + target.length + " curlen=" + current.length);
@@ -256,7 +256,7 @@ abstract class FSTEnum<T> {
 
   // TODO: should we return a status here (SEEK_FOUND / SEEK_NOT_FOUND /
   // SEEK_END)?  saves the eq check above?
-  /** Seeks to largest term that's <= target. */
+  /** Seeks to largest term that's &lt;= target. */
   protected void doSeekFloor() throws IOException {
 
     // TODO: possibly caller could/should provide common

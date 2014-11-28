@@ -61,7 +61,7 @@ public final class WordDelimiterIterator {
   /**
    * If true, causes trailing "'s" to be removed for each subword. (Defaults to true)
    * <p/>
-   * "O'Neil's" => "O", "Neil"
+   * "O'Neil's" =&gt; "O", "Neil"
    */
   final boolean stemEnglishPossessive;
 
@@ -99,7 +99,7 @@ public final class WordDelimiterIterator {
    * @param charTypeTable table containing character types
    * @param splitOnCaseChange if true, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
    * @param splitOnNumerics if true, causes "j2se" to be three tokens; "j" "2" "se"
-   * @param stemEnglishPossessive if true, causes trailing "'s" to be removed for each subword: "O'Neil's" => "O", "Neil"
+   * @param stemEnglishPossessive if true, causes trailing "'s" to be removed for each subword: "O'Neil's" =&gt; "O", "Neil"
    */
   WordDelimiterIterator(byte[] charTypeTable, boolean splitOnCaseChange, boolean splitOnNumerics, boolean stemEnglishPossessive) {
     this.charTypeTable = charTypeTable;

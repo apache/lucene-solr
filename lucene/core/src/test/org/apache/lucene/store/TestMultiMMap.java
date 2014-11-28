@@ -33,7 +33,7 @@ import org.apache.lucene.util.TestUtil;
  * Tests MMapDirectory's MultiMMapIndexInput
  * <p>
  * Because Java's ByteBuffer uses an int to address the
- * values, it's necessary to access a file >
+ * values, it's necessary to access a file &gt;
  * Integer.MAX_VALUE in size using multiple byte buffers.
  */
 public class TestMultiMMap extends BaseDirectoryTestCase {

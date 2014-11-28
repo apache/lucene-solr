@@ -249,7 +249,7 @@ public class DrillSideways {
   /** Result of a drill sideways search, including the
    *  {@link Facets} and {@link TopDocs}. */
   public static class DrillSidewaysResult {
-    /** Combined drill down & sideways results. */
+    /** Combined drill down and sideways results. */
     public final Facets facets;
 
     /** Hits. */

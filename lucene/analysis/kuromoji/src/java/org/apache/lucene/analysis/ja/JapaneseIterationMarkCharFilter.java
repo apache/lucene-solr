@@ -28,8 +28,8 @@ import java.io.Reader;
  * <p>
  * Sequences of iteration marks are supported.  In case an illegal sequence of iteration
  * marks is encountered, the implementation emits the illegal source character as-is
- * without considering its script.  For example, with input "&#x003f;&#x309d", we get
- * "&#x003f;&#x003f" even though "&#x003f;" isn't hiragana.
+ * without considering its script.  For example, with input "&#x003f;&#x309d;", we get
+ * "&#x003f;&#x003f;" even though "&#x003f;" isn't hiragana.
  * </p>
  * <p>
  * Note that a full stop punctuation character "&#x3002;" (U+3002) can not be iterated

@@ -65,7 +65,7 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
     return field;
   }
 
-  /** Subclass & override if you change the encoding. */
+  /** Subclass and override if you change the encoding. */
   protected void decode(BytesRef buf, IntsRef ordinals) {
 
     // grow the buffer up front, even if by a large number of values (buf.length)

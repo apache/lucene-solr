@@ -201,14 +201,14 @@ public class DocTermOrds implements Accountable {
 
   /** Inverts only terms starting w/ prefix, and only terms
    *  whose docFreq (not taking deletions into account) is
-   *  <=  maxTermDocFreq */
+   *  &lt;=  maxTermDocFreq */
   public DocTermOrds(LeafReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
     this(reader, liveDocs, field, termPrefix, maxTermDocFreq, DEFAULT_INDEX_INTERVAL_BITS);
   }
 
   /** Inverts only terms starting w/ prefix, and only terms
    *  whose docFreq (not taking deletions into account) is
-   *  <=  maxTermDocFreq, with a custom indexing interval
+   *  &lt;=  maxTermDocFreq, with a custom indexing interval
    *  (default is every 128nd term). */
   public DocTermOrds(LeafReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
     this(field, maxTermDocFreq, indexIntervalBits);

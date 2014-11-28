@@ -55,7 +55,7 @@ public abstract class TermsIndexReaderBase implements Closeable, Accountable {
    */
   public static abstract class FieldIndexEnum {
 
-    /** Seeks to "largest" indexed term that's <=
+    /** Seeks to "largest" indexed term that's &lt;=
      *  term; returns file pointer index (into the main
      *  terms index file) for that term */
     public abstract long seek(BytesRef term) throws IOException;

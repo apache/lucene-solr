@@ -31,7 +31,7 @@ import java.util.Map;
  * the float value of a field or function as exported by {@link org.apache.lucene.queries.function.ValueSource}.
  * <br>
  *
- * When a and b are equal, and x>=0, this function has a maximum value of 1 that drops as x increases.
+ * When a and b are equal, and x&gt;=0, this function has a maximum value of 1 that drops as x increases.
  * Increasing the value of a and b together results in a movement of the entire function to a flatter part of the curve.
  * <p>These properties make this an idea function for boosting more recent documents.
  * <p>Example:<code>  recip(ms(NOW,mydatefield),3.16e-11,1,1)</code>

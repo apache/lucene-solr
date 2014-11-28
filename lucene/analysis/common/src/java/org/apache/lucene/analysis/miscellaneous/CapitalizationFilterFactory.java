@@ -39,7 +39,7 @@ import java.util.Set;
  * for example if "McK" is on the okPrefix list, the word "McKinley" should not be changed to
  * "Mckinley"<br/>
  * "minWordLength" - how long the word needs to be to get capitalization applied.  If the
- * minWordLength is 3, "and" > "And" but "or" stays "or"<br/>
+ * minWordLength is 3, "and" &gt; "And" but "or" stays "or"<br/>
  * "maxWordCount" - if the token contains more then maxWordCount words, the capitalization is
  * assumed to be correct.<br/>
  *

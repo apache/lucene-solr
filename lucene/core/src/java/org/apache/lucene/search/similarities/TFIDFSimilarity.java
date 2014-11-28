@@ -80,17 +80,17 @@ import org.apache.lucene.util.BytesRef;
  * of the weighted query vectors <i>V(q)</i> and <i>V(d)</i>:
  *
  *  <br>&nbsp;<br>
- *  <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
+ *  <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto" summary="formatting only">
  *    <tr><td>
- *    <table cellpadding="1" cellspacing="0" border="1" align="center">
+ *    <table cellpadding="1" cellspacing="0" border="1" align="center" summary="formatting only">
  *      <tr><td>
- *      <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center" summary="cosine similarity formula">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            cosine-similarity(q,d) &nbsp; = &nbsp;
  *          </td>
  *          <td valign="middle" align="center">
- *            <table>
+ *            <table summary="cosine similarity formula">
  *               <tr><td align="center" style="text-align: center"><small>V(q)&nbsp;&middot;&nbsp;V(d)</small></td></tr>
  *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
  *               <tr><td align="center" style="text-align: center"><small>|V(q)|&nbsp;|V(d)|</small></td></tr>
@@ -165,11 +165,11 @@ import org.apache.lucene.util.BytesRef;
  * we get <i>Lucene's Conceptual scoring formula</i>:
  *
  *  <br>&nbsp;<br>
- *  <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
+ *  <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto" summary="formatting only">
  *    <tr><td>
- *    <table cellpadding="1" cellspacing="0" border="1" align="center">
+ *    <table cellpadding="1" cellspacing="0" border="1" align="center" summary="formatting only">
  *      <tr><td>
- *      <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center" summary="formatting only">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            score(q,d) &nbsp; = &nbsp;
@@ -177,7 +177,7 @@ import org.apache.lucene.util.BytesRef;
  *            <font color="#CCCC00">query-boost(q)</font> &middot; &nbsp;
  *          </td>
  *          <td valign="middle" align="center">
- *            <table>
+ *            <table summary="Lucene conceptual scoring formula">
  *               <tr><td align="center" style="text-align: center"><small><font color="#993399">V(q)&nbsp;&middot;&nbsp;V(d)</font></small></td></tr>
  *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
  *               <tr><td align="center" style="text-align: center"><small><font color="#FF33CC">|V(q)|</font></small></td></tr>
@@ -257,11 +257,11 @@ import org.apache.lucene.util.BytesRef;
  * to those of the <i>conceptual</i> formula:
  *
  * <P>
- * <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
+ * <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto" summary="formatting only">
  *  <tr><td>
- *  <table cellpadding="" cellspacing="2" border="2" align="center">
+ *  <table cellpadding="" cellspacing="2" border="2" align="center" summary="formatting only">
  *  <tr><td>
- *   <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *   <table cellpadding="2" cellspacing="2" border="0" align="center" summary="Lucene conceptual scoring formula">
  *   <tr>
  *     <td valign="middle" align="right" rowspan="1">
  *       score(q,d) &nbsp; = &nbsp;
@@ -310,7 +310,7 @@ import org.apache.lucene.util.BytesRef;
  *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#tf(float) DefaultSimilarity} is:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto" summary="term frequency computation">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#tf(float) tf(t in d)} &nbsp; = &nbsp;
@@ -335,7 +335,7 @@ import org.apache.lucene.util.BytesRef;
  *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(long, long) DefaultSimilarity} is:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto" summary="inverse document frequency computation">
  *        <tr>
  *          <td valign="middle" align="right">
  *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(long, long) idf(t)}&nbsp; = &nbsp;
@@ -344,7 +344,7 @@ import org.apache.lucene.util.BytesRef;
  *            1 + log <big>(</big>
  *          </td>
  *          <td valign="middle" align="center">
- *            <table>
+ *            <table summary="inverse document frequency computation">
  *               <tr><td align="center" style="text-align: center"><small>numDocs</small></td></tr>
  *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
  *               <tr><td align="center" style="text-align: center"><small>docFreq+1</small></td></tr>
@@ -383,7 +383,7 @@ import org.apache.lucene.util.BytesRef;
  *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#queryNorm(float) DefaultSimilarity}
  *      produces a <a href="http://en.wikipedia.org/wiki/Euclidean_norm#Euclidean_norm">Euclidean norm</a>:
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto">
+ *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto" summary="query normalization computation">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            queryNorm(q)  &nbsp; = &nbsp;
@@ -391,7 +391,7 @@ import org.apache.lucene.util.BytesRef;
  *            &nbsp; = &nbsp;
  *          </td>
  *          <td valign="middle" align="center" rowspan="1">
- *            <table>
+ *            <table summary="query normalization computation">
  *               <tr><td align="center" style="text-align: center"><big>1</big></td></tr>
  *               <tr><td align="center" style="text-align: center"><big>
  *                  &ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;
@@ -409,7 +409,7 @@ import org.apache.lucene.util.BytesRef;
  *      computes this value as:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto">
+ *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto" summary="sum of squared weights computation">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            {@link org.apache.lucene.search.Weight#getValueForNormalization() sumOfSquaredWeights} &nbsp; = &nbsp;
@@ -475,7 +475,7 @@ import org.apache.lucene.util.BytesRef;
  *      If the document has multiple fields with the same name, all their boosts are multiplied together:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto">
+ *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto" summary="index-time normalization">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            norm(t,d) &nbsp; = &nbsp;

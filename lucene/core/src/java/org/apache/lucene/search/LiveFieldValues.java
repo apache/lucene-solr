@@ -126,7 +126,7 @@ public abstract class LiveFieldValues<S,T> implements ReferenceManager.RefreshLi
     }
   }
 
-  /** This is called when the id/value was already flushed & opened
+  /** This is called when the id/value was already flushed and opened
    *  in an NRT IndexSearcher.  You must implement this to
    *  go look up the value (eg, via doc values, field cache,
    *  stored fields, etc.). */

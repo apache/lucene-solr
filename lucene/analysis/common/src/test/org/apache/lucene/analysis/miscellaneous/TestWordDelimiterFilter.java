@@ -39,7 +39,7 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEF
  */
 public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
 
-  /***
+  /*
   public void testPerformance() throws IOException {
     String s = "now is the time-for all good men to come to-the aid of their country.";
     Token tok = new Token();

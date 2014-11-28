@@ -118,7 +118,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   }
   
   /**
-   * Creates a {@link FuzzySuggester} instance with an index & a query analyzer initialized with default values.
+   * Creates a {@link FuzzySuggester} instance with an index and query analyzer initialized with default values.
    * 
    * @param indexAnalyzer
    *           Analyzer that will be used for analyzing suggestions while building the index.
@@ -146,7 +146,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    *        to expand from the analyzed form.  Set this to -1 for
    *        no limit.
    * @param preservePositionIncrements Whether position holes should appear in the automaton
-   * @param maxEdits must be >= 0 and <= {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE} .
+   * @param maxEdits must be &gt;= 0 and &lt;= {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE} .
    * @param transpositions <code>true</code> if transpositions should be treated as a primitive 
    *        edit operation. If this is false, comparisons will implement the classic
    *        Levenshtein algorithm.

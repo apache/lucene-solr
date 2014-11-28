@@ -38,7 +38,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  *  this for dimensions that change in real-time (e.g. a
  *  relative time based dimension like "Past day", "Past 2
  *  days", etc.) or that change for each request (e.g. 
- *  distance from the user's location, "< 1 km", "< 2 km",
+ *  distance from the user's location, "&lt; 1 km", "&lt; 2 km",
  *  etc.).
  *
  *  @lucene.experimental */

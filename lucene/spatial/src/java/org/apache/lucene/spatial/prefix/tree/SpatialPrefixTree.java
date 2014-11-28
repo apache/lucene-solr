@@ -64,7 +64,7 @@ public abstract class SpatialPrefixTree {
    * grid, such that you can get a grid with just the right amount of
    * precision.
    *
-   * @param dist >= 0
+   * @param dist {@code >= 0}
    * @return level [1 to maxLevels]
    */
   public abstract int getLevelForDistance(double dist);
@@ -75,7 +75,7 @@ public abstract class SpatialPrefixTree {
    * may over-estimate.
    *
    * @param level [1 to maxLevels]
-   * @return > 0
+   * @return {@code > 0}
    */
   public abstract double getDistanceForLevel(int level);
 
