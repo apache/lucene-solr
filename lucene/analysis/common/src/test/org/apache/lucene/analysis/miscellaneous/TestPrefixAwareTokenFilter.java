@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 
@@ -31,8 +32,8 @@ public class TestPrefixAwareTokenFilter extends BaseTokenStreamTestCase {
     PrefixAwareTokenFilter ts;
 
     ts = new PrefixAwareTokenFilter(
-        new SingleTokenTokenStream(createToken("a", 0, 1)),
-        new SingleTokenTokenStream(createToken("b", 0, 1)));
+        new CannedTokenStream(createToken("a", 0, 1)),
+        new CannedTokenStream(createToken("b", 0, 1)));
     assertTokenStreamContents(ts, 
         new String[] { "a", "b" },
         new int[] { 0, 1 },
@@ -42,9 +43,9 @@ public class TestPrefixAwareTokenFilter extends BaseTokenStreamTestCase {
 
     final MockTokenizer suffix = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     suffix.setReader(new StringReader("hello world"));
-    ts = new PrefixAwareTokenFilter(new SingleTokenTokenStream(createToken("^", 0, 0)),
+    ts = new PrefixAwareTokenFilter(new CannedTokenStream(createToken("^", 0, 0)),
         suffix);
-    ts = new PrefixAwareTokenFilter(ts, new SingleTokenTokenStream(createToken("$", 0, 0)));
+    ts = new PrefixAwareTokenFilter(ts, new CannedTokenStream(createToken("$", 0, 0)));
 
     assertTokenStreamContents(ts,
         new String[] { "^", "hello", "world", "$" },

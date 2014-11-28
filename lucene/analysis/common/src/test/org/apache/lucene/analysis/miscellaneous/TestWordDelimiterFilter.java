@@ -62,14 +62,14 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     // test that subwords and catenated subwords have
     // the correct offsets.
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 12)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new CannedTokenStream(new Token("foo-bar", 5, 12)), DEFAULT_WORD_DELIM_TABLE, flags, null);
 
     assertTokenStreamContents(wdf, 
         new String[] { "foo", "foobar", "bar" },
         new int[] { 5, 5, 9 }, 
         new int[] { 8, 12, 12 });
 
-    wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 6)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    wdf = new WordDelimiterFilter(new CannedTokenStream(new Token("foo-bar", 5, 6)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foo", "bar", "foobar" },
@@ -80,7 +80,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   @Test
   public void testOffsetChange() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("übelkeit)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new CannedTokenStream(new Token("übelkeit)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -91,7 +91,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   @Test
   public void testOffsetChange2() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 17)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new CannedTokenStream(new Token("(übelkeit", 7, 17)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -102,7 +102,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   @Test
   public void testOffsetChange3() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new CannedTokenStream(new Token("(übelkeit", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -113,7 +113,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   @Test
   public void testOffsetChange4() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(foo,bar)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new CannedTokenStream(new Token("(foo,bar)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foo", "foobar", "bar"},

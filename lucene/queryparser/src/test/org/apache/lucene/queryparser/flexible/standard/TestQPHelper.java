@@ -744,14 +744,14 @@ public class TestQPHelper extends LuceneTestCase {
     
     // set a field specific date resolution    
     dateRes.put(monthField, DateTools.Resolution.MONTH);
-    qp.setDateResolution(dateRes);
+    qp.setDateResolutionMap(dateRes);
 
     // set default date resolution to MILLISECOND
     qp.setDateResolution(DateTools.Resolution.MILLISECOND);
 
     // set second field specific date resolution
     dateRes.put(hourField, DateTools.Resolution.HOUR);
-    qp.setDateResolution(dateRes);
+    qp.setDateResolutionMap(dateRes);
 
     // for this field no field specific date resolution has been set,
     // so verify if the default resolution is used

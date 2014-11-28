@@ -207,24 +207,6 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     }
   }
   
-  // LUCENE-3642
-  public void testInvalidOffset() throws Exception {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
-        filters = new WordTokenFilter(filters);
-        return new TokenStreamComponents(tokenizer, filters);
-      }
-    };
-    
-    assertAnalyzesTo(analyzer, "mosfellsbær", 
-        new String[] { "mosfellsbaer" },
-        new int[]    { 0 },
-        new int[]    { 11 });
-  }
-  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new SmartChineseAnalyzer(), 1000*RANDOM_MULTIPLIER);
@@ -234,17 +216,5 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
     checkRandomData(random, new SmartChineseAnalyzer(), 100*RANDOM_MULTIPLIER, 8192);
-  }
-  
-  public void testEmptyTerm() throws IOException {
-    Random random = random();
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new WordTokenFilter(tokenizer));
-      }
-    };
-    checkAnalysisConsistency(random, a, random.nextBoolean(), "");
   }
 }

@@ -101,8 +101,7 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
     : BlendedInfixSuggester.DEFAULT_NUM_FACTOR;
     
     try {
-      return new BlendedInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-                                       FSDirectory.open(new File(indexPath).toPath()),
+      return new BlendedInfixSuggester(FSDirectory.open(new File(indexPath).toPath()),
                                        indexAnalyzer, queryAnalyzer, minPrefixChars,
                                        blenderType, numFactor, true) {
         @Override

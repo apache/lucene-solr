@@ -47,14 +47,6 @@ import java.util.Map;
 public final class IOUtils {
   
   /**
-   * UTF-8 {@link Charset} instance to prevent repeated
-   * {@link Charset#forName(String)} lookups
-   * @deprecated Use {@link StandardCharsets#UTF_8} instead.
-   */
-  @Deprecated
-  public static final Charset CHARSET_UTF_8 = StandardCharsets.UTF_8;
-  
-  /**
    * UTF-8 charset string.
    * <p>Where possible, use {@link StandardCharsets#UTF_8} instead,
    * as using the String constant may slow things down.

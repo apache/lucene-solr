@@ -422,18 +422,6 @@ public final class CodecUtil {
     }
   }
   
-  /**
-   * Checks that the stream is positioned at the end, and throws exception
-   * if it is not. 
-   * @deprecated Use {@link #checkFooter} instead, this should only used for files without checksums 
-   */
-  @Deprecated
-  public static void checkEOF(IndexInput in) throws IOException {
-    if (in.getFilePointer() != in.length()) {
-      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length(), in);
-    }
-  }
-  
   /** 
    * Clones the provided input, reads all bytes from the file, and calls {@link #checkFooter} 
    * <p>
