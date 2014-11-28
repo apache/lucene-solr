@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
  *   <li>
  *     Converts round-trip mappings in nfc.txt (containing '=')
  *     that map to at least one [:Diacritic:] character
- *     into one-way mappings ('>' instead of '=').
+ *     into one-way mappings ('&gt;' instead of '=').
  *   </li>
  * </ol>
  */
