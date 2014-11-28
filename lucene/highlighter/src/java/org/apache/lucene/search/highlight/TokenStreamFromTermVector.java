@@ -43,8 +43,7 @@ import org.apache.lucene.util.UnicodeUtil;
  *
  * @lucene.internal
  */
-//TODO rename to TokenStreamFromTermVector
-public final class TokenStreamFromTermPositionVector extends TokenStream {
+public final class TokenStreamFromTermVector extends TokenStream {
 
   //TODO add a maxStartOffset filter, which highlighters will find handy
 
@@ -68,7 +67,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
    * @param vector Terms that contains the data for
    *        creating the TokenStream. Must have positions and/or offsets.
    */
-  public TokenStreamFromTermPositionVector(Terms vector) throws IOException {
+  public TokenStreamFromTermVector(Terms vector) throws IOException {
     if (!vector.hasPositions() && !vector.hasOffsets()) {
       throw new IllegalArgumentException("The term vector needs positions and/or offsets.");
     }
