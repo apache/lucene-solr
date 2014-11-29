@@ -83,6 +83,7 @@ import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -301,7 +302,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     for (Slice slice : dc.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         // Tell the replica to become the leader if we're the preferred leader AND active AND not the leader already
-        if (replica.getBool(Overseer.preferredLeaderProp, false) == false) {
+        if (replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false) == false) {
           continue;
         }
         if (StringUtils.equalsIgnoreCase(replica.getStr(STATE_PROP), ACTIVE) == false) {
@@ -442,7 +443,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     // Check if we're trying to set a property with parameters that allow us to set the property on multiple replicas
     // in a slice on properties that are known to only be one-per-slice and error out if so.
     if (StringUtils.isNotBlank((String)map.get(SHARD_UNIQUE)) &&
-        Overseer.sliceUniqueBooleanProperties.contains(property.toLowerCase(Locale.ROOT)) &&
+        SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(property.toLowerCase(Locale.ROOT)) &&
         uniquePerSlice == false) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Overseer replica property command received for property " + property +
@@ -472,7 +473,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     }
 
     if (shardUnique == false &&
-        Overseer.sliceUniqueBooleanProperties.contains(prop) == false) {
+        SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(prop) == false) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Balancing properties amongst replicas in a slice requires that"
       + " the property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'. " +
       " Property: " + prop + " shardUnique: " + Boolean.toString(shardUnique));

@@ -315,6 +315,11 @@ Optimizations
 * SOLR-6603: LBHttpSolrServer - lazily allocate skipped-zombie-servers list.
   (Christine Poerschke via shalin)
 
+* SOLR-6554: Speed up overseer operations avoiding cluster state reads from
+  zookeeper at the start of each loop and instead relying on local state and
+  compare-and-set writes. This change also adds batching for consecutive messages
+  belonging to the same collection with stateFormat=2. (shalin)
+
 Other Changes
 ----------------------
 

@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 public class ClusterState implements JSONWriter.Writable {
   private static Logger log = LoggerFactory.getLogger(ClusterState.class);
   
-  private Integer znodeVersion;
+  private final Integer znodeVersion;
   
   private final Map<String, CollectionRef> collectionStates;
   private Set<String> liveNodes;
