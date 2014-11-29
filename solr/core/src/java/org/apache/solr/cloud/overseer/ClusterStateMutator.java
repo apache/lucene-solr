@@ -121,9 +121,9 @@ public class ClusterStateMutator {
   public static ClusterState newState(ClusterState state, String name, DocCollection collection) {
     ClusterState newClusterState = null;
     if (collection == null) {
-      newClusterState = state.copyWith(singletonMap(name, (DocCollection) null));
+      newClusterState = state.copyWith(name, (DocCollection) null);
     } else {
-      newClusterState = state.copyWith(singletonMap(name, collection));
+      newClusterState = state.copyWith(name, collection);
     }
     return newClusterState;
   }

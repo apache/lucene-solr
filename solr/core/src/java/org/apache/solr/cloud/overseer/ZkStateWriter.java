@@ -59,7 +59,7 @@ public class ZkStateWriter {
 
     if (cmd.collection == null) {
       isClusterStateModified = true;
-      clusterState = prevState.copyWith(singletonMap(cmd.name, (DocCollection) null));
+      clusterState = prevState.copyWith(cmd.name, (DocCollection) null);
       updates.put(cmd.name, null);
     } else {
       if (cmd.collection.getStateFormat() > 1) {
@@ -67,7 +67,7 @@ public class ZkStateWriter {
       } else {
         isClusterStateModified = true;
       }
-      clusterState = prevState.copyWith(singletonMap(cmd.name, cmd.collection));
+      clusterState = prevState.copyWith(cmd.name, cmd.collection);
     }
     return clusterState;
   }
@@ -97,12 +97,12 @@ public class ZkStateWriter {
               log.info("going to update_collection {}", path);
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
-              clusterState = clusterState.copyWith(singletonMap(name, newCollection));
+              clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.info("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
-              clusterState = clusterState.copyWith(singletonMap(name, newCollection));
+              clusterState = clusterState.copyWith(name, newCollection);
               isClusterStateModified = true;
             }
           } else if (c.getStateFormat() == 1) {

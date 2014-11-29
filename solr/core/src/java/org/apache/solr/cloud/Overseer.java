@@ -98,10 +98,6 @@ public class Overseer implements Closeable {
 
   static enum LeaderStatus {DONT_KNOW, NO, YES}
 
-  public static final String preferredLeaderProp = COLL_PROP_PREFIX + "preferredleader";
-
-  public static final Set<String> sliceUniqueBooleanProperties = ImmutableSet.of(preferredLeaderProp);
-
   private long lastUpdatedTime = 0;
 
   private class ClusterStateUpdater implements Runnable, Closeable {
@@ -593,7 +589,7 @@ public class Overseer implements Closeable {
         DocCollection c = e.getValue();
         if (c == null) {
           isClusterStateModified = true;
-          state = state.copyWith(singletonMap(e.getKey(), (DocCollection) null));
+          state = state.copyWith(e.getKey(), null);
           updateNodes.put(ZkStateReader.getCollectionPath(e.getKey()) ,null);
           continue;
         }
@@ -604,7 +600,7 @@ public class Overseer implements Closeable {
         } else {
           isClusterStateModified = true;
         }
-        state = state.copyWith(singletonMap(e.getKey(), c));
+        state = state.copyWith(e.getKey(), c);
 
       }
       return state;
