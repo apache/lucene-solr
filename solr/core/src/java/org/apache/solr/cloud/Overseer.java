@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
@@ -27,7 +26,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.BA
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,13 +55,10 @@ import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -438,21 +433,21 @@ public class Overseer implements Closeable {
       if (collectionAction != null) {
         switch (collectionAction) {
           case CREATE:
-            return buildCollection(clusterState, message);
+            return new ClusterStateMutator(getZkStateReader()).createCollection(clusterState, message);
           case DELETE:
-            return removeCollection(clusterState, message);
+            return new ClusterStateMutator(getZkStateReader()).deleteCollection(clusterState, message);
           case CREATESHARD:
-            return createShard(clusterState, message);
+            return new CollectionMutator(getZkStateReader()).createShard(clusterState, message);
           case DELETESHARD:
-            return removeShard(clusterState, message);
+            return new CollectionMutator(getZkStateReader()).deleteShard(clusterState, message);
           case ADDREPLICA:
-            return createReplica(clusterState, message);
+            return new SliceMutator(getZkStateReader()).addReplica(clusterState, message);
           case CLUSTERPROP:
             handleProp(message);
           case ADDREPLICAPROP:
-            return addReplicaProp(clusterState, message);
+            return new ReplicaMutator(getZkStateReader()).addReplicaProperty(clusterState, message);
           case DELETEREPLICAPROP:
-            return deleteReplicaProp(clusterState, message);
+            return new ReplicaMutator(getZkStateReader()).removeReplicaProperty(clusterState, message);
           case BALANCESHARDUNIQUE:
             ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(this, clusterState, message);
             if (dProp.balanceProperty()) {
@@ -471,15 +466,15 @@ public class Overseer implements Closeable {
             case STATE:
               return new ReplicaMutator(getZkStateReader()).setState(clusterState, message);
             case LEADER:
-              return setShardLeader(clusterState, message);
+              return new SliceMutator(getZkStateReader()).setShardLeader(clusterState, message);
             case DELETECORE:
-              return removeCore(clusterState, message);
+              return new SliceMutator(getZkStateReader()).removeReplica(clusterState, message);
             case ADDROUTINGRULE:
-              return addRoutingRule(clusterState, message);
+              return new SliceMutator(getZkStateReader()).addRoutingRule(clusterState, message);
             case REMOVEROUTINGRULE:
-              return removeRoutingRule(clusterState, message);
+              return new SliceMutator(getZkStateReader()).removeRoutingRule(clusterState, message);
             case UPDATESHARDSTATE:
-              return updateShardState(clusterState, message);
+              return new SliceMutator(getZkStateReader()).updateShardState(clusterState, message);
             case QUIT:
               if (myId.equals(message.get("id"))) {
                 log.info("Quit command received {}", LeaderElector.getNodeName(myId));
@@ -498,11 +493,11 @@ public class Overseer implements Closeable {
           // specified in CollectionAction. See SOLR-6115. Remove this in 5.0
           switch (operation) {
             case OverseerCollectionProcessor.CREATECOLLECTION:
-              return buildCollection(clusterState, message);
+              return new ClusterStateMutator(getZkStateReader()).createCollection(clusterState, message);
             case REMOVECOLLECTION:
-              return removeCollection(clusterState, message);
+              return new ClusterStateMutator(getZkStateReader()).deleteCollection(clusterState, message);
             case REMOVESHARD:
-              return removeShard(clusterState, message);
+              return new CollectionMutator(getZkStateReader()).deleteShard(clusterState, message);
             default:
               throw new RuntimeException("unknown operation:" + operation
                   + " contents:" + message.getProperties());
@@ -511,18 +506,6 @@ public class Overseer implements Closeable {
       }
 
       return ZkStateWriter.NO_OP;
-    }
-
-    private ZkWriteCommand addReplicaProp(ClusterState clusterState, ZkNodeProps message) {
-      return new ReplicaMutator(getZkStateReader()).addReplicaProperty(clusterState, message);
-    }
-
-    private ZkWriteCommand deleteReplicaProp(ClusterState clusterState, ZkNodeProps message) {
-      return new ReplicaMutator(getZkStateReader()).removeReplicaProperty(clusterState, message);
-    }
-
-    private ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
-      return new SliceMutator(getZkStateReader()).setShardLeader(clusterState, message);
     }
 
     private void handleProp(ZkNodeProps message)  {
@@ -542,30 +525,6 @@ public class Overseer implements Closeable {
         log.error("Unable to set cluster property", e);
 
       }
-    }
-
-    private ZkWriteCommand createReplica(ClusterState clusterState, ZkNodeProps message) {
-      return new SliceMutator(getZkStateReader()).addReplica(clusterState, message);
-    }
-
-    private ZkWriteCommand buildCollection(ClusterState clusterState, ZkNodeProps message) {
-      return new ClusterStateMutator(getZkStateReader()).createCollection(clusterState, message);
-    }
-
-    private ZkWriteCommand updateShardState(ClusterState clusterState, ZkNodeProps message) {
-      return new SliceMutator(getZkStateReader()).updateShardState(clusterState, message);
-    }
-
-    private ZkWriteCommand addRoutingRule(ClusterState clusterState, ZkNodeProps message) {
-      return new SliceMutator(getZkStateReader()).addRoutingRule(clusterState, message);
-    }
-
-    private ZkWriteCommand removeRoutingRule(ClusterState clusterState, ZkNodeProps message) {
-      return new SliceMutator(getZkStateReader()).removeRoutingRule(clusterState, message);
-    }
-
-    private ZkWriteCommand createShard(ClusterState clusterState, ZkNodeProps message) {
-      return new CollectionMutator(getZkStateReader()).createShard(clusterState, message);
     }
 
     private LeaderStatus amILeader() {
@@ -651,27 +610,7 @@ public class Overseer implements Closeable {
       return state;
     }
 
-    /*
-     * Remove collection from cloudstate
-     */
-    private ZkWriteCommand removeCollection(final ClusterState clusterState, ZkNodeProps message) {
-      return new ClusterStateMutator(getZkStateReader()).deleteCollection(clusterState, message);
-    }
-    /*
-     * Remove collection slice from cloudstate
-     */
-    private ZkWriteCommand removeShard(final ClusterState clusterState, ZkNodeProps message) {
-      return new CollectionMutator(getZkStateReader()).deleteShard(clusterState, message);
-    }
-
-    /*
-       * Remove core from cloudstate
-       */
-      private ZkWriteCommand removeCore(final ClusterState clusterState, ZkNodeProps message) {
-        return new SliceMutator(getZkStateReader()).removeReplica(clusterState, message);
-     }
-
-      @Override
+    @Override
       public void close() {
         this.isClosed = true;
       }
@@ -977,28 +916,6 @@ public class Overseer implements Closeable {
       this.slice = slice;
       this.replica = replica;
     }
-  }
-
-  static void getShardNames(Integer numShards, List<String> shardNames) {
-    if(numShards == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
-    for (int i = 0; i < numShards; i++) {
-      final String sliceName = "shard" + (i + 1);
-      shardNames.add(sliceName);
-    }
-
-  }
-
-  static void getShardNames(List<String> shardNames, String shards) {
-    if(shards ==null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
-    for (String s : shards.split(",")) {
-      if(s ==null || s.trim().isEmpty()) continue;
-      shardNames.add(s.trim());
-    }
-    if(shardNames.isEmpty())
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
-
   }
 
   class OverseerThread extends Thread implements Closeable {
