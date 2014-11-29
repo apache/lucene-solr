@@ -313,6 +313,9 @@ Tests
   Some of the slow Monster tests now explicitly choose the default codec.
   (Mike McCandless, Shawn Heisey)
 
+* LUCENE-5968: Improve error message when 'ant beast' is run on top-level
+  modules.  (Ramkumar Aiyengar, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to

@@ -1351,6 +1351,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- Beast the actual tests (must be wrapped with -init-totals, -check-totals) -->
   <target name="-beast" depends="resolve-groovy">
+    <fail message="The Beast only works inside of individual modules (where 'junit.classpath' is defined)">
+      <condition>
+        <not><isreference refid="junit.classpath"/></not>
+      </condition>
+    </fail>
     <groovy taskname="beaster"><![CDATA[
       import org.apache.tools.ant.BuildException;
       import org.apache.tools.ant.BuildLogger;

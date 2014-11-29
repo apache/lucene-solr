@@ -105,6 +105,9 @@
   <target name="test">
     <forall-analyzers target="test"/>
   </target>
+  <target name="beast">
+    <fail message="The Beast only works inside of individual modules"/>
+  </target>
   <target name="jar">
     <forall-analyzers target="jar-core"/>
   </target>
