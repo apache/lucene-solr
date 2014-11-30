@@ -177,9 +177,6 @@ public class TestIndexWriterAbort extends LuceneTestCase {
         if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
           exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
           e.printStackTrace(exceptionStream);
-          try {
-            iw.rollback();
-          } catch (Throwable t) {}
         } else {
           Rethrow.rethrow(e);
         }
