@@ -205,7 +205,6 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(output);
-        IOUtils.deleteFilesIgnoringExceptions(dir, segFileName);
       } else {
         output.close();
       }

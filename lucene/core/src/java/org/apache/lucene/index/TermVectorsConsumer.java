@@ -126,7 +126,7 @@ final class TermVectorsConsumer extends TermsHash {
       super.abort();
     } finally {
       if (writer != null) {
-        writer.abort();
+        IOUtils.closeWhileHandlingException(writer);
         writer = null;
       }
 

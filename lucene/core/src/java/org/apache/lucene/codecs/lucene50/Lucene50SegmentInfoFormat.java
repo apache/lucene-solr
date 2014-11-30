@@ -118,7 +118,6 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
     si.addFile(fileName);
 
-    boolean success = false;
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
       CodecUtil.writeIndexHeader(output, 
                                    Lucene50SegmentInfoFormat.CODEC_NAME, 
@@ -146,12 +145,6 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
       }
       output.writeStringSet(files);
       CodecUtil.writeFooter(output);
-      success = true;
-    } finally {
-      if (!success) {
-        // TODO: are we doing this outside of the tracking wrapper? why must SIWriter cleanup like this?
-        IOUtils.deleteFilesIgnoringExceptions(si.dir, fileName);
-      }
     }
   }
 

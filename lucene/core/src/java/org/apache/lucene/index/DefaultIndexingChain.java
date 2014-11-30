@@ -217,11 +217,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
   @Override
   public void abort() {
-    try {
-      // E.g. close any open files in the stored fields writer:
-      storedFieldsWriter.abort();
-    } catch (Throwable t) {
-    }
+    IOUtils.closeWhileHandlingException(storedFieldsWriter);
 
     try {
       // E.g. close any open files in the term vectors writer:

@@ -227,6 +227,8 @@ API Changes
 
 * LUCENE-6068: LeafReader.fields() never returns null. (Robert Muir)
 
+* LUCENE-6082: Remove abort() from codec apis. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
