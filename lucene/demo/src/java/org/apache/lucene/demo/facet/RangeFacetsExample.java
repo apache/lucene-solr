@@ -21,11 +21,8 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
@@ -40,7 +37,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -68,7 +64,7 @@ public class RangeFacetsExample implements Closeable {
     // Add documents with a fake timestamp, 1000 sec before
     // "now", 2000 sec before "now", ...:
     for(int i=0;i<100;i++) {
-      Document2 doc = indexWriter.newDocument();
+      Document doc = indexWriter.newDocument();
       long then = nowSec - i * 1000;
       // Add as numeric field, so we can compute range facets and drill down:
       doc.addLong("timestamp", then);

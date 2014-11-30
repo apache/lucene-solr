@@ -23,11 +23,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.StringHelper;
@@ -51,7 +47,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
     FieldInfos.Builder builder = new FieldInfos.Builder();
     FieldInfo fi = builder.getOrAdd("field");
-    fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
+    fi.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     addAttributes(fi);
     FieldInfos infos = builder.finish();
     codec.fieldInfosFormat().write(dir, segmentInfo, "", infos, IOContext.DEFAULT);
@@ -82,17 +78,33 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     }
     FieldInfos.Builder builder = new FieldInfos.Builder();
     for (String field : fieldNames) {
-      IndexableFieldType fieldType = randomFieldType(random());
       FieldInfo fi = builder.getOrAdd(field);
-      IndexOptions indexOptions = fieldType.indexOptions();
+      IndexOptions indexOptions;
+      boolean omitNorms = false;
+      if (random().nextBoolean()) {
+        IndexOptions values[] = IndexOptions.values();
+        indexOptions = values[random().nextInt(values.length)];
+        omitNorms = random().nextBoolean();
+      } else {
+        indexOptions = IndexOptions.NONE;
+      }
+
+      DocValuesType docValuesType;
+      if (random().nextBoolean()) {
+        DocValuesType values[] = getDocValuesTypes();
+        docValuesType = values[random().nextInt(values.length)];
+      } else {
+        docValuesType = DocValuesType.NONE;
+      }
+
       if (indexOptions != IndexOptions.NONE) {
         fi.setIndexOptions(indexOptions);
-        if (fieldType.omitNorms()) {      
+        if (omitNorms) {
           fi.setOmitsNorms();
         }
       }
-      fi.setDocValuesType(fieldType.docValuesType());
-      if (fieldType.indexOptions() != IndexOptions.NONE && fieldType.indexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+      fi.setDocValuesType(docValuesType);
+      if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         if (random().nextBoolean()) {
           fi.setStorePayloads();
         }
@@ -104,34 +116,6 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     FieldInfos infos2 = codec.fieldInfosFormat().read(dir, segmentInfo, "", IOContext.DEFAULT);
     assertEquals(infos, infos2);
     dir.close();
-  }
-  
-  private final IndexableFieldType randomFieldType(Random r) {
-    FieldType type = new FieldType();
-    
-    if (r.nextBoolean()) {
-      IndexOptions values[] = IndexOptions.values();
-      type.setIndexOptions(values[r.nextInt(values.length)]);
-      type.setOmitNorms(r.nextBoolean());
-      
-      if (r.nextBoolean()) {
-        type.setStoreTermVectors(true);
-        if (type.indexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-          type.setStoreTermVectorPositions(r.nextBoolean());
-          type.setStoreTermVectorOffsets(r.nextBoolean());
-          if (type.storeTermVectorPositions()) {
-            type.setStoreTermVectorPayloads(r.nextBoolean());
-          }
-        }
-      }
-    }
-    
-    if (r.nextBoolean()) {
-      DocValuesType values[] = getDocValuesTypes();
-      type.setDocValuesType(values[r.nextInt(values.length)]);
-    }
-        
-    return type;
   }
   
   /** 
@@ -180,7 +164,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
   }
   
   @Override
-  protected void addRandomFields(Document2 doc) {
+  protected void addRandomFields(Document doc) {
     doc.addStored("foobar", TestUtil.randomSimpleString(random()));
   }
 

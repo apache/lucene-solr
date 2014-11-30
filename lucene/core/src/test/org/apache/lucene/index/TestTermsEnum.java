@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -158,7 +155,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueInt("id", id);
     if (VERBOSE) {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);
@@ -359,7 +356,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     final RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
     for(String term : terms) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom(FIELD, term);
       w.addDocument(doc);
     }
@@ -497,7 +494,7 @@ public class TestTermsEnum extends LuceneTestCase {
   public void testZeroTerms() throws Exception {
     d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "one two three");
     doc = w.newDocument();
     doc.addLargeText("field2", "one two three");
@@ -720,7 +717,7 @@ public class TestTermsEnum extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(new LogDocMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "aaa");
     w.addDocument(doc);
 
@@ -770,7 +767,7 @@ public class TestTermsEnum extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(new LogDocMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "abc");
     w.addDocument(doc);
 
@@ -831,7 +828,7 @@ public class TestTermsEnum extends LuceneTestCase {
     fieldTypes.disableSorting("field");
     fieldTypes.setMultiValued("field");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "");
     doc.addAtom("field", "abc");
     w.addDocument(doc);
@@ -898,7 +895,7 @@ public class TestTermsEnum extends LuceneTestCase {
       terms.add(prefix + TestUtil.randomRealisticUnicodeString(random(), 1, 20));
     }
     for(String term : terms) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueAtom("id", term);
       w.addDocument(doc);
     }
@@ -938,7 +935,7 @@ public class TestTermsEnum extends LuceneTestCase {
         int docID = docsEnum.nextDoc();
         assertTrue(docID != DocsEnum.NO_MORE_DOCS);
         assertEquals(docID, pkLookup.lookup(termBytesRef));
-        Document2 doc = r.document(docID);
+        Document doc = r.document(docID);
         assertEquals(term, doc.getString("id"));
 
         if (random().nextInt(7) == 1) {
@@ -983,7 +980,7 @@ public class TestTermsEnum extends LuceneTestCase {
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
       RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("field", sb.toString());
       w.addDocument(doc);
       IndexReader r = w.getReader();

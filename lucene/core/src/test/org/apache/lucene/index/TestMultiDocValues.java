@@ -19,15 +19,8 @@ package org.apache.lucene.index;
 
 import java.util.ArrayList;
 
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -46,7 +39,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addLong("numbers", random().nextLong());
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -80,7 +73,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addBinary("bytes", new BytesRef(TestUtil.randomUnicodeString(random())));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -114,7 +107,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addAtom("bytes", TestUtil.randomUnicodeString(random()));
       if (random().nextInt(7) == 0) {
         iw.addDocument(iw.newDocument());
@@ -156,7 +149,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addAtom("bytes", TestUtil.randomSimpleString(random(), 2));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -196,7 +189,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
         doc.addAtom("bytes", TestUtil.randomUnicodeString(random()));
@@ -260,7 +253,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
         doc.addAtom("bytes", TestUtil.randomSimpleString(random(), 2));
@@ -323,7 +316,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
         doc.addLong("nums", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE));
@@ -374,7 +367,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = TEST_NIGHTLY ? atLeast(500) : atLeast(50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       if (random().nextInt(4) >= 0) {
         doc.addLong("numbers", random().nextLong());
       }

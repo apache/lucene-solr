@@ -22,7 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -54,7 +54,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
         new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     // add some documents
     for (int i = 0; i < docsToAdd; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("content", English.intToEnglish(i).trim());
       writer.addDocument(doc);
     }
@@ -100,7 +100,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     
     // search for all documents
     for (int i = 0; i < docsToAdd; i++) {
-      Document2 doc = searcher.doc(i);
+      Document doc = searcher.doc(i);
       assertTrue(doc.get("content") != null);
     }
 
@@ -132,7 +132,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
         @Override
         public void run() {
           for (int j=1; j<docsPerThread; j++) {
-            Document2 doc = writer.newDocument();
+            Document doc = writer.newDocument();
             doc.addAtom("sizeContent", English.intToEnglish(num*docsPerThread+j).trim());
             try {
               writer.addDocument(doc);

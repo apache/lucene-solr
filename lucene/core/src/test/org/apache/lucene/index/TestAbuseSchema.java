@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LowSchemaField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -46,16 +46,17 @@ public class TestAbuseSchema extends LuceneTestCase {
   // LUCENE-1010
   public void testNoTermVectorAfterTermVectorMerge() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig());
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(a));
     List<LowSchemaField> document = new ArrayList<>();
-    LowSchemaField field = new LowSchemaField("tvtest", "a b c", IndexOptions.DOCS, false);
+    LowSchemaField field = new LowSchemaField(a, "tvtest", "a b c", IndexOptions.DOCS, false);
     field.enableTermVectors(false, false, false);
     document.add(field);
     iw.addDocument(document);
     iw.commit();
 
     document = new ArrayList<>();
-    document.add(new LowSchemaField("tvtest", "a b c", IndexOptions.DOCS, false));
+    document.add(new LowSchemaField(a, "tvtest", "a b c", IndexOptions.DOCS, false));
     iw.addDocument(document);
     // Make first segment
     iw.commit();
@@ -81,36 +82,41 @@ public class TestAbuseSchema extends LuceneTestCase {
     LowSchemaField f1, f2;
 
     // no vectors + vectors
-    f1 = new LowSchemaField("field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
-    f2 = new LowSchemaField("field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    Analyzer a = new MockAnalyzer(random());
+    f1 = new LowSchemaField(a, "field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    f2 = new LowSchemaField(a, "field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f2.enableTermVectors(false, false, false);
     doTestMixup(f1, f2);
     
     // vectors + vectors with pos
-    f1 = new LowSchemaField("field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    a = new MockAnalyzer(random());
+    f1 = new LowSchemaField(a, "field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f1.enableTermVectors(false, false, false);
-    f2 = new LowSchemaField("field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    f2 = new LowSchemaField(a, "field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f2.enableTermVectors(true, false, false);
     doTestMixup(f1, f2);
     
     // vectors + vectors with off
-    f1 = new LowSchemaField("field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    a = new MockAnalyzer(random());
+    f1 = new LowSchemaField(a, "field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f1.enableTermVectors(false, false, false);
-    f2 = new LowSchemaField("field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    f2 = new LowSchemaField(a, "field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f2.enableTermVectors(false, true, false);
     doTestMixup(f1, f2);
     
     // vectors with pos + vectors with pos + off
-    f1 = new LowSchemaField("field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    a = new MockAnalyzer(random());
+    f1 = new LowSchemaField(a, "field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f1.enableTermVectors(true, false, false);
-    f2 = new LowSchemaField("field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    f2 = new LowSchemaField(a, "field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f2.enableTermVectors(true, true, false);
     doTestMixup(f1, f2);
 
     // vectors with pos + vectors with pos + pay
-    f1 = new LowSchemaField("field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    a = new MockAnalyzer(random());
+    f1 = new LowSchemaField(a, "field", "value1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f1.enableTermVectors(true, false, false);
-    f2 = new LowSchemaField("field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    f2 = new LowSchemaField(a, "field", "value2", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     f2.enableTermVectors(true, false, true);
     doTestMixup(f1, f2);
   }
@@ -121,7 +127,7 @@ public class TestAbuseSchema extends LuceneTestCase {
     
     // add 3 good docs
     for (int i = 0; i < 3; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addAtom("id", Integer.toString(i));
       iw.addDocument(doc);
     }
@@ -153,12 +159,13 @@ public class TestAbuseSchema extends LuceneTestCase {
   public void testNoAbortOnBadTVSettings() throws Exception {
     Directory dir = newDirectory();
     // Don't use RandomIndexWriter because we want to be sure both docs go to 1 seg:
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriterConfig iwc = new IndexWriterConfig(a);
     IndexWriter iw = new IndexWriter(dir, iwc);
 
     List<LowSchemaField> doc = new ArrayList<>();
     iw.addDocument(doc);
-    LowSchemaField field = new LowSchemaField("field", "value", IndexOptions.NONE, false);
+    LowSchemaField field = new LowSchemaField(a, "field", "value", IndexOptions.NONE, false);
     field.enableTermVectors(false, false, false);
     doc.add(field);
     try {
@@ -178,15 +185,16 @@ public class TestAbuseSchema extends LuceneTestCase {
 
   public void testPostingsOffsetsWithUnindexedFields() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter riw = newRandomIndexWriter(dir);
+    Analyzer a = new MockAnalyzer(random());
+    RandomIndexWriter riw = newRandomIndexWriter(dir, a);
     for (int i = 0; i < 100; i++) {
       // ensure at least one doc is indexed with offsets
       LowSchemaField field;
       if (i < 99 && random().nextInt(2) == 0) {
         // stored only
-        field = new LowSchemaField("foo", "boo!", IndexOptions.NONE, false);
+        field = new LowSchemaField(a, "foo", "boo!", IndexOptions.NONE, false);
       } else {
-        field = new LowSchemaField("foo", "boo!", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, true);
+        field = new LowSchemaField(a, "foo", "boo!", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, true);
         if (random().nextBoolean()) {
           // store some term vectors for the checkindex cross-check
           field.enableTermVectors(random().nextBoolean(), random().nextBoolean(), false);
@@ -211,22 +219,23 @@ public class TestAbuseSchema extends LuceneTestCase {
    * as the fully merged equivalent.
    */
   public void testOmitNormsCombos() throws IOException {
+    Analyzer a = new MockAnalyzer(random());
     // indexed with norms
-    LowSchemaField norms = new LowSchemaField("foo", "a", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    LowSchemaField norms = new LowSchemaField(a, "foo", "a", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
 
     // indexed without norms
-    LowSchemaField noNorms = new LowSchemaField("foo", "a", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    LowSchemaField noNorms = new LowSchemaField(a, "foo", "a", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     noNorms.disableNorms();
 
     // not indexed, but stored
-    LowSchemaField noIndex = new LowSchemaField("foo", "a", IndexOptions.NONE, false);
+    LowSchemaField noIndex = new LowSchemaField(a, "foo", "a", IndexOptions.NONE, false);
 
     // not indexed but stored, omitNorms is set
-    LowSchemaField noNormsNoIndex = new LowSchemaField("foo", "a", IndexOptions.NONE, false);
+    LowSchemaField noNormsNoIndex = new LowSchemaField(a, "foo", "a", IndexOptions.NONE, false);
     noNormsNoIndex.disableNorms();
 
     // not indexed nor stored (doesnt exist at all, we index a different field instead)
-    LowSchemaField emptyNorms = new LowSchemaField("bar", "a", IndexOptions.NONE, false);
+    LowSchemaField emptyNorms = new LowSchemaField(a, "bar", "a", IndexOptions.NONE, false);
     
     assertNotNull(getNorms("foo", norms, norms));
     assertNull(getNorms("foo", norms, noNorms));
@@ -295,23 +304,24 @@ public class TestAbuseSchema extends LuceneTestCase {
     // globalFieldNumbers.docValuesType map if the field existed, resulting in
     // potentially adding the same field with different DV types.
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriterConfig conf = newIndexWriterConfig(a);
     IndexWriter writer = new IndexWriter(dir, conf);
     List<LowSchemaField> doc = new ArrayList<>();
 
-    LowSchemaField field = new LowSchemaField("f", "mock-value", IndexOptions.DOCS, false);
+    LowSchemaField field = new LowSchemaField(a, "f", "mock-value", IndexOptions.DOCS, false);
     field.disableNorms();
     field.doNotStore();
     doc.add(field);
 
-    field = new LowSchemaField("f", 5, IndexOptions.NONE, false);
+    field = new LowSchemaField(a, "f", 5, IndexOptions.NONE, false);
     field.setDocValuesType(DocValuesType.NUMERIC);
     doc.add(field);
     writer.addDocument(doc);
     writer.commit();
     
     doc = new ArrayList<>();
-    field = new LowSchemaField("f", new BytesRef("mock"), IndexOptions.NONE, false);
+    field = new LowSchemaField(a, "f", new BytesRef("mock"), IndexOptions.NONE, false);
     field.setDocValuesType(DocValuesType.BINARY);
     doc.add(field);
 
@@ -328,10 +338,11 @@ public class TestAbuseSchema extends LuceneTestCase {
   // LUCENE-6049
   public void testExcIndexingDocBeforeDocValues() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriterConfig iwc = new IndexWriterConfig(a);
     IndexWriter w = new IndexWriter(dir, iwc);
     List<LowSchemaField> doc = new ArrayList<>();
-    LowSchemaField field = new LowSchemaField("test", "value", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    LowSchemaField field = new LowSchemaField(a, "test", "value", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     field.setDocValuesType(DocValuesType.SORTED);
     field.doNotStore();
     field.setTokenStream(new TokenStream() {
@@ -356,12 +367,13 @@ public class TestAbuseSchema extends LuceneTestCase {
   public void testSameFieldNumbersAcrossSegments() throws Exception {
     for (int i = 0; i < 2; i++) {
       Directory dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+      Analyzer a = new MockAnalyzer(random());
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(a)
                                                    .setMergePolicy(NoMergePolicy.INSTANCE));
 
       List<LowSchemaField> d1 = new ArrayList<>();
-      d1.add(new LowSchemaField("f1", "first field", IndexOptions.DOCS, false));
-      d1.add(new LowSchemaField("f2", "second field", IndexOptions.DOCS, false));
+      d1.add(new LowSchemaField(a, "f1", "first field", IndexOptions.DOCS, false));
+      d1.add(new LowSchemaField(a, "f2", "second field", IndexOptions.DOCS, false));
       writer.addDocument(d1);
 
       if (i == 1) {
@@ -373,12 +385,12 @@ public class TestAbuseSchema extends LuceneTestCase {
       }
 
       List<LowSchemaField> d2 = new ArrayList<>();
-      d2.add(new LowSchemaField("f2", "second field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
-      LowSchemaField field = new LowSchemaField("f1", "first field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+      d2.add(new LowSchemaField(a, "f2", "second field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+      LowSchemaField field = new LowSchemaField(a, "f1", "first field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
       field.enableTermVectors(false, false, false);
       d2.add(field);
-      d2.add(new LowSchemaField("f3", "third field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
-      d2.add(new LowSchemaField("f4", "fourth field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+      d2.add(new LowSchemaField(a, "f3", "third field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+      d2.add(new LowSchemaField(a, "f4", "fourth field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
       writer.addDocument(d2);
 
       writer.close();
@@ -417,17 +429,18 @@ public class TestAbuseSchema extends LuceneTestCase {
 
   public void testEnablingNorms() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(a)
                                           .setMaxBufferedDocs(10));
     // Enable norms for only 1 doc, pre flush
     for(int j=0;j<10;j++) {
       List<LowSchemaField> doc = new ArrayList<>();
       LowSchemaField f;
       if (j != 8) {
-        f = new LowSchemaField("field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        f = new LowSchemaField(a, "field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         f.disableNorms();
       } else {
-        f = new LowSchemaField("field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        f = new LowSchemaField(a, "field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         f.doNotStore();
       }
       doc.add(f);
@@ -443,17 +456,17 @@ public class TestAbuseSchema extends LuceneTestCase {
     assertEquals(10, hits.length);
     reader.close();
 
-    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+    writer = new IndexWriter(dir, newIndexWriterConfig(a)
                              .setOpenMode(IndexWriterConfig.OpenMode.CREATE).setMaxBufferedDocs(10));
     // Enable norms for only 1 doc, post flush
     for(int j=0;j<27;j++) {
       List<LowSchemaField> doc = new ArrayList<>();
       LowSchemaField f;
       if (j != 26) {
-        f = new LowSchemaField("field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        f = new LowSchemaField(a, "field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         f.disableNorms();
       } else {
-        f = new LowSchemaField("field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        f = new LowSchemaField(a, "field", "aaa", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         f.doNotStore();
       }
       doc.add(f);
@@ -478,7 +491,8 @@ public class TestAbuseSchema extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + i);
       }
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+      Analyzer a = new MockAnalyzer(random());
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(a)
                                                   .setMaxBufferedDocs(2)
                                                   .setMergePolicy(newLogMergePolicy()));
       //LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
@@ -489,22 +503,22 @@ public class TestAbuseSchema extends LuceneTestCase {
 
       if (i == 7) {
         // Add empty docs here
-        LowSchemaField field = new LowSchemaField("content3", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        LowSchemaField field = new LowSchemaField(a, "content3", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         field.doNotStore();
         doc.add(field);
       } else {
         if (i%2 == 0) {
-          doc.add(new LowSchemaField("content4", contents, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
-          doc.add(new LowSchemaField("content5", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+          doc.add(new LowSchemaField(a, "content4", contents, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+          doc.add(new LowSchemaField(a, "content5", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
         } else {
-          LowSchemaField field = new LowSchemaField("content5", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+          LowSchemaField field = new LowSchemaField(a, "content5", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
           field.doNotStore();
           doc.add(field);
         }
-        LowSchemaField field = new LowSchemaField("content1", contents, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        LowSchemaField field = new LowSchemaField(a, "content1", contents, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         field.doNotStore();
         doc.add(field);
-        doc.add(new LowSchemaField("content3", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+        doc.add(new LowSchemaField(a, "content3", "", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
       }
 
       for(int j=0;j<4;j++) {
@@ -526,7 +540,8 @@ public class TestAbuseSchema extends LuceneTestCase {
 
   public void testIndexStoreCombos() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
     byte[] b = new byte[50];
     for(int i=0;i<50;i++) {
       b[i] = (byte) (i+77);
@@ -534,12 +549,12 @@ public class TestAbuseSchema extends LuceneTestCase {
 
     List<LowSchemaField> doc = new ArrayList<>();
 
-    LowSchemaField f = new LowSchemaField("binary", new BytesRef(b, 10, 17), IndexOptions.DOCS, true);
+    LowSchemaField f = new LowSchemaField(a, "binary", new BytesRef(b, 10, 17), IndexOptions.DOCS, true);
     final MockTokenizer doc1field1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     doc1field1.setReader(new StringReader("doc1field1"));
     f.setTokenStream(doc1field1);
 
-    LowSchemaField f2 = new LowSchemaField("string", "value", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    LowSchemaField f2 = new LowSchemaField(a, "string", "value", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
     final MockTokenizer doc1field2 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     doc1field2.setReader(new StringReader("doc1field2"));
     f2.setTokenStream(doc1field2);
@@ -572,7 +587,7 @@ public class TestAbuseSchema extends LuceneTestCase {
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Document2 doc2 = ir.document(0);
+    Document doc2 = ir.document(0);
     IndexableField f3 = doc2.getField("binary");
     b = f3.binaryValue().bytes;
     assertTrue(b != null);
@@ -609,17 +624,17 @@ public class TestAbuseSchema extends LuceneTestCase {
     List<LowSchemaField> d = new ArrayList<>();
         
     // f1,f2,f3: docs only
-    d.add(new LowSchemaField("f1", "This field has docs only", IndexOptions.DOCS, true));
-    d.add(new LowSchemaField("f2", "This field has docs only", IndexOptions.DOCS, true));
-    d.add(new LowSchemaField("f3", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField(analyzer, "f1", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField(analyzer, "f2", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField(analyzer, "f3", "This field has docs only", IndexOptions.DOCS, true));
 
-    d.add(new LowSchemaField("f4", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
-    d.add(new LowSchemaField("f5", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
-    d.add(new LowSchemaField("f6", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField(analyzer, "f4", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField(analyzer, "f5", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField(analyzer, "f6", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
     
-    d.add(new LowSchemaField("f7", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
-    d.add(new LowSchemaField("f8", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
-    d.add(new LowSchemaField("f9", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField(analyzer, "f7", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField(analyzer, "f8", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField(analyzer, "f9", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
         
     writer.addDocument(d);
     writer.forceMerge(1);
@@ -629,19 +644,19 @@ public class TestAbuseSchema extends LuceneTestCase {
     d = new ArrayList<>();
     
     // f1,f4,f7: docs only
-    d.add(new LowSchemaField("f1", "This field has docs only", IndexOptions.DOCS, true));
-    d.add(new LowSchemaField("f4", "This field has docs only", IndexOptions.DOCS, true));
-    d.add(new LowSchemaField("f7", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField(analyzer, "f1", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField(analyzer, "f4", "This field has docs only", IndexOptions.DOCS, true));
+    d.add(new LowSchemaField(analyzer, "f7", "This field has docs only", IndexOptions.DOCS, true));
 
     // f2, f5, f8: docs and freqs
-    d.add(new LowSchemaField("f2", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
-    d.add(new LowSchemaField("f5", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
-    d.add(new LowSchemaField("f8", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField(analyzer, "f2", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField(analyzer, "f5", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField(analyzer, "f8", "This field has docs and freqs", IndexOptions.DOCS_AND_FREQS, true));
     
     // f3, f6, f9: docs and freqs and positions
-    d.add(new LowSchemaField("f3", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
-    d.add(new LowSchemaField("f6", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
-    d.add(new LowSchemaField("f9", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField(analyzer, "f3", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField(analyzer, "f6", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField(analyzer, "f9", "This field has docs and freqs and positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
     writer.addDocument(d);
 
     // force merge
@@ -690,7 +705,7 @@ public class TestAbuseSchema extends LuceneTestCase {
     lmp.setNoCFSRatio(0.0);
 
     List<LowSchemaField> d = new ArrayList<>();
-    d.add(new LowSchemaField("f1", "This field has term freqs", IndexOptions.DOCS_AND_FREQS, true));
+    d.add(new LowSchemaField(analyzer, "f1", "This field has term freqs", IndexOptions.DOCS_AND_FREQS, true));
     for(int i=0;i<30;i++) {
       writer.addDocument(d);
     }
@@ -701,7 +716,7 @@ public class TestAbuseSchema extends LuceneTestCase {
     
     // now add some documents with positions, and check there is no prox after optimization
     d = new ArrayList<>();
-    d.add(new LowSchemaField("f1", "This field has term freqs", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+    d.add(new LowSchemaField(analyzer, "f1", "This field has term freqs", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
     
     for(int i=0;i<30;i++) {
       writer.addDocument(d);
@@ -727,17 +742,19 @@ public class TestAbuseSchema extends LuceneTestCase {
   /** make sure we downgrade positions and payloads correctly */
   public void testMixing() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Analyzer a = new MockAnalyzer(random());
+
+    RandomIndexWriter iw = newRandomIndexWriter(dir, a);
     
     for (int i = 0; i < 20; i++) {
       List<LowSchemaField> doc = new ArrayList<>();
       if (i < 19 && random().nextBoolean()) {
         for (int j = 0; j < 50; j++) {
-          doc.add(new LowSchemaField("foo", "i have positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
+          doc.add(new LowSchemaField(a, "foo", "i have positions", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true));
         }
       } else {
         for (int j = 0; j < 50; j++) {
-          doc.add(new LowSchemaField("foo", "i have no positions", IndexOptions.DOCS_AND_FREQS, true));
+          doc.add(new LowSchemaField(a, "foo", "i have no positions", IndexOptions.DOCS_AND_FREQS, true));
         }
       }
       iw.addDocument(doc);
@@ -759,9 +776,10 @@ public class TestAbuseSchema extends LuceneTestCase {
 
   public void testTypeChangeViaAddIndexesIR2() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriterConfig conf = newIndexWriterConfig(a);
     IndexWriter writer = new IndexWriter(dir, conf);
-    LowSchemaField field = new LowSchemaField("dv", 0L, IndexOptions.NONE, false);
+    LowSchemaField field = new LowSchemaField(a, "dv", 0L, IndexOptions.NONE, false);
     field.setDocValuesType(DocValuesType.NUMERIC);
     List<LowSchemaField> doc = new ArrayList<>();
     doc.add(field);
@@ -774,7 +792,7 @@ public class TestAbuseSchema extends LuceneTestCase {
     IndexReader[] readers = new IndexReader[] {DirectoryReader.open(dir)};
     writer.addIndexes(readers);
     readers[0].close();
-    field = new LowSchemaField("dv", new BytesRef("foo"), IndexOptions.NONE, false);
+    field = new LowSchemaField(a, "dv", new BytesRef("foo"), IndexOptions.NONE, false);
     field.setDocValuesType(DocValuesType.BINARY);
     doc = new ArrayList<>();
     doc.add(field);

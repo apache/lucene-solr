@@ -27,10 +27,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
@@ -112,8 +109,8 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     assertEquals(3, tfs.get(2).intValue()); // f2:is + f2:is + f2:lucene
   }
   
-  static Document2 doc(RandomIndexWriter w, String v1, String v2) {
-    Document2 doc = w.newDocument();
+  static Document doc(RandomIndexWriter w, String v1, String v2) {
+    Document doc = w.newDocument();
     doc.addLargeText(F1, v1);
     doc.addLargeText(F2, v2);
     return doc;

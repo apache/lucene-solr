@@ -39,12 +39,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50Codec;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
@@ -248,7 +246,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   volatile Throwable tragedy;
 
   private final Directory directory;  // where this index resides
-  private final Analyzer analyzer;    // how to analyze text
   final FieldTypes fieldTypes; // schema
 
   private volatile long changeCount; // increments every time a change is completed
@@ -864,8 +861,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         messageState();
       }
 
-      analyzer = fieldTypes.getIndexAnalyzer();
-
       // nocommit what to do here... cannot delegate codecs
       if ((config.getCodec() instanceof Lucene50Codec) == false) {
         codec = config.getCodec();
@@ -893,8 +888,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return fieldTypes;
   }
 
-  public Document2 newDocument() {
-    return new Document2(fieldTypes);
+  public Document newDocument() {
+    return new Document(fieldTypes);
   }
   
   // reads latest field infos for the commit
@@ -1050,12 +1045,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return directory;
   }
 
-  /** Returns the analyzer used by this index. */
-  public Analyzer getAnalyzer() {
-    ensureOpen();
-    return analyzer;
-  }
-
   /** Returns total number of docs in this index, including
    *  docs not yet flushed (still in the RAM buffer),
    *  not counting deletions.
@@ -1207,7 +1196,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       boolean success = false;
       try {
-        if (docWriter.updateDocuments(docs, analyzer, delTerm)) {
+        if (docWriter.updateDocuments(docs, delTerm)) {
           processEvents(true, false);
         }
         success = true;
@@ -1357,7 +1346,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       boolean success = false;
       try {
-        if (docWriter.updateDocument(doc, analyzer, term)) {
+        if (docWriter.updateDocument(doc, term)) {
           processEvents(true, false);
         }
         success = true;
@@ -2369,7 +2358,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           SegmentInfos sis = SegmentInfos.readLatestCommit(dir); // read infos from dir
           totalDocCount += sis.totalDocCount();
 
-          fieldTypes.addAll(FieldTypes.getFieldTypes(sis.getUserData(), analyzer, fieldTypes.getSimilarity()));
+          fieldTypes.addAll(FieldTypes.getFieldTypes(sis.getUserData(), fieldTypes.getIndexAnalyzer(), fieldTypes.getSimilarity()));
 
           for (SegmentCommitInfo info : sis) {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;

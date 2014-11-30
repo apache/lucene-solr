@@ -18,7 +18,7 @@ package org.apache.lucene.codecs.lucene50;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
@@ -61,8 +61,8 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     super.tearDown();
   }
   
-  private Document2 newDocument(String contents) {
-    Document2 doc = iw.newDocument();
+  private Document newDocument(String contents) {
+    Document doc = iw.newDocument();
     FieldTypes fieldTypes = iw.getFieldTypes();
     for (IndexOptions option : IndexOptions.values()) {
       if (option == IndexOptions.NONE) {

@@ -18,13 +18,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 
 /**
  * A range filter built on top of numeric doc values field 
@@ -285,14 +285,14 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
-        // using NumericUtils to easier find the next bigger/lower value
+        // using Document to easier find the next bigger/lower value
         final float inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           float f = lowerVal.floatValue();
           if (!includeUpper && f > 0.0f && Float.isInfinite(f))
             return null;
-          int i = NumericUtils.floatToSortableInt(f);
-          inclusiveLowerPoint = NumericUtils.sortableIntToFloat( includeLower ?  i : (i + 1) );
+          int i = Document.floatToSortableInt(f);
+          inclusiveLowerPoint = Document.sortableIntToFloat(includeLower ? i : (i + 1));
         } else {
           inclusiveLowerPoint = Float.NEGATIVE_INFINITY;
         }
@@ -300,8 +300,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
           float f = upperVal.floatValue();
           if (!includeUpper && f < 0.0f && Float.isInfinite(f))
             return null;
-          int i = NumericUtils.floatToSortableInt(f);
-          inclusiveUpperPoint = NumericUtils.sortableIntToFloat( includeUpper ? i : (i - 1) );
+          int i = Document.floatToSortableInt(f);
+          inclusiveUpperPoint = Document.sortableIntToFloat(includeUpper ? i : (i - 1));
         } else {
           inclusiveUpperPoint = Float.POSITIVE_INFINITY;
         }
@@ -331,14 +331,14 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
-        // using NumericUtils to easier find the next bigger/lower value
+        // using Document to easier find the next bigger/lower value
         final double inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           double f = lowerVal.doubleValue();
           if (!includeUpper && f > 0.0 && Double.isInfinite(f))
             return null;
-          long i = NumericUtils.doubleToSortableLong(f);
-          inclusiveLowerPoint = NumericUtils.sortableLongToDouble( includeLower ?  i : (i + 1L) );
+          long i = Document.doubleToSortableLong(f);
+          inclusiveLowerPoint = Document.sortableLongToDouble(includeLower ? i : (i + 1L));
         } else {
           inclusiveLowerPoint = Double.NEGATIVE_INFINITY;
         }
@@ -346,8 +346,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
           double f = upperVal.doubleValue();
           if (!includeUpper && f < 0.0 && Double.isInfinite(f))
             return null;
-          long i = NumericUtils.doubleToSortableLong(f);
-          inclusiveUpperPoint = NumericUtils.sortableLongToDouble( includeUpper ? i : (i - 1L) );
+          long i = Document.doubleToSortableLong(f);
+          inclusiveUpperPoint = Document.sortableLongToDouble(includeUpper ? i : (i - 1L));
         } else {
           inclusiveUpperPoint = Double.POSITIVE_INFINITY;
         }

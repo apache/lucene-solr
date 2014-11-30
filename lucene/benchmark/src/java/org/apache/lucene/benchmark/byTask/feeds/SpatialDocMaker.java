@@ -24,11 +24,8 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -165,11 +162,11 @@ public class SpatialDocMaker extends DocMaker {
   }
 
   @Override
-  public Document2 makeDocument(IndexWriter w) throws Exception {
+  public Document makeDocument(IndexWriter w) throws Exception {
 
     DocState docState = getDocState();
 
-    Document2 doc = super.makeDocument(w);
+    Document doc = super.makeDocument(w);
 
     // Set SPATIAL_FIELD from body
     DocData docData = docState.docData;
@@ -197,7 +194,7 @@ public class SpatialDocMaker extends DocMaker {
   }
 
   @Override
-  public Document2 makeDocument(IndexWriter w, int size) throws Exception {
+  public Document makeDocument(IndexWriter w, int size) throws Exception {
     //TODO consider abusing the 'size' notion to number of shapes per document
     throw new UnsupportedOperationException();
   }

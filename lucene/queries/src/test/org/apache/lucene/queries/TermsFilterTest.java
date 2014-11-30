@@ -26,9 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
@@ -49,7 +47,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -71,7 +68,7 @@ public class TermsFilterTest extends LuceneTestCase {
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
     for (int i = 0; i < 100; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       int term = i * 10; //terms are units of 10;
       doc.addAtom(fieldName, "" + term);
       w.addDocument(doc);
@@ -106,7 +103,7 @@ public class TermsFilterTest extends LuceneTestCase {
     String fieldName = "field1";
     Directory rd1 = newDirectory();
     RandomIndexWriter w1 = new RandomIndexWriter(random(), rd1);
-    Document2 doc = w1.newDocument();
+    Document doc = w1.newDocument();
     doc.addAtom(fieldName, "content1");
     w1.addDocument(doc);
     IndexReader reader1 = w1.getReader();
@@ -147,7 +144,7 @@ public class TermsFilterTest extends LuceneTestCase {
     List<Term> terms = new ArrayList<>();
     for (int i = 0; i < num; i++) {
       terms.add(new Term("field" + i, "content1"));
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       if (skip == i) {
         continue;
       }
@@ -179,7 +176,7 @@ public class TermsFilterTest extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       String field = "field" + random().nextInt(100);
       terms.add(new Term(field, "content1"));
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom(field, "content1");
       w.addDocument(doc);
     }
@@ -217,7 +214,7 @@ public class TermsFilterTest extends LuceneTestCase {
       String field = "field" + (singleField ? "1" : random().nextInt(100));
       String string = TestUtil.randomRealisticUnicodeString(random());
       terms.add(new Term(field, string));
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom(field, string);
       w.addDocument(doc);
     }

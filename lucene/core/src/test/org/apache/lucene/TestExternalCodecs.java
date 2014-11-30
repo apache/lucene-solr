@@ -18,11 +18,7 @@ package org.apache.lucene;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -64,7 +60,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     fieldTypes.setPostingsFormat("field2", "Memory");
     
     for(int i=0;i<NUM_DOCS;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       // uses default codec:
       doc.addLargeText("field1", "this field uses the standard codec as the test");
       // uses memory codec:

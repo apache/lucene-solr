@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -37,7 +37,7 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
     for (int i = 0; i < 100; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       int term = i * 10; //terms are units of 10;
       doc.addAtom(fieldName, "" + term);
       w.addDocument(doc);

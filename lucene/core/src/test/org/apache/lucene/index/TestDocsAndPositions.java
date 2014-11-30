@@ -20,8 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -51,7 +50,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     fieldTypes.disableStored(fieldName);
 
     for (int i = 0; i < 39; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(fieldName, "1 2 3 4 5 6 7 8 9 10 "
           + "1 2 3 4 5 6 7 8 9 10 " + "1 2 3 4 5 6 7 8 9 10 "
           + "1 2 3 4 5 6 7 8 9 10");
@@ -120,7 +119,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     fieldTypes.disableNorms(fieldName);
     fieldTypes.disableStored(fieldName);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       ArrayList<Integer> positions = new ArrayList<>();
       StringBuilder builder = new StringBuilder();
       int num = atLeast(131);
@@ -205,7 +204,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int term = random().nextInt(max);
     int[] freqInDoc = new int[numDocs];
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = new Document2(fieldTypes);
+      Document doc = new Document(fieldTypes);
       StringBuilder builder = new StringBuilder();
       for (int j = 0; j < 199; j++) {
         int nextInt = random().nextInt(max);
@@ -282,7 +281,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     fieldTypes.disableStored(fieldName);
     int howMany = 1000;
     for (int i = 0; i < 39; i++) {
-      Document2 doc = new Document2(fieldTypes);
+      Document doc = new Document(fieldTypes);
       StringBuilder builder = new StringBuilder();
       for (int j = 0; j < howMany; j++) {
         if (j % 2 == 0) {
@@ -335,7 +334,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableStored("foo");
-    Document2 doc = new Document2(fieldTypes);
+    Document doc = new Document(fieldTypes);
     doc.addAtom("foo", "bar");
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
@@ -362,7 +361,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableStored("foo");
-    Document2 doc = new Document2(fieldTypes);
+    Document doc = new Document(fieldTypes);
     doc.addLargeText("foo", "bar");
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();

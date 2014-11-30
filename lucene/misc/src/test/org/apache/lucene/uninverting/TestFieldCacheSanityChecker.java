@@ -19,9 +19,7 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -68,14 +66,14 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     float theFloat = Float.MAX_VALUE;
     for (int i = 0; i < NUM_DOCS; i++){
       if (0 == i % 3) {
-        Document2 doc = wA.newDocument();
+        Document doc = wA.newDocument();
         doc.addLong("theLong", theLong--);
         doc.addDouble("theDouble", theDouble--);
         doc.addInt("theInt", theInt--);
         doc.addFloat("theFloat", theFloat--);
         wA.addDocument(doc);
       } else {
-        Document2 doc = wB.newDocument();
+        Document doc = wB.newDocument();
         doc.addLong("theLong", theLong--);
         doc.addDouble("theDouble", theDouble--);
         doc.addInt("theInt", theInt--);

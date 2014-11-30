@@ -26,12 +26,8 @@ import java.util.List;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.IOUtils;
@@ -50,7 +46,7 @@ public class TestCheckIndex extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("field");
 
     for(int i=0;i<19;i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("field", "aaa"+i);
       writer.addDocument(doc);
     }
@@ -113,7 +109,7 @@ public class TestCheckIndex extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("foo");
     fieldTypes.disableHighlighting("foo");
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", new CannedTokenStream(
         new Token("bar", 5, 10), new Token("bar", 1, 4)
     ));

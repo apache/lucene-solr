@@ -37,19 +37,8 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -170,18 +159,23 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
       .setUseCompoundFile(false).setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir, conf);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableSorting("bdv1");
+    fieldTypes.disableSorting("bdv1_c");
+    fieldTypes.disableSorting("bdv2");
+    fieldTypes.disableSorting("bdv2_c");
     // create an index w/ few doc-values fields, some with updates and some without
     for (int i = 0; i < 30; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", "" + i, Field.Store.NO));
-      doc.add(new NumericDocValuesField("ndv1", i));
-      doc.add(new NumericDocValuesField("ndv1_c", i*2));
-      doc.add(new NumericDocValuesField("ndv2", i*3));
-      doc.add(new NumericDocValuesField("ndv2_c", i*6));
-      doc.add(new BinaryDocValuesField("bdv1", toBytes(i)));
-      doc.add(new BinaryDocValuesField("bdv1_c", toBytes(i*2)));
-      doc.add(new BinaryDocValuesField("bdv2", toBytes(i*3)));
-      doc.add(new BinaryDocValuesField("bdv2_c", toBytes(i*6)));
+      Document doc = writer.newDocument();
+      doc.addAtom("id", "" + i);
+      doc.addInt("ndv1", i);
+      doc.addInt("ndv1_c", i*2);
+      doc.addInt("ndv2", i*3);
+      doc.addInt("ndv2_c", i*6);
+      doc.addBinary("bdv1", toBytes(i));
+      doc.addBinary("bdv1_c", toBytes(i*2));
+      doc.addBinary("bdv2", toBytes(i*3));
+      doc.addBinary("bdv2_c", toBytes(i*6));
       writer.addDocument(doc);
       if ((i+1) % 10 == 0) {
         writer.commit(); // flush every 10 docs
@@ -624,7 +618,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     for(int i=0;i<35;i++) {
       if (liveDocs.get(i)) {
-        Document2 d = reader.document(i);
+        Document d = reader.document(i);
         List<IndexableField> fields = d.getFields();
         boolean isProxDoc = d.getField("content3") == null;
         if (isProxDoc) {
@@ -726,7 +720,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term(new String("content"), "aaa")), null, 1000).scoreDocs;
 
     // First document should be #0
-    Document2 d = searcher.getIndexReader().document(hits[0].doc);
+    Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("didn't get the right document first", "0", d.getString("id"));
 
     doTestHits(hits, 34, searcher.getIndexReader());
@@ -770,7 +764,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    Document2 d = searcher.getIndexReader().document(hits[0].doc);
+    Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("wrong first document", "0", d.getString("id"));
     doTestHits(hits, 44, searcher.getIndexReader());
     reader.close();
@@ -798,7 +792,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
-    Document2 d = searcher.doc(hits[0].doc);
+    Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "0", d.getString("id"));
     reader.close();
 
@@ -859,57 +853,56 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  private void addDoc(IndexWriter writer, int id) throws IOException
-  {
-    Document doc = new Document();
-    doc.add(new TextField("content", "aaa", Field.Store.NO));
-    doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
-    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
-    customType2.setStoreTermVectors(true);
-    customType2.setStoreTermVectorPositions(true);
-    customType2.setStoreTermVectorOffsets(true);
-    doc.add(new Field("autf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", customType2));
-    doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", customType2));
-    doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
-    doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
+  private void addDoc(IndexWriter writer, int id) throws IOException {
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(String fieldName : new String[] {"autf8", "utf8", "content2", "fie\u2C77ld", "content5", "content6"}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+    }
+    fieldTypes.setIndexOptions("content6", IndexOptions.DOCS_AND_FREQS);
+    fieldTypes.disableSorting("dvBytesDerefFixed");
+    fieldTypes.disableSorting("dvBytesDerefVar");
+    fieldTypes.disableSorting("dvBytesStraightFixed");
+    fieldTypes.disableSorting("dvBytesStraightVar");
+    fieldTypes.setMultiValued("dvSortedSet");
+    fieldTypes.setMultiValued("dvSortedNumeric");
+
+    Document doc = writer.newDocument();
+    doc.addLargeText("content", "aaa");
+    doc.addAtom("id", Integer.toString(id));
+    doc.addLargeText("autf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd");
+    doc.addLargeText("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd");
+    doc.addLargeText("content2", "here is more content with aaa aaa aaa");
+    doc.addLargeText("fie\u2C77ld", "field with non-ascii name");
     // add numeric fields, to test if flex preserves encoding
     // nocommit get these into back compat index
     //doc.add(new IntField("trieInt", id, Field.Store.NO));
     //doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
     // add docvalues fields
-    doc.add(new NumericDocValuesField("dvByte", (byte) id));
+    doc.addInt("dvByte", (byte) id);
     byte bytes[] = new byte[] {
       (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
     };
     BytesRef ref = new BytesRef(bytes);
-    doc.add(new BinaryDocValuesField("dvBytesDerefFixed", ref));
-    doc.add(new BinaryDocValuesField("dvBytesDerefVar", ref));
-    doc.add(new SortedDocValuesField("dvBytesSortedFixed", ref));
-    doc.add(new SortedDocValuesField("dvBytesSortedVar", ref));
-    doc.add(new BinaryDocValuesField("dvBytesStraightFixed", ref));
-    doc.add(new BinaryDocValuesField("dvBytesStraightVar", ref));
-    doc.add(new DoubleDocValuesField("dvDouble", (double)id));
-    doc.add(new FloatDocValuesField("dvFloat", (float)id));
-    doc.add(new NumericDocValuesField("dvInt", id));
-    doc.add(new NumericDocValuesField("dvLong", id));
-    doc.add(new NumericDocValuesField("dvPacked", id));
-    doc.add(new NumericDocValuesField("dvShort", (short)id));
-    doc.add(new SortedSetDocValuesField("dvSortedSet", ref));
-    doc.add(new SortedNumericDocValuesField("dvSortedNumeric", id));
+    doc.addBinary("dvBytesDerefFixed", ref);
+    doc.addBinary("dvBytesDerefVar", ref);
+    doc.addAtom("dvBytesSortedFixed", ref);
+    doc.addAtom("dvBytesSortedVar", ref);
+    doc.addBinary("dvBytesStraightFixed", ref);
+    doc.addBinary("dvBytesStraightVar", ref);
+    doc.addDouble("dvDouble", (double) id);
+    doc.addFloat("dvFloat", (float) id);
+    doc.addInt("dvInt", id);
+    doc.addLong("dvLong", id);
+    doc.addInt("dvPacked", id);
+    doc.addInt("dvShort", (short) id);
+    doc.addAtom("dvSortedSet", ref);
+    doc.addInt("dvSortedNumeric", id);
     // a field with both offsets and term vectors for a cross-check
-    FieldType customType3 = new FieldType(TextField.TYPE_STORED);
-    customType3.setStoreTermVectors(true);
-    customType3.setStoreTermVectorPositions(true);
-    customType3.setStoreTermVectorOffsets(true);
-    customType3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    doc.add(new Field("content5", "here is more content with aaa aaa aaa", customType3));
+    doc.addLargeText("content5", "here is more content with aaa aaa aaa");
     // a field that omits only positions
-    FieldType customType4 = new FieldType(TextField.TYPE_STORED);
-    customType4.setStoreTermVectors(true);
-    customType4.setStoreTermVectorPositions(false);
-    customType4.setStoreTermVectorOffsets(true);
-    customType4.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-    doc.add(new Field("content6", "here is more content with aaa aaa aaa", customType4));
+    doc.addLargeText("content6", "here is more content with aaa aaa aaa");
     // TODO: 
     //   index different norms types via similarity (we use a random one currently?!)
     //   remove any analyzer randomness, explicitly add payloads for certain fields.
@@ -917,16 +910,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   private void addNoProxDoc(IndexWriter writer) throws IOException {
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setIndexOptions(IndexOptions.DOCS);
-    Field f = new Field("content3", "aaa", customType);
-    doc.add(f);
-    FieldType customType2 = new FieldType();
-    customType2.setStored(true);
-    customType2.setIndexOptions(IndexOptions.DOCS);
-    f = new Field("content4", "aaa", customType2);
-    doc.add(f);
+    Document doc = writer.newDocument();
+    doc.addAtom("content3", "aaa");
+    doc.addAtom("content4", "aaa");
     writer.addDocument(doc);
   }
 
@@ -988,7 +974,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // first create a little index with the current code and get the version
     Directory currentDir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), currentDir);
-    riw.addDocument(new Document());
+    riw.addDocument(riw.newDocument());
     riw.close();
     DirectoryReader ir = DirectoryReader.open(currentDir);
     SegmentReader air = (SegmentReader)ir.leaves().get(0).reader();
@@ -1040,7 +1026,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       for (int id=10; id<15; id++) {
         ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", NumericUtils.PRECISION_STEP_DEFAULT_32, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
-        Document2 d = searcher.doc(hits[0].doc);
+        Document d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.getString("id"));
         
         hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", NumericUtils.PRECISION_STEP_DEFAULT, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
@@ -1300,7 +1286,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                            .setOpenMode(OpenMode.APPEND));
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       DirectoryReader r = DirectoryReader.open(writer, true);
       writer.commit();
       r.close();
@@ -1319,9 +1305,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                            .setOpenMode(OpenMode.APPEND));
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       writer.commit();
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       writer.commit();
       writer.close();
       dir.close();

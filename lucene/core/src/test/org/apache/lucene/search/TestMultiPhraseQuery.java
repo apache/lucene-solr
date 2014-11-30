@@ -22,7 +22,7 @@ import java.util.LinkedList;
 
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -193,7 +193,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   private void add(String s, RandomIndexWriter writer) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("body", s);
     writer.addDocument(doc);
   }
@@ -313,7 +313,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   private void add(String s, String type, RandomIndexWriter writer)
       throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("body", s);
     doc.addAtom("type", type);
     writer.addDocument(doc);
@@ -364,7 +364,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     tokens[2].setPositionIncrement(0);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", new CannedTokenStream(tokens));
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -465,7 +465,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     Directory dir = newDirectory(); // random dir
     IndexWriterConfig cfg = newIndexWriterConfig(null);
     IndexWriter writer = new IndexWriter(dir, cfg);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", new CannedTokenStream(INCR_0_DOC_TOKENS));
     writer.addDocument(doc);
     IndexReader r = DirectoryReader.open(writer,false);

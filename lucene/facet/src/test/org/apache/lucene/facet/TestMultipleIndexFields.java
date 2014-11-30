@@ -24,16 +24,14 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -291,9 +289,9 @@ public class TestMultipleIndexFields extends FacetTestCase {
 
   private void seedIndex(TaxonomyWriter tw, RandomIndexWriter iw, FacetsConfig config) throws IOException {
     for (FacetField ff : CATEGORIES) {
-      Document doc = new Document();
+      Document doc = iw.newDocument();
       doc.add(ff);
-      doc.add(new TextField("content", "alpha", Field.Store.YES));
+      doc.addLargeText("content", "alpha");
       iw.addDocument(config.build(tw, doc));
     }
   }

@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetField;
@@ -449,7 +448,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     FacetField ff = new FacetField("dim", bigs);
     FacetLabel cp = new FacetLabel("dim", bigs);
     ordinal = taxoWriter.addCategory(cp);
-    Document2 doc = indexWriter.newDocument();
+    Document doc = indexWriter.newDocument();
     doc.add(ff);
     indexWriter.addDocument(config.build(taxoWriter, doc));
 

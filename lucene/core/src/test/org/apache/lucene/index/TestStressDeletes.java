@@ -21,12 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -63,7 +60,7 @@ public class TestStressDeletes extends LuceneTestCase {
                 synchronized (locks[id]) {
                   Boolean v = exists.get(id);
                   if (v == null || v.booleanValue() == false) {
-                    Document2 doc = w.newDocument();
+                    Document doc = w.newDocument();
                     doc.addUniqueInt("id", id);
                     w.addDocument(doc);
                     exists.put(id, true);

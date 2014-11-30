@@ -35,14 +35,8 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LowSchemaField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -99,11 +93,12 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
   }
 
   @Override
-  protected void addRandomFields(Document2 doc) {
+  protected void addRandomFields(Document doc) {
     for (Options opts : validOptions()) {
       final int numFields = random().nextInt(5);
       for (int j = 0; j < numFields; ++j) {
-        LowSchemaField field = new LowSchemaField("f_" + opts, TestUtil.randomSimpleString(random(), 2), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        LowSchemaField field = new LowSchemaField(doc.getFieldTypes().getIndexAnalyzer(),
+                                                  "f_" + opts, TestUtil.randomSimpleString(random(), 2), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         field.enableTermVectors(opts.positions, opts.offsets, opts.payloads);
         doc.add(field);
       }
@@ -307,10 +302,11 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       }
     }
 
-    public Document2 toDocument(IndexWriter w) {
-      final Document2 doc = w.newDocument();
+    public Document toDocument(IndexWriter w) {
+      final Document doc = w.newDocument();
       for (int i = 0; i < fieldNames.length; ++i) {
-        LowSchemaField field = new LowSchemaField(fieldNames[i], null, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+        LowSchemaField field = new LowSchemaField(doc.getFieldTypes().getIndexAnalyzer(),
+                                                  fieldNames[i], null, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
         field.doNotStore();
         field.setTokenStream(tokenStreams[i]);
         field.enableTermVectors(options.positions, options.offsets, options.payloads);
@@ -494,7 +490,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     }
   }
 
-  protected Document2 addId(Document2 doc, String id) {
+  protected Document addId(Document doc, String id) {
     doc.addAtom("id", id);
     return doc;
   }
@@ -511,7 +507,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       final int docWithVectors = random().nextInt(numDocs);
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      final Document2 emptyDoc = writer.newDocument();
+      final Document emptyDoc = writer.newDocument();
       final RandomDocument doc = docFactory.newDocument(TestUtil.nextInt(random(), 1, 3), 20, options);
       for (int i = 0; i < numDocs; ++i) {
         if (i == docWithVectors) {

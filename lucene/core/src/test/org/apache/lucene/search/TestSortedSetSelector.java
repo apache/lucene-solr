@@ -17,11 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -39,7 +36,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("foo"));
     doc.addAtom("value", new BytesRef("bar"));
     doc.addUniqueAtom("id", "1");
@@ -71,7 +68,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("foo"));
     doc.addAtom("value", new BytesRef("bar"));
     doc.addUniqueAtom("id", "1");
@@ -104,7 +101,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
     fieldTypes.setSortMissingFirst("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -143,7 +140,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addUniqueAtom("id", "1");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -182,7 +179,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("baz"));
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -212,7 +209,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("c"));
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -245,7 +242,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("a"));
     doc.addAtom("value", new BytesRef("b"));
     doc.addAtom("value", new BytesRef("c"));
@@ -278,7 +275,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -318,7 +315,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -358,7 +355,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("baz"));
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -388,7 +385,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("a"));
     doc.addAtom("value", new BytesRef("b"));
     doc.addAtom("value", new BytesRef("c"));
@@ -421,7 +418,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("b"));
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -454,7 +451,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -494,7 +491,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addUniqueAtom("id", "3");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -534,7 +531,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("baz"));
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -79,7 +79,7 @@ public class TestBooleanQuery extends LuceneTestCase {
   public void testNullOrSubScorer() throws Throwable {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a b c d");
     w.addDocument(doc);
 
@@ -143,7 +143,7 @@ public class TestBooleanQuery extends LuceneTestCase {
   public void testDeMorgan() throws Exception {
     Directory dir1 = newDirectory();
     RandomIndexWriter iw1 = new RandomIndexWriter(random(), dir1);
-    Document2 doc1 = iw1.newDocument();
+    Document doc1 = iw1.newDocument();
     doc1.addLargeText("field", "foo bar");
     iw1.addDocument(doc1);
     IndexReader reader1 = iw1.getReader();
@@ -151,7 +151,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     
     Directory dir2 = newDirectory();
     RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2);
-    Document2 doc2 = iw2.newDocument();
+    Document doc2 = iw2.newDocument();
     doc2.addLargeText("field", "foo baz");
     iw2.addDocument(doc2);
     IndexReader reader2 = iw2.getReader();
@@ -203,7 +203,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       if (random().nextInt(20) <= 1) {
         contents += " f";
       }
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("field", contents);
       w.addDocument(doc);
     }
@@ -299,7 +299,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     IndexWriterConfig config = new IndexWriterConfig(indexerAnalyzer);
     IndexWriter writer = new IndexWriter(directory, config);
     String FIELD = "content";
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
     d.addLargeText(FIELD, "clockwork orange");
     writer.addDocument(d);
     writer.close();
@@ -328,7 +328,7 @@ public class TestBooleanQuery extends LuceneTestCase {
   public void testInOrderWithMinShouldMatch() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "some text here");
     w.addDocument(doc);
     IndexReader r = w.getReader();
@@ -391,7 +391,7 @@ public class TestBooleanQuery extends LuceneTestCase {
   public void testMinShouldMatchLeniency() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a b c d");
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);

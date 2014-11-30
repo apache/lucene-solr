@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -221,7 +221,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         FieldTypes fieldTypes = writer.getFieldTypes();
 
         for(int i=0;i<37;i++) {
-          Document2 doc = writer.newDocument();
+          Document doc = writer.newDocument();
           doc.addLargeText("content", "aaa bbb ccc ddd" + i);
           doc.addUniqueInt("id", i);
           writer.addDocument(doc);

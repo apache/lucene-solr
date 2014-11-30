@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -68,7 +66,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     for (int i=0; i<nDocs; i++) {
-      Document2 d = iw.newDocument();
+      Document d = iw.newDocument();
       for (int j=0; j<nTerms; j++) {
         if (random().nextInt(freq[j]) == 0) {
           d.addAtom("f", terms[j].text());

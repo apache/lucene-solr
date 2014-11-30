@@ -30,11 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -79,20 +75,20 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   protected void getAddAndVerifyIndexedDocuments(String testDataFile) throws IOException {
-    List<Document2> testDocuments = getDocuments(testDataFile);
+    List<Document> testDocuments = getDocuments(testDataFile);
     addDocumentsAndCommit(testDocuments);
     verifyDocumentsIndexed(testDocuments.size());
   }
 
-  protected List<Document2> getDocuments(String testDataFile) throws IOException {
+  protected List<Document> getDocuments(String testDataFile) throws IOException {
     return getDocuments(getSampleData(testDataFile));
   }
 
-  protected List<Document2> getDocuments(Iterator<SpatialTestData> sampleData) {
-    List<Document2> documents = new ArrayList<>();
+  protected List<Document> getDocuments(Iterator<SpatialTestData> sampleData) {
+    List<Document> documents = new ArrayList<>();
     while (sampleData.hasNext()) {
       SpatialTestData data = sampleData.next();
-      Document2 document = indexWriter.newDocument();
+      Document document = indexWriter.newDocument();
       document.addAtom("id", data.id);
       document.addAtom("name", data.name);
       Shape shape = data.shape;
@@ -195,8 +191,8 @@ public abstract class StrategyTestCase extends SpatialTestCase {
     addDocument(newDoc(id, shape));
   }
 
-  protected Document2 newDoc(String id, Shape shape) {
-    Document2 doc = indexWriter.newDocument();
+  protected Document newDoc(String id, Shape shape) {
+    Document doc = indexWriter.newDocument();
     doc.addAtom("id", id);
     if (shape != null) {
       strategy.addFields(doc, shape);

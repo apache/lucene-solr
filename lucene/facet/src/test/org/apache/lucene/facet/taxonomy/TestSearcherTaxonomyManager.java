@@ -70,7 +70,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
         Set<String> seen = new HashSet<>();
         List<String> paths = new ArrayList<>();
         while (true) {
-          Document doc = new Document();
+          Document doc = w.newDocument();
           int numPaths = TestUtil.nextInt(random(), 1, 5);
           for(int i=0;i<numPaths;i++) {
             String path;
@@ -271,7 +271,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     tw2.close();
 
     SearcherTaxonomyManager mgr = new SearcherTaxonomyManager(w, true, null, tw);
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     tw.replaceTaxonomy(taxoDir2);
     taxoDir2.close();
 
@@ -307,7 +307,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
       mgr.release(pair);
     }
     
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     tw.replaceTaxonomy(taxoDir2);
     taxoDir2.close();
     w.commit();

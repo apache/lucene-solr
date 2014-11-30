@@ -20,9 +20,7 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -32,7 +30,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestUninvertingReader extends LuceneTestCase {
@@ -45,7 +42,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     fieldTypes.disableSorting("foo");
     fieldTypes.setMultiValued("foo");
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addInt("foo", 5);
     iw.addDocument(doc);
     
@@ -73,10 +70,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document2.bytesToInt(value));
+    assertEquals(-3, Document.bytesToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document2.bytesToInt(value));
+    assertEquals(5, Document.bytesToInt(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -89,7 +86,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     fieldTypes.disableSorting("foo");
     fieldTypes.setMultiValued("foo");
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addFloat("foo", 5f);
     iw.addDocument(doc);
     
@@ -118,10 +115,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3f, Document2.bytesToFloat(value), 0.0f);
+    assertEquals(-3f, Document.bytesToFloat(value), 0.0f);
     
     value = v.lookupOrd(1);
-    assertEquals(5f, Document2.bytesToFloat(value), 0.0f);
+    assertEquals(5f, Document.bytesToFloat(value), 0.0f);
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -134,7 +131,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     fieldTypes.disableSorting("foo");
     fieldTypes.setMultiValued("foo");
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLong("foo", 5);
     iw.addDocument(doc);
     
@@ -162,10 +159,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document2.bytesToLong(value));
+    assertEquals(-3, Document.bytesToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document2.bytesToLong(value));
+    assertEquals(5, Document.bytesToLong(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -178,7 +175,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     fieldTypes.disableSorting("foo");
     fieldTypes.setMultiValued("foo");
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addDouble("foo", 5d);
     iw.addDocument(doc);
     
@@ -206,10 +203,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3d, Document2.bytesToDouble(value), 0.0);
+    assertEquals(-3d, Document.bytesToDouble(value), 0.0);
     
     value = v.lookupOrd(1);
-    assertEquals(5d, Document2.bytesToDouble(value), 0.0);
+    assertEquals(5d, Document.bytesToDouble(value), 0.0);
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();

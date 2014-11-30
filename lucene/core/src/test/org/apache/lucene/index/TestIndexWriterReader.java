@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -140,7 +140,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     String id10 = r1.document(10).getField("id").stringValue();
     
-    Document2 newDoc = writer.newDocument();
+    Document newDoc = writer.newDocument();
     newDoc.addAll(r1.document(10));
 
     newDoc = writer.newDocument();
@@ -168,7 +168,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r3));
 
     writer = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "a b c");
     writer.addDocument(doc);
     assertTrue(r2.isCurrent());
@@ -190,7 +190,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     
     IndexWriter writer = new IndexWriter(dir, iwc);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "a b c");
     writer.addDocument(doc);
     writer.close();
@@ -267,9 +267,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, index2df);
 
     // verify the docs are from different indexes
-    Document2 doc5 = r1.document(5);
+    Document doc5 = r1.document(5);
     assertEquals("index1", doc5.getString("indexname"));
-    Document2 doc150 = r1.document(150);
+    Document doc150 = r1.document(150);
     assertEquals("index2", doc150.getString("indexname"));
     r1.close();
     writer.close();
@@ -892,7 +892,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                  .setMergePolicy(newLogMergePolicy()));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a b c");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -917,7 +917,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testDeletesNumDocs() throws Throwable {
     Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a b c");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -976,7 +976,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("foo", "bar");
     for(int i=0;i<20;i++) {
       w.addDocument(doc);
@@ -1016,7 +1016,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
            .setMergePolicy(newLogMergePolicy(10))
     );
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("foo", "bar");
     for(int i=0;i<20;i++) {
       w.addDocument(doc);
@@ -1128,7 +1128,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     // Create 500 segments:
     for(int i=0;i<500;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", i);
       w.addDocument(doc);
       IndexReader r = DirectoryReader.open(w, true);

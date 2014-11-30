@@ -31,10 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -271,13 +268,8 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   private boolean isAHit(Query q, String content, Analyzer analyzer) throws IOException{
     Directory ramDir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, analyzer);
-    Document doc = new Document();
-    FieldType fieldType = new FieldType();
-    fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    fieldType.setTokenized(true);
-    fieldType.setStored(true);
-    Field field = new Field(FIELD, content, fieldType);
-    doc.add(field);
+    Document doc = writer.newDocument();
+    doc.addLargeText(FIELD, content);
     writer.addDocument(doc);
     writer.close();
     DirectoryReader ir = DirectoryReader.open(ramDir);

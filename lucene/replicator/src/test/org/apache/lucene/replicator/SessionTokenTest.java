@@ -24,7 +24,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
@@ -40,7 +39,7 @@ public class SessionTokenTest extends ReplicatorTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    writer.addDocument(new Document());
+    writer.addDocument(writer.newDocument());
     writer.commit();
     Revision rev = new IndexRevision(writer);
     

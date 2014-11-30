@@ -26,9 +26,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -67,7 +65,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
         "this is the end of the universe as we know it",
         "there is the famous restaurant at the end of the universe",};
     for (int i = 0; i < docs.length; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("id", "" + i);
       doc.addLargeText("field", docs[i]);
       w.addDocument(doc);
@@ -197,7 +195,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
         "this is the end of the universe as we know it",
         "there is the famous restaurant at the end of the universe",};
     for (int i = 0; i < docs.length; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("id", "" + i);
       doc.addLargeText("field", docs[i]);
       w.addDocument(doc);
@@ -356,7 +354,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
         "this is the end of the universe as we know it",
         "there is the famous restaurant at the end of the universe",};
     for (int i = 0; i < docs.length; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("id", "" + i);
       doc.addLargeText("field", docs[i]);
       w.addDocument(doc);

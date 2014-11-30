@@ -21,8 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -39,8 +38,8 @@ import org.junit.BeforeClass;
 
 public class TestFieldMaskingSpanQuery extends LuceneTestCase {
 
-  protected static Document2 doc(RandomIndexWriter w, String... nameAndValues) {
-    Document2 doc = w.newDocument();
+  protected static Document doc(RandomIndexWriter w, String... nameAndValues) {
+    Document doc = w.newDocument();
     int upto = 0;
     while (upto < nameAndValues.length) {
       doc.addLargeText(nameAndValues[upto],
@@ -50,10 +49,6 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     return doc;
   }
   
-  protected static Field field(String name, String value) {
-    return newTextField(name, value, Field.Store.NO);
-  }
-
   protected static IndexSearcher searcher;
   protected static Directory directory;
   protected static IndexReader reader;

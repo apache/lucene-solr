@@ -26,13 +26,14 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.NumericDocValues;
@@ -45,7 +46,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestSortingMergePolicy extends LuceneTestCase {
@@ -63,11 +63,34 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     createRandomIndexes();
   }
 
-  private Document randomDocument() {
-    final Document doc = new Document();
-    doc.add(new NumericDocValuesField("ndv", random().nextLong()));
-    doc.add(new StringField("s", RandomPicks.randomFrom(random(), terms), Store.YES));
-    return doc;
+  private void addRandomDocument(RandomIndexWriter w1, RandomIndexWriter w2) throws IOException {
+    long num = random().nextLong();
+    String term = RandomPicks.randomFrom(random(), terms);
+
+    Document doc = w1.newDocument();
+    doc.addLong("ndv", num);
+    doc.addAtom("s", term);
+    w1.addDocument(doc);
+
+    doc = w2.newDocument();
+    doc.addLong("ndv", num);
+    doc.addAtom("s", term);
+    w2.addDocument(doc);
+  }
+
+  private void addRandomDocument(IndexWriter w1, IndexWriter w2) throws IOException {
+    long num = random().nextLong();
+    String term = RandomPicks.randomFrom(random(), terms);
+
+    Document doc = w1.newDocument();
+    doc.addLong("ndv", num);
+    doc.addAtom("s", term);
+    w1.addDocument(doc);
+
+    doc = w2.newDocument();
+    doc.addLong("ndv", num);
+    doc.addAtom("s", term);
+    w2.addDocument(doc);
   }
 
   static MergePolicy newSortingMergePolicy(Sort sort) {
@@ -107,16 +130,22 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     final IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
     iwc2.setMergePolicy(newSortingMergePolicy(sort));
     final RandomIndexWriter iw1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
+    FieldTypes fieldTypes = iw1.getFieldTypes();
+    fieldTypes.setIndexOptions("ndv", IndexOptions.NONE);
+    fieldTypes.disableStored("ndv");
+    fieldTypes.setDocValuesType("s", DocValuesType.NONE);
     final RandomIndexWriter iw2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
+    fieldTypes = iw2.getFieldTypes();
+    fieldTypes.setIndexOptions("ndv", IndexOptions.NONE);
+    fieldTypes.disableStored("ndv");
+    fieldTypes.setDocValuesType("s", DocValuesType.NONE);
     for (int i = 0; i < numDocs; ++i) {
       if (random().nextInt(5) == 0 && i != numDocs - 1) {
         final String term = RandomPicks.randomFrom(random(), terms);
         iw1.deleteDocuments(new Term("s", term));
         iw2.deleteDocuments(new Term("s", term));
       }
-      final Document doc = randomDocument();
-      iw1.addDocument(doc);
-      iw2.addDocument(doc);
+      addRandomDocument(iw1, iw2);
       if (random().nextInt(8) == 0) {
         iw1.commit();
         iw2.commit();
@@ -125,15 +154,13 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     // Make sure we have something to merge
     iw1.commit();
     iw2.commit();
-    final Document doc = randomDocument();
     // NOTE: don't use RIW.addDocument directly, since it sometimes commits
     // which may trigger a merge, at which case forceMerge may not do anything.
     // With field updates this is a problem, since the updates can go into the
     // single segment in the index, and threefore the index won't be sorted.
     // This hurts the assumption of the test later on, that the index is sorted
     // by SortingMP.
-    iw1.w.addDocument(doc);
-    iw2.w.addDocument(doc);
+    addRandomDocument(iw1.w, iw2.w);
 
     // update NDV of docs belonging to one term (covers many documents)
     final long value = random().nextLong();

@@ -29,13 +29,8 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
@@ -168,7 +163,7 @@ public class TestAddIndexes extends LuceneTestCase {
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "" + (i % 10));
       doc.addLargeText("content", "bbb " + i);
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
@@ -203,7 +198,7 @@ public class TestAddIndexes extends LuceneTestCase {
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "" + (i % 10));
       doc.addLargeText("content", "bbb " + i);
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
@@ -241,7 +236,7 @@ public class TestAddIndexes extends LuceneTestCase {
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "" + (i % 10));
       doc.addLargeText("content", "bbb " + i);
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
@@ -516,7 +511,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("content", "aaa");
       writer.addDocument(doc);
     }
@@ -524,7 +519,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("content", "bbb");
       writer.addDocument(doc);
     }
@@ -605,7 +600,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setMaxBufferedDocs(5).setMergePolicy(lmp));
 
     FieldTypes fieldTypes = writer.getFieldTypes();
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     fieldTypes.enableTermVectors("content");
     fieldTypes.enableTermVectorPositions("content");
     fieldTypes.enableTermVectorOffsets("content");
@@ -642,7 +637,7 @@ public class TestAddIndexes extends LuceneTestCase {
   // TODO: these are also in TestIndexWriter... add a simple doc-writing method
   // like this to LuceneTestCase?
   private void addDoc(IndexWriter writer) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "aaa");
     writer.addDocument(doc);
   }
@@ -973,7 +968,7 @@ public class TestAddIndexes extends LuceneTestCase {
       dirs[i] = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
       IndexWriter writer = new IndexWriter(dirs[i], conf);
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "myid");
       writer.addDocument(doc);
       writer.close();
@@ -1003,7 +998,7 @@ public class TestAddIndexes extends LuceneTestCase {
   // just like addDocs but with ID, starting from docStart
   private void addDocsWithID(IndexWriter writer, int numDocs, int docStart) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("content", "aaa");
       doc.addLargeText("id", "" + (docStart + i));
       writer.addDocument(doc);
@@ -1095,7 +1090,7 @@ public class TestAddIndexes extends LuceneTestCase {
     for (int i = 0; i < dirs.length; i++) {
       dirs[i] = new RAMDirectory();
       IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(new MockAnalyzer(random())));
-      Document2 d = w.newDocument();
+      Document d = w.newDocument();
       FieldTypes fieldTypes = w.getFieldTypes();
       fieldTypes.enableTermVectors("c");
       d.addLargeText("c", "v");
@@ -1141,7 +1136,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
       conf.setCodec(new UnRegisteredCodec());
       IndexWriter w = new IndexWriter(toAdd, conf);
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("foo", "bar");
       w.addDocument(doc);
       w.close();
@@ -1178,7 +1173,7 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testFieldNamesChanged() throws IOException {
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("f1", "doc1 field1");
     doc.addAtom("id", "1");
     w.addDocument(doc);
@@ -1206,7 +1201,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.close();
     assertEquals(2, r3.numDocs());
     for(int docID=0;docID<2;docID++) {
-      Document2 d = r3.document(docID);
+      Document d = r3.document(docID);
       if (d.getString("id").equals("1")) {
         assertEquals("doc1 field1", d.getString("f1"));
       } else {

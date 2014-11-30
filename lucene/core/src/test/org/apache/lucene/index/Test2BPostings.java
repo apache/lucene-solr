@@ -20,12 +20,8 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -66,7 +62,7 @@ public class Test2BPostings extends LuceneTestCase {
     fieldTypes.setIndexOptions("field", IndexOptions.DOCS);
     fieldTypes.disableStored("field");
     fieldTypes.disableNorms("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", new MyTokenStream());
     
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;

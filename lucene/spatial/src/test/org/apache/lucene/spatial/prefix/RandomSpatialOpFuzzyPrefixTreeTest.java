@@ -29,11 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -201,8 +197,8 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
   //Override so we can index parts of a pair separately, resulting in the detailLevel
   // being independent for each shape vs the whole thing
   @Override
-  protected Document2 newDoc(String id, Shape shape) {
-    Document2 doc = indexWriter.newDocument();
+  protected Document newDoc(String id, Shape shape) {
+    Document doc = indexWriter.newDocument();
     fieldTypes.setMultiValued(strategy.getFieldName());
     doc.addAtom("id", id);
     if (shape != null) {

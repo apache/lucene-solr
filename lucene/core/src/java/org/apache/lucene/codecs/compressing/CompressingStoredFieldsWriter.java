@@ -251,8 +251,12 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     final BytesRef bytes;
     final String string;
 
+    // nocommit stored fields writer shouldn't have to do per-doc schema like this?
     Number number = field.numericValue();
     if (number != null) {
+      // nocommit this is sort of evil?  it should be more low-schema, i.e. store a long encoding of the number and let high-schema decode
+      // appropriately, like how DVs work.  e.g. DATE, BIG_INT, IP_ADDRESS work this way already ... we can't expect this impl to have to
+      // know about all future types
       if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
         bits = NUMERIC_INT;
       } else if (number instanceof Long) {

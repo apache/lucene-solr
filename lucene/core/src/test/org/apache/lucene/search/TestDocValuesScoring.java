@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
@@ -46,7 +46,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", "quick brown fox");
     doc.addLargeText("bar", "quick brown fox");
     doc.addFloat("foo_boost", 2f);

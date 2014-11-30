@@ -25,7 +25,6 @@ import java.util.Locale;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -39,12 +38,12 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
         .setOpenMode(OpenMode.CREATE).setMergePolicy(NoMergePolicy.INSTANCE));
     for (int x = 0; x < 11; x++) {
-      Document doc = createDocument(x, "1", 3, format);
+      Document doc = createDocument(w, x, "1", 3, format);
       w.addDocument(doc);
       if (x%3==0) w.commit();
     }
     for (int x = 11; x < 20; x++) {
-      Document doc = createDocument(x, "2", 3, format);
+      Document doc = createDocument(w, x, "2", 3, format);
       w.addDocument(doc);
       if (x%3==0) w.commit();
     }
@@ -98,20 +97,20 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     }
   }
   
-  private Document createDocument(int n, String indexName, 
+  private Document createDocument(IndexWriter w, int n, String indexName,
       int numFields, NumberFormat format) {
     StringBuilder sb = new StringBuilder();
-    Document doc = new Document();
+    Document doc = w.newDocument();
     String id = format.format(n);
-    doc.add(newStringField("id", id, Field.Store.YES));
-    doc.add(newStringField("indexname", indexName, Field.Store.YES));
+    doc.addAtom("id", id);
+    doc.addAtom("indexname", indexName);
     sb.append("a");
     sb.append(n);
-    doc.add(newTextField("field1", sb.toString(), Field.Store.YES));
+    doc.addLargeText("field1", sb.toString());
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(newTextField("field" + (i + 1), sb.toString(), Field.Store.YES));
+      doc.addLargeText("field" + (i + 1), sb.toString());
     }
     return doc;
   }

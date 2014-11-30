@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -81,7 +80,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       writer.commit();
       Revision rev1 = new IndexRevision(writer);
       // releasing that revision should not delete the files
@@ -89,7 +88,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       assertTrue(slowFileExists(dir, IndexFileNames.SEGMENTS + "_1"));
       
       rev1 = new IndexRevision(writer); // create revision again, so the files are snapshotted
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       writer.commit();
       assertNotNull(new IndexRevision(writer));
       rev1.release(); // this release should trigger the delete of segments_1
@@ -106,7 +105,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       writer.commit();
       Revision rev = new IndexRevision(writer);
       @SuppressWarnings("unchecked")
@@ -128,7 +127,7 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     try {
-      writer.addDocument(new Document());
+      writer.addDocument(writer.newDocument());
       writer.commit();
       Revision rev = new IndexRevision(writer);
       @SuppressWarnings("unchecked")

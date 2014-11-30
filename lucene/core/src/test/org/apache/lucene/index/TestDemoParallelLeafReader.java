@@ -31,15 +31,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -684,8 +680,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         // Slowly parse the stored field into a new doc values field:
         for(int i=0;i<maxDoc;i++) {
           // TODO: is this still O(blockSize^2)?
-          Document2 oldDoc = reader.document(i);
-          Document2 newDoc = w.newDocument();
+          Document oldDoc = reader.document(i);
+          Document newDoc = w.newDocument();
           long value = Long.parseLong(oldDoc.getString("text").split(" ")[1]);
           newDoc.addLong("number", value);
           w.addDocument(newDoc);
@@ -734,8 +730,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           // Must slowly parse the stored field into a new doc values field:
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            Document2 oldDoc = reader.document(i);
-            Document2 newDoc = w.newDocument();
+            Document oldDoc = reader.document(i);
+            Document newDoc = w.newDocument();
             long value = Long.parseLong(oldDoc.getString("text").split(" ")[1]);
             newDoc.addLong("number_" + newSchemaGen, value);
             newDoc.addLong("number", value);
@@ -747,8 +743,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           assertNotNull("oldSchemaGen=" + oldSchemaGen, oldValues);
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            Document2 oldDoc = reader.document(i);
-            Document2 newDoc = w.newDocument();
+            Document oldDoc = reader.document(i);
+            Document newDoc = w.newDocument();
             newDoc.addLong("number_" + newSchemaGen, oldValues.get(i));
             w.addDocument(newDoc);
           }
@@ -777,7 +773,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         int maxDoc = r.maxDoc();
         boolean failed = false;
         for(int i=0;i<maxDoc;i++) {
-          Document2 oldDoc = r.document(i);
+          Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.getString("text").split(" ")[1]);
           if (value != numbers.get(i)) {
             if (DEBUG) System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i) + " numbers=" + numbers);
@@ -820,8 +816,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           // Must slowly parse the stored field into a new doc values field:
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            Document2 oldDoc = reader.document(i);
-            Document2 newDoc = w.newDocument();
+            Document oldDoc = reader.document(i);
+            Document newDoc = w.newDocument();
             long value = Long.parseLong(oldDoc.getString("text").split(" ")[1]);
             newDoc.addLong("number", newSchemaGen*value);
             w.addDocument(newDoc);
@@ -832,8 +828,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           assertNotNull("oldSchemaGen=" + oldSchemaGen, oldValues);
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            Document2 oldDoc = reader.document(i);
-            Document2 newDoc = w.newDocument();
+            Document oldDoc = reader.document(i);
+            Document newDoc = w.newDocument();
             newDoc.addLong("number", newSchemaGen*(oldValues.get(i)/oldSchemaGen));
             w.addDocument(newDoc);
           }
@@ -866,7 +862,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         int maxDoc = r.maxDoc();
         boolean failed = false;
         for(int i=0;i<maxDoc;i++) {
-          Document2 oldDoc = r.document(i);
+          Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.getString("text").split(" ")[1]);
           value *= schemaGen;
           if (value != numbers.get(i)) {
@@ -889,7 +885,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = getReindexerNewDVFields(createTempDir(), currentSchemaGen);
     reindexer.commit();
 
-    Document2 doc = reindexer.w.newDocument();
+    Document doc = reindexer.w.newDocument();
     doc.addLargeText("text", "number " + random().nextLong());
     reindexer.w.addDocument(doc);
 
@@ -963,7 +959,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         reindexer = getReindexerNewDVFields(root, currentSchemaGen);
       }
 
-      Document2 doc = reindexer.w.newDocument();
+      Document doc = reindexer.w.newDocument();
       String id;
       String updateID;
       if (maxID > 0 && random().nextInt(10) == 7) {
@@ -1050,7 +1046,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         reindexer = getReindexerSameDVField(root, currentSchemaGen, mergingSchemaGen);
       }
 
-      Document2 doc = reindexer.w.newDocument();
+      Document doc = reindexer.w.newDocument();
       String id;
       String updateID;
       if (maxID > 0 && random().nextInt(10) == 7) {
@@ -1126,7 +1122,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           if (numbers != null) {
             int maxDoc = leaf.maxDoc();
             for(int i=0;i<maxDoc;i++) {
-              Document2 doc = leaf.document(i);
+              Document doc = leaf.document(i);
               long value = Long.parseLong(doc.getString("text").split(" ")[1]);
               long dvValue = numbers.get(i);
               if (value == 0) {
@@ -1147,7 +1143,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     // Start with initial empty commit:
     reindexer.commit();
 
-    Document2 doc = reindexer.w.newDocument();
+    Document doc = reindexer.w.newDocument();
     doc.addLargeText("text", "number " + random().nextLong());
     reindexer.w.addDocument(doc);
 
@@ -1222,7 +1218,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         reindexer = getReindexer(root);
       }
 
-      Document2 doc = reindexer.w.newDocument();
+      Document doc = reindexer.w.newDocument();
       String id;
       String updateID;
       if (maxID > 0 && random().nextInt(10) == 7) {
@@ -1290,7 +1286,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     boolean failed = false;
     long t0 = System.currentTimeMillis();
     for(int i=0;i<maxDoc;i++) {
-      Document2 oldDoc = r.document(i);
+      Document oldDoc = r.document(i);
       long value = multiplier * Long.parseLong(oldDoc.getString("text").split(" ")[1]);
       if (value != numbers.get(i)) {
         System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i) + " numbers=" + numbers);

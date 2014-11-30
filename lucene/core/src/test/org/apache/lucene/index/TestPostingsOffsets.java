@@ -30,14 +30,8 @@ import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -64,7 +58,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
 
     if (random().nextBoolean()) {
       fieldTypes.enableTermVectors("content");
@@ -153,7 +147,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("numbers", English.intToEnglish(i));
       doc.addLargeText("oddeven", (i % 2) == 0 ? "even" : "odd");
       doc.addAtom("id", "" + i);
@@ -239,8 +233,6 @@ public class TestPostingsOffsets extends LuceneTestCase {
     final int numDocs = atLeast(20);
     //final int numDocs = atLeast(5);
 
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-
     // TODO: randomize what IndexOptions we use; also test
     // changing this up in one IW buffered segment...:
     if (random().nextBoolean()) {
@@ -254,7 +246,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     }
 
     for(int docCount=0;docCount<numDocs;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addInt("id", docCount);
       List<Token> tokens = new ArrayList<>();
       final int numTokens = atLeast(100);
@@ -376,7 +368,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("content3");
     fieldTypes.setMultiValued("content3");
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("content3", "here is more content with aaa aaa aaa");
     doc.addLargeText("content3", "here is more content with aaa aaa aaa");
     iw.addDocument(doc);
@@ -453,7 +445,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     };
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     // add good document
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     iw.addDocument(doc);
     try {
       doc.addLargeText("foo", "bar");
@@ -473,7 +465,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
   public void testLegalbutVeryLargeOffsets() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     Token t1 = new Token("foo", 0, Integer.MAX_VALUE-500);
     if (random().nextBoolean()) {
       t1.setPayload(new BytesRef("test"));
@@ -506,7 +498,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       fieldTypes.enableTermVectorPositions("body");
       fieldTypes.enableTermVectorOffsets("body");
      
-      Document2 doc = riw.newDocument();
+      Document doc = riw.newDocument();
       doc.addLargeText("body", new CannedTokenStream(field1));
       doc.addLargeText("body", new CannedTokenStream(field2));
       riw.addDocument(doc);
@@ -532,7 +524,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       fieldTypes.enableTermVectorPositions("body");
       fieldTypes.enableTermVectorOffsets("body");
      
-      Document2 doc = riw.newDocument();
+      Document doc = riw.newDocument();
       doc.addLargeText("body", new CannedTokenStream(tokens));
       riw.addDocument(doc);
       riw.close();

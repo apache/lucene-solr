@@ -21,12 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -502,7 +497,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // we can do this because we add/delete/add (and dont merge to "nothing")
     w.setKeepFullyDeletedSegments(true);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("f", "doctor who");
     w.addDocument(doc);
     w.commit();
@@ -541,7 +536,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
                                                 .setCommitOnClose(false));
     writer.commit(); // empty commit, to not create confusing situation with first commit
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
-    final Document2 doc = writer.newDocument();
+    final Document doc = writer.newDocument();
     doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
     try {
       writer.addDocument(doc);
@@ -572,14 +567,14 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   // TODO: these are also in TestIndexWriter... add a simple doc-writing method
   // like this to LuceneTestCase?
   private void addDoc(IndexWriter writer) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "aaa");
     doc.addInt("numericdv", 1);
     writer.addDocument(doc);
   }
   
   private void addDocWithIndex(IndexWriter writer, int index) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "aaa " + index);
     doc.addLargeText("id", "" + index);
     doc.addInt("numericdv", 1);

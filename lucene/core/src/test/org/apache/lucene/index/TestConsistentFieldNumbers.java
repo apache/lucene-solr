@@ -20,14 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -43,7 +37,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
                                                  .setMergePolicy(NoMergePolicy.INSTANCE));
 
     FieldTypes fieldTypes = writer.getFieldTypes();
-    Document2 d1 = writer.newDocument();
+    Document d1 = writer.newDocument();
     d1.addLargeText("f1", "first field");
     d1.addLargeText("f2", "second field");
     writer.addDocument(d1);
@@ -53,7 +47,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
                                      .setMergePolicy(NoMergePolicy.INSTANCE));
 
     fieldTypes = writer.getFieldTypes();
-    Document2 d2 = writer.newDocument();
+    Document d2 = writer.newDocument();
     fieldTypes.enableTermVectors("f1");
     d2.addLargeText("f2", "second field");
     d2.addLargeText("f1", "first field");
@@ -96,7 +90,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         FieldTypes fieldTypes = writer.getFieldTypes();
         fieldTypes.disableExistsFilters();
 
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         d.addLargeText("f1", "d1 first field");
         d.addLargeText("f2", "d1 second field");
         writer.addDocument(d);
@@ -112,7 +106,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                     .setMergePolicy(NoMergePolicy.INSTANCE));
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         d.addLargeText("f1", "d2 first field");
         d.addStored("f3", new byte[] { 1, 2, 3 });
         writer.addDocument(d);
@@ -131,7 +125,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                     .setMergePolicy(NoMergePolicy.INSTANCE));
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         d.addLargeText("f1", "d3 first field");
         d.addLargeText("f2", "d3 second field");
         d.addStored("f3", new byte[] { 1, 2, 3, 4, 5 });
@@ -199,7 +193,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     }
 
     for (int i = 0; i < NUM_DOCS; i++) {
-      Document2 d = writer.newDocument();
+      Document d = writer.newDocument();
       for (int j = 0; j < docs[i].length; j++) {
         addField(fieldTypes, d, docs[i][j]);
       }
@@ -207,7 +201,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       writer.addDocument(d);
     }
 
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
 
     for(int i=0;i<MAX_FIELDS;i++) {
       addField(fieldTypes, d, i);
@@ -230,15 +224,9 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     dir.close();
   }
 
-  private void addField(FieldTypes fieldTypes, Document2 d, int number) {
+  private void addField(FieldTypes fieldTypes, Document d, int number) {
     String fieldName = "" + number;
 
-    FieldType customType15 = new FieldType(TextField.TYPE_NOT_STORED);
-    customType15.setTokenized(false);
-    customType15.setStoreTermVectors(true);
-    customType15.setStoreTermVectorOffsets(true);
-    customType15.setStoreTermVectorPositions(true);
-    
     int mode = number % 16;
     switch (mode) {
     case 0:

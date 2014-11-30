@@ -22,9 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -48,7 +46,7 @@ public class TestReaderClosed extends LuceneTestCase {
     // but for preflex codec, the test can be very slow, so use less iterations.
     int num = atLeast(10);
     for (int i = 0; i < num; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("field", TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);
     }

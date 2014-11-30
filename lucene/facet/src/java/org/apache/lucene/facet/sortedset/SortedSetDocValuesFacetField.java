@@ -17,20 +17,29 @@ package org.apache.lucene.facet.sortedset;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.util.BytesRef;
 
 /** Add an instance of this to your Document for every facet
  *  label to be indexed via SortedSetDocValues. */
-public class SortedSetDocValuesFacetField extends Field {
+public class SortedSetDocValuesFacetField implements IndexableField {
   
-  /** Indexed {@link FieldType}. */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    TYPE.freeze();
+  public static final IndexableFieldType TYPE = new IndexableFieldType() {
+    };
+
+  @Override
+  public String name() {
+    return "dummy";
+  }
+
+  public IndexableFieldType fieldType() {
+    return TYPE;
   }
 
   /** Dimension. */
@@ -41,7 +50,6 @@ public class SortedSetDocValuesFacetField extends Field {
 
   /** Sole constructor. */
   public SortedSetDocValuesFacetField(String dim, String label) {
-    super("dummy", TYPE);
     FacetField.verifyLabel(label);
     FacetField.verifyLabel(dim);
     this.dim = dim;

@@ -27,19 +27,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.MockDirectoryWrapper.Failure;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -47,7 +36,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
@@ -122,7 +110,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
         dir.failOn(failOn);
         
         for (int i = 0; i < numDocs; i++) {
-          Document2 doc = iw.newDocument();
+          Document doc = iw.newDocument();
           doc.addAtom("id", Integer.toString(i));
           doc.addInt("dv", i);
           doc.addBinary("dv2", new BytesRef(Integer.toString(i))); 
@@ -159,7 +147,7 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
             }
           } else {
             // block docs
-            Document2 doc2 = iw.newDocument();
+            Document doc2 = iw.newDocument();
             doc2.addAtom("id", Integer.toString(-i));
             doc2.addLargeText("text1", TestUtil.randomAnalysisString(random(), 20, true));
             doc2.addStored("stored1", "foo");

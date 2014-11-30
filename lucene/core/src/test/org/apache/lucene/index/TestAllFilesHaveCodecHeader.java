@@ -23,13 +23,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LuceneTestCase;
@@ -50,7 +45,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
     fieldTypes.enableTermVectorPositions("vectors");
 
     for (int i = 0; i < 100; i++) {
-      Document2 doc = riw.newDocument();
+      Document doc = riw.newDocument();
       doc.addInt("id", i);
       doc.addLargeText("body", TestUtil.randomUnicodeString(random()));
       doc.addLargeText("vectors", TestUtil.randomUnicodeString(random()));

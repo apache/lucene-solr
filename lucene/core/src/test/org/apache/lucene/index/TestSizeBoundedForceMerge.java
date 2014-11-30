@@ -19,11 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -36,7 +33,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs, boolean withID) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       if (withID) {
         doc.addUniqueInt("id", i);
       }

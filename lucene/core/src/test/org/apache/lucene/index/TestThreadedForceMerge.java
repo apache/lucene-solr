@@ -22,10 +22,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
@@ -70,7 +67,7 @@ public class TestThreadedForceMerge extends LuceneTestCase {
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
 
       for(int i=0;i<200;i++) {
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         d.addAtom("id", Integer.toString(i));
         d.addAtom("contents", English.intToEnglish(i));
         writer.addDocument(d);
@@ -90,7 +87,7 @@ public class TestThreadedForceMerge extends LuceneTestCase {
               for(int j=0;j<NUM_ITER2;j++) {
                 writerFinal.forceMerge(1, false);
                 for(int k=0;k<17*(1+iFinal);k++) {
-                  Document2 d = writerFinal.newDocument();
+                  Document d = writerFinal.newDocument();
                   d.addAtom("id", iterFinal + "_" + iFinal + "_" + j + "_" + k);
                   d.addAtom("contents", English.intToEnglish(iFinal+k));
                   writerFinal.addDocument(d);

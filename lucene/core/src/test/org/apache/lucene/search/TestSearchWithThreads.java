@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -56,7 +56,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
         sb.append(random().nextBoolean() ? "aaa" : "bbb");
         sb.append(' ');
       }
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("body", sb.toString());
       w.addDocument(doc);
       sb.delete(0, sb.length());

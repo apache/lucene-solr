@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -41,7 +41,7 @@ public class TestSortRescorer extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addUniqueAtom("id", "1");
     doc.addLargeText("body", "some contents and more contents");
     doc.addInt("popularity", 5);
@@ -114,7 +114,7 @@ public class TestSortRescorer extends LuceneTestCase {
     final int[] idToNum = new int[numDocs];
     int maxValue = TestUtil.nextInt(random(), 10, 1000000);
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", i);
       int numTokens = TestUtil.nextInt(random(), 1, 10);
       StringBuilder b = new StringBuilder();

@@ -18,9 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -31,7 +29,7 @@ public class TestRollback extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter rw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 5; i++) {
-      Document2 doc = rw.newDocument();
+      Document doc = rw.newDocument();
       doc.addAtom("pk", Integer.toString(i));
       rw.addDocument(doc);
     }
@@ -43,7 +41,7 @@ public class TestRollback extends LuceneTestCase {
                                            .setOpenMode(IndexWriterConfig.OpenMode.APPEND));
 
     for (int i = 0; i < 3; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String value = Integer.toString(i);
       doc.addAtom("pk", value);
       doc.addAtom("text", "foo");

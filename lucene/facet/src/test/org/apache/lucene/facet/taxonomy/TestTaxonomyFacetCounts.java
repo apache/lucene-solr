@@ -27,10 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
@@ -73,7 +70,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -158,7 +155,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FacetsConfig config = new FacetsConfig();
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.add(new FacetField("a", "foo1"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -216,7 +213,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     config.setIndexFieldName("a", "$facets2");
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.add(new FacetField("a", "foo1"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -280,8 +277,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     FacetsConfig config = new FacetsConfig();
 
-    Document2 doc = writer.newDocument();
-    doc.add(newTextField("field", "text", Field.Store.NO));
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", "text");
     doc.add(new FacetField("a", "path"));
     writer.addDocument(config.build(taxoWriter, doc));
     writer.close();
@@ -297,8 +294,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     config.setMultiValued("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = writer.newDocument();
-    doc.add(newTextField("field", "text", Field.Store.NO));
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", "text");
     doc.add(new FacetField("a", "path", "x"));
     doc.add(new FacetField("a", "path", "y"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -343,8 +340,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setMultiValued("dim", true);
 
-    Document2 doc = writer.newDocument();
-    doc.add(newTextField("field", "text", Field.Store.NO));
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", "text");
     doc.add(new FacetField("dim", "test\u001Fone"));
     doc.add(new FacetField("dim", "test\u001Etwo"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -384,8 +381,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     config.setHierarchical("dim3", true);
     config.setRequireDimCount("dim3", true);
 
-    Document2 doc = writer.newDocument();
-    doc.add(newTextField("field", "text", Field.Store.NO));
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", "text");
     doc.add(new FacetField("dim", "a"));
     doc.add(new FacetField("dim2", "a"));
     doc.add(new FacetField("dim2", "b"));
@@ -433,8 +430,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     
     int numLabels = TestUtil.nextInt(random(), 40000, 100000);
     
-    Document2 doc = writer.newDocument();
-    doc.add(newTextField("field", "text", Field.Store.NO));
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", "text");
     for (int i = 0; i < numLabels; i++) {
       doc.add(new FacetField("dim", "" + i));
     }
@@ -478,8 +475,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FacetsConfig config = new FacetsConfig();
 
-    Document2 doc = writer.newDocument();
-    doc.add(newTextField("field", "text", Field.Store.NO));
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", "text");
     doc.add(new FacetField("a", "path", "other"));
     try {
       config.build(taxoWriter, doc);
@@ -500,8 +497,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FacetsConfig config = new FacetsConfig();
 
-    Document2 doc = writer.newDocument();
-    doc.add(newTextField("field", "text", Field.Store.NO));
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", "text");
     doc.add(new FacetField("a", "path"));
     doc.add(new FacetField("a", "path2"));
     try {
@@ -524,7 +521,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     config.setIndexFieldName("b", "$b");
     
     for(int i = atLeast(30); i > 0; --i) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addAtom("f", "v");
       doc.add(new FacetField("a", "1"));
       doc.add(new FacetField("b", "1"));
@@ -553,7 +550,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     for(int i = atLeast(30); i > 0; --i) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.add(new FacetField("a", "1"));
       doc.add(new FacetField("b", "1"));
       iw.addDocument(config.build(taxoWriter, doc));
@@ -582,7 +579,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.add(new FacetField("a", "1"));
     doc.add(new FacetField("b", "1"));
     iw.addDocument(config.build(taxoWriter, doc));
@@ -611,7 +608,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 10; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.add(new FacetField("a", Integer.toString(i)));
       iw.addDocument(config.build(taxoWriter, doc));
     }
@@ -631,7 +628,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
 
   private void indexTwoDocs(TaxonomyWriter taxoWriter, IndexWriter indexWriter, FacetsConfig config, boolean withContent) throws Exception {
     for (int i = 0; i < 2; i++) {
-      Document2 doc = indexWriter.newDocument();
+      Document doc = indexWriter.newDocument();
       if (withContent) {
         doc.addAtom("f", "a");
       }
@@ -697,7 +694,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     int numDims = TestUtil.nextInt(random(), 1, 7);
     List<TestDoc> testDocs = getRandomDocs(tokens, numDocs, numDims);
     for(TestDoc testDoc : testDocs) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("content", testDoc.content);
       for(int j=0;j<numDims;j++) {
         if (testDoc.dims[j] != null) {

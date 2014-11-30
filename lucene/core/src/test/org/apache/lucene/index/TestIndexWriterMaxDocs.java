@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
@@ -46,7 +44,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     Directory dir = newFSDirectory(createTempDir("2BDocs3"));
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addAtom("field", "text");
       iw.addDocument(doc);
       /*
@@ -179,7 +177,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
       FieldTypes fieldTypes = w.getFieldTypes();
       for(int i=0;i<10;i++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addUniqueInt("id", i);
         w.addDocument(doc);
       }
@@ -223,7 +221,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       FieldTypes fieldTypes = w.getFieldTypes();
 
       for(int i=0;i<10;i++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addUniqueInt("id", i);
         w.addDocument(doc);
         if (i % 2 == 0) {
@@ -300,7 +298,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   public void testMultiReaderExactLimit() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     for (int i = 0; i < 100000; i++) {
       w.addDocument(doc);
     }
@@ -336,7 +334,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   public void testMultiReaderBeyondLimit() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     for (int i = 0; i < 100000; i++) {
       w.addDocument(doc);
     }

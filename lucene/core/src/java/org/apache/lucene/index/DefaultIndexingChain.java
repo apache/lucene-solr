@@ -599,17 +599,15 @@ final class DefaultIndexingChain extends DocConsumer {
      *  if this is the first time we are seeing this field
      *  name in this document. */
     public void invert(IndexableField field, boolean first, Term delTerm) throws IOException {
+      IndexableFieldType fieldType = field.fieldType();
       if (first) {
         // First time we're seeing this field (indexed) in
         // this document:
         invertState.reset();
-      } else if (docState.analyzer != null) {
-        // TODO: this "multi-field-ness" (and, Analyzer) should be outside of IW somehow
-        invertState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
-        invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
+      } else {
+        invertState.position += fieldType.getPositionGap();
+        invertState.offset += fieldType.getOffsetGap();
       }
-
-      IndexableFieldType fieldType = field.fieldType();
 
       IndexOptions indexOptions = fieldType.indexOptions();
       fieldInfo.setIndexOptions(indexOptions);
@@ -630,7 +628,7 @@ final class DefaultIndexingChain extends DocConsumer {
        */
       boolean aborting = false;
       boolean succeededInProcessingField = false;
-      try (TokenStream stream = tokenStream = field.tokenStream(docState.analyzer, tokenStream)) {
+      try (TokenStream stream = tokenStream = field.tokenStream(tokenStream)) {
         // reset the TokenStream to the first token
         stream.reset();
         invertState.setAttributeSource(stream);

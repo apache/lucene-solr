@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -222,7 +220,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     // one document only:
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 d3 = w2.newDocument();
+    Document d3 = w2.newDocument();
 
     d3.addLargeText("f3", "v1");
     w2.addDocument(d3);
@@ -408,8 +406,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertEquals(parallelHits.length, singleHits.length);
     for(int i = 0; i < parallelHits.length; i++) {
       assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);
-      Document2 docParallel = parallel.doc(parallelHits[i].doc);
-      Document2 docSingle = single.doc(singleHits[i].doc);
+      Document docParallel = parallel.doc(parallelHits[i].doc);
+      Document docSingle = single.doc(singleHits[i].doc);
       assertEquals(docParallel.getString("f1"), docSingle.getString("f1"));
       assertEquals(docParallel.getString("f2"), docSingle.getString("f2"));
       assertEquals(docParallel.getString("f3"), docSingle.getString("f3"));
@@ -421,25 +419,25 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   private IndexSearcher single(Random random, boolean compositeComposite) throws IOException {
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random)));
-    Document2 d1 = w.newDocument();
+    Document d1 = w.newDocument();
     d1.addLargeText("f1", "v1");
     d1.addLargeText("f2", "v1");
     d1.addLargeText("f3", "v1");
     d1.addLargeText("f4", "v1");
     w.addDocument(d1);
-    Document2 d2 = w.newDocument();
+    Document d2 = w.newDocument();
     d2.addLargeText("f1", "v2");
     d2.addLargeText("f2", "v2");
     d2.addLargeText("f3", "v2");
     d2.addLargeText("f4", "v2");
     w.addDocument(d2);
-    Document2 d3 = w.newDocument();
+    Document d3 = w.newDocument();
     d3.addLargeText("f1", "v3");
     d3.addLargeText("f2", "v3");
     d3.addLargeText("f3", "v3");
     d3.addLargeText("f4", "v3");
     w.addDocument(d3);
-    Document2 d4 = w.newDocument();
+    Document d4 = w.newDocument();
     d4.addLargeText("f1", "v4");
     d4.addLargeText("f2", "v4");
     d4.addLargeText("f3", "v4");
@@ -481,21 +479,21 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random))
                                              .setMergePolicy(NoMergePolicy.INSTANCE));
-    Document2 d1 = w1.newDocument();
+    Document d1 = w1.newDocument();
     d1.addLargeText("f1", "v1");
     d1.addLargeText("f2", "v1");
     w1.addDocument(d1);
     w1.commit();
-    Document2 d2 = w1.newDocument();
+    Document d2 = w1.newDocument();
     d2.addLargeText("f1", "v2");
     d2.addLargeText("f2", "v2");
     w1.addDocument(d2);
-    Document2 d3 = w1.newDocument();
+    Document d3 = w1.newDocument();
     d3.addLargeText("f1", "v3");
     d3.addLargeText("f2", "v3");
     w1.addDocument(d3);
     w1.commit();
-    Document2 d4 = w1.newDocument();
+    Document d4 = w1.newDocument();
     d4.addLargeText("f1", "v4");
     d4.addLargeText("f2", "v4");
     w1.addDocument(d4);
@@ -508,21 +506,21 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random))
                                              .setMergePolicy(NoMergePolicy.INSTANCE));
-    Document2 d1 = w2.newDocument();
+    Document d1 = w2.newDocument();
     d1.addLargeText("f3", "v1");
     d1.addLargeText("f4", "v1");
     w2.addDocument(d1);
     w2.commit();
-    Document2 d2 = w2.newDocument();
+    Document d2 = w2.newDocument();
     d2.addLargeText("f3", "v2");
     d2.addLargeText("f4", "v2");
     w2.addDocument(d2);
-    Document2 d3 = w2.newDocument();
+    Document d3 = w2.newDocument();
     d3.addLargeText("f3", "v3");
     d3.addLargeText("f4", "v3");
     w2.addDocument(d3);
     w2.commit();
-    Document2 d4 = w2.newDocument();
+    Document d4 = w2.newDocument();
     d4.addLargeText("f3", "v4");
     d4.addLargeText("f4", "v4");
     w2.addDocument(d4);
@@ -535,21 +533,21 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random))
                                              .setMergePolicy(NoMergePolicy.INSTANCE));
-    Document2 d1 = w2.newDocument();
+    Document d1 = w2.newDocument();
     d1.addLargeText("f3", "v1");
     d1.addLargeText("f4", "v1");
     w2.addDocument(d1);
     w2.commit();
-    Document2 d2 = w2.newDocument();
+    Document d2 = w2.newDocument();
     d2.addLargeText("f3", "v2");
     d2.addLargeText("f4", "v2");
     w2.addDocument(d2);
     w2.commit();
-    Document2 d3 = w2.newDocument();
+    Document d3 = w2.newDocument();
     d3.addLargeText("f3", "v3");
     d3.addLargeText("f4", "v3");
     w2.addDocument(d3);
-    Document2 d4 = w2.newDocument();
+    Document d4 = w2.newDocument();
     d4.addLargeText("f3", "v4");
     d4.addLargeText("f4", "v4");
     w2.addDocument(d4);

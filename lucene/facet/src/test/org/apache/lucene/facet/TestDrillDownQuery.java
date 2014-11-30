@@ -22,11 +22,8 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -93,7 +90,7 @@ public class TestDrillDownQuery extends FacetTestCase {
     config.setRequireDimCount("b", true);
 
     for (int i = 0; i < 100; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       if (i % 2 == 0) { // 50
         doc.addLargeText("content", "foo");
       }

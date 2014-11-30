@@ -46,7 +46,7 @@ public class TestSearch extends LuceneTestCase {
       
       IndexWriter writer = new IndexWriter(directory, conf);
       try {
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         d.addLargeText("foo", "bar");
         writer.addDocument(d);
       } finally {
@@ -125,7 +125,7 @@ public class TestSearch extends LuceneTestCase {
         "a c e a b c"
       };
       for (int j = 0; j < docs.length; j++) {
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         d.addLargeText("contents", docs[j]);
         d.addInt("id", j);
         writer.addDocument(d);
@@ -150,7 +150,7 @@ public class TestSearch extends LuceneTestCase {
 
         out.println(hits.length + " total results");
         for (int i = 0 ; i < hits.length && i < 10; i++) {
-          Document2 d = searcher.doc(hits[i].doc);
+          Document d = searcher.doc(hits[i].doc);
           out.println(i + " " + hits[i].score + " " + d.getString("contents"));
         }
       }

@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -83,7 +83,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       directory = newDirectory();
       RandomIndexWriter writer = new RandomIndexWriter (random(), directory);
 
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("field", "term");
       writer.addDocument(doc);
 
@@ -128,7 +128,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testConstantScoreQueryAndFilter() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "a");
     w.addDocument(doc);
     doc = w.newDocument();
@@ -157,7 +157,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testQueryWrapperFilter() throws IOException {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "a");
     w.addDocument(doc);
     IndexReader r = w.getReader();

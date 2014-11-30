@@ -17,7 +17,7 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
@@ -99,7 +99,7 @@ public abstract class SpatialStrategy {
    * @return Not null nor will it have null elements.
    * @throws UnsupportedOperationException if given a shape incompatible with the strategy
    */
-  public abstract void addFields(Document2 doc, Shape shape);
+  public abstract void addFields(Document doc, Shape shape);
 
   /**
    * See {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point, double)} called with

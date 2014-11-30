@@ -23,15 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -133,7 +126,7 @@ public class TestSearchAfter extends LuceneTestCase {
     int numDocs = atLeast(200);
     Random r = random();
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       if (random().nextInt(5) != 4) {
         doc.addLargeText("english", English.intToEnglish(i));
       }

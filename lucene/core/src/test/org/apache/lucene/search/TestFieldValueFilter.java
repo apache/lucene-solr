@@ -19,23 +19,18 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SparseFixedBitSet;
@@ -147,7 +142,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     int[] docStates = new int[docs];
     for (int i = 0; i < docs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       if (random().nextBoolean()) {
         docStates[i] = 1;
         doc.addShortText("some", "value");

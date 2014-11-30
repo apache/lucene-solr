@@ -57,12 +57,7 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AlcoholicMergePolicy;
 import org.apache.lucene.index.AssertingDirectoryReader;
 import org.apache.lucene.index.AssertingLeafReader;
@@ -77,7 +72,6 @@ import org.apache.lucene.index.FieldFilterLeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -643,8 +637,6 @@ public abstract class LuceneTestCase extends Assert {
     .around(new TestRuleSetupAndRestoreInstanceEnv())
     .around(parentChainCallRule);
 
-  private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
-
   enum LiveIWCFlushMode {BY_RAM, BY_DOCS, EITHER};
 
   /** Set by TestRuleSetupAndRestoreClassEnv */
@@ -672,7 +664,6 @@ public abstract class LuceneTestCase extends Assert {
   @After
   public void tearDown() throws Exception {
     parentChainCallRule.teardownCalled = true;
-    fieldToType.clear();
 
     // Test is supposed to call this itself, but we do this defensively in case it forgot:
     restoreIndexWriterMaxDocs();
@@ -893,6 +884,11 @@ public abstract class LuceneTestCase extends Assert {
   /** create a new index writer config with random defaults, using MockAnalyzer */
   public static RandomIndexWriter newRandomIndexWriter(Directory dir) throws IOException {
     return new RandomIndexWriter(random(), dir, newIndexWriterConfig());
+  }
+
+  /** create a new index writer config with random defaults, using MockAnalyzer */
+  public static RandomIndexWriter newRandomIndexWriter(Directory dir, Analyzer a) throws IOException {
+    return new RandomIndexWriter(random(), dir, newIndexWriterConfig(a));
   }
 
   /** create a new index writer config with random defaults */
@@ -1379,112 +1375,7 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
   
-  public static Field newStringField(String name, String value, Store stored) {
-    return newField(random(), name, value, stored == Store.YES ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED);
-  }
-
-  public static Field newTextField(String name, String value, Store stored) {
-    return newField(random(), name, value, stored == Store.YES ? TextField.TYPE_STORED : TextField.TYPE_NOT_STORED);
-  }
-  
-  public static Field newStringField(Random random, String name, String value, Store stored) {
-    return newField(random, name, value, stored == Store.YES ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED);
-  }
-  
-  public static Field newTextField(Random random, String name, String value, Store stored) {
-    return newField(random, name, value, stored == Store.YES ? TextField.TYPE_STORED : TextField.TYPE_NOT_STORED);
-  }
-  
-  public static Field newField(String name, String value, FieldType type) {
-    return newField(random(), name, value, type);
-  }
-
-  /** Returns a FieldType derived from newType but whose
-   *  term vector options match the old type */
-  private static FieldType mergeTermVectorOptions(FieldType newType, FieldType oldType) {
-    if (newType.indexOptions() != IndexOptions.NONE && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
-      newType = new FieldType(newType);
-      newType.setStoreTermVectors(oldType.storeTermVectors());
-      newType.setStoreTermVectorPositions(oldType.storeTermVectorPositions());
-      newType.setStoreTermVectorOffsets(oldType.storeTermVectorOffsets());
-      newType.setStoreTermVectorPayloads(oldType.storeTermVectorPayloads());
-      newType.freeze();
-    }
-
-    return newType;
-  }
-
-  // nocommit can we use FieldTypes here?
-
-  // TODO: if we can pull out the "make term vector options
-  // consistent across all instances of the same field name"
-  // write-once schema sort of helper class then we can
-  // remove the sync here.  We can also fold the random
-  // "enable norms" (now commented out, below) into that:
-  public synchronized static Field newField(Random random, String name, String value, FieldType type) {
-
-    // Defeat any consumers that illegally rely on intern'd
-    // strings (we removed this from Lucene a while back):
-    name = new String(name);
-
-    FieldType prevType = fieldToType.get(name);
-
-    if (usually(random) || type.indexOptions() == IndexOptions.NONE || prevType != null) {
-      // most of the time, don't modify the params
-      if (prevType == null) {
-        fieldToType.put(name, new FieldType(type));
-      } else {
-        type = mergeTermVectorOptions(type, prevType);
-      }
-
-      return new Field(name, value, type);
-    }
-
-    // TODO: once all core & test codecs can index
-    // offsets, sometimes randomly turn on offsets if we are
-    // already indexing positions...
-
-    FieldType newType = new FieldType(type);
-    if (!newType.stored() && random.nextBoolean()) {
-      newType.setStored(true); // randomly store it
-    }
-
-    // Randomly turn on term vector options, but always do
-    // so consistently for the same field name:
-    if (!newType.storeTermVectors() && random.nextBoolean()) {
-      newType.setStoreTermVectors(true);
-      if (!newType.storeTermVectorPositions()) {
-        newType.setStoreTermVectorPositions(random.nextBoolean());
-        
-        if (newType.storeTermVectorPositions()) {
-          if (!newType.storeTermVectorPayloads()) {
-            newType.setStoreTermVectorPayloads(random.nextBoolean());
-          }
-        }
-      }
-      
-      if (!newType.storeTermVectorOffsets()) {
-        newType.setStoreTermVectorOffsets(random.nextBoolean());
-      }
-
-      if (VERBOSE) {
-        System.out.println("NOTE: LuceneTestCase: upgrade name=" + name + " type=" + newType);
-      }
-    }
-    newType.freeze();
-    fieldToType.put(name, newType);
-
-    // TODO: we need to do this, but smarter, ie, most of
-    // the time we set the same value for a given field but
-    // sometimes (rarely) we change it up:
-    /*
-    if (newType.omitNorms()) {
-      newType.setOmitNorms(random.nextBoolean());
-    }
-    */
-    
-    return new Field(name, value, newType);
-  }
+  // nocommit how to randomize FieldTypes here?
 
   /** 
    * Return a random Locale from the available locales on the system.
@@ -2243,8 +2134,8 @@ public abstract class LuceneTestCase extends Assert {
   public void assertStoredFieldsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assert leftReader.maxDoc() == rightReader.maxDoc();
     for (int i = 0; i < leftReader.maxDoc(); i++) {
-      Document2 leftDoc = leftReader.document(i);
-      Document2 rightDoc = rightReader.document(i);
+      Document leftDoc = leftReader.document(i);
+      Document rightDoc = rightReader.document(i);
       
       // TODO: I think this is bogus because we don't document what the order should be
       // from these iterators, etc. I think the codec/IndexReader should be free to order this stuff

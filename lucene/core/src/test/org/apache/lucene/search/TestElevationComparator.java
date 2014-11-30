@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -123,7 +123,7 @@ public class TestElevationComparator extends LuceneTestCase {
   }
 
   private void adoc(IndexWriter w, String[] vals) throws IOException {
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     for (int i = 0; i < vals.length - 2; i += 2) {
       if (vals[i].equals("id")) {
         doc.addUniqueAtom(vals[i], new BytesRef(vals[i+1]));

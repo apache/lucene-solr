@@ -30,14 +30,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -126,7 +120,7 @@ class DocHelper {
    * Adds the fields above to a document 
    * @param doc The document to write
    */ 
-  private static void setupDoc(FieldTypes fieldTypes, Document2 doc) {
+  private static void setupDoc(FieldTypes fieldTypes, Document doc) {
 
     fieldTypes.enableTermVectors(TEXT_FIELD_2_KEY);
     fieldTypes.disableHighlighting(TEXT_FIELD_2_KEY);
@@ -256,7 +250,7 @@ class DocHelper {
   public static SegmentCommitInfo writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
         analyzer).setSimilarity(similarity == null ? IndexSearcher.getDefaultSimilarity() : similarity));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     setupDoc(writer.getFieldTypes(), doc);
     writer.addDocument(doc);
     writer.commit();
@@ -269,11 +263,11 @@ class DocHelper {
     return 14;
   }
 
-  public static int numFields(Document2 doc) {
+  public static int numFields(Document doc) {
     return doc.getFields().size();
   }
   
-  public static Document2 createDocument(IndexWriter writer, int n, String indexName, int numFields) {
+  public static Document createDocument(IndexWriter writer, int n, String indexName, int numFields) {
     StringBuilder sb = new StringBuilder();
 
     FieldTypes fieldTypes = writer.getFieldTypes();
@@ -286,7 +280,7 @@ class DocHelper {
     fieldTypes.enableTermVectorPositions("id");
     fieldTypes.enableTermVectorOffsets("id");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", Integer.toString(n));
     doc.addAtom("indexname", indexName);
     sb.append("a");

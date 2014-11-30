@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -38,7 +36,7 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
-    Document2 doc = riw.newDocument();
+    Document doc = riw.newDocument();
     doc.addLargeText("eng", new BugReproTokenStream());
     riw.addDocument(doc);
     riw.close();
@@ -52,7 +50,7 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 100; i++) {
-      Document2 doc = riw.newDocument();
+      Document doc = riw.newDocument();
       doc.addLargeText("eng", new BugReproTokenStream());
       riw.addDocument(doc);
     }

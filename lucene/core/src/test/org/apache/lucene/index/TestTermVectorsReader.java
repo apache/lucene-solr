@@ -26,13 +26,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -109,7 +104,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       }
     }
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     for(int i=0;i<testFields.length;i++) {
       // nocommit shouldn't it be testTerms[i] not ""?
       doc.addLargeText(testFields[i], "");
@@ -379,7 +374,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
 
     fieldTypes.enableTermVectors("field4");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try {
       doc.addStored("field4", "foo");
       w.addDocument(doc);

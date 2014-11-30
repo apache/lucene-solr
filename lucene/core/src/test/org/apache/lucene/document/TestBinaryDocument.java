@@ -39,7 +39,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     
     doc.addStored("binaryStored", binaryValStored.getBytes(StandardCharsets.UTF_8));
     doc.addStored("stringStored", binaryValStored);
@@ -52,7 +52,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    Document2 docFromReader = reader.document(0);
+    Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary stored field and compare it's content with the original one */
@@ -74,7 +74,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     
     doc.addStored("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes(StandardCharsets.UTF_8)));
     doc.addStored("stringCompressed", CompressionTools.compressString(binaryValCompressed));
@@ -84,7 +84,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    Document2 docFromReader = reader.document(0);
+    Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary compressed field and compare it's content with the original one */

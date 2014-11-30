@@ -17,12 +17,10 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -32,18 +30,13 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.HashMap;
 
 public class AllGroupsCollectorTest extends LuceneTestCase {
 
   public void testTotalGroupCount() throws Exception {
 
     final String groupField = "author";
-    FieldType customType = new FieldType();
-    customType.setStored(true);
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
@@ -52,52 +45,52 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
-    Document doc = new Document();
+    Document doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
-    doc.add(new TextField("content", "random text", Field.Store.YES));
-    doc.add(new Field("id", "1", customType));
+    doc.addLargeText("content", "random text");
+    doc.addStored("id", "1");
     w.addDocument(doc);
 
     // 1
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
-    doc.add(new TextField("content", "some more random text blob", Field.Store.YES));
-    doc.add(new Field("id", "2", customType));
+    doc.addLargeText("content", "some more random text blob");
+    doc.addStored("id", "2");
     w.addDocument(doc);
 
     // 2
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
-    doc.add(new TextField("content", "some more random textual data", Field.Store.YES));
-    doc.add(new Field("id", "3", customType));
+    doc.addLargeText("content", "some more random textual data");
+    doc.addStored("id", "3");
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author2");
-    doc.add(new TextField("content", "some random text", Field.Store.YES));
-    doc.add(new Field("id", "4", customType));
+    doc.addLargeText("content", "some random text");
+    doc.addStored("id", "4");
     w.addDocument(doc);
 
     // 4
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author3");
-    doc.add(new TextField("content", "some more random text", Field.Store.YES));
-    doc.add(new Field("id", "5", customType));
+    doc.addLargeText("content", "some more random text");
+    doc.addStored("id", "5");
     w.addDocument(doc);
 
     // 5
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author3");
-    doc.add(new TextField("content", "random blob", Field.Store.YES));
-    doc.add(new Field("id", "6", customType));
+    doc.addLargeText("content", "random blob");
+    doc.addStored("id", "6");
     w.addDocument(doc);
 
     // 6 -- no author field
-    doc = new Document();
-    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
-    doc.add(new Field("id", "6", customType));
+    doc = w.newDocument();
+    doc.addLargeText("content", "random word stuck in alot of other text");
+    doc.addStored("id", "6");
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
@@ -120,8 +113,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
   }
 
   private void addGroupField(Document doc, String groupField, String value) {
-    doc.add(new TextField(groupField, value, Field.Store.YES));
-    doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
+    doc.addAtom(groupField, value);
   }
 
   private AbstractAllGroupsCollector<?> createRandomCollector(String groupField) {

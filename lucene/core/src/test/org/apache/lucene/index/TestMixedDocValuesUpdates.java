@@ -8,19 +8,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -78,7 +72,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int numDocs = atLeast(5);
 //      System.out.println("[" + Thread.currentThread().getName() + "]: round=" + i + ", numDocs=" + numDocs);
       for (int j = 0; j < numDocs; j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addAtom("id", "doc-" + docID);
         doc.addAtom("key", "all"); // update key
         // add all fields with their current value
@@ -173,7 +167,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     }
 
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "doc" + i);
       double group = random().nextDouble();
       String g;
@@ -215,7 +209,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
               final String f = "f" + field;
               final String cf = "cf" + field;
               long updValue = random.nextInt();
-              Document2 update = writer.newDocument();
+              Document update = writer.newDocument();
               update.disableExistsField();
               update.addBinary(f, TestBinaryDocValuesUpdates.toBytes(updValue));
               update.addLong(cf, updValue*2);
@@ -312,7 +306,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
 
     final int numDocs = atLeast(10);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "doc" + i);
       long value = random().nextInt();
       doc.addBinary("f", TestBinaryDocValuesUpdates.toBytes(value));
@@ -325,7 +319,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
-      Document2 update = writer.newDocument();
+      Document update = writer.newDocument();
       update.disableExistsField();
       update.addBinary("f", TestBinaryDocValuesUpdates.toBytes(value));
       update.addLong("cf", value*2);
@@ -376,7 +370,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     
     // build a large index with many BDV fields and update terms
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       int numUpdateTerms = TestUtil.nextInt(random, 1, numTerms / 10);
       for (int j = 0; j < numUpdateTerms; j++) {
         doc.addAtom("upd", RandomPicks.randomFrom(random, updateTerms));
@@ -400,7 +394,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       int field = random.nextInt(numBinaryFields);
       Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
       long value = random.nextInt();
-      Document2 update = writer.newDocument();
+      Document update = writer.newDocument();
       update.disableExistsField();
       update.addBinary("f"+field, TestBinaryDocValuesUpdates.toBytes(value));
       update.addLong("cf"+field, value*2);

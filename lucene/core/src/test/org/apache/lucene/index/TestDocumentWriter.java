@@ -24,12 +24,8 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
@@ -63,7 +59,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     //After adding the document, we should be able to read it back in
     SegmentReader reader = new SegmentReader(fieldTypes, info, newIOContext(random()));
     assertTrue(reader != null);
-    Document2 doc = reader.document(0);
+    Document doc = reader.document(0);
     assertTrue(doc != null);
 
     //System.out.println("Document: " + doc);
@@ -100,23 +96,13 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testPositionIncrementGap() throws IOException {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      public TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
-      }
-
-      @Override
-      public int getPositionIncrementGap(String fieldName) {
-        return 500;
-      }
-    };
-
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = writer.getFieldTypes();
 
     fieldTypes.setMultiValued("repeated");
-    Document2 doc = writer.newDocument();
+    fieldTypes.setIndexOptions("repeated", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    fieldTypes.setAnalyzerPositionGap("repeated", 500);
+    Document doc = writer.newDocument();
     doc.addLargeText("repeated", "repeated one");
     doc.addLargeText("repeated", "repeated two");
 
@@ -125,7 +111,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     
-    SegmentReader reader = new SegmentReader(FieldTypes.getFieldTypes(dir, analyzer),
+    SegmentReader reader = new SegmentReader(FieldTypes.getFieldTypes(dir, new MockAnalyzer(random())),
                                              info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
@@ -191,7 +177,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("f1", "a 5 a a");
 
     writer.addDocument(doc);
@@ -217,7 +203,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testPreAnalyzedField() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
 
     doc.addLargeText("preanalyzed", new TokenStream() {
       private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
@@ -277,7 +263,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     fieldTypes.setMultiValued("f1");
     fieldTypes.setMultiValued("f2");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("f1", "v1");
     doc.addStored("f1", "v2");
 

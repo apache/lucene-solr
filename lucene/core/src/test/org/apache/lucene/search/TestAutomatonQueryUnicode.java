@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -60,7 +60,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
         "\uFFFD\uD866\uDF05",
         "\uFFFD\uFFFD" }) {
 
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(FN, body);
       doc.addShortText("title", "some title");
       doc.addShortText("footer", "a footer");

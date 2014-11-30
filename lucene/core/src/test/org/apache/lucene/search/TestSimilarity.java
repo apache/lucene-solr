@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -56,10 +56,10 @@ public class TestSimilarity extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setSimilarity(new SimpleSimilarity()));
     
-    Document2 d1 = writer.newDocument();
+    Document d1 = writer.newDocument();
     d1.addLargeText("field", "a c");
 
-    Document2 d2 = writer.newDocument();
+    Document d2 = writer.newDocument();
     d2.addLargeText("field", "a b c");
     
     writer.addDocument(d1);

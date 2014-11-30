@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -41,11 +41,11 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
   public void testPhrasePrefix() throws IOException {
     Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
-    Document2 doc1 = writer.newDocument();
-    Document2 doc2 = writer.newDocument();
-    Document2 doc3 = writer.newDocument();
-    Document2 doc4 = writer.newDocument();
-    Document2 doc5 = writer.newDocument();
+    Document doc1 = writer.newDocument();
+    Document doc2 = writer.newDocument();
+    Document doc3 = writer.newDocument();
+    Document doc4 = writer.newDocument();
+    Document doc5 = writer.newDocument();
     doc1.addLargeText("body", "blueberry pie");
     doc2.addLargeText("body", "blueberry strudel");
     doc3.addLargeText("body", "blueberry pizza");

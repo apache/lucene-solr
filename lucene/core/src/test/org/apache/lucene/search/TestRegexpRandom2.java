@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -68,7 +68,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
       String s = TestUtil.randomUnicodeString(random());
       terms.add(s);
 
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom(fieldName, s);
       writer.addDocument(doc);
     }

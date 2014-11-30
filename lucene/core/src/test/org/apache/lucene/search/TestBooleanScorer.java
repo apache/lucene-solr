@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -43,7 +43,7 @@ public class TestBooleanScorer extends LuceneTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     for (int i = 0; i < values.length; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom(FIELD, values[i]);
       writer.addDocument(doc);
     }
@@ -128,7 +128,7 @@ public class TestBooleanScorer extends LuceneTestCase {
   public void testMoreThan32ProhibitedClauses() throws Exception {
     final Directory d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33");
     w.addDocument(doc);
     doc = w.newDocument();
@@ -230,7 +230,7 @@ public class TestBooleanScorer extends LuceneTestCase {
   public void testEmbeddedBooleanScorer() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "doctors are people who prescribe medicines of which they know little, to cure diseases of which they know less, in human beings of whom they know nothing");
     w.addDocument(doc);
     IndexReader r = w.getReader();

@@ -27,7 +27,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetField;
@@ -183,8 +182,8 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     return new IndexAndTaxonomyRevision(publishIndexWriter, publishTaxoWriter);
   }
   
-  private Document2 newDocument(TaxonomyWriter taxoWriter, int id) throws IOException {
-    Document2 doc = publishIndexWriter.newDocument();
+  private Document newDocument(TaxonomyWriter taxoWriter, int id) throws IOException {
+    Document doc = publishIndexWriter.newDocument();
     doc.add(new FacetField("A", Integer.toString(id, 16)));
     return config.build(taxoWriter, doc);
   }

@@ -24,9 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -366,7 +364,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
                 if (failed.get()) break;
                 for(int j=0;j<10;j++) {
                   final String s = finalI + "_" + String.valueOf(count++);
-                  Document2 doc = w.newDocument();
+                  Document doc = w.newDocument();
                   doc.addAtom("f", s);
                   w.addDocument(doc);
                   w.commit();

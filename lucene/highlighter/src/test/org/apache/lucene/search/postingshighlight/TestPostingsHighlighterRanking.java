@@ -24,11 +24,6 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -63,13 +58,6 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
-    Document document = new Document();
-    Field id = new StringField("id", "", Field.Store.NO);
-    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
-    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    Field body = new Field("body", "", offsetsType);
-    document.add(id);
-    document.add(body);
     
     for (int i = 0; i < numDocs; i++) {
       StringBuilder bodyText = new StringBuilder();
@@ -77,8 +65,9 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
       for (int j = 0; j < numSentences; j++) {
         bodyText.append(newSentence(random(), maxSentenceLength));
       }
-      body.setStringValue(bodyText.toString());
-      id.setStringValue(Integer.toString(i));
+      Document document = iw.newDocument();
+      document.addLargeText("body", bodyText.toString());
+      document.addAtom("id", Integer.toString(i));
       iw.addDocument(document);
     }
     
@@ -251,14 +240,10 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
-    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
-    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    Field body = new Field("body", "", offsetsType);
-    Document doc = new Document();
-    doc.add(body);
-    
-    body.setStringValue("This is a test.  This test is a better test but the sentence is excruiatingly long, " + 
-                        "you have no idea how painful it was for me to type this long sentence into my IDE.");
+    Document doc = iw.newDocument();
+    doc.addLargeText("body",
+                    "This is a test.  This test is a better test but the sentence is excruiatingly long, " + 
+                    "you have no idea how painful it was for me to type this long sentence into my IDE.");
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
@@ -289,13 +274,9 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
-    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
-    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    Field body = new Field("body", "", offsetsType);
-    Document doc = new Document();
-    doc.add(body);
-    
-    body.setStringValue("This has only foo foo. " + 
+    Document doc = iw.newDocument();
+    doc.addLargeText("body",
+                     "This has only foo foo. " + 
                         "On the other hand this sentence contains both foo and bar. " + 
                         "This has only bar bar bar bar bar bar bar bar bar bar bar bar.");
     iw.addDocument(doc);

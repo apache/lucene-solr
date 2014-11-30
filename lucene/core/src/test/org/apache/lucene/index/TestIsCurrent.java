@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.Test;
@@ -41,7 +39,7 @@ public class TestIsCurrent extends LuceneTestCase {
     writer = new RandomIndexWriter(random(), directory);
 
     // write document
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("UUID", "1");
     writer.addDocument(doc);
     writer.commit();

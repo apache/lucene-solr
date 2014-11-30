@@ -22,11 +22,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -117,7 +114,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   @Override
-  public void addFields(Document2 doc, Shape shape) {
+  public void addFields(Document doc, Shape shape) {
     double distErr = SpatialArgs.calcDistanceFromErrPct(shape, distErrPct, ctx);
     addFields(doc, shape, distErr);
   }
@@ -129,7 +126,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
    * simply/aggregate sets of complete leaves in a cell to its parent, resulting in ~20-25%
    * fewer cells. It will likely be removed in the future.
    */
-  public void addFields(Document2 doc, Shape shape, double distErr) {
+  public void addFields(Document doc, Shape shape, double distErr) {
     int detailLevel = grid.getLevelForDistance(distErr);
     FieldTypes fieldTypes = doc.getFieldTypes();
     fieldTypes.disableNorms(getFieldName());

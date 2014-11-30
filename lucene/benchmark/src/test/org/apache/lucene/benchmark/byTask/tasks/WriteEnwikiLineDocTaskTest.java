@@ -32,10 +32,7 @@ import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 
 /** Tests the functionality of {@link WriteEnwikiLineDocTask}. */
@@ -49,9 +46,9 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
     AtomicInteger flip = new AtomicInteger(0);
     
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
+    public Document makeDocument(IndexWriter w) throws Exception {
       boolean isCategory = (flip.incrementAndGet() % 2 == 0); 
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom(BODY_FIELD, "body text");
       doc.addAtom(TITLE_FIELD, isCategory ? "Category:title text" : "title text");
       doc.addAtom(DATE_FIELD, "date text");

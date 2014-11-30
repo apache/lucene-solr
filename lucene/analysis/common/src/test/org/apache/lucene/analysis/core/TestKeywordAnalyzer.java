@@ -23,9 +23,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -51,9 +48,9 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new SimpleAnalyzer()));
 
-    Document doc = new Document();
-    doc.add(new StringField("partnum", "Q36", Field.Store.YES));
-    doc.add(new TextField("description", "Illidium Space Modulator", Field.Store.YES));
+    Document doc = writer.newDocument();
+    doc.addAtom("partnum", "Q36");
+    doc.addLargeText("description", "Illidium Space Modulator");
     writer.addDocument(doc);
 
     writer.close();
@@ -87,11 +84,11 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new KeywordAnalyzer()));
-    Document doc = new Document();
-    doc.add(new TextField("partnum", "Q36", Field.Store.YES));
+    Document doc = writer.newDocument();
+    doc.addLargeText("partnum", "Q36");
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new TextField("partnum", "Q37", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("partnum", "Q37");
     writer.addDocument(doc);
     writer.close();
 

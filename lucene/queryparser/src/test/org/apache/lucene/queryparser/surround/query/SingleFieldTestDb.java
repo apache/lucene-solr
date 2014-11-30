@@ -19,15 +19,13 @@ package org.apache.lucene.queryparser.surround.query;
 
 import java.util.Random;
 
-import org.apache.lucene.document.Field;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 
 public class SingleFieldTestDb {
   private Directory db;
@@ -41,8 +39,8 @@ public class SingleFieldTestDb {
       fieldName = fName;
       IndexWriter writer = new IndexWriter(db, new IndexWriterConfig(new MockAnalyzer(random)));
       for (int j = 0; j < docs.length; j++) {
-        Document d = new Document();
-        d.add(new TextField(fieldName, docs[j], Field.Store.NO));
+        Document d = writer.newDocument();
+        d.addLargeText(fieldName, docs[j]);
         writer.addDocument(d);
       }
       writer.close();

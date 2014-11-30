@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -287,8 +286,8 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     Directory ramDir = newDirectory();
     IndexWriter iw =  new IndexWriter(ramDir, newIndexWriterConfig(analyzer));
-    Document doc = new Document();
-    doc.add(newTextField("body", "blah the footest blah", Field.Store.NO));
+    Document doc = iw.newDocument();
+    doc.addLargeText("body", "blah the footest blah");
     iw.addDocument(doc);
     iw.close();
     

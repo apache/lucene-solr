@@ -2,20 +2,12 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -124,8 +116,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   }
 
   private static void addDoc(RandomIndexWriter iw, int i) throws Exception {
-    Document2 d = iw.newDocument();
-    Field f;
+    Document d = iw.newDocument();
     int scoreAndID = i + 1;
 
     d.addAtom(ID_FIELD, id2String(scoreAndID)); // for debug purposes

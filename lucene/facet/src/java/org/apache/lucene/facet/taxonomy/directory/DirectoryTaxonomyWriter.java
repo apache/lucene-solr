@@ -15,10 +15,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -31,8 +28,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -101,8 +98,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private long indexEpoch;
 
   private SinglePositionTokenStream parentStream = new SinglePositionTokenStream(Consts.PAYLOAD_PARENT);
-  private Field parentStreamField;
-  private Field fullPathField;
   private int cacheMissesUntilFill = 11;
   private boolean shouldFillCache = true;
   
@@ -189,12 +184,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (openMode == OpenMode.CREATE) {
       ++indexEpoch;
     }
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.disableNorms(Consts.FIELD_PAYLOADS);
+    fieldTypes.disableStored(Consts.FIELD_PAYLOADS);
     
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setOmitNorms(true);
-    parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
-    fullPathField = new StringField(Consts.FULL, "", Field.Store.YES);
-
     nextID = indexWriter.maxDoc();
 
     if (cache == null) {
@@ -484,12 +477,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // we write here (e.g., to write parent+2), and need to do a workaround
     // in the reader (which knows that anyway only category 0 has a parent
     // -1).    
-    parentStream.set(Math.max(parent + 1, 1));
-    Document d = new Document();
-    d.add(parentStreamField);
 
-    fullPathField.setStringValue(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
-    d.add(fullPathField);
+    Document d = indexWriter.newDocument();
+    parentStream.set(Math.max(parent + 1, 1));
+    d.addLargeText(Consts.FIELD_PAYLOADS, parentStream);
+    d.addAtom(Consts.FULL, FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
 
     // Note that we do no pass an Analyzer here because the fields that are
     // added to the Document are untokenized or contains their own TokenStream.

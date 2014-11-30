@@ -21,11 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -63,8 +59,8 @@ public class TestConjunctions extends LuceneTestCase {
     searcher.setSimilarity(new TFSimilarity());
   }
   
-  static Document2 doc(RandomIndexWriter writer, String v1, String v2) {
-    Document2 doc = writer.newDocument();
+  static Document doc(RandomIndexWriter writer, String v1, String v2) {
+    Document doc = writer.newDocument();
     doc.addAtom(F1, v1);
     doc.addLargeText(F2, v2);
     return doc;

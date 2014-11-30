@@ -25,12 +25,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -156,7 +152,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     fieldTypes.enableTermVectorOffsets(F);
     fieldTypes.enableTermVectorPositions(F);
     fieldTypes.disableStored(F);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText(F, "aaa");
     writer.addDocument( doc );
     writer.close();
@@ -250,10 +246,10 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     int numFields = 2 + random().nextInt(5);
     int numTerms = 2 + random().nextInt(3);
     List<Doc> docs = new ArrayList<>(numDocs);
-    List<Document2> documents = new ArrayList<>(numDocs);
+    List<Document> documents = new ArrayList<>(numDocs);
     Map<String, Set<Integer>> valueToDocId = new HashMap<>();
     for (int i = 0; i < numDocs; i++) {
-      Document2 document = writer.newDocument();
+      Document document = writer.newDocument();
       String[][] fields = new String[numFields][numTerms];
       for (int j = 0; j < numFields; j++) {
         String[] fieldValues = new String[numTerms];

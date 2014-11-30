@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -62,7 +60,7 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
     BytesRef data = new BytesRef(bytes);
     
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       bytes[0] = (byte)(i >> 24);
       bytes[1] = (byte)(i >> 16);
       bytes[2] = (byte)(i >> 8);
@@ -128,7 +126,7 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
       encoder.reset(bytes);
       encoder.writeVInt(i % 65535); // 1, 2, or 3 bytes
       data.length = encoder.getPosition();
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addBinary("dv", data);
       w.addDocument(doc);
       if (i % 100000 == 0) {

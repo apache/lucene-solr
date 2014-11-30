@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReader;
@@ -65,7 +65,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     fieldTypes.setMultiValued("dv");
     final int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       
       addSome(doc, alwaysTerms);
       
@@ -103,7 +103,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     dir = null;
   }
   
-  private static void addSome(Document2 doc, String values[]) {
+  private static void addSome(Document doc, String values[]) {
     List<String> list = Arrays.asList(values);
     Collections.shuffle(list, random());
     int howMany = TestUtil.nextInt(random(), 1, list.size());

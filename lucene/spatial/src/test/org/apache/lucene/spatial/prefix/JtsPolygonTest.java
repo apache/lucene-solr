@@ -20,11 +20,7 @@ package org.apache.lucene.spatial.prefix;
 import java.text.ParseException;
 import java.util.HashMap;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -92,7 +88,7 @@ public class JtsPolygonTest extends StrategyTestCase {
     
     SpatialPrefixTree trie = new QuadPrefixTree(ctx, 12);
     TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");
-    Document2 doc = indexWriter.newDocument();
+    Document doc = indexWriter.newDocument();
     doc.addAtom("id", "1");
     strategy.addFields(doc, area, 0.025);
     addDocument(doc);

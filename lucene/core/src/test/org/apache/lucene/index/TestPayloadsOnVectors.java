@@ -26,12 +26,8 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -52,7 +48,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
       fieldTypes.enableTermVectorOffsets("field");
     }
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
     doc.addLargeText("field", ts);
@@ -91,7 +87,6 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorPositions("field");
@@ -102,7 +97,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     fieldTypes.setMultiValued("field");
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", ts);
 
     Token withPayload = new Token("withPayload", 0, 11);

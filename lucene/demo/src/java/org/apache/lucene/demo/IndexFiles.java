@@ -32,11 +32,7 @@ import java.util.Date;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -168,7 +164,7 @@ public class IndexFiles {
   static void indexDoc(IndexWriter writer, Path file, long lastModified) throws IOException {
     try (InputStream stream = Files.newInputStream(file)) {
       // make a new, empty document
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       
       // Add the path of the file as a field named "path".  Use a
       // field that is indexed (i.e. searchable), but don't tokenize 

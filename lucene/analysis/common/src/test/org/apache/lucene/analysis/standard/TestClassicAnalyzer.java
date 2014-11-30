@@ -1,11 +1,12 @@
 package org.apache.lucene.analysis.standard;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Random;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.standard.ClassicAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -16,10 +17,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Random;
 
 
 /**
@@ -257,17 +254,17 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     final String bigTerm = new String(chars);
 
     // This produces a too-long term:
     String contents = "abc xyz x" + bigTerm + " another term";
-    doc.add(new TextField("content", contents, Field.Store.NO));
+    doc.addLargeText("content", contents);
     writer.addDocument(doc);
 
     // Make sure we can add another normal document
-    doc = new Document();
-    doc.add(new TextField("content", "abc bbb ccc", Field.Store.NO));
+    doc = writer.newDocument();
+    doc.addLargeText("content", "abc bbb ccc");
     writer.addDocument(doc);
     writer.close();
 
@@ -297,11 +294,11 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     // Make sure we can add a document with exactly the
     // maximum length term, and search on that term:
-    doc = new Document();
-    doc.add(new TextField("content", bigTerm, Field.Store.NO));
     ClassicAnalyzer sa = new ClassicAnalyzer();
     sa.setMaxTokenLength(100000);
-    writer  = new IndexWriter(dir, new IndexWriterConfig(sa));
+    writer = new IndexWriter(dir, new IndexWriterConfig(sa));
+    doc = writer.newDocument();
+    doc.addLargeText("content", bigTerm);
     writer.addDocument(doc);
     writer.close();
     reader = DirectoryReader.open(dir);

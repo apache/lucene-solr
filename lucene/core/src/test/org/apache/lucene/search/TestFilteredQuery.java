@@ -22,9 +22,7 @@ import java.util.BitSet;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -65,7 +63,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter (random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "one two three four five");
     doc.addAtom("sorter", new BytesRef("b"));
     writer.addDocument (doc);
@@ -411,7 +409,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     int numDocs = atLeast(50);
     int totalDocsWithZero = 0;
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       int num = random().nextInt(5);
       if (num == 0) {
         totalDocsWithZero++;
@@ -495,7 +493,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     int numDocs = atLeast(50);
     int totalDocsWithZero = 0;
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       int num = random().nextInt(10);
       if (num == 0) {
         totalDocsWithZero++;

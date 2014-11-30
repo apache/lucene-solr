@@ -28,10 +28,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -57,27 +54,22 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
   static final String PAYLOAD_FIELD_NAME = "p1";
   static final String CONTEXTS_FIELD_NAME = "c1";
 
-  private Map<String, Document> generateIndexDocuments(int ndocs) {
+  private Map<String, Document> generateIndexDocuments(RandomIndexWriter writer, int ndocs) {
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued(CONTEXTS_FIELD_NAME);
     Map<String, Document> docs = new HashMap<>();
     for(int i = 0; i < ndocs ; i++) {
-      Field field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
-      Field payload = new StoredField(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
-      Field weight1 = new NumericDocValuesField(WEIGHT_FIELD_NAME_1, 10 + i);
-      Field weight2 = new NumericDocValuesField(WEIGHT_FIELD_NAME_2, 20 + i);
-      Field weight3 = new NumericDocValuesField(WEIGHT_FIELD_NAME_3, 30 + i);
-      Field contexts = new StoredField(CONTEXTS_FIELD_NAME, new BytesRef("ctx_"  + i + "_0"));
-      Document doc = new Document();
-      doc.add(field);
-      doc.add(payload);
-      doc.add(weight1);
-      doc.add(weight2);
-      doc.add(weight3);
-      doc.add(contexts);
+      Document doc = writer.newDocument();
+      doc.addLargeText(FIELD_NAME, "field_" + i);
+      doc.addStored(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
+      doc.addInt(WEIGHT_FIELD_NAME_1, 10 + i);
+      doc.addInt(WEIGHT_FIELD_NAME_2, 20 + i);
+      doc.addInt(WEIGHT_FIELD_NAME_3, 30 + i);
+      doc.addStored(CONTEXTS_FIELD_NAME, new BytesRef("ctx_"  + i + "_0"));
       for(int j = 1; j < atLeast(3); j++) {
-        contexts.setBytesValue(new BytesRef("ctx_" + i + "_" + j));
-        doc.add(contexts);
+        doc.addStored(CONTEXTS_FIELD_NAME, new BytesRef("ctx_" + i + "_" + j));
       }
-      docs.put(field.stringValue(), doc);
+      docs.put("field_" + i, doc);
     }
     return docs;
   }
@@ -109,7 +101,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
+    Map<String, Document> docs = generateIndexDocuments(writer, atLeast(100));
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -126,7 +118,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       assertEquals(inputIterator.weight(), (w1 + w2 + w3));
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
@@ -141,7 +133,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
+    Map<String, Document> docs = generateIndexDocuments(writer, atLeast(100));
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -158,7 +150,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       assertEquals(inputIterator.weight(), (w1 + w2 + w3));
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
       Set<BytesRef> originalCtxs = new HashSet<>();
@@ -178,7 +170,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
+    Map<String, Document> docs = generateIndexDocuments(writer, atLeast(100));
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -195,7 +187,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       long w3 = doc.getField(WEIGHT_FIELD_NAME_3).numericValue().longValue();
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       assertEquals(inputIterator.weight(), (w1 + w2 + w3));
       assertEquals(inputIterator.payload(), null);
     }
@@ -210,12 +202,12 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
+    Map<String, Document> docs = generateIndexDocuments(writer, atLeast(100));
     Random rand = random();
     List<String> termsToDel = new ArrayList<>();
     for(Document doc : docs.values()) {
       if(rand.nextBoolean() && termsToDel.size() < docs.size()-1) {
-        termsToDel.add(doc.get(FIELD_NAME));
+        termsToDel.add(doc.getString(FIELD_NAME));
       }
       writer.addDocument(doc);
     }
@@ -248,7 +240,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       assertEquals(inputIterator.weight(), w2+w1);
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }
@@ -264,7 +256,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map<String, Document> docs = generateIndexDocuments(atLeast(100));
+    Map<String, Document> docs = generateIndexDocuments(writer, atLeast(100));
     for(Document doc: docs.values()) {
       writer.addDocument(doc);
     }
@@ -277,7 +269,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       assertEquals(inputIterator.weight(), 10);
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
     }

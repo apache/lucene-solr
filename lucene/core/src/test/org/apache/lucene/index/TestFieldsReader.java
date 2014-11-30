@@ -23,13 +23,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Document2StoredFieldVisitor;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document2StoredFieldVisitor;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -42,7 +38,6 @@ import org.junit.BeforeClass;
 
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
-  private static Document testDoc;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -59,7 +54,7 @@ public class TestFieldsReader extends LuceneTestCase {
   public void test() throws IOException {
     assertTrue(dir != null);
     IndexReader reader = DirectoryReader.open(dir);
-    Document2 doc = reader.document(0);
+    Document doc = reader.document(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
 

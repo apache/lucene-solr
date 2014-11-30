@@ -34,14 +34,8 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 
 /**
@@ -138,11 +132,11 @@ public class DocMaker implements Closeable {
   // create a doc
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
-  private Document2 createDocument(IndexWriter w, DocData docData, int size, int cnt) throws UnsupportedEncodingException {
+  private Document createDocument(IndexWriter w, DocData docData, int size, int cnt) throws UnsupportedEncodingException {
     applySchema(w);
 
     final DocState ds = getDocState();
-    final Document2 doc = w.newDocument();
+    final Document doc = w.newDocument();
     
     int id;
     if (r != null) {
@@ -285,10 +279,10 @@ public class DocMaker implements Closeable {
    * <code>reuseFields</code> was set to true, it will reuse {@link Document}
    * and {@link Field} instances.
    */
-  public Document2 makeDocument(IndexWriter w) throws Exception {
+  public Document makeDocument(IndexWriter w) throws Exception {
     resetLeftovers();
     DocData docData = source.getNextDocData(getDocState().docData);
-    Document2 doc = createDocument(w, docData, 0, -1);
+    Document doc = createDocument(w, docData, 0, -1);
     return doc;
   }
 
@@ -296,7 +290,7 @@ public class DocMaker implements Closeable {
    * Same as {@link #makeDocument()}, only this method creates a document of the
    * given size input by <code>size</code>.
    */
-  public Document2 makeDocument(IndexWriter w, int size) throws Exception {
+  public Document makeDocument(IndexWriter w, int size) throws Exception {
     LeftOver lvr = leftover.get();
     if (lvr == null || lvr.docdata == null || lvr.docdata.getBody() == null
         || lvr.docdata.getBody().length() == 0) {
@@ -311,7 +305,7 @@ public class DocMaker implements Closeable {
       cnt = 0;
       dd.setBody(dd2.getBody() + dd.getBody());
     }
-    Document2 doc = createDocument(w, dd, size, cnt);
+    Document doc = createDocument(w, dd, size, cnt);
     if (dd.getBody() == null || dd.getBody().length() == 0) {
       resetLeftovers();
     } else {

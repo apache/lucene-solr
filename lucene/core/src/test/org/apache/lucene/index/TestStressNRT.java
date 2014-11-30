@@ -27,10 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -82,9 +79,6 @@ public class TestStressNRT extends LuceneTestCase {
 
     final int nReadThreads = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
     initModel(ndocs);
-
-    final FieldType storedOnlyType = new FieldType();
-    storedOnlyType.setStored(true);
 
     if (VERBOSE) {
       System.out.println("\n");
@@ -232,7 +226,7 @@ public class TestStressNRT extends LuceneTestCase {
 
                     // add tombstone first
                     if (tombstones) {
-                      Document2 d = writer.newDocument();
+                      Document d = writer.newDocument();
                       d.addAtom("id", "-"+Integer.toString(id));
                       d.addStored(field, Long.toString(nextVal));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
@@ -248,7 +242,7 @@ public class TestStressNRT extends LuceneTestCase {
 
                     // add tombstone first
                     if (tombstones) {
-                      Document2 d = writer.newDocument();
+                      Document d = writer.newDocument();
                       d.addAtom("id", "-"+Integer.toString(id));
                       d.addStored(field, Long.toString(nextVal));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
@@ -261,7 +255,7 @@ public class TestStressNRT extends LuceneTestCase {
                     model.put(id, -nextVal);
                   } else {
                     // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
-                    Document2 d = writer.newDocument();
+                    Document d = writer.newDocument();
                     d.addAtom("id", Integer.toString(id));
                     d.addStored(field, Long.toString(nextVal));
                     if (VERBOSE) {
@@ -357,12 +351,12 @@ public class TestStressNRT extends LuceneTestCase {
                 if (results.totalHits != 1) {
                   System.out.println("FAIL: hits id:" + id + " val=" + val);
                   for(ScoreDoc sd : results.scoreDocs) {
-                    final Document2 doc = r.document(sd.doc);
+                    final Document doc = r.document(sd.doc);
                     System.out.println("  docID=" + sd.doc + " id:" + doc.get("id") + " foundVal=" + doc.getString(field));
                   }
                   fail("id=" + id + " reader=" + r + " totalHits=" + results.totalHits);
                 }
-                Document2 doc = searcher.doc(results.scoreDocs[0].doc);
+                Document doc = searcher.doc(results.scoreDocs[0].doc);
                 long foundVal = Long.parseLong(doc.getString(field));
                 if (foundVal < Math.abs(val)) {
                   fail("foundVal=" + foundVal + " val=" + val + " id=" + id + " reader=" + r);

@@ -22,9 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -56,7 +55,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     config.setMultiValued("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
     doc.add(new SortedSetDocValuesFacetField("a", "zoo"));
@@ -102,21 +101,23 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("a");
 
     FacetsConfig config = new FacetsConfig();
 
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo"));
     writer.addDocument(config.build(doc));
 
     IndexReader r = writer.getReader();
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(r);
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "bar"));
     writer.addDocument(config.build(doc));
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "baz"));
     writer.addDocument(config.build(doc));
 
@@ -144,10 +145,14 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Directory dir = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("a");
+    fieldTypes.setMultiValued("b");
+    fieldTypes.setMultiValued("c");
 
     FacetsConfig config = new FacetsConfig();
 
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
     writer.addDocument(config.build(doc));
 
@@ -155,7 +160,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       writer.commit();
     }
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
     doc.add(new SortedSetDocValuesFacetField("b", "bar1"));
     writer.addDocument(config.build(doc));
@@ -164,7 +169,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       writer.commit();
     }
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo3"));
     doc.add(new SortedSetDocValuesFacetField("b", "bar2"));
     doc.add(new SortedSetDocValuesFacetField("c", "baz1"));
@@ -198,18 +203,21 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("a");
+
     FacetsConfig config = new FacetsConfig();
 
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
     writer.addDocument(config.build(doc));
     writer.commit();
 
-    doc = new Document();
+    doc = writer.newDocument();
     writer.addDocument(config.build(doc));
     writer.commit();
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
     writer.addDocument(config.build(doc));
     writer.commit();
@@ -237,15 +245,18 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("a");
+
     FacetsConfig config = new FacetsConfig();
 
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo1"));
     writer.addDocument(config.build(doc));
 
     writer.commit();
 
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new SortedSetDocValuesFacetField("a", "foo2"));
     writer.addDocument(config.build(doc));
 
@@ -273,13 +284,18 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     Directory taxoDir = newDirectory();
 
     RandomIndexWriter w = new RandomIndexWriter(random(), indexDir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+
     FacetsConfig config = new FacetsConfig();
     int numDocs = atLeast(1000);
     int numDims = TestUtil.nextInt(random(), 1, 7);
+    for(int dim=0;dim<numDims;dim++) {
+      fieldTypes.setMultiValued("dim" + dim);
+    }
     List<TestDoc> testDocs = getRandomDocs(tokens, numDocs, numDims);
     for(TestDoc testDoc : testDocs) {
-      Document doc = new Document();
-      doc.add(newStringField("content", testDoc.content, Field.Store.NO));
+      Document doc = w.newDocument();
+      doc.addAtom("content", testDoc.content);
       for(int j=0;j<numDims;j++) {
         if (testDoc.dims[j] != null) {
           doc.add(new SortedSetDocValuesFacetField("dim" + j, testDoc.dims[j]));

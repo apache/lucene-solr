@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -63,10 +61,11 @@ public class TestRandomSamplingFacetsCollector extends FacetTestCase {
     final int numCategories = 10;
     int numDocs = atLeast(10000);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("EvenOdd", (i % 2 == 0) ? "even" : "odd", Store.NO));
+      Document doc = writer.newDocument();
+      doc.addAtom("EvenOdd", (i % 2 == 0) ? "even" : "odd");
       doc.add(new FacetField("iMod10", Integer.toString(i % numCategories)));
-      writer.addDocument(config.build(taxoWriter, doc));
+      Document built = config.build(taxoWriter, doc);
+      writer.addDocument(built);
     }
     
     // NRT open
@@ -140,7 +139,7 @@ public class TestRandomSamplingFacetsCollector extends FacetTestCase {
       LabelAndValue amortized = amortized10Result.labelValues[i];
       LabelAndValue sampled = random10Result.labelValues[i];
       // since numDocs may not divide by 10 exactly, allow for some slack in the amortized count 
-      assertEquals(amortized.value.floatValue(), Math.min(5 * sampled.value.floatValue(), numDocs / 10.f), 1.0);
+      assertEquals(Math.min(5 * sampled.value.floatValue(), numDocs / 10.f), amortized.value.floatValue(), 1.0);
     }
     
     IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);

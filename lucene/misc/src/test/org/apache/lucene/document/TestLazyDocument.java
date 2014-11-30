@@ -17,9 +17,11 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,17 +58,21 @@ public class TestLazyDocument extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter
       (dir, newIndexWriterConfig(analyzer));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for(String f : FIELDS) {
+      fieldTypes.setMultiValued(f);
+    }
     try {
       for (int docid = 0; docid < NUM_DOCS; docid++) {
-        Document d = new Document();
-        d.add(newStringField("docid", ""+docid, Field.Store.YES));
-        d.add(newStringField("never_load", "fail", Field.Store.YES));
+        Document d = writer.newDocument();
+        d.addAtom("docid", ""+docid);
+        d.addAtom("never_load", "fail");
         for (String f : FIELDS) {
           for (int val = 0; val < NUM_VALUES; val++) {
-            d.add(newStringField(f, docid+"_"+f+"_"+val, Field.Store.YES));
+            d.addAtom(f, docid+"_"+f+"_"+val);
           }
         }
-        d.add(newStringField("load_later", "yes", Field.Store.YES));
+        d.addAtom("load_later", "yes");
         writer.addDocument(d);
       }
     } finally {
@@ -83,34 +89,34 @@ public class TestLazyDocument extends LuceneTestCase {
       ScoreDoc[] hits = searcher.search(q, 100).scoreDocs;
       assertEquals("Too many docs", 1, hits.length);
       LazyTestingStoredFieldVisitor visitor 
-        = new LazyTestingStoredFieldVisitor(new LazyDocument(reader, hits[0].doc),
+        = new LazyTestingStoredFieldVisitor(reader.getFieldTypes(), new LazyDocument(reader, hits[0].doc),
                                             FIELDS);
       reader.document(hits[0].doc, visitor);
-      Document d = visitor.doc;
+      List<FieldValue> d = visitor.doc;
 
       int numFieldValues = 0;
       Map<String,Integer> fieldValueCounts = new HashMap<>();
 
       // at this point, all FIELDS should be Lazy and unrealized
-      for (IndexableField f : d) {
+      for (FieldValue f : d) {
         numFieldValues++;   
-        if (f.name().equals("never_load")) {
+        if (f.name.equals("never_load")) {
           fail("never_load was loaded");
         }
-        if (f.name().equals("load_later")) {
+        if (f.name.equals("load_later")) {
           fail("load_later was loaded on first pass");
         }
-        if (f.name().equals("docid")) {
-          assertFalse(f.name(), f instanceof LazyDocument.LazyField);
+        if (f.name.equals("docid")) {
+          assertFalse(f.name, f.value instanceof LazyDocument.LazyField);
         } else {
-          int count = fieldValueCounts.containsKey(f.name()) ?
-            fieldValueCounts.get(f.name()) : 0;
+          int count = fieldValueCounts.containsKey(f.name) ?
+            fieldValueCounts.get(f.name) : 0;
           count++;
-          fieldValueCounts.put(f.name(), count);
-          assertTrue(f.name() + " is " + f.getClass(),
-                     f instanceof LazyDocument.LazyField);
-          LazyDocument.LazyField lf = (LazyDocument.LazyField) f;
-          assertFalse(f.name() + " is loaded", lf.hasBeenLoaded());
+          fieldValueCounts.put(f.name, count);
+          assertTrue(f.name + " is " + f.value.getClass(),
+                     f.value instanceof LazyDocument.LazyField);
+          LazyDocument.LazyField lf = (LazyDocument.LazyField) f.value;
+          assertFalse(f.name + " is loaded", lf.hasBeenLoaded());
         }
       }
       if (VERBOSE) System.out.println("numFieldValues == " + numFieldValues);
@@ -124,34 +130,39 @@ public class TestLazyDocument extends LuceneTestCase {
 
       // pick a single field name to load a single value
       final String fieldName = FIELDS[random().nextInt(FIELDS.length)];
-      final IndexableField[] fieldValues = d.getFields(fieldName);
+      List<FieldValue> fieldValues = new ArrayList<>();
+      for(FieldValue f : d) {
+        if (f.name.equals(fieldName)) {
+          fieldValues.add(f);
+        }
+      }
       assertEquals("#vals in field: " + fieldName, 
-                   NUM_VALUES, fieldValues.length);
-      final int valNum = random().nextInt(fieldValues.length);
+                   NUM_VALUES, fieldValues.size());
+      final int valNum = random().nextInt(fieldValues.size());
       assertEquals(id + "_" + fieldName + "_" + valNum,
-                   fieldValues[valNum].stringValue());
+                   ((LazyDocument.LazyField) fieldValues.get(valNum).value).stringValue());
       
       // now every value of fieldName should be loaded
-      for (IndexableField f : d) {
-        if (f.name().equals("never_load")) {
+      for (FieldValue f : d) {
+        if (f.name.equals("never_load")) {
           fail("never_load was loaded");
         }
-        if (f.name().equals("load_later")) {
+        if (f.name.equals("load_later")) {
           fail("load_later was loaded too soon");
         }
-        if (f.name().equals("docid")) {
-          assertFalse(f.name(), f instanceof LazyDocument.LazyField);
+        if (f.name.equals("docid")) {
+          assertFalse(f.name, f.value instanceof LazyDocument.LazyField);
         } else {
-          assertTrue(f.name() + " is " + f.getClass(),
-                     f instanceof LazyDocument.LazyField);
-          LazyDocument.LazyField lf = (LazyDocument.LazyField) f;
-          assertEquals(f.name() + " is loaded?", 
+          assertTrue(f.name + " is " + f.value.getClass(),
+                     f.value instanceof LazyDocument.LazyField);
+          LazyDocument.LazyField lf = (LazyDocument.LazyField) f.value;
+          assertEquals(f.name + " is loaded?", 
                        lf.name().equals(fieldName), lf.hasBeenLoaded());
         }
       }
 
       // use the same LazyDoc to ask for one more lazy field
-      visitor = new LazyTestingStoredFieldVisitor(new LazyDocument(reader, hits[0].doc),
+      visitor = new LazyTestingStoredFieldVisitor(reader.getFieldTypes(), new LazyDocument(reader, hits[0].doc),
                                                   "load_later");
       reader.document(hits[0].doc, visitor);
       d = visitor.doc;
@@ -159,17 +170,17 @@ public class TestLazyDocument extends LuceneTestCase {
       // ensure we have all the values we expect now, and that
       // adding one more lazy field didn't "unload" the existing LazyField's
       // we already loaded.
-      for (IndexableField f : d) {
-        if (f.name().equals("never_load")) {
+      for (FieldValue f : d) {
+        if (f.name.equals("never_load")) {
           fail("never_load was loaded");
         }
-        if (f.name().equals("docid")) {
-          assertFalse(f.name(), f instanceof LazyDocument.LazyField);
+        if (f.name.equals("docid")) {
+          assertFalse(f.name, f.value instanceof LazyDocument.LazyField);
         } else {
-          assertTrue(f.name() + " is " + f.getClass(),
-                     f instanceof LazyDocument.LazyField);
-          LazyDocument.LazyField lf = (LazyDocument.LazyField) f;
-          assertEquals(f.name() + " is loaded?", 
+          assertTrue(f.name + " is " + f.value.getClass(),
+                     f.value instanceof LazyDocument.LazyField);
+          LazyDocument.LazyField lf = (LazyDocument.LazyField) f.value;
+          assertEquals(f.name + " is loaded?", 
                        lf.name().equals(fieldName), lf.hasBeenLoaded());
         }
       }
@@ -183,12 +194,21 @@ public class TestLazyDocument extends LuceneTestCase {
     }
   }
 
+  private static class FieldValue {
+    String name;
+    Object value;
+    public FieldValue(String name, Object value) {
+      this.name = name;
+      this.value = value;
+    }
+  }
+
   private static class LazyTestingStoredFieldVisitor extends StoredFieldVisitor {
-    public final Document doc = new Document();
+    public final List<FieldValue> doc = new ArrayList<>();
     public final LazyDocument lazyDoc;
     public final Set<String> lazyFieldNames;
 
-    LazyTestingStoredFieldVisitor(LazyDocument l, String... fields) {
+    LazyTestingStoredFieldVisitor(FieldTypes fieldTypes, LazyDocument l, String... fields) {
       lazyDoc = l;
       lazyFieldNames = new HashSet<>(Arrays.asList(fields));
     }
@@ -201,7 +221,7 @@ public class TestLazyDocument extends LuceneTestCase {
         return Status.NO;
       } else {
         if (lazyFieldNames.contains(fieldInfo.name)) {
-          doc.add(lazyDoc.getField(fieldInfo));
+          doc.add(new FieldValue(fieldInfo.name, lazyDoc.getField(fieldInfo)));
         }
       }
       return Status.NO;
@@ -209,11 +229,7 @@ public class TestLazyDocument extends LuceneTestCase {
 
     @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-      final FieldType ft = new FieldType(TextField.TYPE_STORED);
-      ft.setStoreTermVectors(fieldInfo.hasVectors());
-      ft.setOmitNorms(fieldInfo.omitsNorms());
-      ft.setIndexOptions(fieldInfo.getIndexOptions());
-      doc.add(new Field(fieldInfo.name, value, ft));
+      doc.add(new FieldValue(fieldInfo.name, value));
     }
 
   }

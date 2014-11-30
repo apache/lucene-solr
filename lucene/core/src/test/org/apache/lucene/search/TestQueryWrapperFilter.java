@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -35,7 +35,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "value");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
@@ -93,7 +93,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     final int numDocs = atLeast(100);
     final Set<Integer> aDocs = new HashSet<>();
     for(int i=0;i<numDocs;i++) {
-      final Document2 doc = w.newDocument();
+      final Document doc = w.newDocument();
       final String v;
       if (random().nextInt(5) == 4) {
         v = "a";
@@ -130,7 +130,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 1000; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueAtom("field", English.intToEnglish(i));
       writer.addDocument(doc);
     }

@@ -27,9 +27,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -90,18 +88,18 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(analyzer));
-    Document doc = new Document();
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.setMultiValued("field");
+
+    Document doc = w.newDocument();
     TokenStream tokenStream = analyzer.tokenStream("field", "abcd   ");
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(tokenStream);
     TokenStream sink = tee.newSinkTokenStream();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    ft.setStoreTermVectorPositions(true);
-    Field f1 = new Field("field", tee, ft);
-    Field f2 = new Field("field", sink, ft);
-    doc.add(f1);
-    doc.add(f2);
+    doc.addLargeText("field", tee);
+    doc.addLargeText("field", sink);
     w.addDocument(doc);
     w.close();
 

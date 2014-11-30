@@ -17,14 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -39,7 +33,7 @@ public class TestDocValues extends LuceneTestCase {
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    iw.addDocument(new Document());
+    iw.addDocument(iw.newDocument());
     DirectoryReader dr = DirectoryReader.open(iw, true);
     LeafReader r = getOnlySegmentReader(dr);
     
@@ -62,8 +56,10 @@ public class TestDocValues extends LuceneTestCase {
   public void testMisconfiguredField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setDocValuesType("foo", DocValuesType.NONE);
+    Document doc = iw.newDocument();
+    doc.addAtom("foo", "bar");
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw, true);
     LeafReader r = getOnlySegmentReader(dr);
@@ -105,8 +101,8 @@ public class TestDocValues extends LuceneTestCase {
   public void testNumericField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("foo", 3));
+    Document doc = iw.newDocument();
+    doc.addInt("foo", 3);
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw, true);
     LeafReader r = getOnlySegmentReader(dr);
@@ -141,8 +137,10 @@ public class TestDocValues extends LuceneTestCase {
   public void testBinaryField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(new BinaryDocValuesField("foo", new BytesRef("bar")));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableSorting("foo");
+    Document doc = iw.newDocument();
+    doc.addBinary("foo", new BytesRef("bar"));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw, true);
     LeafReader r = getOnlySegmentReader(dr);
@@ -180,8 +178,8 @@ public class TestDocValues extends LuceneTestCase {
   public void testSortedField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(new SortedDocValuesField("foo", new BytesRef("bar")));
+    Document doc = iw.newDocument();
+    doc.addAtom("foo", new BytesRef("bar"));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw, true);
     LeafReader r = getOnlySegmentReader(dr);
@@ -213,8 +211,10 @@ public class TestDocValues extends LuceneTestCase {
   public void testSortedSetField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(new SortedSetDocValuesField("foo", new BytesRef("bar")));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("foo");
+    Document doc = iw.newDocument();
+    doc.addAtom("foo", new BytesRef("bar"));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw, true);
     LeafReader r = getOnlySegmentReader(dr);
@@ -252,8 +252,11 @@ public class TestDocValues extends LuceneTestCase {
   public void testSortedNumericField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("foo", 3));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("foo");
+
+    Document doc = iw.newDocument();
+    doc.addInt("foo", 3);
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw, true);
     LeafReader r = getOnlySegmentReader(dr);

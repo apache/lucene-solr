@@ -26,7 +26,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -34,7 +33,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -96,7 +94,7 @@ public abstract class ReadTask extends PerfTask {
 
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
-      Document2 doc = null;
+      Document doc = null;
       Bits liveDocs = MultiFields.getLiveDocs(reader);
       for (int m = 0; m < reader.maxDoc(); m++) {
         if (null == liveDocs || liveDocs.get(m)) {
@@ -142,7 +140,7 @@ public abstract class ReadTask extends PerfTask {
           System.out.println("numDocs() = " + reader.numDocs());
           for(int i=0;i<hits.scoreDocs.length;i++) {
             final int docID = hits.scoreDocs[i].doc;
-            final Document2 doc = reader.document(docID);
+            final Document doc = reader.document(docID);
             System.out.println("  " + i + ": doc=" + docID + " score=" + hits.scoreDocs[i].score + " " + printHitsField + " =" + doc.getString(printHitsField));
           }
         }
@@ -163,7 +161,7 @@ public abstract class ReadTask extends PerfTask {
               int id = scoreDocs[m].doc;
               res++;
               if (retrieve) {
-                Document2 document = retrieveDoc(reader, id);
+                Document document = retrieveDoc(reader, id);
                 res += document != null ? 1 : 0;
                 if (numHighlight > 0 && m < numHighlight) {
                   Collection<String> fieldsToHighlight = getFieldsToHighlight(document);
@@ -193,7 +191,7 @@ public abstract class ReadTask extends PerfTask {
   }
 
 
-  protected Document2 retrieveDoc(IndexReader ir, int id) throws IOException {
+  protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
     return ir.document(id);
   }
 
@@ -296,7 +294,7 @@ public abstract class ReadTask extends PerfTask {
    * @param document The Document
    * @return A Collection of Field names (Strings)
    */
-  protected Collection<String> getFieldsToHighlight(Document2 document) {
+  protected Collection<String> getFieldsToHighlight(Document document) {
     List<IndexableField> fields = document.getFields();
     Set<String> result = new HashSet<>(fields.size());
     for (final IndexableField f : fields) {

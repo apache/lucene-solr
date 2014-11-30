@@ -22,12 +22,8 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.Monster;
@@ -65,7 +61,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
     }
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableNorms("field");
     fieldTypes.disableHighlighting("field");

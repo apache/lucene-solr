@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.flexible.standard.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.NumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;

@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -938,34 +937,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertEquals(query1, query2);
   }
 
-// Todo: convert this from DateField to DateUtil
-//  public void testLocalDateFormat() throws IOException, ParseException {
-//    Directory ramDir = newDirectory();
-//    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
-//    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
-//    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
-//    iw.close();
-//    IndexSearcher is = new IndexSearcher(ramDir, true);
-//    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
-//    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
-//    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
-//    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
-//    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
-//    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
-//    is.close();
-//    ramDir.close();
-//  }
-//
-//  private void addDateDoc(String content, int year, int month,
-//                          int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
-//    Document d = new Document();
-//    d.add(newField("f", content, Field.Store.YES, Field.Index.ANALYZED));
-//    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-//    cal.set(year, month - 1, day, hour, minute, second);
-//    d.add(newField("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.NOT_ANALYZED));
-//    iw.addDocument(d);
-//  }
-
   public abstract void testStarParsing() throws Exception;
 
   public void testEscapedWildcard() throws Exception {
@@ -1090,8 +1061,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
-    Document doc = new Document();
-    doc.add(newTextField("field", "the wizard of ozzy", Field.Store.NO));
+    Document doc = w.newDocument();
+    doc.addLargeText("field", "the wizard of ozzy");
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
     w.close();

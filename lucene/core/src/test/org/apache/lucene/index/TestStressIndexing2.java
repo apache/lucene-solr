@@ -25,14 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LowSchemaField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermQuery;
@@ -282,7 +279,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Bits liveDocs = sub.getLiveDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {
-        Document2 doc = sub.document(docID);
+        Document doc = sub.document(docID);
         if (liveDocs == null || liveDocs.get(docID)) {
           System.out.println("    docID=" + docID + " id:" + doc.getString("id"));
         } else {
@@ -569,7 +566,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
-  public static void verifyEquals(Document2 d1, Document2 d2) {
+  public static void verifyEquals(Document d1, Document d2) {
     List<IndexableField> ff1 = d1.getFields();
     List<IndexableField> ff2 = d2.getFields();
 
@@ -785,11 +782,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
     }
 
-    public void indexDoc() throws IOException {
+    public void indexDoc(Analyzer a) throws IOException {
 
       List<LowSchemaField> fields = new ArrayList<>();
       String idString = getIdString();
-      LowSchemaField idField = new LowSchemaField("id", idString, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, false);
+      LowSchemaField idField = new LowSchemaField(a, "id", idString, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, false);
       idField.disableNorms();
       fields.add(idField);
 
@@ -799,27 +796,26 @@ public class TestStressIndexing2 extends LuceneTestCase {
       for (int i=0; i<nFields; i++) {
 
         String fieldName = "f" + nextInt(100);
-        FieldType customType;
 
         LowSchemaField field;
         
         switch (nextInt(4)) {
           case 0:
-            field = new LowSchemaField(fieldName, getString(1), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            field = new LowSchemaField(a, fieldName, getString(1), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
             field.disableNorms();
             setTermVectors(field, prevField);
             break;
           case 1:
-            field = new LowSchemaField(fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            field = new LowSchemaField(a, fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
             field.doNotStore();
             setTermVectors(field, prevField);
             break;
           case 2:
-            field = new LowSchemaField(fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            field = new LowSchemaField(a, fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
             // no term vectors
             break;
           case 3:
-            field = new LowSchemaField(fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+            field = new LowSchemaField(a, fieldName, getString(0), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
             setTermVectors(field, prevField);
             break;
         }
@@ -860,6 +856,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
     @Override
     public void run() {
+      Analyzer a = new MockAnalyzer(random());
       try {
         r = new Random(base+range+seed);
         for (int i=0; i<iterations; i++) {
@@ -869,7 +866,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
           } else if (what < 10) {
             deleteByQuery();
           } else {
-            indexDoc();
+            indexDoc(a);
           }
         }
       } catch (Throwable e) {

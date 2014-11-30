@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -94,7 +94,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   }
   
   private void addDoc(String text, IndexWriter iw, float boost) throws IOException {
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("key", text, boost);
     iw.addDocument(doc);
   }

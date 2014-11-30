@@ -22,9 +22,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -212,7 +210,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   }
 
   private void addDoc(IndexWriter writer, int id) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "aaa");
     doc.addAtom("id", Integer.toString(id));
     writer.addDocument(doc);
@@ -466,7 +464,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
         } else if (random().nextInt(10) == 7) {
           w.getReader().close();
         } else {
-          Document2 doc = w.newDocument();
+          Document doc = w.newDocument();
           doc.addLargeText("field", "some text");
           w.addDocument(doc);
         }

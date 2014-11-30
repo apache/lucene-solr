@@ -23,9 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -491,6 +489,22 @@ public class SpellChecker implements java.io.Closeable {
       ensureOpen();
       final Directory dir = this.spellIndex;
       final IndexWriter writer = new IndexWriter(dir, config);
+      FieldTypes fieldTypes = writer.getFieldTypes();
+      for(int ng=1;ng<=4;ng++) {
+        fieldTypes.disableStored("start" + ng);
+        fieldTypes.disableSorting("start" + ng);
+        fieldTypes.setMultiValued("start" + ng);
+
+        fieldTypes.disableStored("gram" + ng);
+        fieldTypes.setIndexOptions("gram" + ng, IndexOptions.DOCS_AND_FREQS);
+        fieldTypes.disableSorting("gram" + ng);
+        fieldTypes.setMultiValued("gram" + ng);
+
+        fieldTypes.disableStored("end" + ng);
+        fieldTypes.disableSorting("end" + ng);
+        fieldTypes.setMultiValued("end" + ng);
+      }
+
       IndexSearcher indexSearcher = obtainSearcher();
       final List<TermsEnum> termsEnums = new ArrayList<>();
 
@@ -526,7 +540,7 @@ public class SpellChecker implements java.io.Closeable {
           }
   
           // ok index the word
-          Document doc = createDocument(word, getMin(len), getMax(len));
+          Document doc = createDocument(writer, word, getMin(len), getMax(len));
           writer.addDocument(doc);
         }
       } finally {
@@ -566,12 +580,12 @@ public class SpellChecker implements java.io.Closeable {
     return 2;
   }
 
-  private static Document createDocument(String text, int ng1, int ng2) {
-    Document doc = new Document();
+  private static Document createDocument(IndexWriter w, String text, int ng1, int ng2) {
+    Document doc = w.newDocument();
     // the word field is never queried on... its indexed so it can be quickly
     // checked for rebuild (and stored for retrieval). Doesn't need norms or TF/pos
-    Field f = new StringField(F_WORD, text, Field.Store.YES);
-    doc.add(f); // orig term
+    // orig term
+    doc.addAtom(F_WORD, text);
     addGram(text, doc, ng1, ng2);
     return doc;
   }
@@ -583,23 +597,18 @@ public class SpellChecker implements java.io.Closeable {
       String end = null;
       for (int i = 0; i < len - ng + 1; i++) {
         String gram = text.substring(i, i + ng);
-        FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
-        ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-        Field ngramField = new Field(key, gram, ft);
         // spellchecker does not use positional queries, but we want freqs
         // for scoring these multivalued n-gram fields.
-        doc.add(ngramField);
+        doc.addAtom(key, gram);
         if (i == 0) {
           // only one term possible in the startXXField, TF/pos and norms aren't needed.
-          Field startField = new StringField("start" + ng, gram, Field.Store.NO);
-          doc.add(startField);
+          doc.addAtom("start" + ng, gram);
         }
         end = gram;
       }
       if (end != null) { // may not be present if len==ng1
         // only one term possible in the endXXField, TF/pos and norms aren't needed.
-        Field endField = new StringField("end" + ng, end, Field.Store.NO);
-        doc.add(endField);
+        doc.addAtom("end" + ng, end);
       }
     }
   }

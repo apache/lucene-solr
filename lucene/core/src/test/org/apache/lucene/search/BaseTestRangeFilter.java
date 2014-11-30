@@ -21,18 +21,12 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -132,7 +126,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       int maxCount = 0;
 
       for (int d = minId; d <= maxId; d++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addAtom("id", pad(d));
         doc.addInt("id_int", d);
         doc.addFloat("id_float", d);

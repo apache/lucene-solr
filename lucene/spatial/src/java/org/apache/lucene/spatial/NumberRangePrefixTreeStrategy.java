@@ -19,9 +19,7 @@ package org.apache.lucene.spatial;
 
 import java.text.ParseException;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
@@ -49,7 +47,7 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
   }
 
   @Override
-  public void addFields(Document2 doc, Shape shape) {
+  public void addFields(Document doc, Shape shape) {
     //levels doesn't actually matter; NumberRange based Shapes have their own "level".
     doc.addLargeText(getFieldName(), createTokenStream(shape, grid.getMaxLevels()));
   }

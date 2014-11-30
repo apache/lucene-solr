@@ -23,11 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -65,7 +61,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     // index some docs
     int numDocs = atLeast(1000);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addUniqueAtom("id", Integer.toString(i));
       doc.addLargeText("field", randomFieldContents());
       iw.addDocument(doc);

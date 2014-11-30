@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.document.DoubleDocValuesField; // javadocs
-import org.apache.lucene.document.FloatDocValuesField; // javadocs
+import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
@@ -31,10 +30,9 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource; // javadocs
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.NumericUtils;
 
 /** {@link Facets} implementation that computes counts for
  *  dynamic double ranges from a provided {@link
@@ -46,9 +44,9 @@ import org.apache.lucene.util.NumericUtils;
  *  etc.).
  *
  *  <p> If you had indexed your field using {@link
- *  FloatDocValuesField} then pass {@link FloatFieldSource}
+ *  org.apache.lucene.document.Document#addFloat} then pass {@link FloatFieldSource}
  *  as the {@link ValueSource}; if you used {@link
- *  DoubleDocValuesField} then pass {@link
+ *  org.apache.lucene.document.Document#addDouble} then pass {@link
  *  DoubleFieldSource} (this is the default used when you
  *  pass just a the field name).
  *
@@ -85,8 +83,8 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
     for(int i=0;i<ranges.length;i++) {
       DoubleRange range = ranges[i];
       longRanges[i] =  new LongRange(range.label,
-                                     NumericUtils.doubleToSortableLong(range.minIncl), true,
-                                     NumericUtils.doubleToSortableLong(range.maxIncl), true);
+                                     Document.doubleToSortableLong(range.minIncl), true,
+                                     Document.doubleToSortableLong(range.maxIncl), true);
     }
 
     LongRangeCounter counter = new LongRangeCounter(longRanges);
@@ -121,7 +119,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
         }
         // Skip missing docs:
         if (fv.exists(doc)) {
-          counter.add(NumericUtils.doubleToSortableLong(fv.doubleVal(doc)));
+          counter.add(Document.doubleToSortableLong(fv.doubleVal(doc)));
         } else {
           missingCount++;
         }

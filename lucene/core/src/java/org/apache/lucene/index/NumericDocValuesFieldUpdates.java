@@ -1,6 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.packed.PackedInts;

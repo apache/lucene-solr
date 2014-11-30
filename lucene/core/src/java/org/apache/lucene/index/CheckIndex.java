@@ -34,7 +34,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -1739,7 +1739,7 @@ public class CheckIndex implements Closeable {
       for (int j = 0; j < reader.maxDoc(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
-        Document2 doc = reader.document(j);
+        Document doc = reader.document(j);
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           status.totFields += doc.getFields().size();

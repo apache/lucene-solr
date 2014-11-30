@@ -19,12 +19,8 @@ package org.apache.lucene.spatial;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -121,8 +117,8 @@ public class SpatialExample extends LuceneTestCase {
     indexWriter.close();
   }
 
-  private Document2 newSampleDocument(IndexWriter indexWriter, int id, Shape... shapes) {
-    Document2 doc = indexWriter.newDocument();
+  private Document newSampleDocument(IndexWriter indexWriter, int id, Shape... shapes) {
+    Document doc = indexWriter.newDocument();
     FieldTypes fieldTypes = indexWriter.getFieldTypes();
     fieldTypes.setMultiValued(strategy.getFieldName() + "_stored");
     doc.addInt("id", id);
@@ -156,7 +152,7 @@ public class SpatialExample extends LuceneTestCase {
       assertDocMatchedIds(indexSearcher, docs, 2);
       //Now, lets get the distance for the 1st doc via computing from stored point value:
       // (this computation is usually not redundant)
-      Document2 doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
+      Document doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
       String doc1Str = doc1.getString(strategy.getFieldName() + "_stored");
       //assume doc1Str is "x y" as written in newSampleDocument()
       int spaceIdx = doc1Str.indexOf(' ');

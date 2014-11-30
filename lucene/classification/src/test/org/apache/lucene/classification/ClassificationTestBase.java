@@ -21,9 +21,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -50,7 +48,6 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
   private RandomIndexWriter indexWriter;
   private Directory dir;
-  private FieldType ft;
 
   String textFieldName;
   String categoryFieldName;
@@ -65,10 +62,12 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     textFieldName = "text";
     categoryFieldName = "cat";
     booleanFieldName = "bool";
-    ft = new FieldType(TextField.TYPE_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    ft.setStoreTermVectorPositions(true);
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    for(String fieldName : new String[] {textFieldName, categoryFieldName, booleanFieldName}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+    }
   }
 
   @Override
@@ -131,73 +130,80 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     indexWriter = new RandomIndexWriter(random(), dir, newIndexWriterConfig(analyzer).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     indexWriter.commit();
 
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    for(String fieldName : new String[] {textFieldName, categoryFieldName, booleanFieldName}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+    }
+
     String text;
 
-    Document doc = new Document();
+    Document doc = indexWriter.newDocument();
     text = "The traveling press secretary for Mitt Romney lost his cool and cursed at reporters " +
         "who attempted to ask questions of the Republican presidential candidate in a public plaza near the Tomb of " +
         "the Unknown Soldier in Warsaw Tuesday.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
 
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Mitt Romney seeks to assure Israel and Iran, as well as Jewish voters in the United" +
         " States, that he will be tougher against Iran's nuclear ambitions than President Barack Obama.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "And there's a threshold question that he has to answer for the American people and " +
         "that's whether he is prepared to be commander-in-chief,\" she continued. \"As we look to the past events, we " +
         "know that this raises some questions about his preparedness and we'll see how the rest of his trip goes.\"";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Still, when it comes to gun policy, many congressional Democrats have \"decided to " +
         "keep quiet and not go there,\" said Alan Lizotte, dean and professor at the State University of New York at " +
         "Albany's School of Criminal Justice.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Standing amongst the thousands of people at the state Capitol, Jorstad, director of " +
         "technology at the University of Wisconsin-La Crosse, documented the historic moment and shared it with the " +
         "world through the Internet.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "technology");
+    doc.addLargeText(booleanFieldName, "false");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "So, about all those experts and analysts who've spent the past year or so saying " +
         "Facebook was going to make a phone. A new expert has stepped forward to say it's not going to happen.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "technology");
+    doc.addLargeText(booleanFieldName, "false");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "More than 400 million people trust Google with their e-mail, and 50 million store files" +
         " in the cloud using the Dropbox service. People manage their bank accounts, pay bills, trade stocks and " +
         "generally transfer or store huge volumes of personal data online.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "technology");
+    doc.addLargeText(booleanFieldName, "false");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "unlabeled doc";
-    doc.add(new Field(textFieldName, text, ft));
+    doc.addLargeText(textFieldName, text);
     indexWriter.addDocument(doc);
 
     indexWriter.commit();
@@ -224,18 +230,21 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     indexWriter = new RandomIndexWriter(random(), dir, newIndexWriterConfig(analyzer).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     indexWriter.commit();
 
-    FieldType ft = new FieldType(TextField.TYPE_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    ft.setStoreTermVectorPositions(true);
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    for(String fieldName : new String[] {textFieldName, categoryFieldName, booleanFieldName}) {
+      fieldTypes.enableTermVectors(fieldName);
+      fieldTypes.enableTermVectorOffsets(fieldName);
+      fieldTypes.enableTermVectorPositions(fieldName);
+    }
+
     int docs = 1000;
     Random random = random();
     for (int i = 0; i < docs; i++) {
       boolean b = random.nextBoolean();
-      Document doc = new Document();
-      doc.add(new Field(textFieldName, createRandomString(random), ft));
-      doc.add(new Field(categoryFieldName, b ? "technology" : "politics", ft));
-      doc.add(new Field(booleanFieldName, String.valueOf(b), ft));
+      Document doc = indexWriter.newDocument();
+      doc.addLargeText(textFieldName, createRandomString(random));
+      doc.addLargeText(categoryFieldName, b ? "technology" : "politics");
+      doc.addLargeText(booleanFieldName, String.valueOf(b));
       indexWriter.addDocument(doc);
     }
     indexWriter.commit();
@@ -254,59 +263,59 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
     String text;
 
-    Document doc = new Document();
+    Document doc = indexWriter.newDocument();
     text = "Warren Bennis says John F. Kennedy grasped a key lesson about the presidency that few have followed.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
 
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Julian Zelizer says Bill Clinton is still trying to shape his party, years after the White House, while George W. Bush opts for a much more passive role.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Crossfire: Sen. Tim Scott passes on Sen. Lindsey Graham endorsement";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Illinois becomes 16th state to allow same-sex marriage.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "politics", ft));
-    doc.add(new Field(booleanFieldName, "true", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "politics");
+    doc.addLargeText(booleanFieldName, "true");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Apple is developing iPhones with curved-glass screens and enhanced sensors that detect different levels of pressure, according to a new report.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "technology");
+    doc.addLargeText(booleanFieldName, "false");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "The Xbox One is Microsoft's first new gaming console in eight years. It's a quality piece of hardware but it's also noteworthy because Microsoft is using it to make a statement.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "technology");
+    doc.addLargeText(booleanFieldName, "false");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "Google says it will replace a Google Maps image after a California father complained it shows the body of his teen-age son, who was shot to death in 2009.";
-    doc.add(new Field(textFieldName, text, ft));
-    doc.add(new Field(categoryFieldName, "technology", ft));
-    doc.add(new Field(booleanFieldName, "false", ft));
+    doc.addLargeText(textFieldName, text);
+    doc.addLargeText(categoryFieldName, "technology");
+    doc.addLargeText(booleanFieldName, "false");
     indexWriter.addDocument(doc);
 
-    doc = new Document();
+    doc = indexWriter.newDocument();
     text = "second unlabeled doc";
-    doc.add(new Field(textFieldName, text, ft));
+    doc.addLargeText(textFieldName, text);
     indexWriter.addDocument(doc);
 
     indexWriter.commit();

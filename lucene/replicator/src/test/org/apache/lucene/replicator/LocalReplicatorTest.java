@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
@@ -66,7 +65,7 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   }
   
   private Revision createRevision(final int id) throws IOException {
-    sourceWriter.addDocument(new Document());
+    sourceWriter.addDocument(sourceWriter.newDocument());
     sourceWriter.setCommitData(new HashMap<String, String>() {{
       put(VERSION_ID, Integer.toString(id, 16));
     }});

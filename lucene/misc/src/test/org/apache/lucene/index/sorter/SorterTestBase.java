@@ -29,23 +29,13 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -153,41 +143,33 @@ public abstract class SorterTestBase extends LuceneTestCase {
   protected static final String SORTED_DV_FIELD = "sorted";
   protected static final String SORTED_SET_DV_FIELD = "sorted_set";
   protected static final String TERM_VECTORS_FIELD = "term_vectors";
-
-  private static final FieldType TERM_VECTORS_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
-  static {
-    TERM_VECTORS_TYPE.setStoreTermVectors(true);
-    TERM_VECTORS_TYPE.freeze();
-  }
-  
-  private static final FieldType POSITIONS_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
-  static {
-    POSITIONS_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    POSITIONS_TYPE.freeze();
-  }
   
   protected static Directory dir;
   protected static LeafReader unsortedReader;
   protected static LeafReader sortedReader;
   protected static Integer[] sortedValues;
 
-  private static Document doc(final int id, PositionsTokenStream positions) {
-    final Document doc = new Document();
-    doc.add(new StringField(ID_FIELD, Integer.toString(id), Store.YES));
-    doc.add(new StringField(DOCS_ENUM_FIELD, DOCS_ENUM_TERM, Store.NO));
+  private static Document doc(RandomIndexWriter w, final int id, PositionsTokenStream positions) {
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting(BINARY_DV_FIELD);
+    fieldTypes.setMultiValued(SORTED_SET_DV_FIELD);
+    fieldTypes.setMultiValued(SORTED_NUMERIC_DV_FIELD);
+    fieldTypes.enableTermVectors(TERM_VECTORS_FIELD);
+
+    final Document doc = w.newDocument();
+    doc.addAtom(ID_FIELD, Integer.toString(id));
+    doc.addAtom(DOCS_ENUM_FIELD, DOCS_ENUM_TERM);
     positions.setId(id);
-    doc.add(new Field(DOC_POSITIONS_FIELD, positions, POSITIONS_TYPE));
-    doc.add(new NumericDocValuesField(NUMERIC_DV_FIELD, id));
-    TextField norms = new TextField(NORMS_FIELD, Integer.toString(id), Store.NO);
-    norms.setBoost(Float.intBitsToFloat(id));
-    doc.add(norms);
-    doc.add(new BinaryDocValuesField(BINARY_DV_FIELD, new BytesRef(Integer.toString(id))));
-    doc.add(new SortedDocValuesField(SORTED_DV_FIELD, new BytesRef(Integer.toString(id))));
-    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id))));
-    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1))));
-    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
-    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
-    doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
+    doc.addLargeText(DOC_POSITIONS_FIELD, positions);
+    doc.addInt(NUMERIC_DV_FIELD, id);
+    doc.addLargeText(NORMS_FIELD, Integer.toString(id), Float.intBitsToFloat(id));
+    doc.addBinary(BINARY_DV_FIELD, new BytesRef(Integer.toString(id)));
+    doc.addAtom(SORTED_DV_FIELD, new BytesRef(Integer.toString(id)));
+    doc.addAtom(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id)));
+    doc.addAtom(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1)));
+    doc.addInt(SORTED_NUMERIC_DV_FIELD, id);
+    doc.addInt(SORTED_NUMERIC_DV_FIELD, id + 1);
+    doc.addLargeText(TERM_VECTORS_FIELD, Integer.toString(id));
     return doc;
   }
 
@@ -210,7 +192,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, conf);
     writer.setDoRandomForceMerge(false);
     for (int id : ids) {
-      writer.addDocument(doc(id, positions));
+      writer.addDocument(doc(writer, id, positions));
     }
     // delete some documents
     writer.commit();

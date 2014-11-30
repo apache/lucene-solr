@@ -30,10 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
@@ -88,7 +85,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     }
 
     for(String term : terms) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("field", term);
       doc.addLong("long", Long.parseLong(term));
       w.addDocument(doc);
@@ -220,7 +217,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     }
 
     for(Integer term : terms) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("field", intToBytes(term));
       doc.addInt("int", term.intValue());
       w.addDocument(doc);
@@ -342,7 +339,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     w.getFieldTypes().setDocValuesType("binary", DocValuesType.BINARY);
 
     for(String term : terms) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("field", term);
       doc.addBinary("binary", new BytesRef(term));
       w.addDocument(doc);
@@ -446,7 +443,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     int numDocs = 30;
 
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("field", "" + (char) (97+i));
       w.addDocument(doc);
       doc = w.newDocument();
@@ -541,22 +538,6 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
         ByteTermAttributeImpl other = (ByteTermAttributeImpl) target;
         other.bytes = bytes;
       }
-    }
-  }
-
-  /** Basically a StringField that accepts binary term. */
-  private static class BinaryField extends Field {
-
-    final static FieldType TYPE;
-    static {
-      TYPE = new FieldType(StringField.TYPE_NOT_STORED);
-      // Necessary so our custom tokenStream is used by Field.tokenStream:
-      TYPE.setTokenized(true);
-      TYPE.freeze();
-    }
-
-    public BinaryField(String name, BytesRef value) {
-      super(name, new BinaryTokenStream(value), TYPE);
     }
   }
 

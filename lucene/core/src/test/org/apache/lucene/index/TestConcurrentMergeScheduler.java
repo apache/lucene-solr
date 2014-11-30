@@ -24,12 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -94,12 +90,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       }
 
       for(int j=0;j<20;j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addInt("id", i*20+j);
         writer.addDocument(doc);
       }
 
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("id", i*20+19);
       // must cycle here because sometimes the merge flushes
       // the doc we just added and so there's nothing to
@@ -150,7 +146,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         System.out.println("\nTEST: cycle");
       }
       for(int j=0;j<100;j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addUniqueInt("id", i*100+j);
         writer.addDocument(doc);
       }
@@ -190,7 +186,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       }
 
       for(int j=0;j<21;j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addLargeText("content", "a b c");
         writer.addDocument(doc);
       }
@@ -228,7 +224,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     for(int iter=0;iter<numIters;iter++) {
 
       for(int j=0;j<201;j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addUniqueInt("id",iter*201+j);
         writer.addDocument(doc);
       }
@@ -328,7 +324,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     tmp.setSegmentsPerTier(2);
 
     IndexWriter w = new IndexWriter(dir, iwc);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "field");
     while(enoughMergesWaiting.getCount() != 0 && !failed.get()) {
       for(int i=0;i<10;i++) {
@@ -377,7 +373,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
 
     for(int i=0;i<1000;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", i);
       w.addDocument(doc);
 
@@ -472,7 +468,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         }
       });
     IndexWriter w = new IndexWriter(dir, iwc);
-    w.addDocument(new Document());
+    w.addDocument(w.newDocument());
     w.forceMerge(1);
     assertTrue(wasCalled.get());
 

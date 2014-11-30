@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -33,7 +33,7 @@ public class TestNumericRangeFilter extends LuceneTestCase {
   public void testBasicDoubleRange() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addDouble("number", -103.0);
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
@@ -42,7 +42,7 @@ public class TestNumericRangeFilter extends LuceneTestCase {
     Query q = new ConstantScoreQuery(fieldTypes.newRangeFilter("number", -110, true, 400, false));
     assertEquals(1, s.search(q, 1).totalHits);
     NumericDocValues ndv = MultiDocValues.getNumericValues(r, "number");
-    assertEquals(-103.0, Document2.longToDouble(ndv.get(0)), .0000000001);
+    assertEquals(-103.0, Document.longToDouble(ndv.get(0)), .0000000001);
     r.close();
     w.close();
     dir.close();

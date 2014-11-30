@@ -25,7 +25,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.CheckHits;
@@ -60,7 +60,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = TestUtil.randomUnicodeString(random());
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("field", s);
       terms.add(new BytesRef(s));
       writer.addDocument(doc);

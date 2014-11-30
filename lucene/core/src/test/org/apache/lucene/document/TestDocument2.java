@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -43,7 +44,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.NotUniqueException;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -54,7 +54,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -63,6 +62,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
+import org.junit.Ignore;
 
 public class TestDocument2 extends LuceneTestCase {
 
@@ -76,7 +76,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("body", "some text");
     doc.addShortText("title", "a title");
     doc.addAtom("id", "29jafnn");
@@ -93,7 +93,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("binary", new BytesRef(new byte[5]));
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
@@ -113,7 +113,7 @@ public class TestDocument2 extends LuceneTestCase {
     // Sort reverse by default:
     fieldTypes.enableSorting("binary", true);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     byte[] value = new byte[5];
     value[0] = 1;
     doc.addAtom("id", "0");
@@ -141,7 +141,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addStored("binary", new BytesRef(new byte[5]));
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
@@ -159,7 +159,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.setMultiValued("sortedset");
     fieldTypes.setDocValuesType("sortedset", DocValuesType.SORTED_SET);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("sortedset", "one");
     doc.addAtom("sortedset", "two");
     doc.addAtom("sortedset", "three");
@@ -194,7 +194,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.setDocValuesType("sortednumeric", DocValuesType.SORTED_NUMERIC);
     fieldTypes.setMultiValued("sortednumeric");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("sortednumeric", 3);
     doc.addInt("sortednumeric", 1);
     doc.addInt("sortednumeric", 2);
@@ -212,16 +212,134 @@ public class TestDocument2 extends LuceneTestCase {
     dir.close();
   }
 
+  // nocommit test multi-valued too
+  // nocommit does not work ... how to fix?  bring getComparator back to life!?
+  @Ignore
+  public void testBigIntRange() throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    //System.out.println("id type: " + fieldTypes.getFieldType("id"));
+
+    Document doc = w.newDocument();
+    doc.addBigInteger("big", new BigInteger("3000000000000000000"));
+    doc.addAtom("id", "one");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addBigInteger("big", new BigInteger("2000000000000000000"));
+    doc.addAtom("id", "two");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addBigInteger("big", new BigInteger("7000000000000000000"));
+    doc.addAtom("id", "three");
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+
+    System.out.println("FILTER: " + fieldTypes.newRangeFilter("big",
+                                                              new BigInteger("0"), true,
+                                                              new BigInteger("3000000000000000000"), true));
+
+    // Make sure range query hits the right number of hits
+    assertEquals(2, search(s, fieldTypes.newRangeFilter("big",
+                                                        new BigInteger("0"), true,
+                                                        new BigInteger("3000000000000000000"), true), 1).totalHits);
+    System.out.println("test query 2");
+    assertEquals(3, search(s, fieldTypes.newRangeFilter("big",
+                                                        new BigInteger("0"), true,
+                                                        new BigInteger("10000000000000000000"), true), 1).totalHits);
+    assertEquals(1, search(s, fieldTypes.newRangeFilter("big",
+                                                        new BigInteger("10000000000000000000"), true,
+                                                        new BigInteger("25000000000000000000"), true), 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testHalfFloatRange() throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    //System.out.println("id type: " + fieldTypes.getFieldType("id"));
+
+    Document doc = w.newDocument();
+    doc.addHalfFloat("halffloat", 3f);
+    doc.addAtom("id", "one");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addHalfFloat("halffloat", 2f);
+    doc.addAtom("id", "two");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addHalfFloat("halffloat", 7f);
+    doc.addAtom("id", "three");
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+
+    // Make sure range query hits the right number of hits
+    assertEquals(2, search(s, fieldTypes.newRangeFilter("halffloat", 0f, true, 3f, true), 1).totalHits);
+    assertEquals(3, search(s, fieldTypes.newRangeFilter("halffloat", 0f, true, 10f, true), 1).totalHits);
+    assertEquals(1, search(s, fieldTypes.newRangeFilter("halffloat", 1f, true,2.5f, true), 1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  // nocommit test multi-valued too
+  // nocommit this passed too easily:
+  public void testHalfFloatSort() throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    FieldTypes fieldTypes = w.getFieldTypes();
+    //System.out.println("id type: " + fieldTypes.getFieldType("id"));
+
+    Document doc = w.newDocument();
+    doc.addHalfFloat("halffloat", 3f);
+    doc.addAtom("id", "one");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addHalfFloat("halffloat", 2f);
+    doc.addAtom("id", "two");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addHalfFloat("halffloat", 7f);
+    doc.addAtom("id", "three");
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+
+    // Make sure range query hits the right number of hits
+    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("halffloat"));
+    assertEquals(3, hits.totalHits);
+    assertEquals("two", r.document(hits.scoreDocs[0].doc).getString("id"));
+    assertEquals("one", r.document(hits.scoreDocs[1].doc).getString("id"));
+    assertEquals("three", r.document(hits.scoreDocs[2].doc).getString("id"));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
   public void testFloatRangeQuery() throws Exception {
     Directory dir = newDirectory();
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableStored("id");
-    fieldTypes.enableSorting("id");
     //System.out.println("id type: " + fieldTypes.getFieldType("id"));
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addFloat("float", 3f);
     doc.addAtom("id", "one");
     w.addDocument(doc);
@@ -250,7 +368,7 @@ public class TestDocument2 extends LuceneTestCase {
     NumericDocValues ndv = MultiDocValues.getNumericValues(r, "float");
     assertNotNull(ndv);
     ScoreDoc hit = hits.scoreDocs[0];
-    Document2 storedDoc = r.document(hit.doc);
+    Document storedDoc = r.document(hit.doc);
     assertEquals("one", storedDoc.getString("id"));
     assertEquals(3f, Float.intBitsToFloat((int) ndv.get(hit.doc)), .001f);
 
@@ -286,7 +404,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 3);
     w.addDocument(doc);
     w.close();
@@ -303,7 +421,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 3);
     w.addDocument(doc);
 
@@ -347,13 +465,13 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setDocValuesType("string", DocValuesType.SORTED);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try {
       doc.addInt("string", 17);
       fail("did not hit expected exception");
     } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("wrong exception message: " + ise.getMessage(), "field \"string\": type INT must use NUMERIC docValuesType (got: SORTED)", ise.getMessage());
+      assertEquals("wrong exception message: " + ise.getMessage(), "field \"string\": type INT must use NUMERIC or SORTED_NUMERIC docValuesType (got: SORTED)", ise.getMessage());
     }
     doc.addAtom("string", "a string");
     w.addDocument(doc);
@@ -367,13 +485,13 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setDocValuesType("binary", DocValuesType.BINARY);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try {
       doc.addInt("binary", 17);
       fail("did not hit expected exception");
     } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("wrong exception message: " + ise.getMessage(), "field \"binary\": type INT must use NUMERIC docValuesType (got: BINARY)", ise.getMessage());
+      assertEquals("wrong exception message: " + ise.getMessage(), "field \"binary\": type INT must use NUMERIC or SORTED_NUMERIC docValuesType (got: BINARY)", ise.getMessage());
     }
     doc.addAtom("binary", new BytesRef(new byte[7]));
     w.addDocument(doc);
@@ -387,7 +505,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.enableStored("body");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try {
       doc.addLargeText("body", new StringReader("a small string"));
       fail("did not hit expected exception");
@@ -407,7 +525,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.enableStored("body");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try {
       doc.addLargeText("body", new CannedTokenStream());
       fail("did not hit expected exception");
@@ -430,7 +548,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("id", true);
     fieldTypes.enableStored("id");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
 
     doc.addAtom("id", "two");
     w.addDocument(doc);
@@ -457,7 +575,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("numbers");
     fieldTypes.enableStored("id");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("numbers", 1);
     doc.addInt("numbers", 2);
     doc.addAtom("id", "one");
@@ -489,7 +607,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("strings");
     fieldTypes.enableStored("id");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("strings", "abc");
     doc.addAtom("strings", "baz");
     doc.addAtom("id", "one");
@@ -526,7 +644,7 @@ public class TestDocument2 extends LuceneTestCase {
       assertEquals("wrong exception message: " + ise.getMessage(), "field \"binary\": DocValuesType=BINARY cannot be multi-valued", ise.getMessage());
     }
     assertFalse(fieldTypes.getMultiValued("binary"));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addStored("binary", new BytesRef(new byte[7]));
     w.addDocument(doc);
     w.close();
@@ -547,7 +665,7 @@ public class TestDocument2 extends LuceneTestCase {
       assertEquals("wrong exception message: " + ise.getMessage(), "field \"sorted\": DocValuesType=SORTED cannot be multi-valued", ise.getMessage());
     }
     assertFalse(fieldTypes.getMultiValued("sorted"));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addStored("binary", new BytesRef(new byte[7]));
     w.addDocument(doc);
     w.close();
@@ -568,7 +686,7 @@ public class TestDocument2 extends LuceneTestCase {
       assertEquals("wrong exception message: " + ise.getMessage(), "field \"numeric\": DocValuesType=NUMERIC cannot be multi-valued", ise.getMessage());
     }
     assertFalse(fieldTypes.getMultiValued("numeric"));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("numeric", 17);
     w.addDocument(doc);
     w.close();
@@ -585,7 +703,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableStored("id");
     fieldTypes.disableFastRanges("id");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("id", "0");
     w.addDocument(doc);
 
@@ -612,7 +730,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLong("id", 1L);
     w.addDocument(doc);
 
@@ -631,7 +749,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("id", 1);
     w.addDocument(doc);
 
@@ -651,7 +769,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setIndexOptions("id", IndexOptions.DOCS);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addStored("id", new BytesRef(new byte[1]));
     w.addDocument(doc);
 
@@ -674,7 +792,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableStored("id");
     fieldTypes.enableSorting("id");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("id", "1");
     w.addDocument(doc);
 
@@ -704,12 +822,12 @@ public class TestDocument2 extends LuceneTestCase {
 
     fieldTypes.setTermsDictBlockSize("id", 10);
     for(int i=0;i<10;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("id", "0" + i);
       w.addDocument(doc);
     }
     for(int i=0;i<10;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("id", "1" + i);
       w.addDocument(doc);
     }
@@ -753,13 +871,13 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setDocValuesType("id", DocValuesType.BINARY);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try {
       doc.addInt("id", 17);
       fail("did not hit exception");
     } catch (IllegalStateException ise) {
       // Expected
-      assertEquals("wrong exception message: " + ise.getMessage(), "field \"id\": type INT must use NUMERIC docValuesType (got: BINARY)", ise.getMessage());
+      assertEquals("wrong exception message: " + ise.getMessage(), "field \"id\": type INT must use NUMERIC or SORTED_NUMERIC docValuesType (got: BINARY)", ise.getMessage());
     }
     fieldTypes.setPostingsFormat("id", "Memory");
     w.close();
@@ -789,7 +907,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("id", "foo bar");
     w.addDocument(doc);
     BaseTokenStreamTestCase.assertTokenStreamContents(fieldTypes.getQueryAnalyzer().tokenStream("id", "foo bar"), new String[] {"foo bar"}, new int[1], new int[] {7});
@@ -804,7 +922,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("no_highlight");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("highlight", "here is some content");
     doc.addLargeText("no_highlight", "here is some content");
     w.addDocument(doc);
@@ -833,7 +951,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.disableHighlighting("onegap");
     fieldTypes.setAnalyzerPositionGap("onegap", 1);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("nogap", "word1");
     doc.addLargeText("nogap", "word2");
     doc.addLargeText("onegap", "word1");
@@ -860,7 +978,7 @@ public class TestDocument2 extends LuceneTestCase {
   public void testExcFieldTypesAreSaved() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("id", new BytesRef(new byte[5]));
     w.addDocument(doc);
     w.close();
@@ -887,7 +1005,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setIndexOptions("foo", IndexOptions.NONE);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("foo", "bar");
     w.addDocument(doc);
 
@@ -912,7 +1030,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setDocValuesType("foo", DocValuesType.NONE);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 17);
     w.addDocument(doc);
 
@@ -934,7 +1052,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableFastRanges("int");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 17);
     w.addDocument(doc);
     try {
@@ -962,7 +1080,7 @@ public class TestDocument2 extends LuceneTestCase {
 
     FieldTypes fieldTypes = w.getFieldTypes();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addBoolean("onsale", true);
     w.addDocument(doc);
 
@@ -1004,7 +1122,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("int");
     fieldTypes.setSortMissingFirst("int");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 7);
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1040,7 +1158,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("int", true);
     fieldTypes.setSortMissingFirst("int");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 7);
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1076,7 +1194,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("int");
     fieldTypes.setSortMissingLast("int");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 7);
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1112,7 +1230,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("int", true);
     fieldTypes.setSortMissingLast("int");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 7);
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1145,7 +1263,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.commit();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 7);
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1178,7 +1296,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.commit();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("int", 7);
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1216,7 +1334,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("atom");
     fieldTypes.setSortMissingFirst("atom");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("atom", "z");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1252,7 +1370,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("atom", true);
     fieldTypes.setSortMissingFirst("atom");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("atom", "z");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1288,7 +1406,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("atom");
     fieldTypes.setSortMissingLast("atom");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("atom", "z");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1324,7 +1442,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.enableSorting("atom", true);
     fieldTypes.setSortMissingLast("atom");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("atom", "z");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1357,7 +1475,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.commit();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("atom", "z");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1390,7 +1508,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.commit();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("atom", "z");
     doc.addAtom("id", "0");
     w.addDocument(doc);
@@ -1423,7 +1541,7 @@ public class TestDocument2 extends LuceneTestCase {
     w.getFieldTypes().setMinMaxTokenLength("field", 2, 7);
     w.commit();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "hello a toobigterm");
     w.addDocument(doc);
 
@@ -1451,7 +1569,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.setMaxTokenCount("field", 3);
     w.commit();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "hello a toobigterm goodbye");
     w.addDocument(doc);
 
@@ -1475,7 +1593,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMaxTokenCount("field", 3, true);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "hello a toobigterm goodbye");
     w.addDocument(doc);
 
@@ -1499,7 +1617,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setDocValuesType("field", DocValuesType.NONE);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("field", 17);
     w.addDocument(doc);
 
@@ -1520,7 +1638,7 @@ public class TestDocument2 extends LuceneTestCase {
     SimpleDateFormat parser = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
     parser.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     Date date0 = parser.parse("10/22/2014");
     doc.addDate("date", date0);
     doc.addAtom("id", "0");
@@ -1540,7 +1658,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("date"));
     assertEquals(2, hits.totalHits);
-    Document2 hit = s.doc(hits.scoreDocs[0].doc);
+    Document hit = s.doc(hits.scoreDocs[0].doc);
     assertEquals("1", hit.getString("id"));
     assertEquals(date1, hit.getDate("date"));
     hit = s.doc(hits.scoreDocs[1].doc);
@@ -1558,7 +1676,7 @@ public class TestDocument2 extends LuceneTestCase {
     SimpleDateFormat parser = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
     parser.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     Date date0 = parser.parse("10/22/2014");
     doc.addDate("date", date0);
     doc.addAtom("id", "0");
@@ -1587,7 +1705,7 @@ public class TestDocument2 extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     InetAddress inet0 = InetAddress.getByName("10.17.4.10");
     doc.addInetAddress("inet", inet0);
     doc.addAtom("id", "0");
@@ -1605,7 +1723,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("inet"));
     assertEquals(2, hits.totalHits);
-    Document2 hit = s.doc(hits.scoreDocs[0].doc);
+    Document hit = s.doc(hits.scoreDocs[0].doc);
     assertEquals("0", hit.getString("id"));
     assertEquals(inet0, hit.getInetAddress("inet"));
     hit = s.doc(hits.scoreDocs[1].doc);
@@ -1620,7 +1738,7 @@ public class TestDocument2 extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     InetAddress inet0 = InetAddress.getByName("10.17.4.10");
     doc.addInetAddress("inet", inet0);
     doc.addAtom("id", "0");
@@ -1651,7 +1769,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMinMaxTokenLength("field", 2, 7);
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "a");
     doc.addAtom("field", "ab");
     doc.addAtom("field", "goodbyeyou");
@@ -1675,7 +1793,7 @@ public class TestDocument2 extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMinMaxTokenLength("field", 2, 7);
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", new BytesRef(new byte[1]));
     doc.addAtom("field", new BytesRef(new byte[2]));
     doc.addAtom("field", new BytesRef(new byte[10]));
@@ -1700,7 +1818,7 @@ public class TestDocument2 extends LuceneTestCase {
     fieldTypes.disableNorms("field");
     fieldTypes.enableStored("field");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try {
       doc.addLargeText("field", new TokenStream() {
           @Override
@@ -1719,7 +1837,7 @@ public class TestDocument2 extends LuceneTestCase {
   public void testFieldExistsFilter() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field1", "field");
     doc.addAtom("field2", "field");
     doc.addAtom("id", "0");
@@ -1777,7 +1895,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("field", "foo");
     doc.addUniqueAtom("field", "bar");
     w.addDocument(doc);
@@ -1797,7 +1915,7 @@ public class TestDocument2 extends LuceneTestCase {
     IndexWriter w = newIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addStored("field", "bar");
     // nocommit why no exc here?
     doc.addLargeText("field", "bar");
@@ -1809,14 +1927,40 @@ public class TestDocument2 extends LuceneTestCase {
   public void testDoubleTermQuery() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = newIndexWriter(dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addDouble("double", 180.0);
     w.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
     assertEquals(1, s.search(new TermQuery(new Term("double",
-                                                    Document2.longToBytes(Document2.sortableDoubleBits(Double.doubleToLongBits(180.0))))),
+                                                    Document.longToBytes(Document.sortableDoubleBits(Double.doubleToLongBits(180.0))))),
                              1).totalHits);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testSortLocale() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = newIndexWriter(dir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setSortLocale("collated", Locale.ENGLISH);
+
+    Document doc = w.newDocument();
+    doc.addAtom("field", "ABC");
+    doc.addAtom("collated", "ABC");
+    w.addDocument(doc);
+
+    doc = w.newDocument();
+    doc.addAtom("field", "abc");
+    doc.addAtom("collated", "abc");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+    TopDocs td = s.search(new MatchAllDocsQuery(), 5, fieldTypes.newSort("collated"));
+    assertEquals("abc", r.document(td.scoreDocs[0].doc).get("field"));
+    assertEquals("ABC", r.document(td.scoreDocs[1].doc).get("field"));
     r.close();
     w.close();
     dir.close();

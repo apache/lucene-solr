@@ -30,12 +30,8 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -43,7 +39,6 @@ import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LineFileDocsText;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
@@ -553,7 +548,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) throws IOException {
 
     StringReader bogus = new StringReader("");
-    Document2 doc = null;
+    Document doc = null;
     final LineFileDocsText docs = new LineFileDocsText(random);
     if (iw != null) {
       FieldTypes fieldTypes = iw.getFieldTypes();
@@ -686,7 +681,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect, null);
   }
   
-  private static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text, boolean offsetsAreCorrect, Document2 doc) throws IOException {
+  private static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text, boolean offsetsAreCorrect, Document doc) throws IOException {
 
     if (VERBOSE) {
       System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);

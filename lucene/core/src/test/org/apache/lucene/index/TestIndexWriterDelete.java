@@ -32,13 +32,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -70,7 +65,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     fieldTypes.disableStored("contents");
 
     for (int i = 0; i < keywords.length; i++) {
-      Document2 doc = modifier.newDocument();
+      Document doc = modifier.newDocument();
       doc.addAtom("id", keywords[i]);
       doc.addStored("country", unindexed[i]);
       doc.addLargeText("contents", unstored[i]);
@@ -337,7 +332,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           try {
             latch.await();
             for (int j = 0; j < 1000; j++) {
-              Document2 doc = modifier.newDocument();
+              Document doc = modifier.newDocument();
               doc.addLargeText("content", "aaa");
               doc.addUniqueInt("id", id++);
               doc.addInt("value", value);
@@ -465,7 +460,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   private void updateDoc(IndexWriter modifier, int id, int value)
       throws IOException {
-    Document2 doc = modifier.newDocument();
+    Document doc = modifier.newDocument();
     doc.addLargeText("content", "aaa");
     doc.addUniqueInt("id", id);
     doc.addInt("value", value);
@@ -478,7 +473,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   private void addDoc(IndexWriter modifier, int id, int value)
       throws IOException {
-    Document2 doc = modifier.newDocument();
+    Document doc = modifier.newDocument();
     doc.addLargeText("content", "aaa");
     doc.addUniqueInt("id", id);
     doc.addInt("value", value);
@@ -520,7 +515,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     startDir.setEnableVirusScanner(false);
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     for (int i = 0; i < 157; i++) {
-      Document2 d = writer.newDocument();
+      Document d = writer.newDocument();
       d.addUniqueInt("id", i);
       d.addLargeText("content", "aaa " + i);
       d.addInt("dv", i);
@@ -604,7 +599,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             int docId = 12;
             for (int i = 0; i < 13; i++) {
               if (updates) {
-                Document2 d = modifier.newDocument();
+                Document d = modifier.newDocument();
                 d.addUniqueInt("id", docId);
                 d.addLargeText("content", "bbb " + i);
                 d.addInt("dv", i);
@@ -798,7 +793,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.failOn(failure.reset());
 
     for (int i = 0; i < keywords.length; i++) {
-      Document2 doc = modifier.newDocument();
+      Document doc = modifier.newDocument();
       doc.addAtom("id", keywords[i]);
       doc.addStored("country", unindexed[i]);
       doc.addLargeText("contents", unstored[i]);
@@ -918,7 +913,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.failOn(failure.reset());
 
     for (int i = 0; i < keywords.length; i++) {
-      Document2 doc = modifier.newDocument();
+      Document doc = modifier.newDocument();
       doc.addAtom("id", keywords[i]);
       doc.addStored("country", unindexed[i]);
       doc.addLargeText("contents", unstored[i]);
@@ -965,7 +960,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
     Collections.shuffle(ids, random());
     for(int id : ids) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", id);
       w.addDocument(doc);
     }
@@ -1007,7 +1002,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                            .setRAMBufferSizeMB(1.0)
                                            .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                            .setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20");
     int num = atLeast(3);
     for (int iter = 0; iter < num; iter++) {
@@ -1056,7 +1051,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int count = 0;
     int startDelCount = w.getFlushDeletesCount();
     while(true) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", count);
       final Term delTerm;
       if (count == 1010) {
@@ -1103,7 +1098,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int count = 0;
     int startDelCount = w.getFlushDeletesCount();
     while(true) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", count);
       final Term delTerm;
       if (count == 1010) {
@@ -1162,7 +1157,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       if (id == 500) {
         w.deleteDocuments(new Term("id", "0"));
       }
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", id);
       doc.addLargeText("body", sb.toString());
       w.updateDocument(fieldTypes.newIntTerm("id", id), doc);
@@ -1188,7 +1183,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(2);
     IndexWriter w = new IndexWriter(dir, iwc);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "0");
     w.addDocument(doc);
 
@@ -1235,7 +1230,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(d, iwc);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     w.addDocument(doc);
     w.addDocument(doc);
     w.addDocument(doc);

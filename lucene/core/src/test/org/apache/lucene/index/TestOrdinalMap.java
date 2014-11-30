@@ -22,16 +22,12 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
@@ -72,7 +68,7 @@ public class TestOrdinalMap extends LuceneTestCase {
     final int maxDoc = TestUtil.nextInt(random(), 10, 1000);
     final int maxTermLength = TestUtil.nextInt(random(), 1, 4);
     for (int i = 0; i < maxDoc; ++i) {
-      Document2 d = iw.newDocument();
+      Document d = iw.newDocument();
       if (random().nextBoolean()) {
         d.addShortText("sdv", TestUtil.randomSimpleString(random(), maxTermLength));
       }

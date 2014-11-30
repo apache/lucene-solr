@@ -30,18 +30,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.cranky.CrankyCodec;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
@@ -112,7 +102,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     try {
       for (int i = 0; i < numDocs; i++) {
         // TODO: add crankyDocValuesFields, etc
-        Document2 doc = iw.newDocument();
+        Document doc = iw.newDocument();
         doc.addAtom("id", Integer.toString(i));
         doc.addInt("dv", i);
         doc.addBinary("dv2", new BytesRef(Integer.toString(i)));
@@ -153,7 +143,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           }
         } else {
           // block docs
-          Document2 doc2 = iw.newDocument();
+          Document doc2 = iw.newDocument();
           doc2.addAtom("id", Integer.toString(-i));
           doc2.addLargeText("text1", TestUtil.randomAnalysisString(random(), 20, true));
           doc2.addStored("stored1", "foo");

@@ -25,13 +25,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -80,7 +75,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       final long stopTime = System.currentTimeMillis() + 200;
 
       do {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
         doc.addInt("dv", 5);
         try {
@@ -339,7 +334,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
-    final Document2 doc = writer.newDocument();
+    final Document doc = writer.newDocument();
     doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
 
     for(int i=0;i<6;i++) {
@@ -542,7 +537,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     public void run() {
       try {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addLargeText("field", "testData");
         iwConstructed.countDown();
         startIndexing.await();

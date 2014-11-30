@@ -25,8 +25,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * <p>This filter matches the documents looking for terms that fall into the
  * supplied range according to {@link
- * Byte#compareTo(Byte)},  It is not intended
- * for numerical ranges; use {@link NumericRangeFilter} instead.
+ * Byte#compareTo(Byte)}.
  *
  * <p>If you construct a large number of range filters with different ranges but on the 
  * same field, {@link DocValuesRangeFilter} may have significantly better performance. 
@@ -71,7 +70,7 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery>
    * less than or equal to <code>upperTerm</code>.
    */
   public static TermRangeFilter Less(String fieldName, BytesRef upperTerm) {
-      return new TermRangeFilter(fieldName, null, upperTerm, false, true);
+    return new TermRangeFilter(fieldName, null, upperTerm, false, true);
   }
 
   /**
@@ -79,7 +78,7 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery>
    * greater than or equal to <code>lowerTerm</code>.
    */
   public static TermRangeFilter More(String fieldName, BytesRef lowerTerm) {
-      return new TermRangeFilter(fieldName, lowerTerm, null, true, false);
+    return new TermRangeFilter(fieldName, lowerTerm, null, true, false);
   }
   
   /** Returns the lower value of this range filter */

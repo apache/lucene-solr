@@ -27,9 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -149,7 +147,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   }
                 }
 
-                Document2 doc = docs.nextDoc();
+                Document doc = docs.nextDoc();
                 
                 // Maybe add randomly named field
                 if (random().nextBoolean()) {
@@ -176,7 +174,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
                     final List<String> docIDs = new ArrayList<>();
                     final SubDocs subDocs = new SubDocs(packID, docIDs);
-                    final List<Document2> docsList = new ArrayList<>();
+                    final List<Document> docsList = new ArrayList<>();
 
                     allSubDocs.add(subDocs);
                     doc.addAtom("packID", packID);
@@ -459,7 +457,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
         final int inc = Math.max(1, maxDoc/50);
         for(int docID=0;docID<maxDoc;docID += inc) {
           if (liveDocs == null || liveDocs.get(docID)) {
-            final Document2 doc = reader.document(docID);
+            final Document doc = reader.document(docID);
             sum += doc.getFields().size();
           }
         }
@@ -571,7 +569,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
               startDocID = docID;
             }
             lastDocID = docID;
-            final Document2 doc = s.doc(docID);
+            final Document doc = s.doc(docID);
             assertEquals(subDocs.packID, doc.get("packID"));
           }
 

@@ -21,10 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LuceneTestCase;
@@ -40,7 +37,7 @@ public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
     conf.setCodec(TestUtil.getDefaultCodec());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
     for (int i = 0; i < 100; i++) {
-      Document2 doc = riw.newDocument();
+      Document doc = riw.newDocument();
       doc.addUniqueInt("id", i);
       // these fields should sometimes get term vectors, etc
       doc.addLargeText("body", TestUtil.randomUnicodeString(random()));

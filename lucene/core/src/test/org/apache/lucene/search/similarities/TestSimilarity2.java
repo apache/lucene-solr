@@ -20,7 +20,7 @@ package org.apache.lucene.search.similarities;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -91,7 +91,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void testEmptyField() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
@@ -113,7 +113,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void testEmptyTerm() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
@@ -137,7 +137,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableNorms("foo");
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
@@ -162,7 +162,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     fieldTypes.setIndexOptions("foo", IndexOptions.DOCS);
     fieldTypes.disableHighlighting("foo");
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
@@ -185,7 +185,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = iw.getFieldTypes();
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     fieldTypes.setIndexOptions("foo", IndexOptions.DOCS);
     fieldTypes.disableNorms("foo");
     fieldTypes.disableHighlighting("foo");
@@ -213,7 +213,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     // inner queries are not real queries, their boosts are ignored, etc.
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();

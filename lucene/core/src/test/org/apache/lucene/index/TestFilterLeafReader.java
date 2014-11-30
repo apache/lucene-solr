@@ -23,9 +23,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
@@ -119,15 +117,15 @@ public class TestFilterLeafReader extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
 
-    Document2 d1 = writer.newDocument();
+    Document d1 = writer.newDocument();
     d1.addLargeText("default", "one two");
     writer.addDocument(d1);
 
-    Document2 d2 = writer.newDocument();
+    Document d2 = writer.newDocument();
     d2.addLargeText("default", "one three");
     writer.addDocument(d2);
 
-    Document2 d3 = writer.newDocument();
+    Document d3 = writer.newDocument();
     d3.addLargeText("default", "two four");
     writer.addDocument(d3);
 

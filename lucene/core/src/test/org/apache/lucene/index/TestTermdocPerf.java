@@ -23,9 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -92,7 +90,7 @@ public class TestTermdocPerf extends LuceneTestCase {
           .setMaxBufferedDocs(100)
           .setMergePolicy(newLogMergePolicy(100))
     );
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom(field, val);
     for (int i=0; i<ndocs; i++) {
       writer.addDocument(doc);

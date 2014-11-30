@@ -23,11 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -62,7 +58,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "\u0633\u0627\u0628");
     doc.addAtom("body", "body");
     writer.addDocument(doc);
@@ -93,7 +89,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                             BytesRef secondEnd) throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
     // orders the U+0698 character before the U+0633 character, so the single
@@ -121,7 +117,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     Directory farsiIndex = newDirectory();
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(analyzer));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "\u0633\u0627\u0628");
     doc.addAtom("body", "body");
     writer.addDocument(doc);
@@ -156,7 +152,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {
-      Document2 doc = searcher.doc(result[i].doc);
+      Document doc = searcher.doc(result[i].doc);
       for (IndexableField f : doc.getFields("tracer")) {
         buff.append(f.stringValue());
       }

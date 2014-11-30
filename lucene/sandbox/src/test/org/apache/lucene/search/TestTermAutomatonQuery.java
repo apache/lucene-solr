@@ -35,11 +35,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
@@ -61,7 +58,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testBasic1() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     // matches
     doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
@@ -95,7 +92,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testBasicSynonym() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
 
@@ -128,7 +125,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testBasicSlop() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
 
@@ -169,7 +166,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testPosLengthAtQueryTimeMock() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "speedy wifi network");
     w.addDocument(doc);
 
@@ -220,7 +217,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testPosLengthAtQueryTimeTrueish() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "speedy wifi network");
     w.addDocument(doc);
 
@@ -265,7 +262,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testFreq() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     // matches freq == 3
     doc.addLargeText("field", "here comes the sun foo bar here comes another sun here comes shiny sun");
     w.addDocument(doc);
@@ -316,7 +313,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testSegsMissingTerms() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
     w.commit();
@@ -380,7 +377,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   public void testAnyFromTokenStream() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "here comes the sun");
     w.addDocument(doc);
 
@@ -481,7 +478,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("field");
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       int numTokens = atLeast(10);
 
       StringBuilder sb = new StringBuilder();

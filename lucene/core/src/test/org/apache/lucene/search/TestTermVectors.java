@@ -21,10 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -49,7 +47,6 @@ public class TestTermVectors extends LuceneTestCase {
     //writer.setNoCFSRatio(1.0);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
-      FieldType ft = new FieldType(TextField.TYPE_STORED);
       int mod3 = i % 3;
       int mod2 = i % 2;
       if (mod2 == 0 && mod3 == 0) {
@@ -65,7 +62,7 @@ public class TestTermVectors extends LuceneTestCase {
       } else {
         fieldTypes.enableTermVectors("field");
       }
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("field", English.intToEnglish(i));
       //test no term vectors too
       doc.addLargeText("noTV", English.intToEnglish(i));
@@ -94,13 +91,13 @@ public class TestTermVectors extends LuceneTestCase {
     writer.close();
   }
 
-  private Document2 createDoc(IndexWriter writer) {
+  private Document createDoc(IndexWriter writer) {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.enableTermVectors("c");
     fieldTypes.enableTermVectorOffsets("c");
     fieldTypes.enableTermVectorPositions("c");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("c", "aaa");
     return doc;
   }

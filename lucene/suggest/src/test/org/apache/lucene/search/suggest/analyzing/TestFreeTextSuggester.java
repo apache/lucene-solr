@@ -38,7 +38,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
@@ -147,7 +146,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
         @Override
         public BytesRef next() {
-          Document2 doc;
+          Document doc;
           try {
             doc = lfd.nextDoc();
           } catch (IOException ioe) {

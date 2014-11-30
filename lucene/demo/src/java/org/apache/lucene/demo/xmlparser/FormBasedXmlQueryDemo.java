@@ -34,11 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -115,7 +112,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
       //and package the results and forward to JSP
       if (topDocs != null) {
         ScoreDoc[] sd = topDocs.scoreDocs;
-        Document2[] results = new Document2[sd.length];
+        Document[] results = new Document[sd.length];
         for (int i = 0; i < results.length; i++) {
           results[i] = searcher.doc(sd[i].doc);
           request.setAttribute("results", results);
@@ -137,18 +134,20 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
     InputStream dataIn = getServletContext().getResourceAsStream("/WEB-INF/data.tsv");
     BufferedReader br = new BufferedReader(new InputStreamReader(dataIn, StandardCharsets.UTF_8));
     String line = br.readLine();
-    final FieldType textNoNorms = new FieldType(TextField.TYPE_STORED);
-    textNoNorms.setOmitNorms(true);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    for (String fieldName : new String[] {"location", "salary", "type", "description"}) {
+      fieldTypes.disableNorms(fieldName);
+    }
     while (line != null) {
       line = line.trim();
       if (line.length() > 0) {
         //parse row and create a document
         StringTokenizer st = new StringTokenizer(line, "\t");
-        Document doc = new Document();
-        doc.add(new Field("location", st.nextToken(), textNoNorms));
-        doc.add(new Field("salary", st.nextToken(), textNoNorms));
-        doc.add(new Field("type", st.nextToken(), textNoNorms));
-        doc.add(new Field("description", st.nextToken(), textNoNorms));
+        Document doc = writer.newDocument();
+        doc.addLargeText("location", st.nextToken());
+        doc.addLargeText("salary", st.nextToken());
+        doc.addLargeText("type", st.nextToken());
+        doc.addLargeText("description", st.nextToken());
         writer.addDocument(doc);
       }
       line = br.readLine();

@@ -19,9 +19,7 @@ package org.apache.lucene;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -95,7 +93,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setMergePolicy(newLogMergePolicy()));
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "");
     
     LogMergePolicy logMP = (LogMergePolicy) writer.getConfig().getMergePolicy();

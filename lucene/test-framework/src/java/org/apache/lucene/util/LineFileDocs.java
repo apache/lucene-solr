@@ -34,16 +34,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 
 /** Minimal port of benchmark's LneDocSource +
@@ -165,7 +157,7 @@ public class LineFileDocs implements Closeable {
   private final static char SEP = '\t';
 
   /** Note: Document instance is re-used per-thread */
-  public Document2 nextDoc() throws IOException {
+  public Document nextDoc() throws IOException {
     String line;
     synchronized(this) {
       line = reader.readLine();
@@ -189,7 +181,7 @@ public class LineFileDocs implements Closeable {
       throw new RuntimeException("line: [" + line + "] is in an invalid format !");
     }
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("body", line.substring(1+spot2, line.length()));
 
     final String title = line.substring(0, spot);

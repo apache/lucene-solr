@@ -19,11 +19,8 @@ package org.apache.lucene.queries.function;
 
 import java.util.Collections;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
@@ -38,7 +35,7 @@ public class TestSortedSetFieldSource extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(null));
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addBinary("value", new BytesRef("baz"));
     doc.addAtom("id", "2");
     writer.addDocument(doc);

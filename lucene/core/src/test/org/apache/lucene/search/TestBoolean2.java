@@ -21,9 +21,7 @@ package org.apache.lucene.search;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -60,7 +58,7 @@ public class TestBoolean2 extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(field, docFields[i]);
       writer.addDocument(doc);
     }
@@ -94,7 +92,7 @@ public class TestBoolean2 extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir2, 
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field2", "xxx");
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);

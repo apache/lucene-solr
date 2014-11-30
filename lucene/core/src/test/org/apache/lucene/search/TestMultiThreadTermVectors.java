@@ -48,7 +48,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     fieldTypes.setIndexOptions("field", IndexOptions.DOCS);
     fieldTypes.enableTermVectors("field");
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("field", English.intToEnglish(i));
       writer.addDocument(doc);
     }

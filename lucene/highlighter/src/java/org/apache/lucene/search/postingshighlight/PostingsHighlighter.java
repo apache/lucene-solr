@@ -77,6 +77,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * <b>WARNING</b>: The code is very new and probably still has some exciting bugs!
  * <p>
  * Example usage:
+// nocommit fixme
  * <pre class="prettyprint">
  *   // configure field with offsets at index time
  *   FieldType offsetsType = new FieldType(TextField.TYPE_STORED);

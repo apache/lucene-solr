@@ -27,11 +27,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -51,7 +48,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
@@ -66,16 +62,16 @@ public class TestDocTermOrds extends LuceneTestCase {
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    Document doc = new Document();
-    Field field = newTextField("field", "", Field.Store.NO);
-    doc.add(field);
-    field.setStringValue("a b c");
+    Document doc = w.newDocument();
+    doc.addLargeText("field", "a b c");
     w.addDocument(doc);
 
-    field.setStringValue("d e f");
+    doc = w.newDocument();
+    doc.addLargeText("field", "d e f");
     w.addDocument(doc);
 
-    field.setStringValue("a f");
+    doc = w.newDocument();
+    doc.addLargeText("field", "a f");
     w.addDocument(doc);
     
     final IndexReader r = w.getReader();
@@ -142,7 +138,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final Set<Integer> ordsForDocSet = new HashSet<>();
 
     for(int id=0;id<NUM_DOCS;id++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addInt("id", id);
       
       final int termCount = TestUtil.nextInt(random(), 0, 20 * RANDOM_MULTIPLIER);
@@ -241,7 +237,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final Set<Integer> ordsForDocSet = new HashSet<>();
 
     for(int id=0;id<NUM_DOCS;id++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
 
       doc.addInt("id", id);
       
@@ -400,15 +396,17 @@ public class TestDocTermOrds extends LuceneTestCase {
   public void testBackToTheFuture() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    
-    Document doc = new Document();
-    doc.add(newStringField("foo", "bar", Field.Store.NO));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("foo");
+
+    Document doc = iw.newDocument();
+    doc.addAtom("foo", "bar");
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(newStringField("foo", "baz", Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addAtom("foo", "baz");
     // we need a second value for a doc, or we don't actually test DocTermOrds!
-    doc.add(newStringField("foo", "car", Field.Store.NO));
+    doc.addAtom("foo", "car");
     iw.addDocument(doc);
     
     DirectoryReader r1 = DirectoryReader.open(iw, true);
@@ -436,7 +434,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     fieldTypes.disableSorting("foo");
     fieldTypes.setMultiValued("foo");
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addInt("foo", 5);
     iw.addDocument(doc);
     
@@ -464,10 +462,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document2.bytesToInt(value));
+    assertEquals(-3, Document.bytesToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document2.bytesToInt(value));
+    assertEquals(5, Document.bytesToInt(value));
     
     ir.close();
     dir.close();
@@ -480,7 +478,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     fieldTypes.disableSorting("foo");
     fieldTypes.setMultiValued("foo");
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLong("foo", 5);
     iw.addDocument(doc);
     
@@ -508,10 +506,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document2.bytesToLong(value));
+    assertEquals(-3, Document.bytesToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document2.bytesToLong(value));
+    assertEquals(5, Document.bytesToLong(value));
     
     ir.close();
     dir.close();
@@ -523,19 +521,21 @@ public class TestDocTermOrds extends LuceneTestCase {
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    FieldTypes fieldTypes = iwriter.getFieldTypes();
+    fieldTypes.setMultiValued("field");
     
-    Document doc = new Document();
-    doc.add(new StringField("field", "hello", Field.Store.NO));
+    Document doc = iwriter.newDocument();
+    doc.addAtom("field", "hello");
     iwriter.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new StringField("field", "world", Field.Store.NO));
+    doc = iwriter.newDocument();
+    doc.addAtom("field", "world");
     // we need a second value for a doc, or we don't actually test DocTermOrds!
-    doc.add(new StringField("field", "hello", Field.Store.NO));
+    doc.addAtom("field", "hello");
     iwriter.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new StringField("field", "beer", Field.Store.NO));
+    doc = iwriter.newDocument();
+    doc.addAtom("field", "beer");
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     
@@ -606,21 +606,24 @@ public class TestDocTermOrds extends LuceneTestCase {
     IndexWriterConfig iwconfig =  newIndexWriterConfig(null);
     iwconfig.setMergePolicy(newLogMergePolicy());
     IndexWriter iw = new IndexWriter(dir, iwconfig);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setMultiValued("foo");
+    fieldTypes.disableSorting("foo");
     
-    Document doc = new Document();
-    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    Document doc = iw.newDocument();
+    doc.addAtom("foo", "bar");
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addAtom("foo", "baz");
     iw.addDocument(doc);
     
-    doc = new Document();
+    doc = iw.newDocument();
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(new StringField("foo", "baz", Field.Store.NO));
-    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addAtom("foo", "baz");
+    doc.addAtom("foo", "baz");
     iw.addDocument(doc);
     
     iw.forceMerge(1);

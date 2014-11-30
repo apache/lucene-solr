@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -57,7 +55,7 @@ public class TermFilterTest extends LuceneTestCase {
     String fieldName = "field1";
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom(fieldName, "value1");
     w.addDocument(doc);
     IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
@@ -90,7 +88,7 @@ public class TermFilterTest extends LuceneTestCase {
       String field = "field" + i;
       String string = TestUtil.randomRealisticUnicodeString(random());
       terms.add(new Term(field, string));
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom(field, string);
       w.addDocument(doc);
     }

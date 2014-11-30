@@ -21,11 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.apache.lucene.document.BinaryDocValuesField; // javadocs
-import org.apache.lucene.document.NumericDocValuesField; // javadocs
-import org.apache.lucene.document.SortedDocValuesField; // javadocs
-import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
-import org.apache.lucene.document.StringField; // javadocs
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
@@ -59,7 +54,7 @@ public class UninvertingReader extends FilterLeafReader {
    */
   public static enum Type {
     /** 
-     * Single-valued Integer, (e.g. indexed with {@link IntField})
+     * Single-valued Integer, (e.g. indexed with {@link Document2#addInt})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -87,31 +82,31 @@ public class UninvertingReader extends FilterLeafReader {
      */
     DOUBLE,
     /** 
-     * Single-valued Binary, (e.g. indexed with {@link StringField}) 
+     * Single-valued Binary, (e.g. indexed with {@link Document2#addAtom}) 
      * <p>
      * Fields with this type act as if they were indexed with
-     * {@link BinaryDocValuesField}.
+     * an unsorted {@link Document2#addBinary} field.
      */
     BINARY,
     /** 
-     * Single-valued Binary, (e.g. indexed with {@link StringField}) 
+     * Single-valued Binary, (e.g. indexed with {@link Document2#addAtom})
+     * without doc values.
      * <p>
-     * Fields with this type act as if they were indexed with
-     * {@link SortedDocValuesField}.
+     * Fields with this type act as if they were indexed with doc values.
      */
     SORTED,
     /** 
-     * Multi-valued Binary, (e.g. indexed with {@link StringField}) 
+     * Multi-valued Binary, (e.g. indexed with {@link Document2#addAtom}) 
      * <p>
      * Fields with this type act as if they were indexed with
-     * {@link SortedSetDocValuesField}.
+     * multi-valued {@link Document2#addAtom}.
      */
     SORTED_SET_BINARY,
     /** 
-     * Multi-valued Integer, (e.g. indexed with {@link IntField}) 
+     * Multi-valued Integer, (e.g. indexed with {@link Document2#addInt}) 
      * <p>
      * Fields with this type act as if they were indexed with
-     * {@link SortedSetDocValuesField}.
+     * multi-valued {@link Document2#addInt}.
      */
     SORTED_SET_INTEGER,
     /** 

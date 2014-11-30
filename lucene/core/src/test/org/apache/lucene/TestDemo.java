@@ -21,9 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -48,7 +46,7 @@ public class TestDemo extends LuceneTestCase {
     // To store an index on disk, use this instead:
     // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, analyzer);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -65,7 +63,7 @@ public class TestDemo extends LuceneTestCase {
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
     }
 

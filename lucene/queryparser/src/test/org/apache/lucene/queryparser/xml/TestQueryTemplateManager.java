@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.xml;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -122,14 +121,14 @@ public class TestQueryTemplateManager extends LuceneTestCase {
   }
 
   //Helper method to construct Lucene documents used in our tests
-  org.apache.lucene.document.Document getDocumentFromString(String nameValuePairs) {
-    org.apache.lucene.document.Document result = new org.apache.lucene.document.Document();
+  org.apache.lucene.document.Document getDocumentFromString(IndexWriter w, String nameValuePairs) {
+    org.apache.lucene.document.Document result = w.newDocument();
     StringTokenizer st = new StringTokenizer(nameValuePairs, "\t=");
     while (st.hasMoreTokens()) {
       String name = st.nextToken().trim();
       if (st.hasMoreTokens()) {
         String value = st.nextToken().trim();
-        result.add(newTextField(name, value, Field.Store.YES));
+        result.addLargeText(name, value);
       }
     }
     return result;
@@ -147,7 +146,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(analyzer));
     for (String docFieldValue : docFieldValues) {
-      w.addDocument(getDocumentFromString(docFieldValue));
+      w.addDocument(getDocumentFromString(w, docFieldValue));
     }
     w.forceMerge(1);
     w.close();

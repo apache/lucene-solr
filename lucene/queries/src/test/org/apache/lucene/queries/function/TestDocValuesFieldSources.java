@@ -20,15 +20,12 @@ package org.apache.lucene.queries.function;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
@@ -38,7 +35,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
-
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 
@@ -48,42 +44,33 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriterConfig iwConfig = newIndexWriterConfig(new MockAnalyzer(random()));
     final int nDocs = atLeast(50);
-    final Field id = new NumericDocValuesField("id", 0);
-    final Field f;
-    switch (type) {
-      case BINARY:
-        f = new BinaryDocValuesField("dv", new BytesRef());
-        break;
-      case SORTED:
-        f = new SortedDocValuesField("dv", new BytesRef());
-        break;
-      case NUMERIC:
-        f = new NumericDocValuesField("dv", 0);
-        break;
-      default:
-        throw new AssertionError();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), d, iwConfig);
+    if (type == DocValuesType.BINARY) {
+      FieldTypes fieldTypes = iw.getFieldTypes();
+      fieldTypes.disableSorting("dv");
     }
-    Document document = new Document();
-    document.add(id);
-    document.add(f);
-
     final Object[] vals = new Object[nDocs];
 
-    RandomIndexWriter iw = new RandomIndexWriter(random(), d, iwConfig);
     for (int i = 0; i < nDocs; ++i) {
-      id.setLongValue(i);
+      Document document = iw.newDocument();
+      document.addInt("id", i);
       switch (type) {
-        case SORTED:
         case BINARY:
           do {
             vals[i] = TestUtil.randomSimpleString(random(), 20);
           } while (((String) vals[i]).isEmpty());
-          f.setBytesValue(new BytesRef((String) vals[i]));
+          document.addBinary("dv", new BytesRef((String) vals[i]));
+          break;
+        case SORTED:
+          do {
+            vals[i] = TestUtil.randomSimpleString(random(), 20);
+          } while (((String) vals[i]).isEmpty());
+          document.addAtom("dv", new BytesRef((String) vals[i]));
           break;
         case NUMERIC:
           final int bitsPerValue = RandomInts.randomIntBetween(random(), 1, 31); // keep it an int
           vals[i] = (long) random().nextInt((int) PackedInts.maxValue(bitsPerValue));
-          f.setLongValue((Long) vals[i]);
+          document.addLong("dv", (Long) vals[i]);
           break;
       }
       iw.addDocument(document);

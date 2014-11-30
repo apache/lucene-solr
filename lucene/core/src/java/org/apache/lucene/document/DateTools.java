@@ -20,7 +20,6 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.NumericUtils;        // for javadocs
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -40,9 +39,6 @@ import java.util.TimeZone;
  * {@link TermRangeQuery} and {@link PrefixQuery} will require more memory and become slower.
  * 
  * <P>
- * Another approach is {@link NumericUtils}, which provides
- * a sortable binary representation (prefix encoded) of numeric values, which
- * date/time are.
  * For indexing a {@link Date} or {@link Calendar}, just get the unix timestamp as
  * <code>long</code> using {@link Date#getTime} or {@link Calendar#getTimeInMillis} and
  * index this as a numeric value with {@link LongField}

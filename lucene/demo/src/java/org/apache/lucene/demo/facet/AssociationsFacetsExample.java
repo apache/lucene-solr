@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
@@ -69,7 +68,7 @@ public class AssociationsFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    Document2 doc = indexWriter.newDocument();
+    Document doc = indexWriter.newDocument();
     // 3 occurrences for tag 'lucene'
     doc.add(new IntAssociationFacetField(3, "tags", "lucene"));
     // 87% confidence level of genre 'computing'

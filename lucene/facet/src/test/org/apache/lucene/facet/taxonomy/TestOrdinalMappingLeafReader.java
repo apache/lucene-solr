@@ -2,8 +2,8 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -12,8 +12,8 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -105,7 +105,9 @@ public class TestOrdinalMappingLeafReader extends FacetTestCase {
     assertEquals(NUM_DOCS * 2, idResult.value); // each "id" appears twice
     
     BinaryDocValues bdv = MultiDocValues.getBinaryValues(indexReader, "bdv");
+    assertNotNull(bdv);
     BinaryDocValues cbdv = MultiDocValues.getBinaryValues(indexReader, "cbdv");
+    assertNotNull(cbdv);
     for (int i = 0; i < indexReader.maxDoc(); i++) {
       assertEquals(Integer.parseInt(cbdv.get(i).utf8ToString()), Integer.parseInt(bdv.get(i).utf8ToString())*2);
     }
@@ -115,10 +117,13 @@ public class TestOrdinalMappingLeafReader extends FacetTestCase {
   private void buildIndexWithFacets(Directory indexDir, Directory taxoDir, boolean asc) throws IOException {
     IndexWriterConfig config = newIndexWriterConfig(null);
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexDir, config);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableSorting("bdv");
+    fieldTypes.disableSorting("cbdv");
     
     DirectoryTaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
     for (int i = 1; i <= NUM_DOCS; i++) {
-      Document doc = new Document();
+      Document doc = writer.newDocument();
       for (int j = i; j <= NUM_DOCS; j++) {
         int facetValue = asc ? j: NUM_DOCS - j;
         doc.add(new FacetField("tag", Integer.toString(facetValue)));
@@ -127,8 +132,8 @@ public class TestOrdinalMappingLeafReader extends FacetTestCase {
       doc.add(new FacetField("id", Integer.toString(i)));
       
       // make sure OrdinalMappingLeafReader ignores non-facet BinaryDocValues fields
-      doc.add(new BinaryDocValuesField("bdv", new BytesRef(Integer.toString(i))));
-      doc.add(new BinaryDocValuesField("cbdv", new BytesRef(Integer.toString(i*2))));
+      doc.addBinary("bdv", new BytesRef(Integer.toString(i)));
+      doc.addBinary("cbdv", new BytesRef(Integer.toString(i*2)));
       writer.addDocument(facetConfig.build(taxonomyWriter, doc));
     }
     taxonomyWriter.commit();

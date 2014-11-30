@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
@@ -55,7 +55,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     // the second document has 3 negative terms 1,2,3 that exist in the segment (for non-null scorers)
     // to test terms that don't exist (null scorers), we use X,Y,Z
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("field", "A");
     doc.addAtom("field", "B");
     doc.addAtom("field", "C");

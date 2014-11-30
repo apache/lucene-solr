@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -67,7 +66,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     final List<BytesRef> ids = new ArrayList<>();
     DirectoryReader r = null;
     for(int docCount=0;docCount<numDocs;docCount++) {
-      final Document2 doc = docs.nextDoc();
+      final Document doc = docs.nextDoc();
       ids.add(new BytesRef(doc.getString("docid")));
       w.addDocument(doc);
       if (random().nextInt(20) == 17) {

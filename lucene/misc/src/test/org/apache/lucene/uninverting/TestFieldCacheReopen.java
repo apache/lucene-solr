@@ -18,9 +18,7 @@ package org.apache.lucene.uninverting;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -46,7 +44,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("number");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("number", 17);
     writer.addDocument(doc);
     writer.commit();

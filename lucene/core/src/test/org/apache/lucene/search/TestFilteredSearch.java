@@ -20,9 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -61,7 +59,7 @@ public class TestFilteredSearch extends LuceneTestCase {
 
   public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean fullMerge) throws IOException {
     for (int i = 0; i < 60; i++) {//Simple docs
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom(FIELD, Integer.toString(i));
       writer.addDocument(doc);
     }

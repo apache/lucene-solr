@@ -33,10 +33,7 @@ import java.util.TreeSet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum;
@@ -86,56 +83,46 @@ public class TestJoinUtil extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
-    Document doc = new Document();
-    doc.add(new TextField("description", "random text", Field.Store.NO));
-    doc.add(new TextField("name", "name1", Field.Store.NO));
-    doc.add(new TextField(idField, "1", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("1")));
+    Document doc = w.newDocument();
+    doc.addLargeText("description", "random text");
+    doc.addLargeText("name", "name1");
+    doc.addAtom(idField, new BytesRef("1"));
     w.addDocument(doc);
 
     // 1
-    doc = new Document();
-    doc.add(new TextField("price", "10.0", Field.Store.NO));
-    doc.add(new TextField(idField, "2", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("2")));
-    doc.add(new TextField(toField, "1", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
+    doc = w.newDocument();
+    doc.addLargeText("price", "10.0");
+    doc.addAtom(idField, new BytesRef("2"));
+    doc.addAtom(toField, new BytesRef("1"));
     w.addDocument(doc);
 
     // 2
-    doc = new Document();
-    doc.add(new TextField("price", "20.0", Field.Store.NO));
-    doc.add(new TextField(idField, "3", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("3")));
-    doc.add(new TextField(toField, "1", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
+    doc = w.newDocument();
+    doc.addLargeText("price", "20.0");
+    doc.addAtom(idField, new BytesRef("3"));
+    doc.addAtom(toField, new BytesRef("1"));
     w.addDocument(doc);
 
     // 3
-    doc = new Document();
-    doc.add(new TextField("description", "more random text", Field.Store.NO));
-    doc.add(new TextField("name", "name2", Field.Store.NO));
-    doc.add(new TextField(idField, "4", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("4")));
+    doc = w.newDocument();
+    doc.addLargeText("description", "more random text");
+    doc.addLargeText("name", "name2");
+    doc.addAtom(idField, new BytesRef("4"));
     w.addDocument(doc);
     w.commit();
 
     // 4
-    doc = new Document();
-    doc.add(new TextField("price", "10.0", Field.Store.NO));
-    doc.add(new TextField(idField, "5", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("5")));
-    doc.add(new TextField(toField, "4", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
+    doc = w.newDocument();
+    doc.addLargeText("price", "10.0");
+    doc.addAtom(idField, new BytesRef("5"));
+    doc.addAtom(toField, new BytesRef("4"));
     w.addDocument(doc);
 
     // 5
-    doc = new Document();
-    doc.add(new TextField("price", "20.0", Field.Store.NO));
-    doc.add(new TextField(idField, "6", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("6")));
-    doc.add(new TextField(toField, "4", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
+    doc = w.newDocument();
+    doc.addLargeText("price", "20.0");
+    doc.addAtom(idField, new BytesRef("6"));
+    doc.addAtom(toField, new BytesRef("4"));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
@@ -184,24 +171,27 @@ public class TestJoinUtil extends LuceneTestCase {
         random(),
         dir,
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    if (multipleValues) {
+      FieldTypes fieldTypes = w.getFieldTypes();
+      fieldTypes.setMultiValued(toField);
+    }
 
     // 0
-    Document doc = new Document();
-    doc.add(new TextField("description", "random text", Field.Store.NO));
-    doc.add(new TextField("name", "name1", Field.Store.NO));
-    doc.add(new TextField(idField, "0", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("0")));
+    Document doc = w.newDocument();
+    doc.addLargeText("description", "random text");
+    doc.addLargeText("name", "name1");
+    doc.addAtom(idField, new BytesRef("0"));
     w.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("price", "10.0");
 
     if (multipleValues) {
       for(int i=0;i<300;i++) {
-        doc.add(new SortedSetDocValuesField(toField, new BytesRef(""+i)));
+        doc.addAtom(toField, new BytesRef(""+i));
       }
     } else {
-      doc.add(new SortedDocValuesField(toField, new BytesRef("0")));
+      doc.addAtom(toField, new BytesRef("0"));
     }
     w.addDocument(doc);
 
@@ -234,51 +224,45 @@ public class TestJoinUtil extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
-    Document doc = new Document();
-    doc.add(new TextField("description", "random text", Field.Store.NO));
-    doc.add(new TextField("name", "name1", Field.Store.NO));
-    doc.add(new TextField(idField, "7", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("7")));
+    Document doc = w.newDocument();
+    doc.addLargeText("description", "random text");
+    doc.addLargeText("name", "name1");
+    doc.addAtom(idField, new BytesRef("7"));
     w.addDocument(doc);
 
     // 1
-    doc = new Document();
-    doc.add(new TextField("price", "10.0", Field.Store.NO));
-    doc.add(new TextField(idField, "2", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("2")));
-    doc.add(new TextField(toField, "7", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("price", "10.0");
+    doc.addAtom(idField, new BytesRef("2"));
+    doc.addLargeText(toField, "7");
     w.addDocument(doc);
 
     // 2
-    doc = new Document();
-    doc.add(new TextField("price", "20.0", Field.Store.NO));
-    doc.add(new TextField(idField, "3", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("3")));
-    doc.add(new TextField(toField, "7", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("price", "20.0");
+    doc.addAtom(idField, new BytesRef("3"));
+    doc.addLargeText(toField, "7");
     w.addDocument(doc);
 
     // 3
-    doc = new Document();
-    doc.add(new TextField("description", "more random text", Field.Store.NO));
-    doc.add(new TextField("name", "name2", Field.Store.NO));
-    doc.add(new TextField(idField, "0", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("description", "more random text");
+    doc.addLargeText("name", "name2");
     w.addDocument(doc);
     w.commit();
 
     // 4
-    doc = new Document();
-    doc.add(new TextField("price", "10.0", Field.Store.NO));
-    doc.add(new TextField(idField, "5", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("5")));
-    doc.add(new TextField(toField, "0", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("price", "10.0");
+    doc.addAtom(idField, new BytesRef("5"));
+    doc.addLargeText(toField, "0");
     w.addDocument(doc);
 
     // 5
-    doc = new Document();
-    doc.add(new TextField("price", "20.0", Field.Store.NO));
-    doc.add(new TextField(idField, "6", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("6")));
-    doc.add(new TextField(toField, "0", Field.Store.NO));
+    doc = w.newDocument();
+    doc.addLargeText("price", "20.0");
+    doc.addAtom(idField, new BytesRef("6"));
+    doc.addLargeText(toField, "0");
     w.addDocument(doc);
 
     w.forceMerge(1);
@@ -328,56 +312,46 @@ public class TestJoinUtil extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
-    Document doc = new Document();
-    doc.add(new TextField("description", "A random movie", Field.Store.NO));
-    doc.add(new TextField("name", "Movie 1", Field.Store.NO));
-    doc.add(new TextField(idField, "1", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("1")));
+    Document doc = w.newDocument();
+    doc.addLargeText("description", "A random movie");
+    doc.addLargeText("name", "Movie 1");
+    doc.addAtom(idField, new BytesRef("1"));
     w.addDocument(doc);
 
     // 1
-    doc = new Document();
-    doc.add(new TextField("subtitle", "The first subtitle of this movie", Field.Store.NO));
-    doc.add(new TextField(idField, "2", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("2")));
-    doc.add(new TextField(toField, "1", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
+    doc = w.newDocument();
+    doc.addLargeText("subtitle", "The first subtitle of this movie");
+    doc.addAtom(idField, new BytesRef("2"));
+    doc.addAtom(toField, new BytesRef("1"));
     w.addDocument(doc);
 
     // 2
-    doc = new Document();
-    doc.add(new TextField("subtitle", "random subtitle; random event movie", Field.Store.NO));
-    doc.add(new TextField(idField, "3", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("3")));
-    doc.add(new TextField(toField, "1", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("1")));
+    doc = w.newDocument();
+    doc.addLargeText("subtitle", "random subtitle; random event movie");
+    doc.addAtom(idField, new BytesRef("3"));
+    doc.addAtom(toField, new BytesRef("1"));
     w.addDocument(doc);
 
     // 3
-    doc = new Document();
-    doc.add(new TextField("description", "A second random movie", Field.Store.NO));
-    doc.add(new TextField("name", "Movie 2", Field.Store.NO));
-    doc.add(new TextField(idField, "4", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("4")));
+    doc = w.newDocument();
+    doc.addLargeText("description", "A second random movie");
+    doc.addLargeText("name", "Movie 2");
+    doc.addAtom(idField, new BytesRef("4"));
     w.addDocument(doc);
     w.commit();
 
     // 4
-    doc = new Document();
-    doc.add(new TextField("subtitle", "a very random event happened during christmas night", Field.Store.NO));
-    doc.add(new TextField(idField, "5", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("5")));
-    doc.add(new TextField(toField, "4", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
+    doc = w.newDocument();
+    doc.addLargeText("subtitle", "a very random event happened during christmas night");
+    doc.addAtom(idField, new BytesRef("5"));
+    doc.addAtom(toField, new BytesRef("4"));
     w.addDocument(doc);
 
     // 5
-    doc = new Document();
-    doc.add(new TextField("subtitle", "movie end movie test 123 test 123 random", Field.Store.NO));
-    doc.add(new TextField(idField, "6", Field.Store.NO));
-    doc.add(new SortedDocValuesField(idField, new BytesRef("6")));
-    doc.add(new TextField(toField, "4", Field.Store.NO));
-    doc.add(new SortedDocValuesField(toField, new BytesRef("4")));
+    doc = w.newDocument();
+    doc.addLargeText("subtitle", "movie end movie test 123 test 123 random");
+    doc.addAtom(idField, new BytesRef("6"));
+    doc.addAtom(toField, new BytesRef("4"));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
@@ -576,11 +550,17 @@ public class TestJoinUtil extends LuceneTestCase {
       String id = Integer.toString(i);
       int randomI = random().nextInt(context.randomUniqueValues.length);
       String value = context.randomUniqueValues[randomI];
-      Document document = new Document();
-      document.add(newTextField(random(), "id", id, Field.Store.NO));
-      document.add(newTextField(random(), "value", value, Field.Store.NO));
-
       boolean from = context.randomFrom[randomI];
+      RandomIndexWriter writer = from ? fromWriter : toWriter;
+      if (multipleValuesPerDocument) {
+        FieldTypes fieldTypes = writer.getFieldTypes();
+        fieldTypes.setMultiValued("from");
+        fieldTypes.setMultiValued("to");
+      }
+      Document document = writer.newDocument();
+      document.addLargeText("id", id);
+      document.addLargeText("value", value);
+
       int numberOfLinkValues = multipleValuesPerDocument ? 2 + random().nextInt(10) : 1;
       docs[i] = new RandomDoc(id, numberOfLinkValues, value, from);
       for (int j = 0; j < numberOfLinkValues; j++) {
@@ -596,12 +576,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.fromDocuments.get(linkValue).add(docs[i]);
           context.randomValueFromDocs.get(value).add(docs[i]);
-          document.add(newTextField(random(), "from", linkValue, Field.Store.NO));
-          if (multipleValuesPerDocument) {
-            document.add(new SortedSetDocValuesField("from", new BytesRef(linkValue)));
-          } else {
-            document.add(new SortedDocValuesField("from", new BytesRef(linkValue)));
-          }
+          document.addAtom("from", new BytesRef(linkValue));
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<RandomDoc>());
@@ -612,12 +587,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.toDocuments.get(linkValue).add(docs[i]);
           context.randomValueToDocs.get(value).add(docs[i]);
-          document.add(newTextField(random(), "to", linkValue, Field.Store.NO));
-          if (multipleValuesPerDocument) {
-            document.add(new SortedSetDocValuesField("to", new BytesRef(linkValue)));
-          } else {
-            document.add(new SortedDocValuesField("to", new BytesRef(linkValue)));
-          }
+          document.addAtom("to", new BytesRef(linkValue));
         }
       }
 

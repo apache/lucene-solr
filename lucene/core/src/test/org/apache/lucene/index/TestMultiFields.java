@@ -57,7 +57,7 @@ public class TestMultiFields extends LuceneTestCase {
       Set<BytesRef> uniqueTerms = new HashSet<>();
       for(int i=0;i<numDocs;i++) {
 
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         if (!onlyUniqueTerms && random().nextBoolean() && terms.size() > 0) {
           // re-use existing term
           BytesRef term = terms.get(random().nextInt(terms.size()));
@@ -160,7 +160,7 @@ public class TestMultiFields extends LuceneTestCase {
   public void testSeparateEnums() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 d = w.newDocument();
+    Document d = w.newDocument();
     d.addAtom("f", "j");
     w.addDocument(d);
     w.commit();
@@ -178,7 +178,7 @@ public class TestMultiFields extends LuceneTestCase {
   public void testTermDocsEnum() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 d = w.newDocument();
+    Document d = w.newDocument();
     d.addAtom("f", "j");
     w.addDocument(d);
     w.commit();

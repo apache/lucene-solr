@@ -24,12 +24,8 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
@@ -91,11 +87,6 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   public IndexReader r;
   public IndexSearcher s;
   
-  private static final FieldType nonAnalyzedType = new FieldType(TextField.TYPE_STORED);
-  static {
-    nonAnalyzedType.setTokenized(false);
-  }
-  
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -113,7 +104,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     // d1 is an "ok" match for: albino elephant
     {
-      Document2 d1 = writer.newDocument();
+      Document d1 = writer.newDocument();
       d1.addUniqueAtom("id", "d1");
       d1.addLargeText("hed", "elephant");
       d1.addLargeText("dek", "elephant");
@@ -122,7 +113,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     // d2 is a "good" match for: albino elephant
     {
-      Document2 d2 = writer.newDocument();
+      Document d2 = writer.newDocument();
       d2.addUniqueAtom("id", "d2");
       d2.addLargeText("hed", "elephant");
       d2.addLargeText("dek", "albino");
@@ -132,7 +123,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     // d3 is a "better" match for: albino elephant
     {
-      Document2 d3 = writer.newDocument();
+      Document d3 = writer.newDocument();
       d3.addUniqueAtom("id", "d3");
       d3.addLargeText("hed", "albino");
       d3.addLargeText("hed", "elephant");
@@ -141,7 +132,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     // d4 is the "best" match for: albino elephant
     {
-      Document2 d4 = writer.newDocument();
+      Document d4 = writer.newDocument();
       d4.addUniqueAtom("id", "d4");
       d4.addLargeText("hed", "albino");
       d4.addLargeText("hed", "elephant");
@@ -476,7 +467,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     IndexWriterConfig config = new IndexWriterConfig(indexerAnalyzer);
     IndexWriter writer = new IndexWriter(directory, config);
     String FIELD = "content";
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
     d.addLargeText(FIELD, "clockwork orange");
     writer.addDocument(d);
     writer.close();
@@ -520,7 +511,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     DecimalFormat f = new DecimalFormat("0.000000000", DecimalFormatSymbols.getInstance(Locale.ROOT));
     
     for (int i = 0; i < h.length; i++) {
-      Document2 d = searcher.doc(h[i].doc);
+      Document d = searcher.doc(h[i].doc);
       float score = h[i].score;
       System.err.println("#" + i + ": " + f.format(score) + " - " + d.get("id"));
     }

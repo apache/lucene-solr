@@ -18,10 +18,9 @@ package org.apache.lucene.collation;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesRangeFilter;
@@ -33,12 +32,10 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.util.ULocale;
 
@@ -50,18 +47,18 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field field = newField("field", "", StringField.TYPE_STORED);
-    ICUCollationDocValuesField collationField = new ICUCollationDocValuesField("collated", Collator.getInstance(ULocale.ENGLISH));
-    doc.add(field);
-    doc.add(collationField);
 
-    field.setStringValue("ABC");
+    Document doc = iw.newDocument();
+    doc.addAtom("field", "ABC");
+    ICUCollationDocValuesField collationField = new ICUCollationDocValuesField("collated", Collator.getInstance(ULocale.ENGLISH));
     collationField.setStringValue("ABC");
+    doc.add(collationField);
     iw.addDocument(doc);
     
-    field.setStringValue("abc");
+    doc = iw.newDocument();
+    doc.addAtom("field", "abc");
     collationField.setStringValue("abc");
+    doc.add(collationField);
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
@@ -81,20 +78,18 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
   public void testRanges() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field field = newField("field", "", StringField.TYPE_STORED);
     Collator collator = Collator.getInstance(); // uses -Dtests.locale
     if (random().nextBoolean()) {
       collator.setStrength(Collator.PRIMARY);
     }
     ICUCollationDocValuesField collationField = new ICUCollationDocValuesField("collated", collator);
-    doc.add(field);
-    doc.add(collationField);
     
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
+      Document doc = iw.newDocument();
       String value = TestUtil.randomSimpleString(random());
-      field.setStringValue(value);
+      doc.addAtom("field", value);
+      doc.add(collationField);
       collationField.setStringValue(value);
       iw.addDocument(doc);
     }

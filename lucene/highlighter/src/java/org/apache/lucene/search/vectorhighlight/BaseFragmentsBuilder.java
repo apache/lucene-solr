@@ -17,9 +17,6 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -60,6 +57,20 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   private char multiValuedSeparator = ' ';
   private final BoundaryScanner boundaryScanner;
   private boolean discreteMultiValueHighlighting = false;
+
+  protected static class FieldValue {
+    public final String name;
+    public final String value;
+    public final boolean hasTermVectors;
+    public final boolean tokenized;
+
+    public FieldValue(String name, String value, boolean hasTermVectors, boolean tokenized) {
+      this.name = name;
+      this.value = value;
+      this.hasTermVectors = hasTermVectors;
+      this.tokenized = tokenized;
+    }
+  }
   
   protected BaseFragmentsBuilder(){
     this( new String[]{ "<b>" }, new String[]{ "</b>" } );
@@ -124,7 +135,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     }
 
     List<WeightedFragInfo> fragInfos = fieldFragList.getFragInfos();
-    Field[] values = getFields( reader, docId, fieldName );
+    FieldValue[] values = getFields( reader, docId, fieldName );
     if( values.length == 0 ) {
       return null;
     }
@@ -146,16 +157,14 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragments.toArray( new String[fragments.size()] );
   }
   
-  protected Field[] getFields( IndexReader reader, int docId, final String fieldName) throws IOException {
+  protected FieldValue[] getFields( IndexReader reader, int docId, final String fieldName) throws IOException {
     // according to javadoc, doc.getFields(fieldName) cannot be used with lazy loaded field???
-    final List<Field> fields = new ArrayList<>();
+    final List<FieldValue> fields = new ArrayList<>();
     reader.document(docId, new StoredFieldVisitor() {
         
         @Override
         public void stringField(FieldInfo fieldInfo, String value) {
-          FieldType ft = new FieldType(TextField.TYPE_STORED);
-          ft.setStoreTermVectors(fieldInfo.hasVectors());
-          fields.add(new Field(fieldInfo.name, value, ft));
+          fields.add(new FieldValue(fieldInfo.name, value, fieldInfo.hasVectors(), true));
         }
 
         @Override
@@ -163,10 +172,10 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
           return fieldInfo.name.equals(fieldName) ? Status.YES : Status.NO;
         }
       });
-    return fields.toArray(new Field[fields.size()]);
+    return fields.toArray(new FieldValue[fields.size()]);
   }
 
-  protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo,
+  protected String makeFragment( StringBuilder buffer, int[] index, FieldValue[] values, WeightedFragInfo fragInfo,
       String[] preTags, String[] postTags, Encoder encoder ){
     StringBuilder fragment = new StringBuilder();
     final int s = fragInfo.getStartOffset();
@@ -187,15 +196,15 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragment.toString();
   }
 
-  protected String getFragmentSourceMSO( StringBuilder buffer, int[] index, Field[] values,
+  protected String getFragmentSourceMSO( StringBuilder buffer, int[] index, FieldValue[] values,
       int startOffset, int endOffset, int[] modifiedStartOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
-      buffer.append( values[index[0]++].stringValue() );
+      buffer.append( values[index[0]++].value );
       buffer.append( getMultiValuedSeparator() );
     }
     int bufferLength = buffer.length();
     // we added the multi value char to the last buffer, ignore it
-    if (values[index[0] - 1].fieldType().tokenized()) {
+    if (values[index[0] - 1].tokenized) {
       bufferLength--;
     }
     int eo = bufferLength < endOffset ? bufferLength : boundaryScanner.findEndOffset( buffer, endOffset );
@@ -203,10 +212,10 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return buffer.substring( modifiedStartOffset[0], eo );
   }
   
-  protected String getFragmentSource( StringBuilder buffer, int[] index, Field[] values,
+  protected String getFragmentSource( StringBuilder buffer, int[] index, FieldValue[] values,
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
-      buffer.append( values[index[0]].stringValue() );
+      buffer.append( values[index[0]].value );
       buffer.append( multiValuedSeparator );
       index[0]++;
     }
@@ -214,26 +223,26 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return buffer.substring( startOffset, eo );
   }
 
-  protected List<WeightedFragInfo> discreteMultiValueHighlighting(List<WeightedFragInfo> fragInfos, Field[] fields) {
+  protected List<WeightedFragInfo> discreteMultiValueHighlighting(List<WeightedFragInfo> fragInfos, FieldValue[] fields) {
     Map<String, List<WeightedFragInfo>> fieldNameToFragInfos = new HashMap<>();
-    for (Field field : fields) {
-      fieldNameToFragInfos.put(field.name(), new ArrayList<WeightedFragInfo>());
+    for (FieldValue field : fields) {
+      fieldNameToFragInfos.put(field.name, new ArrayList<WeightedFragInfo>());
     }
 
     fragInfos: for (WeightedFragInfo fragInfo : fragInfos) {
       int fieldStart;
       int fieldEnd = 0;
-      for (Field field : fields) {
-        if (field.stringValue().isEmpty()) {
+      for (FieldValue field : fields) {
+        if (field.value.isEmpty()) {
           fieldEnd++;
           continue;
         }
         fieldStart = fieldEnd;
-        fieldEnd += field.stringValue().length() + 1; // + 1 for going to next field with same name.
+        fieldEnd += field.value.length() + 1; // + 1 for going to next field with same name.
 
         if (fragInfo.getStartOffset() >= fieldStart && fragInfo.getEndOffset() >= fieldStart &&
             fragInfo.getStartOffset() <= fieldEnd && fragInfo.getEndOffset() <= fieldEnd) {
-          fieldNameToFragInfos.get(field.name()).add(fragInfo);
+          fieldNameToFragInfos.get(field.name).add(fragInfo);
           continue fragInfos;
         }
 
@@ -282,7 +291,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
           }
         }
         WeightedFragInfo weightedFragInfo = new WeightedFragInfo(fragStart, fragEnd, subInfos, boost);
-        fieldNameToFragInfos.get(field.name()).add(weightedFragInfo);
+        fieldNameToFragInfos.get(field.name).add(weightedFragInfo);
       }
     }
 

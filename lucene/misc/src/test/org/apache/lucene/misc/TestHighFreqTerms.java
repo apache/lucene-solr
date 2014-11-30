@@ -22,7 +22,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -174,58 +174,59 @@ public class TestHighFreqTerms extends LuceneTestCase {
   /********************Testing Utils**********************************/
     
   private static void indexDocs(IndexWriter writer) throws Exception {
-    Random rnd = random();
-    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+
     /**
      * Generate 10 documents where term n  has a docFreq of n and a totalTermFreq of n*2 (squared). 
      */
     for (int i = 1; i <= 10; i++) {
-      Document doc = new Document();
+      Document doc = writer.newDocument();
       String content = getContent(i);
     
-      doc.add(newTextField(rnd, "FIELD_1", content, Field.Store.YES));
+      doc.addLargeText("FIELD_1", content);
       //add a different field
-      doc.add(newTextField(rnd, "different_field", "diff", Field.Store.YES));
+      doc.addLargeText("different_field", "diff");
       writer.addDocument(doc);
     }
     
     //add 10 more docs with the term "diff" this will make it have the highest docFreq if we don't ask for the
     //highest freq terms for a specific field.
     for (int i = 1; i <= 10; i++) {
-      Document doc = new Document();
-      doc.add(newTextField(rnd, "different_field", "diff", Field.Store.YES));
+      Document doc = writer.newDocument();
+      doc.addLargeText("different_field", "diff");
       writer.addDocument(doc);
     }
     // add some docs where tf < df so we can see if sorting works
     // highTF low df
     int highTF = 200;
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     String content = "";
     for (int i = 0; i < highTF; i++) {
       content += "highTF ";
     }
-    doc.add(newTextField(rnd, "FIELD_1", content, Field.Store.YES));
+    doc.addLargeText("FIELD_1", content);
     writer.addDocument(doc);
     // highTF medium df =5
     int medium_df = 5;
     for (int i = 0; i < medium_df; i++) {
       int tf = 25;
-      Document newdoc = new Document();
+      Document newdoc = writer.newDocument();
       String newcontent = "";
       for (int j = 0; j < tf; j++) {
         newcontent += "highTFmedDF ";
       }
-      newdoc.add(newTextField(rnd, "FIELD_1", newcontent, Field.Store.YES));
+      newdoc.addLargeText("FIELD_1", newcontent);
       writer.addDocument(newdoc);
     }
     // add a doc with high tf in field different_field
     int targetTF =150;
-    doc = new Document();
+    doc = writer.newDocument();
     content = "";
     for (int i = 0; i < targetTF; i++) {
       content += "TF150 ";
     }
-    doc.add(newTextField(rnd, "different_field", content, Field.Store.YES));
+    doc.addLargeText("different_field", content);
     writer.addDocument(doc);
     writer.close();
     

@@ -24,11 +24,8 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -133,7 +130,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     final Thread t = new Thread() {
         @Override
         public void run() {
-          Document2 doc = writer.newDocument();
+          Document doc = writer.newDocument();
           doc.addLargeText("content", "aaa");
           do {
             for(int i=0;i<27;i++) {
@@ -174,7 +171,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Add one more document to force writer to commit a
     // final segment, so deletion policy has a chance to
     // delete again:
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "aaa");
     writer.addDocument(doc);
 

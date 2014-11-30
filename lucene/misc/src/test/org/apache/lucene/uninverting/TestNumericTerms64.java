@@ -21,15 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -41,7 +38,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class TestNumericTerms64 extends LuceneTestCase {
   // distance of entries
@@ -69,7 +65,7 @@ public class TestNumericTerms64 extends LuceneTestCase {
 
     // Add a series of noDocs docs with increasing long values, by updating the fields
     for (int l=0; l<noDocs; l++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       long val=distance*l+startOffset;
       doc.addLong("field", val);
       writer.addDocument(doc);

@@ -25,9 +25,7 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -77,7 +75,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   }
 
   @Override
-  public void addFields(Document2 doc, Shape shape) {
+  public void addFields(Document doc, Shape shape) {
     int bufSize = Math.max(128, (int) (this.indexLastBufSize * 1.5));//50% headroom over last
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream(bufSize);
     final BytesRef bytesRef = new BytesRef();//receiver of byteStream's bytes

@@ -62,7 +62,7 @@ public class TestFacetsConfig extends FacetTestCase {
     IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetsConfig facetsConfig = new FacetsConfig();
-    Document doc = new Document();
+    Document doc = indexWriter.newDocument();
     doc.add(new FacetField("a", "b"));
     doc = facetsConfig.build(taxoWriter, doc);
     // these two addDocument() used to fail

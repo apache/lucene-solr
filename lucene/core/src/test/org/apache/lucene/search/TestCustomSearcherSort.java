@@ -26,15 +26,11 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 
 import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Unit test for sorting code. */
@@ -58,7 +54,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     RandomGen random = new RandomGen(random());
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the
                                            // problem doesn't show up
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       if ((i % 5) != 0) { // some documents must not have an entry in the first
                           // sort field
         doc.addAtom("publicationDate_", random.getLuceneDate());

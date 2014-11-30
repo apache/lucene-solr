@@ -20,7 +20,7 @@ package org.apache.lucene.spatial.vector;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -89,7 +89,7 @@ public class DistanceValueSource extends ValueSource {
         // make sure it has minX and area
         if (validX.get(doc)) {
           assert validY.get(doc);
-          return calculator.distance(from, Document2.longToDouble(ptX.get(doc)), Document2.longToDouble(ptY.get(doc))) * multiplier;
+          return calculator.distance(from, Document.longToDouble(ptX.get(doc)), Document.longToDouble(ptY.get(doc))) * multiplier;
         }
         return nullValue;
       }

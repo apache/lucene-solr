@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
@@ -59,7 +58,7 @@ public class SimpleSortedSetFacetsExample {
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
         new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
-    Document2 doc = indexWriter.newDocument();
+    Document doc = indexWriter.newDocument();
     doc.add(new SortedSetDocValuesFacetField("Author", "Bob"));
     doc.add(new SortedSetDocValuesFacetField("Publish Year", "2010"));
     indexWriter.addDocument(config.build(doc));

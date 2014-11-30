@@ -24,9 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
@@ -51,7 +49,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a b c");
     w.addDocument(doc);
     IndexReader r = w.getReader();
@@ -92,7 +90,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
@@ -102,7 +100,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       w.addDocument(doc);
     }
     for(int i=0;i<36;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "m" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
@@ -161,7 +159,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
@@ -171,7 +169,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       w.addDocument(doc);
     }
     for(int i=0;i<36;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "m" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
@@ -181,7 +179,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       w.addDocument(doc);
     }
     for(int i=0;i<36;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "mo" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
@@ -242,7 +240,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     for(int i=0;i<128;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "" + (char) i;
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term + " bytes=" + new BytesRef(term));
@@ -281,7 +279,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
     for(int i=0;i<36;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "" + (char) (97+i);
       terms.add(term);
       if (VERBOSE) {
@@ -291,7 +289,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       w.addDocument(doc);
     }
     for(int i=0;i<128;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String term = "m" + (char) i;
       terms.add(term);
       if (VERBOSE) {
@@ -328,7 +326,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     List<String> terms = new ArrayList<>();
     for(int i=0;i<30;i++) {
       for(int j=0;j<30;j++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         String term = "" + (char) (97+i) + (char) (97+j);
         terms.add(term);
         if (VERBOSE) {
@@ -368,7 +366,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     // Get empty string in there!
     doc.addAtom("field", "");
     w.addDocument(doc);

@@ -25,10 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -73,7 +70,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
     c.setInfoStream(printStreamInfoStream);
     IndexWriter writer = new IndexWriter(dir, c);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("distinctiveFieldName", "aaa ");
     try {
       writer.addDocument(doc);
@@ -97,7 +94,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
     PrintStreamInfoStream printStreamInfoStream = new PrintStreamInfoStream(infoPrintStream);
     c.setInfoStream(printStreamInfoStream);
     IndexWriter writer = new IndexWriter(dir, c);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("boringFieldName", "aaa ");
     try {
       writer.addDocument(doc);

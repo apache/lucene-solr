@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -53,24 +52,24 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
     Document doc;
 
-    doc = new  Document();
-    doc.add(newTextField("aaa", "foo", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("aaa", "foo");
     writer.addDocument(doc);
 
-    doc = new  Document();
-    doc.add(newTextField("aaa", "foo", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("aaa", "foo");
     writer.addDocument(doc);
 
-    doc = new  Document();
-    doc.add(newTextField("contents", "Tom", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("contents", "Tom");
     writer.addDocument(doc);
 
-    doc = new  Document();
-    doc.add(newTextField("contents", "Jerry", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("contents", "Jerry");
     writer.addDocument(doc);
 
-    doc = new Document();
-    doc.add(newTextField("zzz", "bar", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("zzz", "bar");
     writer.addDocument(doc);
 
     writer.forceMerge(1);

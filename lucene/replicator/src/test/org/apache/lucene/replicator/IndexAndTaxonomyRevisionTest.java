@@ -20,8 +20,8 @@ package org.apache.lucene.replicator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetField;
@@ -41,9 +41,9 @@ import org.junit.Test;
 
 public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   
-  private Document newDocument(TaxonomyWriter taxoWriter) throws IOException {
+  private Document newDocument(IndexWriter w, TaxonomyWriter taxoWriter) throws IOException {
     FacetsConfig config = new FacetsConfig();
-    Document doc = new Document();
+    Document doc = w.newDocument();
     doc.add(new FacetField("A", "1"));
     return config.build(taxoWriter, doc);
   }
@@ -82,7 +82,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       ((MockDirectoryWrapper)indexDir).setEnableVirusScanner(false);
     }
     try {
-      indexWriter.addDocument(newDocument(taxoWriter));
+      indexWriter.addDocument(newDocument(indexWriter, taxoWriter));
       indexWriter.commit();
       taxoWriter.commit();
       Revision rev1 = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
@@ -92,7 +92,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       assertTrue(slowFileExists(taxoDir, IndexFileNames.SEGMENTS + "_1"));
       
       rev1 = new IndexAndTaxonomyRevision(indexWriter, taxoWriter); // create revision again, so the files are snapshotted
-      indexWriter.addDocument(newDocument(taxoWriter));
+      indexWriter.addDocument(newDocument(indexWriter, taxoWriter));
       indexWriter.commit();
       taxoWriter.commit();
       assertNotNull(new IndexAndTaxonomyRevision(indexWriter, taxoWriter));
@@ -118,7 +118,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
     Directory taxoDir = newDirectory();
     SnapshotDirectoryTaxonomyWriter taxoWriter = new SnapshotDirectoryTaxonomyWriter(taxoDir);
     try {
-      indexWriter.addDocument(newDocument(taxoWriter));
+      indexWriter.addDocument(newDocument(indexWriter, taxoWriter));
       indexWriter.commit();
       taxoWriter.commit();
       Revision rev = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
@@ -144,7 +144,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
     Directory taxoDir = newDirectory();
     SnapshotDirectoryTaxonomyWriter taxoWriter = new SnapshotDirectoryTaxonomyWriter(taxoDir);
     try {
-      indexWriter.addDocument(newDocument(taxoWriter));
+      indexWriter.addDocument(newDocument(indexWriter, taxoWriter));
       indexWriter.commit();
       taxoWriter.commit();
       Revision rev = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);

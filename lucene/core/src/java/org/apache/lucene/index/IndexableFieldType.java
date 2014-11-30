@@ -26,7 +26,9 @@ import org.apache.lucene.analysis.Analyzer; // javadocs
 public interface IndexableFieldType {
 
   /** True if the field's value should be stored */
-  public boolean stored();
+  default public boolean stored() {
+    return false;
+  }
   
   /** 
    * True if this field's indexed form should be also stored 
@@ -39,7 +41,9 @@ public interface IndexableFieldType {
    * This option is illegal if {@link #indexOptions()} returns
    * IndexOptions.NONE.
    */
-  public boolean storeTermVectors();
+  default public boolean storeTermVectors() {
+    return false;
+  }
 
   /** 
    * True if this field's token character offsets should also
@@ -48,7 +52,9 @@ public interface IndexableFieldType {
    * This option is illegal if term vectors are not enabled for the field
    * ({@link #storeTermVectors()} is false)
    */
-  public boolean storeTermVectorOffsets();
+  default public boolean storeTermVectorOffsets() {
+    return false;
+  }
 
   /** 
    * True if this field's token positions should also be stored
@@ -57,7 +63,9 @@ public interface IndexableFieldType {
    * This option is illegal if term vectors are not enabled for the field
    * ({@link #storeTermVectors()} is false). 
    */
-  public boolean storeTermVectorPositions();
+  default public boolean storeTermVectorPositions() {
+    return false;
+  }
   
   /** 
    * True if this field's token payloads should also be stored
@@ -66,7 +74,9 @@ public interface IndexableFieldType {
    * This option is illegal if term vector positions are not enabled 
    * for the field ({@link #storeTermVectors()} is false).
    */
-  public boolean storeTermVectorPayloads();
+  default public boolean storeTermVectorPayloads() {
+    return false;
+  }
 
   /**
    * True if normalization values should be omitted for the field.
@@ -74,15 +84,31 @@ public interface IndexableFieldType {
    * This saves memory, but at the expense of scoring quality (length normalization
    * will be disabled), and if you omit norms, you cannot use index-time boosts. 
    */
-  public boolean omitNorms();
+  default public boolean omitNorms() {
+    return false;
+  }
 
   /** {@link IndexOptions}, describing what should be
    *  recorded into the inverted index */
-  public IndexOptions indexOptions();
+  default public IndexOptions indexOptions() {
+    return IndexOptions.NONE;
+  }
 
   /** 
    * DocValues {@link DocValuesType}: how the field's value will be indexed
    * into docValues.
    */
-  public DocValuesType docValuesType();  
+  default public DocValuesType docValuesType() {
+    return DocValuesType.NONE;
+  }
+
+  /** Returns the gap to insert between multi-valued, tokenized fields */
+  default public int getPositionGap() {
+    return 1;
+  }
+
+  /** Returns the gap offset to insert between multi-valued, tokenized fields */
+  default public int getOffsetGap() {
+    return 0;
+  }
 }

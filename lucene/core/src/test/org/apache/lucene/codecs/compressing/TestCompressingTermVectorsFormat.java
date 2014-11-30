@@ -1,7 +1,7 @@
 package org.apache.lucene.codecs.compressing;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -39,7 +39,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
   public void testNoOrds() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     iw.getFieldTypes().enableTermVectors("foo");
     doc.addLargeText("foo", "this is a test");
     iw.addDocument(doc);

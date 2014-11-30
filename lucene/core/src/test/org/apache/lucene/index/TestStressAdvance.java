@@ -41,7 +41,7 @@ public class TestStressAdvance extends LuceneTestCase {
         System.out.println("\nTEST: numDocs=" + num);
       }
       for(int id=0;id<num;id++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         if (random().nextInt(4) == 3) {
           doc.addAtom("field", "a");
           aDocs.add(id);

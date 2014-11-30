@@ -5,9 +5,6 @@ import java.text.ParseException;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -22,8 +19,8 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.SortField;
@@ -65,15 +62,15 @@ public class ExpressionAggregationFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    Document doc = new Document();
-    doc.add(new TextField("c", "foo bar", Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 5L));
+    Document doc = indexWriter.newDocument();
+    doc.addLargeText("c", "foo bar");
+    doc.addLong("popularity", 5L);
     doc.add(new FacetField("A", "B"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
-    doc.add(new TextField("c", "foo foo bar", Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 3L));
+    doc = indexWriter.newDocument();
+    doc.addLargeText("c", "foo foo bar");
+    doc.addLong("popularity", 3L);
     doc.add(new FacetField("A", "C"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
     

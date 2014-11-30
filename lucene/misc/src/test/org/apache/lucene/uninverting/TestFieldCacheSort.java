@@ -23,11 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -71,7 +68,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     fieldTypes.setDocValuesType("value", DocValuesType.NONE);
     fieldTypes.disableSorting("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -111,7 +108,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addAtom("value", "foo");
@@ -152,7 +149,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "bar");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -192,7 +189,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addAtom("value", "foo");
@@ -236,7 +233,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addAtom("value", "foo");
@@ -280,7 +277,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addAtom("value", "foo");
@@ -324,7 +321,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addAtom("value", "foo");
@@ -359,7 +356,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -388,7 +385,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -414,7 +411,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
   public void testFieldScore() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("value", "foo bar bar bar bar");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -444,7 +441,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
   public void testFieldScoreReverse() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("value", "foo bar bar bar bar");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -475,7 +472,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("value", 300000);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -508,7 +505,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addInt("value", -1);
@@ -540,7 +537,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addInt("value", -1);
@@ -574,7 +571,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("value", 300000);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -607,7 +604,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("value", 3000000000L);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -640,7 +637,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addLong("value", -1);
@@ -672,7 +669,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addLong("value", -1);
@@ -706,7 +703,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("value", 3000000000L);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -739,7 +736,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addFloat("value", 30.1f);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -772,7 +769,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addFloat("value", -1.3f);
@@ -803,7 +800,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addFloat("value", -1.3f);
@@ -837,7 +834,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addFloat("value", 30.1f);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -870,7 +867,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addDouble("value", 30.1);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -907,7 +904,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addDouble("value", +0d);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -942,7 +939,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addDouble("value", -1.3);
@@ -978,7 +975,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     doc = writer.newDocument();
     doc.addDouble("value", -1.3);
@@ -1016,7 +1013,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addDouble("value", 30.1);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -1053,7 +1050,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableSorting("f");
     fieldTypes.disableSorting("t");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("f", "");
     doc.addAtom("t", "1");
     w.addDocument(doc);
@@ -1084,7 +1081,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     fieldTypes.setMultiValued("string");
     fieldTypes.disableSorting("string");
     for(int i=0; i<5; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("string", "a"+i);
       doc.addAtom("string", "b"+i);
       writer.addDocument(doc);
@@ -1112,7 +1109,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     int id = 0;
     for(int seg=0;seg<2;seg++) {
       for(int docIDX=0;docIDX<10;docIDX++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addInt("id", docIDX);
         StringBuilder sb = new StringBuilder();
         for(int i=0;i<id;i++) {
@@ -1177,7 +1174,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(),
@@ -1201,7 +1198,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(),
@@ -1229,7 +1226,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("value");
     fieldTypes.disableSorting("tievalue");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("tievalue", "tied");
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
@@ -1262,7 +1259,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
   public void testScore() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "bar");
     writer.addDocument(doc);
     doc = writer.newDocument();

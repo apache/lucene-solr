@@ -17,9 +17,7 @@ package org.apache.lucene.spatial.vector;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -104,7 +102,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   @Override
-  public void addFields(Document2 doc, Shape shape) {
+  public void addFields(Document doc, Shape shape) {
     if (shape instanceof Point) {
       addFields(doc, (Point) shape);
       return;
@@ -113,7 +111,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   /** @see #createIndexableFields(com.spatial4j.core.shape.Shape) */
-  public void addFields(Document2 doc, Point point) {
+  public void addFields(Document doc, Point point) {
     doc.addDouble(fieldNameX, point.getX());
     doc.addDouble(fieldNameY, point.getY());
   }

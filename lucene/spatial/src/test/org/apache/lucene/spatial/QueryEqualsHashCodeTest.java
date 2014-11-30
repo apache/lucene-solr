@@ -20,7 +20,7 @@ package org.apache.lucene.spatial;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -67,7 +67,7 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     IndexWriterConfig iwConfig = new IndexWriterConfig(null);
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, iwConfig);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     strategy.addFields(doc, SpatialContext.GEO.makePoint(0, 0));
     writer.addDocument(doc);
     final FieldTypes fieldTypes = writer.getFieldTypes();

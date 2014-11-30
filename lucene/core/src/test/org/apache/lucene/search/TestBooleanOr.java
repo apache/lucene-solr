@@ -19,9 +19,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -133,7 +131,7 @@ public class TestBooleanOr extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     //
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
     d.addLargeText(
         FIELD_T,
         "Optimize not deleting all files");
@@ -164,7 +162,7 @@ public class TestBooleanOr extends LuceneTestCase {
     int docCount = atLeast(10000);
 
     for(int i=0;i<docCount;i++) {
-      Document2 doc = riw.newDocument();
+      Document doc = riw.newDocument();
       doc.addLargeText("field", "a");
       riw.addDocument(doc);
     }

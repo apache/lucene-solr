@@ -28,13 +28,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -66,7 +61,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorPositions("field");
     fieldTypes.enableTermVectorOffsets("field");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "This is a test where foo is highlighed and should be highlighted");
     writer.addDocument(doc);
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
@@ -93,7 +88,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     fieldTypes.enableTermVectors("text");
     fieldTypes.enableTermVectorPositions("text");
     fieldTypes.enableTermVectorOffsets("text");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("text", 
         "Netscape was the general name for a series of web browsers originally produced by Netscape Communications Corporation, now a subsidiary of AOL The original browser was once the dominant browser in terms of usage share, but as a result of the first browser war it lost virtually all of its share to Internet Explorer Netscape was discontinued and support for all Netscape browsers and client products was terminated on March 1, 2008 Netscape Navigator was the name of Netscape\u0027s web browser from versions 1.0 through 4.8 The first beta release versions of the browser were released in 1994 and known as Mosaic and then Mosaic Netscape until a legal challenge from the National Center for Supercomputing Applications (makers of NCSA Mosaic, which many of Netscape\u0027s founders used to develop), led to the name change to Netscape Navigator The company\u0027s name also changed from Mosaic Communications Corporation to Netscape Communications Corporation The browser was easily the most advanced...");
     writer.addDocument(doc);
@@ -139,7 +134,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       fieldTypes.enableTermVectorPositions(fieldName);
       fieldTypes.enableTermVectorOffsets(fieldName);
     }
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("long_term", "This is a test thisisaverylongwordandmakessurethisfails where foo is highlighed and should be highlighted");
     doc.addLargeText("no_long_term", "This is a test where foo is highlighed and should be highlighted");
     writer.addDocument(doc);
@@ -264,7 +259,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       fieldTypes.enableTermVectorPositions(fieldName);
       fieldTypes.enableTermVectorOffsets(fieldName);
     }
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     StringBuilder text = new StringBuilder();
     text.append("words words junk junk junk junk junk junk junk junk highlight junk junk junk junk together junk ");
     for ( int i = 0; i<10; i++ ) {
@@ -317,7 +312,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
         "This text has a typo in referring to Keneddy",
         "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
     for (int i = 0; i < texts.length; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("field", texts[i]);
       writer.addDocument(doc);
     }
@@ -465,7 +460,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       fieldTypes.enableTermVectorOffsets(fieldName);
       fieldTypes.setMultiValued(fieldName);
     }
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText( "field", "zero if naught"); // The first two fields contain the best match
     doc.addLargeText( "field", "hero of legend" ); // but total a lower score (3) than the bottom
     doc.addLargeText( "field", "naught of hero" ); // two fields (4)
@@ -515,7 +510,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       fieldTypes.enableTermVectorPositions(fieldName);
       fieldTypes.enableTermVectorOffsets(fieldName);
     }
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     Token syn = new Token("httpwwwfacebookcom", 6, 29);
     syn.setPositionIncrement(0);
     CannedTokenStream ts = new CannedTokenStream(
@@ -601,7 +596,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
         fieldTypes.disableStored(fieldName);
       }
     }
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText( "field", fieldValue );               // Whitespace tokenized with English stop words
     doc.addLargeText( "field_exact", fieldValue );        // Whitespace tokenized without stop words
     doc.addLargeText( "field_super_exact", fieldValue );  // Whitespace tokenized without toLower

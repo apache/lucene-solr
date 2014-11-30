@@ -1,9 +1,6 @@
 package org.apache.lucene.expressions;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.expressions.js.VariableContext;
 import org.apache.lucene.index.DirectoryReader;
@@ -57,7 +54,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addUniqueAtom("id", "1");
     doc.addLargeText("body", "some contents and more contents");
     doc.addInt("popularity", 5);

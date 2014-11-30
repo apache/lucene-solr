@@ -21,10 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
@@ -60,13 +58,6 @@ public class TestOmitTf extends LuceneTestCase {
     @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
   }
 
-  private static final FieldType omitType = new FieldType(TextField.TYPE_NOT_STORED);
-  private static final FieldType normalType = new FieldType(TextField.TYPE_NOT_STORED);
-  
-  static {
-    omitType.setIndexOptions(IndexOptions.DOCS);
-  }
-
   // Tests whether the DocumentWriter correctly enable the
   // omitTermFreqAndPositions bit in the FieldInfo
   public void testOmitTermFreqAndPositions() throws Exception {
@@ -74,7 +65,7 @@ public class TestOmitTf extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
     FieldTypes fieldTypes = writer.getFieldTypes();
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
         
     // this field will have Tf
     d.addLargeText("f1", "This field has term freqs");
@@ -125,7 +116,7 @@ public class TestOmitTf extends LuceneTestCase {
 
     FieldTypes fieldTypes = writer.getFieldTypes();
 
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
         
     // this field will have Tf
     d.addLargeText("f1", "This field has term freqs");
@@ -179,7 +170,7 @@ public class TestOmitTf extends LuceneTestCase {
             setMaxBufferedDocs(10).
             setMergePolicy(newLogMergePolicy(2))
     );
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
     FieldTypes fieldTypes = writer.getFieldTypes();
         
     // this field will have Tf
@@ -236,7 +227,7 @@ public class TestOmitTf extends LuceneTestCase {
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setNoCFSRatio(0.0);
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableHighlighting("f1");
     fieldTypes.setIndexOptions("f1", IndexOptions.DOCS);
@@ -286,7 +277,7 @@ public class TestOmitTf extends LuceneTestCase {
     fieldTypes.setIndexOptions("noTf", IndexOptions.DOCS);
     String term = "term";
     for(int i = 0; i<30; i++){
-      Document2 d = writer.newDocument();
+      Document d = writer.newDocument();
       sb.append(term).append(" ");
       String content  = sb.toString();
       d.addLargeText("noTf", content + (i%2==0 ? "" : " notf"));
@@ -456,7 +447,7 @@ public class TestOmitTf extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("foo", "bar");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();

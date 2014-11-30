@@ -17,13 +17,9 @@ package org.apache.lucene.spatial.bbox;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -40,8 +36,6 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
@@ -109,11 +103,11 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public void addFields(Document2 doc, Shape shape) {
+  public void addFields(Document doc, Shape shape) {
     addFields(doc, shape.getBoundingBox());
   }
 
-  public void addFields(Document2 doc, Rectangle bbox) {
+  public void addFields(Document doc, Rectangle bbox) {
     doc.addDouble(field_minX, bbox.getMinX());
     doc.addDouble(field_maxX, bbox.getMaxX());
     doc.addDouble(field_minY, bbox.getMinY());
@@ -547,7 +541,7 @@ public class BBoxStrategy extends SpatialStrategy {
   }
 
   private Query makeNumberTermQuery(FieldTypes fieldTypes, String field, double number) {
-    return new TermQuery(new Term(field, Document2.doubleToBytes(number)));
+    return new TermQuery(new Term(field, Document.doubleToSortableBytes(number)));
   }
 }
 

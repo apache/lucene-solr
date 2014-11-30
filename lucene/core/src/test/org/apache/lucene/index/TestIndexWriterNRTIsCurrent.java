@@ -21,10 +21,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -91,7 +88,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       DirectoryReader currentReader = null;
       Random random = LuceneTestCase.random();
       try {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addLargeText("id", "1");
         writer.addDocument(doc);
         holder.reader = currentReader = writer.getReader(true);

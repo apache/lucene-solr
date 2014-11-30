@@ -34,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
  */
 
 public class LowSchemaField implements IndexableFieldType, IndexableField {
+  private final Analyzer analyzer;
   private final String fieldName;
   private final Object value;
   private final boolean tokenized;
@@ -48,7 +49,8 @@ public class LowSchemaField implements IndexableFieldType, IndexableField {
   private float boost = 1.0f;
   private boolean omitNorms;
 
-  public LowSchemaField(String fieldName, Object value, IndexOptions indexOptions, boolean tokenized) {
+  public LowSchemaField(Analyzer analyzer, String fieldName, Object value, IndexOptions indexOptions, boolean tokenized) {
+    this.analyzer = analyzer;
     this.fieldName = fieldName;
     this.value = value;
     this.indexOptions = indexOptions;
@@ -135,7 +137,7 @@ public class LowSchemaField implements IndexableFieldType, IndexableField {
   // nocommit need test trying to do index field with tokenized=false, and Reader value
 
   @Override
-  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+  public TokenStream tokenStream(TokenStream reuse) throws IOException {
     if (tokenStream != null) {
       return tokenStream;
     } else if (indexOptions != IndexOptions.NONE) {

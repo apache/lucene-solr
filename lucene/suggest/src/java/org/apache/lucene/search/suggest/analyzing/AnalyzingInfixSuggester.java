@@ -35,14 +35,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
@@ -73,7 +67,6 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -112,6 +105,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** Field name used for the indexed text. */
   protected final static String TEXT_FIELD_NAME = "text";
+
+  /** Field name used for the binary doc values text. */
+  protected final static String BINARY_DV_TEXT_FIELD_NAME = "text_bdv";
 
   /** Field name used for the indexed text, as a
    *  StringField, for exact lookup. */
@@ -242,10 +238,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     boolean success = false;
     try {
-      // First pass: build a temporary normal Lucene index,
-      // just indexing the suggestions as they iterate:
       writer = new IndexWriter(dir,
                                getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+      setFieldTypes(writer);
       //long t0 = System.nanoTime();
 
       // TODO: use threads?
@@ -313,6 +308,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       }
       writer = new IndexWriter(dir,
           getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+      setFieldTypes(writer);
       searcherMgr = new SearcherManager(writer, true, null);
     }
   }
@@ -324,7 +320,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  see the suggestions in {@link #lookup} */
   public void add(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
     ensureOpen();
-    writer.addDocument(buildDocument(text, contexts, weight, payload));
+    writer.addDocument(buildDocument(writer, text, contexts, weight, payload));
   }
 
   /** Updates a previous suggestion, matching the exact same
@@ -337,27 +333,25 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   public void update(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
     ensureOpen();
     writer.updateDocument(new Term(EXACT_TEXT_FIELD_NAME, text.utf8ToString()),
-                          buildDocument(text, contexts, weight, payload));
+                          buildDocument(writer, text, contexts, weight, payload));
   }
 
-  private Document buildDocument(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
+  private Document buildDocument(IndexWriter writer, BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
     String textString = text.utf8ToString();
-    Document doc = new Document();
-    FieldType ft = getTextFieldType();
-    doc.add(new Field(TEXT_FIELD_NAME, textString, ft));
-    doc.add(new Field("textgrams", textString, ft));
-    doc.add(new StringField(EXACT_TEXT_FIELD_NAME, textString, Field.Store.NO));
-    doc.add(new BinaryDocValuesField(TEXT_FIELD_NAME, text));
-    doc.add(new NumericDocValuesField("weight", weight));
+    Document doc = writer.newDocument();
+    doc.addLargeText(TEXT_FIELD_NAME, textString);
+    doc.addLargeText("textgrams", textString);
+    doc.addAtom(EXACT_TEXT_FIELD_NAME, textString);
+    doc.addBinary(BINARY_DV_TEXT_FIELD_NAME, text);
+    doc.addLong("weight", weight);
     if (payload != null) {
-      doc.add(new BinaryDocValuesField("payloads", payload));
+      doc.addBinary("payloads", payload);
     }
     if (contexts != null) {
       for(BytesRef context : contexts) {
         // TODO: if we had a BinaryTermField we could fix
         // this "must be valid ut8f" limitation:
-        doc.add(new StringField(CONTEXTS_FIELD_NAME, context.utf8ToString(), Field.Store.NO));
-        doc.add(new SortedSetDocValuesField(CONTEXTS_FIELD_NAME, context));
+        doc.addAtom(CONTEXTS_FIELD_NAME, context.utf8ToString());
       }
     }
     return doc;
@@ -377,12 +371,25 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    * Subclass can override this method to change the field type of the text field
    * e.g. to change the index options
    */
-  protected FieldType getTextFieldType(){
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS);
-    ft.setOmitNorms(true);
+  protected void setFieldTypes(IndexWriter writer) {
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableHighlighting(TEXT_FIELD_NAME);
+    fieldTypes.disableNorms(TEXT_FIELD_NAME);
+    fieldTypes.disableStored(TEXT_FIELD_NAME);
+    fieldTypes.setIndexOptions(TEXT_FIELD_NAME, IndexOptions.DOCS);
 
-    return ft;
+    fieldTypes.disableStored(EXACT_TEXT_FIELD_NAME);
+
+    fieldTypes.disableHighlighting("textgrams");
+    fieldTypes.disableNorms("textgrams");
+    fieldTypes.disableStored("textgrams");
+    fieldTypes.setIndexOptions("textgrams", IndexOptions.DOCS);
+
+    fieldTypes.disableSorting(BINARY_DV_TEXT_FIELD_NAME);
+    fieldTypes.disableSorting("payloads");
+    fieldTypes.setIndexOptions("weight", IndexOptions.NONE);
+    fieldTypes.setMultiValued(CONTEXTS_FIELD_NAME);
+    fieldTypes.disableStored(CONTEXTS_FIELD_NAME);
   }
 
   @Override
@@ -564,8 +571,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
                                              boolean doHighlight, Set<String> matchedTokens, String prefixToken)
       throws IOException {
 
-    BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
-
+    BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), BINARY_DV_TEXT_FIELD_NAME);
+    
     // This will just be null if app didn't pass payloads to build():
     // TODO: maybe just stored fields?  they compress...
     BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");

@@ -29,8 +29,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -61,16 +59,16 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(analyzer));
 
     Document doc;
-    doc = new Document();
-    doc.add(new TextField("content", "please divide this sentence into shingles", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("content", "please divide this sentence into shingles");
     writer.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new TextField("content", "just another test sentence", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("content", "just another test sentence");
     writer.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new TextField("content", "a sentence which contains no test", Field.Store.YES));
+    doc = writer.newDocument();
+    doc.addLargeText("content", "a sentence which contains no test");
     writer.addDocument(doc);
 
     writer.close();

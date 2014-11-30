@@ -23,7 +23,6 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -60,60 +59,57 @@ public class TestGrouping extends LuceneTestCase {
 
     String groupField = "author";
 
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
                                random(),
                                dir,
                                newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     // 0
-    Document doc = new Document();
+    Document doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
-    doc.add(new TextField("content", "random text", Field.Store.YES));
-    doc.add(new Field("id", "1", customType));
+    doc.addLargeText("content", "random text");
+    doc.addStored("id", "1");
     w.addDocument(doc);
 
     // 1
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
-    doc.add(new TextField("content", "some more random text", Field.Store.YES));
-    doc.add(new Field("id", "2", customType));
+    doc.addLargeText("content", "some more random text");
+    doc.addStored("id", "2");
     w.addDocument(doc);
 
     // 2
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
-    doc.add(new TextField("content", "some more random textual data", Field.Store.YES));
-    doc.add(new Field("id", "3", customType));
+    doc.addLargeText("content", "some more random textual data");
+    doc.addStored("id", "3");
     w.addDocument(doc);
 
     // 3
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author2");
-    doc.add(new TextField("content", "some random text", Field.Store.YES));
-    doc.add(new Field("id", "4", customType));
+    doc.addLargeText("content", "some random text");
+    doc.addStored("id", "4");
     w.addDocument(doc);
 
     // 4
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author3");
-    doc.add(new TextField("content", "some more random text", Field.Store.YES));
-    doc.add(new Field("id", "5", customType));
+    doc.addLargeText("content", "some more random text");
+    doc.addStored("id", "5");
     w.addDocument(doc);
 
     // 5
-    doc = new Document();
+    doc = w.newDocument();
     addGroupField(doc, groupField, "author3");
-    doc.add(new TextField("content", "random", Field.Store.YES));
-    doc.add(new Field("id", "6", customType));
+    doc.addLargeText("content", "random");
+    doc.addStored("id", "6");
     w.addDocument(doc);
 
     // 6 -- no author field
-    doc = new Document();
-    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
-    doc.add(new Field("id", "6", customType));
+    doc = w.newDocument();
+    doc.addLargeText("content", "random word stuck in alot of other text");
+    doc.addStored("id", "6");
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
@@ -169,7 +165,7 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private void addGroupField(Document doc, String groupField, String value) {
-    doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
+    doc.addAtom(groupField, new BytesRef(value));
   }
 
   private AbstractFirstPassGroupingCollector<?> createRandomFirstPassCollector(String groupField, Sort groupSort, int topDocs) throws IOException {
@@ -550,14 +546,14 @@ public class TestGrouping extends LuceneTestCase {
                                                 dir,
                                                 newIndexWriterConfig(new MockAnalyzer(random())));
 
-    final List<List<Document2>> updateDocs = new ArrayList<>();
+    final List<List<Document>> updateDocs = new ArrayList<>();
 
     //System.out.println("TEST: index groups");
     for(BytesRef group : groupValues) {
-      final List<Document2> docs = new ArrayList<>();
+      final List<Document> docs = new ArrayList<>();
       //System.out.println("TEST:   group=" + (group == null ? "null" : group.utf8ToString()));
       for(GroupDoc groupValue : groupMap.get(group)) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         docs.add(doc);
         if (groupValue.group != null) {
           doc.addAtom("group", groupValue.group.utf8ToString());
@@ -577,7 +573,7 @@ public class TestGrouping extends LuceneTestCase {
       }
     }
 
-    for(List<Document2> docs : updateDocs) {
+    for(List<Document> docs : updateDocs) {
       // Just replaces docs w/ same docs:
       w.updateDocuments(new Term("group", docs.get(0).getString("group")), docs);
     }
@@ -680,7 +676,7 @@ public class TestGrouping extends LuceneTestCase {
         }
 
         groupDocs[i] = groupDoc;
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         if (groupDoc.group != null) {
           doc.addAtom("group", groupDoc.group.utf8ToString());
         }

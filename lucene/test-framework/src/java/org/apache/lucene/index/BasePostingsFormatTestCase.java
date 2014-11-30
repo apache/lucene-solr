@@ -42,10 +42,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
@@ -1415,7 +1412,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableExistsFilters();
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("", "something");
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
@@ -1442,7 +1439,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableExistsFilters();
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("", "");
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
@@ -1472,7 +1469,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableExistsFilters();
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     iw.addDocument(doc);
     doc.addAtom("ghostField", "something");
     iw.addDocument(doc);
@@ -1701,7 +1698,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     int bytesToIndex = atLeast(100) * 1024;
     int bytesIndexed = 0;
     while (bytesIndexed < bytesToIndex) {
-      Document2 doc = docs.nextDoc();
+      Document doc = docs.nextDoc();
       w.addDocument(doc);
       bytesIndexed += RamUsageTester.sizeOf(doc);
     }
@@ -1741,7 +1738,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
 
   @Override
-  protected void addRandomFields(Document2 doc) {
+  protected void addRandomFields(Document doc) {
     FieldTypes fieldTypes = doc.getFieldTypes();
     for (IndexOptions opts : IndexOptions.values()) {
       if (opts == IndexOptions.NONE) {

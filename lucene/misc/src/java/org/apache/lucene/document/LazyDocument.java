@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
@@ -42,7 +41,7 @@ public class LazyDocument {
   private final int docID;
 
   // null until first field is loaded
-  private Document2 doc;
+  private Document doc;
 
   private Map<Integer,List<LazyField>> fields = new HashMap<>();
   private Set<String> fieldNames = new HashSet<>();
@@ -63,7 +62,7 @@ public class LazyDocument {
    * </p>
    * <p>
    * The lazy loading of field values from all instances of StorableField 
-   * objects returned by this method are all backed by a single Document2 
+   * objects returned by this method are all backed by a single Document
    * per LazyDocument instance.
    * </p>
    */
@@ -93,7 +92,7 @@ public class LazyDocument {
    * non-private for test only access
    * @lucene.internal 
    */
-  synchronized Document2 getDocument() {
+  synchronized Document getDocument() {
     if (doc == null) {
       try {
         doc = reader.document(docID, fieldNames);
@@ -106,7 +105,7 @@ public class LazyDocument {
 
   // :TODO: synchronize to prevent redundent copying? (sync per field name?)
   private void fetchRealValues(String name, int fieldNum) {
-    Document2 d = getDocument();
+    Document d = getDocument();
 
     List<LazyField> lazyValues = fields.get(fieldNum);
     List<IndexableField> realValues = d.getFields(name);
@@ -166,7 +165,7 @@ public class LazyDocument {
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
+    public TokenStream tokenStream(TokenStream reuse) {
       return null;
     }
 

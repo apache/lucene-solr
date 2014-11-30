@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -241,7 +241,7 @@ public class TestWildcard
     Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for (int i = 0; i < contents.length; ++i) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(field, contents[i]);
       writer.addDocument(doc);
     }
@@ -340,7 +340,7 @@ public class TestWildcard
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addLargeText(field, docs[i]);
       iw.addDocument(doc);
     }

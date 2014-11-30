@@ -20,7 +20,7 @@ package org.apache.lucene.store;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -78,7 +78,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     int num = atLeast(1000);
     for(int dx = 0; dx < num; dx ++) {
       String f = randomField();
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("data", f);  
       writer.addDocument(doc);
     }

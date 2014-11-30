@@ -33,19 +33,8 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -74,7 +63,7 @@ import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTestCase {
 
   @Override
-  protected void addRandomFields(Document2 doc) {
+  protected void addRandomFields(Document doc) {
     FieldTypes fieldTypes = doc.getFieldTypes();
     fieldTypes.disableExistsFilters();
     for(String fieldName : new String[] {"ndv", "bdv", "sdv", "ssdv", "sndv"}) {
@@ -105,7 +94,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testOneNumber() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -123,7 +112,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
@@ -137,7 +126,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testOneFloat() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -155,7 +144,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
@@ -169,7 +158,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testTwoNumbers() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -188,7 +177,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
@@ -207,7 +196,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv1");
     fieldTypes.disableSorting("dv2");
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -226,7 +215,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv1");
@@ -246,7 +235,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv2");
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -265,7 +254,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
@@ -284,7 +273,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv3");
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -304,7 +293,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv1");
@@ -328,7 +317,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv1");
 
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -349,7 +338,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv2");
@@ -374,7 +363,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addInt("dv", 1);
     iwriter.addDocument(doc);
     doc = iwriter.newDocument();
@@ -401,7 +390,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     doc.addInt("dv", -10);
     iwriter.addDocument(doc);
@@ -418,7 +407,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assert ireader.leaves().size() == 1;
     NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
     for(int i=0;i<2;i++) {
-      Document2 doc2 = ireader.leaves().get(0).reader().document(i);
+      Document doc2 = ireader.leaves().get(0).reader().document(i);
       long expected;
       if (doc2.getString("id").equals("0")) {
         expected = -10;
@@ -439,7 +428,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addLong("dv", Long.MIN_VALUE);
     iwriter.addDocument(doc);
     doc = iwriter.newDocument();
@@ -466,7 +455,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addLong("dv", -8841491950446638677L);
     iwriter.addDocument(doc);
     doc = iwriter.newDocument();
@@ -494,7 +483,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv");
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -512,7 +501,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
@@ -534,7 +523,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv");
 
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     doc.addBinary("dv", new BytesRef("hello world 1"));
     iwriter.addDocument(doc);
@@ -552,7 +541,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
     BytesRef scratch = new BytesRef();
     for(int i=0;i<2;i++) {
-      Document2 doc2 = ireader.leaves().get(0).reader().document(i);
+      Document doc2 = ireader.leaves().get(0).reader().document(i);
       String expected;
       if (doc2.getString("id").equals("0")) {
         expected = "hello world 1";
@@ -576,7 +565,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     iwriter.addDocument(doc);    
     doc = iwriter.newDocument();
@@ -603,7 +592,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.addLargeText("fieldname", text);
@@ -622,7 +611,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.getString("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
@@ -641,7 +630,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef("hello world 1"));
     iwriter.addDocument(doc);
     doc = iwriter.newDocument();
@@ -671,7 +660,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef("hello world 1"));
     iwriter.addDocument(doc);
     doc = iwriter.newDocument();
@@ -707,7 +696,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     doc.addBinary("dv", new BytesRef("hello world 1"));
     iwriter.addDocument(doc);
@@ -729,7 +718,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     scratch = dv.lookupOrd(1);
     assertEquals(new BytesRef("hello world 2"), scratch);
     for(int i=0;i<2;i++) {
-      Document2 doc2 = ireader.leaves().get(0).reader().document(i);
+      Document doc2 = ireader.leaves().get(0).reader().document(i);
       String expected;
       if (doc2.getString("id").equals("0")) {
         expected = "hello world 1";
@@ -751,7 +740,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     iwriter.addDocument(doc);    
     doc = iwriter.newDocument();
@@ -790,7 +779,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv");
 
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef("hello\nworld\r1"));
     iwriter.addDocument(doc);
     iwriter.close();
@@ -813,7 +802,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef("hello world 2"));
     iwriter.addDocument(doc);
     // 2nd doc missing the DV field
@@ -842,7 +831,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     iwriter.addDocument(doc);
     
@@ -915,7 +904,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef(""));
     iwriter.addDocument(doc);
     doc = iwriter.newDocument();
@@ -947,7 +936,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv");
 
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef(""));
     iwriter.addDocument(doc);
     doc = iwriter.newDocument();
@@ -978,7 +967,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv");
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     byte bytes[] = new byte[32766];
     BytesRef b = new BytesRef(bytes);
     random().nextBytes(bytes);
@@ -1004,7 +993,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     byte bytes[] = new byte[32766];
     BytesRef b = new BytesRef(bytes);
     random().nextBytes(bytes);
@@ -1031,7 +1020,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.disableSorting("dv");
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef("boo!"));
     iwriter.addDocument(doc);
     iwriter.close();
@@ -1056,7 +1045,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef("boo!"));
     iwriter.addDocument(doc);
     iwriter.close();
@@ -1084,7 +1073,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     conf.setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(dir, conf);
     for (int i = 0; i < 5; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("docId", i);
       doc.addLargeText("text", "" + i);
       writer.addDocument(doc);
@@ -1132,7 +1121,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Map<String, String> docToString = new HashMap<>();
     int maxLength = TestUtil.nextInt(random(), 1, 50);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("id", "" + i);
       String string = TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
       BytesRef br = new BytesRef(string);
@@ -1146,7 +1135,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     }
     int numDocsNoValue = atLeast(10);
     for (int i = 0; i < numDocsNoValue; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("id", "noValue");
       w.addDocument(doc);
     }
@@ -1163,7 +1152,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       w.forceMerge(1);
     }
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       String id = "" + i + numDocs;
       doc.addLargeText("id", id);
       String string = TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
@@ -1227,7 +1216,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // for numbers of values <= 256, all storage layouts are tested
     assert numDocs > 256;
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       long value = longs.next();
       doc.addAtom("stored", Long.toString(value));
@@ -1279,7 +1268,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // for numbers of values <= 256, all storage layouts are tested
     assert numDocs > 256;
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       
       int valueCount = (int) counts.next();
@@ -1376,7 +1365,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // index some docs
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       final int length;
       if (minLength == maxLength) {
@@ -1453,7 +1442,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
     // index some docs
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       final int length;
       if (minLength == maxLength) {
@@ -1530,7 +1519,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
 
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     iwriter.addDocument(doc);
     
@@ -1558,7 +1547,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     fieldTypes.setMultiValued("field");
     fieldTypes.setMultiValued("field2");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     doc.addBinary("field2", new BytesRef("world"));
     iwriter.addDocument(doc);
@@ -1598,7 +1587,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
   
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     iwriter.addDocument(doc);
     iwriter.commit();
@@ -1640,7 +1629,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
 
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     doc.addBinary("field", new BytesRef("world"));
     iwriter.addDocument(doc);
@@ -1672,7 +1661,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("world"));
     doc.addBinary("field", new BytesRef("hello"));
     iwriter.addDocument(doc);
@@ -1707,7 +1696,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     doc.addBinary("field", new BytesRef("world"));
     iwriter.addDocument(doc);
@@ -1758,7 +1747,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     iwriter.addDocument(doc);
     
@@ -1792,7 +1781,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     iwriter.addDocument(doc);
     iwriter.commit();
@@ -1828,7 +1817,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     iwriter.addDocument(doc);
     
     doc = iwriter.newDocument();
@@ -1863,7 +1852,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     iwriter.addDocument(doc);
     iwriter.commit();
     
@@ -1899,7 +1888,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     iwriter.addDocument(doc);    
     doc = iwriter.newDocument();
@@ -1930,7 +1919,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("field", new BytesRef("hello"));
     doc.addBinary("field", new BytesRef("world"));
     doc.addBinary("field", new BytesRef("beer"));
@@ -1997,7 +1986,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
     // index some docs
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       final int length;
       if (minLength == maxLength) {
@@ -2222,7 +2211,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("id", "0");
     doc.addLong("dv1", 0);
     iw.addDocument(doc);
@@ -2251,7 +2240,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("id", "0");
     doc.addLong("dv1", 0);
     iw.addDocument(doc);
@@ -2281,7 +2270,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("id", "0");
     doc.addLong("dv1", 0);
     iw.addDocument(doc);
@@ -2319,7 +2308,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableSorting("dv1");
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("id", "0");
     doc.addBinary("dv1", new BytesRef());
     iw.addDocument(doc);
@@ -2352,7 +2341,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableSorting("dv1");
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("id", "0");
     doc.addBinary("dv1", new BytesRef());
     iw.addDocument(doc);
@@ -2386,7 +2375,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableSorting("dv1");
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("id", "0");
     doc.addBinary("dv1", new BytesRef());
     iw.addDocument(doc);
@@ -2430,7 +2419,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // index some docs
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id",Integer.toString(i));
       int length = TestUtil.nextInt(random(), 0, 8);
       byte buffer[] = new byte[length];
@@ -2517,7 +2506,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // index some docs
     int numDocs = TestUtil.nextInt(random(), 1025, 2047);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       int length = TestUtil.nextInt(random(), 0, 8);
       byte buffer[] = new byte[length];
@@ -2692,7 +2681,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     
     int numDocs = TestUtil.nextInt(random(), 2025, 2047);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       
       for (int j = 0; j < numSortedSets; j++) {
         doc.addBinary("ss" + j, new BytesRef(TestUtil.randomSimpleString(random())));
@@ -2763,11 +2752,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       bytes.bytes = new byte[1<<i];
       bytes.length = 1<<i;
       for(int j=0;j<4;j++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addBinary("field", bytes);
         w.addDocument(doc);
       }
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addStored("id", "5");
       doc.addBinary("field", new BytesRef());
       w.addDocument(doc);
@@ -2791,7 +2780,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("dv");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 5);
     writer.addDocument(doc);
     writer.close();
@@ -2814,7 +2803,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("dv");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 5);
     writer.addDocument(doc);
     writer.addDocument(writer.newDocument());
@@ -2846,7 +2835,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     iwriter.addDocument(doc);    
     doc = iwriter.newDocument();
@@ -2873,7 +2862,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("dv");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 11);
     doc.addLong("dv", -5);
     writer.addDocument(doc);
@@ -2898,7 +2887,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("dv");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 11);
     doc.addLong("dv", 11);
     writer.addDocument(doc);
@@ -2923,7 +2912,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("dv");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 11);
     doc.addLong("dv", -5);
     writer.addDocument(doc);
@@ -2958,7 +2947,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexWriter writer = new IndexWriter(directory, iwc);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("dv");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 11);
     writer.addDocument(doc);
     writer.commit();
@@ -2993,7 +2982,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     FieldTypes fieldTypes = iwriter.getFieldTypes();
     fieldTypes.setMultiValued("field");
     
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("id", "0");
     iwriter.addDocument(doc);    
     doc = iwriter.newDocument();

@@ -146,8 +146,8 @@ public class SortField {
       if (missingValue != STRING_FIRST && missingValue != STRING_LAST) {
         throw new IllegalArgumentException("For STRING type, missing value must be either STRING_FIRST or STRING_LAST");
       }
-    } else if (type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
-      throw new IllegalArgumentException("Missing value only works for numeric or STRING types");
+    } else if (type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE && type != Type.CUSTOM) {
+      throw new IllegalArgumentException("Missing value only works for numeric or STRING or CUSTOM types");
     }
     this.missingValue = missingValue;
   }

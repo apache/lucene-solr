@@ -24,10 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -183,15 +180,10 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     }
     // riw should sometimes create docvalues fields, etc
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    // these fields should sometimes get term vectors, etc
-    Field idField = newStringField("id", "", Field.Store.NO);
-    Field bodyField = newTextField("body", "", Field.Store.NO);
-    doc.add(idField);
-    doc.add(bodyField);
     for (int i = 0; i < 100; i++) {
-      idField.setStringValue(Integer.toString(i));
-      bodyField.setStringValue(TestUtil.randomUnicodeString(random()));
+      Document doc = riw.newDocument();
+      doc.addAtom("id", Integer.toString(i));
+      doc.addLargeText("body", TestUtil.randomUnicodeString(random()));
       riw.addDocument(doc);
       if (random().nextInt(7) == 0) {
         riw.commit();
@@ -735,7 +727,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   }
 
   @Override
-  protected void addRandomFields(Document2 doc) {
+  protected void addRandomFields(Document doc) {
     doc.addStored("foobar", TestUtil.randomSimpleString(random()));
   }
 

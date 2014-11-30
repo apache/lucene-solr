@@ -18,7 +18,6 @@ package org.apache.lucene.facet.taxonomy;
  */
 
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetTestCase;
@@ -65,7 +64,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
 
     // index documents, 50% have only 'b' and all have 'a'
     for (int i = 0; i < 110; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       // every 11th document is added empty, this used to cause the association
       // aggregators to go into an infinite loop
       if (i % 11 != 0) {
@@ -168,7 +167,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new IntAssociationFacetField(14, "a", "x"));
     doc.add(new FloatAssociationFacetField(55.0f, "b", "y"));
     try {
@@ -190,7 +189,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     config.setHierarchical("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new IntAssociationFacetField(14, "a", "x"));
     try {
       writer.addDocument(config.build(taxoWriter, doc));
@@ -211,7 +210,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     config.setRequireDimCount("a", true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new IntAssociationFacetField(14, "a", "x"));
     try {
       writer.addDocument(config.build(taxoWriter, doc));

@@ -34,11 +34,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -103,7 +99,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document2 doc = searcher.doc(hits.scoreDocs[i].doc);
+      Document doc = searcher.doc(hits.scoreDocs[i].doc);
       String storedField = doc.getString(FIELD_NAME);
 
       TokenStream stream = TokenSources.getAnyTokenStream(searcher
@@ -132,7 +128,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
     Highlighter highlighter = new Highlighter(scorer);
 
-    Document2 doc = searcher.doc(hits.scoreDocs[0].doc);
+    Document doc = searcher.doc(hits.scoreDocs[0].doc);
     String storedField = doc.getString(FIELD_NAME);
 
     TokenStream stream = TokenSources.getAnyTokenStream(searcher
@@ -188,7 +184,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
     Highlighter highlighter = new Highlighter(scorer);
 
-    Document2 doc = searcher.doc(hits.scoreDocs[0].doc);
+    Document doc = searcher.doc(hits.scoreDocs[0].doc);
     String storedField = doc.getString(FIELD_NAME);
 
     TokenStream stream = TokenSources.getAnyTokenStream(searcher
@@ -1822,18 +1818,18 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     searchIndex();
   }
   
-  private Document doc( String f, String v ){
-    Document doc = new Document();
-    doc.add( new TextField( f, v, Field.Store.YES));
+  private Document doc(IndexWriter writer, String f, String v) {
+    Document doc = writer.newDocument();
+    doc.addLargeText( f, v);
     return doc;
   }
   
   private void makeIndex() throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
-    writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
-    writer.addDocument( doc( "t_text1", "more random words for second field del" ) );
-    writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
-    writer.addDocument( doc( "t_text1", "more random words for second field" ) );
+    writer.addDocument( doc( writer, "t_text1", "random words for highlighting tests del" ) );
+    writer.addDocument( doc( writer, "t_text1", "more random words for second field del" ) );
+    writer.addDocument( doc( writer, "t_text1", "random words for highlighting tests del" ) );
+    writer.addDocument( doc( writer, "t_text1", "more random words for second field" ) );
     writer.forceMerge(1);
     writer.close();
   }
@@ -1858,7 +1854,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     TopDocs hits = searcher.search(query, null, 10);
     for( int i = 0; i < hits.totalHits; i++ ){
-      Document2 doc = searcher.doc(hits.scoreDocs[i].doc);
+      Document doc = searcher.doc(hits.scoreDocs[i].doc);
       String result = h.getBestFragment( a, "t_text1", doc.getString("t_text1"));
       if (VERBOSE) System.out.println("result:" +  result);
       assertEquals("more <B>random</B> words for second field", result);
@@ -1941,7 +1937,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     for (String text : texts) {
       addDoc(writer, text);
     }
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt(NUMERIC_FIELD_NAME, 1);
     writer.addDocument(doc);
 
@@ -1957,8 +1953,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     doc.addInt(NUMERIC_FIELD_NAME, 7);
     writer.addDocument(doc);
 
-    Document childDoc = doc(FIELD_NAME, "child document");
-    Document parentDoc = doc(FIELD_NAME, "parent document");
+    Document childDoc = doc(writer, FIELD_NAME, "child document");
+    Document parentDoc = doc(writer, FIELD_NAME, "parent document");
     writer.addDocuments(Arrays.asList(childDoc, parentDoc));
     
     writer.forceMerge(1);
@@ -1975,12 +1971,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     super.tearDown();
   }
   private void addDoc(IndexWriter writer, String text) throws IOException {
-    Document d = new Document();
-
-    Field f = new TextField(FIELD_NAME, text, Field.Store.YES);
-    d.add(f);
+    Document d = writer.newDocument();
+    d.addLargeText(FIELD_NAME, text);
     writer.addDocument(d);
-
   }
 
   private static Token createToken(String term, int start, int offset)

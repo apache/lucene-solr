@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -110,7 +110,7 @@ public class TestDocIdSet extends LuceneTestCase {
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("c", "val");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
@@ -136,7 +136,7 @@ public class TestDocIdSet extends LuceneTestCase {
   public void testNullIteratorFilteredDocIdSet() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("c", "val");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();

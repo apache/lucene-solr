@@ -22,11 +22,8 @@ import java.io.IOException;
 import java.text.ParseException;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -49,7 +46,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -94,7 +90,7 @@ public class DistanceFacetsExample implements Closeable {
 
     // Add documents with latitude/longitude location:
     // we index these both as DoubleFields (for bounding box/ranges) and as NumericDocValuesFields (for scoring)
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addDouble("latitude", 40.759011);
     doc.addDouble("longitude", -73.9844722);
     writer.addDocument(doc);

@@ -26,17 +26,14 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -47,7 +44,6 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestEarlyTermination extends LuceneTestCase {
@@ -65,11 +61,11 @@ public class TestEarlyTermination extends LuceneTestCase {
     sort = new Sort(new SortField("ndv1", SortField.Type.LONG));
   }
 
-  private Document randomDocument() {
-    final Document doc = new Document();
-    doc.add(new NumericDocValuesField("ndv1", random().nextInt(10)));
-    doc.add(new NumericDocValuesField("ndv2", random().nextInt(10)));
-    doc.add(new StringField("s", RandomPicks.randomFrom(random(), terms), Store.YES));
+  private Document randomDocument(RandomIndexWriter iw) {
+    final Document doc = iw.newDocument();
+    doc.addInt("ndv1", random().nextInt(10));
+    doc.addInt("ndv2", random().nextInt(10));
+    doc.addAtom("s", RandomPicks.randomFrom(random(), terms));
     return doc;
   }
 
@@ -89,7 +85,7 @@ public class TestEarlyTermination extends LuceneTestCase {
     iw = new RandomIndexWriter(new Random(seed), dir, iwc);
     iw.setDoRandomForceMerge(false); // don't do this, it may happen anyway with MockRandomMP
     for (int i = 0; i < numDocs; ++i) {
-      final Document doc = randomDocument();
+      final Document doc = randomDocument(iw);
       iw.addDocument(doc);
       if (i == numDocs / 2 || (i != numDocs - 1 && random().nextInt(8) == 0)) {
         iw.commit();

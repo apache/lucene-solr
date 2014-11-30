@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -43,7 +41,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
                                                   .setOpenMode(OpenMode.CREATE)
                                                   .setMaxBufferedDocs(2)
                                                   .setMergePolicy(ldmp));
-      final Document2 doc = writer.newDocument();
+      final Document doc = writer.newDocument();
       doc.addAtom("content", "aaa");
       for(int j=0;j<numDocs;j++) {
         writer.addDocument(doc);
@@ -82,7 +80,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
                                                 .setMergePolicy(ldmp)
                                                 .setMergeScheduler(new ConcurrentMergeScheduler()));
     
-    final Document2 doc = writer.newDocument();
+    final Document doc = writer.newDocument();
     doc.addAtom("content", "aaa");
 
     for(int iter=0;iter<10;iter++) {
@@ -203,7 +201,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
               .setMaxBufferedDocs(2)
               .setMergePolicy(newLogMergePolicy(51))
       );
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("field", "aaa");
       for(int i=0;i<100;i++) {
         writer.addDocument(doc);

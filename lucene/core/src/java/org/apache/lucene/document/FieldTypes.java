@@ -18,12 +18,15 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetAddress;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -46,6 +49,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -97,6 +102,17 @@ import org.apache.lucene.util.Version;
 // tie into highlighter
 // tie into faceting
 // tie into index sorting
+
+// nocommit sugar API to retrieve values from DVs or stored fields or whatever?
+
+// nocommit how will future back-compat work?  segment must store field types as of when it was written?
+
+// nocommit how to make this more extensible?  e.g. so I can say "this field will facet, hierarchical, etc."
+
+
+// nocommit expose DocValuesRangeFilter?
+
+// nocommit PH should take this and validate highlighting was enabled?
 
 // nocommit a segment should store the field type as of when it was written?  on upgrade/reindex we can use that?
 
@@ -201,8 +217,6 @@ import org.apache.lucene.util.Version;
 
 // nocommit fix all change methods to call validate / rollback
 
-// nocommit float16?
-
 // nocommit can we move multi-field-ness out of IW?  so IW only gets a single instance of each field
 
 // nocommit nested/parent/child docs?
@@ -215,16 +229,19 @@ import org.apache.lucene.util.Version;
 
 // nocommit required?  not null?
 
+// nocommit BigInt?
+
+// nocommit BigDecimal?
+
 /** Records how each field is indexed, stored, etc.  This class persists
  *  its state using {@link IndexWriter#setCommitData}, using the
  *  {@link FieldTypes#FIELD_PROPERTIES_KEY} key. */
 
-// nocommit what about uniqueAtom number int/long?  maybe break out isUnique?  then, e.g. like norms, you could have unique set, but maybe
-// later turn it off
-
-// nocommit IW should detect if incoming document's fieldTypes != its own
-
 public class FieldTypes {
+
+  public static final int DEFAULT_POSITION_GAP = 0;
+
+  public static final int DEFAULT_OFFSET_GAP = 1;
 
   enum ValueType {
     NONE,
@@ -232,9 +249,11 @@ public class FieldTypes {
     SHORT_TEXT,
     ATOM,  // nocommit binary sort of overlaps w/ this?
     INT,
+    HALF_FLOAT,
     FLOAT,
     LONG,
     DOUBLE,
+    BIG_INT,
     BINARY, // nocommit rename to bytes?
     BOOLEAN,
     DATE,
@@ -268,7 +287,7 @@ public class FieldTypes {
   private long changeCount;
 
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
-  static class FieldType implements IndexableFieldType, Cloneable {
+  class FieldType implements IndexableFieldType, Cloneable {
     private final String name;
 
     // Lucene version when we were created:
@@ -392,14 +411,19 @@ public class FieldTypes {
     private volatile Analyzer wrappedIndexAnalyzer;
     private volatile Analyzer wrappedQueryAnalyzer;
 
+    Locale sortLocale;
+    Collator sortCollator;
+
     boolean validate() {
       switch (valueType) {
       case NONE:
         break;
       case INT:
+      case HALF_FLOAT:
       case FLOAT:
       case LONG:
       case DOUBLE:
+      case BIG_INT:
       case DATE:
         if (highlighted == Boolean.TRUE) {
           illegalState(name, "type " + valueType + " cannot highlight");
@@ -410,8 +434,14 @@ public class FieldTypes {
         if (queryAnalyzer != null) {
           illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
         }
-        if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
-          illegalState(name, "type " + valueType + " must use NUMERIC docValuesType (got: " + docValuesType + ")");
+        if (valueType == ValueType.BIG_INT) {
+          if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET)) {
+            illegalState(name, "type " + valueType + " must use SORTED or SORTED_SET docValuesType (got: " + docValuesType + ")");
+          }
+        } else {
+          if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
+            illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType (got: " + docValuesType + ")");
+          }
         }
         if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
           illegalState(name, "type " + valueType + " cannot use indexOptions > DOCS (got indexOptions " + indexOptions + ")");
@@ -483,7 +513,7 @@ public class FieldTypes {
         if (indexNorms == Boolean.TRUE) {
           illegalState(name, "type " + valueType + " cannot index norms");
         }
-        if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
+        if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0 && multiValued != Boolean.TRUE) {
           illegalState(name, "type " + valueType + " can only be indexed as DOCS; got " + indexOptions);
         }
         if (maxTokenCount != null) {
@@ -537,6 +567,10 @@ public class FieldTypes {
         illegalState(name, "cannot sort when DocValuesType=" + docValuesType);
       }
 
+      if (sortable == Boolean.FALSE && sortLocale != null) {
+        illegalState(name, "cannot set sortLocale when field is not enabled for sorting");
+      }
+
       if (indexOptionsSet) {
         if (indexOptions == IndexOptions.NONE) {
           if (blockTreeMinItemsInBlock != null) {
@@ -583,6 +617,7 @@ public class FieldTypes {
           illegalState(name, "can only setAnalyzerPositionGap if the field is multi-valued");
         }
       }
+
       if (analyzerOffsetGap != null) {
         if (indexOptions == IndexOptions.NONE) {
           illegalState(name, "can only setAnalyzerOffsetGap if the field is indexed");
@@ -867,26 +902,32 @@ public class FieldTypes {
       case INT:
         out.writeByte((byte) 4);
         break;
-      case FLOAT:
+      case HALF_FLOAT:
         out.writeByte((byte) 5);
         break;
-      case LONG:
+      case FLOAT:
         out.writeByte((byte) 6);
         break;
-      case DOUBLE:
+      case LONG:
         out.writeByte((byte) 7);
         break;
-      case BINARY:
+      case DOUBLE:
         out.writeByte((byte) 8);
         break;
-      case BOOLEAN:
+      case BIG_INT:
         out.writeByte((byte) 9);
         break;
-      case DATE:
+      case BINARY:
         out.writeByte((byte) 10);
         break;
-      case INET_ADDRESS:
+      case BOOLEAN:
         out.writeByte((byte) 11);
+        break;
+      case DATE:
+        out.writeByte((byte) 12);
+        break;
+      case INET_ADDRESS:
+        out.writeByte((byte) 13);
         break;
       default:
         throw new AssertionError("missing ValueType in switch");
@@ -943,6 +984,15 @@ public class FieldTypes {
       writeNullableBoolean(out, storeTermVectorPayloads);
       writeNullableBoolean(out, isUnique);
 
+      if (sortLocale != null) {
+        out.writeByte((byte) 1);
+        writeNullableString(out, sortLocale.getLanguage());
+        writeNullableString(out, sortLocale.getCountry());
+        writeNullableString(out, sortLocale.getVariant());
+      } else {
+        out.writeByte((byte) 0);
+      }
+
       if (indexOptionsSet == false) {
         assert indexOptions == IndexOptions.NONE;
         out.writeByte((byte) 0);
@@ -973,66 +1023,6 @@ public class FieldTypes {
       writeNullableBoolean(out, highlighted);
     }
 
-    private static void writeNullableInteger(DataOutput out, Integer value) throws IOException {
-      if (value == null) {
-        out.writeByte((byte) 0);
-      } else {
-        out.writeByte((byte) 1);
-        out.writeVInt(value.intValue());
-      }
-    }
-
-    private static Integer readNullableInteger(DataInput in) throws IOException {
-      if (in.readByte() == 0) {
-        return null;
-      } else {
-        return in.readVInt();
-      }
-    }
-
-    private static void writeNullableBoolean(DataOutput out, Boolean value) throws IOException {
-      if (value == null) {
-        out.writeByte((byte) 0);
-      } else if (value == Boolean.TRUE) {
-        out.writeByte((byte) 1);
-      } else {
-        out.writeByte((byte) 2);
-      }
-    }
-
-    private static Boolean readNullableBoolean(DataInput in) throws IOException {
-      byte b = in.readByte();
-      if (b == 0) {
-        return null;
-      } else if (b == 1) {
-        return Boolean.TRUE;
-      } else if (b == 2) {
-        return Boolean.FALSE;
-      } else {
-        throw new CorruptIndexException("invalid byte for nullable boolean: " + b, in);
-      }
-    }
-
-    private static void writeNullableString(DataOutput out, String value) throws IOException {
-      if (value == null) {
-        out.writeByte((byte) 0);
-      } else {
-        out.writeByte((byte) 1);
-        out.writeString(value);
-      }
-    }
-
-    private static String readNullableString(DataInput in) throws IOException {
-      byte b = in.readByte();
-      if (b == 0) {
-        return null;
-      } else if (b == 1) {
-        return in.readString();
-      } else {
-        throw new CorruptIndexException("invalid byte for nullable string: " + b, in);
-      }
-    }
-
     public FieldType(DataInput in) throws IOException {
       // nocommit under codec control instead?
       name = in.readString();
@@ -1056,24 +1046,30 @@ public class FieldTypes {
         valueType = ValueType.INT;
         break;
       case 5:
-        valueType = ValueType.FLOAT;
+        valueType = ValueType.HALF_FLOAT;
         break;
       case 6:
-        valueType = ValueType.LONG;
+        valueType = ValueType.FLOAT;
         break;
       case 7:
-        valueType = ValueType.DOUBLE;
+        valueType = ValueType.LONG;
         break;
       case 8:
-        valueType = ValueType.BINARY;
+        valueType = ValueType.DOUBLE;
         break;
       case 9:
-        valueType = ValueType.BOOLEAN;
+        valueType = ValueType.BIG_INT;
         break;
       case 10:
-        valueType = ValueType.DATE;
+        valueType = ValueType.BINARY;
         break;
       case 11:
+        valueType = ValueType.BOOLEAN;
+        break;
+      case 12:
+        valueType = ValueType.DATE;
+        break;
+      case 13:
         valueType = ValueType.INET_ADDRESS;
         break;
       default:
@@ -1136,7 +1132,17 @@ public class FieldTypes {
       storeTermVectorOffsets = readNullableBoolean(in);
       storeTermVectorPayloads = readNullableBoolean(in);
       isUnique = readNullableBoolean(in);
-
+      b = in.readByte();
+      if (b == 1) {
+        String language = readNullableString(in);
+        String country = readNullableString(in);
+        String variant = readNullableString(in);
+        // nocommit this is not sufficient right?  need to use the builder?
+        sortLocale = new Locale(language, country, variant);
+        sortCollator = Collator.getInstance(sortLocale);
+      } else if (b != 0) {
+        throw new CorruptIndexException("invalid byte for sortLocale: " + b, in);        
+      }
       b = in.readByte();
       switch (b) {
       case 0:
@@ -1170,6 +1176,32 @@ public class FieldTypes {
       postingsFormat = readNullableString(in);
       docValuesFormat = readNullableString(in);
       highlighted = readNullableBoolean(in);
+    }
+
+    @Override
+    public int getPositionGap() {
+      if (analyzerPositionGap != null) {
+        return analyzerPositionGap;
+      } else if (indexAnalyzer != null) {
+        return indexAnalyzer.getPositionIncrementGap(name);
+      } else if (defaultIndexAnalyzer != null) {
+        return defaultIndexAnalyzer.getPositionIncrementGap(name);
+      } else {
+        return DEFAULT_POSITION_GAP;
+      }
+    }
+
+    @Override
+    public int getOffsetGap() {
+      if (analyzerOffsetGap != null) {
+        return analyzerOffsetGap;
+      } else if (indexAnalyzer != null) {
+        return indexAnalyzer.getOffsetGap(name);
+      } else if (defaultIndexAnalyzer != null) {
+        return defaultIndexAnalyzer.getOffsetGap(name);
+      } else {
+        return DEFAULT_OFFSET_GAP;
+      }
     }
   }
 
@@ -1441,6 +1473,9 @@ public class FieldTypes {
 
     @Override
     public int getPositionIncrementGap(String fieldName) {
+      throw new UnsupportedOperationException();
+
+      /*
       FieldType field = fields.get(fieldName);
       if (field == null) {
         if (defaultIndexAnalyzer == null) {
@@ -1459,10 +1494,13 @@ public class FieldTypes {
       } else {
         return defaultIndexAnalyzer.getPositionIncrementGap(fieldName);
       }
+      */
     }
 
     @Override
     public int getOffsetGap(String fieldName) {
+      throw new UnsupportedOperationException();
+      /*
       FieldType field = fields.get(fieldName);
       if (field == null) {
         if (defaultIndexAnalyzer == null) {
@@ -1481,6 +1519,7 @@ public class FieldTypes {
       } else {
         return defaultIndexAnalyzer.getOffsetGap(fieldName);
       }
+      */
     }
 
     // nocommit what about wrapReader?
@@ -2549,6 +2588,28 @@ public class FieldTypes {
     }
   }
 
+  public void setSortLocale(String fieldName, Locale locale) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = newFieldType(fieldName);
+      current.sortLocale = locale;
+      current.sortCollator = Collator.getInstance(locale);
+      fields.put(fieldName, current);
+      changed();
+    } else if (current.sortLocale == null || locale.equals(current.sortLocale) == false) {
+      current.sortLocale = locale;
+      current.sortCollator = Collator.getInstance(locale);
+      changed();
+    }
+
+  }
+
+  public Locale getSortLocale(String fieldName) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+    return fieldType.sortLocale;
+  }
+
   /** Each value in this field will be unique (never occur in more than one document).  IndexWriter validates this.  */
   public void setIsUnique(String fieldName) {
     FieldType current = fields.get(fieldName);
@@ -2575,9 +2636,11 @@ public class FieldTypes {
       // bug
       throw new AssertionError("valueType should not be NONE");
     case INT:
+    case HALF_FLOAT:
     case FLOAT:
     case LONG:
     case DOUBLE:
+    case BIG_INT:
     case DATE:
       if (field.highlighted == null) {
         field.highlighted = Boolean.FALSE;
@@ -2586,10 +2649,18 @@ public class FieldTypes {
         field.storeTermVectors = Boolean.FALSE;
       }
       if (field.sortable == null) {
-        if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.NUMERIC || field.docValuesType == DocValuesType.SORTED_NUMERIC) {
-          field.sortable = Boolean.TRUE;
+        if (field.valueType == ValueType.BIG_INT) {
+          if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.SORTED || field.docValuesType == DocValuesType.SORTED_SET) {
+            field.sortable = Boolean.TRUE;
+          } else {
+            field.sortable = Boolean.FALSE;
+          }
         } else {
-          field.sortable = Boolean.FALSE;
+          if (field.docValuesTypeSet == false || field.docValuesType == DocValuesType.NUMERIC || field.docValuesType == DocValuesType.SORTED_NUMERIC) {
+            field.sortable = Boolean.TRUE;
+          } else {
+            field.sortable = Boolean.FALSE;
+          }
         }
       }
       if (field.multiValued == null) {
@@ -2604,10 +2675,18 @@ public class FieldTypes {
       }
       if (field.docValuesTypeSet == false) {
         if (field.sortable == Boolean.TRUE) {
-          if (field.multiValued == Boolean.TRUE) {
-            field.docValuesType = DocValuesType.SORTED_NUMERIC;
+          if (field.valueType == ValueType.BIG_INT) {
+            if (field.multiValued == Boolean.TRUE) {
+              field.docValuesType = DocValuesType.SORTED_SET;
+            } else {
+              field.docValuesType = DocValuesType.SORTED;
+            }
           } else {
-            field.docValuesType = DocValuesType.NUMERIC;
+            if (field.multiValued == Boolean.TRUE) {
+              field.docValuesType = DocValuesType.SORTED_NUMERIC;
+            } else {
+              field.docValuesType = DocValuesType.NUMERIC;
+            }
           }
         }
         field.docValuesTypeSet = true;
@@ -2899,7 +2978,7 @@ public class FieldTypes {
 
     switch (fieldType.valueType) {
     case INT:
-      bytes = Document2.intToBytes(token);
+      bytes = Document.intToBytes(token);
       break;
     default:
       illegalState(fieldName, "cannot create int term query when valueType=" + fieldType.valueType);
@@ -2929,7 +3008,7 @@ public class FieldTypes {
 
     switch (fieldType.valueType) {
     case LONG:
-      bytes = Document2.longToBytes(token);
+      bytes = Document.longToBytes(token);
       break;
     default:
       illegalState(fieldName, "cannot create long term query when valueType=" + fieldType.valueType);
@@ -3025,6 +3104,8 @@ public class FieldTypes {
 
   // nocommit split to newInt/Float/etc./Range
 
+  // nocommit More, Less?
+
   // nocommit not great that the toString of the filter returned here is ... not easy to understand
   public Filter newRangeFilter(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
 
@@ -3049,23 +3130,33 @@ public class FieldTypes {
     
     switch (fieldType.valueType) {
     case INT:
-      minTerm = min == null ? null : Document2.intToBytes(min.intValue());
-      maxTerm = max == null ? null : Document2.intToBytes(max.intValue());
+      minTerm = min == null ? null : Document.intToBytes(min.intValue());
+      maxTerm = max == null ? null : Document.intToBytes(max.intValue());
+      break;
+
+    case HALF_FLOAT:
+      minTerm = min == null ? null : Document.halfFloatToSortableBytes(min.floatValue());
+      maxTerm = max == null ? null : Document.halfFloatToSortableBytes(max.floatValue());
       break;
 
     case FLOAT:
-      minTerm = min == null ? null : Document2.intToBytes(Document2.sortableFloatBits(Float.floatToIntBits(min.floatValue())));
-      maxTerm = max == null ? null : Document2.intToBytes(Document2.sortableFloatBits(Float.floatToIntBits(max.floatValue())));
+      minTerm = min == null ? null : Document.floatToSortableBytes(min.floatValue());
+      maxTerm = max == null ? null : Document.floatToSortableBytes(max.floatValue());
       break;
 
     case LONG:
-      minTerm = min == null ? null : Document2.longToBytes(min.longValue());
-      maxTerm = max == null ? null : Document2.longToBytes(max.longValue());
+      minTerm = min == null ? null : Document.longToBytes(min.longValue());
+      maxTerm = max == null ? null : Document.longToBytes(max.longValue());
       break;
 
     case DOUBLE:
-      minTerm = min == null ? null : Document2.longToBytes(Document2.sortableDoubleBits(Double.doubleToLongBits(min.doubleValue())));
-      maxTerm = max == null ? null : Document2.longToBytes(Document2.sortableDoubleBits(Double.doubleToLongBits(max.doubleValue())));
+      minTerm = min == null ? null : Document.doubleToSortableBytes(min.doubleValue());
+      maxTerm = max == null ? null : Document.doubleToSortableBytes(max.doubleValue());
+      break;
+
+    case BIG_INT:
+      minTerm = min == null ? null : new BytesRef(((BigInteger) min).toByteArray());
+      maxTerm = max == null ? null :  new BytesRef(((BigInteger) max).toByteArray());
       break;
 
     default:
@@ -3141,8 +3232,8 @@ public class FieldTypes {
       illegalState(fieldName, "this field was not indexed for fast ranges");
     }
 
-    BytesRef minTerm = min == null ? null : Document2.longToBytes(min.getTime());
-    BytesRef maxTerm = max == null ? null : Document2.longToBytes(max.getTime());
+    BytesRef minTerm = min == null ? null : Document.longToBytes(min.getTime());
+    BytesRef maxTerm = max == null ? null : Document.longToBytes(max.getTime());
 
     return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
   }
@@ -3235,13 +3326,60 @@ public class FieldTypes {
           } else {
             sortField.setMissingValue(Integer.MAX_VALUE);
           }
-        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+        } else {
+          assert fieldType.sortMissingLast == Boolean.FALSE;
           if (reverse.booleanValue()) {
             sortField.setMissingValue(Integer.MAX_VALUE);
           } else {
             sortField.setMissingValue(Integer.MIN_VALUE);
           }
         }
+        return sortField;
+      }
+
+    case HALF_FLOAT:
+      {
+        SortField sortField;
+        if (fieldType.multiValued == Boolean.TRUE) {
+          // nocommit todo
+          throw new UnsupportedOperationException();
+        } else {
+
+          final Float missingValue;
+
+          if (fieldType.sortMissingLast == Boolean.TRUE) {
+            if (reverse.booleanValue()) {
+              missingValue = Float.NEGATIVE_INFINITY;
+            } else {
+              missingValue = Float.POSITIVE_INFINITY;
+            }
+          } else {
+            assert fieldType.sortMissingLast == Boolean.FALSE;
+            if (reverse.booleanValue()) {
+              missingValue = Float.POSITIVE_INFINITY;
+            } else {
+              missingValue = Float.NEGATIVE_INFINITY;
+            }
+          }
+
+          FieldComparatorSource compSource = new FieldComparatorSource() {
+              @Override
+              public FieldComparator<Float> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
+                return new HalfFloatComparator(numHits, fieldName, missingValue);
+              }
+            };
+
+          sortField = new SortField(fieldName, compSource, reverse) {
+              @Override
+              public String toString() {
+                return "<halffloat" + ": \"" + fieldName + "\" missingValue=" + missingValue + ">";
+              }
+            };
+
+          // nocommit not needed?
+          sortField.setMissingValue(missingValue);
+        }
+
         return sortField;
       }
 
@@ -3260,7 +3398,8 @@ public class FieldTypes {
           } else {
             sortField.setMissingValue(Float.POSITIVE_INFINITY);
           }
-        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+        } else {
+          assert fieldType.sortMissingLast == Boolean.FALSE;
           if (reverse.booleanValue()) {
             sortField.setMissingValue(Float.POSITIVE_INFINITY);
           } else {
@@ -3286,7 +3425,8 @@ public class FieldTypes {
           } else {
             sortField.setMissingValue(Long.MAX_VALUE);
           }
-        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+        } else {
+          assert fieldType.sortMissingLast == Boolean.FALSE;
           if (reverse.booleanValue()) {
             sortField.setMissingValue(Long.MAX_VALUE);
           } else {
@@ -3311,13 +3451,61 @@ public class FieldTypes {
           } else {
             sortField.setMissingValue(Double.POSITIVE_INFINITY);
           }
-        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+        } else {
+          assert fieldType.sortMissingLast == Boolean.FALSE;
           if (reverse.booleanValue()) {
             sortField.setMissingValue(Double.POSITIVE_INFINITY);
           } else {
             sortField.setMissingValue(Double.NEGATIVE_INFINITY);
           }
         }
+        return sortField;
+      }
+
+    case BIG_INT:
+      // nocommit fixme
+      {
+        SortField sortField;
+        if (fieldType.multiValued == Boolean.TRUE) {
+          // nocommit todo
+          throw new UnsupportedOperationException();
+        } else {
+
+          final Float missingValue;
+
+          if (fieldType.sortMissingLast == Boolean.TRUE) {
+            if (reverse.booleanValue()) {
+              missingValue = Float.NEGATIVE_INFINITY;
+            } else {
+              missingValue = Float.POSITIVE_INFINITY;
+            }
+          } else {
+            assert fieldType.sortMissingLast == Boolean.FALSE;
+            if (reverse.booleanValue()) {
+              missingValue = Float.POSITIVE_INFINITY;
+            } else {
+              missingValue = Float.NEGATIVE_INFINITY;
+            }
+          }
+
+          FieldComparatorSource compSource = new FieldComparatorSource() {
+              @Override
+              public FieldComparator<Float> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
+                return new HalfFloatComparator(numHits, fieldName, missingValue);
+              }
+            };
+
+          sortField = new SortField(fieldName, compSource, reverse) {
+              @Override
+              public String toString() {
+                return "<halffloat" + ": \"" + fieldName + "\" missingValue=" + missingValue + ">";
+              }
+            };
+
+          // nocommit not needed?
+          sortField.setMissingValue(missingValue);
+        }
+
         return sortField;
       }
 
@@ -3343,7 +3531,8 @@ public class FieldTypes {
           } else {
             sortField.setMissingValue(SortField.STRING_LAST);
           }
-        } else if (fieldType.sortMissingLast == Boolean.FALSE) {
+        } else {
+          assert fieldType.sortMissingLast == Boolean.FALSE;
           if (reverse.booleanValue()) {
             sortField.setMissingValue(SortField.STRING_LAST);
           } else {
@@ -3545,6 +3734,66 @@ public class FieldTypes {
     enableExistsFilters = true;
     indexedDocs = false;
     addFieldNamesField();
+  }
+
+  static void writeNullableInteger(DataOutput out, Integer value) throws IOException {
+    if (value == null) {
+      out.writeByte((byte) 0);
+    } else {
+      out.writeByte((byte) 1);
+      out.writeVInt(value.intValue());
+    }
+  }
+
+  static Integer readNullableInteger(DataInput in) throws IOException {
+    if (in.readByte() == 0) {
+      return null;
+    } else {
+      return in.readVInt();
+    }
+  }
+
+  static void writeNullableBoolean(DataOutput out, Boolean value) throws IOException {
+    if (value == null) {
+      out.writeByte((byte) 0);
+    } else if (value == Boolean.TRUE) {
+      out.writeByte((byte) 1);
+    } else {
+      out.writeByte((byte) 2);
+    }
+  }
+
+  static Boolean readNullableBoolean(DataInput in) throws IOException {
+    byte b = in.readByte();
+    if (b == 0) {
+      return null;
+    } else if (b == 1) {
+      return Boolean.TRUE;
+    } else if (b == 2) {
+      return Boolean.FALSE;
+    } else {
+      throw new CorruptIndexException("invalid byte for nullable boolean: " + b, in);
+    }
+  }
+
+  static void writeNullableString(DataOutput out, String value) throws IOException {
+    if (value == null) {
+      out.writeByte((byte) 0);
+    } else {
+      out.writeByte((byte) 1);
+      out.writeString(value);
+    }
+  }
+
+  static String readNullableString(DataInput in) throws IOException {
+    byte b = in.readByte();
+    if (b == 0) {
+      return null;
+    } else if (b == 1) {
+      return in.readString();
+    } else {
+      throw new CorruptIndexException("invalid byte for nullable string: " + b, in);
+    }
   }
 
   // nocommit add sugar to wrap long NDVs as float/double?

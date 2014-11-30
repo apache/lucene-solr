@@ -13,10 +13,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -54,18 +51,23 @@ public class DocumentDictionaryTest extends LuceneTestCase {
   static final String CONTEXT_FIELD_NAME = "c1";
   
   /** Returns Pair(list of invalid document terms, Map of document term -> document) */
-  private Map.Entry<List<String>, Map<String, Document>> generateIndexDocuments(int ndocs, boolean requiresPayload, boolean requiresContexts) {
+  private Map.Entry<List<String>, Map<String, Document>> generateIndexDocuments(RandomIndexWriter writer, int ndocs, boolean requiresPayload, boolean requiresContexts) {
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued(CONTEXT_FIELD_NAME);
+
     Map<String, Document> docs = new HashMap<>();
     List<String> invalidDocTerms = new ArrayList<>();
+    boolean useStoredFieldWeights = rarely();
     for(int i = 0; i < ndocs ; i++) {
-      Document doc = new Document();
+      Document doc = writer.newDocument();
       boolean invalidDoc = false;
-      Field field = null;
       // usually have valid term field in document
+      String term;
       if (usually()) {
-        field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
-        doc.add(field);
+        term = "field_" + i;
+        doc.addLargeText(FIELD_NAME, term);
       } else {
+        term = "invalid_" + i;
         invalidDoc = true;
       }
       
@@ -73,8 +75,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       if (requiresPayload || usually()) {
         // usually have valid payload field in document
         if (usually()) {
-          Field payload = new StoredField(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
-          doc.add(payload);
+          doc.addStored(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
         } else if (requiresPayload) {
           invalidDoc = true;
         }
@@ -83,7 +84,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       if (requiresContexts || usually()) {
         if (usually()) {
           for (int j = 0; j < atLeast(2); j++) {
-            doc.add(new StoredField(CONTEXT_FIELD_NAME, new BytesRef("context_" + i + "_"+ j)));
+            doc.addStored(CONTEXT_FIELD_NAME, new BytesRef("context_" + i + "_"+ j));
           }
         }
         // we should allow entries without context
@@ -91,18 +92,15 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       
       // usually have valid weight field in document
       if (usually()) {
-        Field weight = (rarely()) ? 
-            new StoredField(WEIGHT_FIELD_NAME, 100d + i) : 
-            new NumericDocValuesField(WEIGHT_FIELD_NAME, 100 + i);
-        doc.add(weight);
+        if (useStoredFieldWeights) {
+          doc.addStoredDouble(WEIGHT_FIELD_NAME, 100d + i);
+        } else {
+          doc.addLong(WEIGHT_FIELD_NAME, 100 + i);
+        }
       }
       
-      String term = null;
       if (invalidDoc) {
-        term = (field!=null) ? field.stringValue() : "invalid_" + i;
         invalidDocTerms.add(term);
-      } else {
-        term = field.stringValue();
       }
       
       docs.put(term, doc);
@@ -137,7 +135,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), true, false);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(writer, atLeast(1000), true, false);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
@@ -151,7 +149,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
@@ -172,7 +170,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false, false);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(writer, atLeast(1000), false, false);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
@@ -186,7 +184,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
       assertEquals(inputIterator.payload(), null);
@@ -208,7 +206,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), true, true);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(writer, atLeast(1000), true, true);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     for(Document doc: docs.values()) {
@@ -222,7 +220,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
       assertTrue(inputIterator.payload().equals(doc.getField(PAYLOAD_FIELD_NAME).binaryValue()));
@@ -249,7 +247,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(atLeast(1000), false, false);
+    Map.Entry<List<String>, Map<String, Document>> res = generateIndexDocuments(writer, atLeast(1000), false, false);
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     Random rand = random();
@@ -257,7 +255,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     for(Document doc : docs.values()) {
       IndexableField f = doc.getField(FIELD_NAME);
       if(rand.nextBoolean() && f != null && !invalidDocTerms.contains(f.stringValue())) {
-        termsToDel.add(doc.get(FIELD_NAME));
+        termsToDel.add(doc.getString(FIELD_NAME));
       }
       writer.addDocument(doc);
     }
@@ -285,7 +283,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     BytesRef f;
     while((f = inputIterator.next())!=null) {
       Document doc = docs.remove(f.utf8ToString());
-      assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
+      assertTrue(f.equals(new BytesRef(doc.getString(FIELD_NAME))));
       IndexableField weightField = doc.getField(WEIGHT_FIELD_NAME);
       assertEquals(inputIterator.weight(), (weightField != null) ? weightField.numericValue().longValue() : 0);
       assertEquals(inputIterator.payload(), null);
@@ -331,38 +329,35 @@ public class DocumentDictionaryTest extends LuceneTestCase {
 
   private List<Suggestion> indexMultiValuedDocuments(int numDocs, RandomIndexWriter writer) throws IOException {
     List<Suggestion> suggestionList = new ArrayList<>(numDocs);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued(FIELD_NAME);
 
     for(int i=0; i<numDocs; i++) {
-      Document doc = new Document();
-      Field field;
+      Document doc = writer.newDocument();
       BytesRef payloadValue;
       Set<BytesRef> contextValues = new HashSet<>();
       long numericValue = -1; //-1 for missing weight
       BytesRef term;
 
       payloadValue = new BytesRef("payload_" + i);
-      field = new StoredField(PAYLOAD_FIELD_NAME, payloadValue);
-      doc.add(field);
+      doc.addStored(PAYLOAD_FIELD_NAME, payloadValue);
 
       if (usually()) {
         numericValue = 100 + i;
-        field = new NumericDocValuesField(WEIGHT_FIELD_NAME, numericValue);
-        doc.add(field);
+        doc.addLong(WEIGHT_FIELD_NAME, numericValue);
       }
 
       int numContexts = atLeast(1);
       for (int j=0; j<numContexts; j++) {
         BytesRef contextValue = new BytesRef("context_" + i + "_" + j);
-        field = new StoredField(CONTEXT_FIELD_NAME, contextValue);
-        doc.add(field);
+        doc.addStored(CONTEXT_FIELD_NAME, contextValue);
         contextValues.add(contextValue);
       }
 
       int numSuggestions = atLeast(2);
       for (int j=0; j<numSuggestions; j++) {
         term = new BytesRef("field_" + i + "_" + j);
-        field = new StoredField(FIELD_NAME, term);
-        doc.add(field);
+        doc.addStored(FIELD_NAME, term);
 
         Suggestion suggestionValue = new Suggestion();
         suggestionValue.payload = payloadValue;

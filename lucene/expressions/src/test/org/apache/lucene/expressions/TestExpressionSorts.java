@@ -20,11 +20,7 @@ package org.apache.lucene.expressions;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -62,7 +58,7 @@ public class TestExpressionSorts extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = TestUtil.nextInt(random(), 2049, 4000);
     for (int i = 0; i < numDocs; i++) {
-      Document2 document = iw.newDocument();
+      Document document = iw.newDocument();
       document.addLargeText("english", English.intToEnglish(i));
       document.addLargeText("oddeven", (i % 2 == 0) ? "even" : "odd");
       document.addInt("int", random().nextInt());

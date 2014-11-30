@@ -30,7 +30,6 @@ import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -93,7 +92,7 @@ public class ExtractWikipedia {
   }
 
   public void extract() throws Exception {
-    Document2 doc = null;
+    Document doc = null;
     System.out.println("Starting Extraction");
     long start = System.currentTimeMillis();
     RAMDirectory dir = new RAMDirectory();

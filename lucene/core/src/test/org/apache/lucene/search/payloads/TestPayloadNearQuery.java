@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -109,7 +109,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
         .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("field", English.intToEnglish(i));
       String txt = English.intToEnglish(i) +' '+English.intToEnglish(i+1);
       doc.addLargeText("field2", txt);

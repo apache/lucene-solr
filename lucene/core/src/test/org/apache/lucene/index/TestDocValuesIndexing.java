@@ -23,19 +23,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Ignore;
 
 /**
  * 
@@ -51,7 +44,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testAddIndexes() throws IOException {
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("id", "1");
     doc.addInt("dv", 1);
     w.addDocument(doc);
@@ -89,7 +82,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMultiValuedDocValuesField() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("field", 17);
     
     // add the doc
@@ -115,7 +108,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testDifferentTypedDocValuesField() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("field", 17);
     w.addDocument(doc);
     
@@ -138,7 +131,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testDifferentTypedDocValuesField2() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("field", 17);
     w.addDocument(doc);
     
@@ -164,7 +157,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setIndexOptions("field", IndexOptions.NONE);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     byte[] bytes = new byte[32764];
     BytesRef b = new BytesRef();
     b.bytes = bytes;
@@ -197,7 +190,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     iwconfig.setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(dir, iwconfig);
     for (int i = 0; i < 50; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("dv", i);
       doc.addLargeText("docId", "" + i);
       writer.addDocument(doc);
@@ -210,7 +203,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     NumericDocValues dv = slow.getNumericDocValues("dv");
     for (int i = 0; i < 50; i++) {
       assertEquals(i, dv.get(i));
-      Document2 d = slow.document(i);
+      Document d = slow.document(i);
       // cannot use d.get("dv") due to another bug!
       // nocommit why is this here?
       // assertNull(d.getString("dv"));
@@ -227,7 +220,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     w.addDocument(w.newDocument());
     
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 0);
     try {
       doc.addAtom("foo", new BytesRef("hello"));
@@ -246,7 +239,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesDifferentDocuments() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 0);
     w.addDocument(doc);
 
@@ -272,7 +265,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("dv", new BytesRef("foo!"));
     iwriter.addDocument(doc);
     
@@ -298,7 +291,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addBinary("dv", new BytesRef("foo!"));
     iwriter.addDocument(doc);
     
@@ -326,7 +319,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addInt("dv", 1);
     iwriter.addDocument(doc);
     
@@ -352,7 +345,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     doc.addAtom("dv", new BytesRef("just fine"));
     iwriter.addDocument(doc);
     
@@ -383,7 +376,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     FieldTypes fieldTypes = iwriter.getFieldTypes();
-    Document2 doc = iwriter.newDocument();
+    Document doc = iwriter.newDocument();
     fieldTypes.setMultiValued("dv");
     doc.addAtom("dv", new BytesRef("just fine"));
     iwriter.addDocument(doc);
@@ -410,7 +403,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesDifferentSegments() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 0);
     w.addDocument(doc);
     w.commit();
@@ -430,7 +423,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesAfterDeleteAll() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 0);
     w.addDocument(doc);
     w.deleteAll();
@@ -446,7 +439,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesAfterReopenCreate() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 0);
     w.addDocument(doc);
     w.close();
@@ -463,7 +456,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesAfterReopenAppend1() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 0);
     w.addDocument(doc);
     w.close();
@@ -483,7 +476,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesAfterReopenAppend2() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("foo", new BytesRef("foo"));
     w.addDocument(doc);
     w.close();
@@ -505,7 +498,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesAfterReopenAppend3() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("foo", new BytesRef("foo"));
     w.addDocument(doc);
     w.close();
@@ -542,7 +535,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           public void run() {
             try {
               startingGun.await();
-              Document2 doc = w.newDocument();
+              Document doc = w.newDocument();
               if (what == 0) {
                 doc.addAtom("foo", new BytesRef("hello"));
               } else if (what == 1) {
@@ -575,7 +568,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testMixedTypesViaAddIndexes() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addInt("foo", 0);
     w.addDocument(doc);
 
@@ -612,7 +605,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -633,7 +626,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.close();
@@ -655,7 +648,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.close();
@@ -674,7 +667,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.deleteAll();
@@ -689,7 +682,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.commit();
@@ -705,7 +698,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.close();
@@ -723,7 +716,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.close();
@@ -750,7 +743,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.close();
@@ -779,7 +772,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
     writer.close();
@@ -804,7 +797,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLong("dv", 0L);
     writer.addDocument(doc);
 

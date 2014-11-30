@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -59,7 +59,7 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
     List<String> terms = new ArrayList<>();
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueAtom("id", Integer.toString(i));
       int numTerms = random().nextInt(4);
       for (int j = 0; j < numTerms; j++) {

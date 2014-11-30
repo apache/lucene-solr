@@ -22,10 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.TestUtil;
@@ -63,14 +61,14 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
       } else {
         value = RandomPicks.randomFrom(random(), values);
       }
-      final Document2 doc = iwriter.newDocument();
+      final Document doc = iwriter.newDocument();
       doc.addLong("dv", value);
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
     final long size1 = dirSize(dir);
     for (int i = 0; i < 20; ++i) {
-      final Document2 doc = iwriter.newDocument();
+      final Document doc = iwriter.newDocument();
       doc.addLong("dv", RandomPicks.randomFrom(random(), values));
       iwriter.addDocument(doc);
     }
@@ -92,14 +90,14 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
     final long day = 1000L * 60 * 60 * 24;
 
     for (int i = 0; i < 300; ++i) {
-      final Document2 doc = iwriter.newDocument();
+      final Document doc = iwriter.newDocument();
       doc.addLong("dv", base + random().nextInt(1000) * day);
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
     final long size1 = dirSize(dir);
     for (int i = 0; i < 50; ++i) {
-      final Document2 doc = iwriter.newDocument();
+      final Document doc = iwriter.newDocument();
       doc.addLong("dv", base + random().nextInt(1000) * day);
       iwriter.addDocument(doc);
     }
@@ -118,13 +116,13 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
     fieldTypes.disableStored("dv");
 
     for (int i = 0; i < 20000; ++i) {
-      final Document2 doc = iwriter.newDocument();
+      final Document doc = iwriter.newDocument();
       doc.addLong("dv", i & 1023);
       iwriter.addDocument(doc);
     }
     iwriter.forceMerge(1);
     final long size1 = dirSize(dir);
-    final Document2 doc = iwriter.newDocument();
+    final Document doc = iwriter.newDocument();
     doc.addLong("dv", Long.MAX_VALUE);
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);

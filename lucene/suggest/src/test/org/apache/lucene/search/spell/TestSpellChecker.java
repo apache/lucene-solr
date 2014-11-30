@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -58,28 +57,28 @@ public class TestSpellChecker extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(new MockAnalyzer(random())));
 
     for (int i = 0; i < 1000; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("field1", English.intToEnglish(i), Field.Store.YES));
-      doc.add(newTextField("field2", English.intToEnglish(i + 1), Field.Store.YES)); // + word thousand
-      doc.add(newTextField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES)); // + word thousand
+      Document doc = writer.newDocument();
+      doc.addLargeText("field1", English.intToEnglish(i));
+      doc.addLargeText("field2", English.intToEnglish(i + 1)); // + word thousand
+      doc.addLargeText("field3", "fvei" + (i % 2 == 0 ? " five" : "")); // + word thousand
       writer.addDocument(doc);
     }
     {
-      Document doc = new Document();
-      doc.add(newTextField("field1", "eight", Field.Store.YES)); // "eight" in
+      Document doc = writer.newDocument();
+      doc.addLargeText("field1", "eight"); // "eight" in
                                                                    // the index
                                                                    // twice
       writer.addDocument(doc);
     }
     {
-      Document doc = new Document();
+      Document doc = writer.newDocument();
       doc
-          .add(newTextField("field1", "twenty-one twenty-one", Field.Store.YES)); // "twenty-one" in the index thrice
+          .addLargeText("field1", "twenty-one twenty-one"); // "twenty-one" in the index thrice
       writer.addDocument(doc);
     }
     {
-      Document doc = new Document();
-      doc.add(newTextField("field1", "twenty", Field.Store.YES)); // "twenty"
+      Document doc = writer.newDocument();
+      doc.addLargeText("field1", "twenty"); // "twenty"
                                                                     // in the
                                                                     // index
                                                                     // twice

@@ -18,10 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
@@ -57,7 +54,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
     }
 
-    final Document2 doc = w.newDocument();
+    final Document doc = w.newDocument();
     final int valueLength = RandomInts.randomIntBetween(random(), 1 << 13, 1 << 20);
     final byte[] value = new byte[valueLength];
     for (int i = 0; i < valueLength; ++i) {
@@ -92,7 +89,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
     }
 
     DirectoryReader rd = DirectoryReader.open(dir);
-    Document2 sd = rd.document(numDocs - 1);
+    Document sd = rd.document(numDocs - 1);
     assertNotNull(sd);
     assertEquals(1, sd.getFields().size());
     BytesRef valueRef = sd.getBinary("fld");

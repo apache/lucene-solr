@@ -21,7 +21,6 @@ import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 
@@ -45,7 +44,7 @@ public class AddDocTask extends PerfTask {
   
   @Override
   public int doLogic() throws Exception {
-    Document2 doc;
+    Document doc;
     DocMaker docMaker = getRunData().getDocMaker();
     IndexWriter iw = getRunData().getIndexWriter();
     if (docSize > 0) {

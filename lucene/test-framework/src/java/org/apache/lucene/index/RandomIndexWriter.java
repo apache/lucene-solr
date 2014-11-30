@@ -25,8 +25,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ReferenceManager;
@@ -102,7 +101,7 @@ public class RandomIndexWriter implements Closeable {
     return w.getFieldTypes();
   }
 
-  public Document2 newDocument() {
+  public Document newDocument() {
     return w.newDocument();
   }
 

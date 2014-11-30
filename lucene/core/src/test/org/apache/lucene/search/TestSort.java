@@ -19,21 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -58,7 +49,7 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -85,7 +76,7 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "bar");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -115,7 +106,7 @@ public class TestSort extends LuceneTestCase {
     fieldTypes.setDocValuesType("value", DocValuesType.BINARY);
     fieldTypes.enableSorting("value");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
     doc = writer.newDocument();
@@ -145,7 +136,7 @@ public class TestSort extends LuceneTestCase {
     fieldTypes.setDocValuesType("value", DocValuesType.BINARY);
     fieldTypes.enableSorting("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "bar");
     writer.addDocument(doc);
 
@@ -172,7 +163,7 @@ public class TestSort extends LuceneTestCase {
   public void testStringValSorted() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "foo");
     writer.addDocument(doc);
 
@@ -201,7 +192,7 @@ public class TestSort extends LuceneTestCase {
   public void testStringValReverseSorted() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", "bar");
     writer.addDocument(doc);
 
@@ -233,7 +224,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     
     for(int value : new int[] {300000, -1, 4}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("value", value);
       writer.addDocument(doc);
     }
@@ -261,7 +252,7 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     for(int value : new int[] {300000, -1, 4}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("value", value);
       writer.addDocument(doc);
     }
@@ -290,7 +281,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     writer.addDocument(writer.newDocument());
     for(int value : new int[] {-1, 4}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("value", value);
       writer.addDocument(doc);
     }
@@ -320,7 +311,7 @@ public class TestSort extends LuceneTestCase {
     fieldTypes.setSortMissingLast("value");
     writer.addDocument(writer.newDocument());
     for(int value : new int[] {-1, 4}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("value", value);
       writer.addDocument(doc);
     }
@@ -347,7 +338,7 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     for(long value : new long[] {3000000000L, -1L, 4L}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLong("value", value);
       writer.addDocument(doc);
     }
@@ -374,7 +365,7 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     for(long value : new long[] {3000000000L, -1L, 4L}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLong("value", value);
       writer.addDocument(doc);
     }
@@ -402,7 +393,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     writer.addDocument(writer.newDocument());
     for(long value : new long[] {-1L, 4L}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLong("value", value);
       writer.addDocument(doc);
     }
@@ -432,7 +423,7 @@ public class TestSort extends LuceneTestCase {
     fieldTypes.setSortMissingLast("value");
     writer.addDocument(writer.newDocument());
     for(long value : new long[] {-1L, 4L}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLong("value", value);
       writer.addDocument(doc);
     }
@@ -459,7 +450,7 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
     FieldTypes fieldTypes = writer.getFieldTypes();
     for(float value : new float[] {30.1F, -1.3F, 4.2F}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addFloat("value", value);
       writer.addDocument(doc);
     }
@@ -487,7 +478,7 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
     FieldTypes fieldTypes = writer.getFieldTypes();
     for(float value : new float[] {30.1F, -1.3F, 4.2F}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addFloat("value", value);
       writer.addDocument(doc);
     }
@@ -516,7 +507,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     writer.addDocument(writer.newDocument());
     for(float value : new float[] {-1.3F, 4.2F}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addFloat("value", value);
       writer.addDocument(doc);
     }
@@ -547,7 +538,7 @@ public class TestSort extends LuceneTestCase {
     fieldTypes.setSortMissingLast("value");
     writer.addDocument(writer.newDocument());
     for(float value : new float[] {-1.3F, 4.2F}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addFloat("value", value);
       writer.addDocument(doc);
     }
@@ -576,7 +567,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
 
     for(double value : new double[] {30.1, -1.3, 4.2333333333333, 4.2333333333332}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addDouble("value", value);
       writer.addDocument(doc);
     }
@@ -604,7 +595,7 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     for(double value : new double[] {+0D, -0D}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addDouble("value", value);
       writer.addDocument(doc);
     }
@@ -632,7 +623,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
 
     for(double value : new double[] {30.1, -1.3, 4.2333333333333, 4.2333333333332}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addDouble("value", value);
       writer.addDocument(doc);
     }
@@ -661,7 +652,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     writer.addDocument(writer.newDocument());
     for(double value : new double[] {-1.3, 4.2333333333333, 4.2333333333332}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addDouble("value", value);
       writer.addDocument(doc);
     }
@@ -691,7 +682,7 @@ public class TestSort extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     writer.addDocument(writer.newDocument());
     for(double value : new double[] {-1.3, 4.2333333333333, 4.2333333333332}) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addDouble("value", value);
       writer.addDocument(doc);
     }

@@ -17,9 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -39,7 +37,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
       char ch1 = (char) TestUtil.nextInt(random(), 'a', 'z');
       char ch2 = (char) TestUtil.nextInt(random(), 'a', 'z');

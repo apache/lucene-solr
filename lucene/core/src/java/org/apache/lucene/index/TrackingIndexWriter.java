@@ -20,8 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.ControlledRealTimeReopenThread; // javadocs
 import org.apache.lucene.search.Query;
@@ -49,7 +48,7 @@ public class TrackingIndexWriter {
     this.writer = writer;
   }
 
-  public Document2 newDocument() {
+  public Document newDocument() {
     return writer.newDocument();
   }
 

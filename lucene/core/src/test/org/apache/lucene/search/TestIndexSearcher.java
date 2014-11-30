@@ -22,8 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -45,7 +44,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 100; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addUniqueAtom("field", Integer.toString(i));
       doc.addAtom("field2", Boolean.toString(i % 2 == 0));
       iw.addDocument(doc);

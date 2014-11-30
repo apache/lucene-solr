@@ -37,19 +37,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -72,18 +61,18 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 @SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterExceptions extends LuceneTestCase {
 
-  private static class DocCopyIterator implements Iterable<Document2> {
-    private final Document2 doc;
+  private static class DocCopyIterator implements Iterable<Document> {
+    private final Document doc;
     private final int count;
     
-    public DocCopyIterator(Document2 doc, int count) {
+    public DocCopyIterator(Document doc, int count) {
       this.count = count;
       this.doc = doc;
     }
 
     @Override
-    public Iterator<Document2> iterator() {
-      return new Iterator<Document2>() {
+    public Iterator<Document> iterator() {
+      return new Iterator<Document>() {
         int upto;
 
         @Override
@@ -92,7 +81,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
 
         @Override
-        public Document2 next() {
+        public Document next() {
           upto++;
           return doc;
         }
@@ -136,7 +125,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println(Thread.currentThread().getName() + ": TEST: IndexerThread: cycle");
         }
-        final Document2 doc = writer.newDocument();
+        final Document doc = writer.newDocument();
         doc.addLargeText("content1", "aaa bbb ccc ddd");
         doc.addLargeText("content6", "aaa bbb ccc ddd");
         doc.addLargeText("content2", "aaa bbb ccc ddd");
@@ -354,7 +343,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Directory dir = newDirectory();
     TestPoint2 testPoint = new TestPoint2();
     IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())), testPoint);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a field");
     w.addDocument(doc);
     testPoint.doFail = true;
@@ -384,11 +373,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                                                       newIndexWriterConfig(analyzer)
                                                         .setMaxBufferedDocs(2), 
                                                       new TestPoint1());
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a field");
     w.addDocument(doc);
 
-    Document2 crashDoc = w.newDocument();
+    Document crashDoc = w.newDocument();
     crashDoc.addLargeText("crash", "do it on token 4");
     try {
       w.addDocument(crashDoc);
@@ -427,7 +416,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     TestPoint3 testPoint = new TestPoint3();
     IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, conf, testPoint);
     testPoint.doFail = true;
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a field");
     for(int i=0;i<10;i++)
       try {
@@ -475,7 +464,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, conf);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     String contents = "aa bb cc dd ee ff gg hh ii jj kk";
     doc.addLargeText("content", contents);
     try {
@@ -565,7 +554,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMaxBufferedDocs(2));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     String contents = "aa bb cc dd ee ff gg hh ii jj kk";
     doc.addLargeText("content", contents);
     boolean hitError = false;
@@ -615,7 +604,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setMergeFactor(Math.max(lmp.getMergeFactor(), 5));
 
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("contents", "here are some contents");
       writer.addDocument(doc);
       writer.addDocument(doc);
@@ -725,7 +714,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
               public void run() {
                 try {
                   for(int iter=0;iter<NUM_ITER;iter++) {
-                    Document2 doc = writer.newDocument();
+                    Document doc = writer.newDocument();
                     doc.addLargeText("contents", "here are some contents");
                     writer.addDocument(doc);
                     writer.addDocument(doc);
@@ -784,7 +773,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
                                                   .setMaxBufferedDocs(10));
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("contents", "here are some contents");
       for(int j=0;j<17;j++) {
         writer.addDocument(doc);
@@ -831,7 +820,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // TODO: these are also in TestIndexWriter... add a simple doc-writing method
   // like this to LuceneTestCase?
   private void addDoc(IndexWriter writer) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", "aaa");
     writer.addDocument(doc);
   }
@@ -934,7 +923,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       dir.setFailOnCreateOutput(false);
       dir.setEnableVirusScanner(false); // we check for specific list of files
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("field", "a field");
       w.addDocument(doc);
       dir.failOn(failure);
@@ -1269,7 +1258,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         dir.failOn(failure);
         int numDocs = 10 + random().nextInt(30);
         for (int i = 0; i < numDocs; i++) {
-          Document2 doc = w.newDocument();
+          Document doc = w.newDocument();
           doc.addLargeText("field", "a field");
           // random TV
           try {
@@ -1284,12 +1273,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           }
             
         }
-        Document2 document = w.newDocument();
+        Document document = w.newDocument();
         document.addLargeText("field", "a field");
         w.addDocument(document);
 
         for (int i = 0; i < numDocs; i++) {
-          Document2 doc = w.newDocument();
+          Document doc = w.newDocument();
           doc.addLargeText("field", "a field");
           // random TV
           try {
@@ -1353,14 +1342,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int numDocs1 = random().nextInt(25);
     for(int docCount=0;docCount<numDocs1;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("content", "good content");
       w.addDocument(doc);
     }
     
-    final List<Document2> docs = new ArrayList<>();
+    final List<Document> docs = new ArrayList<>();
     for(int docCount=0;docCount<7;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       docs.add(doc);
       doc.addAtom("id", docCount+"");
       doc.addLargeText("content", "silly content " + docCount);
@@ -1382,7 +1371,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final int numDocs2 = random().nextInt(25);
     for(int docCount=0;docCount<numDocs2;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("content", "good content");
       w.addDocument(doc);
     }
@@ -1410,16 +1399,16 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int numDocs1 = random().nextInt(25);
     for(int docCount=0;docCount<numDocs1;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("content", "good content");
       w.addDocument(doc);
     }
 
     // Use addDocs (no exception) to get docs in the index:
-    final List<Document2> docs = new ArrayList<>();
+    final List<Document> docs = new ArrayList<>();
     final int numDocs2 = random().nextInt(25);
     for(int docCount=0;docCount<numDocs2;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       docs.add(doc);
       doc.addAtom("subid", "subs");
       doc.addAtom("id", docCount+"");
@@ -1429,7 +1418,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final int numDocs3 = random().nextInt(25);
     for(int docCount=0;docCount<numDocs3;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("content", "good content");
       w.addDocument(doc);
     }
@@ -1438,7 +1427,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final int limit = TestUtil.nextInt(random(), 2, 25);
     final int crashAt = random().nextInt(limit);
     for(int docCount=0;docCount<limit;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       docs.add(doc);
       doc.addAtom("id", docCount+"");
       doc.addLargeText("content", "silly content " + docCount);
@@ -1461,7 +1450,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final int numDocs4 = random().nextInt(25);
     for(int docCount=0;docCount<numDocs4;docCount++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("content", "good content");
       w.addDocument(doc);
     }
@@ -1491,7 +1480,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // add good document
     iw.addDocument(iw.newDocument());
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     String value = null;
     try {
       // set to null value
@@ -1515,7 +1504,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // add good document
     iw.addDocument(iw.newDocument());
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     byte v[] = null;
     try {
       // set to null value
@@ -1540,7 +1529,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     iw.addDocument(iw.newDocument());
 
     BytesRef v = null;
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     try {
       // set to null value
       doc.addStored("foo", v);
@@ -1573,7 +1562,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // add good document
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.setMultiValued("foo");
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     iw.addDocument(doc);
 
     doc.addLargeText("foo", "bar");
@@ -1630,7 +1619,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testIllegalPositions() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     Token t1 = new Token("foo", 0, 3);
     t1.setPositionIncrement(Integer.MAX_VALUE);
     Token t2 = new Token("bar", 4, 7);
@@ -1652,7 +1641,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testLegalbutVeryLargePositions() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     Token t1 = new Token("foo", 0, 3);
     t1.setPositionIncrement(Integer.MAX_VALUE-500);
     if (random().nextBoolean()) {
@@ -1672,7 +1661,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iw = new IndexWriter(dir, iwc);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("field1", "sometext");
     doc.addLargeText("field2", "sometext");
     doc.addAtom("foo", "bar");
@@ -1694,42 +1683,27 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
               @Override
               public IndexableFieldType fieldType() {
-                return StringField.TYPE_NOT_STORED;
+                return new IndexableFieldType() {
+                  @Override
+                  public boolean stored() {
+                    return false;
+                  }
+
+                  @Override
+                  public boolean omitNorms() {
+                    return true;
+                  }
+
+                  @Override
+                  public IndexOptions indexOptions() {
+                    return IndexOptions.DOCS;
+                  }
+                };
               }
 
               @Override
               public float boost() {
                 return 5f;
-              }
-
-              @Override
-              public String stringValue() {
-                return null;
-              }
-
-              @Override
-              public Number numericDocValue() {
-                return null;
-              }
-
-              @Override
-              public Number numericValue() {
-                return null;
-              }
-
-              @Override
-              public BytesRef binaryDocValue() {
-                return null;
-              }
-
-              @Override
-              public BytesRef binaryValue() {
-                return null;
-              }
-
-              @Override
-              public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
-                return null;
               }
             });
           }
@@ -1780,7 +1754,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // Create an index with one document
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter iw = new IndexWriter(dir, iwc);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addAtom("foo", "bar");
     iw.addDocument(doc); // add a document
     iw.commit();
@@ -1906,7 +1880,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         fieldTypes.disableSorting("bcf");
       }
       for(int i=0;i<numDocs;i++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addAtom("id", ""+(docBase+i));
         doc.addLong("f", 1L);
         doc.addLong("cf", 2L);
@@ -1935,7 +1909,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                 System.out.println("  update id=" + docid + " to value " + value);
               }
               Term idTerm = new Term("id", Integer.toString(docid));
-              Document2 update = w.newDocument();
+              Document update = w.newDocument();
               update.disableExistsField();
               if (random().nextBoolean()) { // update only numeric field
                 update.addLong("f", value);
@@ -2073,7 +2047,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.setIndexOptions("foo", IndexOptions.DOCS_AND_FREQS);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", new TokenStream() {
       CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
@@ -2135,7 +2109,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     iwc.setInfoStream(evilInfoStream);
     IndexWriter iw = new IndexWriter(dir, iwc);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     for (int i = 0; i < 10; i++) {
       iw.addDocument(doc);
     }
@@ -2206,7 +2180,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       
       IndexWriterConfig iwc = new IndexWriterConfig(null);
       IndexWriter iw = new IndexWriter(dir, iwc);
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       for (int i = 0; i < 10; i++) {
         iw.addDocument(doc);
       }

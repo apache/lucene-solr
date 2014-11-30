@@ -30,7 +30,6 @@ import org.apache.lucene.benchmark.byTask.tasks.CloseIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.CreateIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -102,7 +101,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     reader.close();
   }
   
-  private Document2 createTestNormsDocument(boolean setNormsProp,
+  private Document createTestNormsDocument(boolean setNormsProp,
       boolean normsPropVal, boolean setBodyNormsProp, boolean bodyNormsVal)
       throws Exception {
     Properties props = new Properties();
@@ -124,7 +123,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
     dm.setConfig(config, new OneDocSource());
-    Document2 doc = dm.makeDocument(w);
+    Document doc = dm.makeDocument(w);
     w.close();
     dir.close();
     return doc;
@@ -145,7 +144,7 @@ public class DocMakerTest extends BenchmarkTestCase {
   /* Tests doc.tokenized.norms and doc.body.tokenized.norms properties. */
   public void testNorms() throws Exception {
     
-    Document2 doc;
+    Document doc;
     
     // Don't set anything, use the defaults
     doc = createTestNormsDocument(false, false, false, false);

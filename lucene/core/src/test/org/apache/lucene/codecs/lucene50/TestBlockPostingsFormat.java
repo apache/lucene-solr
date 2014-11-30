@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
@@ -49,7 +49,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     fieldTypes.disableSorting("field");
     fieldTypes.setMultiValued("field");
     for(int i=0;i<25;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("field", Character.toString((char) (97+i)));
       doc.addAtom("field", "z" + Character.toString((char) (97+i)));
       w.addDocument(doc);

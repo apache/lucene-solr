@@ -25,10 +25,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -80,7 +77,6 @@ public class TestBagOfPositions extends LuceneTestCase {
     }
 
     FieldTypes fieldTypes = iw.getFieldTypes();
-    Field prototype = newTextField("field", "", Field.Store.NO);
     if (random().nextBoolean()) {
       fieldTypes.disableNorms("field");
     }
@@ -118,7 +114,7 @@ public class TestBagOfPositions extends LuceneTestCase {
                   text.append(' ');
                   text.append(token);
                 }
-                Document2 document = iw.newDocument();
+                Document document = iw.newDocument();
                 document.addLargeText("field", text.toString());
                 iw.addDocument(document);
               }

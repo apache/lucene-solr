@@ -20,14 +20,9 @@ package org.apache.lucene.classification.utils;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -76,7 +71,7 @@ public class DataSplitterTest extends LuceneTestCase {
 
     Random rnd = random();
     for (int i = 0; i < 100; i++) {
-      Document2 doc = indexWriter.newDocument();
+      Document doc = indexWriter.newDocument();
       doc.addAtom(idFieldName, Integer.toString(i));
       doc.addLargeText(textFieldName, TestUtil.randomUnicodeString(rnd, 1024));
       doc.addLargeText(classFieldName, TestUtil.randomUnicodeString(rnd, 10));

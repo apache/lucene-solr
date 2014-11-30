@@ -24,7 +24,6 @@ import java.util.Random;
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AllDeletedFilterReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;

@@ -38,11 +38,11 @@ public class TestDocBoost extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    Document2 d1 = writer.newDocument();
+    Document d1 = writer.newDocument();
     d1.addLargeText("field", "word");           // boost = 1
     writer.addDocument(d1);
 
-    Document2 d2 = writer.newDocument();
+    Document d2 = writer.newDocument();
     d2.addLargeText("field", "word", 2.0f);     // boost = 2
     writer.addDocument(d2);
 

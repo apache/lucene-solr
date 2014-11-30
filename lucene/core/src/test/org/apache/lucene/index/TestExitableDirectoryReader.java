@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.ExitableDirectoryReader.ExitingReaderException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
@@ -97,15 +95,15 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
 
-    Document2 d1 = writer.newDocument();
+    Document d1 = writer.newDocument();
     d1.addLargeText("default", "one two");
     writer.addDocument(d1);
 
-    Document2 d2 = writer.newDocument();
+    Document d2 = writer.newDocument();
     d2.addLargeText("default", "one three");
     writer.addDocument(d2);
 
-    Document2 d3 = writer.newDocument();
+    Document d3 = writer.newDocument();
     d3.addLargeText("default", "ones two four");
     writer.addDocument(d3);
 

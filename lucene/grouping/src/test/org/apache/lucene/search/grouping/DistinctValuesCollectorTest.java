@@ -32,12 +32,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -71,58 +66,58 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         random,
         dir,
         newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    Document doc = new Document();
+    Document doc = w.newDocument();
     addField(doc, groupField, "1");
     addField(doc, countField, "1");
-    doc.add(new TextField("content", "random text", Field.Store.NO));
-    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.addLargeText("content", "random text");
+    doc.addAtom("id", "1");
     w.addDocument(doc);
 
     // 1
-    doc = new Document();
+    doc = w.newDocument();
     addField(doc, groupField, "1");
     addField(doc, countField, "1");
-    doc.add(new TextField("content", "some more random text blob", Field.Store.NO));
-    doc.add(new StringField("id", "2", Field.Store.NO));
+    doc.addLargeText("content", "some more random text blob");
+    doc.addAtom("id", "2");
     w.addDocument(doc);
 
     // 2
-    doc = new Document();
+    doc = w.newDocument();
     addField(doc, groupField, "1");
     addField(doc, countField, "2");
-    doc.add(new TextField("content", "some more random textual data", Field.Store.NO));
-    doc.add(new StringField("id", "3", Field.Store.NO));
+    doc.addLargeText("content", "some more random textual data");
+    doc.addAtom("id", "3");
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3 -- no count field
-    doc = new Document();
+    doc = w.newDocument();
     addField(doc, groupField, "2");
-    doc.add(new TextField("content", "some random text", Field.Store.NO));
-    doc.add(new StringField("id", "4", Field.Store.NO));
+    doc.addLargeText("content", "some random text");
+    doc.addAtom("id", "4");
     w.addDocument(doc);
 
     // 4
-    doc = new Document();
+    doc = w.newDocument();
     addField(doc, groupField, "3");
     addField(doc, countField, "1");
-    doc.add(new TextField("content", "some more random text", Field.Store.NO));
-    doc.add(new StringField("id", "5", Field.Store.NO));
+    doc.addLargeText("content", "some more random text");
+    doc.addAtom("id", "5");
     w.addDocument(doc);
 
     // 5
-    doc = new Document();
+    doc = w.newDocument();
     addField(doc, groupField, "3");
     addField(doc, countField, "1");
-    doc.add(new TextField("content", "random blob", Field.Store.NO));
-    doc.add(new StringField("id", "6", Field.Store.NO));
+    doc.addLargeText("content", "random blob");
+    doc.addAtom("id", "6");
     w.addDocument(doc);
 
     // 6 -- no author field
-    doc = new Document();
-    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
+    doc = w.newDocument();
+    doc.addLargeText("content", "random word stuck in alot of other text");
     addField(doc, countField, "1");
-    doc.add(new StringField("id", "6", Field.Store.NO));
+    doc.addAtom("id", "6");
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
@@ -348,7 +343,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   private void addField(Document doc, String field, String value) {
-    doc.add(new SortedDocValuesField(field, new BytesRef(value)));
+    doc.addAtom(field, new BytesRef(value));
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
@@ -438,23 +433,22 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       }
       countsVals.add(countValue);
 
-      Document doc = new Document();
-      doc.add(new StringField("id", String.format(Locale.ROOT, "%09d", i), Field.Store.YES));
-      doc.add(new SortedDocValuesField("id", new BytesRef(String.format(Locale.ROOT, "%09d", i))));
+      Document doc = w.newDocument();
+      doc.addAtom("id", String.format(Locale.ROOT, "%09d", i));
       if (groupValue != null) {
         addField(doc, groupField, groupValue);
       }
       if (countValue != null) {
         addField(doc, countField, countValue);
       }
-      doc.add(new TextField("content", content, Field.Store.YES));
+      doc.addLargeText("content", content);
       w.addDocument(doc);
     }
 
     DirectoryReader reader = w.getReader();
     if (VERBOSE) {
       for(int docID=0;docID<reader.maxDoc();docID++) {
-        Document2 doc = reader.document(docID);
+        Document doc = reader.document(docID);
         System.out.println("docID=" + docID + " id=" + doc.getString("id") + " content=" + doc.getString("content") + " author=" + doc.getString("author") + " publisher=" + doc.getString("publisher"));
       }
     }

@@ -407,7 +407,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  boolean updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
+  boolean updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs,
                           final Term delTerm) throws IOException {
     boolean hasEvents = preUpdate();
 
@@ -424,7 +424,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        dwpt.updateDocuments(docs, analyzer, delTerm);
+        dwpt.updateDocuments(docs, delTerm);
       } finally {
         // We don't know how many documents were actually
         // counted as indexed, so we must subtract here to
@@ -447,8 +447,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     return postUpdate(flushingDWPT, hasEvents);
   }
 
-  boolean updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
-      final Term delTerm) throws IOException {
+  boolean updateDocument(final Iterable<? extends IndexableField> doc, final Term delTerm) throws IOException {
 
     boolean hasEvents = preUpdate();
 
@@ -465,7 +464,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        dwpt.updateDocument(doc, analyzer, delTerm); 
+        dwpt.updateDocument(doc, delTerm); 
       } finally {
         // We don't know whether the document actually
         // counted as being indexed, so we must subtract here to

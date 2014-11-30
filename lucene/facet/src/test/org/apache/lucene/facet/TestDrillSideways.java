@@ -28,12 +28,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
@@ -83,7 +79,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -260,7 +256,7 @@ public class TestDrillSideways extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setHierarchical("Publish Date", true);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.add(new FacetField("Author", "Bob"));
     doc.add(new FacetField("Publish Date", "2010", "10", "15"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -315,7 +311,7 @@ public class TestDrillSideways extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
     config.setHierarchical("dim", true);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.add(new FacetField("dim", "a", "x"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -503,7 +499,7 @@ public class TestDrillSideways extends FacetTestCase {
     }
 
     for(Doc rawDoc : docs) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("id", rawDoc.id);
       doc.addAtom("content", rawDoc.contentToken);
 

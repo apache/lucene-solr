@@ -25,10 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -69,7 +66,7 @@ public class ReadTokensTask extends PerfTask {
     if (iw == null) {
       iw = getPrivateWriter();
     }
-    Document2 doc = docMaker.makeDocument(iw);
+    Document doc = docMaker.makeDocument(iw);
 
     List<IndexableField> fields = doc.getFields();
     Analyzer analyzer = iw.getFieldTypes().getIndexAnalyzer();
@@ -79,7 +76,7 @@ public class ReadTokensTask extends PerfTask {
           field.name().equals(DocMaker.DATE_FIELD) ||
           field.name().equals(DocMaker.TITLE_FIELD)) {
       
-        final TokenStream stream = field.tokenStream(analyzer, null);
+        final TokenStream stream = field.tokenStream(null);
         // reset the TokenStream to the first token
         stream.reset();
 

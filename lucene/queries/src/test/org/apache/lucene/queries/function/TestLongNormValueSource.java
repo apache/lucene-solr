@@ -19,8 +19,6 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -56,12 +54,12 @@ public class TestLongNormValueSource extends LuceneTestCase {
     iwConfig.setSimilarity(sim);
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
 
-    Document doc = new Document();
-    doc.add(new TextField("text", "this is a test test test", Field.Store.NO));
+    Document doc = iw.newDocument();
+    doc.addLargeText("text", "this is a test test test");
     iw.addDocument(doc);
 
-    doc = new Document();
-    doc.add(new TextField("text", "second test", Field.Store.NO));
+    doc = iw.newDocument();
+    doc.addLargeText("text", "second test");
     iw.addDocument(doc);
 
     reader = iw.getReader();

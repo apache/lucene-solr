@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -69,13 +68,13 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
 
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(a));
 
-      Document doc = new Document();
+      Document doc = writer.newDocument();
       StringBuilder b = new StringBuilder();
       for(int i=1;i<limit;i++)
         b.append(" a");
       b.append(" x");
       b.append(" z");
-      doc.add(newTextField("field", b.toString(), Field.Store.NO));
+      doc.addLargeText("field", b.toString());
       writer.addDocument(doc);
       writer.close();
       

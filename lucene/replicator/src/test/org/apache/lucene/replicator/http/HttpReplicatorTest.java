@@ -44,7 +44,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class HttpReplicatorTest extends ReplicatorTestCase {
@@ -101,7 +100,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   }
   
   private void publishRevision(int id) throws IOException {
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     writer.setCommitData(Collections.singletonMap("ID", Integer.toString(id, 16)));
     writer.commit();

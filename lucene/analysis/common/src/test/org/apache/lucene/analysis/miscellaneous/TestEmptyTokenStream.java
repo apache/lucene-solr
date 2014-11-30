@@ -19,13 +19,10 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
@@ -55,9 +52,9 @@ public class TestEmptyTokenStream extends BaseTokenStreamTestCase {
     TokenStream ts = new EmptyTokenStream();
     assertFalse(ts.hasAttribute(TermToBytesRefAttribute.class));
 
-    Document doc = new Document();
-    doc.add(new StringField("id", "0", Field.Store.YES));
-    doc.add(new TextField("description", ts));
+    Document doc = writer.newDocument();
+    doc.addAtom("id", "0");
+    doc.addLargeText("description", ts);
     
     // this should not fail because we have no TermToBytesRefAttribute
     writer.addDocument(doc);

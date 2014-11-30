@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -33,7 +31,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -101,7 +98,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       for(int docIDX=0;docIDX<numDocs;docIDX++) {
-        final Document2 doc = w.newDocument();
+        final Document doc = w.newDocument();
         doc.addAtom("string", TestUtil.randomRealisticUnicodeString(random()));
         doc.addLargeText("text", content[random().nextInt(content.length)]);
         doc.addFloat("float", random().nextFloat());

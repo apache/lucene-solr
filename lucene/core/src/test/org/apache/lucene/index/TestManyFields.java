@@ -20,12 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -33,14 +29,13 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** Test that creates way, way, way too many fields */
 public class TestManyFields extends LuceneTestCase {
-  private static final FieldType storedTextType = new FieldType(TextField.TYPE_NOT_STORED);
   
   public void testManyFields() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                  .setMaxBufferedDocs(10));
     for(int j=0;j<100;j++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("a"+j, "aaa" + j);
       doc.addAtom("b"+j, "aaa" + j);
       doc.addAtom("c"+j, "aaa" + j);
@@ -78,7 +73,7 @@ public class TestManyFields extends LuceneTestCase {
       // First, docs where every term is unique (heavy on
       // Posting instances)
       for(int j=0;j<100;j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         for(int k=0;k<100;k++) {
           doc.addLargeText("field", Integer.toString(random().nextInt()));
         }
@@ -88,7 +83,7 @@ public class TestManyFields extends LuceneTestCase {
       // Next, many single term docs where only one term
       // occurs (heavy on byte blocks)
       for(int j=0;j<100;j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addLargeText("field", "aaa aaa aaa aaa aaa aaa aaa aaa aaa aaa");
         writer.addDocument(doc);
       }
@@ -104,7 +99,7 @@ public class TestManyFields extends LuceneTestCase {
         }
         String longTerm = b.toString();
 
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addStored("field", longTerm);
         writer.addDocument(doc);
       }
@@ -130,15 +125,12 @@ public class TestManyFields extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     int upto = 0;
 
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setOmitNorms(true);
-
     int firstDocCount = -1;
     for(int iter=0;iter<10;iter++) {
       final int startFlushCount = w.getFlushCount();
       int docCount = 0;
       while(w.getFlushCount() == startFlushCount) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         for(int i=0;i<10;i++) {
           String fieldName = "field" + (upto++);
           fieldTypes.disableNorms(fieldName);

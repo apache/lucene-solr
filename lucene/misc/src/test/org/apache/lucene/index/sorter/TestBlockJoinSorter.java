@@ -23,12 +23,9 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -61,7 +58,6 @@ public class TestBlockJoinSorter extends LuceneTestCase {
       cached.or(iterator);
       return new BitDocIdSet(cached);
     }
-
   }
 
   public void test() throws IOException {
@@ -69,20 +65,17 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
     cfg.setMergePolicy(newLogMergePolicy());
     final RandomIndexWriter writer = new RandomIndexWriter(random(), newDirectory(), cfg);
-    final Document parentDoc = new Document();
-    final NumericDocValuesField parentVal = new NumericDocValuesField("parent_val", 0L);
-    parentDoc.add(parentVal);
-    final StringField parent = new StringField("parent", "true", Store.YES);
-    parentDoc.add(parent);
     for (int i = 0; i < numParents; ++i) {
       List<Document> documents = new ArrayList<>();
       final int numChildren = random().nextInt(10);
       for (int j = 0; j < numChildren; ++j) {
-        final Document childDoc = new Document();
-        childDoc.add(new NumericDocValuesField("child_val", random().nextInt(5)));
+        final Document childDoc = writer.newDocument();
+        childDoc.addInt("child_val", random().nextInt(5));
         documents.add(childDoc);
       }
-      parentVal.setLongValue(random().nextInt(50));
+      final Document parentDoc = writer.newDocument();
+      parentDoc.addLong("parent_val", random().nextInt(50));
+      parentDoc.addAtom("parent", "true");
       documents.add(parentDoc);
       writer.addDocuments(documents);
     }

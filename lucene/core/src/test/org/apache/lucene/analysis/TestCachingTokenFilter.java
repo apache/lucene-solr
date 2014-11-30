@@ -22,9 +22,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -39,7 +37,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   public void testCaching() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     TokenStream stream = new TokenStream() {
       private int index = 0;
       private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);

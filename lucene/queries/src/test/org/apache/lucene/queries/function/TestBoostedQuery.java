@@ -3,8 +3,6 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -55,9 +53,8 @@ public class TestBoostedQuery extends LuceneTestCase {
     IndexWriterConfig iwConfig = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
-    Document document = new Document();
-    Field idField = new SortedDocValuesField("id", new BytesRef());
-    document.add(idField);
+    Document document = iw.newDocument();
+    document.addAtom("id", new BytesRef());
     iw.addDocument(document);
     ir = iw.getReader();
     is = newSearcher(ir);

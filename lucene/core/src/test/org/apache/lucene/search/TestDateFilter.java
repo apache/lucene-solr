@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -44,7 +44,7 @@ public class TestDateFilter extends LuceneTestCase {
     
     long now = System.currentTimeMillis();
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     // add time that is in the past
     doc.addAtom("datefield", DateTools.timeToString(now - 1000, DateTools.Resolution.MILLISECOND));
     doc.addLargeText("body", "Today is a very sunny day in New York City");
@@ -107,7 +107,7 @@ public class TestDateFilter extends LuceneTestCase {
     
     long now = System.currentTimeMillis();
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     // add time that is in the future
     doc.addAtom("datefield", DateTools.timeToString(now + 888888, DateTools.Resolution.MILLISECOND));
     doc.addLargeText("body", "Today is a very sunny day in New York City");

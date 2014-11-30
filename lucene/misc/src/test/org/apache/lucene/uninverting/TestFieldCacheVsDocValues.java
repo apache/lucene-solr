@@ -24,15 +24,8 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
@@ -161,7 +154,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       byte[] bytes = new byte[numBytes];
       random().nextBytes(bytes);
       docBytes.add(bytes);
-      Document2 doc = w.newDocument();      
+      Document doc = w.newDocument();
       BytesRef b = new BytesRef(bytes);
       b.length = bytes.length;
       doc.addBinary("field", b);
@@ -204,7 +197,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
-      Document2 doc = ar.document(docID);
+      Document doc = ar.document(docID);
       BytesRef bytes = s.get(docID);
       byte[] expected = docBytes.get(Integer.parseInt(doc.getString("id")));
       assertEquals(expected.length, bytes.length);
@@ -265,7 +258,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       byte[] bytes = new byte[numBytes];
       random().nextBytes(bytes);
       docBytes.add(bytes);
-      Document2 doc = w.newDocument();      
+      Document doc = w.newDocument();
       BytesRef b = new BytesRef(bytes);
       b.length = bytes.length;
       doc.addBinary("field", b);
@@ -280,7 +273,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
-      Document2 doc = ar.document(docID);
+      Document doc = ar.document(docID);
       BytesRef bytes = s.get(docID);
       byte[] expected = docBytes.get(Integer.parseInt(doc.getString("id")));
       assertEquals(expected.length, bytes.length);
@@ -299,7 +292,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     // index some docs
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       final int length;
       if (minLength == maxLength) {
@@ -340,11 +333,14 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setMultiValued("dv");
+    fieldTypes.setMultiValued("indexed");
+
     // index some docs
     int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       final int length = TestUtil.nextInt(random(), minLength, maxLength);
       int numValues = random().nextInt(17);
@@ -361,14 +357,14 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       ArrayList<String> unordered = new ArrayList<>(values);
       Collections.shuffle(unordered, random());
       for (String v : values) {
-        doc.add(newStringField("indexed", v, Field.Store.NO));
+        doc.addAtom("indexed", v);
       }
 
       // add in any order to the dv field
       ArrayList<String> unordered2 = new ArrayList<>(values);
       Collections.shuffle(unordered2, random());
       for (String v : unordered2) {
-        doc.add(new SortedSetDocValuesField("dv", new BytesRef(v)));
+        doc.addAtom("dv", new BytesRef(v));
       }
 
       writer.addDocument(doc);
@@ -420,7 +416,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     assert numDocs > 256;
     for (int i = 0; i < numDocs; i++) {
       long value = longs.next();
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       // 1/4 of the time we neglect to add the fields
       if (random().nextInt(4) > 0) {
@@ -632,6 +628,6 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   
   protected boolean codecAcceptsHugeBinaryValues(String field) {
     String name = TestUtil.getDocValuesFormat(field);
-    return !(name.equals("Memory") || name.equals("Direct"));
+    return !(name.equals("Memory")); // Direct has a different type of limit
   }
 }

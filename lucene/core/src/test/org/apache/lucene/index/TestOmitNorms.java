@@ -21,15 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestOmitNorms extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
@@ -40,7 +35,7 @@ public class TestOmitNorms extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
     FieldTypes fieldTypes = writer.getFieldTypes();
 
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
         
     // this field will have norms
     d.addLargeText("f1", "This field has norms");
@@ -90,7 +85,7 @@ public class TestOmitNorms extends LuceneTestCase {
     );
     FieldTypes fieldTypes = writer.getFieldTypes();
 
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
         
     // this field will have norms
     d.addLargeText("f1", "This field has norms");
@@ -144,7 +139,7 @@ public class TestOmitNorms extends LuceneTestCase {
     );
     FieldTypes fieldTypes = writer.getFieldTypes();
 
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
         
     // this field will have norms
     d.addLargeText("f1", "This field has norms");
@@ -197,7 +192,7 @@ public class TestOmitNorms extends LuceneTestCase {
     lmp.setMergeFactor(2);
     lmp.setNoCFSRatio(0.0);
 
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
 
     fieldTypes.disableNorms("f1");
     d.addLargeText("f1", "This field has no norms");

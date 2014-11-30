@@ -22,13 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.DrillSideways;
@@ -62,8 +57,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeFilter;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
@@ -78,13 +71,13 @@ public class TestRangeFacetCounts extends FacetTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     for(long l=0;l<100;l++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLong("field", l);
       w.addDocument(doc);
     }
 
     // Also add Long.MAX_VALUE
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLong("field", Long.MAX_VALUE);
     w.addDocument(doc);
 
@@ -143,7 +136,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLong("field", Long.MIN_VALUE);
     w.addDocument(doc);
 
@@ -182,11 +175,11 @@ public class TestRangeFacetCounts extends FacetTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     for(long l=0;l<100;l++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLong("field", l);
       w.addDocument(doc);
     }
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLong("field", Long.MAX_VALUE);
     w.addDocument(doc);
 
@@ -222,7 +215,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
 
     for (long l = 0; l < 100; l++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       // For computing range facet counts and drill down by numeric range:
       doc.addLong("field", l);
 
@@ -316,7 +309,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     for(long l=0;l<100;l++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addDouble("field", l);
       w.addDocument(doc);
     }
@@ -344,7 +337,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     for(long l=0;l<100;l++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addFloat("field", l);
       w.addDocument(doc);
     }
@@ -381,7 +374,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       long v = random().nextLong();
       values[i] = v;
       doc.addLong("field", v);
@@ -526,7 +519,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     float minValue = Float.POSITIVE_INFINITY;
     float maxValue = Float.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       float v = random().nextFloat();
       values[i] = v;
       doc.addFloat("field", v);
@@ -685,7 +678,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     double minValue = Double.POSITIVE_INFINITY;
     double maxValue = Double.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       double v = random().nextDouble();
       values[i] = v;
       doc.addDouble("field", v);
@@ -830,7 +823,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         w.addDocument(w.newDocument());
         continue;
       }
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLong("field", l);
       w.addDocument(doc);
     }
@@ -859,7 +852,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.addDocument(doc);

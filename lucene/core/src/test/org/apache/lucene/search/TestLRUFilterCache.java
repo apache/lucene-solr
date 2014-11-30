@@ -25,15 +25,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestLRUFilterCache extends LuceneTestCase {
@@ -61,11 +58,9 @@ public class TestLRUFilterCache extends LuceneTestCase {
     Thread[] threads = new Thread[3];
     threads[0] = new Thread() {
       public void run() {
-        Document doc = new Document();
-        StringField f = new StringField("color", "", Store.NO);
-        doc.add(f);
         for (int i = 0; indexing.get() && i < numDocs; ++i) {
-          f.setStringValue(RandomPicks.randomFrom(random(), new String[] {"blue", "red", "yellow"}));
+          Document doc = w.newDocument();
+          doc.addAtom("color", RandomPicks.randomFrom(random(), new String[] {"blue", "red", "yellow"}));
           try {
             w.addDocument(doc);
             if ((i & 63) == 0) {
@@ -135,13 +130,16 @@ public class TestLRUFilterCache extends LuceneTestCase {
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
-    StringField f = new StringField("color", "blue", Store.NO);
-    doc.add(f);
+    Document doc = w.newDocument();
+    doc.addAtom("color", "blue");
     w.addDocument(doc);
-    f.setStringValue("red");
+
+    doc = w.newDocument();
+    doc.addAtom("color", "red");
     w.addDocument(doc);
-    f.setStringValue("green");
+
+    doc = w.newDocument();
+    doc.addAtom("color", "green");
     w.addDocument(doc);
     final DirectoryReader reader = w.getReader();
     final IndexSearcher searcher = newSearcher(reader);

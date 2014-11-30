@@ -27,9 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
@@ -135,7 +133,7 @@ public class TestTransactionRollback extends LuceneTestCase {
                                           .setIndexDeletionPolicy(sdp));
 
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt(FIELD_RECORD_ID, currentRecordId);
       w.addDocument(doc);
 

@@ -22,7 +22,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 import java.util.Random;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -58,7 +58,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), index);
 
     for (int i = 0; i < data.length; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueAtom("id", String.valueOf(i));//Field.Keyword("id",String.valueOf(i)));
       doc.addLargeText("all", "all");//Field.Keyword("all","all"));
       if (null != data[i]) {
@@ -445,7 +445,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     DecimalFormat f = new DecimalFormat("0.000000", DecimalFormatSymbols.getInstance(Locale.ROOT));
 
     for (int i = 0; i < h.length; i++) {
-      Document2 d = searcher.doc(h[i].doc);
+      Document d = searcher.doc(h[i].doc);
       float score = h[i].score;
       System.err.println("#" + i + ": " + f.format(score) + " - " +
                          d.get("id") + " - " + d.get("data"));

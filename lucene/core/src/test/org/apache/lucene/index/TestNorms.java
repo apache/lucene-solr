@@ -21,10 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -83,7 +80,7 @@ public class TestNorms extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     
     for (int i = 0; i < 100; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("foo", "");
       doc.addLargeText("bar", "singleton");
       writer.addDocument(doc);
@@ -113,7 +110,7 @@ public class TestNorms extends LuceneTestCase {
     NumericDocValues normValues = open.getNormValues(byteTestField);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
-      Document2 document = open.document(i);
+      Document document = open.document(i);
       int expected = Integer.parseInt(document.getString(byteTestField));
       assertEquals(expected, normValues.get(i));
     }
@@ -134,7 +131,7 @@ public class TestNorms extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(writer.w, random);
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      Document2 doc = docs.nextDoc();
+      Document doc = docs.nextDoc();
       int boost = random().nextInt(255);
       doc.addLargeText(byteTestField, "" + boost, boost);
       writer.addDocument(doc);

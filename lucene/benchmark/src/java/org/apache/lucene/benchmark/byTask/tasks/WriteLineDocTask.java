@@ -32,7 +32,6 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -176,7 +175,7 @@ public class WriteLineDocTask extends PerfTask {
     if (iw == null) {
       iw = getPrivateWriter();
     }
-    Document2 doc = docSize > 0 ? docMaker.makeDocument(iw,docSize) : docMaker.makeDocument(iw);
+    Document doc = docSize > 0 ? docMaker.makeDocument(iw,docSize) : docMaker.makeDocument(iw);
 
     Matcher matcher = threadNormalizer.get();
     if (matcher == null) {
@@ -211,7 +210,7 @@ public class WriteLineDocTask extends PerfTask {
    * Selects output line file by written doc.
    * Default: original output line file.
    */
-  protected PrintWriter lineFileOut(Document2 doc) {
+  protected PrintWriter lineFileOut(Document doc) {
     return lineFileOut;
   }
 

@@ -25,11 +25,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
@@ -249,7 +245,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", Integer.toString(i));
       long value = norms[i];
       doc.addLargeText("stored", Long.toString(value));
@@ -328,7 +324,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   }
 
   @Override
-  protected void addRandomFields(Document2 doc) {
+  protected void addRandomFields(Document doc) {
     // TODO: improve
     doc.addLargeText("foobar", TestUtil.randomSimpleString(random()));
   }
@@ -372,7 +368,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int numDocs = atLeast(1000);
     List<Integer> toDelete = new ArrayList<>();
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       if (random().nextInt(5) == 1) {
         toDelete.add(i);
         doc.addAtom("id", ""+i);

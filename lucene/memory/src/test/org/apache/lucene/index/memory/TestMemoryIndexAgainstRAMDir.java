@@ -36,11 +36,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
@@ -151,11 +148,9 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(analyzer).setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
-    Document doc = new Document();
-    Field field1 = newTextField("foo", fooField.toString(), Field.Store.NO);
-    Field field2 = newTextField("term", termField.toString(), Field.Store.NO);
-    doc.add(field1);
-    doc.add(field2);
+    Document doc = writer.newDocument();
+    doc.addLargeText("foo", fooField.toString());
+    doc.addLargeText("term", termField.toString());
     writer.addDocument(doc);
     writer.close();
     
@@ -432,8 +427,8 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       mockAnalyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
       LineFileDocs lineFileDocs = new LineFileDocs(writer, random());
-      Document2 nextDoc = lineFileDocs.nextDoc();
-      Document doc = new Document();
+      Document nextDoc = lineFileDocs.nextDoc();
+      Document doc = writer.newDocument();
       for (IndexableField field : nextDoc.getFields()) {
         if (field.fieldType().indexOptions() != IndexOptions.NONE && field.stringValue() != null && field.fieldType().docValuesType() == DocValuesType.NONE) {
           doc.add(field);
@@ -475,19 +470,19 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       mockAnalyzer.setOffsetGap(random().nextInt(100));
     }
     //index into a random directory
-    FieldType type = new FieldType(TextField.TYPE_STORED);
-    type.setStoreTermVectorOffsets(true);
-    type.setStoreTermVectorPayloads(false);
-    type.setStoreTermVectorPositions(true);
-    type.setStoreTermVectors(true);
-    type.freeze();
-
-    Document doc = new Document();
-    doc.add(new Field(field_name, "la la", type));
-    doc.add(new Field(field_name, "foo bar foo bar foo", type));
-
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors(field_name);
+    fieldTypes.enableTermVectorPositions(field_name);
+    fieldTypes.enableTermVectorOffsets(field_name);
+    fieldTypes.enableTermVectorPayloads(field_name);
+    fieldTypes.setMultiValued(field_name);
+
+    Document doc = writer.newDocument();
+    doc.addLargeText(field_name, "la la");
+    doc.addLargeText(field_name, "foo bar foo bar foo");
+
     writer.updateDocument(new Term("id", "1"), doc);
     writer.commit();
     writer.close();

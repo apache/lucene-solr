@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -68,7 +68,7 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);    
     FieldTypes fieldTypes = writer.getFieldTypes();     
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("value", 5);
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -98,7 +98,7 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("value", 3);
     doc.addInt("value", 7);
     doc.addUniqueAtom("id", "1");
@@ -132,7 +132,7 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     fieldTypes.enableSorting("value");
     fieldTypes.setSortMissingFirst("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("value", 5);
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -167,7 +167,7 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("value", 5);
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -201,7 +201,7 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addInt("value", 5);
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -231,7 +231,7 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addFloat("value", -3f);
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -263,7 +263,7 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addDouble("value", -3d);
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);

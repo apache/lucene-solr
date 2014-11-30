@@ -20,11 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -55,7 +52,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // add 500 docs with id 0..499
     for (int i = 0; i < 500; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addUniqueInt("id", i);
       iw.addDocument(doc);
     }
@@ -295,7 +292,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader, false);
 
     // add a doc, refresh the reader, and check that it's there
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "1");
     writer.addDocument(doc);
 

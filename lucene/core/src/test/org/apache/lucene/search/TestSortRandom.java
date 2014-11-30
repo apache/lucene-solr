@@ -26,11 +26,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -73,7 +69,7 @@ public class TestSortRandom extends LuceneTestCase {
     final List<BytesRef> docValues = new ArrayList<>();
     // TODO: deletions
     while (numDocs < NUM_DOCS) {
-      final Document2 doc = writer.newDocument();
+      final Document doc = writer.newDocument();
 
       // 10% of the time, the document is missing the value:
       if (random().nextInt(10) != 7) {

@@ -12,15 +12,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -28,7 +21,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -78,8 +70,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     return bytes;
   }
   
-  private Document2 doc(IndexWriter w, int id) {
-    Document2 doc = w.newDocument();
+  private Document doc(IndexWriter w, int id) {
+    Document doc = w.newDocument();
     doc.addAtom("id", "doc-" + id);
     doc.addBinary("val", toBytes(id + 1));
     return doc;
@@ -366,7 +358,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("bdv");
 
     for (int i = 0; i < 4; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("dvUpdateKey", "dv");
       doc.addInt("ndv", i);
       doc.addBinary("bdv", new BytesRef(Integer.toString(i)));
@@ -418,7 +410,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("bdv2");
     
     for (int i = 0; i < 2; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("dvUpdateKey", "dv");
       doc.addBinary("bdv1", toBytes(i));
       doc.addBinary("bdv2", toBytes(i));
@@ -452,7 +444,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("bdv");
 
     for (int i = 0; i < 2; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("dvUpdateKey", "dv");
       if (i == 0) { // index only one document with value
         doc.addBinary("bdv", toBytes(5L));
@@ -483,7 +475,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("key", "doc");
     doc.addAtom("foo", "bar");
     writer.addDocument(doc); // flushed document
@@ -523,7 +515,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("bdv");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("key", "doc");
     doc.addBinary("bdv", toBytes(5L));
     doc.addShortText("sorted", "value");
@@ -556,7 +548,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("bdv");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("key", "doc");
     doc.addBinary("bdv", toBytes(5L));
     writer.addDocument(doc); // flushed document
@@ -590,7 +582,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     for (int rnd = 0; rnd < numRounds; rnd++) {
       int numDocs = atLeast(30);
       for (int i = 0; i < numDocs; i++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addAtom("key", "doc");
         doc.addBinary("bdv", toBytes(-1));
         doc.addUniqueInt("id", docid++);
@@ -619,7 +611,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       // forceMerge is called, the index will be with one segment and deletes
       // and some MPs might now merge it, thereby invalidating test's
       // assumption that the reader has no deletes).
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("id", docid++);
       doc.addAtom("key", "doc");
       doc.addBinary("bdv", toBytes(value));
@@ -657,7 +649,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("bdv");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("k1", "v1");
     doc.addAtom("k2", "v2");
     doc.addBinary("bdv", toBytes(5L));
@@ -711,7 +703,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       int numDocs = atLeast(5);
 //      System.out.println("[" + Thread.currentThread().getName() + "]: round=" + i + ", numDocs=" + numDocs);
       for (int j = 0; j < numDocs; j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addAtom("id", "doc-" + docID);
         doc.addAtom("key", "all"); // update key
         // add all fields with their current value
@@ -785,7 +777,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("bdv");
 
     // first segment with BDV
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc0");
     doc.addBinary("bdv", toBytes(3L));
     writer.addDocument(doc);
@@ -843,7 +835,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("bdv");
 
     // first segment with BDV
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc0");
     doc.addAtom("bdvmock", "mock-value");
     doc.addBinary("bdv", toBytes(5L));
@@ -884,7 +876,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("f");
     
     // nocommit use low schema API here:
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("fmock", "mock-value");
     doc.addBinary("f", toBytes(5L));
     writer.addDocument(doc);
@@ -919,7 +911,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
     final int numDocs = atLeast(2000);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueAtom("id", "doc" + i);
       double group = random().nextDouble();
       String g;
@@ -963,7 +955,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
               final String cf = "cf" + field;
 //              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t + " field=" + field);
               long updValue = random.nextInt();
-              Document2 update = writer.newDocument();
+              Document update = writer.newDocument();
               update.disableExistsField();
               update.addBinary(f, toBytes(updValue));
               update.addBinary(cf, toBytes(updValue*2));
@@ -1053,7 +1045,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("cf");
     final int numDocs = atLeast(10);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueAtom("id", "doc" + i);
       long value = random().nextInt();
       doc.addBinary("f", toBytes(value));
@@ -1066,7 +1058,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
-      Document2 update = writer.newDocument();
+      Document update = writer.newDocument();
       update.disableExistsField();
       update.addBinary("f", toBytes(value));
       update.addBinary("cf", toBytes(value*2));
@@ -1100,7 +1092,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("f1");
     fieldTypes.disableSorting("f2");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "d0");
     doc.addBinary("f1", toBytes(5L));
     doc.addBinary("f2", toBytes(13L));
@@ -1154,7 +1146,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
     // create first index
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", RandomPicks.randomFrom(random(), randomTerms));
       doc.addBinary("bdv", toBytes(4L));
       doc.addBinary("control", toBytes(8L));
@@ -1168,7 +1160,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     // update some docs to a random value
     long value = random().nextInt();
     Term term = new Term("id", RandomPicks.randomFrom(random(), randomTerms));
-    Document2 update = writer.newDocument();
+    Document update = writer.newDocument();
     update.disableExistsField();
     update.addBinary("bdv", toBytes(value));
     update.addBinary("control", toBytes(value*2));
@@ -1213,7 +1205,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("f1");
     fieldTypes.disableSorting("f2");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "d0");
     doc.addBinary("f1", toBytes(1L));
     doc.addBinary("f2", toBytes(1L));
@@ -1267,7 +1259,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     
     // build a large index with many BDV fields and update terms
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       int numUpdateTerms = TestUtil.nextInt(random, 1, numTerms / 10);
       for (int j = 0; j < numUpdateTerms; j++) {
         doc.addAtom("upd", RandomPicks.randomFrom(random, updateTerms));
@@ -1291,7 +1283,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       int field = random.nextInt(numBinaryFields);
       Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
       long value = random.nextInt();
-      Document2 update = writer.newDocument();
+      Document update = writer.newDocument();
       update.disableExistsField();
       update.addBinary("f" + field, toBytes(value));
       update.addBinary("cf" + field, toBytes(value*2));
@@ -1325,7 +1317,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("f1");
     fieldTypes.disableSorting("f2");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("upd", "t1");
     doc.addAtom("upd", "t2");
     doc.addBinary("f1", toBytes(1L));
@@ -1353,7 +1345,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("f1");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc");
     doc.addBinary("f1", toBytes(1L));
     writer.addDocument(doc);
@@ -1379,7 +1371,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.disableSorting("f1");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc");
     doc.addBinary("f1", toBytes(1L));
     writer.addDocument(doc);

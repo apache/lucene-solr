@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -84,7 +84,7 @@ public class FuzzyTermOnShortTermsTest extends LuceneTestCase {
           .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
 
       for (String s : vals){
-         Document2 d = writer.newDocument();
+         Document d = writer.newDocument();
          d.addLargeText(FIELD, s);
          writer.addDocument(d);
       }

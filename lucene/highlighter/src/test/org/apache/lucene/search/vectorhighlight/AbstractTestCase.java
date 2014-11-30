@@ -26,12 +26,8 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -357,7 +353,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     fieldTypes.enableTermVectorPositions(F);
     fieldTypes.setMultiValued(F);
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
 
     for( String value: values ) {
       doc.addLargeText(F, value);
@@ -376,7 +372,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets(F);
     fieldTypes.enableTermVectorPositions(F);
     fieldTypes.setMultiValued(F);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     for( String value: values ) {
       doc.addLargeText(F, value);
       //doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );

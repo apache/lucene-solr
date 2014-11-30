@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -51,7 +51,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     final RandomIndexWriter swriter2 = new RandomIndexWriter(random(), sdir2, new MockAnalyzer(random()));
 
     for (int i = 0; i < 10; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("data", Integer.toString(i));
       writer.addDocument(doc);
       RandomIndexWriter otherWriter = (i % 2 == 0) ? swriter1 : swriter2;

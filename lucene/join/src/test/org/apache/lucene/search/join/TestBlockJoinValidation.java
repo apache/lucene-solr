@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -64,7 +63,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     final IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter indexWriter = new IndexWriter(directory, config);
     for (int i = 0; i < AMOUNT_OF_SEGMENTS; i++) {
-      List<Document> segmentDocs = createDocsForSegment(i);
+      List<Document> segmentDocs = createDocsForSegment(indexWriter, i);
       indexWriter.addDocuments(segmentDocs);
       indexWriter.commit();
     }
@@ -138,10 +137,10 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     directory.close();
   }
 
-  private static List<Document> createDocsForSegment(int segmentNumber) {
+  private static List<Document> createDocsForSegment(IndexWriter w, int segmentNumber) {
     List<List<Document>> blocks = new ArrayList<>(AMOUNT_OF_PARENT_DOCS);
     for (int i = 0; i < AMOUNT_OF_PARENT_DOCS; i++) {
-      blocks.add(createParentDocWithChildren(segmentNumber, i));
+      blocks.add(createParentDocWithChildren(w, segmentNumber, i));
     }
     List<Document> result = new ArrayList<>(AMOUNT_OF_DOCS_IN_SEGMENT);
     for (List<Document> block : blocks) {
@@ -150,26 +149,26 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     return result;
   }
 
-  private static List<Document> createParentDocWithChildren(int segmentNumber, int parentNumber) {
+  private static List<Document> createParentDocWithChildren(IndexWriter w, int segmentNumber, int parentNumber) {
     List<Document> result = new ArrayList<>(AMOUNT_OF_CHILD_DOCS + 1);
     for (int i = 0; i < AMOUNT_OF_CHILD_DOCS; i++) {
-      result.add(createChildDoc(segmentNumber, parentNumber, i));
+      result.add(createChildDoc(w, segmentNumber, parentNumber, i));
     }
-    result.add(createParentDoc(segmentNumber, parentNumber));
+    result.add(createParentDoc(w, segmentNumber, parentNumber));
     return result;
   }
 
-  private static Document createParentDoc(int segmentNumber, int parentNumber) {
-    Document result = new Document();
-    result.add(newStringField("id", createFieldValue(segmentNumber * AMOUNT_OF_PARENT_DOCS + parentNumber), Field.Store.YES));
-    result.add(newStringField("parent", createFieldValue(parentNumber), Field.Store.NO));
+  private static Document createParentDoc(IndexWriter w, int segmentNumber, int parentNumber) {
+    Document result = w.newDocument();
+    result.addAtom("id", createFieldValue(segmentNumber * AMOUNT_OF_PARENT_DOCS + parentNumber));
+    result.addAtom("parent", createFieldValue(parentNumber));
     return result;
   }
 
-  private static Document createChildDoc(int segmentNumber, int parentNumber, int childNumber) {
-    Document result = new Document();
-    result.add(newStringField("id", createFieldValue(segmentNumber * AMOUNT_OF_PARENT_DOCS + parentNumber, childNumber), Field.Store.YES));
-    result.add(newStringField("child", createFieldValue(childNumber), Field.Store.NO));
+  private static Document createChildDoc(IndexWriter w, int segmentNumber, int parentNumber, int childNumber) {
+    Document result = w.newDocument();
+    result.addAtom("id", createFieldValue(segmentNumber * AMOUNT_OF_PARENT_DOCS + parentNumber, childNumber));
+    result.addAtom("child", createFieldValue(childNumber));
     return result;
   }
 

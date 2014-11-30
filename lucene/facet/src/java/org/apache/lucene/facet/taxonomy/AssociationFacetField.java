@@ -19,12 +19,14 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.Document; // javadocs
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.Facets;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
 
 /** Add an instance of this to your {@link Document} to add
@@ -36,15 +38,20 @@ import org.apache.lucene.util.BytesRef;
  *  Facets} implementations.
  * 
  *  @lucene.experimental */
-public class AssociationFacetField extends Field {
+public class AssociationFacetField implements IndexableField {
   
-  /** Indexed {@link FieldType}. */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    TYPE.freeze();
+  public static final IndexableFieldType TYPE = new IndexableFieldType() {
+    };
+  
+  @Override
+  public String name() {
+    return "dummy";
   }
-  
+
+  public IndexableFieldType fieldType() {
+    return TYPE;
+  }
+
   /** Dimension for this field. */
   public final String dim;
 
@@ -57,7 +64,6 @@ public class AssociationFacetField extends Field {
   /** Creates this from {@code dim} and {@code path} and an
    *  association */
   public AssociationFacetField(BytesRef assoc, String dim, String... path) {
-    super("dummy", TYPE);
     FacetField.verifyLabel(dim);
     for(String label : path) {
       FacetField.verifyLabel(label);

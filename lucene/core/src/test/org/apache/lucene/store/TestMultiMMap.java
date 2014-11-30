@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -346,7 +346,7 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     
     int numDocs = 100;
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("docid", i);
       doc.addAtom("junk", TestUtil.randomUnicodeString(random));
       writer.addDocument(doc);

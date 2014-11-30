@@ -19,7 +19,6 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.util.BytesRef;
 
 /** Add an instance of this to your {@link Document} to add

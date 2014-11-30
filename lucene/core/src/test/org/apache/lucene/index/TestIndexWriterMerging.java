@@ -20,12 +20,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -85,7 +81,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     int max = reader.maxDoc();
     for (int i = 0; i < max; i++)
     {
-      Document2 temp = reader.document(i);
+      Document temp = reader.document(i);
       //System.out.println("doc "+i+"="+temp.getField("count").stringValue());
       //compare the index doc number to the value that it should be
       if (temp.getInt("count") != i + startAt) {
@@ -109,7 +105,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     for (int i = start; i < (start + numDocs); i++)
     {
-      Document2 temp = writer.newDocument();
+      Document temp = writer.newDocument();
       temp.addUniqueInt("count", i);
       writer.addDocument(temp);
     }
@@ -130,7 +126,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     fieldTypes.enableTermVectorPositions("termVector");
 
     for(int i=0;i<10;i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
       doc.addStored("stored", "stored");
       doc.addAtom("termVector", "termVector");
@@ -185,7 +181,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     fieldTypes.enableTermVectorPositions("termVector");
 
     for(int i=0;i<98;i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
       doc.addStored("stored", "stored");
       doc.addAtom("termVector", "termVector");
@@ -243,7 +239,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     fieldTypes.enableTermVectorPositions("termVector");
 
     for(int i=0;i<98;i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
       doc.addStored("stored", "stored");
       doc.addAtom("termVector", "termVector");
@@ -316,7 +312,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     IndexWriter iw = new IndexWriter(dir, conf);
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.enableTermVectors("tvtest");
-    Document2 document = iw.newDocument();
+    Document document = iw.newDocument();
     document.addLargeText("tvtest", "a b c");
     for(int i=0;i<177;i++) {
       iw.addDocument(document);
@@ -357,7 +353,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
           System.out.println("TEST: iter=" + iter);
         }
         for(int j=0;j<199;j++) {
-          Document2 doc = writer.newDocument();
+          Document doc = writer.newDocument();
           doc.addUniqueInt("id", iter*201+j);
           writer.addDocument(doc);
         }

@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.Arrays;
 
 import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -80,7 +80,7 @@ public class TestDateSort extends LuceneTestCase {
     String[] actualOrder = new String[5];
     ScoreDoc[] hits = searcher.search(query, null, 1000, sort).scoreDocs;
     for (int i = 0; i < hits.length; i++) {
-      Document2 document = searcher.doc(hits[i].doc);
+      Document document = searcher.doc(hits[i].doc);
       String text = document.getString(TEXT_FIELD);
       actualOrder[i] = text;
     }
@@ -96,8 +96,8 @@ public class TestDateSort extends LuceneTestCase {
     assertEquals(Arrays.asList(expectedOrder), Arrays.asList(actualOrder));
   }
 
-  private Document2 createDocument(RandomIndexWriter writer, String text, long time) {
-    Document2 document = writer.newDocument();
+  private Document createDocument(RandomIndexWriter writer, String text, long time) {
+    Document document = writer.newDocument();
 
     // Add the text field.
     document.addLargeText(TEXT_FIELD, text);

@@ -22,9 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -73,7 +71,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
                                                 .setMergePolicy(newLogMergePolicy()));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
-      Document2 d1 = writer.newDocument();
+      Document d1 = writer.newDocument();
       d1.addLargeText(term.field(), term.text());
       writer.addDocument(d1);
     }

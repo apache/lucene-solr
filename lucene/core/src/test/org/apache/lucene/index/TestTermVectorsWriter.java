@@ -25,15 +25,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -47,17 +40,17 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testDoubleOffsetCounting() throws Exception {
     Directory dir = newDirectory();
     // nocommit sneaky behavior change ...
-    MockAnalyzer a = new MockAnalyzer(random());
-    a.setOffsetGap(0);
-    a.setPositionIncrementGap(0);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setIndexOptions("field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    fieldTypes.setMultiValued("field");
+    fieldTypes.setAnalyzerOffsetGap("field", 0);
+    fieldTypes.setAnalyzerPositionGap("field", 0);
     fieldTypes.setDocValuesType("field", DocValuesType.NONE);
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
-    fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "abcd");
     doc.addAtom("field", "abcd");
     doc.addAtom("field", "");
@@ -115,7 +108,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "abcd");
     doc.addLargeText("field", "abcd");
     w.addDocument(doc);
@@ -150,7 +143,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "abcd   ");
     doc.addLargeText("field", "abcd   ");
     w.addDocument(doc);
@@ -186,7 +179,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     try (TokenStream stream = analyzer.tokenStream("field", "abcd   ")) {
       stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
       TokenStream cachedStream = new CachingTokenFilter(stream);
@@ -225,7 +218,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "abcd the");
     doc.addLargeText("field", "abcd the");
     w.addDocument(doc);
@@ -260,7 +253,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");
     fieldTypes.setMultiValued("field");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "abcd the  ");
     doc.addLargeText("field", "crunch man");
     w.addDocument(doc);
@@ -298,7 +291,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStandardEmptyField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
@@ -335,7 +328,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStandardEmptyField2() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
@@ -386,7 +379,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       fieldTypes.enableTermVectorOffsets("termVector");
       fieldTypes.enableTermVectorPositions("termVector");
 
-      Document2 document = writer.newDocument();
+      Document document = writer.newDocument();
       document.addStored("stored", "stored");
       writer.addDocument(document);
       writer.addDocument(document);
@@ -434,7 +427,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       fieldTypes.enableTermVectorOffsets("termVector");
       fieldTypes.enableTermVectorPositions("termVector");
 
-      Document2 document = writer.newDocument();
+      Document document = writer.newDocument();
       document.addStored("stored", "stored");
       writer.addDocument(document);
       writer.addDocument(document);
@@ -468,7 +461,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("termVector");
     fieldTypes.enableTermVectorPositions("termVector");
 
-    Document2 document = writer.newDocument();
+    Document document = writer.newDocument();
     document.addStored("stored", "stored");
     document.addLargeText("termVector", "termVector");
     for(int i=0;i<10;i++) {
@@ -507,8 +500,9 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectors("tvtest");
     fieldTypes.enableTermVectorOffsets("tvtest");
     fieldTypes.enableTermVectorPositions("tvtest");
+    fieldTypes.setMultiValued("tvtest");
 
-    Document2 document = iw.newDocument();
+    Document document = iw.newDocument();
     document.addLargeText("tvtest", "a b c");
     iw.addDocument(document);
     document = iw.newDocument();
@@ -517,9 +511,6 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     // Make first segment
     iw.commit();
 
-    FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
-    customType.setStoreTermVectors(true);
-    document = iw.newDocument();
     document.addStored("tvtest", "a b c");
     iw.addDocument(document);
     // Make 2nd segment
@@ -539,7 +530,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.enableTermVectors("field");
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     iw.addDocument(doc);
     try {
       doc.addStored("field", "value");

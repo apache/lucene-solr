@@ -20,11 +20,7 @@ package org.apache.lucene.spatial.prefix;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.spatial.SpatialTestCase;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
@@ -42,7 +38,7 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
     Shape point = ctx.makePoint(-118.243680, 34.052230);
 
-    Document2 losAngeles = indexWriter.newDocument();
+    Document losAngeles = indexWriter.newDocument();
     losAngeles.addAtom("name", "Los Angeles");
 
     fieldTypes.setMultiValued(prefixGridStrategy.getFieldName());

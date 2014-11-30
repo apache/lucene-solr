@@ -20,11 +20,7 @@ package org.apache.lucene.spatial.prefix.tree;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -86,7 +82,7 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
 
     trie = new QuadPrefixTree(ctx, 12);
     TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");
-    Document2 doc = indexWriter.newDocument();
+    Document doc = indexWriter.newDocument();
     doc.addAtom("id", "1");
 
     Shape area = ctx.makeRectangle(-122.82, -122.78, 48.54, 48.56);

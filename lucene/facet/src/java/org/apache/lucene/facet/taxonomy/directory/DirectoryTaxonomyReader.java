@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
@@ -312,7 +312,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       }
     }
     
-    Document2 doc = indexReader.document(ordinal);
+    Document doc = indexReader.document(ordinal);
     FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.getString(Consts.FULL)));
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);

@@ -34,7 +34,6 @@ import org.apache.lucene.util.BytesRef;
 
 public interface IndexableField {
 
-
   /** Field name */
   public String name();
 
@@ -45,10 +44,9 @@ public interface IndexableField {
    * Creates the TokenStream used for indexing this field.  If appropriate,
    * implementations should use the given Analyzer to create the TokenStreams.
    *
-   * @param analyzer Analyzer that should be used to create the TokenStreams from
    * @param reuse TokenStream for a previous instance of this field <b>name</b>. This allows
    *              custom field types (like StringField and NumericField) that do not use
-   *              the analyzer to still have good performance. Note: the passed-in type
+   *              an analyzer to still have good performance. Note: the passed-in type
    *              may be inappropriate, for example if you mix up different types of Fields
    *              for the same field name. So its the responsibility of the implementation to
    *              check.
@@ -56,7 +54,9 @@ public interface IndexableField {
    *         a non-null value if the field is to be indexed
    * @throws IOException Can be thrown while creating the TokenStream
    */
-  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException;
+  default public TokenStream tokenStream(TokenStream reuse) throws IOException {
+    return null;
+  }
 
   /** 
    * Returns the field's index-time boost.
@@ -78,20 +78,32 @@ public interface IndexableField {
    * @see Similarity#computeNorm(FieldInvertState)
    * @see DefaultSimilarity#encodeNormValue(float)
    */
-  public float boost();
+  default public float boost() {
+    return 1.0f;
+  }
 
   /** Non-null if this field has a stored binary value */
-  public BytesRef binaryValue();
+  default public BytesRef binaryValue() {
+    return null;
+  }
 
   /** Non-null if this field has a binary doc value */
-  public BytesRef binaryDocValue();
+  default public BytesRef binaryDocValue() {
+    return null;
+  }
 
   /** Non-null if this field has a string value */
-  public String stringValue();
+  default public String stringValue() {
+    return null;
+  }
 
   /** Non-null if this field has a numeric value */
-  public Number numericValue(); 
+  default public Number numericValue() { 
+    return null;
+  }
 
   /** Non-null if this field has a numeric doc value */
-  public Number numericDocValue(); 
+  default public Number numericDocValue() {
+    return null;
+  }
 }

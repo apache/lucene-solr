@@ -24,9 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -94,7 +92,7 @@ public class TestSlowFuzzyQuery2 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
 
     for (int i = 0; i < terms; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("field", mapInt(codePointTable, i));
       writer.addDocument(doc);
     }   
@@ -151,7 +149,7 @@ public class TestSlowFuzzyQuery2 extends LuceneTestCase {
         IndexWriter.MaxFieldLength.UNLIMITED);
     
     for (int i = 0; i < terms; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("field", Integer.toBinaryString(i));
       writer.addDocument(doc);
     }

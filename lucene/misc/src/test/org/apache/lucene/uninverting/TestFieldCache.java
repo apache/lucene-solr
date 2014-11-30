@@ -28,16 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -56,7 +48,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -98,7 +89,7 @@ public class TestFieldCache extends LuceneTestCase {
       System.out.println("TEST: setUp");
     }
     for (int i = 0; i < NUM_DOCS; i++){
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLong("theLong", theLong--);
       doc.addDouble("theDouble", theDouble--);
       doc.addInt("theInt", theInt--);
@@ -156,7 +147,7 @@ public class TestFieldCache extends LuceneTestCase {
         }
         @Override
         public long parseValue(BytesRef term) {
-          return Document2.sortableDoubleBits(Document2.bytesToLong(term));
+          return Document.sortableDoubleBits(Document.bytesToLong(term));
         }
       }, false);
       assertTrue(bos.toString(IOUtils.UTF_8).indexOf("WARNING") != -1);
@@ -438,7 +429,7 @@ public class TestFieldCache extends LuceneTestCase {
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.setMultiValued("sortedset");
     fieldTypes.disableSorting("binary");
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addBinary("binary", new BytesRef("binary value"));
     doc.addBinary("sorted", new BytesRef("sorted value"));
     doc.addInt("numeric", -42);
@@ -572,7 +563,7 @@ public class TestFieldCache extends LuceneTestCase {
   public void testNonexistantFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
+    Document doc = iw.newDocument();
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
@@ -620,7 +611,7 @@ public class TestFieldCache extends LuceneTestCase {
   public void testNonIndexedFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addStored("bogusbytes", "bogus");
     doc.addStored("bogusshorts", "bogus");
     doc.addStored("bogusints", "bogus");
@@ -702,7 +693,7 @@ public class TestFieldCache extends LuceneTestCase {
           break;
       }
       values[i] = v;
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       if (v == 0 && random().nextBoolean()) {
         // missing
       } else {
@@ -748,7 +739,7 @@ public class TestFieldCache extends LuceneTestCase {
           break;
       }
       values[i] = v;
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       if (v == 0 && random().nextBoolean()) {
         // missing
       } else {

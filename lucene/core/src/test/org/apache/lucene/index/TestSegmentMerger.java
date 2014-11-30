@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -97,14 +96,14 @@ public class TestSegmentMerger extends LuceneTestCase {
                                                    newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
-    Document2 newDoc1 = mergedReader.document(0);
+    Document newDoc1 = mergedReader.document(0);
     assertTrue(newDoc1 != null);
 
     Set<String> unstored = DocHelper.getUnstored(fieldTypes);
 
     //There are 2 unstored fields on the document
     assertEquals(DocHelper.numFields() - unstored.size() + 1, DocHelper.numFields(newDoc1));
-    Document2 newDoc2 = mergedReader.document(1);
+    Document newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
     assertEquals(DocHelper.numFields() - unstored.size() + 1, DocHelper.numFields(newDoc2));
 

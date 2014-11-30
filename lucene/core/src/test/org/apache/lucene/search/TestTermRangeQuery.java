@@ -27,7 +27,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -270,7 +270,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void insertDoc(IndexWriter writer, String content) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
 
     doc.addAtom("id", "id" + docCount);
     doc.addLargeText("content", content);
@@ -420,7 +420,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     for (String term : randomTerms) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("field", term);
       w.addDocument(doc);
     }
@@ -476,7 +476,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     
     for(int i=0;i<26;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       byte[] bytes = new byte[1];
       bytes[0] = (byte) i;
       doc.addAtom("field", new BytesRef(bytes));

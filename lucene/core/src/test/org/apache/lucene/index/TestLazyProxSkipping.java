@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -96,7 +94,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         content = this.term3 + " " + this.term2;
       }
 
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(this.field, content);
       writer.addDocument(doc);
     }
@@ -147,7 +145,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
     for (int i = 0; i < 10; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(this.field, "a b");
       writer.addDocument(doc);
     }

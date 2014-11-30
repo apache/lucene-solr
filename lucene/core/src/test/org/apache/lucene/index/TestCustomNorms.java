@@ -19,10 +19,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -53,7 +50,7 @@ public class TestCustomNorms extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(writer.w, random());
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      Document2 doc = docs.nextDoc();
+      Document doc = docs.nextDoc();
       float nextFloat = random().nextFloat();
       doc.addLargeText(floatTestField, "" + nextFloat, nextFloat);
       writer.addDocument(doc);
@@ -67,7 +64,7 @@ public class TestCustomNorms extends LuceneTestCase {
     NumericDocValues norms = open.getNormValues(floatTestField);
     assertNotNull(norms);
     for (int i = 0; i < open.maxDoc(); i++) {
-      Document2 document = open.document(i);
+      Document document = open.document(i);
       float expected = Float.parseFloat(document.getString(floatTestField));
       assertEquals(expected, Float.intBitsToFloat((int)norms.get(i)), 0.0f);
     }

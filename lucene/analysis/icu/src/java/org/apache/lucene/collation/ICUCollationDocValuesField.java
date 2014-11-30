@@ -17,24 +17,49 @@ package org.apache.lucene.collation;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.DocValuesRangeFilter;
 import org.apache.lucene.util.BytesRef;
-
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RawCollationKey;
 
 /**
  * Indexes collation keys as a single-valued {@link SortedDocValuesField}.
  * <p>
- * This is more efficient that {@link ICUCollationKeyAnalyzer} if the field 
+ * This is more efficient than {@link ICUCollationKeyAnalyzer} if the field 
  * only has one value: no uninversion is necessary to sort on the field, 
  * locale-sensitive range queries can still work via {@link DocValuesRangeFilter}, 
  * and the underlying data structures built at index-time are likely more efficient 
  * and use less memory than FieldCache.
  */
-public final class ICUCollationDocValuesField extends Field {
+public final class ICUCollationDocValuesField implements IndexableField {
+
+  private static final IndexableFieldType TYPE = new IndexableFieldType() {
+      @Override
+      public DocValuesType docValuesType() {
+        return DocValuesType.SORTED;
+      }
+    };
+
+  @Override
+  public String name() {
+    return name;
+  }
+
+  public IndexableFieldType fieldType() {
+    return TYPE;
+  }
+
+  @Override
+  public BytesRef binaryDocValue() {
+    return bytes;
+  }
+
   private final String name;
   private final Collator collator;
   private final BytesRef bytes = new BytesRef();
@@ -52,22 +77,14 @@ public final class ICUCollationDocValuesField extends Field {
   // TODO: can we make this trap-free? maybe just synchronize on the collator
   // instead? 
   public ICUCollationDocValuesField(String name, Collator collator) {
-    super(name, SortedDocValuesField.TYPE);
     this.name = name;
     try {
       this.collator = (Collator) collator.clone();
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
-    fieldsData = bytes; // so wrong setters cannot be called
   }
 
-  @Override
-  public String name() {
-    return name;
-  }
-  
-  @Override
   public void setStringValue(String value) {
     collator.getRawCollationKey(value, key);
     bytes.bytes = key.bytes;

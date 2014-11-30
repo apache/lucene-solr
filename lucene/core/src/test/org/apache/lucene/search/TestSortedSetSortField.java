@@ -17,11 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -69,7 +66,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
   public void testForward() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
     doc.addAtom("value", new BytesRef("baz"));
@@ -100,7 +97,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("foo"));
     doc.addAtom("value", new BytesRef("bar"));
     doc.addUniqueAtom("id", "1");
@@ -131,7 +128,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
     fieldTypes.setSortMissingFirst("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("baz"));
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -165,7 +162,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("value", new BytesRef("baz"));
     doc.addUniqueAtom("id", "2");
     writer.addDocument(doc);
@@ -200,7 +197,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("value");
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
 
     doc.addAtom("value", new BytesRef("baz"));
     doc.addUniqueAtom("id", "2");

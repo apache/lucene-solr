@@ -29,11 +29,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -66,7 +63,7 @@ public class TestPayloads extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("f2");
 
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
 
     // this field won't have any payloads
     d.addLargeText("f1", "This field has no payloads");
@@ -151,7 +148,7 @@ public class TestPayloads extends LuceneTestCase {
     int payloadDataLength = numTerms * numDocs * 2 + numTerms * numDocs * (numDocs - 1) / 2;
     byte[] payloadData = generateRandomData(payloadDataLength);
         
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
     d.addLargeText(fieldName, content);
     // add the same document multiple times to have the same payload lengths for all
     // occurrences within two consecutive skip intervals
@@ -458,7 +455,7 @@ public class TestPayloads extends LuceneTestCase {
           public void run() {
             try {
               for (int j = 0; j < numDocs; j++) {
-                Document2 d = writer.newDocument();
+                Document d = writer.newDocument();
                 d.addLargeText(field, new PoolingPayloadTokenStream(pool));
                 writer.addDocument(d);
               }
@@ -559,7 +556,7 @@ public class TestPayloads extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
                                                      new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("hasMaybepayload", "here we go");
     writer.addDocument(doc);
     writer.close();
@@ -582,7 +579,7 @@ public class TestPayloads extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(null);
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer) ts).setReader(new StringReader("here we go"));
     doc.addLargeText("field", ts);
@@ -616,7 +613,7 @@ public class TestPayloads extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("field");
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
     doc.addLargeText("field", ts);

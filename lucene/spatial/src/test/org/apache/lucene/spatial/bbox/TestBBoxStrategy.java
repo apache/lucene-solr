@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.bbox;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.Query;

@@ -19,10 +19,13 @@ package org.apache.lucene.facet;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Add an instance of this to your {@link Document} for every facet label.
@@ -31,11 +34,18 @@ import org.apache.lucene.index.IndexOptions;
  * <b>NOTE:</b> you must call {@link FacetsConfig#build(Document)} before
  * you add the document to IndexWriter.
  */
-public class FacetField extends Field {
-  static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    TYPE.freeze();
+public class FacetField implements IndexableField {
+
+  public static final IndexableFieldType TYPE = new IndexableFieldType() {
+    };
+
+  @Override
+  public String name() {
+    return "dummy";
+  }
+
+  public IndexableFieldType fieldType() {
+    return TYPE;
   }
 
   /** Dimension for this field. */
@@ -47,7 +57,6 @@ public class FacetField extends Field {
   /** Creates the this from {@code dim} and
    *  {@code path}. */
   public FacetField(String dim, String... path) {
-    super("dummy", TYPE);
     verifyLabel(dim);
     for(String label : path) {
       verifyLabel(label);

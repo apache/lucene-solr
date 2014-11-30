@@ -78,7 +78,7 @@ public class TestStressIndexing extends LuceneTestCase {
 
       // Add 10 docs:
       for(int j=0; j<10; j++) {
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         int n = random().nextInt();
         d.addInt("id", nextID++);
         d.addLargeText("contents", English.intToEnglish(n));

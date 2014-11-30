@@ -18,9 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
@@ -54,7 +52,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setCodec(TestUtil.getDefaultCodec()));
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     byte bytes[] = new byte[2];
     BytesRef data = new BytesRef(bytes);
     doc.addBinary("dv", data);
@@ -109,7 +107,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setCodec(TestUtil.getDefaultCodec()));
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     byte bytes[] = new byte[4];
     BytesRef data = new BytesRef(bytes);
     doc.addBinary("dv", data);

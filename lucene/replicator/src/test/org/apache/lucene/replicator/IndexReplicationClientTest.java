@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -122,7 +121,7 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
   }
   
   private Revision createRevision(final int id) throws IOException {
-    publishWriter.addDocument(new Document());
+    publishWriter.addDocument(publishWriter.newDocument());
     publishWriter.setCommitData(new HashMap<String, String>() {{
       put(VERSION_ID, Integer.toString(id, 16));
     }});

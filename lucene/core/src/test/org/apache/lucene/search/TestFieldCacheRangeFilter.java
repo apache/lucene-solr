@@ -20,18 +20,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 import org.junit.Test;
 
 /**
@@ -441,7 +436,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     FieldTypes fieldTypes = writer.getFieldTypes();
 
     for (int d = -20; d <= 20; d++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addInt("id_int", d);
       doc.addAtom("body", "body");
       writer.addDocument(doc);

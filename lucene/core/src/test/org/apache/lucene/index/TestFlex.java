@@ -38,7 +38,7 @@ public class TestFlex extends LuceneTestCase {
 
     for(int iter=0;iter<2;iter++) {
       if (iter == 0) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addLargeText("field1", "this is field1");
         doc.addLargeText("field2", "this is field2");
         doc.addLargeText("field3", "aaa");
@@ -65,7 +65,7 @@ public class TestFlex extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random()))
                                          .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("f", "a b c");
     w.addDocument(doc);
     w.forceMerge(1);

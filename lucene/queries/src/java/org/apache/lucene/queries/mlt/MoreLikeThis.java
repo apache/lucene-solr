@@ -27,7 +27,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -737,7 +737,7 @@ public final class MoreLikeThis {
 
       // field does not store term vector info
       if (vector == null) {
-        Document2 d = ir.document(docNum);
+        Document d = ir.document(docNum);
         for (IndexableField field : d.getFields(fieldName)) {
           final String stringValue = field.stringValue();
           if (stringValue != null) {

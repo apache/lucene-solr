@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.Directory;
@@ -37,7 +37,7 @@ public class TestUniqueAtom extends LuceneTestCase {
   public void testBasic1() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.addDocument(doc);
 
@@ -58,7 +58,7 @@ public class TestUniqueAtom extends LuceneTestCase {
   public void testBasic2() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.addDocument(doc);
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
@@ -102,7 +102,7 @@ public class TestUniqueAtom extends LuceneTestCase {
 
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.addDocument(doc);
     if (random().nextBoolean()) {
@@ -136,7 +136,7 @@ public class TestUniqueAtom extends LuceneTestCase {
 
     ReferenceManager<DirectoryReader> mgr = w.getReaderManager();
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.addDocument(doc);
     if (random().nextBoolean()) {
@@ -188,7 +188,7 @@ public class TestUniqueAtom extends LuceneTestCase {
 
               // First add randomly for a while:
               for(int iter=0;iter<3*numTerms;iter++) {
-                Document2 doc = w.newDocument();
+                Document doc = w.newDocument();
                 BytesRef term = termsList.get(random().nextInt(termsList.size()));
                 doc.addUniqueAtom("field", term);
                 if (random().nextBoolean()) {
@@ -204,7 +204,7 @@ public class TestUniqueAtom extends LuceneTestCase {
 
               // Then add every single term, so we know all will be added:
               for(BytesRef term : termsList) {
-                Document2 doc = w.newDocument();
+                Document doc = w.newDocument();
                 doc.addUniqueAtom("field", term);
                 if (random().nextBoolean()) {
                   w.updateDocument(new Term("field", term), doc);
@@ -244,7 +244,7 @@ public class TestUniqueAtom extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("field", new BytesRef("one"));
     w.close();
     SegmentInfos infos = SegmentInfos.readLatestCommit(dir);

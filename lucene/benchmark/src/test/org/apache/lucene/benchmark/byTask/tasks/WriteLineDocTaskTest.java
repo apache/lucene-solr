@@ -33,10 +33,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils.Type;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 
 /** Tests the functionality of {@link WriteLineDocTask}. */
@@ -46,8 +43,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   public static final class WriteLineDocMaker extends DocMaker {
   
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
-      Document2 doc = w.newDocument();
+    public Document makeDocument(IndexWriter w) throws Exception {
+      Document doc = w.newDocument();
       doc.addAtom(BODY_FIELD, "body");
       doc.addAtom(TITLE_FIELD, "title");
       doc.addAtom(DATE_FIELD, "date");
@@ -60,8 +57,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   public static final class NewLinesDocMaker extends DocMaker {
   
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
-      Document2 doc = w.newDocument();
+    public Document makeDocument(IndexWriter w) throws Exception {
+      Document doc = w.newDocument();
       doc.addAtom(BODY_FIELD, "body\r\ntext\ttwo");
       doc.addAtom(TITLE_FIELD, "title\r\ntext");
       doc.addAtom(DATE_FIELD, "date\r\ntext");
@@ -73,8 +70,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NoBodyDocMaker extends DocMaker {
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
-      Document2 doc = w.newDocument();
+    public Document makeDocument(IndexWriter w) throws Exception {
+      Document doc = w.newDocument();
       doc.addAtom(TITLE_FIELD, "title");
       doc.addAtom(DATE_FIELD, "date");
       return doc;
@@ -84,8 +81,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NoTitleDocMaker extends DocMaker {
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
-      Document2 doc = w.newDocument();
+    public Document makeDocument(IndexWriter w) throws Exception {
+      Document doc = w.newDocument();
       doc.addAtom(BODY_FIELD, "body");
       doc.addAtom(DATE_FIELD, "date");
       return doc;
@@ -95,8 +92,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // class has to be public so that Class.forName.newInstance() will work
   public static final class JustDateDocMaker extends DocMaker {
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
-      Document2 doc = w.newDocument();
+    public Document makeDocument(IndexWriter w) throws Exception {
+      Document doc = w.newDocument();
       doc.addAtom(DATE_FIELD, "date");
       return doc;
     }
@@ -106,8 +103,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // same as JustDate just that this one is treated as legal
   public static final class LegalJustDateDocMaker extends DocMaker {
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
-      Document2 doc = w.newDocument();
+    public Document makeDocument(IndexWriter w) throws Exception {
+      Document doc = w.newDocument();
       doc.addAtom(DATE_FIELD, "date");
       return doc;
     }
@@ -116,7 +113,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // class has to be public so that Class.forName.newInstance() will work
   public static final class EmptyDocMaker extends DocMaker {
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
+    public Document makeDocument(IndexWriter w) throws Exception {
       return w.newDocument();
     }
   }
@@ -125,8 +122,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   public static final class ThreadingDocMaker extends DocMaker {
   
     @Override
-    public Document2 makeDocument(IndexWriter w) throws Exception {
-      Document2 doc = w.newDocument();
+    public Document makeDocument(IndexWriter w) throws Exception {
+      Document doc = w.newDocument();
       String name = Thread.currentThread().getName();
       doc.addAtom(BODY_FIELD, "body_" + name);
       doc.addAtom(TITLE_FIELD, "title_" + name);

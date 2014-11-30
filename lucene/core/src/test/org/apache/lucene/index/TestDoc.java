@@ -33,14 +33,11 @@ import java.util.LinkedList;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -208,7 +205,7 @@ public class TestDoc extends LuceneTestCase {
    private SegmentCommitInfo indexDoc(IndexWriter writer, String fileName)
      throws Exception {
      Path path = workDir.resolve(fileName);
-     Document2 doc = writer.newDocument();
+     Document doc = writer.newDocument();
      InputStreamReader is = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8);
      doc.addLargeText("contents", is);
      writer.addDocument(doc);

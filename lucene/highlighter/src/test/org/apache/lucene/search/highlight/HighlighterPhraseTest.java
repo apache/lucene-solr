@@ -23,19 +23,16 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -45,8 +42,8 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class HighlighterPhraseTest extends LuceneTestCase {
   private static final String FIELD = "text";
@@ -55,13 +52,13 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
+    fieldTypes.enableTermVectorPositions(FIELD);
     try {
-      final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectorOffsets(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new TokenStreamConcurrent());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -96,14 +93,13 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
+    fieldTypes.enableTermVectorPositions(FIELD);
     try {
-      final Document document = new Document();
-
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectorOffsets(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new TokenStreamConcurrent());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -164,14 +160,13 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
+    fieldTypes.enableTermVectorPositions(FIELD);
     try {
-      final Document document = new Document();
-
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectorOffsets(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, new TokenStreamSparse(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new TokenStreamSparse());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -206,13 +201,13 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
+    fieldTypes.enableTermVectorPositions(FIELD);
     try {
-      final Document document = new Document();
-
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setStoreTermVectorOffsets(true);
-      customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, TEXT, customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, TEXT);
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -245,13 +240,13 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
+    fieldTypes.enableTermVectorPositions(FIELD);
     try {
-      final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectorOffsets(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, new TokenStreamSparse(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new TokenStreamSparse());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();

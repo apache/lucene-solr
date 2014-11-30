@@ -18,9 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
@@ -42,7 +40,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     tmp.setForceMergeDeletesPctAllowed(30.0);
     IndexWriter w = new IndexWriter(dir, conf);
     for(int i=0;i<80;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("content", "aaa " + (i%4));
       w.addDocument(doc);
     }
@@ -88,7 +86,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       int maxCount = 0;
       final int numDocs = TestUtil.nextInt(random(), 20, 100);
       for(int i=0;i<numDocs;i++) {
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addLargeText("content", "aaa " + (i%4));
         w.addDocument(doc);
         int count = w.getSegmentCount();
@@ -124,7 +122,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
 
     final int numDocs = atLeast(200);
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", i);
       doc.addLargeText("content", "aaa " + i);
       w.addDocument(doc);
@@ -229,7 +227,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     FieldTypes fieldTypes = w.getFieldTypes();
     for(int i=0;i<15000*RANDOM_MULTIPLIER;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("id", random().nextLong() + "" + random().nextLong());
       w.addDocument(doc);
     }

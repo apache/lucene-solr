@@ -42,9 +42,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -313,15 +311,10 @@ public class FreeTextSuggester extends Lookup {
     iwc.setRAMBufferSizeMB(ramBufferSizeMB);
     IndexWriter writer = new IndexWriter(dir, iwc);
 
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    // TODO: if only we had IndexOptions.TERMS_ONLY...
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-    ft.setOmitNorms(true);
-    ft.freeze();
-
-    Document doc = new Document();
-    Field field = new Field("body", "", ft);
-    doc.add(field);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableHighlighting("body");
+    fieldTypes.disableNorms("body");
+    fieldTypes.setIndexOptions("body", IndexOptions.DOCS_AND_FREQS);
 
     totTokens = 0;
     IndexReader reader = null;
@@ -334,7 +327,8 @@ public class FreeTextSuggester extends Lookup {
         if (surfaceForm == null) {
           break;
         }
-        field.setStringValue(surfaceForm.utf8ToString());
+        Document doc = writer.newDocument();
+        doc.addLargeText("body", surfaceForm.utf8ToString());
         writer.addDocument(doc);
         count++;
       }

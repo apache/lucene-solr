@@ -25,10 +25,10 @@ import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
@@ -45,10 +45,10 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetsConfig config = new FacetsConfig();
     
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     doc.add(new FacetField("A", "1"));
     writer.addDocument(config.build(taxoWriter, doc));
-    doc = new Document();
+    doc = writer.newDocument();
     doc.add(new FacetField("A", "2"));
     writer.addDocument(config.build(taxoWriter, doc));
     

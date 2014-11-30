@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -315,7 +314,7 @@ public class TestFSTs extends LuceneTestCase {
     final IndexWriter writer = new IndexWriter(dir, conf);
     final LineFileDocs docs = new LineFileDocs(writer, random());
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
-    Document2 doc;
+    Document doc;
     int docCount = 0;
     while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
       writer.addDocument(doc);
@@ -874,7 +873,7 @@ public class TestFSTs extends LuceneTestCase {
           }
         }
         allIDs.add(idString);
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         doc.addAtom("id", idString);
         w.addDocument(doc);
       }
@@ -991,7 +990,7 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     for(String term : allTerms) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addAtom("field", term);
       w.addDocument(doc);
     }

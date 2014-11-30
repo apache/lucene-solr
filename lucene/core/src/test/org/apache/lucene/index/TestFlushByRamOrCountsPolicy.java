@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
@@ -31,8 +30,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
@@ -314,7 +311,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       try {
         long ramSize = 0;
         while (pendingDocs.decrementAndGet() > -1) {
-          Document2 doc = docs.nextDoc();
+          Document doc = docs.nextDoc();
           writer.addDocument(doc);
           long newRamSize = writer.ramBytesUsed();
           if (newRamSize != ramSize) {

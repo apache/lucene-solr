@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -125,8 +123,8 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
   /**
    * Gets a document with content "my dog has fleas".
    */
-  private Document2 getDocument(IndexWriter w) {
-    Document2 document = w.newDocument();
+  private Document getDocument(IndexWriter w) {
+    Document document = w.newDocument();
     document.addLargeText(TEXT_FIELD, "my dog has fleas");
     return document;
   }

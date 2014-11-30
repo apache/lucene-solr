@@ -22,12 +22,8 @@ import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -165,7 +161,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableNorms("f");
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("f", text);
     w.addDocument(doc);
   }
@@ -232,7 +228,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     FieldTypes fieldTypes = iw.getFieldTypes();
     fieldTypes.disableNorms("lyrics");
 
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("lyrics", "drug drug");
     iw.addDocument(doc);
 
@@ -271,7 +267,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("lyrics", document);
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
@@ -324,7 +320,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
      Directory dir = newDirectory();
 
      RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-     Document2 doc = iw.newDocument();
+     Document doc = iw.newDocument();
      doc.addLargeText("lyrics", document);
      iw.addDocument(doc);
      IndexReader ir = iw.getReader();

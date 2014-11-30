@@ -22,10 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -70,11 +67,11 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     Directory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     // add the first doc
-    Document doc = new Document();
+    Document doc = writer.newDocument();
     String dummyTitle = "this is a dummy title ";
-    doc.add(new TextField("title", dummyTitle, Field.Store.YES));
+    doc.addLargeText("title", dummyTitle);
     String dummyContent = "there is some content written here";
-    doc.add(new TextField("contents", dummyContent, Field.Store.YES));
+    doc.addLargeText("contents", dummyContent);
     writer.addDocument(doc);
     writer.commit();
 
@@ -83,7 +80,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     IndexSearcher indexSearcher = newSearcher(directoryReader);
     TopDocs result = indexSearcher.search(new MatchAllDocsQuery(), 1);
     assertTrue(result.totalHits > 0);
-    Document2 d = indexSearcher.doc(result.scoreDocs[0].doc);
+    Document d = indexSearcher.doc(result.scoreDocs[0].doc);
     assertNotNull(d);
     assertNotNull(d.getField("title"));
     assertEquals(dummyTitle, d.getField("title").stringValue());
@@ -91,11 +88,11 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     assertEquals(dummyContent, d.getField("contents").stringValue());
 
     // add a second doc
-    doc = new Document();
+    doc = writer.newDocument();
     String dogmasTitle = "dogmas";
-    doc.add(new TextField("title", dogmasTitle, Field.Store.YES));
+    doc.addLargeText("title", dogmasTitle);
     String dogmasContents = "white men can't jump";
-    doc.add(new TextField("contents", dogmasContents, Field.Store.YES));
+    doc.addLargeText("contents", dogmasContents);
     writer.addDocument(doc);
     writer.commit();
 
@@ -103,7 +100,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     directoryReader = DirectoryReader.open(dir);
     indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
-    Document2 d1 = indexSearcher.doc(result.scoreDocs[1].doc);
+    Document d1 = indexSearcher.doc(result.scoreDocs[1].doc);
     assertNotNull(d1);
     assertNotNull(d1.getField("title"));
     assertEquals(dogmasTitle, d1.getField("title").stringValue());

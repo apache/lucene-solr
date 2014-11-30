@@ -23,8 +23,6 @@ import java.lang.reflect.Modifier;
 
 import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;

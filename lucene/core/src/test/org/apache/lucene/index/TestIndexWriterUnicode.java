@@ -26,9 +26,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -235,7 +233,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   public void testEmbeddedFFFF() throws Throwable {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", "a a\uffffb");
     w.addDocument(doc);
     doc = w.newDocument();
@@ -252,7 +250,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   public void testInvalidUTF16() throws Throwable {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new TestIndexWriter.StringSplitAnalyzer()));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
 
     final int count = utf8Data.length/2;
     for(int i=0;i<count;i++) {
@@ -262,7 +260,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Document2 doc2 = ir.document(0);
+    Document doc2 = ir.document(0);
     for(int i=0;i<count;i++) {
       assertEquals("field " + i + " was not indexed correctly", 1, ir.docFreq(new Term("f"+i, utf8Data[2*i+1])));
       assertEquals("field " + i + " is incorrect", utf8Data[2*i+1], doc2.getField("f"+i).stringValue());
@@ -304,7 +302,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       allTerms.add(s);
 
       // Single segment
-      Document2 d = writer.newDocument();
+      Document d = writer.newDocument();
       d.addAtom("f", s);
       writer.addDocument(d);
 

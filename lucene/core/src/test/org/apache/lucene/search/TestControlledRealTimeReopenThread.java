@@ -24,12 +24,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
@@ -311,7 +307,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     LatchedIndexWriter _writer = new LatchedIndexWriter(d, conf, latch, signal);
     final TrackingIndexWriter writer = new TrackingIndexWriter(_writer);
     final SearcherManager manager = new SearcherManager(_writer, false, null);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("test", "test");
     writer.addDocument(doc);
     manager.maybeRefresh();
@@ -512,7 +508,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         commitThread.start();
         commitThreads.add(commitThread);
       }
-      Document2 d = iw.newDocument();
+      Document d = iw.newDocument();
       d.addLargeText("count", i + "");
       d.addLargeText("content", content);
       long start = System.currentTimeMillis();

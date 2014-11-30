@@ -21,20 +21,14 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TimeUnits;
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Test indexes ~82M docs with 52 positions each, so you get > Integer.MAX_VALUE positions
@@ -69,7 +63,7 @@ public class Test2BPositions extends LuceneTestCase {
     fieldTypes.disableNorms("field");
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("field", new MyTokenStream());
     w.addDocument(doc);
     for (int i = 0; i < numDocs; i++) {

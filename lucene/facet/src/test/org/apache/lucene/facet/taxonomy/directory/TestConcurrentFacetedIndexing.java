@@ -10,9 +10,9 @@ import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -100,7 +100,7 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
           Random random = random();
           while (numDocs.decrementAndGet() > 0) {
             try {
-              Document doc = new Document();
+              Document doc = iw.newDocument();
               int numCats = random.nextInt(3) + 1; // 1-3
               while (numCats-- > 0) {
                 FacetField ff = newCategory();

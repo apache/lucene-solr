@@ -12,21 +12,13 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -35,7 +27,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -61,8 +52,8 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 @SuppressWarnings("resource")
 public class TestNumericDocValuesUpdates extends LuceneTestCase {
 
-  private Document2 doc(IndexWriter w, int id) {
-    Document2 doc = w.newDocument();
+  private Document doc(IndexWriter w, int id) {
+    Document doc = w.newDocument();
     doc.addAtom("id", "doc-" + id);
     // make sure we don't set the doc's value to 0, to not confuse with a document that's missing values
     doc.addInt("val", id + 1);
@@ -341,7 +332,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("bdv");
 
     for (int i = 0; i < 4; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("dvUpdateKey", "dv");
       doc.addInt("ndv", i);
       doc.addBinary("bdv", new BytesRef(Integer.toString(i)));
@@ -392,7 +383,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for (int i = 0; i < 2; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("dvUpdateKey", "dv");
       doc.addInt("ndv1", i);
       doc.addInt("ndv2", i);
@@ -424,7 +415,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for (int i = 0; i < 2; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("dvUpdateKey", "dv");
       if (i == 0) { // index only one document with value
         doc.addInt("ndv", 5);
@@ -456,7 +447,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("key", "doc");
     doc.addAtom("foo", "bar");
     writer.addDocument(doc); // flushed document
@@ -495,7 +486,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     });
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("key", "doc");
     doc.addInt("ndv", 5);
     doc.addShortText("sorted", "value");
@@ -527,7 +518,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("key", "doc");
     doc.addInt("ndv", 5);
     writer.addDocument(doc); // flushed document
@@ -561,7 +552,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     for (int rnd = 0; rnd < numRounds; rnd++) {
       int numDocs = atLeast(30);
       for (int i = 0; i < numDocs; i++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addAtom("key", "doc");
         doc.addLong("ndv", -1);
         doc.addUniqueInt("id", docid++);
@@ -590,7 +581,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       // forceMerge is called, the index will be with one segment and deletes
       // and some MPs might now merge it, thereby invalidating test's
       // assumption that the reader has no deletes).
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("id", docid++);
       doc.addAtom("key", "doc");
       doc.addLong("ndv", value);
@@ -627,7 +618,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("k1", "v1");
     doc.addAtom("k2", "v2");
     doc.addInt("ndv", 5);
@@ -680,7 +671,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       int numDocs = atLeast(5);
 //      System.out.println("[" + Thread.currentThread().getName() + "]: round=" + i + ", numDocs=" + numDocs);
       for (int j = 0; j < numDocs; j++) {
-        Document2 doc = writer.newDocument();
+        Document doc = writer.newDocument();
         doc.addAtom("id", "doc-" + docID);
         doc.addAtom("key", "all"); // update key
         // add all fields with their current value
@@ -756,7 +747,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableExistsFilters();
 
     // first segment with NDV
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc0");
     doc.addInt("ndv", 3);
     writer.addDocument(doc);
@@ -804,7 +795,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   }
 
   // nocommit fixme LUCENE-6062
-  @Ignore
+  // @Ignore
   @Test
   public void testUpdateSegmentWithNoDocValues2() throws Exception {
     Directory dir = newDirectory();
@@ -816,22 +807,22 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // first segment with NDV
-    Document doc = new Document();
-    doc.add(new StringField("id", "doc0", Store.NO));
-    doc.add(new NumericDocValuesField("ndv", 3));
+    Document doc = writer.newDocument();
+    doc.addAtom("id", "doc0");
+    doc.addInt("ndv", 3);
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new StringField("id", "doc4", Store.NO)); // document without 'ndv' field
+    doc = writer.newDocument();
+    doc.addAtom("id", "doc4"); // document without 'ndv' field
     writer.addDocument(doc);
     writer.commit();
     
     // second segment with no NDV, but another dv field "foo"
-    doc = new Document();
-    doc.add(new StringField("id", "doc1", Store.NO));
-    doc.add(new NumericDocValuesField("foo", 3));
+    doc = writer.newDocument();
+    doc.addAtom("id", "doc1");
+    doc.addInt("foo", 3);
     writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new StringField("id", "doc2", Store.NO)); // document that isn't updated
+    doc = writer.newDocument();
+    doc.addAtom("id", "doc2"); // document that isn't updated
     writer.addDocument(doc);
     writer.commit();
     
@@ -902,7 +893,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // first segment with NDV
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc0");
     doc.addAtom("ndvmock", "mock-value");
     doc.addInt("ndv", 5);
@@ -942,7 +933,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
 
     // nocommit use low schema API
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("fmock", "mock-value");
     doc.addInt("f", 5);
     writer.addDocument(doc);
@@ -968,7 +959,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     final int numFields = TestUtil.nextInt(random(), 1, 4);
     final int numDocs = atLeast(2000);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "doc" + i);
       double group = random().nextDouble();
       String g;
@@ -1012,7 +1003,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
               final String cf = "cf" + field;
 //              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t + " field=" + field);
               long updValue = random.nextInt();
-              Document2 update = writer.newDocument();
+              Document update = writer.newDocument();
               update.disableExistsField();
               update.addLong(f, updValue);
               update.addLong(cf, updValue*2);
@@ -1100,7 +1091,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     final int numDocs = atLeast(10);
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", "doc" + i);
       long value = random().nextInt();
       doc.addLong("f", value);
@@ -1113,7 +1104,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
-      Document2 update = writer.newDocument();
+      Document update = writer.newDocument();
       update.disableExistsField();
       update.addLong("f", value);
       update.addLong("cf", value*2);
@@ -1145,7 +1136,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       }
     });
     IndexWriter writer = new IndexWriter(dir, conf);
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "d0");
     doc.addLong("f1", 5L);
     doc.addLong("f2", 13L);
@@ -1197,7 +1188,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
 
     // create first index
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", RandomPicks.randomFrom(random(), randomTerms));
       doc.addLong("ndv", 4L);
       doc.addLong("control", 8L);
@@ -1211,7 +1202,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // update some docs to a random value
     long value = random().nextInt();
     Term term = new Term("id", RandomPicks.randomFrom(random(), randomTerms));
-    Document2 update = writer.newDocument();
+    Document update = writer.newDocument();
     update.disableExistsField();
     update.addLong("ndv", value);
     update.addLong("control", value*2);
@@ -1254,7 +1245,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "d0");
     doc.addLong("f1", 1L);
     doc.addLong("f2", 1L);
@@ -1304,7 +1295,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     // build a large index with many NDV fields and update terms
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       int numUpdateTerms = TestUtil.nextInt(random, 1, numTerms / 10);
       for (int j = 0; j < numUpdateTerms; j++) {
         doc.addAtom("upd", RandomPicks.randomFrom(random, updateTerms));
@@ -1328,7 +1319,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       int field = random.nextInt(numNumericFields);
       Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
       long value = random.nextInt();
-      Document2 update = writer.newDocument();
+      Document update = writer.newDocument();
       update.disableExistsField();
       update.addLong("f"+field, value);
       update.addLong("cf"+field, value*2);
@@ -1362,7 +1353,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     fieldTypes.disableSorting("upd");
     fieldTypes.setMultiValued("upd");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("upd", "t1");
     doc.addAtom("upd", "t2");
     doc.addLong("f1", 1L);
@@ -1389,7 +1380,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc");
     doc.addLong("f1", 1L);
     writer.addDocument(doc);
@@ -1414,7 +1405,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addAtom("id", "doc");
     doc.addLong("f1", 1L);
     writer.addDocument(doc);

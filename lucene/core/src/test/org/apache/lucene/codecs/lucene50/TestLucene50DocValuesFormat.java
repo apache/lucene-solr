@@ -26,7 +26,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
@@ -140,7 +140,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
 
     // index some docs
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueAtom("id", Integer.toString(i));
       final int length = TestUtil.nextInt(random(), minLength, maxLength);
       int numValues = random().nextInt(17);

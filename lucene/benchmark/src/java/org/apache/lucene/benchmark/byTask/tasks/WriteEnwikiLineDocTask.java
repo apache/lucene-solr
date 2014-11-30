@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 
@@ -63,7 +62,7 @@ public class WriteEnwikiLineDocTask extends WriteLineDocTask {
   }
   
   @Override
-  protected PrintWriter lineFileOut(Document2 doc) {
+  protected PrintWriter lineFileOut(Document doc) {
     IndexableField titleField = doc.getField(DocMaker.TITLE_FIELD);
     if (titleField!=null && titleField.stringValue().startsWith("Category:")) {
       return categoryLineFileOut;

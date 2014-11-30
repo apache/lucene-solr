@@ -26,15 +26,13 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
@@ -48,20 +46,21 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableSorting("bytes");
     final List<Long> numbers = new ArrayList<>();
     final List<BytesRef> binary = new ArrayList<>();
     final List<BytesRef> sorted = new ArrayList<>();
     final int numDocs = atLeast(100);
     for(int i=0;i<numDocs;i++) {
-      Document d = new Document();
+      Document d = w.newDocument();
       long number = random().nextLong();
-      d.add(new NumericDocValuesField("number", number));
+      d.addLong("number", number);
       BytesRef bytes = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
-      d.add(new BinaryDocValuesField("bytes", bytes));
+      d.addBinary("bytes", bytes);
       binary.add(bytes);
       bytes = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
-      d.add(new SortedDocValuesField("sorted", bytes));
+      d.addBinary("sorted", bytes);
       sorted.add(bytes);
       w.addDocument(d);
       numbers.add(number);
@@ -164,9 +163,9 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
         System.out.println("  " + numDocs + ": s=" + s);
       }
       
-      final Document doc = new Document();
-      doc.add(new SortedDocValuesField("stringdv", br));
-      doc.add(new NumericDocValuesField("id", numDocs));
+      final Document doc = writer.newDocument();
+      doc.addAtom("stringdv", br);
+      doc.addInt("id", numDocs);
       docValues.add(br);
       writer.addDocument(doc);
       numDocs++;

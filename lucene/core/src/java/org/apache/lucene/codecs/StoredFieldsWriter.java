@@ -19,7 +19,7 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Document2StoredFieldVisitor;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -100,7 +100,7 @@ public abstract class StoredFieldsWriter implements Closeable {
         // fieldsWriter.addDocument; see LUCENE-1282
         Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(null);
         storedFieldsReader.visitDocument(docID, visitor);
-        Document2 doc = visitor.getDocument();
+        Document doc = visitor.getDocument();
         addDocument(doc, mergeState.mergeFieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);

@@ -24,12 +24,10 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.LowSchemaField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -44,6 +42,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestIndexableField extends LuceneTestCase {
 
   private class MyField implements IndexableField {
+    private final Analyzer a = new MockAnalyzer(random());
 
     private final int counter;
     private final IndexableFieldType fieldType = new IndexableFieldType() {
@@ -73,22 +72,12 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public boolean omitNorms() {
-        return false;
-      }
-
-      @Override
       public IndexOptions indexOptions() {
         if ((counter % 10) != 3) {
           return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
         } else {
           return IndexOptions.NONE;
         }
-      }
-
-      @Override
-      public DocValuesType docValuesType() {
-        return DocValuesType.NONE;
       }
     };
 
@@ -143,24 +132,14 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public Number numericValue() {
-      return null;
-    }
-
-    @Override
-    public Number numericDocValue() {
-      return null;
-    }
-
-    @Override
     public IndexableFieldType fieldType() {
       return fieldType;
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
-      return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
-        analyzer.tokenStream(name(), new StringReader(stringValue()));
+    public TokenStream tokenStream(TokenStream previous) throws IOException {
+      return readerValue() != null ? a.tokenStream(name(), readerValue()) :
+        a.tokenStream(name(), new StringReader(stringValue()));
     }
   }
 
@@ -169,7 +148,9 @@ public class TestIndexableField extends LuceneTestCase {
   public void testArbitraryFields() throws Exception {
 
     final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Analyzer a = new MockAnalyzer(random());
+
+    final RandomIndexWriter w = newRandomIndexWriter(dir, a);
 
     final int NUM_DOCS = atLeast(27);
     if (VERBOSE) {
@@ -204,7 +185,7 @@ public class TestIndexableField extends LuceneTestCase {
                   next = null;
                   if (fieldUpto == 0) {
                     fieldUpto = 1;
-                    next = newStringField("id", ""+finalDocCount, Field.Store.YES);
+                    next = new LowSchemaField(a, "id", ""+finalDocCount, IndexOptions.DOCS, false);
                   } else {
                     next = new MyField(finalBaseCount + (fieldUpto++-1));
                   }
@@ -247,7 +228,7 @@ public class TestIndexableField extends LuceneTestCase {
       final TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
       assertEquals(1, hits.totalHits);
       final int docID = hits.scoreDocs[0].doc;
-      final Document2 doc = s.doc(docID);
+      final Document doc = s.doc(docID);
       final int endCounter = counter + fieldsPerDoc[id];
       while(counter < endCounter) {
         final String name = "f" + counter;
@@ -335,34 +316,10 @@ public class TestIndexableField extends LuceneTestCase {
   }
 
   private static class CustomField implements IndexableField {
-    @Override
-    public BytesRef binaryValue() {
-      return null;
-    }
-
-    @Override
-    public BytesRef binaryDocValue() {
-      return null;
-    }
 
     @Override
     public String stringValue() {
       return "foobar";
-    }
-
-    @Override
-    public Number numericValue() {
-      return null;
-    }
-
-    @Override
-    public Number numericDocValue() {
-      return null;
-    }
-
-    @Override
-    public float boost() {
-      return 1.0f;
     }
 
     @Override
@@ -371,16 +328,13 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer a, TokenStream reuse) {
-      return null;
-    }
-
-    @Override
     public IndexableFieldType fieldType() {
-      FieldType ft = new FieldType(StoredField.TYPE);
-      ft.setStoreTermVectors(true);
-      ft.freeze();
-      return ft;
+      return new IndexableFieldType() {
+        @Override
+        public boolean storeTermVectors() {
+          return true;
+        }
+      };
     }
   }
 

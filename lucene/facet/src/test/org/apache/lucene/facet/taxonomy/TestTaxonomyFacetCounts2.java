@@ -28,8 +28,6 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -118,10 +116,10 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   }
 
   private static void addField(Document doc) {
-    doc.add(new StringField(A.field(), A.text(), Store.NO));
+    doc.addAtom(A.field(), A.text());
   }
 
-  private static void addFacets(Document doc, FacetsConfig config, boolean updateTermExpectedCounts) 
+  private static void addFacets(Document doc, FacetsConfig config, boolean updateTermExpectedCounts)
       throws IOException {
     List<FacetField> docCategories = randomCategories(random());
     for (FacetField ff : docCategories) {
@@ -155,7 +153,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   private static void indexDocsNoFacets(IndexWriter indexWriter) throws IOException {
     int numDocs = atLeast(2);
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document doc = indexWriter.newDocument();
       addField(doc);
       indexWriter.addDocument(doc);
     }
@@ -168,7 +166,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     int numDocs = atLeast(random, 2);
     FacetsConfig config = getConfig();
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document doc = indexWriter.newDocument();
       addFacets(doc, config, false);
       indexWriter.addDocument(config.build(taxoWriter, doc));
     }
@@ -181,7 +179,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     int numDocs = atLeast(random, 2);
     FacetsConfig config = getConfig();
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document doc = indexWriter.newDocument();
       addFacets(doc, config, true);
       addField(doc);
       indexWriter.addDocument(config.build(taxoWriter, doc));
@@ -195,7 +193,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     int numDocs = atLeast(random, 2);
     FacetsConfig config = getConfig();
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document doc = indexWriter.newDocument();
       boolean hasContent = random.nextBoolean();
       if (hasContent) {
         addField(doc);

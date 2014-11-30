@@ -20,9 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
@@ -121,7 +119,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
            .setSimilarity(similarity).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i));
       doc.addLargeText("field", English.intToEnglish(i));
       doc.addLargeText("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i));

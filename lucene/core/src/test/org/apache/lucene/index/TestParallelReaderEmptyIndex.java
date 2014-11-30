@@ -20,12 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -95,7 +91,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       FieldTypes fieldTypes = iw.getFieldTypes();
       fieldTypes.enableTermVectors("test");
 
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addLargeText("test", "");
       doc.addUniqueInt("id", 1);
       iw.addDocument(doc);

@@ -22,9 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
@@ -62,7 +60,7 @@ public class TestNeverDelete extends LuceneTestCase {
             try {
               int docCount = 0;
               while (System.currentTimeMillis() < stopTime) {
-                Document2 doc = w.newDocument();
+                Document doc = w.newDocument();
                 doc.addInt("dc", docCount);
                 doc.addLargeText("field", "here is some text");
                 w.addDocument(doc);

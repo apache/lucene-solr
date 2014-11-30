@@ -32,7 +32,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
@@ -138,7 +137,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   }
 
   /** Add random fields to the provided document. */
-  protected abstract void addRandomFields(Document2 doc);
+  protected abstract void addRandomFields(Document doc);
 
   private Map<String, Long> bytesUsedByExtension(Directory d) throws IOException {
     Map<String, Long> bytesUsedByExtension = new HashMap<>();
@@ -185,7 +184,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     final int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; ++i) {
-      Document2 d = w.newDocument();
+      Document d = w.newDocument();
       addRandomFields(d);
       w.addDocument(d);
     }
@@ -234,7 +233,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     final int numDocs = atLeast(10000);
     LeafReader reader1 = null;
     for (int i = 0; i < numDocs; ++i) {
-      Document2 d = w.newDocument();
+      Document d = w.newDocument();
       addRandomFields(d);
       w.addDocument(d);
       if (i == 100) {

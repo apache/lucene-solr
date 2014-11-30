@@ -27,9 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -93,12 +91,12 @@ public class TokenSourcesTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(null));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
     try {
-      final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new OverlappingTokenStream());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -137,13 +135,13 @@ public class TokenSourcesTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(null));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
+    fieldTypes.enableTermVectorPositions(FIELD);
     try {
-      final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorOffsets(true);
-      customType.setStoreTermVectorPositions(true);
-      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new OverlappingTokenStream());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -182,12 +180,12 @@ public class TokenSourcesTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(null));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
     try {
-      final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new OverlappingTokenStream());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -226,12 +224,12 @@ public class TokenSourcesTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(null));
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorOffsets(FIELD);
     try {
-      final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new OverlappingTokenStream());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -269,13 +267,13 @@ public class TokenSourcesTest extends LuceneTestCase {
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         newIndexWriterConfig(null));
+
+    FieldTypes fieldTypes = indexWriter.getFieldTypes();
+    fieldTypes.enableTermVectors(FIELD);
+    fieldTypes.enableTermVectorPositions(FIELD);
     try {
-      final Document document = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorOffsets(false);
-      customType.setStoreTermVectorPositions(true);
-      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
+      final Document document = indexWriter.newDocument();
+      document.addLargeText(FIELD, new OverlappingTokenStream());
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -312,11 +310,6 @@ public class TokenSourcesTest extends LuceneTestCase {
   public void testPayloads() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    FieldType myFieldType = new FieldType(TextField.TYPE_NOT_STORED);
-    myFieldType.setStoreTermVectors(true);
-    myFieldType.setStoreTermVectorOffsets(true);
-    myFieldType.setStoreTermVectorPositions(true);
-    myFieldType.setStoreTermVectorPayloads(true);
 
     curOffset = 0;
 
@@ -327,8 +320,13 @@ public class TokenSourcesTest extends LuceneTestCase {
       getToken("high")
     };
 
-    Document doc = new Document();
-    doc.add(new Field("field", new CannedTokenStream(tokens), myFieldType));
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.enableTermVectors("field");
+    fieldTypes.enableTermVectorOffsets("field");
+    fieldTypes.enableTermVectorPositions("field");
+    fieldTypes.enableTermVectorPayloads("field");
+    Document doc = writer.newDocument();
+    doc.addLargeText("field", new CannedTokenStream(tokens));
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();

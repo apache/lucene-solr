@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Document2StoredFieldVisitor; // javadocs
 
 /**

@@ -25,9 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.StringHelper;
@@ -190,7 +188,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
   }
   
   @Override
-  protected void addRandomFields(Document2 doc) {
+  protected void addRandomFields(Document doc) {
     doc.addStored("foobar", TestUtil.randomSimpleString(random()));
   }
 

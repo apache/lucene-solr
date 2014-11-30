@@ -26,11 +26,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -155,14 +155,29 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
   }
 
   @Override
-  protected FieldType getTextFieldType() {
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorPositions(true);
-    ft.setOmitNorms(true);
+  protected void setFieldTypes(IndexWriter writer) {
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.disableHighlighting(TEXT_FIELD_NAME);
+    fieldTypes.disableNorms(TEXT_FIELD_NAME);
+    fieldTypes.disableStored(TEXT_FIELD_NAME);
+    fieldTypes.setIndexOptions(TEXT_FIELD_NAME, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    fieldTypes.enableTermVectors(TEXT_FIELD_NAME);
+    fieldTypes.enableTermVectorPositions(TEXT_FIELD_NAME);
 
-    return ft;
+    fieldTypes.disableStored(EXACT_TEXT_FIELD_NAME);
+
+    fieldTypes.disableHighlighting("textgrams");
+    fieldTypes.disableNorms("textgrams");
+    fieldTypes.disableStored("textgrams");
+    fieldTypes.setIndexOptions("textgrams", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    fieldTypes.enableTermVectors("textgrams");
+    fieldTypes.enableTermVectorPositions("textgrams");
+
+    fieldTypes.disableSorting(BINARY_DV_TEXT_FIELD_NAME);
+    fieldTypes.disableSorting("payloads");
+    fieldTypes.setIndexOptions("weight", IndexOptions.NONE);
+    fieldTypes.setMultiValued(CONTEXTS_FIELD_NAME);
+    fieldTypes.disableStored(CONTEXTS_FIELD_NAME);
   }
 
   @Override
@@ -170,8 +185,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
                                                     boolean doHighlight, Set<String> matchedTokens, String prefixToken)
       throws IOException {
 
-    BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
-    assert textDV != null;
+    BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), BINARY_DV_TEXT_FIELD_NAME);
 
     // This will just be null if app didn't pass payloads to build():
     // TODO: maybe just stored fields?  they compress...

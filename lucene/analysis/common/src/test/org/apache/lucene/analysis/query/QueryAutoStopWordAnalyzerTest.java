@@ -16,18 +16,16 @@ package org.apache.lucene.analysis.query;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.util.Arrays;
-import java.util.Collections;
 
 public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   String variedFieldValues[] = {"the", "quick", "brown", "fox", "jumped", "over", "the", "lazy", "boring", "dog"};
@@ -45,11 +43,11 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(appAnalyzer));
     int numDocs = 200;
     for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
+      Document doc = writer.newDocument();
       String variedFieldValue = variedFieldValues[i % variedFieldValues.length];
       String repetitiveFieldValue = repetitiveFieldValues[i % repetitiveFieldValues.length];
-      doc.add(new TextField("variedField", variedFieldValue, Field.Store.YES));
-      doc.add(new TextField("repetitiveField", repetitiveFieldValue, Field.Store.YES));
+      doc.addLargeText("variedField", variedFieldValue);
+      doc.addLargeText("repetitiveField", repetitiveFieldValue);
       writer.addDocument(doc);
     }
     writer.close();

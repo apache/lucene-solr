@@ -26,7 +26,7 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -66,7 +66,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("content", "aaa");
       writer.addDocument(doc);
     }
@@ -74,7 +74,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("content", "bbb");
       writer.addDocument(doc);
     }
@@ -82,7 +82,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("content", "ccc");
       doc.addUniqueInt("id", i);
       writer.addDocument(doc);
@@ -245,7 +245,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       IndexWriter writer = newWriter(dir, config);
       FieldTypes fieldTypes = writer.getFieldTypes();
       for (int j = 0; j < docsPerRound; j++) {
-        final Document2 doc = writer.newDocument();
+        final Document doc = writer.newDocument();
         for (int k = 0; k < num; k++) {
           if (random().nextBoolean()) {
             fieldTypes.disableNorms("" + k);
@@ -310,7 +310,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     fieldTypes.enableTermVectorOffsets("date");
     fieldTypes.enableTermVectorPositions("date");
     for (int i = 0; i < 100; i++) {
-      Document2 doc = iw.newDocument();
+      Document doc = iw.newDocument();
       doc.addLargeText("id", Integer.toString(random().nextInt(50)));
       doc.addLargeText("date", Integer.toString(random().nextInt(100)));
       iw.addDocument(doc);

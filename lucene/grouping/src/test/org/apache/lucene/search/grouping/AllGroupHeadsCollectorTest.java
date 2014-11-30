@@ -28,12 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -66,69 +61,68 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         random(),
         dir,
         newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    DocValuesType valueType = DocValuesType.SORTED;
 
     // 0
-    Document doc = new Document();
-    addGroupField(doc, groupField, "author1", valueType);
-    doc.add(newTextField("content", "random text", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 1));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("1")));
+    Document doc = w.newDocument();
+    addGroupField(doc, groupField, "author1");
+    doc.addLargeText("content", "random text");
+    doc.addInt("id_1", 1);
+    doc.addAtom("id_2", new BytesRef("1"));
     w.addDocument(doc);
 
     // 1
-    doc = new Document();
-    addGroupField(doc, groupField, "author1", valueType);
-    doc.add(newTextField("content", "some more random text blob", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 2));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("2")));
+    doc = w.newDocument();
+    addGroupField(doc, groupField, "author1");
+    doc.addLargeText("content", "some more random text blob");
+    doc.addInt("id_1", 2);
+    doc.addAtom("id_2", new BytesRef("2"));
     w.addDocument(doc);
 
     // 2
-    doc = new Document();
-    addGroupField(doc, groupField, "author1", valueType);
-    doc.add(newTextField("content", "some more random textual data", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 3));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("3")));
+    doc = w.newDocument();
+    addGroupField(doc, groupField, "author1");
+    doc.addLargeText("content", "some more random textual data");
+    doc.addInt("id_1", 3);
+    doc.addAtom("id_2", new BytesRef("3"));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
-    doc = new Document();
-    addGroupField(doc, groupField, "author2", valueType);
-    doc.add(newTextField("content", "some random text", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 4));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("4")));
+    doc = w.newDocument();
+    addGroupField(doc, groupField, "author2");
+    doc.addLargeText("content", "some random text");
+    doc.addInt("id_1", 4);
+    doc.addAtom("id_2", new BytesRef("4"));
     w.addDocument(doc);
 
     // 4
-    doc = new Document();
-    addGroupField(doc, groupField, "author3", valueType);
-    doc.add(newTextField("content", "some more random text", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 5));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("5")));
+    doc = w.newDocument();
+    addGroupField(doc, groupField, "author3");
+    doc.addLargeText("content", "some more random text");
+    doc.addInt("id_1", 5);
+    doc.addAtom("id_2", new BytesRef("5"));
     w.addDocument(doc);
 
     // 5
-    doc = new Document();
-    addGroupField(doc, groupField, "author3", valueType);
-    doc.add(newTextField("content", "random blob", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 6));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
+    doc = w.newDocument();
+    addGroupField(doc, groupField, "author3");
+    doc.addLargeText("content", "random blob");
+    doc.addInt("id_1", 6);
+    doc.addAtom("id_2", new BytesRef("6"));
     w.addDocument(doc);
 
     // 6 -- no author field
-    doc = new Document();
-    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 6));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
+    doc = w.newDocument();
+    doc.addLargeText("content", "random word stuck in alot of other text");
+    doc.addInt("id_1", 6);
+    doc.addAtom("id_2", new BytesRef("6"));
     w.addDocument(doc);
 
     // 7 -- no author field
-    doc = new Document();
-    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(new NumericDocValuesField("id_1", 7));
-    doc.add(new SortedDocValuesField("id_2", new BytesRef("7")));
+    doc = w.newDocument();
+    doc.addLargeText("content", "random word stuck in alot of other text");
+    doc.addInt("id_1", 7);
+    doc.addAtom("id_2", new BytesRef("7"));
     w.addDocument(doc);
 
     IndexReader reader = w.getReader();
@@ -246,7 +240,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
         groupDocs[i] = groupDoc;
 
-        Document2 doc = w.newDocument();
+        Document doc = w.newDocument();
         if (groupDoc.group != null) {
           doc.addAtom("group", new BytesRef(groupDoc.group.utf8ToString()));
         }
@@ -494,19 +488,8 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return collector;
   }
 
-  private void addGroupField(Document doc, String groupField, String value, DocValuesType valueType) {
-    Field valuesField = null;
-    switch(valueType) {
-      case BINARY:
-        valuesField = new BinaryDocValuesField(groupField, new BytesRef(value));
-        break;
-      case SORTED:
-        valuesField = new SortedDocValuesField(groupField, new BytesRef(value));
-        break;
-      default:
-        fail("unhandled type");
-    }
-    doc.add(valuesField);
+  private void addGroupField(Document doc, String groupField, String value) {
+    doc.addBinary(groupField, new BytesRef(value));
   }
 
   private static class GroupDoc {

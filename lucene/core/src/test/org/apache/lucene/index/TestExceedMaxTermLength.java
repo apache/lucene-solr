@@ -20,10 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,12 +57,7 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
       (dir, newIndexWriterConfig(random(), new MockAnalyzer(random())));
     FieldTypes fieldTypes = w.getFieldTypes();
     try {
-      final FieldType ft = new FieldType();
-      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-      ft.setStored(random().nextBoolean());
-      ft.freeze();
-      
-      final Document2 doc = w.newDocument();
+      final Document doc = w.newDocument();
       if (random().nextBoolean()) {
         // totally ok short field value
         doc.addLargeText(TestUtil.randomSimpleString(random(), 1, 10), TestUtil.randomSimpleString(random(), 1, 10));
@@ -75,7 +67,6 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
       final String value = TestUtil.randomSimpleString(random(),
                                                        minTestTermLength,
                                                        maxTestTermLegnth);
-      final Field f = new Field(name, value, ft);
       if (random().nextBoolean()) {
         // totally ok short field value
         doc.addLargeText(TestUtil.randomSimpleString(random(), 1, 10), TestUtil.randomSimpleString(random(), 1, 10));

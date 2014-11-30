@@ -27,12 +27,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -195,7 +191,7 @@ public class Test2BTerms extends LuceneTestCase {
 
       FieldTypes fieldTypes = w.getFieldTypes();
 
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
 
       List<Long> savedTokens = new ArrayList<>();
 

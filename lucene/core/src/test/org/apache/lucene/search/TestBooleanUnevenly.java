@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -45,7 +45,7 @@ public class TestBooleanUnevenly extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), directory, new MockAnalyzer(random()));
-    Document2 doc;
+    Document doc;
     count1 = 0;
     for (int i=0;i<2;i++) {
       for (int j=0;j<2048;j++) {

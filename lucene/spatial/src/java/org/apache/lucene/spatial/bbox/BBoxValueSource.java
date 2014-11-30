@@ -20,7 +20,7 @@ package org.apache.lucene.spatial.bbox;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -69,10 +69,10 @@ class BBoxValueSource extends ValueSource {
           return null;
         } else {
           rect.reset(
-                     Document2.longToDouble(minX.get(doc)),
-                     Document2.longToDouble(maxX.get(doc)),
-                     Document2.longToDouble(minY.get(doc)),
-                     Document2.longToDouble(maxY.get(doc)));
+                     Document.longToDouble(minX.get(doc)),
+                     Document.longToDouble(maxX.get(doc)),
+                     Document.longToDouble(minY.get(doc)),
+                     Document.longToDouble(maxY.get(doc)));
           return rect;
         }
       }

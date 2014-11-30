@@ -101,7 +101,6 @@ public class TermRangeQuery extends MultiTermQuery {
   
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-
     if (lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {
       // Matches no terms:
       return TermsEnum.EMPTY;

@@ -19,7 +19,7 @@ package org.apache.lucene.queryparser.flexible.standard.config;
 
 import java.text.NumberFormat;
 
-import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.NumericType;
 import org.apache.lucene.search.NumericRangeQuery;
 
 /**

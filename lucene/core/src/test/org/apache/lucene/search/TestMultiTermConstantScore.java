@@ -23,11 +23,7 @@ import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -61,10 +57,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         newIndexWriterConfig(
             new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setMergePolicy(newLogMergePolicy()));
 
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
     for (int i = 0; i < data.length; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("id", String.valueOf(i));
       doc.addAtom("all", "all");
       if (null != data[i]) {

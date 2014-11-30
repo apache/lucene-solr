@@ -26,7 +26,6 @@ import junit.framework.Assert;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -47,25 +46,25 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
 
     for (int i = 900; i < 1112; i++) {
-      Document doc = new Document();
+      Document doc = writer.newDocument();
       String num = English.intToEnglish(i).replaceAll("[-]", " ").replaceAll("[,]", "");
-      doc.add(newTextField("numbers", num, Field.Store.NO));
+      doc.addLargeText("numbers", num);
       writer.addDocument(doc);
     }
     
     {
-      Document doc = new Document();
-      doc.add(newTextField("numbers", "thou hast sand betwixt thy toes", Field.Store.NO));
+      Document doc = writer.newDocument();
+      doc.addLargeText("numbers", "thou hast sand betwixt thy toes");
       writer.addDocument(doc);
     }
     {
-      Document doc = new Document();
-      doc.add(newTextField("numbers", "hundredeight eightyeight yeight", Field.Store.NO));
+      Document doc = writer.newDocument();
+      doc.addLargeText("numbers", "hundredeight eightyeight yeight");
       writer.addDocument(doc);
     }
     {
-      Document doc = new Document();
-      doc.add(newTextField("numbers", "tres y cinco", Field.Store.NO));
+      Document doc = writer.newDocument();
+      doc.addLargeText("numbers", "tres y cinco");
       writer.addDocument(doc);
     }
     
@@ -293,10 +292,9 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
         broken[0] = orig.substring(0, breakAt);
         broken[1] = orig.substring(breakAt);
         breaks.add(broken);
-        Document doc = new Document();
-        doc.add(newTextField("random_break", broken[0] + " " + broken[1],
-            Field.Store.NO));
-        doc.add(newTextField("random_combine", orig, Field.Store.NO));
+        Document doc = writer.newDocument();
+        doc.addLargeText("random_break", broken[0] + " " + broken[1]);
+        doc.addLargeText("random_combine", orig);
         writer.addDocument(doc);
       }
       writer.commit();

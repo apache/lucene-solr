@@ -21,9 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -70,7 +68,7 @@ public class BooleanFilterTest extends LuceneTestCase {
   }
 
   private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("accessRights", accessRights);
     doc.addLargeText("price", price);
     doc.addLargeText("date", date);

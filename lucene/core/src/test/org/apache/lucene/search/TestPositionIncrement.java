@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -89,7 +89,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     };
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store, analyzer);
-    Document2 d = writer.newDocument();
+    Document d = writer.newDocument();
     d.addLargeText("field", "bogus");
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
@@ -202,7 +202,7 @@ public class TestPositionIncrement extends LuceneTestCase {
   public void testPayloadsPos0() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockPayloadAnalyzer());
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("content", new StringReader("a a b c d e a f g h i j a b k k"));
     writer.addDocument(doc);
 

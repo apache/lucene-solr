@@ -22,12 +22,8 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
@@ -136,7 +132,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     // TODO: we should add other fields that use things like docs&freqs but omit positions,
     // because linefiledocs doesn't cover all the possibilities.
     for (int i = 0; i < numdocs; i++) {
-      Document2 document = lineFileDocs.nextDoc();
+      Document document = lineFileDocs.nextDoc();
       // grab the title and add some SortedSet instances for fun
       String title = document.getString("titleTokenized");
       String split[] = title.split("\\s+");

@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.document.Document2;
-import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.LeafReader;
@@ -109,7 +108,7 @@ interface FieldCache {
   public static final Parser DOCUMENT2_INT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document2.bytesToInt(term);
+      return Document.bytesToInt(term);
     }
     
     @Override
@@ -150,7 +149,7 @@ interface FieldCache {
   public static final Parser DOCUMENT2_FLOAT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document2.sortableFloatBits(Document2.bytesToInt(term));
+      return Document.sortableFloatBits(Document.bytesToInt(term));
     }
     
     @Override
@@ -188,7 +187,7 @@ interface FieldCache {
   public static final Parser DOCUMENT2_LONG_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document2.bytesToLong(term);
+      return Document.bytesToLong(term);
     }
     
     @Override
@@ -228,7 +227,7 @@ interface FieldCache {
   public static final Parser DOCUMENT2_DOUBLE_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document2.sortableDoubleBits(Document2.bytesToLong(term));
+      return Document.sortableDoubleBits(Document.bytesToLong(term));
     }
     
     @Override

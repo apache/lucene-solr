@@ -28,9 +28,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -71,7 +69,7 @@ public class TestParser extends LuceneTestCase {
       int endOfDate = line.indexOf('\t');
       String date = line.substring(0, endOfDate).trim();
       String content = line.substring(endOfDate).trim();
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText("date", date);
       doc.addLargeText("contents", content);
       doc.addInt("date2", Integer.valueOf(date));
@@ -237,7 +235,7 @@ public class TestParser extends LuceneTestCase {
       System.out.println("=========" + qType + "============");
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for (int i = 0; i < Math.min(numDocs, hits.totalHits); i++) {
-        Document2 ldoc = searcher.doc(scoreDocs[i].doc);
+        Document ldoc = searcher.doc(scoreDocs[i].doc);
         System.out.println("[" + ldoc.getString("date") + "]" + ldoc.getString("contents"));
       }
       System.out.println();

@@ -22,10 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -55,7 +52,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("id", "0");
     doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
@@ -113,7 +110,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("id", "0");
     doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
@@ -152,7 +149,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("id", "0");
     doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
@@ -206,7 +203,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("id", "0");
     doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
@@ -284,7 +281,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addUniqueAtom("id", "0");
     doc.addLargeText("field", "wizard the the the the the oz");
     w.addDocument(doc);
@@ -343,7 +340,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     final int[] idToNum = new int[numDocs];
     int maxValue = TestUtil.nextInt(random(), 10, 1000000);
     for(int i=0;i<numDocs;i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", i);
       int numTokens = TestUtil.nextInt(random(), 1, 10);
       StringBuilder b = new StringBuilder();

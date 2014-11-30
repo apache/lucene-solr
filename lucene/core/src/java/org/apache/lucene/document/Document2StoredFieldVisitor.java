@@ -18,6 +18,7 @@ package org.apache.lucene.document;
  */
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.util.Date;
 import java.util.HashSet;
@@ -38,7 +39,7 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental */
 
 public class Document2StoredFieldVisitor extends StoredFieldVisitor {
-  private final Document2 doc;
+  private final Document doc;
   private final Set<String> fieldsToAdd;
   private final FieldTypes fieldTypes;
 
@@ -47,14 +48,14 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
    * @param fieldsToAdd Set of fields to load, or <code>null</code> (all fields).
    */
   public Document2StoredFieldVisitor(FieldTypes fieldTypes, Set<String> fieldsToAdd) {
-    doc = new Document2(fieldTypes, false);
+    doc = new Document(fieldTypes, false);
     this.fieldTypes = fieldTypes;
     this.fieldsToAdd = fieldsToAdd;
   }
 
   /** Load only fields named in the provided fields. */
   public Document2StoredFieldVisitor(FieldTypes fieldTypes, String... fields) {
-    doc = new Document2(fieldTypes, false);
+    doc = new Document(fieldTypes, false);
     this.fieldTypes = fieldTypes;
     fieldsToAdd = new HashSet<>(fields.length);
     for(String field : fields) {
@@ -64,7 +65,7 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
 
   /** Load all stored fields. */
   public Document2StoredFieldVisitor(FieldTypes fieldTypes) {
-    doc = new Document2(fieldTypes, false);
+    doc = new Document(fieldTypes, false);
     this.fieldTypes = fieldTypes;
     this.fieldsToAdd = null;
   }
@@ -84,6 +85,8 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
     FieldTypes.FieldType fieldType = getFieldType(fieldInfo.name);
     if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.INET_ADDRESS) {
       doc.addInetAddress(fieldInfo.name, InetAddress.getByAddress(value));
+    } else if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.BIG_INT) {
+      doc.addBigInteger(fieldInfo.name, new BigInteger(value));
     } else {
       doc.addBinary(fieldInfo.name, new BytesRef(value));
     }
@@ -134,12 +137,12 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
 
   /**
    * Retrieve the visited document.
-   * @return {@link Document2} populated with stored fields. Note that only
+   * @return {@link Document} populated with stored fields. Note that only
    *         the stored information in the field instances is valid,
    *         data such as indexing options, term vector options,
    *         etc is not set.
    */
-  public Document2 getDocument() {
+  public Document getDocument() {
     return doc;
   }
 }

@@ -24,9 +24,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.similarities.Similarity;
@@ -69,7 +68,6 @@ class DocumentsWriterPerThread {
 
   static class DocState {
     final DocumentsWriterPerThread docWriter;
-    Analyzer analyzer;
     InfoStream infoStream;
     Similarity similarity;
     int docID;
@@ -85,10 +83,7 @@ class DocumentsWriterPerThread {
     }
 
     public void clear() {
-      // don't hold onto doc nor analyzer, in case it is
-      // largish:
       doc = null;
-      analyzer = null;
     }
   }
 
@@ -225,17 +220,16 @@ class DocumentsWriterPerThread {
     }
   }
 
-  public void updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException {
+  public void updateDocument(Iterable<? extends IndexableField> doc, Term delTerm) throws IOException {
     testPoint("DocumentsWriterPerThread addDocument start");
-    if (doc instanceof Document2) {
-      Document2 doc2 = (Document2) doc;
+    if (doc instanceof Document) {
+      Document doc2 = (Document) doc;
       if (doc2.getFieldTypes() != fieldTypes) {
         throw new IllegalArgumentException("this document wasn't created by this writer (fieldTypes are different)");
       }
     }
     assert deleteQueue != null;
     docState.doc = doc;
-    docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segmentInfo.name);
@@ -269,10 +263,9 @@ class DocumentsWriterPerThread {
     finishDocument(delTerm);
   }
 
-  public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException {
+  public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Term delTerm) throws IOException {
     testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
-    docState.analyzer = analyzer;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segmentInfo.name);
     }
@@ -287,8 +280,8 @@ class DocumentsWriterPerThread {
         // document, so the counter will be "wrong" in that case, but
         // it's very hard to fix (we can't easily distinguish aborting
         // vs non-aborting exceptions):
-        if (doc instanceof Document2) {
-          Document2 doc2 = (Document2) doc;
+        if (doc instanceof Document) {
+          Document doc2 = (Document) doc;
           if (doc2.getFieldTypes() != fieldTypes) {
             throw new IllegalArgumentException("this document wasn't created by this writer (fieldTypes are different)");
           }

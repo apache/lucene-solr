@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader;
@@ -105,12 +104,12 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   // ================================================= Helper Methods ================================================
 
-  protected void addDocument(Document2 doc) throws IOException {
+  protected void addDocument(Document doc) throws IOException {
     indexWriter.addDocument(doc);
   }
 
-  protected void addDocumentsAndCommit(List<Document2> documents) throws IOException {
-    for (Document2 document : documents) {
+  protected void addDocumentsAndCommit(List<Document> documents) throws IOException {
+    for (Document document : documents) {
       indexWriter.addDocument(document);
     }
     commit();
@@ -237,9 +236,9 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   protected static class SearchResult {
 
     public float score;
-    public Document2 document;
+    public Document document;
 
-    public SearchResult(float score, Document2 storedDocument) {
+    public SearchResult(float score, Document storedDocument) {
       this.score = score;
       this.document = storedDocument;
     }

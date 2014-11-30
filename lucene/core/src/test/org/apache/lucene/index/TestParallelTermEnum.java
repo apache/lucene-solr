@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -41,7 +39,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    Document2 doc;
+    Document doc;
     rd1 = newDirectory();
     IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random())));
     FieldTypes fieldTypes = iw1.getFieldTypes();

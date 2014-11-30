@@ -23,7 +23,6 @@ import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_INT;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 

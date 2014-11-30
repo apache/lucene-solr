@@ -21,11 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -58,13 +54,13 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     // Cannot use RIW because this test wants CFS to stay off:
     IndexWriter iw = new IndexWriter(dir, iwConf);
 
-    Document2 validDoc = iw.newDocument();
+    Document validDoc = iw.newDocument();
     validDoc.addInt("id", 0);
     iw.addDocument(validDoc);
     iw.commit();
     
     // make sure that #writeField will fail to trigger an abort
-    Document2 invalidDoc = iw.newDocument();
+    Document invalidDoc = iw.newDocument();
     
     try {
       invalidDoc.addStored("invalid", (String) null);

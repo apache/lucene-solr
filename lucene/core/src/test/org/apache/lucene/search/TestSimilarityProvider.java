@@ -18,9 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -49,7 +47,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random())).setSimilarity(sim);
     RandomIndexWriter iw = new RandomIndexWriter(random(), directory, iwc);
     
-    Document2 doc = iw.newDocument();
+    Document doc = iw.newDocument();
     doc.addLargeText("foo", "quick brown fox");
     doc.addLargeText("bar", "quick brown fox");
     iw.addDocument(doc);

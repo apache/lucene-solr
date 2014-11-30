@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -57,7 +55,7 @@ public class TestSpans extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addLargeText(field, docFields[i]);
       writer.addDocument(doc);
     }
@@ -447,7 +445,7 @@ public class TestSpans extends LuceneTestCase {
 
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addUniqueAtom("id", id);
     doc.addLargeText("text", text);
     writer.addDocument(doc);

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -65,7 +64,7 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testDocument() throws IOException {
     assertTrue(reader.numDocs() == 1);
     assertTrue(reader.maxDoc() >= 1);
-    Document2 result = reader.document(0);
+    Document result = reader.document(0);
     assertTrue(result != null);
     //There are 2 unstored fields on the document that are not preserved across writing
     assertEquals(DocHelper.numFields() - DocHelper.getUnstored(fieldTypes).size() + 1, DocHelper.numFields(result));

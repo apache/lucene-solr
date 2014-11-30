@@ -21,9 +21,7 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -116,7 +114,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     TopDocs td = searcher.search(q, 10);
     ScoreDoc[] sd = td.scoreDocs;
     for (int i = 0; i < sd.length; i++) {
-      Document2 doc = searcher.doc(sd[i].doc);
+      Document doc = searcher.doc(sd[i].doc);
       String id = doc.getString("id");
       assertTrue(qString + "matched doc#" + id + " not expected", expecteds
           .contains(id));
@@ -172,10 +170,10 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     rd = newDirectory();
     IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(analyzer));
     for (int i = 0; i < docsContent.length; i++) {
-      Document doc = new Document();
-      doc.add(newTextField("name", docsContent[i].name, Field.Store.YES));
-      doc.add(newTextField("id", docsContent[i].id, Field.Store.YES));
-      doc.add(newTextField("role", docsContent[i].role, Field.Store.YES));
+      Document doc = w.newDocument();
+      doc.addLargeText("name", docsContent[i].name);
+      doc.addLargeText("id", docsContent[i].id);
+      doc.addLargeText("role", docsContent[i].role);
       w.addDocument(doc);
     }
     w.close();

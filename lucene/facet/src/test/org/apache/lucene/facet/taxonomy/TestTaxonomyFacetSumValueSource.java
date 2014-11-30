@@ -24,12 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -79,28 +74,28 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     // Reused across documents, to add the necessary facet
     // fields:
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("num", 10));
+    Document doc = writer.newDocument();
+    doc.addInt("num", 10);
     doc.add(new FacetField("Author", "Bob"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
-    doc.add(new NumericDocValuesField("num", 20));
+    doc = writer.newDocument();
+    doc.addInt("num", 20);
     doc.add(new FacetField("Author", "Lisa"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
-    doc.add(new NumericDocValuesField("num", 30));
+    doc = writer.newDocument();
+    doc.addInt("num", 30);
     doc.add(new FacetField("Author", "Lisa"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
-    doc.add(new NumericDocValuesField("num", 40));
+    doc = writer.newDocument();
+    doc.addInt("num", 40);
     doc.add(new FacetField("Author", "Susan"));
     writer.addDocument(config.build(taxoWriter, doc));
 
-    doc = new Document();
-    doc.add(new NumericDocValuesField("num", 45));
+    doc = writer.newDocument();
+    doc.addInt("num", 45);
     doc.add(new FacetField("Author", "Frank"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -144,8 +139,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     FacetsConfig config = new FacetsConfig();
 
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("num", 10));
+    Document doc = writer.newDocument();
+    doc.addInt("num", 10);
     doc.add(new FacetField("a", "foo1"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -153,8 +148,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       writer.commit();
     }
 
-    doc = new Document();
-    doc.add(new NumericDocValuesField("num", 20));
+    doc = writer.newDocument();
+    doc.addInt("num", 20);
     doc.add(new FacetField("a", "foo2"));
     doc.add(new FacetField("b", "bar1"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -163,8 +158,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       writer.commit();
     }
 
-    doc = new Document();
-    doc.add(new NumericDocValuesField("num", 30));
+    doc = writer.newDocument();
+    doc.addInt("num", 30);
     doc.add(new FacetField("a", "foo3"));
     doc.add(new FacetField("b", "bar2"));
     doc.add(new FacetField("c", "baz1"));
@@ -208,8 +203,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("num", 10));
+    Document doc = writer.newDocument();
+    doc.addInt("num", 10);
     doc.add(new FacetField("a", "foo1"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -257,9 +252,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
 
     for(int i = atLeast(30); i > 0; --i) {
-      Document doc = new Document();
+      Document doc = iw.newDocument();
       if (random().nextBoolean()) { // don't match all documents
-        doc.add(new StringField("f", "v", Field.Store.NO));
+        doc.addAtom("f", "v");
       }
       doc.add(new FacetField("dim", "a"));
       iw.addDocument(config.build(taxoWriter, doc));
@@ -291,8 +286,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 4; i++) {
-      Document doc = new Document();
-      doc.add(new NumericDocValuesField("price", (i+1)));
+      Document doc = iw.newDocument();
+      doc.addInt("price", (i+1));
       doc.add(new FacetField("a", Integer.toString(i % 2)));
       iw.addDocument(config.build(taxoWriter, doc));
     }
@@ -318,8 +313,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     FacetsConfig config = new FacetsConfig();
     for (int i = 0; i < 4; i++) {
-      Document doc = new Document();
-      doc.add(new NumericDocValuesField("price", (i+1)));
+      Document doc = iw.newDocument();
+      doc.addInt("price", (i+1));
       doc.add(new FacetField("a", Integer.toString(i % 2)));
       iw.addDocument(config.build(taxoWriter, doc));
     }
@@ -372,8 +367,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     //config.setRequireDimCount("a", true);
     
     for (int i = 0; i < 4; i++) {
-      Document doc = new Document();
-      doc.add(new NumericDocValuesField("price", (i+1)));
+      Document doc = iw.newDocument();
+      doc.addInt("price", (i+1));
       doc.add(new FacetField("a", Integer.toString(i % 2), "1"));
       iw.addDocument(config.build(taxoWriter, doc));
     }
@@ -402,8 +397,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     config.setIndexFieldName("b", "$b");
     
     for(int i = atLeast(30); i > 0; --i) {
-      Document doc = new Document();
-      doc.add(new StringField("f", "v", Field.Store.NO));
+      Document doc = iw.newDocument();
+      doc.addAtom("f", "v");
       doc.add(new FacetField("a", "1"));
       doc.add(new FacetField("b", "1"));
       iw.addDocument(config.build(taxoWriter, doc));
@@ -436,10 +431,10 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     int numDims = TestUtil.nextInt(random(), 1, 7);
     List<TestDoc> testDocs = getRandomDocs(tokens, numDocs, numDims);
     for(TestDoc testDoc : testDocs) {
-      Document doc = new Document();
-      doc.add(newStringField("content", testDoc.content, Field.Store.NO));
+      Document doc = w.newDocument();
+      doc.addAtom("content", testDoc.content);
       testDoc.value = random().nextFloat();
-      doc.add(new FloatDocValuesField("value", testDoc.value));
+      doc.addFloat("value", testDoc.value);
       for(int j=0;j<numDims;j++) {
         if (testDoc.dims[j] != null) {
           doc.add(new FacetField("dim" + j, testDoc.dims[j]));

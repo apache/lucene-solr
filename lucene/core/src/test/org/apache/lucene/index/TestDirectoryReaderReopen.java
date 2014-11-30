@@ -29,13 +29,8 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -116,7 +111,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
       int M = 3;
       for (int i=0; i<4; i++) {
         for (int j=0; j<M; j++) {
-          Document2 doc = iwriter.newDocument();
+          Document doc = iwriter.newDocument();
           doc.addAtom("id", i+"_"+j);
           doc.addAtom("id2", i+"_"+j);
           doc.addStored("id3", i+"_"+j);
@@ -124,7 +119,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
           if (i>0) {
             int k = i-1;
             int n = j + k*M;
-            Document2 prevItereationDoc = reader.document(n);
+            Document prevItereationDoc = reader.document(n);
             assertNotNull(prevItereationDoc);
             String id = prevItereationDoc.getString("id");
             assertEquals(k+"_"+j, id);
@@ -458,9 +453,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     r.close();
   }
 
-  public static Document2 createDocument(IndexWriter w, int n, int numFields) {
+  public static Document createDocument(IndexWriter w, int n, int numFields) {
     StringBuilder sb = new StringBuilder();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     sb.append("a");
     sb.append(n);
     doc.addLargeText("field1", sb.toString());
@@ -548,7 +543,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     );
     FieldTypes fieldTypes = writer.getFieldTypes();
     for(int i=0;i<4;i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
       writer.addDocument(doc);
       Map<String,String> data = new HashMap<>();
@@ -599,7 +594,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
     // Can't use RIW because it randomly commits:
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("field", "value");
     w.addDocument(doc);
     w.commit();
@@ -628,7 +623,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.getDefaultCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("id", "id");
     w.addDocument(doc);
     doc = w.newDocument();
@@ -693,7 +688,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     Directory dir = new RAMDirectory();
 
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("id", "id");
     w.addDocument(doc);
     doc = w.newDocument();
@@ -743,7 +738,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     Directory dir = new RAMDirectory();
 
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addAtom("id", "id");
     w.addDocument(doc);
     doc = w.newDocument();

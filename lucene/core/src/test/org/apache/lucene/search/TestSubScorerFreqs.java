@@ -44,7 +44,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     // make sure we have more than one segment occationally
     int num = atLeast(31);
     for (int i = 0; i < num; i++) {
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("f", "a b c d b c d c d d");
       w.addDocument(doc);
 

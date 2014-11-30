@@ -21,12 +21,10 @@ import java.util.HashMap;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -48,22 +46,22 @@ public class TestExpressionValueSource extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
-    Document doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
-    doc.add(newTextField("body", "some contents and more contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 5));
+    Document doc = iw.newDocument();
+    doc.addAtom("id", "1");
+    doc.addLargeText("body", "some contents and more contents");
+    doc.addInt("popularity", 5);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(newStringField("id", "2", Field.Store.YES));
-    doc.add(newTextField("body", "another document with different contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 20));
+    doc = iw.newDocument();
+    doc.addAtom("id", "2");
+    doc.addLargeText("body", "another document with different contents");
+    doc.addInt("popularity", 20);
     iw.addDocument(doc);
     
-    doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
-    doc.add(newTextField("body", "crappy contents", Field.Store.NO));
-    doc.add(new NumericDocValuesField("popularity", 2));
+    doc = iw.newDocument();
+    doc.addAtom("id", "3");
+    doc.addLargeText("body", "crappy contents");
+    doc.addInt("popularity", 2);
     iw.addDocument(doc);
     iw.forceMerge(1);
     

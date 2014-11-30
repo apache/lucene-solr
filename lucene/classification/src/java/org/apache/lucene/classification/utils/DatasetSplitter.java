@@ -21,9 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -72,49 +70,48 @@ public class DatasetSplitter {
     IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(analyzer));
     IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(analyzer));
 
+    for (IndexWriter w : new IndexWriter[] {testWriter, cvWriter, trainingWriter}) {
+      FieldTypes fieldTypes = w.getFieldTypes();
+      for (String fieldName : fieldNames) {
+        fieldTypes.enableTermVectors(fieldName);
+        fieldTypes.enableTermVectorPositions(fieldName);
+        fieldTypes.enableTermVectorOffsets(fieldName);
+      }
+    }
+
     try {
       int size = originalIndex.maxDoc();
 
       IndexSearcher indexSearcher = new IndexSearcher(originalIndex);
       TopDocs topDocs = indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
 
-      // set the type to be indexed, stored, with term vectors
-      FieldType ft = new FieldType(TextField.TYPE_STORED);
-      ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorOffsets(true);
-      ft.setStoreTermVectorPositions(true);
-
       int b = 0;
 
       // iterate over existing documents
       for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+        IndexWriter w;
+        if (b % 2 == 0 && testWriter.maxDoc() < size * testRatio) {
+          w = testWriter;
+        } else if (cvWriter.maxDoc() < size * crossValidationRatio) {
+          w = cvWriter;
+        } else {
+          w = trainingWriter;
+        }
 
         // create a new document for indexing
-        Document doc = new Document();
+        Document doc = w.newDocument();
         if (fieldNames != null && fieldNames.length > 0) {
           for (String fieldName : fieldNames) {
-            doc.add(new Field(fieldName, originalIndex.document(scoreDoc.doc).getField(fieldName).stringValue(), ft));
+            doc.addLargeText(fieldName, originalIndex.document(scoreDoc.doc).getField(fieldName).stringValue());
           }
         } else {
           for (IndexableField storableField : originalIndex.document(scoreDoc.doc).getFields()) {
-            if (storableField.binaryValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.binaryValue(), ft));
-            } else if (storableField.stringValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.stringValue(), ft));
-            } else if (storableField.numericValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.numericValue().toString(), ft));
-            }
+            doc.addLargeText(storableField.name(), storableField.stringValue());
           }
         }
 
         // add it to one of the IDXs
-        if (b % 2 == 0 && testWriter.maxDoc() < size * testRatio) {
-          testWriter.addDocument(doc);
-        } else if (cvWriter.maxDoc() < size * crossValidationRatio) {
-          cvWriter.addDocument(doc);
-        } else {
-          trainingWriter.addDocument(doc);
-        }
+        w.addDocument(doc);
         b++;
       }
     } catch (Exception e) {

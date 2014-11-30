@@ -64,7 +64,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     int updateCount = 0;
     // TODO: sometimes update ids not in order...
     for(int docIter=0;docIter<numUpdates;docIter++) {
-      final Document2 doc = w.newDocument();
+      final Document doc = w.newDocument();
       final String myID = Integer.toString(id);
       if (id == SIZE-1) {
         id = 0;
@@ -201,7 +201,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       try {
         DirectoryReader open = null;
         for (int i = 0; i < num; i++) {
-          Document2 doc = writer.newDocument();// docs.nextDoc();
+          Document doc = writer.newDocument();// docs.nextDoc();
           doc.addAtom("id", "test");
           writer.updateDocument(new Term("id", "test"), doc);
           if (random().nextInt(3) == 0) {

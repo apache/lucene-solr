@@ -23,7 +23,7 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -51,7 +51,7 @@ public class TestWildcardRandom extends LuceneTestCase {
     
     NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ROOT));
     for (int i = 0; i < 1000; i++) {
-      Document2 doc = writer.newDocument();
+      Document doc = writer.newDocument();
       doc.addAtom("field", df.format(i));
       writer.addDocument(doc);
     }

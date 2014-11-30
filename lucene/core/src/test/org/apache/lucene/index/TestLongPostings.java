@@ -23,12 +23,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -119,7 +115,7 @@ public class TestLongPostings extends LuceneTestCase {
     FieldTypes fieldTypes = riw.getFieldTypes();
     fieldTypes.setMultiValued("field");
     for(int idx=0;idx<NUM_DOCS;idx++) {
-      final Document2 doc = riw.newDocument();
+      final Document doc = riw.newDocument();
       String s = isS1.get(idx) ? s1 : s2;
       final int count = TestUtil.nextInt(random(), 1, 4);
       for(int ct=0;ct<count;ct++) {
@@ -319,7 +315,7 @@ public class TestLongPostings extends LuceneTestCase {
       fieldTypes.setIndexOptions("field", options);
       fieldTypes.setMultiValued("field");
       for(int idx=0;idx<NUM_DOCS;idx++) {
-        final Document2 doc = riw.newDocument();
+        final Document doc = riw.newDocument();
         String s = isS1.get(idx) ? s1 : s2;
         final int count = TestUtil.nextInt(random(), 1, 4);
         for(int ct=0;ct<count;ct++) {

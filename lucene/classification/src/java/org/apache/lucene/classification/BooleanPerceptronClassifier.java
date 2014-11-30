@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
@@ -171,7 +171,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     // run the search and use stored field values
     for (ScoreDoc scoreDoc : indexSearcher.search(q,
         Integer.MAX_VALUE).scoreDocs) {
-      Document2 doc = indexSearcher.doc(scoreDoc.doc);
+      Document doc = indexSearcher.doc(scoreDoc.doc);
 
       // assign class to the doc
       ClassificationResult<Boolean> classificationResult = assignClass(doc

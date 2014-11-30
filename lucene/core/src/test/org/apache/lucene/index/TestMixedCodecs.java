@@ -22,9 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,7 +58,7 @@ public class TestMixedCodecs extends LuceneTestCase {
         w = new RandomIndexWriter(random(), dir, iwc);
         docsLeftInThisSegment = TestUtil.nextInt(random(), 10, 100);
       }
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addUniqueInt("id", docUpto);
       w.addDocument(doc);
       docUpto++;

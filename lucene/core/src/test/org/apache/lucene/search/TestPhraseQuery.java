@@ -64,7 +64,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("repeated");
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "one two three four five");
     doc.addLargeText("repeated", "this is a repeated field - first part");
     doc.addLargeText("repeated", "second part of a repeated field");
@@ -217,7 +217,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Analyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig(stopAnalyzer));
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "the stop words are here");
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
@@ -241,7 +241,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("source", "marketing info");
     writer.addDocument(doc);
     
@@ -329,15 +329,15 @@ public class TestPhraseQuery extends LuceneTestCase {
           .setMergePolicy(newLogMergePolicy())
           .setSimilarity(new DefaultSimilarity()));
 
-    Document2 doc = writer.newDocument();
+    Document doc = writer.newDocument();
     doc.addLargeText("field", "foo firstname lastname foo");
     writer.addDocument(doc);
     
-    Document2 doc2 = writer.newDocument();
+    Document doc2 = writer.newDocument();
     doc2.addLargeText("field", "foo firstname zzz lastname foo");
     writer.addDocument(doc2);
     
-    Document2 doc3 = writer.newDocument();
+    Document doc3 = writer.newDocument();
     doc3.addLargeText("field", "foo firstname zzz yyy lastname foo");
     writer.addDocument(doc3);
     
@@ -637,7 +637,7 @@ public class TestPhraseQuery extends LuceneTestCase {
       }
       docs.add(doc);
 
-      Document2 d = w.newDocument();
+      Document d = w.newDocument();
       d.addLargeText("f", sb.toString());
       w.addDocument(d);
     }

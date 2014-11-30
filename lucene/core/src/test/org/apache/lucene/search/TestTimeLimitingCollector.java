@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -117,7 +117,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   }
 
   private void add(String value, RandomIndexWriter iw) throws IOException {
-    Document2 d = iw.newDocument();
+    Document d = iw.newDocument();
     d.addLargeText(FIELD_NAME, value);
     iw.addDocument(d);
   }

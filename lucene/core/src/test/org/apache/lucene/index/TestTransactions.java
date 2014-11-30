@@ -20,12 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -158,7 +154,7 @@ public class TestTransactions extends LuceneTestCase {
       fieldTypes.enableTermVectors("id");
 
       for(int j=0; j<10; j++) {
-        Document2 d = writer.newDocument();
+        Document d = writer.newDocument();
         int n = random().nextInt();
         d.addUniqueInt("id", nextID++);
         d.addLargeText("contents", English.intToEnglish(n));
@@ -217,7 +213,7 @@ public class TestTransactions extends LuceneTestCase {
   public void initIndex(Directory dir) throws Throwable {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     for(int j=0; j<7; j++) {
-      Document2 d = writer.newDocument();
+      Document d = writer.newDocument();
       int n = random().nextInt();
       d.addLargeText("contents", English.intToEnglish(n));
       writer.addDocument(d);

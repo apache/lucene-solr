@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.document.Document2;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.IndexReader;
@@ -189,7 +189,7 @@ public class IndexSearcher {
    * Sugar for <code>.getIndexReader().document2(docID)</code> 
    * @see IndexReader#document2(int) 
    */
-  public Document2 doc(int docID) throws IOException {
+  public Document doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
@@ -205,7 +205,7 @@ public class IndexSearcher {
    * Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code>
    * @see IndexReader#document(int, Set) 
    */
-  public Document2 doc(int docID, Set<String> fieldsToLoad) throws IOException {
+  public Document doc(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 

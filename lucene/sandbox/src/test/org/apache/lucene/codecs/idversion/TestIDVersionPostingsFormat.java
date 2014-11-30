@@ -29,17 +29,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.codecs.idversion.StringAndPayloadField.SingleTokenWithPayloadTokenStream;
-import org.apache.lucene.document.Document2;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsEnum;
@@ -75,7 +70,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("id0", 100));
     w.addDocument(doc);
     doc = w.newDocument();
@@ -244,7 +239,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  " + idValue + " -> " + version);
       }
-      Document2 doc = w.newDocument();
+      Document doc = w.newDocument();
       doc.addLargeText("id", makeIDTokenStream(idValue, version));
       w.addDocument(doc);
       idsList.add(idValue);
@@ -362,6 +357,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     BytesRef payload = new BytesRef(8);
     payload.length = 8;
     IDVersionPostingsFormat.longToBytes(version, payload);
+    return makeIDTokenStream(idValue, payload);
+  }
+
+  private static TokenStream makeIDTokenStream(String idValue, BytesRef payload) {
     SingleTokenWithPayloadTokenStream ts = new SingleTokenWithPayloadTokenStream();
     ts.setValue(idValue, payload);
     return ts;
@@ -375,7 +374,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     doc = w.newDocument();
@@ -409,7 +408,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     w.commit();
@@ -438,7 +437,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     doc = w.newDocument();
@@ -458,7 +457,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     w.deleteDocuments(new Term("id", "id"));
@@ -489,8 +488,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
-    doc.add(newTextField("id", "id", Field.Store.NO));
+    Document doc = w.newDocument();
+    doc.addLargeText("id", "id");
     try {
       w.addDocument(doc);
       w.commit();
@@ -511,8 +510,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
-    doc.add(newStringField("id", "id", Field.Store.NO));
+    Document doc = w.newDocument();
+    doc.addAtom("id", "id");
     try {
       w.addDocument(doc);
       w.commit();
@@ -533,8 +532,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
-    doc.add(new StringAndPayloadField("id", "id", new BytesRef("foo")));
+    Document doc = w.newDocument();
+    doc.addLargeText("id", makeIDTokenStream("id", new BytesRef("foo")));
     try {
       w.addDocument(doc);
       w.commit();
@@ -555,7 +554,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("id", 17));
     w.addDocument(doc);
     w.commit();
@@ -579,7 +578,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
     fieldTypes.enableTermVectors("id");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("foo", 17));
     try {
       w.addDocument(doc);
@@ -602,7 +601,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
     fieldTypes.setMultiValued("id");
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     doc.addLargeText("id", makeIDTokenStream("id", 17));
     doc.addLargeText("id", makeIDTokenStream("id", 17));
     try {
@@ -624,9 +623,9 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
-    Document2 doc = w.newDocument();
+    Document doc = w.newDocument();
     // -1
-    doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
+    doc.addLargeText("id", makeIDTokenStream("id", new BytesRef(new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
     try {
       w.addDocument(doc);
       w.commit();
@@ -637,7 +636,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
     doc = w.newDocument();
     // Long.MAX_VALUE:
-    doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
+    doc.addLargeText("id", makeIDTokenStream("id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
     try {
       w.addDocument(doc);
       w.commit();
@@ -807,7 +806,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
                       System.out.println(Thread.currentThread() + ": now fail!");
                     }
                     assertTrue(passes);
-                    Document2 doc = w.newDocument();
+                    Document doc = w.newDocument();
                     doc.addLargeText("id", makeIDTokenStream(id, newVersion));
                     w.updateDocument(new Term("id", id), doc);
                     truth.put(id, newVersion);
