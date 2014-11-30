@@ -65,7 +65,7 @@ final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       success = true;
     } finally {
       if (!success) {
-        abort();
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }
@@ -256,16 +256,6 @@ final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     } else {
       tvf.writeVInt(delta);
     }
-  }
-
-  @Override
-  public void abort() {
-    try {
-      close();
-    } catch (Throwable ignored) {}
-    IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_INDEX_EXTENSION),
-        IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_DOCUMENTS_EXTENSION),
-        IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_FIELDS_EXTENSION));
   }
   
   @Override

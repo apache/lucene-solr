@@ -84,6 +84,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       iw.commit();
     }
     finally {
+      // next event will cause IW to delete the old files: we use prepareCommit just as example
+      iw.prepareCommit();
       int counter = 0;
       for (String fileName : dir.listAll()) {
         if (fileName.endsWith(".fdt") || fileName.endsWith(".fdx")) {
@@ -92,7 +94,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       }
       // Only one .fdt and one .fdx files must have been found
       assertEquals(2, counter);
-      iw.close();
+      iw.rollback();
       dir.close();
     }
   }

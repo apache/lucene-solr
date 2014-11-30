@@ -61,10 +61,6 @@ public abstract class StoredFieldsWriter implements Closeable {
 
   /** Writes a single stored field. */
   public abstract void writeField(FieldInfo info, IndexableField field) throws IOException;
-
-  /** Aborts writing entirely, implementation should remove
-   *  any partially-written files, etc. */
-  public abstract void abort();
   
   /** Called before {@link #close()}, passing in the number
    *  of documents that were written. Note that this is 

@@ -115,8 +115,7 @@ final class Lucene41StoredFieldsWriter extends StoredFieldsWriter {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(indexStream);
-        abort();
+        IOUtils.closeWhileHandlingException(fieldsStream, indexStream, indexWriter);
       }
     }
   }
@@ -288,14 +287,6 @@ final class Lucene41StoredFieldsWriter extends StoredFieldsWriter {
         throw new AssertionError("Cannot get here");
       }
     }
-  }
-
-  @Override
-  public void abort() {
-    IOUtils.closeWhileHandlingException(this);
-    IOUtils.deleteFilesIgnoringExceptions(directory,
-        IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION),
-        IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION));
   }
 
   @Override

@@ -65,7 +65,7 @@ final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       success = true;
     } finally {
       if (!success) {
-        abort();
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }
@@ -96,16 +96,6 @@ final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     } finally {
       fieldsStream = indexStream = null;
     }
-  }
-
-  @Override
-  public void abort() {
-    try {
-      close();
-    } catch (Throwable ignored) {}
-    IOUtils.deleteFilesIgnoringExceptions(directory,
-        IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION),
-        IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
   }
 
   @Override

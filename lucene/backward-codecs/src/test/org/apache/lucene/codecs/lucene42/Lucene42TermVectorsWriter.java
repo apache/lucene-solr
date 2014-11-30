@@ -238,8 +238,7 @@ final class Lucene42TermVectorsWriter extends TermVectorsWriter {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(indexStream);
-        abort();
+        IOUtils.closeWhileHandlingException(vectorsStream, indexStream, indexWriter);
       }
     }
   }
@@ -252,14 +251,6 @@ final class Lucene42TermVectorsWriter extends TermVectorsWriter {
       vectorsStream = null;
       indexWriter = null;
     }
-  }
-
-  @Override
-  public void abort() {
-    IOUtils.closeWhileHandlingException(this);
-    IOUtils.deleteFilesIgnoringExceptions(directory,
-        IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION),
-        IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION));
   }
 
   @Override
