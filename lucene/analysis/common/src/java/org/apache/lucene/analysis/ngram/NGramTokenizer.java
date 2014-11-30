@@ -33,7 +33,7 @@ import org.apache.lucene.util.AttributeFactory;
  * that characters between startOffset and endOffset in the original stream are
  * the same as the term chars.
  * <p>For example, "abcde" would be tokenized as (minGram=2, maxGram=3):
- * <table>
+ * <table summary="ngram tokens example">
  * <tr><th>Term</th><td>ab</td><td>abc</td><td>bc</td><td>bcd</td><td>cd</td><td>cde</td><td>de</td></tr>
  * <tr><th>Position increment</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
  * <tr><th>Position length</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>

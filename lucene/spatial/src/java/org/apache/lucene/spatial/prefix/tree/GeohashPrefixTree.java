@@ -65,7 +65,7 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
       throw new IllegalArgumentException("maxLen must be [1-"+MAXP+"] but got "+ maxLevels);
   }
 
-  /** Any more than this and there's no point (double lat & lon are the same). */
+  /** Any more than this and there's no point (double lat and lon are the same). */
   public static int getMaxLevelsPossible() {
     return GeohashUtils.MAX_PRECISION;
   }

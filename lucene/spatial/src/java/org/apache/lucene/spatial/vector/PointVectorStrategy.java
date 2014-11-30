@@ -46,7 +46,9 @@ import com.spatial4j.core.shape.Shape;
  * Simple {@link SpatialStrategy} which represents Points in two numeric {@link
  * DoubleField}s.  The Strategy's best feature is decent distance sort.
  *
- * <h4>Characteristics:</h4>
+ * <p>
+ * <b>Characteristics:</b>
+ * <p>
  * <ul>
  * <li>Only indexes points; just one per field value.</li>
  * <li>Can query by a rectangle or circle.</li>
@@ -58,9 +60,11 @@ import com.spatial4j.core.shape.Shape;
  * searching with a Circle.</li>
  * </ul>
  *
- * <h4>Implementation:</h4>
+ * <p>
+ * <b>Implementation:</b>
+ * <p>
  * This is a simple Strategy.  Search works with {@link NumericRangeQuery}s on
- * an x & y pair of fields.  A Circle query does the same bbox query but adds a
+ * an x and y pair of fields.  A Circle query does the same bbox query but adds a
  * ValueSource filter on
  * {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
  * <p />

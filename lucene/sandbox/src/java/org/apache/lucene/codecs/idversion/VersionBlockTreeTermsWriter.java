@@ -85,7 +85,7 @@ import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * This is just like {@link BlockTreeTermsWriter}, except it also stores a version per term, and adds a method to its TermsEnum
- * implementation to seekExact only if the version is >= the specified version.  The version is added to the terms index to avoid seeking if
+ * implementation to seekExact only if the version is &gt;= the specified version.  The version is added to the terms index to avoid seeking if
  * no term in the block has a high enough version.  The term blocks file is .tiv and the terms index extension is .tipv.
  *
  * @lucene.experimental

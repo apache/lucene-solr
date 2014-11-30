@@ -293,7 +293,7 @@ public class BlockGroupingCollector extends SimpleCollector {
   // in the UI?
 
   /** Returns the grouped results.  Returns null if the
-   *  number of groups collected is <= groupOffset.
+   *  number of groups collected is &lt;= groupOffset.
    *
    *  <p><b>NOTE</b>: This collector is unable to compute
    *  the groupValue per group so it will always be null.

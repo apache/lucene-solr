@@ -60,6 +60,10 @@
           description="Runs pitests (core, modules and back-compat)"
   />
 
+  <target name="beast">
+    <fail message="The Beast only works inside of individual modules"/>
+  </target>
+
   <target name="compile-core" depends="compile-lucene-core"/>
 
   <!-- lucene/test-framework is excluded from compilation -->

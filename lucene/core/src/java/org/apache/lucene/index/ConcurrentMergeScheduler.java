@@ -162,7 +162,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   };
 
   /**
-   * Called whenever the running merges have changed, to pause & unpause
+   * Called whenever the running merges have changed, to pause and unpause
    * threads. This method sorts the merge threads by their merge size in
    * descending order and then pauses/unpauses threads from first to last --
    * that way, smaller merges are guaranteed to run before larger ones.

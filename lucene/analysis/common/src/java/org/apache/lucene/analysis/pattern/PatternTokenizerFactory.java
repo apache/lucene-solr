@@ -38,7 +38,7 @@ import org.apache.lucene.util.AttributeFactory;
  * {@link String#split(java.lang.String)}
  * </p>
  * <p>
- * Using group >= 0 selects the matching group as the token.  For example, if you have:<br/>
+ * Using group &gt;= 0 selects the matching group as the token.  For example, if you have:<br/>
  * <pre>
  *  pattern = \'([^\']+)\'
  *  group = 0

@@ -393,7 +393,7 @@ public class AnalyzerFactoryTask extends PerfTask {
   /**
    * This method looks up a class with its fully qualified name (FQN), or a short-name
    * class-simplename, or with a package suffix, assuming "org.apache.lucene.analysis."
-   * as the package prefix (e.g. "standard.ClassicTokenizerFactory" ->
+   * as the package prefix (e.g. "standard.ClassicTokenizerFactory" -&gt;
    * "org.apache.lucene.analysis.standard.ClassicTokenizerFactory").
    *
    * If className contains a period, the class is first looked up as-is, assuming that it

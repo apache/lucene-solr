@@ -20,6 +20,7 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1282,7 +1283,7 @@ public class FieldTypes {
 
   /** Decodes String previously created by bytesToString. */
   private static byte[] stringToBytes(String s) {
-    byte[] bytesIn = s.getBytes(IOUtils.CHARSET_UTF_8);
+    byte[] bytesIn = s.getBytes(StandardCharsets.UTF_8);
     byte[] bytesOut = new byte[bytesIn.length*7/8];
     int carry = 0;
     int carryBits = 0;
@@ -1326,7 +1327,7 @@ public class FieldTypes {
     }
     assert outUpto == bytesOut.length: "outUpto=" + outUpto + " bytesOut.length=" + bytesOut.length + " bytesIn.length=" + bytesIn.length + " carryBits=" + carryBits;
 
-    return new String(bytesOut, IOUtils.CHARSET_UTF_8);
+    return new String(bytesOut, StandardCharsets.UTF_8);
   }
 
   public synchronized void setPostingsFormat(String fieldName, String postingsFormat) {

@@ -84,7 +84,7 @@ public class WeightedSpanTermExtractor {
   }
 
   /**
-   * Fills a <code>Map</code> with <@link WeightedSpanTerm>s using the terms from the supplied <code>Query</code>.
+   * Fills a <code>Map</code> with {@link WeightedSpanTerm}s using the terms from the supplied <code>Query</code>.
    * 
    * @param query
    *          Query to extract Terms from
@@ -237,7 +237,7 @@ public class WeightedSpanTermExtractor {
   }
 
   /**
-   * Fills a <code>Map</code> with <@link WeightedSpanTerm>s using the terms from the supplied <code>SpanQuery</code>.
+   * Fills a <code>Map</code> with {@link WeightedSpanTerm}s using the terms from the supplied <code>SpanQuery</code>.
    * 
    * @param terms
    *          Map to place created WeightedSpanTerms in
@@ -325,7 +325,7 @@ public class WeightedSpanTermExtractor {
   }
 
   /**
-   * Fills a <code>Map</code> with <@link WeightedSpanTerm>s using the terms from the supplied <code>Query</code>.
+   * Fills a <code>Map</code> with {@link WeightedSpanTerm}s using the terms from the supplied <code>Query</code>.
    * 
    * @param terms
    *          Map to place created WeightedSpanTerms in

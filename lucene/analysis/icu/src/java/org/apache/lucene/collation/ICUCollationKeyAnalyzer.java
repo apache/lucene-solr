@@ -78,14 +78,6 @@ public final class ICUCollationKeyAnalyzer extends Analyzer {
     this.factory = new ICUCollationAttributeFactory(collator);
   }
 
-  /**
-   * @deprecated Use {@link #ICUCollationKeyAnalyzer(Collator)}
-   */
-  @Deprecated
-  public ICUCollationKeyAnalyzer(Version matchVersion, Collator collator) {
-    this.factory = new ICUCollationAttributeFactory(collator);
-  }
-
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {

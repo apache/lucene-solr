@@ -949,7 +949,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 2000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1034,7 +1034,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 2000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
     int maxID = 0;
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
@@ -1210,9 +1210,10 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads
-    int numDocs = atLeast(3000);
+    int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
     int maxID = 0;
     int refreshEveryNumDocs = 100;
+    int commitCloseNumDocs = 1000;
     for(int i=0;i<numDocs;i++) {
       if (reindexer == null) {
         reindexer = getReindexer(root);
@@ -1259,16 +1260,18 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         reindexer.w.deleteDocuments(new Term("id", ""+random().nextInt(i)));
       }
 
-      if (random().nextInt(1000) == 17) {
+      if (random().nextInt(commitCloseNumDocs) == 17) {
         if (DEBUG) System.out.println("TEST: commit @ " + (i+1) + " docs");
         reindexer.commit();
+        commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
 
       // Sometimes close & reopen writer/manager, to confirm the parallel segments persist:
-      if (random().nextInt(1000) == 17) {
+      if (random().nextInt(commitCloseNumDocs) == 17) {
         if (DEBUG) System.out.println("TEST: close writer @ " + (i+1) + " docs");
         reindexer.close();
         reindexer = null;
+        commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
     }
     if (reindexer != null) {

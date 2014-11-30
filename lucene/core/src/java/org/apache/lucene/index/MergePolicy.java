@@ -420,7 +420,7 @@ public abstract class MergePolicy {
 
   /**
    * Determine what set of merge operations is necessary in
-   * order to merge to <= the specified segment count. {@link IndexWriter} calls this when its
+   * order to merge to {@code <=} the specified segment count. {@link IndexWriter} calls this when its
    * {@link IndexWriter#forceMerge} method is called. This call is always
    * synchronized on the {@link IndexWriter} instance so only one thread at a
    * time will call this method.

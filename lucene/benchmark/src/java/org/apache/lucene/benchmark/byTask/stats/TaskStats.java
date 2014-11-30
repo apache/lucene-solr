@@ -35,7 +35,7 @@ public class TaskStats implements Cloneable {
   /** task start time */
   private long start;
   
-  /** task elapsed time.  elapsed >= 0 indicates run completion! */
+  /** task elapsed time.  elapsed &gt;= 0 indicates run completion! */
   private long elapsed = -1;
   
   /** max tot mem during task */

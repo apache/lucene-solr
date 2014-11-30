@@ -79,7 +79,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
 
       final TokenStream tokenStream = TokenSources
           .getTokenStream(indexReader.getTermVector(
-              0, FIELD), false);
+              0, FIELD));
       assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
           TEXT), highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
@@ -145,7 +145,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         assertEquals(0, position);
         final TokenStream tokenStream = TokenSources.getTokenStream(
             indexReader.getTermVector(position,
-                FIELD), false);
+                FIELD));
         assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
             TEXT), highlighter.getBestFragment(tokenStream, TEXT));
       }
@@ -186,7 +186,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
           new QueryScorer(phraseQuery));
       final TokenStream tokenStream = TokenSources
           .getTokenStream(indexReader.getTermVector(
-              0, FIELD), false);
+              0, FIELD));
       assertEquals(
           highlighter.getBestFragment(new TokenStreamSparse(), TEXT),
           highlighter.getBestFragment(tokenStream, TEXT));
@@ -226,7 +226,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
           new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
           new QueryScorer(phraseQuery));
       final TokenStream tokenStream = TokenSources.getTokenStream(
-          indexReader.getTermVector(0, FIELD), true);
+          indexReader.getTermVector(0, FIELD));
       assertEquals("the fox <B>did</B> not <B>jump</B>", highlighter
           .getBestFragment(tokenStream, TEXT));
     } finally {
@@ -266,7 +266,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
           new QueryScorer(phraseQuery));
       final TokenStream tokenStream = TokenSources
           .getTokenStream(indexReader.getTermVector(
-              0, FIELD), false);
+              0, FIELD));
       assertEquals(
           highlighter.getBestFragment(new TokenStreamSparse(), TEXT),
           highlighter.getBestFragment(tokenStream, TEXT));

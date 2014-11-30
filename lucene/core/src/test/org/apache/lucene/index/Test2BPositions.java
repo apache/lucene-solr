@@ -31,7 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Test indexes ~82M docs with 52 positions each, so you get > Integer.MAX_VALUE positions
+ * Test indexes ~82M docs with 52 positions each, so you get &gt; Integer.MAX_VALUE positions
  * @lucene.experimental
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })

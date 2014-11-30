@@ -96,8 +96,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
     : AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS;
 
     try {
-      return new AnalyzingInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-                                         FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
+      return new AnalyzingInfixSuggester(FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
                                          queryAnalyzer, minPrefixChars, true) {
         @Override
         public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {

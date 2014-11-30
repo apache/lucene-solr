@@ -81,10 +81,10 @@ class Lucene50DocValuesConsumer extends DocValuesConsumer implements Closeable {
   public static final int BINARY_PREFIX_COMPRESSED = 2;
 
   /** Standard storage for sorted set values with 1 level of indirection:
-   *  docId -> address -> ord. */
+   *  {@code docId -> address -> ord}. */
   public static final int SORTED_WITH_ADDRESSES = 0;
   /** Single-valued sorted set values, encoded as sorted values, so no level
-   *  of indirection: docId -> ord. */
+   *  of indirection: {@code docId -> ord}. */
   public static final int SORTED_SINGLE_VALUED = 1;
   
   /** placeholder for missing offset that means there are no missing values */

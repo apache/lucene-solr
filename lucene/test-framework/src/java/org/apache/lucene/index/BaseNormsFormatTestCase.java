@@ -339,7 +339,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   
   // TODO: test thread safety (e.g. across different fields) explicitly here
 
-  /** 
+  /*
    * LUCENE-6006: Tests undead norms.
    *                                 .....            
    *                             C C  /            

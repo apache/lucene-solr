@@ -43,7 +43,8 @@ import java.util.Map;
  * <p>
  * Any errors in query syntax will be ignored and the parser will attempt
  * to decipher what it can; however, this may mean odd or unexpected results.
- * <h4>Query Operators</h4>
+ * <p>
+ * <b>Query Operators</b>
  * <ul>
  *  <li>'{@code +}' specifies {@code AND} operation: <tt>token1+token2</tt>
  *  <li>'{@code |}' specifies {@code OR} operation: <tt>token1|token2</tt>
@@ -63,7 +64,7 @@ import java.util.Map;
  * For example, the following will evaluate {@code token1 OR token2} first,
  * then {@code AND} with {@code token3}:
  * <blockquote>token1 | token2 + token3</blockquote>
- * <h4>Escaping</h4>
+ * <b>Escaping</b>
  * <p>
  * An individual term may contain any possible character with certain characters
  * requiring escaping using a '{@code \}'.  The following characters will need to be escaped in

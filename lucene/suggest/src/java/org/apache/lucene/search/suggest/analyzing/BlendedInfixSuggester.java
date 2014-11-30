@@ -41,7 +41,6 @@ import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
 
 // TODO:
 // - allow to use the search score
@@ -97,15 +96,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    * directory, if it exists.
    */
   public BlendedInfixSuggester(Directory dir, Analyzer analyzer) throws IOException {
-    this(analyzer.getVersion(), dir, analyzer);
-  }
-
-  /**
-   * @deprecated Use {@link #BlendedInfixSuggester(Directory, Analyzer)}
-   */
-  @Deprecated
-  public BlendedInfixSuggester(Version matchVersion, Directory dir, Analyzer analyzer) throws IOException {
-    super(matchVersion, dir, analyzer);
+    super(dir, analyzer);
     this.blenderType = BlenderType.POSITION_LINEAR;
     this.numFactor = DEFAULT_NUM_FACTOR;
   }
@@ -122,16 +113,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    */
   public BlendedInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer,
                                int minPrefixChars, BlenderType blenderType, int numFactor, boolean commitOnBuild) throws IOException {
-    this(indexAnalyzer.getVersion(), dir, indexAnalyzer, queryAnalyzer, minPrefixChars, blenderType, numFactor, commitOnBuild);
-  }
-
-  /**
-   * @deprecated Use {@link #BlendedInfixSuggester(Directory, Analyzer, Analyzer, int, BlendedInfixSuggester.BlenderType, int, boolean)}
-   */
-  @Deprecated
-  public BlendedInfixSuggester(Version matchVersion, Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer,
-                               int minPrefixChars, BlenderType blenderType, int numFactor, boolean commitOnBuild) throws IOException {
-    super(matchVersion, dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild);
+    super(dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild);
     this.blenderType = blenderType;
     this.numFactor = numFactor;
   }

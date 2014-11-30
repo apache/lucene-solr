@@ -161,12 +161,12 @@ public class GermanStemmer
     /**
      * Do some substitutions for the term to reduce overstemming:
      *
-     * - Substitute Umlauts with their corresponding vowel: äöü -> aou,
+     * - Substitute Umlauts with their corresponding vowel:{@code äöü -> aou},
      *   "ß" is substituted by "ss"
      * - Substitute a second char of a pair of equal characters with
-     *   an asterisk: ?? -> ?*
+     *   an asterisk: {@code ?? -> ?*}
      * - Substitute some common character combinations with a token:
-     *   sch/ch/ei/ie/ig/st -> $/§/%/&/#/!
+     *   {@code sch/ch/ei/ie/ig/st -> $/§/%/&/#/!}
      */
     private void substitute( StringBuilder buffer )
     {

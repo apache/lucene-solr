@@ -22,7 +22,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * TaxonomyWriterCache is a relatively simple interface for a cache of
- * category->ordinal mappings, used in TaxonomyWriter implementations (such as
+ * category-&gt;ordinal mappings, used in TaxonomyWriter implementations (such as
  * {@link DirectoryTaxonomyWriter}).
  * <p>
  * It basically has put() methods for adding a mapping, and get() for looking a

@@ -74,9 +74,9 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
- * 
- * <h4>Overview</h4>
- * 
+ * <p>
+ * <b>Overview</b>
+ * <p>
  * This class is a replacement/substitute for a large subset of
  * {@link RAMDirectory} functionality. It is designed to
  * enable maximum efficiency for on-the-fly matchmaking combining structured and 
@@ -121,9 +121,9 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
  * <a target="_blank" 
  * href="http://www.tbray.org/ongoing/When/200x/2003/07/30/OnSearchTOC">On Search, the Series</a>.
  * 
- * 
- * <h4>Example Usage</h4> 
- * 
+ * <p>
+ * <b>Example Usage</b> 
+ * <p>
  * <pre class="prettyprint">
  * Analyzer analyzer = new SimpleAnalyzer(version);
  * MemoryIndex index = new MemoryIndex();
@@ -139,29 +139,29 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
  * System.out.println("indexData=" + index.toString());
  * </pre>
  * 
- * 
- * <h4>Example XQuery Usage</h4> 
+ * <p>
+ * <b>Example XQuery Usage</b> 
  * 
  * <pre class="prettyprint">
  * (: An XQuery that finds all books authored by James that have something to do with "salmon fishing manuals", sorted by relevance :)
  * declare namespace lucene = "java:nux.xom.pool.FullTextUtil";
  * declare variable $query := "+salmon~ +fish* manual~"; (: any arbitrary Lucene query can go here :)
  * 
- * for $book in /books/book[author="James" and lucene:match(abstract, $query) > 0.0]
+ * for $book in /books/book[author="James" and lucene:match(abstract, $query) &gt; 0.0]
  * let $score := lucene:match($book/abstract, $query)
  * order by $score descending
  * return $book
  * </pre>
  * 
- * 
- * <h4>Thread safety guarantees</h4>
- *
+ * <p>
+ * <b>Thread safety guarantees</b>
+ * <p>
  * MemoryIndex is not normally thread-safe for adds or queries.  However, queries
  * are thread-safe after {@code freeze()} has been called.
  *
- *
- * <h4>Performance Notes</h4>
- * 
+ * <p>
+ * <b>Performance Notes</b>
+ * <p>
  * Internally there's a new data structure geared towards efficient indexing 
  * and searching, plus the necessary support code to seamlessly plug into the Lucene 
  * framework.
@@ -189,7 +189,7 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
  */
 public class MemoryIndex {
 
-  /** info for each field: Map<String fieldName, Info field> */
+  /** info for each field: Map&lt;String fieldName, Info field&gt; */
   private final HashMap<String,Info> fields = new HashMap<>();
   
   /** fields sorted ascending by fieldName; lazily computed on demand */
@@ -689,8 +689,8 @@ public class MemoryIndex {
   private static final class Info {
     
     /**
-     * Term strings and their positions for this field: Map <String
-     * termText, ArrayIntList positions>
+     * Term strings and their positions for this field: Map &lt;String
+     * termText, ArrayIntList positions&gt;
      */
     private final BytesRefHash terms; 
     

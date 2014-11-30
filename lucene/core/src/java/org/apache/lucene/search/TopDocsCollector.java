@@ -94,8 +94,8 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends SimpleCollect
   }
 
   /**
-   * Returns the documents in the rage [start .. pq.size()) that were collected
-   * by this collector. Note that if start >= pq.size(), an empty TopDocs is
+   * Returns the documents in the range [start .. pq.size()) that were collected
+   * by this collector. Note that if {@code start >= pq.size()}, an empty TopDocs is
    * returned.<br>
    * This method is convenient to call if the application always asks for the
    * last results, starting from the last 'page'.<br>
@@ -113,8 +113,8 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends SimpleCollect
   }
 
   /**
-   * Returns the documents in the rage [start .. start+howMany) that were
-   * collected by this collector. Note that if start >= pq.size(), an empty
+   * Returns the documents in the range [start .. start+howMany) that were
+   * collected by this collector. Note that if {@code start >= pq.size()}, an empty
    * TopDocs is returned, and if pq.size() - start &lt; howMany, then only the
    * available documents in [start .. pq.size()) are returned.<br>
    * This method is useful to call in case pagination of search results is

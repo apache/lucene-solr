@@ -26,7 +26,7 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 
-/** The base for the original two SPT's: Geohash & Quad. Don't subclass this for new SPTs.
+/** The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
  * @lucene.internal */
 //public for RPT pruneLeafyBranches code
 public abstract class LegacyCell implements Cell {
@@ -170,7 +170,7 @@ public abstract class LegacyCell implements Cell {
   protected abstract Collection<Cell> getSubCells();
 
   /**
-   * {@link #getSubCells()}.size() -- usually a constant. Should be >=2
+   * {@link #getSubCells()}.size() -- usually a constant. Should be &gt;=2
    */
   public abstract int getSubCellsSize();
 

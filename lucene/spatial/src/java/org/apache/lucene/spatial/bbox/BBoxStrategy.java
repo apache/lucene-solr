@@ -47,8 +47,9 @@ import com.spatial4j.core.shape.Shape;
  * coordinates in numeric fields. It supports all {@link SpatialOperation}s and
  * has a custom overlap relevancy. It is based on GeoPortal's <a
  * href="http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialClauseAdapter.java">SpatialClauseAdapter</a>.
- *
- * <h4>Characteristics:</h4>
+ * <p>
+ * <b>Characteristics:</b>
+ * <p>
  * <ul>
  * <li>Only indexes Rectangles; just one per field value. Other shapes can be provided
  * and the bounding box will be used.</li>
@@ -56,8 +57,9 @@ import com.spatial4j.core.shape.Shape;
  * <li>Supports most {@link SpatialOperation}s but not Overlaps.</li>
  * <li>Uses the DocValues API for any sorting / relevancy.</li>
  * </ul>
- *
- * <h4>Implementation:</h4>
+ * <p>
+ * <b>Implementation:</b>
+ * <p>
  * This uses 4 double fields for minX, maxX, minY, maxY
  * and a boolean to mark a dateline cross. Depending on the particular {@link
  * SpatialOperation}s, there are a variety of {@link NumericRangeQuery}s to be

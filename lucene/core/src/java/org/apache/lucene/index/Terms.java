@@ -49,7 +49,7 @@ public abstract class Terms {
    *  documents that are accepted by the provided {@link
    *  CompiledAutomaton}.  If the <code>startTerm</code> is
    *  provided then the returned enum will only return terms
-   *  > <code>startTerm</code>, but you still must call
+   *  {@code > startTerm}, but you still must call
    *  next() first to get to the first term.  Note that the
    *  provided <code>startTerm</code> must be accepted by
    *  the automaton.

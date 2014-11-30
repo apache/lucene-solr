@@ -75,7 +75,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.Version;
 
 // TODO:
 //   - a PostingsFormat that stores super-high-freq terms as
@@ -121,7 +120,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   protected final Analyzer queryAnalyzer;
   /** Analyzer used at index time */
   protected final Analyzer indexAnalyzer;
-  final Version matchVersion;
   private final Directory dir;
   final int minPrefixChars;
   private final boolean commitOnBuild;
@@ -148,15 +146,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     this(dir, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS, false);
   }
 
-  /**
-   * @deprecated Use {@link #AnalyzingInfixSuggester(Directory, Analyzer)}
-   */
-  @Deprecated
-  public AnalyzingInfixSuggester(Version matchVersion, Directory dir, Analyzer analyzer) throws IOException {
-    this(matchVersion, dir, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS, false);
-  }
-
-
   /** Create a new instance, loading from a previously built
    *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
    *  private to the infix suggester (i.e., not an external
@@ -174,15 +163,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    */
   public AnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
                                  boolean commitOnBuild) throws IOException {
-     this(indexAnalyzer.getVersion(), dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild);
-  }
-
-  /**
-   * @deprecated Use {@link #AnalyzingInfixSuggester(Directory, Analyzer, Analyzer, int, boolean)}
-   */
-  @Deprecated
-  public AnalyzingInfixSuggester(Version matchVersion, Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
-                                 boolean commitOnBuild) throws IOException {
 
     if (minPrefixChars < 0) {
       throw new IllegalArgumentException("minPrefixChars must be >= 0; got: " + minPrefixChars);
@@ -190,7 +170,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     this.queryAnalyzer = queryAnalyzer;
     this.indexAnalyzer = indexAnalyzer;
-    this.matchVersion = matchVersion;
     this.dir = dir;
     this.minPrefixChars = minPrefixChars;
     this.commitOnBuild = commitOnBuild;

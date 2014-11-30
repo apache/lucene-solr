@@ -192,7 +192,7 @@ public class SynonymMap {
     }
     
     /**
-     * Add a phrase->phrase synonym mapping.
+     * Add a phrase-&gt;phrase synonym mapping.
      * Phrases are character sequences where words are
      * separated with character zero (U+0000).  Empty words
      * (two U+0000s in a row) are not allowed in the input nor

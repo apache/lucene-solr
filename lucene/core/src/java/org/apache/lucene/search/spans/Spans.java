@@ -34,12 +34,13 @@ public abstract class Spans {
    * <code> target &le; current</code>, or after the iterator has exhausted.
    * Both cases may result in unpredicted behavior.
    * <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre class="prettyprint">
+   * a match.  <p>Behaves as if written: 
+   * <pre class="prettyprint">
    *   boolean skipTo(int target) {
    *     do {
    *       if (!next())
    *         return false;
-   *     } while (target > doc());
+   *     } while (target &gt; doc());
    *     return true;
    *   }
    * </pre>

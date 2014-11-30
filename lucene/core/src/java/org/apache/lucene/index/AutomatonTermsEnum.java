@@ -305,7 +305,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
    * can match.
    * 
    * @param position current position in the input String
-   * @return position >=0 if more possible solutions exist for the DFA
+   * @return {@code position >= 0} if more possible solutions exist for the DFA
    */
   private int backtrack(int position) {
     while (position-- > 0) {

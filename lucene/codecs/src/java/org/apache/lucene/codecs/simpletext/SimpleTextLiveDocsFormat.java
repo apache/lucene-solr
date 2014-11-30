@@ -42,7 +42,7 @@ import org.apache.lucene.util.UnicodeUtil;
 /**
  * reads/writes plaintext live docs
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextLiveDocsFormat extends LiveDocsFormat {

@@ -1525,8 +1525,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   final InfoStream infoStream;
 
   /**
-   * Forces merge policy to merge segments until there are <=
-   * maxNumSegments.  The actual merges to be
+   * Forces merge policy to merge segments until there are
+   * {@code <= maxNumSegments}.  The actual merges to be
    * executed are determined by the {@link MergePolicy}.
    *
    * <p>This is a horribly costly operation, especially when
@@ -1545,7 +1545,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * afterwards, to allow IndexWriter to free up disk space.</p>
    *
    * <p>If some but not all readers re-open while merging
-   * is underway, this will cause > 2X temporary
+   * is underway, this will cause {@code > 2X} temporary
    * space to be consumed as those new readers will then
    * hold open the temporary segments at that time.  It is
    * best not to re-open readers while merging is running.</p>
@@ -2787,7 +2787,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private final Object commitLock = new Object();
 
   /**
-   * <p>Commits all pending changes (added & deleted
+   * <p>Commits all pending changes (added and deleted
    * documents, segment merges, added
    * indexes, etc.) to the index, and syncs all referenced
    * index files, such that a reader will see the changes
@@ -2799,7 +2799,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * <p> Note that this operation calls Directory.sync on
    * the index files.  That call should not return until the
-   * file contents & metadata are on stable storage.  For
+   * file contents and metadata are on stable storage.  For
    * FSDirectory, this calls the OS's fsync.  But, beware:
    * some hardware devices may in fact cache writes even
    * during fsync, and return before the bits are actually

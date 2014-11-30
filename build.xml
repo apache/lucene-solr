@@ -68,6 +68,10 @@
     </subant>
   </target>
 
+  <target name="beast">
+    <fail message="The Beast only works inside of individual modules"/>
+  </target>
+
   <target name="documentation" description="Generate Lucene and Solr Documentation">
     <subant target="documentation" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />

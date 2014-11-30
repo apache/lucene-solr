@@ -33,7 +33,7 @@ import org.apache.lucene.util.Accountable;
 /**
  * plain-text norms format.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * 
  * @lucene.experimental
  */
@@ -53,7 +53,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
   /**
    * Reads plain-text norms.
    * <p>
-   * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+   * <b>FOR RECREATIONAL USE ONLY</b>
    * 
    * @lucene.experimental
    */
@@ -100,7 +100,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
   /**
    * Writes plain-text norms.
    * <p>
-   * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+   * <b>FOR RECREATIONAL USE ONLY</b>
    * 
    * @lucene.experimental
    */

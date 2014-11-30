@@ -133,6 +133,9 @@
           depends="-clover.load, test-solr-core, test-solrj"/>
   <target name="pitest" description="Validate, then run core, solrj, and contrib unit tests."
           depends="pitest-core, pitest-contrib"/>
+  <target name="beast">
+    <fail message="The Beast only works inside of individual modules"/>
+  </target>
   <target name="compile-test" description="Compile core, solrj, and contrib unit tests, and solr-test-framework."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib"/>
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"

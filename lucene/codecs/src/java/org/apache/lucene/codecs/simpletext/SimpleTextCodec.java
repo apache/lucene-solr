@@ -31,7 +31,7 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 /**
  * plain text index format.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public final class SimpleTextCodec extends Codec {

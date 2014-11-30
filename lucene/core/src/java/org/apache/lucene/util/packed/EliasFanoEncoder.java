@@ -29,11 +29,11 @@ import org.apache.lucene.util.ToStringUtils;
  * that was introduced in the 1970's by Peter Elias and Robert Fano.
  * <p>
  * The Elias-Fano encoding is a high bits / low bits representation of
- * a monotonically increasing sequence of <code>numValues > 0</code> natural numbers <code>x[i]</code>
+ * a monotonically increasing sequence of {@code numValues > 0} natural numbers <code>x[i]</code>
  * <p>
- * <code>0 <= x[0] <= x[1] <= ... <= x[numValues-2] <= x[numValues-1] <= upperBound</code>
+ * {@code 0 <= x[0] <= x[1] <= ... <= x[numValues-2] <= x[numValues-1] <= upperBound}
  * <p>
- * where <code>upperBound > 0</code> is an upper bound on the last value.
+ * where {@code upperBound > 0} is an upper bound on the last value.
  * <br>
  * The Elias-Fano encoding uses less than half a bit per encoded number more
  * than the smallest representation
@@ -52,7 +52,7 @@ import org.apache.lucene.util.ToStringUtils;
  * <code>0...01</code>. <br>
  * In the upper bits the total the number of 1 bits is <code>numValues</code>
  * and the total number of 0 bits is:<p>
- * <code>floor(x[numValues-1]/2**L) <= upperBound/(2**max(0, floor(log(upperBound/numValues)))) <= 2*numValues</code>
+ * {@code floor(x[numValues-1]/2**L) <= upperBound/(2**max(0, floor(log(upperBound/numValues)))) <= 2*numValues}
  * <p>
  * The Elias-Fano encoding uses at most
  * <p>
@@ -60,7 +60,7 @@ import org.apache.lucene.util.ToStringUtils;
  * <p>
  * bits per encoded number. With <code>upperBound</code> in these bounds (<code>p</code> is an integer):
  * <p>
- * <code>2**p < x[numValues-1] <= upperBound <= 2**(p+1)</code>
+ * {@code 2**p < x[numValues-1] <= upperBound <= 2**(p+1)}
  * <p>
  * the number of bits per encoded number is minimized.
  * <p>
@@ -120,7 +120,7 @@ public class EliasFanoEncoder implements Accountable {
    * @param upperBound  At least the highest value that will be encoded.
    *                For space efficiency this should not exceed the power of two that equals
    *                or is the first higher than the actual maximum.
-   *                <br>When <code>numValues >= (upperBound/3)</code>
+   *                <br>When {@code numValues >= (upperBound/3)}
    *                a {@link FixedBitSet} will take less space.
    * @param indexInterval The number of high zero bits for which a single index entry is built.
    *                The index will have at most <code>2 * numValues / indexInterval</code> entries
@@ -131,12 +131,12 @@ public class EliasFanoEncoder implements Accountable {
    *         <li><code>numValues</code> is negative, or
    *         <li><code>numValues</code> is non negative and <code>upperBound</code> is negative, or
    *         <li>the low bits do not fit in a <code>long[]</code>:
-   *             <code>(L * numValues / 64) > Integer.MAX_VALUE</code>, or
+   *             {@code (L * numValues / 64) > Integer.MAX_VALUE}, or
    *         <li>the high bits do not fit in a <code>long[]</code>:
-   *             <code>(2 * numValues / 64) > Integer.MAX_VALUE</code>, or
-   *         <li><code>indexInterval < 2</code>,
+   *             {@code (2 * numValues / 64) > Integer.MAX_VALUE}, or
+   *         <li>{@code indexInterval < 2},
    *         <li>the index bits do not fit in a <code>long[]</code>:
-   *             <code>(numValues / indexInterval * ceil(2log(3 * numValues)) / 64) > Integer.MAX_VALUE</code>.
+   *             {@code (numValues / indexInterval * ceil(2log(3 * numValues)) / 64) > Integer.MAX_VALUE}.
    *         </ul>
    */
   public EliasFanoEncoder(long numValues, long upperBound, long indexInterval) {
@@ -266,7 +266,7 @@ public class EliasFanoEncoder implements Accountable {
    *  (including some space for its index) is at most about 5/6 of the size of the FixedBitSet,
    *  this is the same as comparing estimates of the number of bits accessed by a pair of FixedBitSets and
    *  by a pair of non indexed EliasFanoDocIdSets when determining the intersections of the pairs.
-   *  <br>A bit set is preferred when <code>upperbound <= 256</code>.
+   *  <br>A bit set is preferred when {@code upperbound <= 256}.
    *  <br>It is assumed that {@link #DEFAULT_INDEX_INTERVAL} is used.
    *  @param numValues The number of document identifiers that is to be encoded. Should be non negative.
    *  @param upperBound The maximum possible value for a document identifier. Should be at least <code>numValues</code>.

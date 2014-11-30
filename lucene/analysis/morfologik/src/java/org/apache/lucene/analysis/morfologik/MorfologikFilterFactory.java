@@ -47,24 +47,12 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
    */
   private final String dictionaryResource;
 
-  /** Schema attribute. */
-  @Deprecated
-  public static final String DICTIONARY_SCHEMA_ATTRIBUTE = "dictionary";
-
   /** Dictionary resource */
   public static final String DICTIONARY_RESOURCE_ATTRIBUTE = "dictionary-resource";
 
   /** Creates a new MorfologikFilterFactory */
   public MorfologikFilterFactory(Map<String,String> args) {
     super(args);
-
-    // Be specific about no-longer-supported dictionary attribute.
-    String dictionaryName = get(args, DICTIONARY_SCHEMA_ATTRIBUTE);
-    if (dictionaryName != null && !dictionaryName.isEmpty()) {
-      throw new IllegalArgumentException("The " + DICTIONARY_SCHEMA_ATTRIBUTE + " attribute is no "
-          + "longer supported (Morfologik now offers one unified Polish dictionary): " + dictionaryName
-          + ". Perhaps you wanted to use 'dictionary-resource' attribute instead?");
-    }
 
     dictionaryResource = get(args, DICTIONARY_RESOURCE_ATTRIBUTE, DEFAULT_DICTIONARY_RESOURCE);
     

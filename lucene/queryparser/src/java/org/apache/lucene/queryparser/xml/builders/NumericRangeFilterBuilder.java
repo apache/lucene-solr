@@ -35,7 +35,7 @@ import java.io.IOException;
  * attributes and the defaults if optional attributes are omitted. For more
  * detail on what each of the attributes actually do, consult the documentation
  * for {@link NumericRangeFilter}:
- * <table>
+ * <table summary="supported attributes">
  * <tr>
  * <th>Attribute name</th>
  * <th>Values</th>

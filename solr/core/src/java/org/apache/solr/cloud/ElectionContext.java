@@ -1,6 +1,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
@@ -148,7 +149,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     
     assert shardId != null;
     ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION,
-        Overseer.OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId,
+        OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId,
         ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
         leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
         ZkStateReader.CORE_NAME_PROP,
@@ -201,7 +202,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     
     // clear the leader in clusterstate
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.LEADER.toLower(),
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
         ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
         collection);
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));

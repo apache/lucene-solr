@@ -1,3 +1,5 @@
+package org.apache.lucene.queries.mlt;
+
 /**
  * Copyright 2004-2005 The Apache Software Foundation.
  *
@@ -13,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.queries.mlt;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -644,7 +645,7 @@ public final class MoreLikeThis {
   }
 
   /**
-   * Create a PriorityQueue from a word->tf map.
+   * Create a PriorityQueue from a word-&gt;tf map.
    *
    * @param words a map of words keyed on the word(String) with Int objects as the values.
    */

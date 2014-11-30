@@ -1379,7 +1379,7 @@ public abstract class LuceneTestCase extends Assert {
 
   /** 
    * Return a random Locale from the available locales on the system.
-   * @see "https://issues.apache.org/jira/browse/LUCENE-4020"
+   * @see <a href="https://issues.apache.org/jira/browse/LUCENE-4020">LUCENE-4020</a>
    */
   public static Locale randomLocale(Random random) {
     Locale locales[] = Locale.getAvailableLocales();
@@ -1388,7 +1388,7 @@ public abstract class LuceneTestCase extends Assert {
 
   /** 
    * Return a random TimeZone from the available timezones on the system
-   * @see "https://issues.apache.org/jira/browse/LUCENE-4020" 
+   * @see <a href="https://issues.apache.org/jira/browse/LUCENE-4020">LUCENE-4020</a>
    */
   public static TimeZone randomTimeZone(Random random) {
     String tzIds[] = TimeZone.getAvailableIDs();

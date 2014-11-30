@@ -71,7 +71,7 @@ public class FuzzyQuery extends MultiTermQuery {
    * of that length is also required.
    * 
    * @param term the term to search for
-   * @param maxEdits must be >= 0 and <= {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}.
+   * @param maxEdits must be {@code >= 0} and {@code <=} {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}.
    * @param prefixLength length of common (non-fuzzy) prefix
    * @param maxExpansions the maximum number of terms to match. If this number is
    *  greater than {@link BooleanQuery#getMaxClauseCount} when the query is rewritten, 

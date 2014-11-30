@@ -108,7 +108,7 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
 
   /** Returns userData, previously passed to {@link
    *  IndexWriter#setCommitData(Map)} for this commit.  Map is
-   *  String -> String. */
+   *  {@code String -> String}. */
   public abstract Map<String,String> getUserData() throws IOException;
   
   @Override

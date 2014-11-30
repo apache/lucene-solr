@@ -40,7 +40,7 @@ public class MorfologikAnalyzer extends Analyzer {
    * and have an associated <code>.info</code> metadata file. See the Morfologik project
    * for details.
    * 
-   * @see "http://morfologik.blogspot.com/"
+   * @see <a href="http://morfologik.blogspot.com/">http://morfologik.blogspot.com/</a>
    */
   public MorfologikAnalyzer(final String dictionaryResource) {
     this.dictionary = dictionaryResource;

@@ -49,7 +49,7 @@ import com.spatial4j.core.shape.Shape;
  * be coerced into compatibility.
  * <p/>
  * Note that a SpatialStrategy is not involved with the Lucene stored field
- * values of shapes, which is immaterial to indexing & search.
+ * values of shapes, which is immaterial to indexing and search.
  * <p/>
  * Thread-safe.
  *

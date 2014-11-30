@@ -98,9 +98,9 @@ public abstract class FieldComparator<T> {
    * 
    * @param slot1 first slot to compare
    * @param slot2 second slot to compare
-   * @return any N < 0 if slot2's value is sorted after
-   * slot1, any N > 0 if the slot2's value is sorted before
-   * slot1 and 0 if they are equal
+   * @return any {@code N < 0} if slot2's value is sorted after
+   * slot1, any {@code N > 0} if the slot2's value is sorted before
+   * slot1 and {@code 0} if they are equal
    */
   public abstract int compare(int slot1, int slot2);
 
@@ -134,9 +134,9 @@ public abstract class FieldComparator<T> {
    * frequently).</p>
    * 
    * @param doc that was hit
-   * @return any N < 0 if the doc's value is sorted after
-   * the bottom entry (not competitive), any N > 0 if the
-   * doc's value is sorted before the bottom entry and 0 if
+   * @return any {@code N < 0} if the doc's value is sorted after
+   * the bottom entry (not competitive), any {@code N > 0} if the
+   * doc's value is sorted before the bottom entry and {@code 0} if
    * they are equal.
    */
   public abstract int compareBottom(int doc) throws IOException;
@@ -150,9 +150,9 @@ public abstract class FieldComparator<T> {
    * use searchAfter (deep paging).
    *    
    * @param doc that was hit
-   * @return any N < 0 if the doc's value is sorted after
-   * the bottom entry (not competitive), any N > 0 if the
-   * doc's value is sorted before the bottom entry and 0 if
+   * @return any {@code N < 0} if the doc's value is sorted after
+   * the bottom entry (not competitive), any {@code N > 0} if the
+   * doc's value is sorted before the bottom entry and {@code 0} if
    * they are equal.
    */
   public abstract int compareTop(int doc) throws IOException;

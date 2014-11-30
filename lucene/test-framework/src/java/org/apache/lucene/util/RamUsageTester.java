@@ -324,7 +324,7 @@ public final class RamUsageTester {
      * finalization step from Austin Appleby's
      * <code>MurmurHash3</code>.
      * 
-     * @see "http://sites.google.com/site/murmurhash/"
+     * @see <a href="http://sites.google.com/site/murmurhash/">http://sites.google.com/site/murmurhash/</a>
      */
     private static int rehash(Object o) {
       int k = System.identityHashCode(o);
