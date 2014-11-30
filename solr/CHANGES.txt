@@ -281,6 +281,9 @@ Optimizations
 * SOLR-6603: LBHttpSolrServer - lazily allocate skipped-zombie-servers list.
   (Christine Poerschke via shalin)
 
+* SOLR-6680: DefaultSolrHighlighter can sometimes avoid CachingTokenFilter to save memory and
+  enable other optimizations. (David Smiley)
+
 Other Changes
 ----------------------
 
