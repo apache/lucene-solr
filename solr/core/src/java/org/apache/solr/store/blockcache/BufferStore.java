@@ -21,6 +21,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @lucene.experimental
@@ -45,7 +46,14 @@ public class BufferStore implements Store {
 
   private final int bufferSize;
 
+  private final AtomicLong shardBuffercacheAllocate;
+  private final AtomicLong shardBuffercacheLost;
+
   public synchronized static void initNewBuffer(int bufferSize, long totalAmount) {
+    initNewBuffer(bufferSize, totalAmount, null);
+  }
+
+  public synchronized static void initNewBuffer(int bufferSize, long totalAmount, Metrics metrics) {
     if (totalAmount == 0) {
       return;
     }
@@ -55,13 +63,21 @@ public class BufferStore implements Store {
       if (count > Integer.MAX_VALUE) {
         count = Integer.MAX_VALUE;
       }
-      BufferStore store = new BufferStore(bufferSize, (int) count);
+      AtomicLong shardBuffercacheLost = new AtomicLong(0);
+      AtomicLong shardBuffercacheAllocate = new AtomicLong(0);
+      if (metrics != null) {
+        shardBuffercacheLost = metrics.shardBuffercacheLost;
+        shardBuffercacheAllocate = metrics.shardBuffercacheAllocate;
+      }
+      BufferStore store = new BufferStore(bufferSize, (int) count, shardBuffercacheAllocate, shardBuffercacheLost);
       bufferStores.put(bufferSize, store);
     }
   }
 
-  private BufferStore(int bufferSize, int count) {
+  private BufferStore(int bufferSize, int count, AtomicLong shardBuffercacheAllocate, AtomicLong shardBuffercacheLost) {
     this.bufferSize = bufferSize;
+    this.shardBuffercacheAllocate = shardBuffercacheAllocate;
+    this.shardBuffercacheLost = shardBuffercacheLost;
     buffers = setupBuffers(bufferSize, count);
   }
 
@@ -102,14 +118,17 @@ public class BufferStore implements Store {
     checkReturn(buffers.offer(buffer));
   }
 
-  private void checkReturn(boolean offer) {
-
+  private void checkReturn(boolean accepted) {
+    if (!accepted) {
+      shardBuffercacheLost.incrementAndGet();
+    }
   }
 
   private byte[] newBuffer(byte[] buf) {
     if (buf != null) {
       return buf;
     }
+    shardBuffercacheAllocate.incrementAndGet();
     return new byte[bufferSize];
   }
 }

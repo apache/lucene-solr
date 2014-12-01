@@ -461,6 +461,9 @@ Other Changes
 * SOLR-6370: Allow tests to report/fail on many ZK watches being parallelly
   requested on the same data (Ramkumar Aiyengar via Timothy Potter)
 
+* SOLR-6752: Buffer Cache allocate/lost metrics should be exposed.
+  (Mike Drob via Mark Miller)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
