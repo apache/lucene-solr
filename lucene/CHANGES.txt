@@ -28,6 +28,8 @@ Bug fixes
 * LUCENE-5929: Also extract terms to highlight from block join
   queries. (Julie Tibshirani via Mike McCandless)
 
+* LUCENE-5980: Don't let document length overflow. (Robert Muir)
+
 Documentation
 
 * LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)

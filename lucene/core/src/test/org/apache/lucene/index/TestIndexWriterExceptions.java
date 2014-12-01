@@ -36,6 +36,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -48,6 +50,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -2205,6 +2208,48 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     assertEquals(docCount-deleteCount, r.numDocs());
     r.close();
 
+    dir.close();
+  }
+  
+  // kind of slow, but omits positions, so just CPU
+  @Nightly
+  public void testTooManyTokens() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Document doc = new Document();
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    doc.add(new Field("foo", new TokenStream() {
+      CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+      PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+      long num = 0;
+      
+      @Override
+      public boolean incrementToken() throws IOException {
+        if (num == Integer.MAX_VALUE + 1) {
+          return false;
+        }
+        clearAttributes();
+        if (num == 0) {
+          posIncAtt.setPositionIncrement(1);
+        } else {
+          posIncAtt.setPositionIncrement(0);
+        }
+        termAtt.append("a");
+        num++;
+        if (VERBOSE && num % 1000000 == 0) {
+          System.out.println("indexed: " + num);
+        }
+        return true;
+      }
+    }, ft));
+    try {
+      iw.addDocument(doc);
+      fail("didn't hit exception");
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("too many tokens"));
+    }
+    iw.close();
     dir.close();
   }
   
