@@ -310,6 +310,7 @@ final class ExactPhraseScorer extends Scorer {
       // last term
 
       {
+        any = false;
         final ChunkState cs = chunkStates[endMinus1];
         while (cs.pos < chunkEnd) {
           if (cs.pos > cs.lastPos) {
@@ -318,6 +319,7 @@ final class ExactPhraseScorer extends Scorer {
             if (posIndex >= 0 && gens[posIndex] == gen
                 && counts[posIndex] == endMinus1) {
               addPosition(cs.pos);
+              any = true;
             }
           }
 
@@ -332,8 +334,10 @@ final class ExactPhraseScorer extends Scorer {
       chunkStart += CHUNK;
       chunkEnd += CHUNK;
 
-      posRemaining = positionsInChunk;
-      return true;
+      if (any) {
+        posRemaining = positionsInChunk;
+        return true;
+      }
     }
   }
 

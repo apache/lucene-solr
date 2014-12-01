@@ -1886,6 +1886,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       this.postings = postings;
       upto = 0;
       skipPositions = 0;
+      pos = -1;
       startOffset = -1;
       endOffset = -1;
       docID = -1;
