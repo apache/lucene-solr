@@ -17,22 +17,20 @@
 
 package org.apache.solr.search;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.FieldCache;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
@@ -44,16 +42,14 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntOpenHashSet;
-import com.carrotsearch.hppc.IntIntOpenHashMap;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
 
@@ -221,16 +217,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       try {
 
         SolrIndexSearcher searcher = (SolrIndexSearcher)indexSearcher;
-        IndexSchema schema = searcher.getSchema();
-        SchemaField schemaField = schema.getField(this.field);
 
-        SortedDocValues docValues = null;
+        //FYI FieldCache uses DocValues if available and doesn't return null
+        SortedDocValues docValues = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), this.field);
+        assert docValues != null;
         FunctionQuery funcQuery = null;
-        if(schemaField.hasDocValues()) {
-          docValues = searcher.getAtomicReader().getSortedDocValues(this.field);
-        } else {
-          docValues = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), this.field);
-        }
 
         FieldType fieldType = null;
 
