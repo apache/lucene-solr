@@ -1953,7 +1953,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() {
-      assert skipPositions > 0;
+      if (skipPositions <= 0)
+        return NO_MORE_POSITIONS;
       skipPositions--;
       pos = postings[upto++];
       if (hasOffsets) {
@@ -2301,6 +2302,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public int nextPosition() {
       posUpto += posJump;
+      if (posUpto >= curPositions.length)
+        return NO_MORE_POSITIONS;
       return curPositions[posUpto];
     }
 

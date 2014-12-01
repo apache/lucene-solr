@@ -17,16 +17,14 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.posfilter.OrderedNearQuery;
-import org.junit.Assert;
-
-import java.io.IOException;
 
 public class TestIntervalScoring extends IntervalTestBase {
 
