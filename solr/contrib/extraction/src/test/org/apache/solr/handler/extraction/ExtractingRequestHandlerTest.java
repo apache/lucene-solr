@@ -288,6 +288,74 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   }
 
+  public void testLiteralDefaults() throws Exception {
+
+    // sanity check config
+    loadLocalFromHandler("/update/extract/lit-def",
+                         "extraction/simple.html",
+                         "literal.id", "lit-def-simple");
+    assertU(commit());
+    assertQ(req("q", "id:lit-def-simple")
+            , "//*[@numFound='1']"
+            , "count(//arr[@name='foo_s']/str)=1"
+            , "//arr[@name='foo_s']/str[.='x']"
+            , "count(//arr[@name='bar_s']/str)=1"
+            , "//arr[@name='bar_s']/str[.='y']"
+            , "count(//arr[@name='zot_s']/str)=1"
+            , "//arr[@name='zot_s']/str[.='z']"
+            ); 
+    
+    // override the default foo_s
+    loadLocalFromHandler("/update/extract/lit-def",
+                         "extraction/simple.html",
+                         "literal.foo_s", "1111",
+                         "literal.id", "lit-def-simple");
+    assertU(commit());
+    assertQ(req("q", "id:lit-def-simple")
+            , "//*[@numFound='1']"
+            , "count(//arr[@name='foo_s']/str)=1"
+            , "//arr[@name='foo_s']/str[.='1111']"
+            , "count(//arr[@name='bar_s']/str)=1"
+            , "//arr[@name='bar_s']/str[.='y']"
+            , "count(//arr[@name='zot_s']/str)=1"
+            , "//arr[@name='zot_s']/str[.='z']"
+            ); 
+
+    // pre-pend the bar_s
+    loadLocalFromHandler("/update/extract/lit-def",
+                         "extraction/simple.html",
+                         "literal.bar_s", "2222",
+                         "literal.id", "lit-def-simple");
+    assertU(commit());
+    assertQ(req("q", "id:lit-def-simple")
+            , "//*[@numFound='1']"
+            , "count(//arr[@name='foo_s']/str)=1"
+            , "//arr[@name='foo_s']/str[.='x']"
+            , "count(//arr[@name='bar_s']/str)=2"
+            , "//arr[@name='bar_s']/str[.='2222']"
+            , "//arr[@name='bar_s']/str[.='y']"
+            , "count(//arr[@name='zot_s']/str)=1"
+            , "//arr[@name='zot_s']/str[.='z']"
+            ); 
+
+    // invariant zot_s can not be changed
+    loadLocalFromHandler("/update/extract/lit-def",
+                         "extraction/simple.html",
+                         "literal.zot_s", "3333",
+                         "literal.id", "lit-def-simple");
+    assertU(commit());
+    assertQ(req("q", "id:lit-def-simple")
+            , "//*[@numFound='1']"
+            , "count(//arr[@name='foo_s']/str)=1"
+            , "//arr[@name='foo_s']/str[.='x']"
+            , "count(//arr[@name='bar_s']/str)=1"
+            , "//arr[@name='bar_s']/str[.='y']"
+            , "count(//arr[@name='zot_s']/str)=1"
+            , "//arr[@name='zot_s']/str[.='z']"
+            ); 
+    
+  }
+
   @Test
   public void testPlainTextSpecifyingMimeType() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
@@ -612,7 +680,9 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("wdf_nocase:\"Test password protected word doc\""), "//*[@numFound='2']");
   }
   
-  SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
+  SolrQueryResponse loadLocalFromHandler(String handler, String filename, 
+                                         String... args) throws Exception {
+                              
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
     try {
       // TODO: stop using locally defined streams once stream.file and
@@ -620,10 +690,14 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       List<ContentStream> cs = new ArrayList<>();
       cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);
-      return h.queryAndResponse("/update/extract", req);
+      return h.queryAndResponse(handler, req);
     } finally {
       req.close();
     }
+  }
+
+  SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
+    return loadLocalFromHandler("/update/extract", filename, args);
   }
 
 

@@ -194,6 +194,18 @@
   
   <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler"/>
 
+  <requestHandler name="/update/extract/lit-def" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
+    <lst name="defaults">
+      <str name="literal.foo_s">x</str>
+    </lst>
+    <lst name="appends">
+      <str name="literal.bar_s">y</str>
+    </lst>
+    <lst name="invariants">
+      <str name="literal.zot_s">z</str>
+      <str name="uprefix">ignored_</str>
+    </lst>
+  </requestHandler>
 
   <highlighting>
    <!-- Configure the standard fragmenter -->
