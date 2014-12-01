@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -1359,7 +1360,7 @@ public class Overseer implements Closeable {
   public static class Stats {
     static final int MAX_STORED_FAILURES = 10;
 
-    final Map<String, Stat> stats = Collections.synchronizedMap(new HashMap<String, Stat>());
+    final Map<String, Stat> stats = new ConcurrentHashMap<>();
 
     public Map<String, Stat> getStats() {
       return stats;
@@ -1377,19 +1378,16 @@ public class Overseer implements Closeable {
 
     public void success(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      synchronized (stats) {
-        Stat stat = stats.get(op);
-        if (stat == null) {
-          stat = new Stat();
-          stats.put(op, stat);
-        }
-        stat.success.incrementAndGet();
+      Stat stat = stats.get(op);
+      if (stat == null) {
+        stat = new Stat();
+        stats.put(op, stat);
       }
+      stat.success.incrementAndGet();
     }
 
     public void error(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      synchronized (stats) {
       Stat stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
@@ -1397,26 +1395,20 @@ public class Overseer implements Closeable {
       }
       stat.errors.incrementAndGet();
     }
-    }
 
     public TimerContext time(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      Stat stat;
-      synchronized (stats) {
-        stat = stats.get(op);
+      Stat stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
         stats.put(op, stat);
-      }
       }
       return stat.requestTime.time();
     }
 
     public void storeFailureDetails(String operation, ZkNodeProps request, SolrResponse resp) {
       String op = operation.toLowerCase(Locale.ROOT);
-      Stat stat ;
-      synchronized (stats) {
-        stat = stats.get(op);
+      Stat stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
         stats.put(op, stat);
@@ -1428,7 +1420,6 @@ public class Overseer implements Closeable {
         }
         failedOps.addLast(new FailedOp(request, resp));
       }
-    }
     }
 
     public List<FailedOp> getFailureDetails(String operation) {
