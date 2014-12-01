@@ -1,13 +1,13 @@
 package org.apache.lucene.index;
 
+import java.io.IOException;
+import java.util.Iterator;
+
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-
-import java.io.IOException;
-import java.util.Iterator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

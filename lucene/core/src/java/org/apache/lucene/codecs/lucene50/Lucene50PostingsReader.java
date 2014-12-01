@@ -345,7 +345,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1; // throw new UnsupportedOperationException("Shouldn't call nextPosition() on BlockDocsEnum");
+      throw new UnsupportedOperationException("Shouldn't call nextPosition() on BlockDocsEnum");
     }
 
     @Override

@@ -38,8 +38,11 @@ public class TotalHitCountCollector extends SimpleCollector {
 
   @Override
   public int postingFeatures() {
-    // we don't need frequencies here
-    return DocsEnum.FLAG_NONE;
+    // nocommit: we don't need frequencies here, but it causes test failures if
+    // we don't ask for them because our leafcollectors sometimes get wrapped in
+    // RandomOrderCollectors, which call score(), and that trips an assertion
+    // in AssertingLeafReader.freq() when the freq turns out to be 0.
+    return DocsEnum.FLAG_FREQS;
   }
 
   @Override

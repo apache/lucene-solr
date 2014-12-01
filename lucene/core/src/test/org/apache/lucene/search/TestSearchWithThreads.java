@@ -20,16 +20,18 @@ package org.apache.lucene.search;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@Seed("12017F5C55C9DD62")
 public class TestSearchWithThreads extends LuceneTestCase {
   int NUM_DOCS;
   final int NUM_SEARCH_THREADS = 5;
