@@ -166,6 +166,7 @@ public class NativeUnixDirectory extends FSDirectory {
     private boolean isOpen;
 
     public NativeUnixIndexOutput(Path path, int bufferSize) throws IOException {
+      super("NativeUnixIndexOutput(path=\"" + path.toString() + "\")");
       //this.path = path;
       final FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), false);
       fos = new FileOutputStream(fd);

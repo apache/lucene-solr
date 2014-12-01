@@ -59,6 +59,7 @@ public class ThrottledIndexOutput extends IndexOutput {
   public ThrottledIndexOutput(int bytesPerSecond, long flushDelayMillis,
       long closeDelayMillis, long seekDelayMillis, long minBytesWritten,
       IndexOutput delegate) {
+    super("ThrottledIndexOutput(" + delegate + ")");
     assert bytesPerSecond > 0;
     this.delegate = delegate;
     this.bytesPerSecond = bytesPerSecond;

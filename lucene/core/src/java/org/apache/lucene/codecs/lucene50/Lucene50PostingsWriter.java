@@ -221,7 +221,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     final int docDelta = docID - lastDocID;
 
     if (docID < 0 || (docCount > 0 && docDelta <= 0)) {
-      throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " )", docOut.toString());
+      throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " )", docOut);
     }
 
     docDeltaBuffer[docBufferUpto] = docDelta;

@@ -31,6 +31,17 @@ import java.io.IOException;
  */
 public abstract class IndexOutput extends DataOutput implements Closeable {
 
+  private final String resourceDescription;
+
+  /** Sole constructor.  resourceDescription should be non-null, opaque string
+   *  describing this resource; it's returned from {@link #toString}. */
+  protected IndexOutput(String resourceDescription) {
+    if (resourceDescription == null) {
+      throw new IllegalArgumentException("resourceDescription must not be null");
+    }
+    this.resourceDescription = resourceDescription;
+  }
+
   /** Closes this stream to further operations. */
   @Override
   public abstract void close() throws IOException;
@@ -42,4 +53,9 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
 
   /** Returns the current checksum of bytes written so far */
   public abstract long getChecksum() throws IOException;
+
+  @Override
+  public String toString() {
+    return resourceDescription;
+  }
 }

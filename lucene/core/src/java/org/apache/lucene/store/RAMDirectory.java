@@ -173,7 +173,7 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
       existing.directory = null;
     }
     fileMap.put(name, file);
-    return new RAMOutputStream(file, true);
+    return new RAMOutputStream(name, file, true);
   }
 
   /**

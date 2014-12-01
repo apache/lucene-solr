@@ -36,7 +36,8 @@ public class OutputStreamIndexOutput extends IndexOutput {
    * @param bufferSize the buffer size in bytes used to buffer writes internally.
    * @throws IllegalArgumentException if the given buffer size is less or equal to <tt>0</tt>
    */
-  public OutputStreamIndexOutput(OutputStream out, int bufferSize) {
+  public OutputStreamIndexOutput(String resourceDescription, OutputStream out, int bufferSize) {
+    super(resourceDescription);
     this.os = new BufferedOutputStream(new CheckedOutputStream(out, crc), bufferSize);
   }
 

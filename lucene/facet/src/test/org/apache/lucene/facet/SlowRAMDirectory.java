@@ -143,6 +143,7 @@ public class SlowRAMDirectory extends RAMDirectory {
     private final Random rand;
     
     public SlowIndexOutput(IndexOutput io) {
+      super("SlowIndexOutput(" + io + ")");
       this.io = io;
       this.rand = forkRandom();
     }
