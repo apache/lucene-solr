@@ -28,6 +28,9 @@ Bug fixes
 * LUCENE-6004: Don't highlight the LookupResult.key returned from
   AnalyzingInfixSuggester (Christian Reuschling, jane chang via Mike McCandless)
 
+* LUCENE-6075: Don't overflow int in SimpleRateLimiter (Boaz Leskes
+  via Mike McCandless)
+  
 * LUCENE-5980: Don't let document length overflow. (Robert Muir)
 
 * LUCENE-6042: CustomScoreQuery explain was incorrect in some cases,
