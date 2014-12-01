@@ -38,6 +38,15 @@ IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
 
 REM Verify Java is available
 IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
+REM Try to detect JAVA_HOME from the registry
+IF NOT DEFINED JAVA_HOME (
+  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment" /v CurrentVersion') DO set CurVer=%%B
+  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment\!CurVer!" /v JavaHome') DO (
+    set JAVA_HOME=%%B
+    @echo Detected JAVA_HOME=%%B
+  )
+)
+
 IF NOT DEFINED JAVA_HOME goto need_java_home
 set JAVA_HOME=%JAVA_HOME:"=%
 "%JAVA_HOME%"\bin\java -version:1.8 -version > nul 2>&1
