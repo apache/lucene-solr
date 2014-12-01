@@ -276,14 +276,6 @@ Bug Fixes
 * SOLR-6631: DistributedQueue spinning on calling zookeeper getChildren()
   (Jessica Cheng Mallet, Mark Miller, Timothy Potter)
 
-* SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
-  causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
-
-* SOLR-6685: ConcurrentModificationException in Overseer Status API. (shalin)
-
-* SOLR-6706: /update/json/docs throws RuntimeException if a nested structure
-  contains a non-leaf float field (Noble Paul, shalin)
-
 * SOLR-6579:SnapPuller Replication blocks clean shutdown of tomcat
   (Philip Black-Knight via Noble Paul)
 
@@ -496,6 +488,18 @@ Bug Fixes
     * spellcheck.[dictionary name].* and spellcheck.collateParam.* in SpellCheckComponent
     * olap.* in AnalyticsComponent
   (Alexandre Rafalovitch & hossman)
+
+* SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
+  causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
+
+* SOLR-6685: ConcurrentModificationException in Overseer Status API. (shalin)
+
+* SOLR-6706: /update/json/docs throws RuntimeException if a nested structure
+  contains a non-leaf float field (Noble Paul, shalin)
+
+* SOLR-6610: Slow startup of new clusters because ZkController.publishAndWaitForDownStates
+  always times out. (Jessica Cheng Mallet, shalin, Noble Paul)
+
 
 ==================  4.10.2 ==================
 
