@@ -66,6 +66,9 @@ Bug Fixes
 * SOLR-6610: Slow startup of new clusters because ZkController.publishAndWaitForDownStates
   always times out. (Jessica Cheng Mallet, shalin, Noble Paul)
 
+* SOLR-6726: better strategy for selecting the JMX RMI port based on SOLR_PORT in bin/solr
+  script (Timothy Potter)
+
 Other Changes
 ----------------------
 

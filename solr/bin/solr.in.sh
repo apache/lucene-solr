@@ -60,3 +60,6 @@ GC_TUNE="-XX:NewRatio=3 \
 # JMX savvy tools like VisualVM remotely, set to "false" to disable that behavior
 # (recommended in production environments)
 ENABLE_REMOTE_JMX_OPTS="true"
+
+# The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+# RMI_PORT=18983

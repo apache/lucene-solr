@@ -63,3 +63,5 @@ REM JMX savvy tools like VisualVM remotely, set to "false" to disable that behav
 REM (recommended in production environments)
 set ENABLE_REMOTE_JMX_OPTS=true
 
+REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+REM set RMI_PORT=18983

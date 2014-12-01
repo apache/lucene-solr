@@ -508,12 +508,13 @@ IF "%SOLR_MODE%"=="solrcloud" (
 
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
+  IF "!RMI_PORT!"=="" set RMI_PORT=1%SOLR_PORT%
   set REMOTE_JMX_OPTS=-Dcom.sun.management.jmxremote ^
 -Dcom.sun.management.jmxremote.local.only=false ^
 -Dcom.sun.management.jmxremote.ssl=false ^
 -Dcom.sun.management.jmxremote.authenticate=false ^
--Dcom.sun.management.jmxremote.port=10%SOLR_PORT:~-2,2% ^
--Dcom.sun.management.jmxremote.rmi.port=10%SOLR_PORT:~-2,2%
+-Dcom.sun.management.jmxremote.port=!RMI_PORT! ^
+-Dcom.sun.management.jmxremote.rmi.port=!RMI_PORT!
 
 IF NOT "%SOLR_HOST%"=="" set REMOTE_JMX_OPTS=%REMOTE_JMX_OPTS% -Djava.rmi.server.hostname=%SOLR_HOST%
 ) ELSE (
@@ -557,12 +558,24 @@ IF "%verbose%"=="1" (
     @echo     SOLR_HOME       = %SOLR_HOME%
     @echo     SOLR_HOST       = %SOLR_HOST%
     @echo     SOLR_PORT       = %SOLR_PORT%
+    @echo     STOP_PORT       = %STOP_PORT%
+    @echo     SOLR_JAVA_MEM   = %SOLR_JAVA_MEM%
     @echo     GC_TUNE         = !GC_TUNE!
     @echo     GC_LOG_OPTS     = %GC_LOG_OPTS%
-    @echo     SOLR_JAVA_MEM   = %SOLR_JAVA_MEM%
-    @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
-    @echo     CLOUD_MODE_OPTS = %CLOUD_MODE_OPTS%
     @echo     SOLR_TIMEZONE   = %SOLR_TIMEZONE%
+
+    IF "%SOLR_MODE%"=="solrcloud" (
+      @echo     CLOUD_MODE_OPTS = %CLOUD_MODE_OPTS%
+    )
+
+     IF NOT "%SOLR_ADDL_ARGS%"=="" (
+       @echo     SOLR_ADDL_ARGS  = %SOLR_ADDL_ARGS%
+     )
+
+    IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
+        @echo     RMI_PORT        = !RMI_PORT!
+        @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
+    )
 )
 
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE% -Djava.net.preferIPv4Stack=true
