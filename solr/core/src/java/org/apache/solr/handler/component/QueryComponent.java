@@ -1257,6 +1257,10 @@ public class QueryComponent extends SearchComponent
           if (sdoc != null) {
             if (returnScores) {
               doc.setField("score", sdoc.score);
+            } else {
+              // Score might have been added (in createMainQuery) to shard-requests (and therefore in shard-response-docs)
+              // Remove score if the outer request did not ask for it returned
+              doc.remove("score");
             }
             if (removeKeyField) {
               doc.removeFields(keyFieldName);
