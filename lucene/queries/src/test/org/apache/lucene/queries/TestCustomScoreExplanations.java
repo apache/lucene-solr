@@ -26,7 +26,9 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+@SuppressCodecs("Lucene3x") // needs docvalues support
 public class TestCustomScoreExplanations extends BaseExplanationTestCase {
   public void testOneTerm() throws Exception {
     Query q = new TermQuery(new Term(FIELD, "w1"));
