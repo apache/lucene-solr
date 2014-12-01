@@ -49,9 +49,7 @@ public class Metrics implements Updater {
   public AtomicLong recordWrites = new AtomicLong(0);
   public AtomicLong queriesExternal = new AtomicLong(0);
   public AtomicLong queriesInternal = new AtomicLong(0);
-  public AtomicLong shardBuffercacheAllocate1024 = new AtomicLong(0);
-  public AtomicLong shardBuffercacheAllocate8192 = new AtomicLong(0);
-  public AtomicLong shardBuffercacheAllocateOther = new AtomicLong(0);
+  public AtomicLong shardBuffercacheAllocate = new AtomicLong(0);
   public AtomicLong shardBuffercacheLost = new AtomicLong(0);
   public Map<String,MethodCall> methodCalls = new ConcurrentHashMap<>();
   
@@ -101,6 +99,8 @@ public class Metrics implements Updater {
       metricsRecord.setMetric("record.writes", getPerSecond(recordWrites.getAndSet(0), seconds));
       metricsRecord.setMetric("query.external", getPerSecond(queriesExternal.getAndSet(0), seconds));
       metricsRecord.setMetric("query.internal", getPerSecond(queriesInternal.getAndSet(0), seconds));
+      metricsRecord.setMetric("buffercache.allocations", getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds));
+      metricsRecord.setMetric("buffercache.lost", getPerSecond(shardBuffercacheLost.getAndSet(0), seconds));
       for (Entry<String,MethodCall> entry : methodCalls.entrySet()) {
         String key = entry.getKey();
         MethodCall value = entry.getValue();
