@@ -30,6 +30,9 @@ Bug fixes
 
 * LUCENE-5980: Don't let document length overflow. (Robert Muir)
 
+* LUCENE-6042: CustomScoreQuery explain was incorrect in some cases,
+  such as when nested inside a boolean query. (Denis Lantsman via Robert Muir)
+
 Documentation
 
 * LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
