@@ -55,6 +55,9 @@ Bug Fixes
 * SOLR-6510: The collapse QParser would throw a NPE when used on a DocValues field on
   an empty segment/index. (Christine Poerschke, David Smiley)
 
+* SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
+  causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
+
 Other Changes
 ----------------------
 
