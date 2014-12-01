@@ -17,33 +17,30 @@ package org.apache.solr.cloud.overseer;
  * limitations under the License.
  */
 
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 
-/**
-* Created by shalin on 29/10/14.
-*/
 public class ZkWriteCommand {
   public final String name;
   public final DocCollection collection;
-//  public final ClusterState state;
   public final boolean noop;
 
   public ZkWriteCommand(String name, DocCollection collection) {
     this.name = name;
     this.collection = collection;
-//    this.state = state;
     this.noop = false;
   }
 
   /**
    * Returns a no-op
    */
-  public ZkWriteCommand() {
+  protected ZkWriteCommand() {
     this.noop = true;
     this.name = null;
     this.collection = null;
-//    this.state = null;
+  }
+
+  public static ZkWriteCommand noop() {
+    return new ZkWriteCommand();
   }
 }
 
