@@ -168,11 +168,6 @@
     <url-pattern>/schema/*</url-pattern>
   </servlet-mapping>
   
-  <servlet-mapping>
-    <servlet-name>SolrConfigRestApi</servlet-name>
-    <url-pattern>/config/*</url-pattern>
-  </servlet-mapping>
-  
   <mime-mapping>
     <extension>.xsl</extension>
     <!-- per http://www.w3.org/TR/2006/PR-xslt20-20061121/ -->
