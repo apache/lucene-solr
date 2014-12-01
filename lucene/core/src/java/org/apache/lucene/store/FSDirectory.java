@@ -282,7 +282,7 @@ public abstract class FSDirectory extends BaseDirectory {
     private final String name;
 
     public FSIndexOutput(String name) throws IOException {
-      super(new FilterOutputStream(Files.newOutputStream(directory.resolve(name))) {
+      super("FSIndexOutput(path=\"" + directory.resolve(name) + "\")", new FilterOutputStream(Files.newOutputStream(directory.resolve(name))) {
         // This implementation ensures, that we never write more than CHUNK_SIZE bytes:
         @Override
         public void write(byte[] b, int offset, int length) throws IOException {

@@ -229,6 +229,10 @@ API Changes
 
 * LUCENE-6082: Remove abort() from codec apis. (Robert Muir)
 
+* LUCENE-6084: IndexOutput's constructor now requires a String
+  resourceDescription so its toString is sane (Robert Muir, Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
