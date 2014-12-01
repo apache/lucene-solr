@@ -121,7 +121,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     // We initially don't have a /get handler defined
     SolrCore core = container.create(new CoreDescriptor(container, "core1", testDirectory + "/core", "configSet", "configset-2"));
     assertThat("No /get handler should be defined in the initial configuration",
-        core.getRequestHandler("/get"), is(nullValue()));
+        core.getRequestHandler("/dump"), is(nullValue()));
 
     // Now copy in a config with a /get handler and reload
     FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-withgethandler.xml"),
@@ -130,7 +130,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
     core = container.getCore("core1");
     assertThat("A /get handler should be defined in the reloaded configuration",
-        core.getRequestHandler("/get"), is(notNullValue()));
+        core.getRequestHandler("/dump"), is(notNullValue()));
     core.close();
 
     container.shutdown();

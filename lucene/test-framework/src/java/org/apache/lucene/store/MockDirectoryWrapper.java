@@ -75,7 +75,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
   boolean wrapLocking = true;
-  boolean useSlowOpenClosers = true;
+  boolean useSlowOpenClosers = LuceneTestCase.TEST_NIGHTLY;
   boolean enableVirusScanner = true;
   boolean allowRandomFileNotFoundException = true;
   boolean allowReadingFilesStillOpenForWrite = false;
@@ -85,7 +85,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   Map<String,Exception> openLocks = Collections.synchronizedMap(new HashMap<String,Exception>());
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
-  private Throttling throttling = Throttling.SOMETIMES;
+  private Throttling throttling = LuceneTestCase.TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
   final AtomicInteger inputCloneCount = new AtomicInteger();
 
@@ -191,9 +191,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
   
   /** 
-   * By default, opening and closing has a rare small sleep to catch race conditions
+   * Add a rare small sleep to catch race conditions in open/close
    * <p>
-   * You can disable this if you dont need it
+   * You can enable this if you need it.
    */
   public void setUseSlowOpenClosers(boolean v) {
     useSlowOpenClosers = v;

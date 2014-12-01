@@ -30,6 +30,10 @@ import java.util.HashSet;
 
 public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
   public CloudMLTQParserTest() {
+    fixShardCount = true;
+    shardCount = 2;
+    sliceCount = 2;
+    
     configString = "solrconfig.xml";
     schemaString = "schema.xml";
   }

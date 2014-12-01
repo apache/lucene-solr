@@ -43,6 +43,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NoHttpResponseException;
@@ -54,7 +55,6 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -204,6 +204,8 @@ public class SolrCLI {
       return new ApiTool();
     else if ("create_collection".equals(toolType))
       return new CreateCollectionTool();
+    else if ("create_core".equals(toolType))
+      return new CreateCoreTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -223,6 +225,7 @@ public class SolrCLI {
     formatter.printHelp("status", getToolOptions(new StatusTool()));
     formatter.printHelp("api", getToolOptions(new ApiTool()));
     formatter.printHelp("create_collection", getToolOptions(new CreateCollectionTool()));
+    formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -701,12 +704,12 @@ public class SolrCLI {
     }    
   } // end ApiTool class
 
+  private static final String DEFAULT_CONFIG_SET = "data_driven_schema_configs";
+
   /**
    * Supports create_collection command in the bin/solr script.
    */
   public static class CreateCollectionTool implements Tool {
-
-    private static final String DEFAULT_CONFIG_SET = "data_driven_schema_configs";
 
     @Override
     public String getName() {
@@ -796,8 +799,12 @@ public class SolrCLI {
           Map<String,Object> status = statusTool.reportStatus(solrUrl, systemInfo, httpClient);
 
           Map<String,Object> cloud = (Map<String, Object>)status.get("cloud");
-          if (cloud == null)
-            throw new IllegalArgumentException("Solr server at "+solrUrl+" not running in SolrCloud mode!");
+          if (cloud == null) {
+            System.err.println("\nERROR: Solr at "+solrUrl+
+                " is running in standalone server mode, please use the create_core command instead;\n" +
+                "create_collection can only be used when running in SolrCloud mode.\n");
+            return 1;
+          }
 
           String zookeeper = (String) cloud.get("ZooKeeper");
           if (zookeeper.endsWith("(embedded)")) {
@@ -869,7 +876,7 @@ public class SolrCLI {
       String collectionName = cli.getOptionValue("name");
       String createCollectionUrl =
           String.format(Locale.ROOT,
-              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&configSet=%s",
+              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&collection.configName=%s",
               baseUrl,
               collectionName,
               numShards,
@@ -883,6 +890,7 @@ public class SolrCLI {
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(json);
       System.out.println(arr.toString());
+      System.out.println();
     }
 
     protected int optionAsInt(CommandLine cli, String option, int defaultVal) {
@@ -1164,5 +1172,112 @@ public class SolrCLI {
       new JSONWriter(arr, 2).write(report);
       System.out.println(arr.toString());
     }
-  } // end HealthcheckTool  
+  } // end HealthcheckTool
+
+  public static class CreateCoreTool implements Tool {
+
+    @Override
+    public String getName() {
+      return "create_core";
+    }
+
+    @SuppressWarnings("static-access")
+    @Override
+    public Option[] getOptions() {
+      return new Option[] {
+          OptionBuilder
+              .withArgName("URL")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Base Solr URL, default is http://localhost:8983/solr")
+              .create("solrUrl"),
+          OptionBuilder
+              .withArgName("NAME")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Name of the core to create.")
+              .create("name"),
+          OptionBuilder
+              .withArgName("CONFIG")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Name of the configuration for this core; default is "+DEFAULT_CONFIG_SET)
+              .create("config"),
+          OptionBuilder
+              .withArgName("DIR")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Path to configsets directory on the local system.")
+              .create("configsetsDir")
+      };
+    }
+
+    @Override
+    public int runTool(CommandLine cli) throws Exception {
+
+      String solrUrl = cli.getOptionValue("solrUrl", "http://localhost:8983/solr");
+      if (!solrUrl.endsWith("/"))
+        solrUrl += "/";
+
+      File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
+      if (!configsetsDir.isDirectory())
+        throw new FileNotFoundException(configsetsDir.getAbsolutePath()+" not found!");
+
+      String configSet = cli.getOptionValue("config", DEFAULT_CONFIG_SET);
+      File configSetDir = new File(configsetsDir, configSet);
+      if (!configSetDir.isDirectory())
+        throw new FileNotFoundException("Specified config "+configSet+
+            " not found in "+configsetsDir.getAbsolutePath());
+
+      File confDir = new File(configSetDir,"conf");
+
+      String coreName = cli.getOptionValue("name");
+
+      String systemInfoUrl = solrUrl+"admin/info/system";
+      HttpClient httpClient = getHttpClient();
+      String solrHome = null;
+      try {
+        Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
+        if ("solrcloud".equals(systemInfo.get("mode"))) {
+          System.err.println("\nERROR: Solr at "+solrUrl+
+              " is running in SolrCloud mode, please use create_collection command instead.\n");
+          return 1;
+        }
+
+        // convert raw JSON into user-friendly output
+        solrHome = (String)systemInfo.get("solr_home");
+        if (solrHome == null) {
+          solrHome = configsetsDir.getParentFile().getAbsolutePath();
+        }
+      } finally {
+        closeHttpClient(httpClient);
+      }
+
+      File coreInstanceDir = new File(solrHome, coreName);
+      if (!coreInstanceDir.isDirectory()) {
+        coreInstanceDir.mkdirs();
+        if (!coreInstanceDir.isDirectory())
+          throw new IOException("Failed to create new core instance directory: "+coreInstanceDir.getAbsolutePath());
+      }
+
+      FileUtils.copyDirectoryToDirectory(confDir, coreInstanceDir);
+
+      String createCoreUrl =
+          String.format(Locale.ROOT,
+              "%sadmin/cores?action=CREATE&name=%s&instanceDir=%s",
+              solrUrl,
+              coreName,
+              coreName);
+
+      System.out.println("Creating new core '"+coreName+"' using command:\n\n"+createCoreUrl+"\n");
+
+      Map<String,Object> json = getJson(createCoreUrl);
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2).write(json);
+      System.out.println(arr.toString());
+      System.out.println();
+
+      return 0;
+    }
+  } // end CreateCoreTool class
 }

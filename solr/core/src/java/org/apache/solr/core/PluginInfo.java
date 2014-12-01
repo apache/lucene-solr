@@ -22,8 +22,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.util.*;
+
+import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 /**
  * An Object which represents a Plugin of any type 
@@ -34,24 +38,40 @@ public class PluginInfo implements MapSerializable{
   public final NamedList initArgs;
   public final Map<String, String> attributes;
   public final List<PluginInfo> children;
+  public final boolean isFromSolrConfig;
 
   public PluginInfo(String type, Map<String, String> attrs ,NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
-    this.name = attrs.get("name");
-    this.className = attrs.get("class");
+    this.name = attrs.get(NAME);
+    this.className = attrs.get(CLASS_NAME);
     this.initArgs = initArgs;
     attributes = unmodifiableMap(attrs);
     this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
+    isFromSolrConfig = false;
   }
 
 
   public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
     type = node.getNodeName();
-    name = DOMUtil.getAttr(node, "name", requireName ? err : null);
-    className = DOMUtil.getAttr(node, "class", requireClass ? err : null);
+    name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
+    className = DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null);
     initArgs = DOMUtil.childNodesToNamedList(node);
     attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
     children = loadSubPlugins(node);
+    isFromSolrConfig = true;
+  }
+
+  public PluginInfo(String type, Map<String,Object> map) {
+    LinkedHashMap m = new LinkedHashMap<>(map);
+    NamedList nl = new NamedList();
+    for (String s : asList(DEFAULTS, APPENDS, INVARIANTS)) if (m.get(s) != null) nl.add(s, map.remove(s));
+    this.type = type;
+    this.name = (String) m.get(NAME);
+    this.className = (String) m.get(CLASS_NAME);
+    this.initArgs = nl;
+    attributes = unmodifiableMap(m);
+    this.children =  Collections.<PluginInfo>emptyList();
+    isFromSolrConfig = true;
   }
 
   private List<PluginInfo> loadSubPlugins(Node node) {
@@ -128,11 +148,11 @@ public class PluginInfo implements MapSerializable{
   public static final PluginInfo EMPTY_INFO = new PluginInfo("",Collections.<String,String>emptyMap(), new NamedList(),Collections.<PluginInfo>emptyList());
 
   private static final HashSet<String> NL_TAGS = new HashSet<>
-    (Arrays.asList("lst", "arr",
-                   "bool",
-                   "str",
-                   "int","long",
-                   "float","double"));
+    (asList("lst", "arr",
+        "bool",
+        "str",
+        "int", "long",
+        "float", "double"));
   public static final String DEFAULTS = "defaults";
   public static final String APPENDS = "appends";
   public static final String INVARIANTS = "invariants";

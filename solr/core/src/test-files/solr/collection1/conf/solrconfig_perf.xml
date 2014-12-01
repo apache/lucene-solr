@@ -71,6 +71,4 @@
   <requestHandler name="standard" class="solr.SearchHandler" default="true">
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
 </config>

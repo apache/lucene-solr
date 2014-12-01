@@ -27,7 +27,7 @@ import java.nio.file.Paths;
 import java.util.Random;
 
 /**
- * Simple standalone tool that forever acquires & releases a
+ * Simple standalone tool that forever acquires and releases a
  * lock using a specific LockFactory.  Run without any args
  * to see usage.
  *

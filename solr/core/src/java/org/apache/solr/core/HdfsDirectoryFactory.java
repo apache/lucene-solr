@@ -209,7 +209,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   private BlockCache createBlockCache(int numberOfBlocksPerBank, int blockSize,
       int bankCount, boolean directAllocation, int slabSize, int bufferSize,
       int bufferCount) {
-    BufferStore.initNewBuffer(bufferSize, bufferCount);
+    BufferStore.initNewBuffer(bufferSize, bufferCount, metrics);
     long totalMemory = (long) bankCount * (long) numberOfBlocksPerBank
         * (long) blockSize;
     

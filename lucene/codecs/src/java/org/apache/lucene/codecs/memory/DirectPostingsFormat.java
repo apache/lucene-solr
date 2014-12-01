@@ -55,9 +55,9 @@ import org.apache.lucene.util.automaton.Transition;
 
 /** Wraps {@link Lucene50PostingsFormat} format for on-disk
  *  storage, but then at read time loads and stores all
- *  terms & postings directly in RAM as byte[], int[].
+ *  terms and postings directly in RAM as byte[], int[].
  *
- *  <p><b><font color=red>WARNING</font></b>: This is
+ *  <p><b>WARNING</b>: This is
  *  exceptionally RAM intensive: it makes no effort to
  *  compress the postings data, storing terms as separate
  *  byte[] and postings as separate int[], but as a result it
@@ -90,7 +90,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
   /** minSkipCount is how many terms in a row must have the
    *  same prefix before we put a skip pointer down.  Terms
-   *  with docFreq <= lowFreqCutoff will use a single int[]
+   *  with docFreq &lt;= lowFreqCutoff will use a single int[]
    *  to hold all docs, freqs, position and offsets; terms
    *  with higher docFreq will use separate arrays. */
   public DirectPostingsFormat(int minSkipCount, int lowFreqCutoff) {

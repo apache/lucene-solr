@@ -33,7 +33,7 @@ import java.util.Map;
  * {@link ValueSource} in which {@link FunctionValues#objectVal(int)} returns a {@link
  * com.spatial4j.core.shape.Rectangle}.
  * <p/>
- * Implementers: remember to implement equals & hashCode if you have
+ * Implementers: remember to implement equals and hashCode if you have
  * fields!
  *
  * @lucene.experimental

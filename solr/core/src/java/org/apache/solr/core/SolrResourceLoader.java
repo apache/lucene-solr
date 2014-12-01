@@ -695,10 +695,14 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
 
     for (SolrInfoMBean bean : arr) {
-      try {
-        infoRegistry.put(bean.getName(), bean);
-      } catch (Exception e) {
-        log.warn("could not register MBean '" + bean.getName() + "'.", e);
+      // Too slow? I suspect not, but we may need
+      // to start tracking this in a Set.
+      if (!infoRegistry.containsValue(bean)) {
+        try {
+          infoRegistry.put(bean.getName(), bean);
+        } catch (Exception e) {
+          log.warn("could not register MBean '" + bean.getName() + "'.", e);
+        }
       }
     }
   }

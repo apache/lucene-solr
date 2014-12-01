@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -602,7 +601,7 @@ public class CoreContainer {
       solrCores.waitAddPendingCoreOps(name);
       ConfigSet coreConfig = coreConfigService.getConfig(cd);
       log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
-      SolrCore newCore = core.reload(coreConfig, core);
+      SolrCore newCore = core.reload(coreConfig);
       registerCore(name, newCore, false);
     }
     catch (Exception e) {

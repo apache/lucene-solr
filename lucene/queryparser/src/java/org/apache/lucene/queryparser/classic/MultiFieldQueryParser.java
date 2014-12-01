@@ -55,7 +55,7 @@ public class MultiFieldQueryParser extends QueryParser
    * +(title:term1 body:term1) +(title:term2 body:term2)
    * </code>
    * 
-   * <p>When you pass a boost (title=>5 body=>10) you can get </p>
+   * <p>When you pass a boost (title=&gt;5 body=&gt;10) you can get </p>
    * 
    * <code>
    * +(title:term1^5.0 body:term1^10.0) +(title:term2^5.0 body:term2^10.0)

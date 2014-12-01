@@ -18,17 +18,26 @@ package org.apache.solr.schema;
  */
 
 
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.util.CommandOperation;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -79,7 +88,7 @@ public class SchemaManager {
    * @param rdr The input as a Reader
    * @return Lis of errors . If the List is empty then the operation is successful.
    */
-  public List performOperations(Reader rdr)  {
+  public List performOperations(Reader rdr) throws Exception {
     List<CommandOperation> ops = null;
     try {
       ops = CommandOperation.parse(rdr);
@@ -102,13 +111,13 @@ public class SchemaManager {
 
   }
 
-  private List doOperations(List<CommandOperation> operations){
+  private List doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
     int timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, -1);
     long startTime = System.nanoTime();
-    long endTime = timeout >0  ? System.nanoTime()+ (timeout * 1000*1000) : Long.MAX_VALUE;
+    long endTime = timeout > 0 ? System.nanoTime() + (timeout * 1000 * 1000) : Long.MAX_VALUE;
     SolrCore core = req.getCore();
-    for(;System.nanoTime() < endTime ;) {
-      managedIndexSchema = (ManagedIndexSchema) core.getLatestSchema();
+    for (; System.nanoTime() < endTime; ) {
+      managedIndexSchema = getFreshManagedSchema();
       for (CommandOperation op : operations) {
         if (ADD_FIELD.equals(op.name) || ADD_DYNAMIC_FIELD.equals(op.name)) {
           applyAddField(op);
@@ -123,20 +132,51 @@ public class SchemaManager {
       }
       List errs = CommandOperation.captureErrors(operations);
       if (!errs.isEmpty()) return errs;
+      SolrResourceLoader loader = req.getCore().getResourceLoader();
+      if (loader instanceof ZkSolrResourceLoader) {
 
-      try {
-        managedIndexSchema.persistManagedSchema(false);
-        core.setLatestSchema(managedIndexSchema);
-        waitForOtherReplicasToUpdate(timeout, startTime);
-        return EMPTY_LIST;
-      } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
-        String s = "Failed to update schema because schema is modified";
-        log.warn(s, e);
-        continue;
-      } catch (Exception e){
-        String s = "Exception persisting schema";
-        log.warn(s, e);
-        return singletonList(s + e.getMessage());
+        StringWriter sw = new StringWriter();
+        try {
+          managedIndexSchema.persist(sw);
+        } catch (IOException e) {
+          log.info("race condition ");
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
+          //unlikely
+        }
+
+        try {
+          ZkController.persistConfigResourceToZooKeeper(loader,
+              managedIndexSchema.getSchemaZkVersion(),
+              managedIndexSchema.getResourceName(),
+              sw.toString().getBytes(StandardCharsets.UTF_8),
+              true);
+          return EMPTY_LIST;
+        } catch (ZkController.ResourceModifiedInZkException e) {
+          log.info("Race condition schema modified by another node");
+          continue;
+        } catch (Exception e) {
+          String s = "Exception persisting schema";
+          log.warn(s, e);
+          return singletonList(s + e.getMessage());
+        }
+
+      }else {
+
+        try {
+          //only for non cloud stuff
+          managedIndexSchema.persistManagedSchema(false);
+          core.setLatestSchema(managedIndexSchema);
+          waitForOtherReplicasToUpdate(timeout, startTime);
+          return EMPTY_LIST;
+        } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+          String s = "Failed to update schema because schema is modified";
+          log.warn(s, e);
+          continue;
+        } catch (Exception e) {
+          String s = "Exception persisting schema";
+          log.warn(s, e);
+          return singletonList(s + e.getMessage());
+        }
       }
     }
 
@@ -231,4 +271,28 @@ public class SchemaManager {
     return true;
   }
 
+  public ManagedIndexSchema getFreshManagedSchema() throws IOException, KeeperException, InterruptedException {
+    SolrResourceLoader resourceLoader = req.getCore().getResourceLoader();
+    if (resourceLoader instanceof ZkSolrResourceLoader) {
+      ZkSolrResourceLoader loader = (ZkSolrResourceLoader) resourceLoader;
+      InputStream in = resourceLoader.openResource(req.getSchema().getResourceName());
+      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+        int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.info("managed schema loaded . version : {} ", version);
+        return new ManagedIndexSchema(req.getCore().getSolrConfig(),
+            req.getSchema().getResourceName() ,new InputSource(in),
+            true,
+            req.getSchema().getResourceName(),
+            version,new Object());
+      }else {
+        return (ManagedIndexSchema) req.getCore().getLatestSchema();
+      }
+
+    } else {
+      return (ManagedIndexSchema) req.getCore().getLatestSchema();
+    }
+
+
+
+  }
 }

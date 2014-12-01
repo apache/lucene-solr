@@ -32,11 +32,11 @@ import org.apache.lucene.util.CharsRefBuilder;
  * Parser for the Solr synonyms format.
  * <ol>
  *   <li> Blank lines and lines starting with '#' are comments.
- *   <li> Explicit mappings match any token sequence on the LHS of "=>"
+ *   <li> Explicit mappings match any token sequence on the LHS of "=&gt;"
  *        and replace with all alternatives on the RHS.  These types of mappings
  *        ignore the expand parameter in the constructor.
  *        Example:
- *        <blockquote>i-pod, i pod => ipod</blockquote>
+ *        <blockquote>i-pod, i pod =&gt; ipod</blockquote>
  *   <li> Equivalent synonyms may be separated with commas and give
  *        no explicit mapping.  In this case the mapping behavior will
  *        be taken from the expand parameter in the constructor.  This allows
@@ -47,10 +47,10 @@ import org.apache.lucene.util.CharsRefBuilder;
  *   <li> Multiple synonym mapping entries are merged.
  *        Example:
  *        <blockquote>
- *         foo => foo bar<br>
- *         foo => baz<br><br>
+ *         foo =&gt; foo bar<br>
+ *         foo =&gt; baz<br><br>
  *         is equivalent to<br><br>
- *         foo => foo bar, baz
+ *         foo =&gt; foo bar, baz
  *        </blockquote>
  *  </ol>
  * @lucene.experimental

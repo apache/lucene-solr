@@ -79,8 +79,8 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   public Token() {
   }
 
-  /** Constructs a Token with the given term text, and start
-   *  & end offsets.  The type defaults to "word."
+  /** Constructs a Token with the given term text, start
+   *  and end offsets.  The type defaults to "word."
    *  <b>NOTE:</b> for better indexing speed you should
    *  instead use the char[] termBuffer methods to set the
    *  term text.

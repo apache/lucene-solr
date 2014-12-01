@@ -36,14 +36,13 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
  * plain text segments file format.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
@@ -63,9 +62,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   public SegmentInfo read(Directory directory, String segmentName, byte[] segmentID, IOContext context) throws IOException {
     BytesRefBuilder scratch = new BytesRefBuilder();
     String segFileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
-    ChecksumIndexInput input = directory.openChecksumInput(segFileName, context);
-    boolean success = false;
-    try {
+    try (ChecksumIndexInput input = directory.openChecksumInput(segFileName, context)) {
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_VERSION);
       final Version version;
@@ -125,14 +122,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount,
                                          isCompoundFile, null, diagnostics, id);
       info.setFiles(files);
-      success = true;
       return info;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(input);
-      } else {
-        input.close();
-      }
     }
   }
 
@@ -146,10 +136,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
     String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
     si.addFile(segFileName);
 
-    boolean success = false;
-    IndexOutput output = dir.createOutput(segFileName, ioContext);
-
-    try {
+    try (IndexOutput output = dir.createOutput(segFileName, ioContext)) {
       BytesRefBuilder scratch = new BytesRefBuilder();
     
       SimpleTextUtil.write(output, SI_VERSION);
@@ -201,14 +188,6 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.writeNewline(output);
       
       SimpleTextUtil.writeChecksum(output, scratch);
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(output);
-        IOUtils.deleteFilesIgnoringExceptions(dir, segFileName);
-      } else {
-        output.close();
-      }
     }
   }
 }

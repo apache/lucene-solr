@@ -28,10 +28,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -67,7 +74,6 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   @Override
   public void doTest() throws Exception {
-
     Map editable_prop_map = (Map) new ObjectBuilder(new JSONParser(new StringReader(
         ConfigOverlay.MAPPING))).getObject();
     Map caches = (Map) editable_prop_map.get("query");
@@ -143,31 +149,39 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         return;
       }
 
+      DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+      List<String> urls = new ArrayList<>();
+      for (Slice slice : coll.getSlices()) {
+        for (Replica replica : slice.getReplicas())
+          urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+      }
+
+
       //get another node
-      RestTestHarness harness = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
+      String url = urls.get(urls.size());
+
       long startTime = System.nanoTime();
-      boolean success = false;
-      long maxTimeoutSeconds = 10;
+      long maxTimeoutSeconds = 20;
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
-        Map respMap = getAsMap("/config/overlay?wt=json", harness);
+        Map respMap = getAsMap(url+"/config/overlay?wt=json", cloudClient);
         Map m = (Map) respMap.get("overlay");
         if(m!= null) m = (Map) m.get("props");
         if(m == null) {
-          errmessages.add(MessageFormat.format( "overlay does not exist for cache: {} , iteration: {} response {} ", cacheName, i, respMap.toString()));
+          errmessages.add(MessageFormat.format( "overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
           continue;
         }
 
 
         Object o = getObjectByPath(m, true, asList("query", cacheName, "size"));
-        if(!val1.equals(o)) errmessages.add(MessageFormat.format("'size' property not set, expected = {}, actual {}", val1,o));
+        if(!val1.equals(o)) errmessages.add(MessageFormat.format("'size' property not set, expected = {0}, actual {1}", val1,o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "initialSize"));
-        if(!val2.equals(o)) errmessages.add(MessageFormat.format("'initialSize' property not set, expected = {}, actual {}", val2,o));
+        if(!val2.equals(o)) errmessages.add(MessageFormat.format("'initialSize' property not set, expected = {0}, actual {1}", val2,o));
 
         o = getObjectByPath(m, true, asList("query", cacheName, "autowarmCount"));
-        if(!val3.equals(o)) errmessages.add(MessageFormat.format("'autowarmCount' property not set, expected = {}, actual {}", val3,o));
+        if(!val3.equals(o)) errmessages.add(MessageFormat.format("'autowarmCount' property not set, expected = {0}, actual {1}", val3,o));
         if(errmessages.isEmpty()) break;
       }
       if(!errmessages.isEmpty()) {
@@ -178,5 +192,15 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   }
 
-
+  public static Map getAsMap(String uri, CloudSolrServer cloudClient) throws Exception {
+    HttpGet get = new HttpGet(uri) ;
+    HttpEntity entity = null;
+    try {
+      entity = cloudClient.getLbServer().getHttpClient().execute(get).getEntity();
+      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    } finally {
+      EntityUtils.consumeQuietly(entity);
+    }
+  }
 }

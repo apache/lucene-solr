@@ -34,7 +34,8 @@ import org.apache.lucene.search.*;
  * multiplied by the supplied "boost" parameter, so this should be less than 1 to achieve a 
  * demoting effect
  * 
- * This code was originally made available here: [WWW] http://marc.theaimsgroup.com/?l=lucene-user&m=108058407130459&w=2
+ * This code was originally made available here: 
+ *   <a href="http://marc.theaimsgroup.com/?l=lucene-user&m=108058407130459&w=2">http://marc.theaimsgroup.com/?l=lucene-user&amp;m=108058407130459&amp;w=2</a>
  * and is documented here: http://wiki.apache.org/lucene-java/CommunityContributions
  */
 public class BoostingQuery extends Query {

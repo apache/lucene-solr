@@ -36,7 +36,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
- * Test indexes ~82M docs with 52 positions each, so you get > Integer.MAX_VALUE positions
+ * Test indexes ~82M docs with 52 positions each, so you get &gt; Integer.MAX_VALUE positions
  * @lucene.experimental
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })

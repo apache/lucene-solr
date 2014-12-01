@@ -28,16 +28,28 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements SchemaAware {
   private static final String PARAM_QUERY_TARGET_PROPORTION = "queryTargetProportion";
   private static final String PARAM_MIN_SIDE_LENGTH = "minSideLength";
-  private String numberFieldName;//required
-  private String booleanFieldName = "boolean";
+
+  //score modes:
+  private static final String OVERLAP_RATIO = "overlapRatio";
+  private static final String AREA = "area";
+  private static final String AREA2D = "area2D";
+
+  private String numberTypeName;//required
+  private String booleanTypeName = "boolean";
 
   private IndexSchema schema;
+
+  public BBoxField() {
+    super(new HashSet<>(Arrays.asList(OVERLAP_RATIO, AREA, AREA2D)));
+  }
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -48,25 +60,25 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field type: " + typeName
           + " must specify the numberType attribute.");
     }
-    numberFieldName = v;
+    numberTypeName = v;
 
     v = args.remove("booleanType");
     if (v != null) {
-      booleanFieldName = v;
+      booleanTypeName = v;
     }
   }
 
   @Override
   public void inform(IndexSchema schema) {
     this.schema = schema;
-    FieldType numberType = schema.getFieldTypeByName(numberFieldName);
-    FieldType booleanType = schema.getFieldTypeByName(booleanFieldName);
+    FieldType numberType = schema.getFieldTypeByName(numberTypeName);
+    FieldType booleanType = schema.getFieldTypeByName(booleanTypeName);
 
     if (numberType == null) {
-      throw new RuntimeException("Cannot find number fieldType: " + numberFieldName);
+      throw new RuntimeException("Cannot find number fieldType: " + numberTypeName);
     }
     if (booleanType == null) {
-      throw new RuntimeException("Cannot find boolean fieldType: " + booleanFieldName);
+      throw new RuntimeException("Cannot find boolean fieldType: " + booleanTypeName);
     }
     if (!(booleanType instanceof BoolField)) {
       throw new RuntimeException("Must be a BoolField: " + booleanType);
@@ -75,33 +87,47 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
       throw new RuntimeException("Must be TrieDoubleField: " + numberType);
     }
 
+    //note: this only works for explicit fields, not dynamic fields
     List<SchemaField> fields = new ArrayList<>(schema.getFields().values());//copy, because we modify during iteration
     for (SchemaField sf : fields) {
       if (sf.getType() == this) {
         String name = sf.getName();
-        register(schema, name + BBoxStrategy.SUFFIX_MINX, numberType);
-        register(schema, name + BBoxStrategy.SUFFIX_MAXX, numberType);
-        register(schema, name + BBoxStrategy.SUFFIX_MINY, numberType);
-        register(schema, name + BBoxStrategy.SUFFIX_MAXY, numberType);
-        register(schema, name + BBoxStrategy.SUFFIX_XDL, booleanType);
+        registerSubFields(schema, name, numberType, booleanType);
       }
     }
   }
 
+  private void registerSubFields(IndexSchema schema, String name, FieldType numberType, FieldType booleanType) {
+    register(schema, name + BBoxStrategy.SUFFIX_MINX, numberType);
+    register(schema, name + BBoxStrategy.SUFFIX_MAXX, numberType);
+    register(schema, name + BBoxStrategy.SUFFIX_MINY, numberType);
+    register(schema, name + BBoxStrategy.SUFFIX_MAXY, numberType);
+    register(schema, name + BBoxStrategy.SUFFIX_XDL, booleanType);
+  }
+
+  // note: Registering the field is probably optional; it makes it show up in the schema browser and may have other
+  //  benefits.
   private void register(IndexSchema schema, String name, FieldType fieldType) {
     SchemaField sf = new SchemaField(name, fieldType);
     schema.getFields().put(sf.getName(), sf);
   }
 
   @Override
-  protected BBoxStrategy newSpatialStrategy(String s) {
-    BBoxStrategy strategy = new BBoxStrategy(ctx, s);
+  protected BBoxStrategy newSpatialStrategy(String fieldName) {
+    //if it's a dynamic field, we register the sub-fields now.
+    FieldType numberType = schema.getFieldTypeByName(numberTypeName);
+    FieldType booleanType = schema.getFieldTypeByName(booleanTypeName);
+    if (schema.isDynamicField(fieldName)) {
+      registerSubFields(schema, fieldName, numberType, booleanType);
+    }
+
+    BBoxStrategy strategy = new BBoxStrategy(ctx, fieldName);
     //Solr's FieldType ought to expose Lucene FieldType. Instead as a hack we create a Field with a dummy value.
-    SchemaField field = schema.getField(strategy.getFieldName() + BBoxStrategy.SUFFIX_MINX);
+    final SchemaField solrNumField = new SchemaField("_", numberType);//dummy temp
     org.apache.lucene.document.FieldType luceneType =
-        (org.apache.lucene.document.FieldType) field.createField(0.0, 1.0f).fieldType();
-    //and annoyingly this field isn't going to have a docValues format because Solr uses a separate Field for that
-    if (field.hasDocValues()) {
+        (org.apache.lucene.document.FieldType) solrNumField.createField(0.0, 1.0f).fieldType();
+    //and annoyingly this Field isn't going to have a docValues format because Solr uses a separate Field for that
+    if (solrNumField.hasDocValues()) {
       luceneType = new org.apache.lucene.document.FieldType(luceneType);
       luceneType.setDocValuesType(DocValuesType.NUMERIC);
     }
@@ -111,9 +137,12 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
 
   @Override
   protected ValueSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String scoreParam, BBoxStrategy strategy) {
+    if (scoreParam == null) {
+      return null;
+    }
     switch (scoreParam) {
       //TODO move these to superclass after LUCENE-5804 ?
-      case "overlapRatio":
+      case OVERLAP_RATIO:
         double queryTargetProportion = 0.25;//Suggested default; weights towards target area
 
         String v = parser.getParam(PARAM_QUERY_TARGET_PROPORTION);
@@ -130,10 +159,10 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
             (Rectangle) spatialArgs.getShape(),
             queryTargetProportion, minSideLength);
 
-      case "area":
+      case AREA:
         return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, ctx.isGeo());
 
-      case "area2D":
+      case AREA2D:
         return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, false);
 
       default:

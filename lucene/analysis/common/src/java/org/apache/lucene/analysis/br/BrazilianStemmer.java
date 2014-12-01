@@ -232,8 +232,8 @@ public class BrazilianStemmer {
   /**
    * 1) Turn to lowercase
    * 2) Remove accents
-   * 3) ã -> a ; õ -> o
-   * 4) ç -> c
+   * 3) ã -&gt; a ; õ -&gt; o
+   * 4) ç -&gt; c
    *
    * @return null or a string transformed
    */

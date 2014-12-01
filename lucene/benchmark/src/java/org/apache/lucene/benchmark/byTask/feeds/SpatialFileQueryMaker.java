@@ -39,7 +39,7 @@ import java.util.Properties;
  * It's parsed by {@link com.spatial4j.core.context.SpatialContext#readShapeFromWkt(String)} (String)} and then
  * further manipulated via a configurable {@link SpatialDocMaker.ShapeConverter}. When using point
  * data, it's likely you'll want to configure the shape converter so that the query shapes actually
- * cover a region. The queries are all created & cached in advance. This query maker works in
+ * cover a region. The queries are all created and cached in advance. This query maker works in
  * conjunction with {@link SpatialDocMaker}.  See spatial.alg for a listing of options, in
  * particular the options starting with "query.".
  */

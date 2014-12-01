@@ -50,9 +50,9 @@ import org.apache.lucene.util.fst.FST;
  * For example if you have these rules:
  *      
  * <pre>
- *   a -> x
- *   a b -> y
- *   b c d -> z
+ *   a -&gt; x
+ *   a b -&gt; y
+ *   b c d -&gt; z
  * </pre>
  *
  * Then input <code>a b c d e</code> parses to <code>y b c

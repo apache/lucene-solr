@@ -28,7 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 /**
  * plain text doc values format.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * <p>
  * the .dat file contains the data.
  *  for numbers this is a "fixed-width" file, for example a single byte range:

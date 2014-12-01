@@ -65,7 +65,7 @@ public final class CapitalizationFilter extends TokenFilter {
    * @param forceFirstLetter Force the first letter to be capitalized even if it is in the keep list.
    * @param okPrefix do not change word capitalization if a word begins with something in this list.
    * @param minWordLength how long the word needs to be to get capitalization applied.  If the
-   *                      minWordLength is 3, "and" > "And" but "or" stays "or".
+   *                      minWordLength is 3, "and" &gt; "And" but "or" stays "or".
    * @param maxWordCount if the token contains more then maxWordCount words, the capitalization is
    *                     assumed to be correct.
    * @param maxTokenLength ???

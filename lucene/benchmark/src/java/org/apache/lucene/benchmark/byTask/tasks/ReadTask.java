@@ -268,7 +268,7 @@ public abstract class ReadTask extends PerfTask {
   }
 
   /**
-   * Return true if, with search & results traversing, docs should be retrieved.
+   * Return true if, with search and results traversing, docs should be retrieved.
    */
   public abstract boolean withRetrieve();
 

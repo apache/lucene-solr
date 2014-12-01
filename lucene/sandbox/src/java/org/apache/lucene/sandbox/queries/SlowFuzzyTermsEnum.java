@@ -110,7 +110,7 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
      * <p>The termCompare method in FuzzyTermEnum uses Levenshtein distance to 
      * calculate the distance between the given term and the comparing term. 
      * </p>
-     * <p>If the minSimilarity is >= 1.0, this uses the maxEdits as the comparison.
+     * <p>If the minSimilarity is &gt;= 1.0, this uses the maxEdits as the comparison.
      * Otherwise, this method uses the following logic to calculate similarity.
      * <pre>
      *   similarity = 1 - ((float)distance / (float) (prefixLength + Math.min(textlen, targetlen)));

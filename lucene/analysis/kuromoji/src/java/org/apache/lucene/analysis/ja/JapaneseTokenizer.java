@@ -62,8 +62,8 @@ import org.apache.lucene.util.fst.FST;
  * <p>
  * This tokenizer uses a rolling Viterbi search to find the 
  * least cost segmentation (path) of the incoming characters.  
- * For tokens that appear to be compound (> length 2 for all
- * Kanji, or > length 7 for non-Kanji), we see if there is a
+ * For tokens that appear to be compound (&gt; length 2 for all
+ * Kanji, or &gt; length 7 for non-Kanji), we see if there is a
  * 2nd best segmentation of that token after applying
  * penalties to the long tokens.  If so, and the Mode is
  * {@link Mode#SEARCH}, we output the alternate segmentation 

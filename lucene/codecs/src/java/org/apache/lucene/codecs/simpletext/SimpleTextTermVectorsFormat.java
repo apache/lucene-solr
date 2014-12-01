@@ -30,7 +30,7 @@ import org.apache.lucene.store.IOContext;
 /**
  * plain text term vectors format.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextTermVectorsFormat extends TermVectorsFormat {

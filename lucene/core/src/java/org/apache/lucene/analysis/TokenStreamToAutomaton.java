@@ -78,7 +78,7 @@ public class TokenStreamToAutomaton {
     }
   }
 
-  /** Subclass & implement this if you need to change the
+  /** Subclass and implement this if you need to change the
    *  token (such as escaping certain bytes) before it's
    *  turned into a graph. */ 
   protected BytesRef changeToken(BytesRef in) {

@@ -42,7 +42,7 @@ import org.apache.lucene.util.MathUtil;
  * Skip level i contains every skipInterval-th entry from skip level i-1.
  * Therefore the number of entries on level i is: floor(df / ((skipInterval ^ (i + 1))).
  * 
- * Each skip entry on a level i>0 contains a pointer to the corresponding skip entry in list i-1.
+ * Each skip entry on a level {@code i>0} contains a pointer to the corresponding skip entry in list i-1.
  * This guarantees a logarithmic amount of skips to find the target document.
  * 
  * While this class takes care of writing the different skip levels,

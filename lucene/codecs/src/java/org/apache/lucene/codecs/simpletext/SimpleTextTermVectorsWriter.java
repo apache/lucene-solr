@@ -33,7 +33,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Writes plain-text term vectors.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
@@ -74,7 +74,7 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
       success = true;
     } finally {
       if (!success) {
-        abort();
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }
@@ -161,14 +161,6 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
       write(Integer.toString(endOffset));
       newLine();
     }
-  }
-
-  @Override
-  public void abort() {
-    try {
-      close();
-    } catch (Throwable ignored) {}
-    IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", VECTORS_EXTENSION));
   }
 
   @Override

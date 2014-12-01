@@ -64,14 +64,6 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
     }
     
     @Override
-    public void abort() {
-      delegate.abort();
-      if (random.nextInt(100) == 0) {
-        throw new RuntimeException(new IOException("Fake IOException from TermVectorsWriter.abort()"));
-      }
-    }
-    
-    @Override
     public int merge(MergeState mergeState) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.merge()");

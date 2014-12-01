@@ -22,7 +22,7 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
 
 /** 
- * Computes which segments have identical field name->number mappings,
+ * Computes which segments have identical field name to number mappings,
  * which allows stored fields and term vectors in this codec to be bulk-merged.
  */
 class MatchingReaders {

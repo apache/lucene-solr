@@ -23,6 +23,11 @@ limitations under the License.
   width: 20%;
 }
 
+#content #files #tree-holder li
+{
+  overflow: hidden;
+}
+
 #content #files form .buttons button
 {
   float: right;

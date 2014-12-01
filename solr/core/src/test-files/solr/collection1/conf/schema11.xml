@@ -214,7 +214,7 @@
              See the Java Regular Expression documentation for more
              infomation on pattern and replacement string syntax.
              
-             http://docs.oracle.com/javase/7/docs/api/java/util/regex/package-summary.html
+             http://docs.oracle.com/javase/8/docs/api/java/util/regex/package-summary.html
           -->
         <filter class="solr.PatternReplaceFilterFactory"
                 pattern="([^a-z])" replacement="" replace="all"
@@ -330,6 +330,7 @@ valued. -->
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.  -->
    <dynamicField name="*_s"  	type="string"  indexed="true"  stored="true"/>
+   <dynamicField name="*_s_dv"  type="string"  indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ss"  	type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_sS" 	type="string"  indexed="false" stored="true"/>
    <dynamicField name="*_i"  	type="int"    indexed="true"  stored="true"/>

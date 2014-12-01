@@ -134,7 +134,7 @@ public final class ArrayUtil {
  END APACHE HARMONY CODE
   */
 
-  /** Returns an array size >= minTargetSize, generally
+  /** Returns an array size &gt;= minTargetSize, generally
    *  over-allocating exponentially to achieve amortized
    *  linear-time cost as the array grows.
    *

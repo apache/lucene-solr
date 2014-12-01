@@ -30,7 +30,7 @@ public interface QueryMaker {
   /** 
    * Create the next query, of the given size.
    * @param size the size of the query - number of terms, etc.
-   * @exception Exception if cannot make the query, or if size>0 was specified but this feature is not supported.
+   * @exception Exception if cannot make the query, or if size &gt; 0 was specified but this feature is not supported.
    */ 
   public Query makeQuery (int size) throws Exception;
 

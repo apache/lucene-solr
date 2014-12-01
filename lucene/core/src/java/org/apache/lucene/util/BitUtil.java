@@ -46,7 +46,7 @@ public final class BitUtil {
   // packed inside a 32 bit integer (8 4 bit numbers).  That
   // should be faster than accessing an array for each index, and
   // the total array size is kept smaller (256*sizeof(int))=1K
-  /***** the python code that generated bitlist
+  /* the python code that generated bitlist
   def bits2int(val):
   arr=0
   for shift in range(8,0,-1):
@@ -58,7 +58,7 @@ public final class BitUtil {
   def int_table():
     tbl = [ hex(bits2int(val)).strip('L') for val in range(256) ]
     return ','.join(tbl)
-  ******/
+  */
   private static final int[] BIT_LISTS = {
     0x0, 0x1, 0x2, 0x21, 0x3, 0x31, 0x32, 0x321, 0x4, 0x41, 0x42, 0x421, 0x43, 
     0x431, 0x432, 0x4321, 0x5, 0x51, 0x52, 0x521, 0x53, 0x531, 0x532, 0x5321, 
@@ -98,12 +98,12 @@ public final class BitUtil {
   }
 
   /** Return the list of bits which are set in b encoded as followed:
-   * <code>(i >>> (4 * n)) & 0x0F</code> is the offset of the n-th set bit of
+   * {@code (i >>> (4 * n)) & 0x0F} is the offset of the n-th set bit of
    * the given byte plus one, or 0 if there are n or less bits set in the given
    * byte. For example <code>bitList(12)</code> returns 0x43:<ul>
-   * <li><code>0x43 & 0x0F</code> is 3, meaning the the first bit set is at offset 3-1 = 2,</li>
-   * <li><code>(0x43 >>> 4) & 0x0F</code> is 4, meaning there is a second bit set at offset 4-1=3,</li>
-   * <li><code>(0x43 >>> 8) & 0x0F</code> is 0, meaning there is no more bit set in this byte.</li>
+   * <li>{@code 0x43 & 0x0F} is 3, meaning the the first bit set is at offset 3-1 = 2,</li>
+   * <li>{@code (0x43 >>> 4) & 0x0F} is 4, meaning there is a second bit set at offset 4-1=3,</li>
+   * <li>{@code (0x43 >>> 8) & 0x0F} is 0, meaning there is no more bit set in this byte.</li>
    * </ul>*/
   public static int bitList(byte b) {
     return BIT_LISTS[b & 0xFF];
@@ -142,7 +142,7 @@ public final class BitUtil {
      return popCount;
    }
 
-  /** Returns the popcount or cardinality of A & ~B.
+  /** Returns the popcount or cardinality of {@code A & ~B}.
    *  Neither array is modified. */
   public static long pop_andnot(long[] arr1, long[] arr2, int wordOffset, int numWords) {
     long popCount = 0;

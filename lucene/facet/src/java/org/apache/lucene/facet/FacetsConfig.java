@@ -120,7 +120,7 @@ public class FacetsConfig {
   }
 
   /** Pass {@code true} if this dimension is hierarchical
-   *  (has depth > 1 paths). */
+   *  (has depth &gt; 1 paths). */
   public synchronized void setHierarchical(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {

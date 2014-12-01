@@ -243,7 +243,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
     }
   }
   
-  /** weight -> cost */
+  /** weight -&gt; cost */
   private static int encodeWeight(long value) {
     if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
       throw new UnsupportedOperationException("cannot encode value: " + value);

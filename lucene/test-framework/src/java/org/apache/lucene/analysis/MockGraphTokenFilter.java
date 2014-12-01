@@ -26,7 +26,7 @@ import org.apache.lucene.util.TestUtil;
 // TODO: sometimes remove tokens too...?
 
 /** Randomly inserts overlapped (posInc=0) tokens with
- *  posLength sometimes > 1.  The chain must have
+ *  posLength sometimes &gt; 1.  The chain must have
  *  an OffsetAttribute.  */
 
 public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {

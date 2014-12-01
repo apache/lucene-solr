@@ -139,15 +139,19 @@ public final class RequestHandlers {
    * Handlers will be registered and initialized in the order they appear in solrconfig.xml
    */
 
-  void initHandlersFromConfig(SolrConfig config, List<PluginInfo> implicits){
+  void initHandlersFromConfig(SolrConfig config){
+    List<PluginInfo> implicits = PluginsRegistry.getHandlers(core);
     // use link map so we iterate in the same order
     Map<PluginInfo,SolrRequestHandler> handlers = new LinkedHashMap<>();
-    Map<String, PluginInfo> implicitInfoMap= new HashMap<>();
+    Map<String, PluginInfo> infoMap= new LinkedHashMap<>();
     //deduping implicit and explicit requesthandlers
-    for (PluginInfo info : implicits) implicitInfoMap.put(info.name,info);
+    for (PluginInfo info : implicits) infoMap.put(info.name,info);
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName()))
-      if(implicitInfoMap.containsKey(info.name)) implicitInfoMap.remove(info.name);
-    ArrayList<PluginInfo> infos = new ArrayList<>(implicitInfoMap.values());
+      if(infoMap.containsKey(info.name)) infoMap.remove(info.name);
+    for (Map.Entry e : core.getSolrConfig().getOverlay().getReqHandlers().entrySet())
+      infoMap.put((String)e.getKey(), new PluginInfo(SolrRequestHandler.TYPE, (Map)e.getValue()));
+
+    ArrayList<PluginInfo> infos = new ArrayList<>(infoMap.values());
     infos.addAll(config.getPluginInfos(SolrRequestHandler.class.getName()));
     for (PluginInfo info : infos) {
       try {
@@ -212,7 +216,7 @@ public final class RequestHandlers {
     if(!ags.isEmpty()){
       info = new PluginInfo(info.type, info.attributes, info.initArgs.clone(), info.children);
       for (InitParams initParam : ags) {
-        initParam.apply(info.initArgs);
+        initParam.apply(info);
       }
     }
     return info;

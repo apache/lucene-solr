@@ -588,7 +588,7 @@ public final class Util {
    * 
    * <p>
    * Note: larger FSTs (a few thousand nodes) won't even
-   * render, don't bother.  If the FST is > 2.1 GB in size
+   * render, don't bother.  If the FST is &gt; 2.1 GB in size
    * then this method will throw strange exceptions.
    * 
    * @param sameRank
@@ -600,7 +600,7 @@ public final class Util {
    *          If <code>true</code> states will have labels equal to their offsets in their
    *          binary format. Expands the graph considerably. 
    * 
-   * @see "http://www.graphviz.org/"
+   * @see <a href="http://www.graphviz.org/">graphviz project</a>
    */
   public static <T> void toDot(FST<T> fst, Writer out, boolean sameRank, boolean labelStates) 
     throws IOException {    

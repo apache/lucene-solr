@@ -222,7 +222,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             setCommitOnClose(false)
     );
 
-    for(int iter=0;iter<10;iter++) {
+    int numIters = TEST_NIGHTLY ? 10 : 3;
+    for(int iter=0;iter<numIters;iter++) {
 
       for(int j=0;j<201;j++) {
         idField.setStringValue(Integer.toString(iter*201+j));

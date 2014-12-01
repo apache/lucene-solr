@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
@@ -48,6 +49,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -74,6 +76,7 @@ public class Config {
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
+  private int zkVersion = -1;
 
   /**
    * Builds a config from a resource name with no xpath prefix.
@@ -113,9 +116,14 @@ public class Config {
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
     try {
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      
+
       if (is == null) {
-        is = new InputSource(loader.openConfig(name));
+        InputStream in = loader.openConfig(name);
+        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+          zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+          log.info("loaded config {} with version {} ",name,zkVersion);
+        }
+        is = new InputSource(in);
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       }
 
@@ -462,6 +470,12 @@ public class Config {
     }
     
     return version;
+  }
+
+  /**If this config is loaded from zk the version is relevant other wise -1 is returned
+   */
+  public int getZnodeVersion(){
+    return zkVersion;
   }
 
   public Config getOriginalConfig() {

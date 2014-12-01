@@ -93,12 +93,12 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
         .toString());
 
     // phrase after changing default slop
-    qp.setDefaultPhraseSlop(99);
+    qp.setPhraseSlop(99);
     assertEquals("\"(multi multi2) foo\"~99 bar", qp.parse("\"multi foo\" bar",
         "").toString());
     assertEquals("\"(multi multi2) foo\"~99 \"foo bar\"~2", qp.parse(
         "\"multi foo\" \"foo bar\"~2", "").toString());
-    qp.setDefaultPhraseSlop(0);
+    qp.setPhraseSlop(0);
 
     // non-default operator:
     qp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);

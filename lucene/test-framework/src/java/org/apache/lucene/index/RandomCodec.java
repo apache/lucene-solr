@@ -37,6 +37,7 @@ import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
+import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
@@ -72,7 +73,7 @@ public class RandomCodec extends AssertingCodec {
 
   public final Set<String> avoidCodecs;
 
-  /** memorized field->postingsformat mappings */
+  /** memorized field to postingsformat mappings */
   // note: we have to sync this map even though its just for debugging/toString, 
   // otherwise DWPT's .toString() calls that iterate over the map can 
   // cause concurrentmodificationexception if indexwriter's infostream is on
@@ -136,15 +137,16 @@ public class RandomCodec extends AssertingCodec {
         new LuceneFixedGap(TestUtil.nextInt(random, 1, 1000)),
         new LuceneVarGapFixedInterval(TestUtil.nextInt(random, 1, 1000)),
         new LuceneVarGapDocFreqInterval(TestUtil.nextInt(random, 1, 100), TestUtil.nextInt(random, 1, 1000)),
-        new SimpleTextPostingsFormat(),
+        random.nextInt(10) == 0 ? new SimpleTextPostingsFormat() : TestUtil.getDefaultPostingsFormat(),
         new AssertingPostingsFormat(),
         new MemoryPostingsFormat(true, random.nextFloat()),
         new MemoryPostingsFormat(false, random.nextFloat()));
     
     addDocValues(avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
+        new DirectDocValuesFormat(), // maybe not a great idea...
         new MemoryDocValuesFormat(),
-        new SimpleTextDocValuesFormat(),
+        random.nextInt(10) == 0 ? new SimpleTextDocValuesFormat() : TestUtil.getDefaultDocValuesFormat(),
         new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);

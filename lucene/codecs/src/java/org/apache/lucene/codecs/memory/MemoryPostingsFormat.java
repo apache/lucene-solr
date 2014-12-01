@@ -68,7 +68,7 @@ import org.apache.lucene.util.packed.PackedInts;
 // it pulls the FST directly from what you wrote w/o going
 // to disk.
 
-/** Stores terms & postings (docs, positions, payloads) in
+/** Stores terms and postings (docs, positions, payloads) in
  *  RAM, using an FST.
  *
  * <p>Note that this codec implements advance as a linear

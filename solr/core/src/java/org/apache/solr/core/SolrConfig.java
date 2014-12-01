@@ -287,7 +287,7 @@ public class SolrConfig extends Config implements MapSerializable{
   }
 
   public static List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
-      .add(new SolrPluginInfo(SolrRequestHandler.class, "requestHandler", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(SolrRequestHandler.class, SolrRequestHandler.TYPE, REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QueryResponseWriter.class, "queryResponseWriter", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
@@ -328,19 +328,20 @@ public class SolrConfig extends Config implements MapSerializable{
     }
   }
 
-  private static  ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
+  public static  ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
     try {
       in = loader.openResource(ConfigOverlay.RESOURCE_NAME);
     } catch (IOException e) {
       //no problem no overlay.json file
-      return new ConfigOverlay(Collections.EMPTY_MAP,0);
+      return new ConfigOverlay(Collections.EMPTY_MAP,-1);
     }
 
     try {
       int version = 0; //will be always 0 for file based resourceloader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.info("config overlay loaded . version : {} ", version);
       }
       Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
       return new ConfigOverlay(m,version);
@@ -712,6 +713,7 @@ public class SolrConfig extends Config implements MapSerializable{
   @Override
   public Map<String, Object> toMap() {
     LinkedHashMap result = new LinkedHashMap();
+    if(getZnodeVersion() > -1) result.put("znodeVersion",getZnodeVersion());
     result.put("luceneMatchVersion",luceneMatchVersion);
     result.put("updateHandler", getUpdateHandlerInfo().toMap());
     Map m = new LinkedHashMap();
@@ -730,6 +732,9 @@ public class SolrConfig extends Config implements MapSerializable{
       if(plugin.options.contains(PluginOpts.REQUIRE_NAME)){
         LinkedHashMap items = new LinkedHashMap();
         for (PluginInfo info : infos) items.put(info.name, info.toMap());
+        if(tag.equals(SolrRequestHandler.TYPE)){
+          for (Map.Entry e : overlay.getReqHandlers().entrySet())  items.put(e.getKey(),e.getValue());
+        }
         result.put(tag,items);
       } else {
         if(plugin.options.contains(MULTI_OK)){

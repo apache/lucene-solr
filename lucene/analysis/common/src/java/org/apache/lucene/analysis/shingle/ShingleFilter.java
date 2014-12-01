@@ -39,7 +39,7 @@ import org.apache.lucene.util.AttributeSource;
  * might be tokenized into shingles "please divide", "divide this",
  * "this sentence", "sentence into", and "into shingles".
  *
- * <p>This filter handles position increments > 1 by inserting filler tokens
+ * <p>This filter handles position increments &gt; 1 by inserting filler tokens
  * (tokens with termtext "_"). It does not handle a position increment of 0.
  */
 public final class ShingleFilter extends TokenFilter {
@@ -356,7 +356,7 @@ public final class ShingleFilter extends TokenFilter {
 
   /**
    * <p>Get the next token from the input stream.
-   * <p>If the next token has <code>positionIncrement > 1</code>,
+   * <p>If the next token has <code>positionIncrement &gt; 1</code>,
    * <code>positionIncrement - 1</code> {@link #fillerToken}s are
    * inserted first.
    * @param target Where to put the new token; if null, a new instance is created.

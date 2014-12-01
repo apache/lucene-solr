@@ -294,7 +294,7 @@ public final class CJKBigramFilter extends TokenFilter {
 
   /** 
    * Flushes a bigram token to output from our buffer 
-   * This is the normal case, e.g. ABC -> AB BC
+   * This is the normal case, e.g. ABC -&gt; AB BC
    */
   private void flushBigram() {
     clearAttributes();

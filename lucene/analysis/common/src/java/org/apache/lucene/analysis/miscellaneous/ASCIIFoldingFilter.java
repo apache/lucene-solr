@@ -153,7 +153,7 @@ public final class ASCIIFoldingFilter extends TokenFilter {
    * accents are removed from accented characters.
    * @param input     The characters to fold
    * @param inputPos  Index of the first character to fold
-   * @param output    The result of the folding. Should be of size >= {@code length * 4}.
+   * @param output    The result of the folding. Should be of size &gt;= {@code length * 4}.
    * @param outputPos Index of output where to put the result of the folding
    * @param length    The number of characters to fold
    * @return length of output

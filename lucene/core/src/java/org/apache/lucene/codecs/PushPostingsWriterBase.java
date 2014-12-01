@@ -180,7 +180,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
    * for the field. */
   public abstract void startDoc(int docID, int freq) throws IOException;
 
-  /** Add a new position & payload, and start/end offset.  A
+  /** Add a new position and payload, and start/end offset.  A
    *  null payload means no payload; a non-null payload with
    *  zero length also means no payload.  Caller may reuse
    *  the {@link BytesRef} for the payload between calls
@@ -188,7 +188,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
    *  and <code>endOffset</code> will be -1 when offsets are not indexed. */
   public abstract void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException;
 
-  /** Called when we are done adding positions & payloads
+  /** Called when we are done adding positions and payloads
    *  for each doc. */
   public abstract void finishDoc() throws IOException;
 }

@@ -434,14 +434,14 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     Map<CharSequence, DateTools.Resolution> fieldMap = new HashMap<>();
     // set a field specific date resolution
     fieldMap.put(monthField, DateTools.Resolution.MONTH);
-    qp.setDateResolution(fieldMap);
+    qp.setDateResolutionMap(fieldMap);
 
     // set default date resolution to MILLISECOND
     qp.setDateResolution(DateTools.Resolution.MILLISECOND);
 
     // set second field specific date resolution
     fieldMap.put(hourField, DateTools.Resolution.HOUR);
-    qp.setDateResolution(fieldMap);
+    qp.setDateResolutionMap(fieldMap);
 
     // for this field no field specific date resolution has been set,
     // so verify if the default resolution is used

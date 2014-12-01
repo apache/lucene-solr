@@ -59,6 +59,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
@@ -76,12 +78,32 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    */
   public static final String FILTER_PARAM = "filter";
 
+  //score param values:
+  public static final String DISTANCE = "distance";
+  public static final String RECIP_DISTANCE = "recipDistance";
+  public static final String NONE = "none";
+
   protected final Logger log = LoggerFactory.getLogger( getClass() );
 
   protected SpatialContext ctx;
   protected SpatialArgsParser argsParser;
 
   private final Cache<String, T> fieldStrategyCache = CacheBuilder.newBuilder().build();
+
+  protected final Set<String> supportedScoreModes;
+
+  protected AbstractSpatialFieldType() {
+    this(Collections.emptySet());
+  }
+
+  protected AbstractSpatialFieldType(Set<String> moreScoreModes) {
+    Set<String> set = new TreeSet<>();//sorted for consistent display order
+    set.add(NONE);
+    set.add(DISTANCE);
+    set.add(RECIP_DISTANCE);
+    set.addAll(moreScoreModes);
+    supportedScoreModes = Collections.unmodifiableSet(set);
+  }
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -290,16 +312,27 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     return new FilteredQuery(functionQuery, filter);
   }
 
+  /** The set of values supported for the score local-param. Not null. */
+  public Set<String> getSupportedScoreModes() {
+    return supportedScoreModes;
+  }
+
   protected ValueSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String score, T strategy) {
-    if (score == null || "none".equals(score) || "".equals(score)) {
+    if (score == null) {
       return null;
-    } else if ("distance".equals(score)) {
-      double multiplier = 1.0;//TODO support units=kilometers
-      return strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter(), multiplier);
-    } else if ("recipDistance".equals(score)) {
-      return strategy.makeRecipDistanceValueSource(spatialArgs.getShape());
-    } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'score' local-param must be one of 'none', 'distance', or 'recipDistance'");
+    }
+    switch (score) {
+      case NONE:
+      case "":
+        return null;
+      case DISTANCE:
+        double multiplier = 1.0;//TODO support units=kilometers
+        return strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter(), multiplier);
+      case RECIP_DISTANCE:
+        return strategy.makeRecipDistanceValueSource(spatialArgs.getShape());
+      default:
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "'score' local-param must be one of " + supportedScoreModes);
     }
   }
 

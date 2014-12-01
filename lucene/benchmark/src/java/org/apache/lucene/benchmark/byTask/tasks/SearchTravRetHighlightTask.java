@@ -53,7 +53,7 @@ import java.util.Collections;
  * <li>fields - The fields to highlight.  If not specified all fields will be highlighted (or at least attempted)</li>
  * </ul>
  * Example:
- * <pre>"SearchHlgtSameRdr" SearchTravRetHighlight(size[10],highlight[10],mergeContiguous[true],maxFrags[3],fields[body]) > : 1000
+ * <pre>"SearchHlgtSameRdr" SearchTravRetHighlight(size[10],highlight[10],mergeContiguous[true],maxFrags[3],fields[body]) &gt; : 1000
  * </pre>
  *
  * Documents must be stored in order for this task to work.  Additionally, term vector positions can be used as well.

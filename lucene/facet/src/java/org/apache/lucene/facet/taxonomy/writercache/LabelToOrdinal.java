@@ -20,7 +20,7 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
  */
 
 /**
- * Abstract class for storing Label->Ordinal mappings in a taxonomy. 
+ * Abstract class for storing Label-&gt;Ordinal mappings in a taxonomy. 
  * 
  * @lucene.experimental
  */

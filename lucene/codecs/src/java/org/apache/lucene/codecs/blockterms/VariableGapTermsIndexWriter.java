@@ -109,7 +109,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
 
-  /** Sets an index term when docFreq >= docFreqThresh, or
+  /** Sets an index term when docFreq &gt;= docFreqThresh, or
    *  every interval terms.  This should reduce seek time
    *  to high docFreq terms.  */
   public static final class EveryNOrDocFreqTermSelector extends IndexTermSelector {

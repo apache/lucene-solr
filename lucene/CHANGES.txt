@@ -115,6 +115,8 @@ New Features
   suggesters from multi-valued fields.  (Varun Thacker via Mike
   McCandless)
 
+* LUCENE-6077: Added a filter cache. (Adrien Grand, Robert Muir)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
@@ -225,6 +227,8 @@ API Changes
 
 * LUCENE-6068: LeafReader.fields() never returns null. (Robert Muir)
 
+* LUCENE-6082: Remove abort() from codec apis. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -311,6 +315,9 @@ Tests
   Some of the slow Monster tests now explicitly choose the default codec.
   (Mike McCandless, Shawn Heisey)
 
+* LUCENE-5968: Improve error message when 'ant beast' is run on top-level
+  modules.  (Ramkumar Aiyengar, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
@@ -344,6 +351,11 @@ Optimizations
 
 * LUCENE-6033: CachingTokenFilter now uses ArrayList not LinkedList, and has new
   isCached() method. (David Smiley)
+
+* LUCENE-6031: TokenSources (in the default highlighter) converts term vectors into a
+  TokenStream much faster in linear time (not N*log(N) using less memory, and with reset()
+  implemented.  Only one of offsets or positions are required of the term vector.
+  (David Smiley)
 
 Build
 

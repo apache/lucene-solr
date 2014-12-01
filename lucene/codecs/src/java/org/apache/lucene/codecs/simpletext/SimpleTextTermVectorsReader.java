@@ -67,7 +67,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.VE
 /**
  * Reads plain-text term vectors.
  * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * <b>FOR RECREATIONAL USE ONLY</b>
  * @lucene.experimental
  */
 public class SimpleTextTermVectorsReader extends TermVectorsReader {

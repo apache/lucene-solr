@@ -124,7 +124,10 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       fs = new HandleLimitFS(fs, MAX_OPEN_FILES).getFileSystem(null);
       // windows is currently slow
       if (random.nextInt(10) == 0) {
-        fs = new WindowsFS(fs).getFileSystem(null);
+        // don't try to emulate windows on windows: they don't get along
+        if (!Constants.WINDOWS) {
+          fs = new WindowsFS(fs).getFileSystem(null);
+        }
       }
     }
     if (LuceneTestCase.VERBOSE) {

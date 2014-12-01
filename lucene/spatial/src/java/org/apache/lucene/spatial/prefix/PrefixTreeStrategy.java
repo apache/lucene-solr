@@ -40,8 +40,9 @@ import com.spatial4j.core.shape.Shape;
  * subclasses are {@link RecursivePrefixTreeStrategy} and {@link
  * TermQueryPrefixTreeStrategy}.  This strategy is most effective as a fast
  * approximate spatial search filter.
- *
- * <h4>Characteristics:</h4>
+ * <p>
+ * <b>Characteristics:</b>
+ * <p>
  * <ul>
  * <li>Can index any shape; however only {@link RecursivePrefixTreeStrategy}
  * can effectively search non-point shapes.</li>
@@ -64,8 +65,9 @@ import com.spatial4j.core.shape.Shape;
  * it doesn't scale to large numbers of points nor is it real-time-search
  * friendly.</li>
  * </ul>
- *
- * <h4>Implementation:</h4>
+ * <p>
+ * <b>Implementation:</b>
+ * <p>
  * The {@link SpatialPrefixTree} does most of the work, for example returning
  * a list of terms representing grids of various sizes for a supplied shape.
  * An important

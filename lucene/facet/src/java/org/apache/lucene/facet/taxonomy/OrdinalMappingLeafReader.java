@@ -53,7 +53,7 @@ import org.apache.lucene.util.IntsRef;
  * IndexWriter writer = new IndexWriter(newDir, conf);
  * List&lt;LeafReaderContext&gt; leaves = reader.leaves();
  * LeafReader wrappedLeaves[] = new LeafReader[leaves.size()];
- * for (int i = 0; i < leaves.size(); i++) {
+ * for (int i = 0; i &lt; leaves.size(); i++) {
  *   wrappedLeaves[i] = new OrdinalMappingLeafReader(leaves.get(i).reader(), ordmap);
  * }
  * writer.addIndexes(new MultiReader(wrappedLeaves));

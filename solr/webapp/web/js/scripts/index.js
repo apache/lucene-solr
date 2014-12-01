@@ -257,7 +257,7 @@ sammy.get
               .show();
           }
 
-          var commandLineArgs = app.dashboard_values['jvm']['jmx']['commandLineArgs'];
+          var commandLineArgs = app.dashboard_values['jvm']['jmx']['commandLineArgs'].sort().reverse();
           if( 0 !== commandLineArgs.length )
           {
             var cmd_arg_element = $( '.command_line_args dt', this );

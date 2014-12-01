@@ -19,11 +19,15 @@ package org.apache.solr.spelling.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -92,9 +96,26 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
     : AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS;
 
     try {
-      return new AnalyzingInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-                                         FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
-                                         queryAnalyzer, minPrefixChars, true);
+      return new AnalyzingInfixSuggester(FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
+                                         queryAnalyzer, minPrefixChars, true) {
+        @Override
+        public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+          List<LookupResult> res = super.lookup(key, contexts, num, allTermsRequired, doHighlight);
+          if (doHighlight) {
+            List<LookupResult> res2 = new ArrayList<>();
+            for(LookupResult hit : res) {
+              res2.add(new LookupResult(hit.highlightKey.toString(),
+                                        hit.highlightKey,
+                                        hit.value,
+                                        hit.payload,
+                                        hit.contexts));
+            }
+            res = res2;
+          }
+
+          return res;
+        }
+        };
     } catch (IOException e) {
       throw new RuntimeException();
     }

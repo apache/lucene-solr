@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 /**
- * Traverses a {@link SpatialPrefixTree} indexed field, using the template &
+ * Traverses a {@link SpatialPrefixTree} indexed field, using the template and
  * visitor design patterns for subclasses to guide the traversal and collect
  * matching documents.
  * <p/>
@@ -257,7 +257,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     }
 
     /**
-     * Called when doing a divide & conquer to find the next intersecting cells
+     * Called when doing a divide and conquer to find the next intersecting cells
      * of the query shape that are beneath {@code cell}. {@code cell} is
      * guaranteed to have an intersection and thus this must return some number
      * of nodes.

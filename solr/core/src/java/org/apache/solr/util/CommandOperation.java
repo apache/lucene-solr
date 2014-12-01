@@ -210,5 +210,19 @@ public  class CommandOperation {
     }
 
   }
+  public CommandOperation getCopy(){
+    return new CommandOperation(name,commandData);
+  }
 
+  public Map getMap(String key, Map def) {
+    Object o =getMapVal(key);
+    if(o==null) return def;
+    if ( !(o instanceof Map)) {
+      addError(MessageFormat.format("''{0}'' must be a map", key));
+      return def;
+    } else {
+      return (Map) o;
+
+    }
+  }
 }

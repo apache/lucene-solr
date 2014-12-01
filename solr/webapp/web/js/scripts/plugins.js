@@ -235,21 +235,21 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
           }
 
           content += '<li><dl class="clearfix">' + "\n";
-          content += '<dt>' + detail_key + ':</dt>' + "\n";
+          content += '<dt>' + detail_key.esc() + ':</dt>' + "\n";
           if($.isArray(detail_value)) {
             $.each(detail_value, function(index, value) { 
-              content += '<dd>' + value + '</dd>' + "\n";
+              content += '<dd>' + value.esc() + '</dd>' + "\n";
             });
           }
           else {
-            content += '<dd>' + detail_value + '</dd>' + "\n";
+            content += '<dd>' + new String( detail_value ).esc() + '</dd>' + "\n";
           }
           content += '</dl></li>' + "\n";
         }
         else if( 'stats' === detail_key && details[detail_key] )
         {
           content += '<li class="stats clearfix">' + "\n";
-          content += '<span>' + detail_key + ':</span>' + "\n";
+          content += '<span>' + detail_key.esc() + ':</span>' + "\n";
           content += '<ul>' + "\n";
 
           for( var stats_key in details[detail_key] )
@@ -258,8 +258,8 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
             stats_value = stats_value.replace( /([\(@])/g, '$1&#8203;' );
 
             content += '<li><dl class="clearfix">' + "\n";
-            content += '<dt>' + stats_key + ':</dt>' + "\n";
-            content += '<dd>' + stats_value + '</dd>' + "\n";
+            content += '<dt>' + stats_key.esc() + ':</dt>' + "\n";
+            content += '<dd>' + stats_value.esc() + '</dd>' + "\n";
             content += '</dl></li>' + "\n";
           }
 

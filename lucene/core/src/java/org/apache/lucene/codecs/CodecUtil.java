@@ -178,7 +178,7 @@ public final class CodecUtil {
    * @param maxVersion The maximum supported expected version number.
    * @return The actual version found, when a valid header is found 
    *         that matches <code>codec</code>, with an actual version 
-   *         where <code>minVersion <= actual <= maxVersion</code>.
+   *         where {@code minVersion <= actual <= maxVersion}.
    *         Otherwise an exception is thrown.
    * @throws CorruptIndexException If the first four bytes are not
    *         {@link #CODEC_MAGIC}, or if the actual codec found is
@@ -238,7 +238,7 @@ public final class CodecUtil {
    * @param expectedSuffix The expected auxiliary suffix for this file.
    * @return The actual version found, when a valid header is found 
    *         that matches <code>codec</code>, with an actual version 
-   *         where <code>minVersion <= actual <= maxVersion</code>, 
+   *         where {@code minVersion <= actual <= maxVersion}, 
    *         and matching <code>expectedID</code> and <code>expectedSuffix</code>
    *         Otherwise an exception is thrown.
    * @throws CorruptIndexException If the first four bytes are not
@@ -419,18 +419,6 @@ public final class CodecUtil {
     final int algorithmID = in.readInt();
     if (algorithmID != 0) {
       throw new CorruptIndexException("codec footer mismatch: unknown algorithmID: " + algorithmID, in);
-    }
-  }
-  
-  /**
-   * Checks that the stream is positioned at the end, and throws exception
-   * if it is not. 
-   * @deprecated Use {@link #checkFooter} instead, this should only used for files without checksums 
-   */
-  @Deprecated
-  public static void checkEOF(IndexInput in) throws IOException {
-    if (in.getFilePointer() != in.length()) {
-      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length(), in);
     }
   }
   

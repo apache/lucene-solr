@@ -369,17 +369,6 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * Sets the default slop for phrases. If zero, then exact phrase matches are
    * required. Default value is zero.
-   * 
-   * @deprecated renamed to {@link #setPhraseSlop(int)}
-   */
-  @Deprecated
-  public void setDefaultPhraseSlop(int defaultPhraseSlop) {
-    getQueryConfigHandler().set(ConfigurationKeys.PHRASE_SLOP, defaultPhraseSlop);
-  }
-  
-  /**
-   * Sets the default slop for phrases. If zero, then exact phrase matches are
-   * required. Default value is zero.
    */
   @Override
   public void setPhraseSlop(int defaultPhraseSlop) {
@@ -509,18 +498,6 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    */
   public DateTools.Resolution getDateResolution() {
     return getQueryConfigHandler().get(ConfigurationKeys.DATE_RESOLUTION);
-  }
-
-  /**
-   * Sets the {@link Resolution} used for each field
-   * 
-   * @param dateRes a collection that maps a field to its {@link Resolution}
-   * 
-   * @deprecated this method was renamed to {@link #setDateResolutionMap(Map)} 
-   */
-  @Deprecated
-  public void setDateResolution(Map<CharSequence, DateTools.Resolution> dateRes) {
-    setDateResolutionMap(dateRes);
   }
   
   /**

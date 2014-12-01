@@ -58,7 +58,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
     return setResult();
   }
 
-  /** Seeks to smallest term that's >= target. */
+  /** Seeks to smallest term that's &gt;= target. */
   public InputOutput<T> seekCeil(BytesRef target) throws IOException {
     this.target = target;
     targetLength = target.length;
@@ -66,7 +66,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
     return setResult();
   }
 
-  /** Seeks to biggest term that's <= target. */
+  /** Seeks to biggest term that's &lt;= target. */
   public InputOutput<T> seekFloor(BytesRef target) throws IOException {
     this.target = target;
     targetLength = target.length;

@@ -40,8 +40,6 @@
   <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
   <requestHandler name="/replication" class="solr.ReplicationHandler">
 	<lst name="slave">
 		<str name="masterUrl">http://127.0.0.1:TEST_PORT/solr</str>
