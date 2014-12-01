@@ -481,6 +481,9 @@ Bug Fixes
 
 * SOLR-6784: BBoxField's 'score' mode should have been optional. (David Smiley)
 
+* SOLR-6510: The collapse QParser would throw a NPE when used on a DocValues field on
+  an empty segment/index. (Christine Poerschke, David Smiley)
+
 ==================  4.10.2 ==================
 
 Bug Fixes
