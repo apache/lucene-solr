@@ -482,6 +482,21 @@
     </lst>
   </requestHandler>
 
+  <requestHandler name="/search-facet-def" class="solr.SearchHandler" >
+    <lst name="defaults">
+      <str name="facet.field">foo_s</str>
+    </lst>
+    <lst name="appends">
+      <str name="facet.query">foo_s:bar</str>
+    </lst>
+  </requestHandler>
+  <requestHandler name="/search-facet-invariants" class="solr.SearchHandler" >
+    <lst name="invariants">
+      <str name="facet.field">foo_s</str>
+      <str name="facet.query">foo_s:bar</str>
+    </lst>
+  </requestHandler>
+
   <admin>
     <defaultQuery>solr</defaultQuery>
     <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
