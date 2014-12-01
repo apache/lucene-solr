@@ -286,13 +286,6 @@ Bug Fixes
   it caused long startup times on lage indexes even when it wasn't used.
   (yonik)
 
-* SOLR-6662: better validation when parsing command-line options that expect a value
-  (Timothy Potter)
-
-* SOLR-6705: Better strategy for dealing with JVM specific options in the start
-  scripts; remove -XX:+AggressiveOpts and only set -XX:-UseSuperWord for Java 1.7u40
-  to u51. (Uwe Schindler, janhoy, hossman, Timothy Potter)
-
 * SOLR-6738: Admin UI - Escape Data on Plugins-View (steffkes)
 
 * SOLR-3774: Solr adds RequestHandler SolrInfoMBeans twice to the JMX server.
@@ -401,10 +394,6 @@ Other Changes
 
 * SOLR-6651: Fix wrong timeout logged in waitForReplicasToComeUp. (shalin)
 
-* SOLR-6661: Adjust all example configurations to allow overriding error-prone 
-  relative paths for solrconfig.xml <lib> references with solr.install.dir 
-  system property; bin/solr scripts will set it appropriately. (ehatcher)
-
 * SOLR-6698: Solr is not consistent wrt ZkCredentialsProvider / ZkCredentialProvider.
   References to zkCredentialProvider in System properties or configurations should be
   changed to zkCredentialsProvider.  (Gregory Chanan)
@@ -500,6 +489,26 @@ Bug Fixes
 * SOLR-6610: Slow startup of new clusters because ZkController.publishAndWaitForDownStates
   always times out. (Jessica Cheng Mallet, shalin, Noble Paul)
 
+* SOLR-6662: better validation when parsing command-line options that expect a value
+  (Timothy Potter)
+
+* SOLR-6732: Fix handling of leader-initiated recovery state was String in older versions
+  and is now a JSON map, caused backwards compatibility issues when doing rolling upgrades of
+  a live cluster while indexing (Timothy Potter)
+
+* SOLR-6705: Better strategy for dealing with JVM specific options in the start
+  scripts; remove -XX:+AggressiveOpts and only set -XX:-UseSuperWord for Java 1.7u40
+  to u51. (Uwe Schindler, janhoy, hossman, Timothy Potter)
+
+* SOLR-6726: better strategy for selecting the JMX RMI port based on SOLR_PORT in bin/solr
+  script (Timothy Potter)
+
+Other Changes
+----------------------
+
+* SOLR-6661: Adjust all example configurations to allow overriding error-prone
+  relative paths for solrconfig.xml <lib> references with solr.install.dir
+  system property; bin/solr scripts will set it appropriately. (ehatcher)
 
 ==================  4.10.2 ==================
 

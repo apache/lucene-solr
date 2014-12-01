@@ -150,6 +150,9 @@ function print_usage() {
     echo "  -h <host>     Specify the hostname for this Solr instance"
     echo ""
     echo "  -p <port>     Specify the port to start the Solr HTTP listener on; default is 8983"
+    echo "                  The specified port (SOLR_PORT) will also be used to determine the stop port"
+    echo "                  STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(1\$SOLR_PORT). "
+    echo "                  For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
     echo ""
     echo "  -d <dir>      Specify the Solr server directory; defaults to server"
     echo ""
@@ -173,9 +176,9 @@ function print_usage() {
     echo "      schemaless:    Schema-less example"
     echo ""
     echo "  -a            Additional parameters to pass to the JVM when starting Solr, such as to setup"
-    echo "                Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
-    echo "                you could pass: -a \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
-    echo "                In most cases, you should wrap the additional parameters in double quotes."
+    echo "                  Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
+    echo "                  you could pass: -a \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
+    echo "                  In most cases, you should wrap the additional parameters in double quotes."
     echo ""
     echo "  -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
@@ -190,10 +193,6 @@ function print_usage() {
     echo "  -p <port>     Specify the port the Solr HTTP listener is bound to; default is 8983"
     echo ""
     echo "  -all          Find and stop all running Solr servers on this host"
-    echo ""
-    echo "  -V            Verbose messages from this script"
-    echo ""
-    echo "NOTE: If port is not specified, then all running Solr servers are stopped."
     echo ""
   elif [ "$CMD" == "healthcheck" ]; then
     echo ""
@@ -876,8 +875,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
   fi
 
   if [ "$SOLR_PID" != "" ]; then
-    echo -e "\nSolr already running on port $SOLR_PORT (pid: $SOLR_PID)!"
-    echo -e "Please use the 'restart' command if you want to restart this node.\n"
+    echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\n"
     exit
   fi
 else
@@ -964,12 +962,17 @@ fi
 
 # These are useful for attaching remove profilers like VisualVM/JConsole
 if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
+
+  if [ "$RMI_PORT" == "" ]; then
+    RMI_PORT=1$SOLR_PORT
+  fi
+
   REMOTE_JMX_OPTS="-Dcom.sun.management.jmxremote \
 -Dcom.sun.management.jmxremote.local.only=false \
 -Dcom.sun.management.jmxremote.ssl=false \
 -Dcom.sun.management.jmxremote.authenticate=false \
--Dcom.sun.management.jmxremote.port=10${SOLR_PORT: -2} \
--Dcom.sun.management.jmxremote.rmi.port=10${SOLR_PORT: -2}"
+-Dcom.sun.management.jmxremote.port=$RMI_PORT \
+-Dcom.sun.management.jmxremote.rmi.port=$RMI_PORT"
 
   # if the host is set, then set that as the rmi server hostname
   if [ "$SOLR_HOST" != "" ]; then
@@ -1013,24 +1016,34 @@ function launch_solr() {
 
   if $verbose ; then
     echo -e "\nStarting Solr using the following settings:"
+    echo -e "    JAVA            = $JAVA"
     echo -e "    SOLR_SERVER_DIR = $SOLR_SERVER_DIR"
     echo -e "    SOLR_HOME       = $SOLR_HOME"
-    echo -e "    JAVA            = $JAVA"
     echo -e "    SOLR_HOST       = $SOLR_HOST"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
+    echo -e "    STOP_PORT       = $STOP_PORT"
+    echo -e "    SOLR_JAVA_MEM   = $SOLR_JAVA_MEM"
     echo -e "    GC_TUNE         = $GC_TUNE"
     echo -e "    GC_LOG_OPTS     = $GC_LOG_OPTS"
-    echo -e "    SOLR_JAVA_MEM   = $SOLR_JAVA_MEM"
-    echo -e "    REMOTE_JMX_OPTS = $REMOTE_JMX_OPTS"
-    echo -e "    CLOUD_MODE_OPTS = $CLOUD_MODE_OPTS"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
-    
+
+    if [ "$SOLR_MODE" == "solrcloud" ]; then
+      echo -e "    CLOUD_MODE_OPTS = $CLOUD_MODE_OPTS"
+    fi
+
     if [ "$SOLR_OPTS" != "" ]; then
       echo -e "    SOLR_OPTS        = $SOLR_OPTS"
     fi
+
     if [ "$SOLR_ADDL_ARGS" != "" ]; then
       echo -e "    SOLR_ADDL_ARGS   = $SOLR_ADDL_ARGS"
     fi
+
+    if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
+      echo -e "    RMI_PORT        = $RMI_PORT"
+      echo -e "    REMOTE_JMX_OPTS = $REMOTE_JMX_OPTS"
+    fi
+    echo -e "\n"
   fi
     
   # need to launch solr from the server dir

@@ -63,6 +63,9 @@ REM JMX savvy tools like VisualVM remotely, set to "false" to disable that behav
 REM (recommended in production environments)
 set ENABLE_REMOTE_JMX_OPTS=true
 
+REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+REM set RMI_PORT=18983
+
 REM Anything you add to the SOLR_OPTS variable will be included in the java
 REM start command line as-is, in ADDITION to other options. If you specify the
 REM -a option on start script, those options will be appended as well. Examples:
