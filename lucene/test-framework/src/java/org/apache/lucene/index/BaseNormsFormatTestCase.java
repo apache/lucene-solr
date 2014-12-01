@@ -185,6 +185,30 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   }
   
   public void testNCommon() throws Exception {
+    final Random r = random();
+    final int N = TestUtil.nextInt(r, 2, 15);
+    final long[] commonValues = new long[N];
+    for (int j = 0; j < N; ++j) {
+      commonValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    }
+    final int numOtherValues = TestUtil.nextInt(r, 2, 256 - N);
+    final long[] otherValues = new long[numOtherValues];
+    for (int j = 0; j < numOtherValues; ++j) {
+      otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    }
+    doTestNormsVersusStoredFields(new LongProducer() {
+      @Override
+      long next() {
+        return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
+      }
+    });
+  }
+  
+  /**
+   * a more thorough n-common that tests all low bpv
+   */
+  @Nightly
+  public void testNCommonBig() throws Exception {
     final int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; ++i) {

@@ -186,9 +186,6 @@ public final class TermsFilter extends Filter {
     BitDocIdSet.Builder builder = new BitDocIdSet.Builder(reader.maxDoc());
     final Fields fields = reader.fields();
     final BytesRef spare = new BytesRef(this.termsBytes);
-    if (fields == null) {
-      return builder.build();
-    }
     Terms terms = null;
     TermsEnum termsEnum = null;
     DocsEnum docs = null;

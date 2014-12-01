@@ -39,7 +39,6 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
-@Slow
 public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   public static UserDictionary readDict() {
@@ -184,15 +183,15 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerNoPunct, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 500*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNoPunct, 500*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerNoPunct, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNoPunct, 20*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -207,11 +206,11 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
                         return new TokenStreamComponents(tokenizer, graph);
                       }
                     },
-                    100*RANDOM_MULTIPLIER, 8192);
+                    20*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testLargeDocReliability() throws Exception {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
       String s = TestUtil.randomUnicodeString(random(), 10000);
       try (TokenStream ts = analyzer.tokenStream("foo", s)) {
         ts.reset();

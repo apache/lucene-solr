@@ -82,6 +82,7 @@ import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
@@ -819,6 +820,11 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** create a new index writer config with random defaults */
+  public static IndexWriterConfig newIndexWriterConfig() {
+    return newIndexWriterConfig(new MockAnalyzer(random()));
+  }
+
+  /** create a new index writer config with random defaults */
   public static IndexWriterConfig newIndexWriterConfig(Analyzer a) {
     return newIndexWriterConfig(random(), a);
   }
@@ -842,7 +848,16 @@ public abstract class LuceneTestCase extends Assert {
     } else if (rarely(r)) {
       int maxThreadCount = TestUtil.nextInt(r, 1, 4);
       int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
-      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      ConcurrentMergeScheduler cms;
+      if (r.nextBoolean()) {
+        cms = new ConcurrentMergeScheduler();
+      } else {
+        cms = new ConcurrentMergeScheduler() {
+            @Override
+            protected synchronized void maybeStall() {
+            }
+          };
+      }
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
     }
@@ -1256,7 +1271,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (rarely(random) && !bare) { 
-      final double maxMBPerSec = 10 + 5*(random.nextDouble()-0.5);
+      final double maxMBPerSec = TestUtil.nextInt(random, 20, 40);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
       }

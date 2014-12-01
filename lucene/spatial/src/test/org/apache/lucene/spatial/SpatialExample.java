@@ -24,6 +24,7 @@ import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -122,7 +123,8 @@ public class SpatialExample extends LuceneTestCase {
 
   private Document newSampleDocument(int id, Shape... shapes) {
     Document doc = new Document();
-    doc.add(new IntField("id", id, Field.Store.YES));
+    doc.add(new StoredField("id", id));
+    doc.add(new NumericDocValuesField("id", id));
     //Potentially more than one shape in this field is supported by some
     // strategies; see the javadocs of the SpatialStrategy impl to see.
     for (Shape shape : shapes) {

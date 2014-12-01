@@ -26,7 +26,7 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat; // javadocs
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -49,7 +49,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
 
-// TODO: 
+// TODO:
 //   - build depth-N prefix hash?
 //   - or: longer dense skip lists than just next byte?
 
@@ -60,7 +60,7 @@ import org.apache.lucene.util.automaton.Transition;
  *  <p><b><font color=red>WARNING</font></b>: This is
  *  exceptionally RAM intensive: it makes no effort to
  *  compress the postings data, storing terms as separate
- *  byte[] and postings as separate int[], but as a result it 
+ *  byte[] and postings as separate int[], but as a result it
  *  gives substantial increase in search performance.
  *
  *  <p>This postings format supports {@link TermsEnum#ord}
@@ -87,7 +87,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   public DirectPostingsFormat() {
     this(DEFAULT_MIN_SKIP_COUNT, DEFAULT_LOW_FREQ_CUTOFF);
   }
-  
+
   /** minSkipCount is how many terms in a row must have the
    *  same prefix before we put a skip pointer down.  Terms
    *  with docFreq <= lowFreqCutoff will use a single int[]
@@ -98,7 +98,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     this.minSkipCount = minSkipCount;
     this.lowFreqCutoff = lowFreqCutoff;
   }
-  
+
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return PostingsFormat.forName("Lucene50").fieldsConsumer(state);
@@ -159,7 +159,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
-    
+
     @Override
     public Iterable<? extends Accountable> getChildResources() {
       return Accountables.namedAccountables("field", fields);
@@ -204,7 +204,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       @Override
       public long ramBytesUsed() {
         return BASE_RAM_BYTES_USED +
-            ((postings!=null) ? RamUsageEstimator.sizeOf(postings) : 0) + 
+            ((postings!=null) ? RamUsageEstimator.sizeOf(postings) : 0) +
             ((payloads!=null) ? RamUsageEstimator.sizeOf(payloads) : 0);
       }
 
@@ -235,32 +235,32 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public long ramBytesUsed() {
-         long sizeInBytes = BASE_RAM_BYTES_USED;
-         sizeInBytes += (docIDs!=null)? RamUsageEstimator.sizeOf(docIDs) : 0;
-         sizeInBytes += (freqs!=null)? RamUsageEstimator.sizeOf(freqs) : 0;
-         
-         if(positions != null) {
-           sizeInBytes += RamUsageEstimator.shallowSizeOf(positions);
-           for(int[] position : positions) {
-             sizeInBytes += (position!=null) ? RamUsageEstimator.sizeOf(position) : 0;
-           }
-         }
-         
-         if (payloads != null) {
-           sizeInBytes += RamUsageEstimator.shallowSizeOf(payloads);
-           for(byte[][] payload : payloads) {
-             if(payload != null) {
-               sizeInBytes += RamUsageEstimator.shallowSizeOf(payload);
-               for(byte[] pload : payload) {
-                 sizeInBytes += (pload!=null) ? RamUsageEstimator.sizeOf(pload) : 0; 
-               }
-             }
-           }
-         }
-         
-         return sizeInBytes;
+        long sizeInBytes = BASE_RAM_BYTES_USED;
+        sizeInBytes += (docIDs!=null)? RamUsageEstimator.sizeOf(docIDs) : 0;
+        sizeInBytes += (freqs!=null)? RamUsageEstimator.sizeOf(freqs) : 0;
+
+        if(positions != null) {
+          sizeInBytes += RamUsageEstimator.shallowSizeOf(positions);
+          for(int[] position : positions) {
+            sizeInBytes += (position!=null) ? RamUsageEstimator.sizeOf(position) : 0;
+          }
+        }
+
+        if (payloads != null) {
+          sizeInBytes += RamUsageEstimator.shallowSizeOf(payloads);
+          for(byte[][] payload : payloads) {
+            if(payload != null) {
+              sizeInBytes += RamUsageEstimator.shallowSizeOf(payload);
+              for(byte[] pload : payload) {
+                sizeInBytes += (pload!=null) ? RamUsageEstimator.sizeOf(pload) : 0;
+              }
+            }
+          }
+        }
+
+        return sizeInBytes;
       }
-      
+
       @Override
       public Iterable<? extends Accountable> getChildResources() {
         return Collections.emptyList();
@@ -321,7 +321,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
       terms = new TermAndSkip[numTerms];
       termOffsets = new int[1+numTerms];
-      
+
       byte[] termBytes = new byte[1024];
 
       this.minSkipCount = minSkipCount;
@@ -420,7 +420,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           }
 
           final int[] postings = scratch.get();
-        
+
           ent = new LowFreqTerm(postings, payloads, docFreq, (int) totalTermFreq);
         } else {
           final int[] docs = new int[docFreq];
@@ -532,17 +532,17 @@ public final class DirectPostingsFormat extends PostingsFormat {
       sizeInBytes += ((skips!=null) ? RamUsageEstimator.sizeOf(skips) : 0);
       sizeInBytes += ((skipOffsets!=null) ? RamUsageEstimator.sizeOf(skipOffsets) : 0);
       sizeInBytes += ((sameCounts!=null) ? RamUsageEstimator.sizeOf(sameCounts) : 0);
-      
+
       if(terms!=null) {
         sizeInBytes += RamUsageEstimator.shallowSizeOf(terms);
         for(TermAndSkip termAndSkip : terms) {
           sizeInBytes += (termAndSkip!=null) ? termAndSkip.ramBytesUsed() : 0;
         }
       }
-      
+
       return sizeInBytes;
     }
-    
+
     @Override
     public Iterable<? extends Accountable> getChildResources() {
       return Collections.emptyList();
@@ -560,7 +560,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       int upto = termOffsets[ord];
       final int termLen = termOffsets[1+ord] - upto;
       int otherUpto = other.offset;
-      
+
       final int stop = upto + Math.min(termLen, other.length);
       while (upto < stop) {
         int diff = (termBytes[upto++] & 0xFF) - (otherBytes[otherUpto++] & 0xFF);
@@ -568,7 +568,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           return diff;
         }
       }
-    
+
       // One is a prefix of the other, or, they are equal:
       return termLen - other.length;
     }
@@ -720,7 +720,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     public boolean hasPositions() {
       return hasPos;
     }
-    
+
     @Override
     public boolean hasPayloads() {
       return hasPayloads;
@@ -868,13 +868,15 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
         // TODO: implement reuse
         // it's hairy!
 
+        if ((flags & DocsEnum.FLAG_POSITIONS) >= DocsEnum.FLAG_POSITIONS)
+          return docsAndPositions(liveDocs, reuse, flags);
+
         if (terms[termOrd] instanceof LowFreqTerm) {
           final int[] postings = ((LowFreqTerm) terms[termOrd]).postings;
-          final byte[] payloads = ((LowFreqTerm) terms[termOrd]).payloads;
           if (hasFreq) {
             if (hasPos) {
               int posLen;
@@ -890,13 +892,13 @@ public final class DirectPostingsFormat extends PostingsFormat {
               if (reuse instanceof LowFreqDocsEnum) {
                 docsEnum = (LowFreqDocsEnum) reuse;
                 if (!docsEnum.canReuse(liveDocs, posLen)) {
-                  docsEnum = new LowFreqDocsEnum(liveDocs, hasOffsets, hasPayloads);
+                  docsEnum = new LowFreqDocsEnum(liveDocs, posLen);
                 }
               } else {
-                docsEnum = new LowFreqDocsEnum(liveDocs, hasOffsets, hasPayloads);
+                docsEnum = new LowFreqDocsEnum(liveDocs, posLen);
               }
 
-              return docsEnum.reset(postings, payloads);
+              return docsEnum.reset(postings);
             } else {
               LowFreqDocsEnumNoPos docsEnum;
               if (reuse instanceof LowFreqDocsEnumNoPos) {
@@ -954,7 +956,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           final LowFreqTerm term = ((LowFreqTerm) terms[termOrd]);
           final int[] postings = term.postings;
           final byte[] payloads = term.payloads;
-          return new LowFreqDocsEnum(liveDocs, hasOffsets, hasPayloads).reset(postings, payloads);
+          return new LowFreqDocsAndPositionsEnum(liveDocs, hasOffsets, hasPayloads).reset(postings, payloads);
         } else {
           final HighFreqTerm term = (HighFreqTerm) terms[termOrd];
           return new HighFreqDocsAndPositionsEnum(liveDocs, hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
@@ -1217,7 +1219,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           // if (DEBUG) {
           //   System.out.println("  term=" + new BytesRef(termBytes, termOffset, termLength).utf8ToString() + " skips=" + Arrays.toString(skips));
           // }
-        
+
           assert termOrd < state.changeOrd;
 
           assert stateUpto <= termLength: "term.length=" + termLength + "; stateUpto=" + stateUpto;
@@ -1350,7 +1352,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
             compiledAutomaton.automaton.initTransition(nextState, states[stateUpto].transition);
             states[stateUpto].transitionUpto = -1;
             states[stateUpto].transitionMax = -1;
-            
+
             if (stateUpto == termLength) {
               // if (DEBUG) {
               //   System.out.println("  term ends after push");
@@ -1470,10 +1472,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
         // TODO: implement reuse
         // it's hairy!
+        if ((flags & DocsEnum.FLAG_POSITIONS) >= DocsEnum.FLAG_POSITIONS)
+          return docsAndPositions(liveDocs, reuse, flags);
 
         if (terms[termOrd] instanceof LowFreqTerm) {
           final int[] postings = ((LowFreqTerm) terms[termOrd]).postings;
-          final byte[] payloads = ((LowFreqTerm) terms[termOrd]).payloads;
           if (hasFreq) {
             if (hasPos) {
               int posLen;
@@ -1485,7 +1488,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
               if (hasPayloads) {
                 posLen++;
               }
-              return new LowFreqDocsEnum(liveDocs, hasOffsets, hasPayloads).reset(postings, payloads);
+              return new LowFreqDocsEnum(liveDocs, posLen).reset(postings);
             } else {
               return new LowFreqDocsEnumNoPos(liveDocs).reset(postings);
             }
@@ -1512,7 +1515,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           final LowFreqTerm term = ((LowFreqTerm) terms[termOrd]);
           final int[] postings = term.postings;
           final byte[] payloads = term.payloads;
-          return new LowFreqDocsEnum(liveDocs, hasOffsets, hasPayloads).reset(postings, payloads);
+          return new LowFreqDocsAndPositionsEnum(liveDocs, hasOffsets, hasPayloads).reset(postings, payloads);
         } else {
           final HighFreqTerm term = (HighFreqTerm) terms[termOrd];
           return new HighFreqDocsAndPositionsEnum(liveDocs, hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
@@ -1589,32 +1592,32 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int startPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int endPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int startOffset() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int endOffset() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public BytesRef getPayload() throws IOException {
-      return null;
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1623,7 +1626,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       // be costly:
       return slowAdvance(target);
     }
-    
+
     @Override
     public long cost() {
       return postings.length;
@@ -1687,32 +1690,32 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int startPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int endPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int startOffset() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int endOffset() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public BytesRef getPayload() throws IOException {
-      return null;
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1721,14 +1724,129 @@ public final class DirectPostingsFormat extends PostingsFormat {
       // be costly:
       return slowAdvance(target);
     }
-    
+
     @Override
     public long cost() {
       return postings.length / 2;
     }
   }
 
+  // Docs + freqs + positions/offets:
   private final static class LowFreqDocsEnum extends DocsEnum {
+    private int[] postings;
+    private final Bits liveDocs;
+    private final int posMult;
+    private int upto;
+    private int freq;
+
+    public LowFreqDocsEnum(Bits liveDocs, int posMult) {
+      this.liveDocs = liveDocs;
+      this.posMult = posMult;
+      // if (DEBUG) {
+      //   System.out.println("LowFreqDE: posMult=" + posMult);
+      // }
+    }
+
+    public boolean canReuse(Bits liveDocs, int posMult) {
+      return liveDocs == this.liveDocs && posMult == this.posMult;
+    }
+
+    public DocsEnum reset(int[] postings) {
+      this.postings = postings;
+      upto = -2;
+      freq = 0;
+      return this;
+    }
+
+    // TODO: can do this w/o setting members?
+    @Override
+    public int nextDoc() {
+      upto += 2 + freq*posMult;
+      // if (DEBUG) {
+      //   System.out.println("  nextDoc freq=" + freq + " upto=" + upto + " vs " + postings.length);
+      // }
+      if (liveDocs == null) {
+        if (upto < postings.length) {
+          freq = postings[upto+1];
+          assert freq > 0;
+          return postings[upto];
+        }
+      } else {
+        while (upto < postings.length) {
+          freq = postings[upto+1];
+          assert freq > 0;
+          if (liveDocs.get(postings[upto])) {
+            return postings[upto];
+          }
+          upto += 2 + freq*posMult;
+        }
+      }
+      return NO_MORE_DOCS;
+    }
+
+    @Override
+    public int docID() {
+      // TODO: store docID member?
+      if (upto < 0) {
+        return -1;
+      } else if (upto < postings.length) {
+        return postings[upto];
+      } else {
+        return NO_MORE_DOCS;
+      }
+    }
+
+    @Override
+    public int freq() {
+      // TODO: can I do postings[upto+1]?
+      return freq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      // Linear scan, but this is low-freq term so it won't
+      // be costly:
+      return slowAdvance(target);
+    }
+
+    @Override
+    public long cost() {
+      // TODO: could do a better estimate
+      return postings.length / 2;
+    }
+  }
+
+  private final static class LowFreqDocsAndPositionsEnum extends DocsEnum {
     private int[] postings;
     private final Bits liveDocs;
     private final int posMult;
@@ -1747,7 +1865,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     private int payloadLength;
     private byte[] payloadBytes;
 
-    public LowFreqDocsEnum(Bits liveDocs, boolean hasOffsets, boolean hasPayloads) {
+    public LowFreqDocsAndPositionsEnum(Bits liveDocs, boolean hasOffsets, boolean hasPayloads) {
       this.liveDocs = liveDocs;
       this.hasOffsets = hasOffsets;
       this.hasPayloads = hasPayloads;
@@ -1764,10 +1882,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    public boolean canReuse(Bits liveDocs, int posMult) {
-      return liveDocs == this.liveDocs && posMult == this.posMult;
-    }
-
     public DocsEnum reset(int[] postings, byte[] payloadBytes) {
       this.postings = postings;
       upto = 0;
@@ -1782,6 +1896,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextDoc() {
+      pos = -1;
       if (hasPayloads) {
         for(int i=0;i<skipPositions;i++) {
           upto++;
@@ -1822,7 +1937,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           }
         }
       }
-      pos = -1;
+
       return docID = NO_MORE_DOCS;
     }
 
@@ -1838,9 +1953,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() {
-      //assert skipPositions > 0;
-      if (skipPositions == 0)
-        return NO_MORE_POSITIONS;
+      assert skipPositions > 0;
       skipPositions--;
       pos = postings[upto++];
       if (hasOffsets) {
@@ -1891,7 +2004,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         return null;
       }
     }
-    
+
     @Override
     public long cost() {
       // TODO: could do a better estimate
@@ -1965,32 +2078,32 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int startPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int endPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int startOffset() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public int endOffset() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public BytesRef getPayload() throws IOException {
-      return null;
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -2100,7 +2213,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         return docID = docIDs[upto];
       }
     }
-    
+
     @Override
     public long cost() {
       return docIDs.length;
@@ -2157,7 +2270,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       upto++;
       if (liveDocs == null) {
         if (upto < docIDs.length) {
-          posUpto = -posJump;   
+          posUpto = -posJump;
           curPositions = positions[upto];
           return docID = docIDs[upto];
         }
@@ -2187,8 +2300,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() {
-      if (posUpto >= curPositions.length)
-        return NO_MORE_POSITIONS;
       posUpto += posJump;
       return curPositions[posUpto];
     }
@@ -2200,7 +2311,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int endPosition() throws IOException {
-      return curPositions[posUpto];
+      return startPosition();
     }
 
     @Override
@@ -2350,7 +2461,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         return payload;
       }
     }
-    
+
     @Override
     public long cost() {
       return docIDs.length;

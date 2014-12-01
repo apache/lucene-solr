@@ -127,7 +127,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     // not be reproducible from the original seed
     this.randomState = new Random(random.nextInt());
     this.throttledOutput = new ThrottledIndexOutput(ThrottledIndexOutput
-        .mBitsToBytes(40 + randomState.nextInt(10)), 5 + randomState.nextInt(5), null);
+        .mBitsToBytes(40 + randomState.nextInt(10)), 1 + randomState.nextInt(5), null);
     init();
   }
 
@@ -180,7 +180,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public static enum Throttling {
     /** always emulate a slow hard disk. could be very slow! */
     ALWAYS,
-    /** sometimes (2% of the time) emulate a slow hard disk. */
+    /** sometimes (0.5% of the time) emulate a slow hard disk. */
     SOMETIMES,
     /** never throttle output */
     NEVER

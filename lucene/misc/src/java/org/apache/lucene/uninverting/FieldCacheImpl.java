@@ -383,11 +383,6 @@ class FieldCacheImpl implements FieldCache {
         return base + (bits.length() >>> 3);
       }
     }
-
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
   }
 
   static final class DocsWithFieldCache extends Cache {
@@ -487,11 +482,6 @@ class FieldCacheImpl implements FieldCache {
     @Override
     public long ramBytesUsed() {
       return values.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_LONG;
-    }
-    
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
     }
   }
 

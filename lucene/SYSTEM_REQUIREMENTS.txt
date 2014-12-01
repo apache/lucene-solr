@@ -1,9 +1,6 @@
 # System Requirements 
 
-Apache Lucene runs of Java 7 or greater, Java 8 is verified to be
-compatible and may bring some performance improvements. When using
-Oracle Java 7 or OpenJDK 7, be sure to not use the GA build 147 or
-update versions u40, u45 and u51! We recommend using u55 or later.
+Apache Lucene runs on Java 8 or greater.
 
 It is also recommended to always use the latest update version of your
 Java VM, because bugs may affect Lucene. An overview of known JVM bugs

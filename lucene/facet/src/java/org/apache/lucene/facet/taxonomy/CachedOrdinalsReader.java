@@ -148,11 +148,6 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
       }
       return mem;
     }
-    
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
-    }
   }
 
   @Override

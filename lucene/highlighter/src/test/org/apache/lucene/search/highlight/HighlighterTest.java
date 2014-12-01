@@ -21,12 +21,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -42,14 +42,19 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
+import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
+import org.apache.lucene.search.join.BitDocIdSetFilter;
+import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
+import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -514,6 +519,62 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     }
 
 
+  }
+  
+  public void testToParentBlockJoinQuery() throws Exception {
+    BitDocIdSetFilter parentFilter = new BitDocIdSetCachingWrapperFilter(
+        new QueryWrapperFilter(
+          new TermQuery(new Term(FIELD_NAME, "parent"))));
+    
+    query = new ToParentBlockJoinQuery(new TermQuery(new Term(FIELD_NAME, "child")),
+        parentFilter, ScoreMode.None);
+    searcher = newSearcher(reader);
+    hits = searcher.search(query, 100);
+    int maxNumFragmentsRequired = 2;
+    
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this, scorer);
+    
+    for (int i = 0; i < hits.totalHits; i++) {
+      String text = "child document";
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
+      
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+      highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired, "...");
+    }
+    
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 1);
+  }
+  
+  public void testToChildBlockJoinQuery() throws Exception {
+    BitDocIdSetFilter parentFilter = new BitDocIdSetCachingWrapperFilter(
+        new QueryWrapperFilter(
+          new TermQuery(new Term(FIELD_NAME, "parent"))));
+    
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new ToChildBlockJoinQuery(new TermQuery(
+        new Term(FIELD_NAME, "parent")), parentFilter, false), Occur.MUST);
+    booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "child")), Occur.MUST);
+    query = booleanQuery;
+    
+    searcher = newSearcher(reader);
+    hits = searcher.search(query, 100);
+    int maxNumFragmentsRequired = 2;
+    
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this, scorer);
+    
+    for (int i = 0; i < hits.totalHits; i++) {
+      String text = "parent document";
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
+      
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+      highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired, "...");
+    }
+    
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 1);
   }
 
   public void testSimpleQueryScorerPhraseHighlighting2() throws Exception {
@@ -1901,6 +1962,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
     writer.addDocument(doc, analyzer);
 
+    Document childDoc = doc(FIELD_NAME, "child document");
+    Document parentDoc = doc(FIELD_NAME, "parent document");
+    writer.addDocuments(Arrays.asList(childDoc, parentDoc));
+    
     writer.forceMerge(1);
     writer.close();
     reader = DirectoryReader.open(ramDir);

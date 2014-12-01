@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.0.0 =======================
 
+System Requirements
+
+* LUCENE-5950: Move to Java 8 as minimum Java version.
+  (Ryan Ernst, Uwe Schindler)
+
 New Features
 
 API Changes
@@ -16,6 +21,9 @@ API Changes
   of the return type is enough to upgrade (see MIGRATE.txt).
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
+
+* LUCENE-6067: Accountable.getChildResources has a default
+  implementation returning the empty list.  (Robert Muir)
 
 ======================= Lucene 5.0.0 =======================
 
@@ -41,7 +49,7 @@ New Features
 * LUCENE-5889: Add commit method to AnalyzingInfixSuggester, and allow just using .add
   to build up the suggester.  (Varun Thacker via Mike McCandless)
 
-* LUCENE-5123: Add a "push" option to the postings writing API, so
+* LUCENE-5123: Add a "pull" option to the postings writing API, so
   that a PostingsFormat now receives a Fields instance and it is
   responsible for iterating through all fields, terms, documents and
   positions.  (Robert Muir, Mike McCandless)
@@ -94,6 +102,18 @@ New Features
 * LUCENE-6050: Accept MUST and MUST_NOT (in addition to SHOULD) for
   each context passed to Analyzing/BlendedInfixSuggester (Arcadius
   Ahouansou, jane chang via Mike McCandless)
+
+* LUCENE-5929: Also extract terms to highlight from block join
+  queries. (Julie Tibshirani via Mike McCandless)
+
+* LUCENE-6063: Allow overriding whether/how ConcurrentMergeScheduler
+  stalls incoming threads when merges are falling behind (Mike
+  McCandless)
+
+* LUCENE-5833: DocumentDictionary now enumerates each value separately
+  in a multi-valued field (not just the first value), so you can build
+  suggesters from multi-valued fields.  (Varun Thacker via Mike
+  McCandless)
 
 API Changes
 
@@ -199,6 +219,12 @@ API Changes
   instance based on a Directory implementation passed to the factory method.
   See MIGRATE.txt for more details.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-6062: Throw exception instead of silently doing nothing if you try to 
+  sort/group/etc on a misconfigured field (e.g. no docvalues, no UninvertingReader, etc).  
+  (Robert Muir)
+
+* LUCENE-6068: LeafReader.fields() never returns null. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -212,6 +238,9 @@ Bug Fixes
   may modify the index, and to prevent false corruption reports, as it does
   not have the regular "spinlock" of DirectoryReader.open. It now implements
   Closeable and you must close it to release the lock.  (Mike McCandless, Robert Muir)
+
+* LUCENE-6004: Don't highlight the LookupResult.key returned from
+  AnalyzingInfixSuggester (Christian Reuschling, jane chang via Mike McCandless)
 
 * LUCENE-5980: Don't let document length overflow. (Robert Muir)
 
@@ -246,11 +275,22 @@ Bug Fixes
 
 * LUCENE-6055: PayloadAttribute.clone() now does a deep clone of the underlying
   bytes. (Shai Erera)
+
+* LUCENE-6060: Remove dangerous IndexWriter.unlock method (Simon
+  Willnauer, Mike McCandless)
+
+* LUCENE-6062: Pass correct fieldinfos to docvalues producer when the
+  segment has updates. (Mike McCandless, Shai Erera, Robert Muir)
+
+* LUCENE-6075: Don't overflow int in SimpleRateLimiter (Boaz Leskes
+  via Mike McCandless)
   
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
   analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
+
+* LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
 
 Tests
 
@@ -317,6 +357,8 @@ Build
 
 * LUCENE-5995: Upgrade ICU to 54.1 (Robert Muir)
 
+* LUCENE-6070: Upgrade forbidden-apis to 1.7 (Uwe Schindler)
+
 Other
 
 * LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
@@ -326,6 +368,13 @@ Other
   (Adrien Grand, Robert Muir)
 
 * LUCENE-5915: Remove Pulsing postings format. (Robert Muir)
+
+======================= Lucene 4.10.3 ======================
+
+Bug fixes
+
+* LUCENE-3229: Overlapping ordered SpanNearQuery spans should not match.
+  (Ludovic Boutros, Paul Elschot, Greg Dearing, ehatcher)
 
 ======================= Lucene 4.10.2 ======================
 

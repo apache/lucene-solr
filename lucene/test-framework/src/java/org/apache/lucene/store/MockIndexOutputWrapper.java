@@ -68,7 +68,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
         if (b != null) {
           delegate.writeBytes(b, offset, (int) freeSpace);
         } else {
-          delegate.copyBytes(in, len);
+          delegate.copyBytes(in, (int) freeSpace);
         }
       }
       if (realUsage > dir.maxUsedSize) {

@@ -43,8 +43,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
   @Override
   public Fields fields() throws IOException {
-    Fields fields = super.fields();
-    return fields == null ? null : new AssertingFields(fields);
+    return new AssertingFields(super.fields());
   }
   
   @Override

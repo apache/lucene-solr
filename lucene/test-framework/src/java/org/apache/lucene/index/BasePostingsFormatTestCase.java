@@ -1589,12 +1589,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                       while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
                         docFreq++;
                         totalTermFreq += docs.freq();
-                        if (docs instanceof DocsEnum) {
-                          DocsEnum posEnum = (DocsEnum) docs;
-                          int limit = TestUtil.nextInt(random(), 1, docs.freq());
-                          for(int i=0;i<limit;i++) {
-                            posEnum.nextPosition();
-                          }
+                        int limit = TestUtil.nextInt(random(), 1, docs.freq());
+                        for(int i=0;i<limit;i++) {
+                          docs.nextPosition();
                         }
                       }
 
@@ -1638,12 +1635,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                         while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
                           docFreq++;
                           totalTermFreq += docs.freq();
-                          if (docs instanceof DocsEnum) {
-                            DocsEnum posEnum = (DocsEnum) docs;
-                            int limit = TestUtil.nextInt(random(), 1, docs.freq());
-                            for(int i=0;i<limit;i++) {
-                              posEnum.nextPosition();
-                            }
+                          int limit = TestUtil.nextInt(random(), 1, docs.freq());
+                          for(int i=0;i<limit;i++) {
+                            docs.nextPosition();
                           }
                         }
 

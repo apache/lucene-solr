@@ -95,6 +95,11 @@ public class ToChildBlockJoinQuery extends Query {
     return new ToChildBlockJoinWeight(this, parentQuery.createWeight(searcher), parentsFilter, doScores);
   }
 
+  /** Return our parent query. */
+  public Query getParentQuery() {
+    return parentQuery;
+  }
+
   private static class ToChildBlockJoinWeight extends Weight {
     private final Query joinQuery;
     private final Weight parentWeight;

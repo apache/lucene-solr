@@ -98,10 +98,6 @@
       <property name="-grammar.relative.path" location="${grammar.path}" relative="true"/>
       <replace-value property="grammar.relative.path" value="${-grammar.relative.path}${file.separator}" from="${file.separator}" to="/"/>
       <java classname="org.antlr.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
-        <!-- this is a hack because antlr generates code comments in nondeterministic order
-         (using HashMap somewhere it should use LinkedHashMap). This hack only works for Java 7,
-         Java 8 always uses murmurhash for strings and uses time-of-day as seed. -->
-        <sysproperty key="jdk.map.althashing.threshold" value="-1"/>
         <sysproperty key="file.encoding" value="UTF-8"/>
         <sysproperty key="user.language" value="en"/>
         <sysproperty key="user.country" value="US"/>

@@ -246,6 +246,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
   }
   
   // LUCENE-5269
+  @Slow
   public void testUnicodeShinglesAndNgrams() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
