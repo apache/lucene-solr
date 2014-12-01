@@ -512,7 +512,7 @@ IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 IF "%SCRIPT_CMD%"=="stop" (
   IF "%SOLR_PORT%"=="" (
     IF "%STOP_ALL%"=="1" (
-      for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
+      for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
         set SOME_SOLR_PORT=
         For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
         if NOT "!SOME_SOLR_PORT!"=="" (
@@ -905,7 +905,7 @@ goto done
 :get_info
 REM Find all Java processes, correlate with those listening on a port
 REM and then try to contact via that port using the status tool
-for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
+for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
   set SOME_SOLR_PORT=
   For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
   if NOT "!SOME_SOLR_PORT!"=="" (
@@ -1012,7 +1012,7 @@ IF "!CREATE_REPFACT!"=="" set CREATE_REPFACT=1
 
 REM Find a port that Solr is running on
 if "!CREATE_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
+  for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
     set SOME_SOLR_PORT=
     For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
     if NOT "!SOME_SOLR_PORT!"=="" (
