@@ -246,6 +246,8 @@ final class ExactPhraseScorer extends Scorer {
         gen++;
       }
 
+      boolean any = false;
+
       // first term
       {
         final ChunkState cs = chunkStates[0];
@@ -254,6 +256,7 @@ final class ExactPhraseScorer extends Scorer {
             cs.lastPos = cs.pos;
             final int posIndex = cs.pos - chunkStart;
             counts[posIndex] = 1;
+            any = true;
             assert gens[posIndex] != gen;
             gens[posIndex] = gen;
           }
@@ -268,7 +271,6 @@ final class ExactPhraseScorer extends Scorer {
       }
 
       // middle terms
-      boolean any = true;
       for (int t = 1; t < endMinus1; t++) {
         final ChunkState cs = chunkStates[t];
         any = false;
