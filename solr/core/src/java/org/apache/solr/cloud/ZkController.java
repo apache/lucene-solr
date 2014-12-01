@@ -552,7 +552,8 @@ public final class ZkController {
 
     try {
       boolean createdWatchesAndUpdated = false;
-      if (zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, true)) {
+      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+      if (stat!= null && stat.getNumChildren()>0) {
         zkStateReader.createClusterStateWatchersAndUpdate();
         createdWatchesAndUpdated = true;
         publishAndWaitForDownStates();
