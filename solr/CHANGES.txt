@@ -503,6 +503,9 @@ Bug Fixes
 * SOLR-6726: better strategy for selecting the JMX RMI port based on SOLR_PORT in bin/solr
   script (Timothy Potter)
 
+* SOLR-6795: distrib.singlePass returns score even though not asked for.
+  (Per Steffensen via shalin)
+
 Other Changes
 ----------------------
 
