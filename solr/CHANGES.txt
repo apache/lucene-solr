@@ -510,6 +510,9 @@ Other Changes
   relative paths for solrconfig.xml <lib> references with solr.install.dir
   system property; bin/solr scripts will set it appropriately. (ehatcher)
 
+* SOLR-6694: Auto-detect JAVA_HOME using the Windows registry if it is not set
+  (janhoy, Timothy Potter)
+
 ==================  4.10.2 ==================
 
 Bug FixesAnalyticsComponent
