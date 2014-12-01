@@ -135,15 +135,6 @@
     </init-param>
   </servlet>
 
-  <servlet>
-    <servlet-name>SolrConfigRestApi</servlet-name>
-    <servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
-    <init-param>
-      <param-name>org.restlet.application</param-name>
-      <param-value>org.apache.solr.rest.SolrConfigRestApi</param-value>
-    </init-param>
-  </servlet>
-  
   <servlet-mapping>
     <servlet-name>RedirectOldAdminUI</servlet-name>
     <url-pattern>/admin/</url-pattern>
