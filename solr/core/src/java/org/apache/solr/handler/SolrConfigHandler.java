@@ -52,6 +52,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -104,22 +105,33 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   private static Runnable getListener(SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader) {
     final String coreName = core.getName();
     final CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
-    final String overlayPath = (zkSolrResourceLoader).getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;
-    final String solrConfigPath = (zkSolrResourceLoader).getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
+    final String overlayPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;
+    final String solrConfigPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
+    String schemaRes = null;
+    if(core.getLatestSchema().isMutable()  && core.getLatestSchema() instanceof ManagedIndexSchema){
+      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+      schemaRes = mis.getResourceName();
+    }
+    final String managedSchmaResourcePath = schemaRes ==null ? null: zkSolrResourceLoader.getConfigSetZkPath() + "/" + schemaRes;
     return new Runnable() {
           @Override
           public void run() {
             log.info("config update listener called for core {}", coreName);
             SolrZkClient zkClient = cc.getZkController().getZkClient();
-            int solrConfigversion,overlayVersion;
+            int solrConfigversion,overlayVersion, managedSchemaVersion=0;
             try (SolrCore core = cc.getCore(coreName))  {
               if (core.isClosed()) return;
                solrConfigversion = core.getSolrConfig().getOverlay().getZnodeVersion();
                overlayVersion = core.getSolrConfig().getZnodeVersion();
+              if(managedSchmaResourcePath != null){
+                managedSchemaVersion = ((ManagedIndexSchema)core.getLatestSchema()).getSchemaZkVersion();
+              }
+
             }
 
             if (checkStale(zkClient, overlayPath, solrConfigversion) ||
-                checkStale(zkClient, solrConfigPath, overlayVersion)) {
+                checkStale(zkClient, solrConfigPath, overlayVersion) ||
+                checkStale(zkClient, managedSchmaResourcePath,managedSchemaVersion)) {
               log.info("core reload {}",coreName);
               cc.reload(coreName);
             }
@@ -128,6 +140,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
   private static boolean checkStale(SolrZkClient zkClient,  String zkPath, int currentVersion)  {
+    if(zkPath == null) return false;
     try {
       Stat stat = zkClient.exists(zkPath, null, true);
       if(stat == null){
