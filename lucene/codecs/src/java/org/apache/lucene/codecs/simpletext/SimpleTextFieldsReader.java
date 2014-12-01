@@ -472,11 +472,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
     public int nextPosition() throws IOException {
       if (readPositions) {
         SimpleTextUtil.readLine(in, scratch);
-        if (StringHelper.startsWith(scratch.get(), DOC)) {
+        if (!StringHelper.startsWith(scratch.get(), POS)) {
           pos = NO_MORE_POSITIONS;
           return pos;
         }
-        assert StringHelper.startsWith(scratch.get(), POS): "got line=" + scratch.get().utf8ToString();
         scratchUTF16_2.copyUTF8Bytes(scratch.bytes(), POS.length, scratch.length()-POS.length);
         pos = ArrayUtil.parseInt(scratchUTF16_2.chars(), 0, scratchUTF16_2.length());
       } else {

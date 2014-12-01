@@ -17,7 +17,8 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -25,9 +26,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
-import java.io.IOException;
-
-@Seed("5DA7DDB9F83D92AC:D927BA1FCE8EC808")
 public class TestPositionFilteredIntervals extends IntervalTestBase {
 
   public static final String field = "field";
