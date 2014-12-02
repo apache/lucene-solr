@@ -167,6 +167,8 @@ public class VerboseFS extends FilterFileSystemProvider {
     } finally {
       if (containsDestructive(options)) {
         sop("newFileChannel" + options + ": " + path(path), exception);
+      } else {
+        IOUtils.reThrow(exception);
       }
     }
     throw new AssertionError();
@@ -182,6 +184,8 @@ public class VerboseFS extends FilterFileSystemProvider {
     } finally {
       if (containsDestructive(options)) {
         sop("newAsynchronousFileChannel" + options + ": " + path(path), exception);
+      } else {
+        IOUtils.reThrow(exception);
       }
     }
     throw new AssertionError();
@@ -197,6 +201,8 @@ public class VerboseFS extends FilterFileSystemProvider {
     } finally {
       if (containsDestructive(options)) {
         sop("newByteChannel" + options + ": " + path(path), exception);
+      } else {
+        IOUtils.reThrow(exception);
       }
     }
     throw new AssertionError();
@@ -271,6 +277,8 @@ public class VerboseFS extends FilterFileSystemProvider {
       } finally {
         if (containsDestructive(options)) {
           sop("newByteChannel[SECURE]" + options + ": " + path(path), exception);
+        } else {
+          IOUtils.reThrow(exception);
         }
       }
       throw new AssertionError();
