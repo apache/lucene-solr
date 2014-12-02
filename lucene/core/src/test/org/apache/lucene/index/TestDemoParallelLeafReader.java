@@ -120,6 +120,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
       IndexWriterConfig iwc = getIndexWriterConfig();
       iwc.setMergePolicy(new ReindexingMergePolicy(iwc.getMergePolicy()));
+      if (DEBUG) {
+        System.out.println("TEST: use IWC:\n" + iwc);
+      }
       w = new IndexWriter(indexDir, iwc);
 
       w.getConfig().setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
@@ -644,7 +647,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     return new ReindexingReader(root) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
-        return newIndexWriterConfig();
+        IndexWriterConfig iwc = newIndexWriterConfig();
+        TieredMergePolicy tmp = new TieredMergePolicy();
+        // We write tiny docs, so we need tiny floor to avoid O(N^2) merging:
+        tmp.setFloorSegmentMB(.01);
+        iwc.setMergePolicy(tmp);
+        return iwc;
       }
 
       @Override
@@ -694,7 +702,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     return new ReindexingReader(root) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
-        return newIndexWriterConfig();
+        IndexWriterConfig iwc = newIndexWriterConfig();
+        TieredMergePolicy tmp = new TieredMergePolicy();
+        // We write tiny docs, so we need tiny floor to avoid O(N^2) merging:
+        tmp.setFloorSegmentMB(.01);
+        iwc.setMergePolicy(tmp);
+        return iwc;
       }
 
       @Override
@@ -780,7 +793,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     return new ReindexingReader(root) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
-        return newIndexWriterConfig();
+        IndexWriterConfig iwc = newIndexWriterConfig();
+        TieredMergePolicy tmp = new TieredMergePolicy();
+        // We write tiny docs, so we need tiny floor to avoid O(N^2) merging:
+        tmp.setFloorSegmentMB(.01);
+        iwc.setMergePolicy(tmp);
+        return iwc;
       }
 
       @Override
