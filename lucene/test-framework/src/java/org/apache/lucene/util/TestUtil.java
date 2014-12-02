@@ -17,8 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,6 +43,8 @@ import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -958,7 +958,7 @@ public final class TestUtil {
       if (random.nextBoolean()) {
         final int posFlags;
         switch (random.nextInt(4)) {
-          case 0: posFlags = DocsEnum.FLAG_NONE; break;
+          case 0: posFlags = DocsEnum.FLAG_POSITIONS; break;
           case 1: posFlags = DocsEnum.FLAG_OFFSETS; break;
           case 2: posFlags = DocsEnum.FLAG_PAYLOADS; break;
           default: posFlags = DocsEnum.FLAG_OFFSETS | DocsEnum.FLAG_PAYLOADS; break;
