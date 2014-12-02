@@ -506,6 +506,9 @@ Bug Fixes
 * SOLR-6795: distrib.singlePass returns score even though not asked for.
   (Per Steffensen via shalin)
 
+* SOLR-6796: distrib.singlePass does not return correct set of fields for multi-fl-parameter
+  requests. (Per Steffensen via shalin)
+
 Other Changes
 ----------------------
 
