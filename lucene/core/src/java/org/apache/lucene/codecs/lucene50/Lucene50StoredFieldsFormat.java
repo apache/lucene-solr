@@ -118,7 +118,7 @@ public final class Lucene50StoredFieldsFormat extends CompressingStoredFieldsFor
 
   /** Sole constructor. */
   public Lucene50StoredFieldsFormat() {
-    super("Lucene50StoredFields", CompressionMode.FAST, 1 << 14);
+    super("Lucene50StoredFields", CompressionMode.FAST, 1 << 14, 128);
   }
 
 }
