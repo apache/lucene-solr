@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
@@ -626,7 +627,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
-    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), null, StringHelper.randomId());
+    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), null, StringHelper.randomId(), new HashMap<>());
   }
   
   /** Creates a file of the specified size with random data. */

@@ -236,6 +236,10 @@ API Changes
 * LUCENE-6087: Allow passing custom DirectoryReader to SearcherManager
   (Mike McCandless)
 
+* LUCENE-6085: Undeprecate SegmentInfo attributes, but add safety so they
+  won't be trappy if codec tries to use them during docvalues updates.
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
