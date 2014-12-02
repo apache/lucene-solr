@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,9 +41,12 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -104,6 +108,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     waitForThingsToLevelOut(30000);
 
+    testLeaderInitiatedRecoveryCRUD();
+
     // test a 1x2 collection
     testRf2();
 
@@ -122,7 +128,59 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     log.info("HttpParitionTest succeeded ... shutting down now!");
   }
-  
+
+  /**
+   * Tests handling of lir state znodes.
+   */
+  protected void testLeaderInitiatedRecoveryCRUD() throws Exception {
+    String testCollectionName = "c8n_crud_1x2";
+    String shardId = "shard1";
+    createCollection(testCollectionName, 1, 2, 1);
+    cloudClient.setDefaultCollection(testCollectionName);
+
+    Replica leader =
+        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
+    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
+
+    CoreContainer cores = ((SolrDispatchFilter)leaderJetty.getDispatchFilter().getFilter()).getCores();
+    ZkController zkController = cores.getZkController();
+    assertNotNull("ZkController is null", zkController);
+
+    Replica notLeader =
+        ensureAllReplicasAreActive(testCollectionName, shardId, 1, 2, maxWaitSecsToSeeAllActive).get(0);
+
+    ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
+    String replicaUrl = replicaCoreNodeProps.getCoreUrl();
+
+    assertTrue(!zkController.isReplicaInRecoveryHandling(replicaUrl));
+    assertTrue(zkController.ensureReplicaInLeaderInitiatedRecovery(testCollectionName, shardId, replicaUrl, replicaCoreNodeProps, false));
+    assertTrue(zkController.isReplicaInRecoveryHandling(replicaUrl));
+    Map<String,Object> lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
+    assertNotNull(lirStateMap);
+    assertEquals(ZkStateReader.DOWN, lirStateMap.get("state"));
+    zkController.removeReplicaFromLeaderInitiatedRecoveryHandling(replicaUrl);
+    assertTrue(!zkController.isReplicaInRecoveryHandling(replicaUrl));
+
+    // test old non-json format handling
+    SolrZkClient zkClient = zkController.getZkClient();
+    String znodePath = zkController.getLeaderInitiatedRecoveryZnodePath(testCollectionName, shardId, notLeader.getName());
+    zkClient.setData(znodePath, "down".getBytes(StandardCharsets.UTF_8), true);
+    lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
+    assertNotNull(lirStateMap);
+    assertEquals(ZkStateReader.DOWN, lirStateMap.get("state"));
+    zkClient.delete(znodePath, -1, false);
+
+    // try to clean up
+    try {
+      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      req.setCollectionName(testCollectionName);
+      req.process(cloudClient);
+    } catch (Exception e) {
+      // don't fail the test
+      log.warn("Could not delete collection {} after test completed", testCollectionName);
+    }
+  }
+
   protected void testRf2() throws Exception {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x2";
