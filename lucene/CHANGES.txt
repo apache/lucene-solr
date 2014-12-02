@@ -233,6 +233,9 @@ API Changes
   resourceDescription so its toString is sane (Robert Muir, Mike
   McCandless)
 
+* LUCENE-6087: Allow passing custom DirectoryReader to SearcherManager
+  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
