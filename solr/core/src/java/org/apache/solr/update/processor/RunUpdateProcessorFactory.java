@@ -94,7 +94,10 @@ class RunUpdateProcessor extends UpdateRequestProcessor
   {
     updateHandler.commit(cmd);
     super.processCommit(cmd);
-    changesSinceCommit = false;
+    if (!cmd.softCommit) {
+      // a hard commit means we don't need to flush the transaction log
+      changesSinceCommit = false;
+    }
   }
 
   /**
