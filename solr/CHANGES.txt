@@ -509,6 +509,10 @@ Bug Fixes
 * SOLR-6796: distrib.singlePass does not return correct set of fields for multi-fl-parameter
   requests. (Per Steffensen via shalin)
 
+* SOLR-6776: Transaction log was not flushed at the end of update requests with softCommit
+  specified, which could lead to data loss if the server were killed immediately after the
+  update finished.  (Jeffery Yuan via yonik)
+
 Other Changes
 ----------------------
 
