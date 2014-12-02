@@ -70,7 +70,8 @@ public abstract class CompressionMode {
 
     @Override
     public Compressor newCompressor() {
-      return new DeflateCompressor(Deflater.BEST_COMPRESSION);
+      // 3 is the highest level that doesn't have lazy match evaluation
+      return new DeflateCompressor(3);
     }
 
     @Override
