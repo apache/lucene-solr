@@ -106,13 +106,15 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
     for (String handler : handlerNames) {
       try {
 
-        if (handler.startsWith("/update")) {
+
+        if (handler.startsWith("/update") ||
+            handler.startsWith("/admin") ||
+            handler.startsWith("/schema") ||
+            handler.startsWith("/config") ||
+            handler.startsWith("/mlt")
+            ) {
           continue;
         }
-        if (handler.startsWith("/mlt")) {
-          continue;
-        }
-        if(handler.startsWith("/admin/")) continue;
 
         assertQ("failure w/handler: '" + handler + "'",
                 req("qt", handler,

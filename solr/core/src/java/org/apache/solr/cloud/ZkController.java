@@ -2122,7 +2122,7 @@ public final class ZkController {
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
-    String errMsg = "Failed to persist resource at {0} - version mismatch {1}";
+    String errMsg = "Failed to persist resource at {0} - old {1}";
     try {
       try {
         zkClient.setData(resourceLocation , content,znodeVersion, true);
@@ -2135,7 +2135,7 @@ public final class ZkController {
           } catch (KeeperException.NodeExistsException nee) {
             try {
               Stat stat = zkClient.exists(resourceLocation, null, true);
-              log.info("failed to set data version in zk is {} and expected version is {} ", stat.getVersion(),znodeVersion);
+              log.info("failed to set data version in zk is {0} and expected version is {1} ", stat.getVersion(),znodeVersion);
             } catch (Exception e1) {
               log.warn("could not get stat");
             }
@@ -2147,7 +2147,15 @@ public final class ZkController {
       }
 
     } catch (KeeperException.BadVersionException bve){
-      log.info(MessageFormat.format(errMsg,resourceLocation));
+      int v = -1;
+      try {
+        Stat stat = zkClient.exists(resourceLocation, null, true);
+        v = stat.getVersion();
+      } catch (Exception e) {
+        log.error(e.getMessage());
+
+      }
+      log.info(MessageFormat.format(errMsg+ " zkVersion= "+v,resourceLocation,znodeVersion));
       throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation,znodeVersion) + ", retry.");
     }catch (ResourceModifiedInZkException e){
       throw e;

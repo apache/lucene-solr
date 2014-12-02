@@ -27,6 +27,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.RealTimeGetHandler;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.admin.LoggingHandler;
@@ -57,7 +58,8 @@ public class PluginsRegistry {
 
     //solrconfighandler
     implicits.add(getReqHandlerInfo("/config", SolrConfigHandler.class, null));
-
+    //schemahandler
+    implicits.add(getReqHandlerInfo("/schema", SchemaHandler.class, null));
     //register replicationhandler always for SolrCloud
     implicits.add(getReqHandlerInfo("/replication", ReplicationHandler.class,null));
 

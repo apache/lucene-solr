@@ -343,26 +343,31 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           // get or create/cache the parser for the core
           SolrRequestParsers parser = config.getRequestParsers();
 
-          // Handle /schema/* and /config/* paths via Restlet
-          if( path.equals("/schema") || path.startsWith("/schema/")
-              /*|| path.equals("/config") || path.startsWith("/config/")*/) {
-            solrReq = parser.parse(core, path, req);
-            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
-            if( path.equals(req.getServletPath()) ) {
-              // avoid endless loop - pass through to Restlet via webapp
-              chain.doFilter(request, response);
-            } else {
-              // forward rewritten URI (without path prefix and core/collection name) to Restlet
-              req.getRequestDispatcher(path).forward(request, response);
-            }
-            return;
-          }
 
           // Determine the handler from the url path if not set
           // (we might already have selected the cores handler)
           if( handler == null && path.length() > 1 ) { // don't match "" or "/" as valid path
             handler = core.getRequestHandler( path );
+
+            if(handler == null){
+              //may be a restlet path
+              // Handle /schema/* paths via Restlet
+              if( path.equals("/schema") || path.startsWith("/schema/")) {
+                solrReq = parser.parse(core, path, req);
+                SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
+                if( path.equals(req.getServletPath()) ) {
+                  // avoid endless loop - pass through to Restlet via webapp
+                  chain.doFilter(request, response);
+                } else {
+                  // forward rewritten URI (without path prefix and core/collection name) to Restlet
+                  req.getRequestDispatcher(path).forward(request, response);
+                }
+                return;
+              }
+
+            }
             // no handler yet but allowed to handle select; let's check
+
             if( handler == null && parser.isHandleSelect() ) {
               if( "/select".equals( path ) || "/select/".equals( path ) ) {
                 solrReq = parser.parse( core, path, req );
