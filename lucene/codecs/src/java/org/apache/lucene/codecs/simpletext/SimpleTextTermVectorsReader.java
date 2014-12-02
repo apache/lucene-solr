@@ -47,22 +47,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.DOC;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.END;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.ENDOFFSET;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELD;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDNAME;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDOFFSETS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDPAYLOADS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDPOSITIONS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDTERMCOUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.NUMFIELDS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.PAYLOAD;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.POSITION;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.STARTOFFSET;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.TERMFREQ;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.TERMTEXT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.VECTORS_EXTENSION;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.*;
 
 /**
  * Reads plain-text term vectors.
@@ -73,15 +58,15 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.VE
 public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
   private static final long BASE_RAM_BYTES_USED =
-        RamUsageEstimator.shallowSizeOfInstance(SimpleTextTermVectorsReader.class)
-      + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
-      + RamUsageEstimator.shallowSizeOfInstance(CharsRef.class);
+      RamUsageEstimator.shallowSizeOfInstance(SimpleTextTermVectorsReader.class)
+          + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
+          + RamUsageEstimator.shallowSizeOfInstance(CharsRef.class);
 
   private long offsets[]; /* docid -> offset in .vec file */
   private IndexInput in;
   private BytesRefBuilder scratch = new BytesRefBuilder();
   private CharsRefBuilder scratchUTF16 = new CharsRefBuilder();
-  
+
   public SimpleTextTermVectorsReader(Directory directory, SegmentInfo si, IOContext context) throws IOException {
     boolean success = false;
     try {
@@ -96,15 +81,15 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
     readIndex(si.getDocCount());
   }
-  
+
   // used by clone
   SimpleTextTermVectorsReader(long offsets[], IndexInput in) {
     this.offsets = offsets;
     this.in = in;
   }
-  
-  // we don't actually write a .tvx-like index, instead we read the 
-  // vectors file in entirety up-front and save the offsets 
+
+  // we don't actually write a .tvx-like index, instead we read the
+  // vectors file in entirety up-front and save the offsets
   // so we can seek to the data later.
   private void readIndex(int maxDoc) throws IOException {
     ChecksumIndexInput input = new BufferedChecksumIndexInput(in);
@@ -120,7 +105,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     SimpleTextUtil.checkFooter(input);
     assert upto == offsets.length;
   }
-  
+
   @Override
   public Fields get(int doc) throws IOException {
     SortedMap<String,SimpleTVTerms> fields = new TreeMap<>();
@@ -136,30 +121,30 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       assert StringHelper.startsWith(scratch.get(), FIELD);
       // skip fieldNumber:
       parseIntAt(FIELD.length);
-      
+
       readLine();
       assert StringHelper.startsWith(scratch.get(), FIELDNAME);
       String fieldName = readString(FIELDNAME.length, scratch);
-      
+
       readLine();
       assert StringHelper.startsWith(scratch.get(), FIELDPOSITIONS);
       boolean positions = Boolean.parseBoolean(readString(FIELDPOSITIONS.length, scratch));
-      
+
       readLine();
       assert StringHelper.startsWith(scratch.get(), FIELDOFFSETS);
       boolean offsets = Boolean.parseBoolean(readString(FIELDOFFSETS.length, scratch));
-      
+
       readLine();
       assert StringHelper.startsWith(scratch.get(), FIELDPAYLOADS);
       boolean payloads = Boolean.parseBoolean(readString(FIELDPAYLOADS.length, scratch));
-      
+
       readLine();
       assert StringHelper.startsWith(scratch.get(), FIELDTERMCOUNT);
       int termCount = parseIntAt(FIELDTERMCOUNT.length);
-      
+
       SimpleTVTerms terms = new SimpleTVTerms(offsets, positions, payloads);
       fields.put(fieldName, terms);
-      
+
       BytesRefBuilder term = new BytesRefBuilder();
       for (int j = 0; j < termCount; j++) {
         readLine();
@@ -168,14 +153,14 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         term.grow(termLength);
         term.setLength(termLength);
         System.arraycopy(scratch.bytes(), TERMTEXT.length, term.bytes(), 0, termLength);
-        
+
         SimpleTVPostings postings = new SimpleTVPostings();
         terms.terms.put(term.toBytesRef(), postings);
-        
+
         readLine();
         assert StringHelper.startsWith(scratch.get(), TERMFREQ);
         postings.freq = parseIntAt(TERMFREQ.length);
-        
+
         if (positions || offsets) {
           if (positions) {
             postings.positions = new int[postings.freq];
@@ -183,12 +168,12 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
               postings.payloads = new BytesRef[postings.freq];
             }
           }
-        
+
           if (offsets) {
             postings.startOffsets = new int[postings.freq];
             postings.endOffsets = new int[postings.freq];
           }
-          
+
           for (int k = 0; k < postings.freq; k++) {
             if (positions) {
               readLine();
@@ -206,12 +191,12 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
                 }
               }
             }
-            
+
             if (offsets) {
               readLine();
               assert StringHelper.startsWith(scratch.get(), STARTOFFSET);
               postings.startOffsets[k] = parseIntAt(STARTOFFSET.length);
-              
+
               readLine();
               assert StringHelper.startsWith(scratch.get(), ENDOFFSET);
               postings.endOffsets[k] = parseIntAt(ENDOFFSET.length);
@@ -230,11 +215,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
     return new SimpleTextTermVectorsReader(offsets, in.clone());
   }
-  
+
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.close(in); 
+      IOUtils.close(in);
     } finally {
       in = null;
       offsets = null;
@@ -244,20 +229,20 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   private void readLine() throws IOException {
     SimpleTextUtil.readLine(in, scratch);
   }
-  
+
   private int parseIntAt(int offset) {
     scratchUTF16.copyUTF8Bytes(scratch.bytes(), offset, scratch.length()-offset);
     return ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
   }
-  
+
   private String readString(int offset, BytesRefBuilder scratch) {
     scratchUTF16.copyUTF8Bytes(scratch.bytes(), offset, scratch.length()-offset);
     return scratchUTF16.toString();
   }
-  
+
   private class SimpleTVFields extends Fields {
     private final SortedMap<String,SimpleTVTerms> fields;
-    
+
     SimpleTVFields(SortedMap<String,SimpleTVTerms> fields) {
       this.fields = fields;
     }
@@ -277,20 +262,20 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       return fields.size();
     }
   }
-  
+
   private static class SimpleTVTerms extends Terms {
     final SortedMap<BytesRef,SimpleTVPostings> terms;
     final boolean hasOffsets;
     final boolean hasPositions;
     final boolean hasPayloads;
-    
+
     SimpleTVTerms(boolean hasOffsets, boolean hasPositions, boolean hasPayloads) {
       this.hasOffsets = hasOffsets;
       this.hasPositions = hasPositions;
       this.hasPayloads = hasPayloads;
       terms = new TreeMap<>();
     }
-    
+
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       // TODO: reuse
@@ -331,13 +316,13 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     public boolean hasPositions() {
       return hasPositions;
     }
-    
+
     @Override
     public boolean hasPayloads() {
       return hasPayloads;
     }
   }
-  
+
   private static class SimpleTVPostings {
     private int freq;
     private int positions[];
@@ -345,17 +330,17 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private int endOffsets[];
     private BytesRef payloads[];
   }
-  
+
   private static class SimpleTVTermsEnum extends TermsEnum {
     SortedMap<BytesRef,SimpleTVPostings> terms;
     Iterator<Map.Entry<BytesRef,SimpleTextTermVectorsReader.SimpleTVPostings>> iterator;
     Map.Entry<BytesRef,SimpleTextTermVectorsReader.SimpleTVPostings> current;
-    
+
     SimpleTVTermsEnum(SortedMap<BytesRef,SimpleTVPostings> terms) {
       this.terms = terms;
       this.iterator = terms.entrySet().iterator();
     }
-    
+
     @Override
     public SeekStatus seekCeil(BytesRef text) throws IOException {
       iterator = terms.tailMap(text).entrySet().iterator();
@@ -404,9 +389,8 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       // TODO: reuse
-      SimpleTVPostings postings = current.getValue();
       SimpleTVDocsEnum e = new SimpleTVDocsEnum();
-      e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
+      e.reset(liveDocs, (flags & DocsEnum.FLAG_FREQS) == 0 ? 1 : current.getValue().freq);
       return e;
     }
 
@@ -417,13 +401,89 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         return null;
       }
       // TODO: reuse
-      SimpleTVDocsEnum e = new SimpleTVDocsEnum();
+      SimpleTVDocsAndPositionsEnum e = new SimpleTVDocsAndPositionsEnum();
       e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
       return e;
     }
   }
-  
+
+  // note: these two enum classes are exactly like the Default impl...
   private static class SimpleTVDocsEnum extends DocsEnum {
+    private boolean didNext;
+    private int doc = -1;
+    private int freq;
+    private Bits liveDocs;
+
+    @Override
+    public int freq() throws IOException {
+      assert freq != -1;
+      return freq;
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int nextDoc() {
+      if (!didNext && (liveDocs == null || liveDocs.get(0))) {
+        didNext = true;
+        return (doc = 0);
+      } else {
+        return (doc = NO_MORE_DOCS);
+      }
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
+    }
+
+    public void reset(Bits liveDocs, int freq) {
+      this.liveDocs = liveDocs;
+      this.freq = freq;
+      this.doc = -1;
+      didNext = false;
+    }
+
+    @Override
+    public long cost() {
+      return 1;
+    }
+  }
+
+  private static class SimpleTVDocsAndPositionsEnum extends DocsEnum {
     private boolean didNext;
     private int doc = -1;
     private int nextPos;
@@ -481,13 +541,13 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int nextPosition() {
-      //assert (positions != null && nextPos < positions.length) ||
-      //  startOffsets != null && nextPos < startOffsets.length;
       if (positions != null) {
         if (nextPos >= positions.length)
           return NO_MORE_POSITIONS;
         return positions[nextPos++];
       } else {
+        if (nextPos >= startOffsets.length)
+          return NO_MORE_POSITIONS;
         nextPos++;
         return -1;
       }
@@ -495,12 +555,12 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int startPosition() throws IOException {
-      return positions[nextPos - 1];
+      return positions[nextPos-1];
     }
 
     @Override
     public int endPosition() throws IOException {
-      return positions[nextPos - 1];
+      return positions[nextPos-1];
     }
 
     @Override
@@ -520,7 +580,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         return endOffsets[nextPos-1];
       }
     }
-    
+
     @Override
     public long cost() {
       return 1;
@@ -531,7 +591,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(offsets);
   }
-  
+
   @Override
   public String toString() {
     return getClass().getSimpleName();
