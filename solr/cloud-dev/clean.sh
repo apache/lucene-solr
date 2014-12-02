@@ -13,8 +13,8 @@ cd ..
 
 for (( i=1; i <= $numServers; i++ ))
 do
-  rm -r -f example$i
+  rm -r -f server$i
 done
 
-rm -r -f examplezk
-rm -r -f example-lastlogs
+rm -r -f serverzk
+rm -r -f server-lastlogs
