@@ -71,14 +71,7 @@ done
 
 SOLR_TIP=`dirname "$SOLR_SCRIPT"`/..
 SOLR_TIP=`cd "$SOLR_TIP"; pwd`
-
-# TODO: see SOLR-3619, need to support server or example
-# depending on the version of Solr
-if [ -e "$SOLR_TIP/server/start.jar" ]; then
-  DEFAULT_SERVER_DIR=$SOLR_TIP/server
-else
-  DEFAULT_SERVER_DIR=$SOLR_TIP/example
-fi
+DEFAULT_SERVER_DIR=$SOLR_TIP/server
 
 # If an include wasn't specified in the environment, then search for one...
 if [ "x$SOLR_INCLUDE" == "x" ]; then
@@ -190,9 +183,11 @@ function print_usage() {
     echo ""
     echo "  -k <key>      Stop key; default is solrrocks"
     echo ""
-    echo "  -p <port>     Specify the port the Solr HTTP listener is bound to; default is 8983"
+    echo "  -p <port>     Specify the port the Solr HTTP listener is bound to"
     echo ""
     echo "  -all          Find and stop all running Solr servers on this host"
+    echo ""
+    echo "  NOTE: To see if any Solr servers are running, do: solr -i"
     echo ""
   elif [ "$CMD" == "healthcheck" ]; then
     echo ""
@@ -308,7 +303,7 @@ function get_info() {
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
           echo ""
-          echo "Found Solr process $ID running on port $port"
+          echo "Solr process $ID running on port $port"
           run_tool status -solr http://localhost:$port/solr
           echo ""
        fi
@@ -323,7 +318,7 @@ function get_info() {
           port=`jetty_port "$ID"`
           if [ "$port" != "" ]; then
             echo ""
-            echo "Found Solr process $ID running on port $port"
+            echo "Solr process $ID running on port $port"
             run_tool status -solr http://localhost:$port/solr
             echo ""
           fi
@@ -486,7 +481,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
               CREATE_CONFIGSET="$2"
               shift 2
           ;;
-          -shards)
+          -s|-shards)
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Shard count is required when using the $1 option!"
                 exit 1
@@ -494,7 +489,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
               CREATE_NUM_SHARDS="$2"
               shift 2
           ;;
-          -replicationFactor)
+          -rf|-replicationFactor)
               if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Replication factor is required when using the $1 option!"
                 exit 1
@@ -591,12 +586,18 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
 
-            # see if the arg value is relative to the tip vs full path
-            if [[ $2 != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
-              SOLR_SERVER_DIR="$SOLR_TIP/$2"
+            if [[ "$2" == "." || "$2" == "./" || "$2" == ".." || "$2" == "../" ]]; then
+              SOLR_SERVER_DIR=`pwd`/$2
             else
-              SOLR_SERVER_DIR="$2"
+              # see if the arg value is relative to the tip vs full path
+              if [[ $2 != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
+                SOLR_SERVER_DIR="$SOLR_TIP/$2"
+              else
+                SOLR_SERVER_DIR="$2"
+              fi
             fi
+            # resolve it to an absolute path
+            SOLR_SERVER_DIR=`cd "$SOLR_SERVER_DIR"; pwd`
             shift 2
         ;;
         -s|-solr.home)
@@ -809,7 +810,7 @@ if [ "$EXAMPLE" != "" ]; then
             shift
         ;;
         techproducts)
-            SOLR_HOME="$SOLR_TIP/server/solr"
+            SOLR_HOME="$SOLR_SERVER_DIR/solr"
             EXAMPLE_CONFIGSET=sample_techproducts_configs
             shift
         ;;
@@ -818,7 +819,7 @@ if [ "$EXAMPLE" != "" ]; then
             shift
         ;;
         schemaless)
-            SOLR_HOME="$SOLR_TIP/server/solr"
+            SOLR_HOME="$SOLR_SERVER_DIR/solr"
             EXAMPLE_CONFIGSET=data_driven_schema_configs
             shift
         ;;
@@ -827,6 +828,11 @@ if [ "$EXAMPLE" != "" ]; then
             exit 1
         ;;
     esac
+fi
+
+if [[ "$FG" == "true" && "$EXAMPLE" != "" ]]; then
+  FG="false"
+  echo -e "\nWARNING: Foreground mode (-f) not supported when running examples.\n"
 fi
 
 if [ "$STOP_KEY" == "" ]; then
@@ -876,7 +882,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
 
   if [ "$SOLR_PID" != "" ]; then
     echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\n"
-    exit
+    exit 1
   fi
 else
   # either stop or restart
@@ -890,6 +896,7 @@ else
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
   else
     echo -e "No process found for Solr node running on port $SOLR_PORT"
+    exit 1
   fi
 fi
 
