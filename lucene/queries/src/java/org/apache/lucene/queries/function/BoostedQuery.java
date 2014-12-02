@@ -17,23 +17,24 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Query that is boosted by a ValueSource
@@ -127,41 +128,24 @@ public class BoostedQuery extends Query {
   }
 
 
-  private class CustomScorer extends Scorer {
+  private class CustomScorer extends FilterScorer {
     private final BoostedQuery.BoostedWeight weight;
     private final float qWeight;
-    private final Scorer scorer;
     private final FunctionValues vals;
     private final LeafReaderContext readerContext;
 
     private CustomScorer(LeafReaderContext readerContext, BoostedQuery.BoostedWeight w, float qWeight,
         Scorer scorer, ValueSource vs) throws IOException {
-      super(w);
+      super(scorer);
       this.weight = w;
       this.qWeight = qWeight;
-      this.scorer = scorer;
       this.readerContext = readerContext;
       this.vals = vs.getValues(weight.fcontext, readerContext);
     }
 
-    @Override
-    public int docID() {
-      return scorer.docID();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return scorer.advance(target);
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return scorer.nextDoc();
-    }
-
     @Override   
     public float score() throws IOException {
-      float score = qWeight * scorer.score() * vals.floatVal(scorer.docID());
+      float score = qWeight * in.score() * vals.floatVal(in.docID());
 
       // Current Lucene priority queues can't handle NaN and -Infinity, so
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
@@ -170,18 +154,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public int freq() throws IOException {
-      return scorer.freq();
-    }
-
-    @Override
-    public int nextPosition() throws IOException {
-      return scorer.nextPosition();
-    }
-
-    @Override
     public Collection<ChildScorer> getChildren() {
-      return Collections.singleton(new ChildScorer(scorer, "CUSTOM"));
+      return Collections.singleton(new ChildScorer(in, "CUSTOM"));
     }
 
     public Explanation explain(int doc) throws IOException {
@@ -197,10 +171,6 @@ public class BoostedQuery extends Query {
       return res;
     }
 
-    @Override
-    public long cost() {
-      return scorer.cost();
-    }
   }
 
 

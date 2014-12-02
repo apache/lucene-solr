@@ -17,6 +17,10 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BulkScorer;
@@ -26,11 +30,8 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 
 class DrillSidewaysScorer extends BulkScorer {
 
@@ -647,6 +648,31 @@ class DrillSidewaysScorer extends BulkScorer {
     @Override
     public int nextPosition() throws IOException {
       throw new UnsupportedOperationException("FakeScorer doesn't support nextPosition()");
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override

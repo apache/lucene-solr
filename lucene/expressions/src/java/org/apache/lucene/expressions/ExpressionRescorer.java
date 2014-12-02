@@ -18,7 +18,6 @@ package org.apache.lucene.expressions;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,18 +26,11 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FakeScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Rescorer;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortRescorer;
-import org.apache.lucene.search.Weight;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A {@link Rescorer} that uses an expression to re-score
@@ -62,61 +54,6 @@ class ExpressionRescorer extends SortRescorer {
     super(new Sort(expression.getSortField(bindings, true)));
     this.expression = expression;
     this.bindings = bindings;
-  }
-
-  private static class FakeScorer extends Scorer {
-    float score;
-    int doc = -1;
-    int freq = 1;
-
-    public FakeScorer() {
-      super(null);
-    }
-    
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int freq() {
-      return freq;
-    }
-
-    @Override
-    public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException("FakeScorer doesn't support nextPosition()");
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
-    }
-    
-    @Override
-    public float score() {
-      return score;
-    }
-
-    @Override
-    public long cost() {
-      return 1;
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Collection<ChildScorer> getChildren() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   @Override

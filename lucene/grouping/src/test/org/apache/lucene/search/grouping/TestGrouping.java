@@ -18,11 +18,29 @@
 package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -34,7 +52,20 @@ import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.CachingCollector;
+import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
 import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.function.FunctionSecondPassGroupingCollector;
@@ -54,6 +85,7 @@ import org.apache.lucene.util.mutable.MutableValueStr;
 //   - test ties
 //   - test compound sort
 
+@Seed("3C4E441C6A8DA6A2:4E026113DBED10D1")
 public class TestGrouping extends LuceneTestCase {
 
   public void testBasic() throws Exception {
@@ -878,7 +910,7 @@ public class TestGrouping extends LuceneTestCase {
             }
           } else {
             // Collect only into cache, then replay multiple times:
-            c = cCache = CachingCollector.create(false, true, maxCacheMB);
+            c = cCache = CachingCollector.create(false, DocsEnum.FLAG_FREQS, true, maxCacheMB);
           }
         } else {
           cCache = null;

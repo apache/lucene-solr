@@ -17,16 +17,20 @@ package org.apache.lucene.queries.function.valuesource;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.*;
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Map;
 
 /** 
  * Function that returns {@link TFIDFSimilarity#tf(float)}
@@ -86,6 +90,31 @@ public class TFValueSource extends TermFreqValueSource {
             @Override
             public int nextPosition() throws IOException {
               return -1;
+            }
+
+            @Override
+            public int startPosition() throws IOException {
+              throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int endPosition() throws IOException {
+              throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int startOffset() throws IOException {
+              throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int endOffset() throws IOException {
+              throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public BytesRef getPayload() throws IOException {
+              throw new UnsupportedOperationException();
             }
 
             @Override

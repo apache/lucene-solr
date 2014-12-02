@@ -17,6 +17,11 @@ package org.apache.lucene.facet.taxonomy;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
@@ -25,15 +30,9 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FakeScorer;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.IntsRef;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /** Aggregates sum of values from {@link
  *  FunctionValues#doubleVal}, for each facet label.
@@ -62,34 +61,6 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
     sumValues(fc.getMatchingDocs(), fc.getKeepScores(), valueSource);
   }
 
-  private static final class FakeScorer extends Scorer {
-    float score;
-    int docID;
-    FakeScorer() { super(null); }
-    @Override public float score() throws IOException { return score; }
-    @Override public int freq() throws IOException { throw new UnsupportedOperationException(); }
-
-    @Override
-    public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override public int docID() { return docID; }
-    @Override public int nextDoc() throws IOException { throw new UnsupportedOperationException(); }
-    @Override public int advance(int target) throws IOException { throw new UnsupportedOperationException(); }
-    @Override public long cost() { return 0; }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Collection<ChildScorer> getChildren() {
-      throw new UnsupportedOperationException();
-    }
-  }
-
   private final void sumValues(List<MatchingDocs> matchingDocs, boolean keepScores, ValueSource valueSource) throws IOException {
     final FakeScorer scorer = new FakeScorer();
     Map<String, Scorer> context = new HashMap<>();
@@ -110,7 +81,7 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
       while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         ords.get(doc, scratch);
         if (keepScores) {
-          scorer.docID = doc;
+          scorer.doc = doc;
           scorer.score = scores[scoresIdx++];
         }
         float value = (float) functionValues.doubleVal(doc);

@@ -43,7 +43,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -68,8 +67,8 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
@@ -517,8 +516,8 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       assertNotNull(memTermEnum.next());
       assertThat(termEnum.totalTermFreq(), equalTo(memTermEnum.totalTermFreq()));
 
-      DocsAndPositionsEnum docsPosEnum = termEnum.docsAndPositions(null, null, 0);
-      DocsAndPositionsEnum memDocsPosEnum = memTermEnum.docsAndPositions(null, null, 0);
+      DocsEnum docsPosEnum = termEnum.docsAndPositions(null, null, 0);
+      DocsEnum memDocsPosEnum = memTermEnum.docsAndPositions(null, null, 0);
       String currentTerm = termEnum.term().utf8ToString();
 
       assertThat("Token mismatch for field: " + field_name, currentTerm, equalTo(memTermEnum.term().utf8ToString()));

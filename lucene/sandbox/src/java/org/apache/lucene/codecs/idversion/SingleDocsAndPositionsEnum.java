@@ -17,6 +17,8 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -85,6 +87,16 @@ class SingleDocsAndPositionsEnum extends DocsEnum {
     assert pos == -1;
     pos = 0;
     IDVersionPostingsFormat.longToBytes(version, payload);
+    return pos;
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return pos;
+  }
+
+  @Override
+  public int endPosition() throws IOException {
     return pos;
   }
 

@@ -17,6 +17,15 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -60,15 +69,6 @@ import org.apache.lucene.util.IntBlockPool.SliceWriter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -1046,6 +1046,7 @@ public class MemoryIndex {
       private int doc = -1;
       private SliceReader sliceReader;
       private int freq;
+      private int pos;
       private int startOffset;
       private int endOffset;
       
@@ -1071,6 +1072,7 @@ public class MemoryIndex {
 
       @Override
       public int nextDoc() {
+        pos = -1;
         if (hasNext && (liveDocs == null || liveDocs.get(0))) {
           hasNext = false;
           return doc = 0;
@@ -1096,13 +1098,23 @@ public class MemoryIndex {
           return NO_MORE_POSITIONS;
         assert !sliceReader.endOfSlice() : " stores offsets : " + startOffset;
         if (storeOffsets) {
-          int pos = sliceReader.readInt();
+          pos = sliceReader.readInt();
           startOffset = sliceReader.readInt();
           endOffset = sliceReader.readInt();
           return pos;
         } else {
           return sliceReader.readInt();
         }
+      }
+
+      @Override
+      public int startPosition() throws IOException {
+        return pos;
+      }
+
+      @Override
+      public int endPosition() throws IOException {
+        return pos;
       }
 
       @Override

@@ -831,7 +831,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
           prevDocsEnum = threadState.reuseDocsEnum;
         }
 
-        int flags = DocsEnum.FLAG_NONE;
+        int flags = DocsEnum.FLAG_POSITIONS;
         if (alwaysTestMax || random().nextBoolean()) {
           flags |= DocsEnum.FLAG_OFFSETS;
         }

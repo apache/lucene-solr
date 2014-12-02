@@ -17,6 +17,19 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.text.BreakIterator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -39,19 +52,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-
-import java.io.IOException;
-import java.text.BreakIterator;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
  * Simple highlighter that does not analyze fields nor use
@@ -730,10 +730,20 @@ public class PostingsHighlighter {
     public int nextPosition() throws IOException { return NO_MORE_POSITIONS; }
 
     @Override
-    public int startOffset() throws IOException { return Integer.MAX_VALUE; }
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
-    public int endOffset() throws IOException { return Integer.MAX_VALUE; }
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException { throw new UnsupportedOperationException(); }
+
+    @Override
+    public int endOffset() throws IOException { throw new UnsupportedOperationException(); }
 
     @Override
     public BytesRef getPayload() throws IOException { return null; }

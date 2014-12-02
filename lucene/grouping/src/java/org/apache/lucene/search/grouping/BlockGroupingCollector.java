@@ -18,11 +18,11 @@ package org.apache.lucene.search.grouping;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FakeScorer;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Scorer;
@@ -33,12 +33,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
-
-import java.io.IOException;
-import java.util.Collection;
 
 // TODO: this sentence is too long for the class summary.
 /** BlockGroupingCollector performs grouping with a
@@ -97,61 +93,6 @@ public class BlockGroupingCollector extends SimpleCollector {
   private Scorer scorer;
   private final GroupQueue groupQueue;
   private boolean groupCompetes;
-
-  private final static class FakeScorer extends Scorer {
-
-    float score;
-    int doc;
-
-    public FakeScorer() {
-      super(null);
-    }
-
-    @Override
-    public float score() {
-      return score;
-    }
-    
-    @Override
-    public int freq() {
-      throw new UnsupportedOperationException(); // TODO: wtf does this class do?
-    }
-
-    @Override
-    public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long cost() {
-      return 1;
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Collection<ChildScorer> getChildren() {
-      throw new UnsupportedOperationException();
-    }
-  }
 
   private static final class OneGroup {
     LeafReaderContext readerContext;

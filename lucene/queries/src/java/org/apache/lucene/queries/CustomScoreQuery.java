@@ -17,6 +17,12 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -29,13 +35,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  * Query that sets document score as a programmatic function of several (sub) scores:
@@ -291,6 +292,8 @@ public class CustomScoreQuery extends Query {
     private final CustomScoreProvider provider;
     private final float[] vScores; // reused in score() to avoid allocating this array for each doc
 
+    // TODO : can we use FilterScorer here instead?
+
     // constructor
     private CustomScorer(CustomScoreProvider provider, CustomWeight w, float qWeight,
         Scorer subQueryScorer, Scorer[] valSrcScorers) {
@@ -335,6 +338,31 @@ public class CustomScoreQuery extends Query {
     @Override
     public int nextPosition() throws IOException {
       return subQueryScorer.nextPosition();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return subQueryScorer.startPosition();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return subQueryScorer.endPosition();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return subQueryScorer.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return subQueryScorer.endOffset();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return subQueryScorer.getPayload();
     }
 
     @Override

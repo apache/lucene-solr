@@ -17,6 +17,12 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -45,12 +51,6 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.lucene.util.automaton.Operations;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 
 /**
  * Support for highlighting multiterm queries in PostingsHighlighter.
@@ -237,7 +237,19 @@ class MultiTermHighlighting {
         currentStartOffset = currentEndOffset = Integer.MAX_VALUE;
         return Integer.MAX_VALUE;
       }
-      
+
+      @Override
+      public int startPosition() throws IOException {
+        if (currentStartOffset < Integer.MAX_VALUE)
+          return 0;
+        return NO_MORE_POSITIONS;
+      }
+
+      @Override
+      public int endPosition() throws IOException {
+        return startPosition();
+      }
+
       @Override
       public int freq() throws IOException {
         return Integer.MAX_VALUE; // lie

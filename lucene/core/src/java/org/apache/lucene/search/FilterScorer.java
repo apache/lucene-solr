@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
  * further override some of these methods and may also provide additional
  * methods and fields.
  */
-abstract class FilterScorer extends Scorer {
+public abstract class FilterScorer extends Scorer {
   protected final Scorer in;
   
   public FilterScorer(Scorer in) {

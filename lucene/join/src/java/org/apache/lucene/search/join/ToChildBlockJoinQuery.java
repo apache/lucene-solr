@@ -25,7 +25,6 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -34,11 +33,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Just like {@link ToParentBlockJoinQuery}, except this
@@ -284,7 +279,32 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1; // nocommit do positions make sense here?
+      throw new UnsupportedOperationException(); // nocommit do positions make sense here?
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override

@@ -17,13 +17,13 @@ package org.apache.lucene.search.highlight.positions;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.posfilter.Interval;
-
-import java.io.IOException;
 
 /**
  * A TokenStream constructed from a stream of positions and their offsets.
@@ -31,7 +31,7 @@ import java.io.IOException;
  * are assumed to be non-overlapping.
  * 
  * TODO: abstract the dependency on the current PositionOffsetMapper impl; 
- * allow for implementations of position->offset maps that don't rely on term vectors.
+ * allow for implementations of position-&gt;offset maps that don't rely on term vectors.
  * 
  * @lucene.experimental
  */

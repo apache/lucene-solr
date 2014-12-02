@@ -17,6 +17,10 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -28,10 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
+import org.apache.lucene.util.BytesRef;
 
 
 /**
@@ -174,7 +175,32 @@ public class FunctionQuery extends Query {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     public Explanation explain(int doc) throws IOException {

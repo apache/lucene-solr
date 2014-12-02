@@ -17,6 +17,10 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Locale;
+import java.util.Set;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -27,6 +31,7 @@ import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FakeScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
@@ -37,10 +42,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
-import java.util.Locale;
-import java.util.Set;
 
 class TermsIncludingScoreQuery extends Query {
 
@@ -363,7 +364,32 @@ class TermsIncludingScoreQuery extends Query {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override

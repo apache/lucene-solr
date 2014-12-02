@@ -15,6 +15,10 @@ package org.apache.lucene.search.highlight.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.io.StringReader;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -24,7 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -50,9 +54,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
-
-import java.io.IOException;
-import java.io.StringReader;
 
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
@@ -89,7 +90,6 @@ public class IntervalHighlighterTest extends LuceneTestCase {
       throws Exception {
     IndexWriter writer = new IndexWriter(dir, iwc);
     FieldType type = new FieldType();
-    type.setIndexed(true);
     type.setTokenized(true);
     type.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     type.setStored(true);

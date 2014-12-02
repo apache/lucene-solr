@@ -24,10 +24,10 @@ import org.apache.lucene.util.BytesRef;
 
 /** Used by {@link BulkScorer}s that need to pass a {@link
  *  Scorer} to {@link LeafCollector#setScorer}. */
-final class FakeScorer extends Scorer {
-  float score;
-  int doc = -1;
-  int freq = 1;
+public final class FakeScorer extends Scorer {
+  public float score;
+  public int doc = -1;
+  public int freq = 1;
 
   public FakeScorer() {
     super(null);
