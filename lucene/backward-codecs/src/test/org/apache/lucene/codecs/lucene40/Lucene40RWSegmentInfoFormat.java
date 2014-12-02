@@ -51,7 +51,7 @@ public final class Lucene40RWSegmentInfoFormat extends Lucene40SegmentInfoFormat
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeStringStringMap(si.getDiagnostics());
-      output.writeStringStringMap(Collections.<String,String>emptyMap());
+      output.writeStringStringMap(si.getAttributes());
       output.writeStringSet(si.files());
 
       success = true;

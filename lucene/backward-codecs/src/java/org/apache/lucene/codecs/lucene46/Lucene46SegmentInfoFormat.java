@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene46;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -71,7 +72,7 @@ public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
         CodecUtil.checkEOF(input);
       }
 
-      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, null);
+      final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, null, Collections.<String,String>emptyMap());
       si.setFiles(files);
 
       return si;

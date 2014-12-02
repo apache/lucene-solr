@@ -17,6 +17,8 @@ package org.apache.lucene.codecs.lucene46;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
 import org.apache.lucene.util.Version;
@@ -48,6 +50,12 @@ public class TestLucene46SegmentInfoFormat extends BaseSegmentInfoFormatTestCase
   @Deprecated
   protected void assertIDEquals(byte[] expected, byte[] actual) {
     assertNull(actual); // we don't support IDs
+  }
+
+  @Override
+  @Deprecated
+  protected void assertAttributesEquals(Map<String,String> expected, Map<String,String> actual) {
+    assertEquals(0, actual.size()); // we don't support attributes
   }
 
   @Override
