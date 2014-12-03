@@ -36,18 +36,18 @@ import org.apache.lucene.util.FrequencyTrackingRingBuffer;
  */
 public final class UsageTrackingFilterCachingPolicy implements FilterCachingPolicy {
 
-  private static boolean isCostly(Filter filter) {
+  static boolean isCostly(Filter filter) {
     // This does not measure the cost of iterating over the filter (for this we
     // already have the DocIdSetIterator#cost API) but the cost to build the
     // DocIdSet in the first place
     return filter instanceof MultiTermQueryWrapperFilter;
   }
 
-  private static boolean isCheapToCache(DocIdSet set) {
+  static boolean isCheapToCache(DocIdSet set) {
     // the produced doc set is already cacheable, so caching has no
     // overhead at all. TODO: extend this to sets whose iterators have a low
     // cost?
-    return set.isCacheable();
+    return set == null || set.isCacheable();
   }
 
   private final FilterCachingPolicy.CacheOnLargeSegments segmentPolicy;
