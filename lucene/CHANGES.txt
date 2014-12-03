@@ -95,6 +95,9 @@ New Features
 
 * LUCENE-6077: Added a filter cache. (Adrien Grand, Robert Muir)
 
+* LUCENE-6089, LUCENE-6090: Tune CompressionMode.HIGH_COMPRESSION for 
+  better compression and less cpu usage. (Adrien Grand, Robert Muir)
+
 * LUCENE-6088: TermsFilter implements Accountable. (Adrien Grand)
 
 API Changes
