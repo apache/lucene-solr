@@ -95,6 +95,8 @@ New Features
 
 * LUCENE-6077: Added a filter cache. (Adrien Grand, Robert Muir)
 
+* LUCENE-6088: TermsFilter implements Accountable. (Adrien Grand)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

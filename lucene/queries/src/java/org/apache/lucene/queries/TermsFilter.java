@@ -33,10 +33,12 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Constructs a filter for docs matching any of the terms added to this class.
@@ -45,7 +47,9 @@ import org.apache.lucene.util.BytesRef;
  * a choice of "category" labels picked by the end user. As a filter, this is much faster than the
  * equivalent query (a BooleanQuery with many "should" TermQueries)
  */
-public final class TermsFilter extends Filter {
+public final class TermsFilter extends Filter implements Accountable {
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermsFilter.class);
 
   /*
    * this class is often used for large number of terms in a single field.
@@ -178,7 +182,14 @@ public final class TermsFilter extends Filter {
     this.hashCode = hash;
     
   }
-  
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED
+        + RamUsageEstimator.sizeOf(termsAndFields)
+        + RamUsageEstimator.sizeOf(termsBytes)
+        + RamUsageEstimator.sizeOf(offsets);
+  }
   
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
@@ -254,7 +265,13 @@ public final class TermsFilter extends Filter {
     return builder.toString();
   }
   
-  private static final class TermsAndField {
+  private static final class TermsAndField implements Accountable {
+
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(TermsAndField.class)
+        + RamUsageEstimator.shallowSizeOfInstance(String.class)
+        + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER; // header of the array held by the String
+
     final int start;
     final int end;
     final String field;
@@ -265,6 +282,13 @@ public final class TermsFilter extends Filter {
       this.start = start;
       this.end = end;
       this.field = field;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      // this is an approximation since we don't actually know how strings store
+      // their data, which can be JVM-dependent
+      return BASE_RAM_BYTES_USED + field.length() * RamUsageEstimator.NUM_BYTES_CHAR;
     }
 
     @Override
@@ -317,4 +341,5 @@ public final class TermsFilter extends Filter {
     Collections.sort(toSort);
     return toSort;
   }
+
 }
