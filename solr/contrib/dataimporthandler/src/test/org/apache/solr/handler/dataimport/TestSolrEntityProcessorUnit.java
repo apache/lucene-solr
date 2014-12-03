@@ -31,18 +31,31 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
   public void testQuery() {
     List<Doc> docs = generateUniqueDocs(2);
 
-    MockSolrEntityProcessor processor = new MockSolrEntityProcessor(docs);
+    MockSolrEntityProcessor processor = createAndInit(docs);
 
     assertExpectedDocs(docs, processor);
     assertEquals(1, processor.getQueryCount());
   }
 
+  private MockSolrEntityProcessor createAndInit(List<Doc> docs) {
+    return createAndInit(docs, SolrEntityProcessor.ROWS_DEFAULT);
+  }
+
   public void testNumDocsGreaterThanRows() {
     List<Doc> docs = generateUniqueDocs(44);
 
-    MockSolrEntityProcessor processor = new MockSolrEntityProcessor(docs, 10);
+    int rowsNum = 10;
+    MockSolrEntityProcessor processor = createAndInit(docs, rowsNum);
     assertExpectedDocs(docs, processor);
     assertEquals(5, processor.getQueryCount());
+  }
+
+  private MockSolrEntityProcessor createAndInit(List<Doc> docs, int rowsNum) {
+    MockSolrEntityProcessor processor = new MockSolrEntityProcessor(docs, rowsNum);
+    HashMap<String,String> entityAttrs = new HashMap<String,String>(){{put(SolrEntityProcessor.SOLR_SERVER,"http://route:66/no");}};
+    processor.init(getContext(null, null, null, null, Collections.emptyList(), 
+        entityAttrs));
+    return processor;
   }
 
   public void testMultiValuedFields() {
@@ -53,7 +66,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     Doc testDoc = createDoc(types);
     docs.add(testDoc);
 
-    MockSolrEntityProcessor processor = new MockSolrEntityProcessor(docs);
+    MockSolrEntityProcessor processor = createAndInit(docs);
     Map<String, Object> next = processor.nextRow();
     assertNotNull(next);
 
