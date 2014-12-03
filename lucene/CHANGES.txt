@@ -117,10 +117,49 @@ New Features
 
 * LUCENE-6077: Added a filter cache. (Adrien Grand, Robert Muir)
 
+* LUCENE-6088: TermsFilter implements Accountable. (Adrien Grand)
+
+Optimizations
+
+* LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
+  track visited states.  (Markus Heiden via Mike McCandless)
+
+* LUCENE-5959: Don't allocate excess memory when building automaton in
+  finish. (Markus Heiden via Mike McCandless)
+
+* LUCENE-5963: Reduce memory allocations in
+  AnalyzingSuggester. (Markus Heiden via Mike McCandless)
+
+* LUCENE-5938: MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is now faster on
+  queries that match few documents by using a sparse bit set implementation.
+  (Adrien Grand)
+
+* LUCENE-5969: Refactor merging to be more efficient, checksum calculation is
+  per-segment/per-producer, and norms and doc values merging no longer cause 
+  RAM spikes for latent fields. (Mike McCandless, Robert Muir)
+
+* LUCENE-5983: CachingWrapperFilter now uses a new DocIdSet implementation
+  called RoaringDocIdSet instead of WAH8DocIdSet. (Adrien Grand)
+
+* LUCENE-6022: DocValuesDocIdSet checks live docs before doc values.
+  (Adrien Grand)
+
+* LUCENE-6030: Add norms patched compression for a small number of common values
+  (Ryan Ernst)
+
+* LUCENE-6040: Speed up EliasFanoDocIdSet through broadword bit selection.
+  (Paul Elschot)
+
+* LUCENE-6033: CachingTokenFilter now uses ArrayList not LinkedList, and has new
+  isCached() method. (David Smiley)
+
+* LUCENE-6031: TokenSources (in the default highlighter) converts term vectors into a
+  TokenStream much faster in linear time (not N*log(N) using less memory, and with reset()
+  implemented.  Only one of offsets or positions are required of the term vector.
+  (David Smiley)
+
 * LUCENE-6089, LUCENE-6090: Tune CompressionMode.HIGH_COMPRESSION for 
   better compression and less cpu usage. (Adrien Grand, Robert Muir)
-
-* LUCENE-6088: TermsFilter implements Accountable. (Adrien Grand)
 
 API Changes
 
@@ -333,45 +372,6 @@ Tests
 
 * LUCENE-5968: Improve error message when 'ant beast' is run on top-level
   modules.  (Ramkumar Aiyengar, Uwe Schindler)
-
-Optimizations
-
-* LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
-  track visited states.  (Markus Heiden via Mike McCandless)
-
-* LUCENE-5959: Don't allocate excess memory when building automaton in
-  finish. (Markus Heiden via Mike McCandless)
-
-* LUCENE-5963: Reduce memory allocations in
-  AnalyzingSuggester. (Markus Heiden via Mike McCandless)
-
-* LUCENE-5938: MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE is now faster on
-  queries that match few documents by using a sparse bit set implementation.
-  (Adrien Grand)
-
-* LUCENE-5969: Refactor merging to be more efficient, checksum calculation is
-  per-segment/per-producer, and norms and doc values merging no longer cause 
-  RAM spikes for latent fields. (Mike McCandless, Robert Muir)
-
-* LUCENE-5983: CachingWrapperFilter now uses a new DocIdSet implementation
-  called RoaringDocIdSet instead of WAH8DocIdSet. (Adrien Grand)
-
-* LUCENE-6022: DocValuesDocIdSet checks live docs before doc values.
-  (Adrien Grand)
-
-* LUCENE-6030: Add norms patched compression for a small number of common values
-  (Ryan Ernst)
-
-* LUCENE-6040: Speed up EliasFanoDocIdSet through broadword bit selection.
-  (Paul Elschot)
-
-* LUCENE-6033: CachingTokenFilter now uses ArrayList not LinkedList, and has new
-  isCached() method. (David Smiley)
-
-* LUCENE-6031: TokenSources (in the default highlighter) converts term vectors into a
-  TokenStream much faster in linear time (not N*log(N) using less memory, and with reset()
-  implemented.  Only one of offsets or positions are required of the term vector.
-  (David Smiley)
 
 Build
 
