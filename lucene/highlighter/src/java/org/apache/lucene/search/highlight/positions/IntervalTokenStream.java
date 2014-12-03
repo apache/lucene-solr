@@ -27,8 +27,8 @@ import org.apache.lucene.search.posfilter.Interval;
 
 /**
  * A TokenStream constructed from a stream of positions and their offsets.
- * The document is segmented into tokens at the start and end offset of each interval.  The intervals
- * are assumed to be non-overlapping.
+ * The document is segmented into tokens at the start and end offset of each interval.  If
+ * an interval overlaps the previous returned interval, it is skipped.
  * 
  * TODO: abstract the dependency on the current PositionOffsetMapper impl; 
  * allow for implementations of position-&gt;offset maps that don't rely on term vectors.
@@ -47,7 +47,10 @@ public class IntervalTokenStream extends TokenStream {
   private final Interval[] positions;
   
   // the index of the current position interval
-  private int pos = -1;
+  private int index = -1;
+
+  // last end offset returned (to avoid overlaps)
+  private int lastEndOffset = -1;
   
   public IntervalTokenStream (String text, Interval[] positions) {
     this.text = text;
@@ -56,14 +59,17 @@ public class IntervalTokenStream extends TokenStream {
   
   @Override
   public final boolean incrementToken() throws IOException {
-    if (++pos >= positions.length)
-      return false;
-    if (positions[pos] == null)
-      return false;
-    int b, e;
-    b = positions[pos].offsetBegin;
-    e = positions[pos].offsetEnd;
-    assert b >=0;
+    int b = -1, e = -1;
+    while (b <= lastEndOffset) {
+      if (++index >= positions.length)
+        return false;
+      if (positions[index] == null)
+        return false;
+      b = positions[index].offsetBegin;
+      e = positions[index].offsetEnd;
+      assert b >= 0;
+    }
+    lastEndOffset = e;
     termAtt.append(text, b, e);
     offsetAtt.setOffset(b, e);
     posIncrAtt.setPositionIncrement(1);

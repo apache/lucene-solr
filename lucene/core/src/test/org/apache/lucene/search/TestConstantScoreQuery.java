@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -25,8 +27,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 /** This class only tests some basic functionality in CSQ, the main parts are mostly
  * tested by MultiTermQuery tests, explanations seems to be tested in TestExplanations! */
@@ -56,9 +56,9 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       public void setScorer(Scorer scorer) {
         this.scorer = scorer;
         assertEquals("Scorer is implemented by wrong class", scorerClassName, scorer.getClass().getName());
-        if (innerScorerClassName != null && scorer instanceof ConstantScoreQuery.ConstantScorer) {
-          final ConstantScoreQuery.ConstantScorer innerScorer = (ConstantScoreQuery.ConstantScorer) scorer;
-          assertEquals("inner Scorer is implemented by wrong class", innerScorerClassName, innerScorer.docIdSetIterator.getClass().getName());
+        if (innerScorerClassName != null && scorer instanceof ConstantScoreQuery.ConstantScoreScorer) {
+          final ConstantScoreQuery.ConstantScoreScorer innerScorer = (ConstantScoreQuery.ConstantScoreScorer) scorer;
+          assertEquals("inner Scorer is implemented by wrong class", innerScorerClassName, innerScorer.in.getClass().getName());
         }
       }
       
@@ -113,13 +113,13 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       final Query csqbq = new ConstantScoreQuery(bq);
       csqbq.setBoost(17.0f);
       
-      checkHits(searcher, csq1, csq1.getBoost(), ConstantScoreQuery.ConstantScorer.class.getName(), null);
-      checkHits(searcher, csq2, csq2.getBoost(), ConstantScoreQuery.ConstantScorer.class.getName(), ConstantScoreQuery.ConstantScorer.class.getName());
+      checkHits(searcher, csq1, csq1.getBoost(), ConstantScoreQuery.ConstantScoreScorer.class.getName(), null);
+      checkHits(searcher, csq2, csq2.getBoost(), ConstantScoreQuery.ConstantScoreScorer.class.getName(), ConstantScoreQuery.ConstantScoreScorer.class.getName());
       
       // for the combined BQ, the scorer should always be BooleanScorer's BucketScorer, because our scorer supports out-of order collection!
       final String bucketScorerClass = FakeScorer.class.getName();
       checkHits(searcher, bq, csq1.getBoost() + csq2.getBoost(), bucketScorerClass, null);
-      checkHits(searcher, csqbq, csqbq.getBoost(), ConstantScoreQuery.ConstantScorer.class.getName(), bucketScorerClass);
+      checkHits(searcher, csqbq, csqbq.getBoost(), ConstantScoreQuery.ConstantScoreScorer.class.getName(), bucketScorerClass);
     } finally {
       if (reader != null) reader.close();
       if (directory != null) directory.close();

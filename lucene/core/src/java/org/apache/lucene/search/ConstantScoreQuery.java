@@ -153,23 +153,26 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context, int flags, Bits acceptDocs) throws IOException {
-      final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
         final DocIdSet dis = filter.getDocIdSet(context, acceptDocs);
         if (dis == null) {
           return null;
         }
-        disi = dis.iterator();
+        final DocIdSetIterator disi = dis.iterator();
+        if (disi == null)
+          return null;
+        return new ConstantDocIdSetIteratorScorer(disi, this, queryWeight);
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, flags, acceptDocs);
+        Scorer scorer = innerWeight.scorer(context, flags, acceptDocs);
+        if (scorer == null) {
+          return null;
+        }
+        return new ConstantScoreScorer(scorer, queryWeight);
       }
 
-      if (disi == null) {
-        return null;
-      }
-      return new ConstantScorer(disi, this, queryWeight);
+
     }
 
     @Override
@@ -223,17 +226,46 @@ public class ConstantScoreQuery extends Query {
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           // we must wrap again here, but using the scorer passed in as parameter:
-          in.setScorer(new ConstantScorer(scorer, weight, theScore));
+          in.setScorer(new ConstantScoreScorer(scorer, theScore));
         }
       };
     }
   }
 
-  protected class ConstantScorer extends Scorer {
+  protected class ConstantScoreScorer extends FilterScorer {
+
+    private final float score;
+
+    public ConstantScoreScorer(Scorer wrapped, float score) {
+      super(wrapped);
+      this.score = score;
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return 1;
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      if (query != null) {
+        return Collections.singletonList(new ChildScorer(in, "constant"));
+      } else {
+        return Collections.emptyList();
+      }
+    }
+  }
+
+  protected class ConstantDocIdSetIteratorScorer extends Scorer {
     final DocIdSetIterator docIdSetIterator;
     final float theScore;
 
-    public ConstantScorer(DocIdSetIterator docIdSetIterator, Weight w, float theScore) {
+    public ConstantDocIdSetIteratorScorer(DocIdSetIterator docIdSetIterator, Weight w, float theScore) {
       super(w);
       this.theScore = theScore;
       this.docIdSetIterator = docIdSetIterator;
@@ -260,11 +292,9 @@ public class ConstantScoreQuery extends Query {
       return 1;
     }
 
-    // nocommit maybe split into ConstantFilterScorer and ConstantQueryScorer to make these available?
-
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      return NO_MORE_POSITIONS;
     }
 
     @Override

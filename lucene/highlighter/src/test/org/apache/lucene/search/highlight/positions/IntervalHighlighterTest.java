@@ -19,7 +19,7 @@ package org.apache.lucene.search.highlight.positions;
 import java.io.IOException;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.Analyzer;
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -52,28 +52,19 @@ import org.apache.lucene.search.posfilter.NonOverlappingQuery;
 import org.apache.lucene.search.posfilter.OrderedNearQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.junit.Ignore;
 
-/**
- * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
- */
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
+@Seed("2C0AB6BC65255FAA")
 public class IntervalHighlighterTest extends LuceneTestCase {
   
   protected final static String F = "f";
-  protected Analyzer analyzer;
   protected Directory dir;
   protected IndexSearcher searcher;
-  private IndexWriterConfig iwc;
-  
+
   private static final String PORRIDGE_VERSE = "Pease porridge hot! Pease porridge cold! Pease porridge in the pot nine days old! Some like it hot, some"
       + " like it cold, Some like it in the pot nine days old! Pease porridge hot! Pease porridge cold!";
   
   public void setUp() throws Exception {
     super.setUp();
-    iwc = newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.CREATE);
-    analyzer = iwc.getAnalyzer();
     dir = newDirectory();
   }
   
@@ -86,8 +77,9 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   // make several docs
-  protected void insertDocs(Analyzer analyzer, String... values)
+  protected void insertDocs(String... values)
       throws Exception {
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.CREATE);
     IndexWriter writer = new IndexWriter(dir, iwc);
     FieldType type = new FieldType();
     type.setTokenized(true);
@@ -184,7 +176,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testTerm() throws Exception {
-    insertDocs(analyzer, "This is a test test");
+    insertDocs("This is a test test");
     String frags[] = doSearch(termQuery("test"));
     assertEquals("This is a <B>test</B> <B>test</B>", frags[0]);
     close();
@@ -195,14 +187,14 @@ public class IntervalHighlighterTest extends LuceneTestCase {
         + "Let us see what happens to long in this case.";
     String gold = "this is some <B>long</B> text.  It has the word <B>long</B> in many places.  In fact, it has <B>long</B> on some different fragments.  "
         + "Let us see what happens to <B>long</B> in this case.";
-    insertDocs(analyzer, input);
+    insertDocs(input);
     String frags[] = doSearch(termQuery("long"), input.length());
     assertEquals(gold, frags[0]);
     close();
   }
   
   public void testBooleanAnd() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(termQuery("This"), Occur.MUST));
     bq.add(new BooleanClause(termQuery("test"), Occur.MUST));
@@ -212,7 +204,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testConstantScore() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(termQuery("This"), Occur.MUST));
     bq.add(new BooleanClause(termQuery("test"), Occur.MUST));
@@ -222,7 +214,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testBooleanAndOtherOrder() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.MUST));
     bq.add(new BooleanClause(new TermQuery(new Term(F, "This")), Occur.MUST));
@@ -232,7 +224,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testBooleanOr() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.SHOULD));
     bq.add(new BooleanClause(new TermQuery(new Term(F, "This")), Occur.SHOULD));
@@ -242,7 +234,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testSingleMatchScorer() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.SHOULD));
     bq.add(new BooleanClause(new TermQuery(new Term(F, "notoccurringterm")),
@@ -253,7 +245,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testBooleanNrShouldMatch() throws Exception {
-    insertDocs(analyzer, "a b c d e f g h i");
+    insertDocs("a b c d e f g h i");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "a")), Occur.SHOULD));
     bq.add(new BooleanClause(new TermQuery(new Term(F, "b")), Occur.SHOULD));
@@ -278,7 +270,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testPhrase() throws Exception {
-    insertDocs(analyzer, "is it that this is a test, is it");
+    insertDocs("is it that this is a test, is it");
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term(F, "is"));
     pq.add(new Term(F, "a"));
@@ -293,7 +285,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
    */
   //@Ignore
   public void testPhraseOriginal() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term(F, "a"));
     pq.add(new Term(F, "test"));
@@ -303,7 +295,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testNestedBoolean() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.SHOULD));
     BooleanQuery bq2 = new BooleanQuery();
@@ -316,14 +308,14 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testWildcard() throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs("This is a test");
     String frags[] = doSearch(new WildcardQuery(new Term(F, "t*t")));
     assertEquals("This is a <B>test</B>", frags[0]);
     close();
   }
 
   public void testMixedBooleanNot() throws Exception {
-    insertDocs(analyzer, "this is a test", "that is an elephant");
+    insertDocs("this is a test", "that is an elephant");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.MUST));
     bq.add(new BooleanClause(new TermQuery(new Term(F, "that")), Occur.MUST_NOT));
@@ -333,7 +325,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
 
   public void testMixedBooleanShould() throws Exception {
-    insertDocs(analyzer, "this is a test", "that is an elephant", "the other was a rhinoceros");
+    insertDocs("this is a test", "that is an elephant", "the other was a rhinoceros");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "is")), Occur.MUST));
     bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.SHOULD));
@@ -351,7 +343,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   }
   
   public void testMultipleDocumentsAnd() throws Exception {
-    insertDocs(analyzer, "This document has no matches", PORRIDGE_VERSE,
+    insertDocs("This document has no matches", PORRIDGE_VERSE,
         "This document has some Pease porridge in it");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "Pease")), Occur.MUST));
@@ -368,7 +360,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   
 
   public void testMultipleDocumentsOr() throws Exception {
-    insertDocs(analyzer, "This document has no matches", PORRIDGE_VERSE,
+    insertDocs("This document has no matches", PORRIDGE_VERSE,
         "This document has some Pease porridge in it");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause(new TermQuery(new Term(F, "Pease")), Occur.SHOULD));
@@ -386,30 +378,26 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   
   public void testBrouwerianQuery() throws Exception {
 
-    insertDocs(analyzer, "the quick brown duck jumps over the lazy dog with the quick brown fox");
+    insertDocs("the quick brown fox jumps over the lazy dog with the quick orange fox");
 
-    BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term(F, "the")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term(F, "quick")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term(F, "jumps")), Occur.MUST));
+    OrderedNearQuery query = new OrderedNearQuery(1,
+        new TermQuery(new Term(F, "the")), new TermQuery(new Term(F, "quick")), new TermQuery(new Term(F, "fox")));
 
     assertEquals(getHighlight(query),
-                 "<B>the</B> <B>quick</B> brown duck <B>jumps</B> over <B>the</B> lazy dog with the <B>quick</B> brown fox");
+                 "<B>the quick brown fox</B> jumps over the lazy dog with <B>the quick orange fox</B>");
 
-    BooleanQuery sub = new BooleanQuery();
-    sub.add(new BooleanClause(new TermQuery(new Term(F, "duck")), Occur.MUST));
-    NonOverlappingQuery bq = new NonOverlappingQuery(query, sub);
+    NonOverlappingQuery bq = new NonOverlappingQuery(query, new TermQuery(new Term(F, "orange")));
 
     assertEquals(getHighlight(bq),
-                 "the quick brown duck <B>jumps</B> over <B>the</B> lazy dog with the <B>quick</B> brown fox");
+                 "<B>the quick brown fox<B> jumps over the lazy dog with the quick orange fox");
 
     close();
   }
   
-  @Ignore("not implemented yet - unsupported")
+  //@Ignore("not implemented yet - unsupported")
   public void testMultiPhraseQuery() throws Exception {
     MultiPhraseQuery query = new MultiPhraseQuery();
-    insertDocs(analyzer, "pease porridge hot but not too hot or otherwise pease porridge cold");
+    insertDocs("pease porridge hot but not too hot or otherwise pease porridge cold");
 
     query.add(terms(F, "pease"), 0);
     query.add(terms(F, "porridge"), 1);
@@ -422,10 +410,10 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     close();
   }
   
-  @Ignore("not implemented yet - unsupported")
+  //@Ignore("not implemented yet - unsupported")
   public void testMultiPhraseQueryCollisions() throws Exception {
     MultiPhraseQuery query = new MultiPhraseQuery();
-    insertDocs(analyzer, "pease porridge hot not too hot or otherwise pease porridge porridge");
+    insertDocs("pease porridge hot not too hot or otherwise pease porridge porridge");
 
     query.add(terms(F, "pease"), 0);
     query.add(terms(F, "porridge"), 1);
@@ -440,12 +428,12 @@ public class IntervalHighlighterTest extends LuceneTestCase {
 
   public void testNearPhraseQuery() throws Exception {
 
-    insertDocs(analyzer, "pease porridge rather hot and pease porridge fairly cold");
+    insertDocs("pease porridge rather hot and pease porridge fairly cold");
 
     Query firstQ = new OrderedNearQuery(4, termQuery("pease"), termQuery("porridge"), termQuery("hot"));
     {
       String frags[] = doSearch(firstQ, Integer.MAX_VALUE);
-      assertEquals("<B>pease</B> <B>porridge</B> rather <B>hot</B> and pease porridge fairly cold", frags[0]);
+      assertEquals("<B>pease porridge rather hot</B> and pease porridge fairly cold", frags[0]);
     }
 
     // near.3(near.4(pease, porridge, hot), near.4(pease, porridge, cold))
@@ -454,7 +442,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
                 new OrderedNearQuery(4, termQuery("pease"), termQuery("porridge"), termQuery("cold")));
 
     String frags[] = doSearch(q, Integer.MAX_VALUE);
-    assertEquals("<B>pease</B> <B>porridge</B> rather <B>hot</B> and <B>pease</B> <B>porridge</B> fairly <B>cold</B>",
+    assertEquals("<B>pease porridge rather hot and pease porridge fairly cold</B>",
                  frags[0]);
 
     close();
@@ -469,18 +457,18 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     }
 
   public void testSloppyPhraseQuery() throws Exception {
-    assertSloppyPhrase( "a b c d a b c d e f", "a b <B>c</B> d <B>a</B> b c d e f", 2, "c", "a");
-    assertSloppyPhrase( "a c e b d e f a b","<B>a</B> c e <B>b</B> d e f <B>a</B> <B>b</B>", 2, "a", "b");
-    assertSloppyPhrase( "Y A X B A", "Y <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "a c e b d e f a b", "<B>a c e b</B> d e f <B>a b</B>", 2, "a", "b");
+    assertSloppyPhrase( "a b c d a b c d e f", "a b <B>c d a</B> b c d e f", 2, "c", "a");
+    assertSloppyPhrase( "Y A X B A", "Y <B>A X B A</B>", 2, "X", "A", "A");
 
-    assertSloppyPhrase( "X A X B A","<B>X</B> <B>A</B> X B <B>A</B>", 2, "X", "A", "A"); // non overlapping minmal!!
+    assertSloppyPhrase( "X A X B A","X <B>A X B A</B>", 2, "X", "A", "A"); // non overlapping minmal!!
     assertSloppyPhrase( "A A A X",null, 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A",  "A <B>A</B> <B>X</B> <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A Y B A", "A <B>A</B> <B>X</B> <B>A</B> Y B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A",  "A <B>A X A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A Y B A", "A <B>A X A</B> Y B A", 2, "X", "A", "A");
     assertSloppyPhrase( "A A X", null, 2, "X", "A", "A");
     assertSloppyPhrase( "A X A", null, 1, "X", "A", "A");
 
-    assertSloppyPhrase( "A X B A", "<B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A X B A", "<B>A X B A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
 
@@ -493,7 +481,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
 
 
   private void assertSloppyPhrase(String doc, String expected, int slop, String...query) throws Exception {
-    insertDocs(analyzer, doc);
+    insertDocs(doc);
     PhraseQuery pq = new PhraseQuery();
     for (String string : query) {
       pq.add(new Term(F, string));  

@@ -49,10 +49,9 @@ final class SloppyPhraseScorer extends Scorer {
   private boolean hasRpts; // flag indicating that there are repetitions (as checked in first candidate doc)
   private boolean checkedRpts; // flag to only check for repetitions in first candidate doc
   private boolean hasMultiTermRpts; //  
-  private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) offset 
+  private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) phraseOffset
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
   
-  private int numMatches;
   private final long cost;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
@@ -62,15 +61,15 @@ final class SloppyPhraseScorer extends Scorer {
     this.postings = postings;
     this.slop = slop;
     this.numPostings = postings==null ? 0 : postings.length;
-    pq = new PhraseQueue(postings.length);
-    // min(cost)
-    cost = postings[0].postings.cost();
+    pq = new PhraseQueue(this.numPostings);
     // convert tps to a list of phrase positions.
     // note: phrase-position differs from term-position in that its position
-    // reflects the phrase offset: pp.pos = tp.pos - offset.
+    // reflects the phrase phraseOffset: pp.pos = tp.pos - phraseOffset.
     // this allows to easily identify a matching (exact) phrase 
     // when all PhrasePositions have exactly the same position.
-    if (postings.length > 0) {
+    if (postings != null && postings.length > 0) {
+      // min(cost)
+      cost = postings[0].postings.cost();
       min = new PhrasePositions(postings[0].postings, postings[0].position, 0, postings[0].terms);
       max = min;
       max.doc = -1;
@@ -82,11 +81,16 @@ final class SloppyPhraseScorer extends Scorer {
       }
       max.next = min; // make it cyclic for easier manipulation
     }
+    else {
+      cost = 0;
+    }
   }
 
   private int matchLength;
   private int startpos = -1;
   private int endpos = -1;
+  private int startoffset = -1;
+  private int endoffset = -1;
 
   @Override
   public int nextPosition() throws IOException {
@@ -101,13 +105,15 @@ final class SloppyPhraseScorer extends Scorer {
     PhrasePositions top = pq.pop();
     matchLength = end - top.position;
     int next = pq.top().position;
-    int pos = top.position + top.offset;
+    int pos = top.position + top.phraseOffset;
+    int startoffset = top.startOffset();
+    int endoffset = top.endOffset();
     while (advancePP(top)) {
       if (hasRpts && !advanceRpts(top))
         break; // pps exhausted
       if (top.position > next) { // done minimizing current match-length
         if (matchLength <= slop) {
-          setSpan(pos);
+          setSpan(pos, startoffset, endoffset);
           pq.add(top);
           return startpos;
         }
@@ -115,18 +121,22 @@ final class SloppyPhraseScorer extends Scorer {
         top = pq.pop();
         next = pq.top().position;
         matchLength = end - top.position;
-        pos = top.position + top.offset;
+        pos = top.position + top.phraseOffset;
+        startoffset = top.startOffset();
+        endoffset = top.endOffset();
       }
       else {
         int matchLength2 = end - top.position;
-        pos = top.position + top.offset;
+        pos = top.position + top.phraseOffset;
+        startoffset = top.startOffset();
+        endoffset = top.endOffset();
         if (matchLength2 < matchLength)
           matchLength = matchLength2;
       }
     }
 
     if (matchLength <= slop) {
-      setSpan(pos);
+      setSpan(pos, startoffset, endoffset);
       return startpos;
     }
 
@@ -134,15 +144,19 @@ final class SloppyPhraseScorer extends Scorer {
 
   }
 
-  private void setSpan(int topPos) {
+  private void setSpan(int topPos, int topStartOffset, int topEndOffset) throws IOException {
     startpos = topPos;
     endpos = topPos;
+    startoffset = topStartOffset;
+    endoffset = topEndOffset;
     for (Object o : pq.getPPs()) {
       if (o == null)
         continue;
       PhrasePositions pp = (PhrasePositions) o;
-      startpos = Math.min(startpos, pp.position + pp.offset);
-      endpos = Math.max(endpos, pp.position + pp.offset);
+      startpos = Math.min(startpos, pp.position + pp.phraseOffset);
+      startoffset = Math.min(startoffset, pp.startOffset());
+      endpos = Math.max(endpos, pp.position + pp.phraseOffset);
+      endoffset = Math.max(endoffset, pp.endOffset());
     }
   }
 
@@ -213,10 +227,10 @@ final class SloppyPhraseScorer extends Scorer {
     return true;
   }
 
-  /** compare two pps, but only by position and offset */
+  /** compare two pps, but only by position and phraseOffset */
   private PhrasePositions lesser(PhrasePositions pp, PhrasePositions pp2) {
     if (pp.position < pp2.position ||
-        (pp.position == pp2.position && pp.offset < pp2.offset)) {
+        (pp.position == pp2.position && pp.phraseOffset < pp2.phraseOffset)) {
       return pp;
     }
     return pp2;
@@ -305,7 +319,7 @@ final class SloppyPhraseScorer extends Scorer {
     }
   }
 
-  /** At initialization (each doc), each repetition group is sorted by (query) offset.
+  /** At initialization (each doc), each repetition group is sorted by (query) phraseOffset.
    * This provides the start condition: no collisions.
    * <p>Case 1: no multi-term repeats<br>
    * It is sufficient to advance each pp in the group by one less than its group index.
@@ -325,7 +339,7 @@ final class SloppyPhraseScorer extends Scorer {
           int k;
           while((k=collide(pp)) >= 0) {
             PhrasePositions pp2 = lesser(pp, rg[k]);
-            if (!advancePP(pp2)) {  // at initialization always advance pp with higher offset
+            if (!advancePP(pp2)) {  // at initialization always advance pp with higher phraseOffset
               return false; // exhausted
             }
             if (pp2.rptInd < i) { // should not happen?
@@ -383,14 +397,14 @@ final class SloppyPhraseScorer extends Scorer {
     return true; // PPs available
   }
 
-  /** sort each repetition group by (query) offset. 
+  /** sort each repetition group by (query) phraseOffset.
    * Done only once (at first doc) and allows to initialize faster for each doc. */
   private void sortRptGroups(ArrayList<ArrayList<PhrasePositions>> rgs) {
     rptGroups = new PhrasePositions[rgs.size()][];
     Comparator<PhrasePositions> cmprtr = new Comparator<PhrasePositions>() {
       @Override
       public int compare(PhrasePositions pp1, PhrasePositions pp2) {
-        return pp1.offset - pp2.offset;
+        return pp1.phraseOffset - pp2.phraseOffset;
       }
     };
     for (int i=0; i<rptGroups.length; i++) {
@@ -417,7 +431,7 @@ final class SloppyPhraseScorer extends Scorer {
           PhrasePositions pp2 = rpp[j];
           if (
               pp2.rptGroup >=0        // already marked as a repetition
-              || pp2.offset == pp.offset // not a repetition: two PPs are originally in same offset in the query! 
+              || pp2.phraseOffset == pp.phraseOffset // not a repetition: two PPs are originally in same phraseOffset in the query!
               || tpPos(pp2) != tpPos) {  // not a repetition
             continue; 
           }
@@ -461,9 +475,9 @@ final class SloppyPhraseScorer extends Scorer {
     return res;
   }
 
-  /** Actual position in doc of a PhrasePosition, relies on that position = tpPos - offset) */
-  private final int tpPos(PhrasePositions pp) {
-    return pp.position + pp.offset;
+  /** Actual position in doc of a PhrasePosition, relies on that position = tpPos - phraseOffset) */
+  private int tpPos(PhrasePositions pp) {
+    return pp.position + pp.phraseOffset;
   }
 
   /** find repeating terms and assign them ordinal values */
@@ -473,7 +487,7 @@ final class SloppyPhraseScorer extends Scorer {
     for (PhrasePositions pp=min,prev=null; prev!=max; pp=(prev=pp).next) { // iterate cyclic list: done once handled max
       for (Term t : pp.terms) {
         Integer cnt0 = tcnt.get(t);
-        Integer cnt = cnt0==null ? new Integer(1) : new Integer(1+cnt0.intValue());
+        Integer cnt = cnt0==null ? new Integer(1) : new Integer(1 + cnt0);
         tcnt.put(t, cnt);
         if (cnt==2) {
           tord.put(t,tord.size());
@@ -495,7 +509,7 @@ final class SloppyPhraseScorer extends Scorer {
         }
       }
     }
-    return rp.toArray(new PhrasePositions[0]);
+    return rp.toArray(new PhrasePositions[rp.size()]);
   }
   
   /** bit-sets - for each repeating pp, for each of its repeating terms, the term ordinal values is set */
@@ -535,7 +549,7 @@ final class SloppyPhraseScorer extends Scorer {
   /** map each term to the single group that contains it */ 
   private HashMap<Term,Integer> termGroups(LinkedHashMap<Term,Integer> tord, ArrayList<FixedBitSet> bb) throws IOException {
     HashMap<Term,Integer> tg = new HashMap<>();
-    Term[] t = tord.keySet().toArray(new Term[0]);
+    Term[] t = tord.keySet().toArray(new Term[tord.size()]);
     for (int i=0; i<bb.size(); i++) { // i is the group no.
       FixedBitSet bits = bb.get(i);
       for (int ord = bits.nextSetBit(0); ord != DocIdSetIterator.NO_MORE_DOCS; ord = ord + 1 >= bits.length() ? DocIdSetIterator.NO_MORE_DOCS : bits.nextSetBit(ord + 1)) {
@@ -586,17 +600,18 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public int startOffset() throws IOException {
-    return -1; // nocommit
+    return startoffset;
   }
 
   @Override
   public int endOffset() throws IOException {
-    return -1; // nocommit
+    return endoffset;
   }
 
+  // TODO : getPayload on spans?
   @Override
   public BytesRef getPayload() throws IOException {
-    return null; // nocommit
+    return null;
   }
 
   @Override

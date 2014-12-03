@@ -29,11 +29,11 @@ final class PhraseQueue extends PriorityQueue<PhrasePositions> {
     if (pp1.doc == pp2.doc) 
       if (pp1.position == pp2.position)
         // same doc and pp.position, so decide by actual term positions. 
-        // rely on: pp.position == tp.position - offset. 
-        if (pp1.offset == pp2.offset) {
+        // rely on: pp.position == tp.position - phraseOffset.
+        if (pp1.phraseOffset == pp2.phraseOffset) {
           return pp1.ord < pp2.ord;
         } else {
-          return pp1.offset < pp2.offset;
+          return pp1.phraseOffset < pp2.phraseOffset;
         }
       else {
         return pp1.position < pp2.position;

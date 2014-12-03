@@ -17,19 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
 
-import java.io.IOException;
-
 /**
- * Position of a term in a document that takes into account the term offset within the phrase. 
+ * Position of a term in a document that takes into account the term phraseOffset within the phrase.
  */
 final class PhrasePositions {
   int doc;              // current doc
   int position;         // position in doc
-  int count;            // remaining pos in this doc
-  int offset;           // position in phrase
+  //int count;            // remaining pos in this doc
+  int phraseOffset;           // position in phrase
   final int ord;                                  // unique across all PhrasePositions instances
   final DocsEnum postings;            // stream of docs & positions
   PhrasePositions next;                           // used to make lists
@@ -39,7 +39,7 @@ final class PhrasePositions {
 
   PhrasePositions(DocsEnum postings, int o, int ord, Term[] terms) {
     this.postings = postings;
-    offset = o;
+    phraseOffset = o;
     this.ord = ord;
     this.terms = terms;
   }
@@ -62,28 +62,37 @@ final class PhrasePositions {
   }
 
   final void firstPosition() throws IOException {
-    count = postings.freq();  // read first pos
     nextPosition();
   }
 
   /**
    * Go to next location of this term current document, and set 
-   * <code>position</code> as <code>location - offset</code>, so that a 
+   * <code>position</code> as <code>location - phraseOffset</code>, so that a
    * matching exact phrase is easily identified when all PhrasePositions 
    * have exactly the same <code>position</code>.
    */
   final boolean nextPosition() throws IOException {
-    if (count-- > 0) {  // read subsequent pos's
-      position = postings.nextPosition() - offset;
-      return true;
-    } else
+    int nextPos = postings.nextPosition();
+    if (nextPos == DocsEnum.NO_MORE_POSITIONS) {
+      position = nextPos;
       return false;
+    }
+    position = nextPos - phraseOffset;
+    return true;
+  }
+
+  public final int startOffset() throws IOException {
+    return postings.startOffset();
+  }
+
+  public final int endOffset() throws IOException {
+    return postings.endOffset();
   }
   
   /** for debug purposes */
   @Override
   public String toString() {
-    String s = "d:"+doc+" offset:"+offset+" position:"+position+" c:"+count;
+    String s = "d:"+doc+" phraseOffset:"+ phraseOffset +" position:"+position;
     if (rptGroup >=0 ) {
       s += " rpt:"+rptGroup+",i"+rptInd;
     }

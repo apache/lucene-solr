@@ -16,14 +16,14 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
-
-import java.io.IOException;
 
 public class TestPhraseQueryPositions extends IntervalTestBase {
   
@@ -77,6 +77,18 @@ public class TestPhraseQueryPositions extends IntervalTestBase {
     checkIntervals(query, searcher, new int[][]{
         {0, 0, 2, 31, 33},
         {1, 3, 5, 34, 36}
+    });
+  }
+
+  public void testSloppyPhraseQueryWithRepears() throws IOException {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "porridge"));
+    query.add(new Term("field", "pease"));
+    query.setSlop(1);
+    checkIntervals(query, searcher, new int[][]{
+        {0, 0, 3, 3, 6, 31, 34},
+        {1, 0, 3, 3, 6, 31, 34}
     });
   }
 

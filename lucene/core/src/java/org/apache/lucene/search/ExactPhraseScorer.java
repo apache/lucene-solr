@@ -231,7 +231,7 @@ final class ExactPhraseScorer extends Scorer {
 
   private boolean findNextMatches() throws IOException {
 
-    // TODO: we could fold in chunkStart into offset and
+    // TODO: we could fold in chunkStart into phraseOffset and
     // save one subtract per pos incr
 
     boolean exhausted = false;
