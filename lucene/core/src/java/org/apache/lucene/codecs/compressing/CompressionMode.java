@@ -186,7 +186,7 @@ public abstract class CompressionMode {
     byte[] compressed;
 
     DeflateDecompressor() {
-      decompressor = new Inflater();
+      decompressor = new Inflater(true);
       compressed = new byte[0];
     }
 
@@ -198,13 +198,18 @@ public abstract class CompressionMode {
         return;
       }
       final int compressedLength = in.readVInt();
-      if (compressedLength > compressed.length) {
-        compressed = new byte[ArrayUtil.oversize(compressedLength, 1)];
+      // pad with extra "dummy byte": see javadocs for using Inflater(true)
+      // we do it for compliance, but its unnecessary for years in zlib.
+      final int paddedLength = compressedLength + 1;
+      if (paddedLength > compressed.length) {
+        compressed = new byte[ArrayUtil.oversize(paddedLength, 1)];
       }
       in.readBytes(compressed, 0, compressedLength);
+      compressed[compressedLength] = 0; // explicitly set dummy byte to 0
 
       decompressor.reset();
-      decompressor.setInput(compressed, 0, compressedLength);
+      // extra "dummy byte"
+      decompressor.setInput(compressed, 0, paddedLength);
 
       bytes.offset = bytes.length = 0;
       while (true) {
@@ -242,7 +247,7 @@ public abstract class CompressionMode {
     byte[] compressed;
 
     DeflateCompressor(int level) {
-      compressor = new Deflater(level);
+      compressor = new Deflater(level, true);
       compressed = new byte[64];
     }
 
