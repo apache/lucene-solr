@@ -219,6 +219,9 @@ New Features
 
 * SOLR-6607: Managing requesthandlers throuh API (Noble Paul)
 
+* SOLR-4799: faster join using join="zipper" aka merge join for nested DIH EntityProcessors
+  (Mikhail Khludnev via Noble Paul)
+
 Bug Fixes
 ----------------------
 

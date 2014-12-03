@@ -48,6 +48,8 @@ public class EntityProcessorBase extends EntityProcessor {
   protected String onError = ABORT;  
   
   protected DIHCacheSupport cacheSupport = null;
+  
+  protected Zipper zipper;
 
 
   @Override
@@ -56,19 +58,30 @@ public class EntityProcessorBase extends EntityProcessor {
     if (isFirstInit) {
       firstInit(context);
     }
-    if(cacheSupport!=null) {
-      cacheSupport.initNewParent(context);
-    }   
-    
+    if(zipper!=null){
+      zipper.onNewParent(context);
+    }else{
+      if(cacheSupport!=null) {
+        cacheSupport.initNewParent(context);
+      }   
+    }
   }
 
-  /**first time init call. do one-time operations here
+  /**
+   * first time init call. do one-time operations here
+   * it's necessary to call it from the overridden method,
+   * otherwise it throws NPE on accessing zipper from nextRow()
    */
   protected void firstInit(Context context) {
     entityName = context.getEntityAttribute("name");
     String s = context.getEntityAttribute(ON_ERROR);
     if (s != null) onError = s;
-    initCache(context);
+    
+    zipper = Zipper.createOrNull(context);
+    
+    if(zipper==null){
+      initCache(context);
+    }
     isFirstInit = false;
   }
 
@@ -109,25 +122,29 @@ public class EntityProcessorBase extends EntityProcessor {
   }
   
   protected Map<String, Object> getNext() {
-    if(cacheSupport==null) {
-      try {
-        if (rowIterator == null)
+    if(zipper!=null){
+      return zipper.supplyNextChild(rowIterator);
+    }else{
+      if(cacheSupport==null) {
+        try {
+          if (rowIterator == null)
+            return null;
+          if (rowIterator.hasNext())
+            return rowIterator.next();
+          query = null;
+          rowIterator = null;
           return null;
-        if (rowIterator.hasNext())
-          return rowIterator.next();
-        query = null;
-        rowIterator = null;
-        return null;
-      } catch (Exception e) {
-        SolrException.log(log, "getNext() failed for query '" + query + "'", e);
-        query = null;
-        rowIterator = null;
-        wrapAndThrow(DataImportHandlerException.WARN, e);
-        return null;
-      }
-    } else  {
-      return cacheSupport.getCacheData(context, query, rowIterator);
-    }      
+        } catch (Exception e) {
+          SolrException.log(log, "getNext() failed for query '" + query + "'", e);
+          query = null;
+          rowIterator = null;
+          wrapAndThrow(DataImportHandlerException.WARN, e);
+          return null;
+        }
+      } else  {
+        return cacheSupport.getCacheData(context, query, rowIterator);
+      }  
+    }
   }
 
 
