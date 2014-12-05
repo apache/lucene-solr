@@ -343,11 +343,21 @@ final class IndexFileDeleter implements Closeable {
     }
   }
 
-  private void ensureOpen() throws AlreadyClosedException {
+  void ensureOpen() throws AlreadyClosedException {
     writer.ensureOpen(false);
     // since we allow 'closing' state, we must still check this, we could be closing because we hit e.g. OOM
     if (writer.tragedy != null) {
       throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.tragedy);
+    }
+  }
+
+  // for testing
+  boolean isClosed() {
+    try {
+      ensureOpen();
+      return false;
+    } catch (AlreadyClosedException ace) {
+      return true;
     }
   }
 

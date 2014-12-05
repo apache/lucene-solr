@@ -22,17 +22,17 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Test;
-
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
@@ -84,17 +84,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       iw.commit();
     }
     finally {
-      // next event will cause IW to delete the old files: we use prepareCommit just as example
-      iw.prepareCommit();
-      int counter = 0;
-      for (String fileName : dir.listAll()) {
-        if (fileName.endsWith(".fdt") || fileName.endsWith(".fdx")) {
-          counter++;
-        }
-      }
-      // Only one .fdt and one .fdx files must have been found
-      assertEquals(2, counter);
-      iw.rollback();
+      // Abort should have closed the deleter:
       dir.close();
     }
   }

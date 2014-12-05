@@ -29,6 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -81,14 +82,23 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     MockDirectoryWrapper directory = newMockDirectory();
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
-
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                      .setMaxBufferedDocs(2));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+      .setMaxBufferedDocs(2);
+    if (iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler) {
+      iwc.setMergeScheduler(new SuppressingConcurrentMergeScheduler() {
+          @Override
+          protected boolean isOK(Throwable th) {
+            return th instanceof AlreadyClosedException ||
+              (th instanceof IllegalStateException && th.getMessage().contains("this writer hit an unrecoverable error"));
+          }
+        });
+    }
+    IndexWriter writer = new IndexWriter(directory, iwc);
     Document doc = new Document();
     Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);
-    int extraCount = 0;
 
+    outer:
     for(int i=0;i<10;i++) {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + i);
@@ -110,22 +120,20 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           if (failure.hitExc) {
             fail("failed to hit IOException");
           }
-          extraCount++;
         } catch (IOException ioe) {
           if (VERBOSE) {
             ioe.printStackTrace(System.out);
           }
           failure.clearDoFail();
-          break;
+          assertTrue(writer.isClosed());
+          // Abort should have closed the deleter:
+          assertTrue(writer.deleter.isClosed());
+          break outer;
         }
       }
-      assertEquals(20*(i+1)+extraCount, writer.numDocs());
     }
 
-    writer.close();
-    IndexReader reader = DirectoryReader.open(directory);
-    assertEquals(200+extraCount, reader.numDocs());
-    reader.close();
+    assertFalse(DirectoryReader.indexExists(directory));
     directory.close();
   }
 
