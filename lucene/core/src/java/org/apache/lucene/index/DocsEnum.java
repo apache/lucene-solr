@@ -78,16 +78,21 @@ public abstract class DocsEnum extends DocIdSetIterator {
     return atts;
   }
 
-  /** Returns the next position.  You should only call this
-   *  up to {@link DocsEnum#freq()} times else
-   *  the behavior is not defined.  If positions were not
-   *  indexed this will return -1; this only happens if
-   *  offsets were indexed and you passed needsOffset=true
-   *  when pulling the enum.  */
+  /**
+   * Returns the next position.  If there are no more
+   * positions, this will return DocsEnum.NO_MORE_POSITIONS */
   public abstract int nextPosition() throws IOException;
 
+  /**
+   * @return the current starting position.
+   * @throws IOException
+   */
   public abstract int startPosition() throws IOException;
 
+  /**
+   * @return the current ending position
+   * @throws IOException
+   */
   public abstract int endPosition() throws IOException;
 
   /** Returns start offset for the current position, or -1

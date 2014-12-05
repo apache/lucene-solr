@@ -1592,32 +1592,33 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      assert false;
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int startPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int endPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
+      return -1;
     }
 
     @Override
     public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
+      return -1;
     }
 
     @Override
     public BytesRef getPayload() throws IOException {
-      throw new UnsupportedOperationException();
+      return null;
     }
 
     @Override
@@ -1690,32 +1691,33 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      assert false;
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int startPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int endPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
+      return -1;
     }
 
     @Override
     public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
+      return -1;
     }
 
     @Override
     public BytesRef getPayload() throws IOException {
-      throw new UnsupportedOperationException();
+      return null;
     }
 
     @Override
@@ -1804,32 +1806,33 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      assert false; // should be using LowFreqDocsAndPositionsEnum
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int startPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int endPosition() throws IOException {
-      throw new UnsupportedOperationException();
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
+      return -1;
     }
 
     @Override
     public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
+      return -1;
     }
 
     @Override
     public BytesRef getPayload() throws IOException {
-      throw new UnsupportedOperationException();
+      return null;
     }
 
     @Override

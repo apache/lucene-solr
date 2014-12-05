@@ -74,27 +74,27 @@ class SingleDocsEnum extends DocsEnum {
 
   @Override
   public int nextPosition() throws IOException {
-    throw new UnsupportedOperationException();
+    return NO_MORE_POSITIONS;
   }
 
   @Override
   public int startPosition() throws IOException {
-    throw new UnsupportedOperationException();
+    return NO_MORE_POSITIONS;
   }
 
   @Override
   public int endPosition() throws IOException {
-    throw new UnsupportedOperationException();
+    return NO_MORE_POSITIONS;
   }
 
   @Override
   public int startOffset() throws IOException {
-    throw new UnsupportedOperationException();
+    return -1;
   }
 
   @Override
   public int endOffset() throws IOException {
-    throw new UnsupportedOperationException();
+    return -1;
   }
 
   @Override
