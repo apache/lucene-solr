@@ -17,6 +17,9 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -26,9 +29,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Set;
 
 /**
  * A Query that matches documents containing an interval (the minuend) that
@@ -148,7 +148,7 @@ public final class NonOverlappingQuery extends PositionFilterQuery {
     @Override
     protected void reset(int doc) throws IOException {
       super.reset(doc);
-      if (this.subtrahend == null || this.subtrahend.advance(doc) != doc)
+      if (this.subtrahend == null || this.subtrahend.docID() == NO_MORE_DOCS || this.subtrahend.advance(doc) != doc)
         subtPosition = NO_MORE_POSITIONS;
       else
         subtPosition = -1;

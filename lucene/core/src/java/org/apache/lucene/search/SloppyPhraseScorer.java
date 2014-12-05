@@ -92,7 +92,6 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private int matchLength;
   private int startpos = -1;
   private int startoffset = -1;
-  private int startoffset = -1;
   private int endoffset = -1;
 
   @Override
@@ -153,8 +152,6 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private void setSpanStart(int topPos, int topStartOffset) throws IOException {
     startpos = topPos;
     startoffset = topStartOffset;
-    startoffset = topStartOffset;
-    endoffset = topEndOffset;
     for (Object o : pq.getPPs()) {
       if (o == null)
         continue;

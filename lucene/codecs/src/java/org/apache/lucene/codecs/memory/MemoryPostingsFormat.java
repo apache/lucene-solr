@@ -332,8 +332,9 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         } else if (writeOffsets == false) {
           if (writePayloads) {
             enumFlags = DocsEnum.FLAG_PAYLOADS;
-          } else {
-            enumFlags = 0;
+          }
+          else {
+            enumFlags = DocsEnum.FLAG_POSITIONS;
           }
         } else {
           if (writePayloads) {

@@ -17,15 +17,21 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.FakeScorer;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldValueHitQueue;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreCachingWrappingScorer;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.IndexWriter; // javadocs
-import org.apache.lucene.search.*;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
@@ -36,13 +42,6 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
 
 
 /** Collects parent document hits for a Query containing one more more
