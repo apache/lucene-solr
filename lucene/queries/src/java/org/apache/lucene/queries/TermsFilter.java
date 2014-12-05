@@ -190,7 +190,12 @@ public final class TermsFilter extends Filter implements Accountable {
         + RamUsageEstimator.sizeOf(termsBytes)
         + RamUsageEstimator.sizeOf(offsets);
   }
-  
+
+  @Override
+  public Iterable<? extends Accountable> getChildResources() {
+    return Collections.emptyList();
+  }
+
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
     final LeafReader reader = context.reader();
@@ -289,6 +294,11 @@ public final class TermsFilter extends Filter implements Accountable {
       // this is an approximation since we don't actually know how strings store
       // their data, which can be JVM-dependent
       return BASE_RAM_BYTES_USED + field.length() * RamUsageEstimator.NUM_BYTES_CHAR;
+    }
+
+    @Override
+    public Iterable<? extends Accountable> getChildResources() {
+      return Collections.emptyList();
     }
 
     @Override
