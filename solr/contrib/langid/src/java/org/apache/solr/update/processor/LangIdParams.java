@@ -41,12 +41,16 @@ public interface LangIdParams {
   String MAP_LCMAP =  LANGUAGE_ID + ".map.lcmap";            // Enables mapping multiple langs to same output field
   String MAP_PATTERN =  LANGUAGE_ID + ".map.pattern";        // RegEx pattern to match field name
   String MAP_REPLACE =  LANGUAGE_ID + ".map.replace";        // Replace pattern
+  String MAX_FIELD_VALUE_CHARS = LANGUAGE_ID + ".maxFieldValueChars";   // Maximum number of characters to use per field for language detection
+  String MAX_TOTAL_CHARS = LANGUAGE_ID + ".maxTotalChars";   // Maximum number of characters to use per all concatenated fields for language detection
 
   String DOCID_FIELD_DEFAULT = "id";
   String DOCID_LANGFIELD_DEFAULT = null;
   String DOCID_LANGSFIELD_DEFAULT = null;
   String MAP_PATTERN_DEFAULT = "(.*)";
   String MAP_REPLACE_DEFAULT = "$1_{lang}";
+  int MAX_FIELD_VALUE_CHARS_DEFAULT = 10000;
+  int MAX_TOTAL_CHARS_DEFAULT = 20000;
 
   // TODO: This default threshold accepts even "uncertain" detections. 
   // Increase &langid.threshold above 0.5 to return only certain detections
