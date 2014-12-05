@@ -639,3 +639,15 @@ together by Lucene.
   PayloadAttribute's name is unchanged, it just uses the BytesRef
   class to refer to the payload bytes/start offset/end offset 
   (or null if there is no payload).
+
+Bugs fixed in several ValueSource functions may result in different behavior in 
+situations where some documents do not have values for fields wrapped in other 
+ValueSources.  Users who want to preserve the previous behavior may need to wrap 
+their ValueSources in a "DefFunction" along with a ConstValueSource of "0.0".
+
+## PayloadAttributeImpl.clone() (LUCENE-6055)
+
+PayloadAttributeImpl.clone() did a shallow clone which was incorrect, and was
+fixed to do a deep clone. If you require shallow cloning of the underlying bytes,
+you should override PayloadAttributeImpl.clone() to do a shallow clone instead.
+

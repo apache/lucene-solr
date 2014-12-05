@@ -39,6 +39,9 @@ Bug fixes
 * LUCENE-5948: RateLimiter now fully inits itself on init.  (Varun
   Thacker via Mike McCandless)
 
+* LUCENE-6055: PayloadAttribute.clone() now does a deep clone of the underlying
+  bytes. (Shai Erera)
+  
 Documentation
 
 * LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)

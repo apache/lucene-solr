@@ -88,7 +88,6 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   @Override
   public void fillBytesRef() {
     bytes.copyChars(termBuffer, 0, termLength);
-    bytes.get();
   }
 
   @Override
