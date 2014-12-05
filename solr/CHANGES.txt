@@ -110,6 +110,12 @@ Upgrading from Solr 4.x
 * SolrCore.reload(ConfigSet coreConfig, SolrCore prev) was deprecated in 4.10.3 and
   removed in 5.0. use SolrCore.reload(ConfigSet coreConfig). See SOLR-5864.
 
+* The "termIndexInterval" option in solrconfig.xml has been a No-Op in the default codec 
+  since Solr 4.0, and has been removed completely in 5.0.  If you get an "Illegal parameter 
+  'termIndexInterval'" error when upgrading, you can safely remove this option from your 
+  configs.  If you have a strong need to configure this, you must explicitly configure your 
+  schema with a custom codec.  See SOLR-6560 and for more details.
+
 Detailed Change List
 ----------------------
 
@@ -454,6 +460,9 @@ Other Changes
 
 * SOLR-6752: Buffer Cache allocate/lost metrics should be exposed.
   (Mike Drob via Mark Miller)
+
+* SOLR-6560: Purge termIndexInterval from example/test configs
+  (Tom Burton-West, hossman)
 
 ==================  4.10.3 ==================
 
