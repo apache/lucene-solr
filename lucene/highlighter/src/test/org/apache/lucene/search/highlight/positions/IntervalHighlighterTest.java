@@ -19,7 +19,6 @@ package org.apache.lucene.search.highlight.positions;
 import java.io.IOException;
 import java.io.StringReader;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -53,7 +52,6 @@ import org.apache.lucene.search.posfilter.OrderedNearQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-@Seed("2C0AB6BC65255FAA")
 public class IntervalHighlighterTest extends LuceneTestCase {
   
   protected final static String F = "f";
@@ -276,7 +274,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     pq.add(new Term(F, "a"));
     String frags[] = doSearch(pq);
     // make sure we highlight the phrase, and not the terms outside the phrase
-    assertEquals("is it that this <B>is</B> <B>a</B> test, is it", frags[0]);
+    assertEquals("is it that this <B>is a</B> test, is it", frags[0]);
     close();
   }
   
@@ -290,7 +288,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     pq.add(new Term(F, "a"));
     pq.add(new Term(F, "test"));
     String frags[] = doSearch(pq);
-    assertEquals("This is <B>a</B> <B>test</B>", frags[0]);
+    assertEquals("This is <B>a test</B>", frags[0]);
     close();
   }
   
@@ -389,7 +387,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     NonOverlappingQuery bq = new NonOverlappingQuery(query, new TermQuery(new Term(F, "orange")));
 
     assertEquals(getHighlight(bq),
-                 "<B>the quick brown fox<B> jumps over the lazy dog with the quick orange fox");
+                 "<B>the quick brown fox</B> jumps over the lazy dog with the quick orange fox");
 
     close();
   }
@@ -405,7 +403,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     query.setSlop(1);
     
     String[] frags = doSearch(query, Integer.MAX_VALUE);
-    assertEquals("<B>pease</B> <B>porridge</B> <B>hot</B> but not too hot or otherwise <B>pease</B> <B>porridge</B> <B>cold</B>", frags[0]);
+    assertEquals("<B>pease porridge hot</B> but not too hot or otherwise <B>pease porridge cold</B>", frags[0]);
 
     close();
   }
@@ -421,7 +419,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     query.setSlop(1);
     
     String[] frags = doSearch(query, Integer.MAX_VALUE);
-    assertEquals("pease porridge hot but not too hot or otherwise <B>pease</B> <B>porridge</B> <B>porridge</B>", frags[0]);
+    assertEquals("pease porridge hot not too hot or otherwise <B>pease porridge porridge</B>", frags[0]);
 
     close();
   }
@@ -460,8 +458,8 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     assertSloppyPhrase( "a c e b d e f a b", "<B>a c e b</B> d e f <B>a b</B>", 2, "a", "b");
     assertSloppyPhrase( "a b c d a b c d e f", "a b <B>c d a</B> b c d e f", 2, "c", "a");
     assertSloppyPhrase( "Y A X B A", "Y <B>A X B A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "X A X B A","<B>X A X B A</B>", 2, "X", "A", "A"); // non overlapping minmal!!
 
-    assertSloppyPhrase( "X A X B A","X <B>A X B A</B>", 2, "X", "A", "A"); // non overlapping minmal!!
     assertSloppyPhrase( "A A A X",null, 2, "X", "A", "A");
     assertSloppyPhrase( "A A X A",  "A <B>A X A</B>", 2, "X", "A", "A");
     assertSloppyPhrase( "A A X A Y B A", "A <B>A X A</B> Y B A", 2, "X", "A", "A");
@@ -469,12 +467,11 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     assertSloppyPhrase( "A X A", null, 1, "X", "A", "A");
 
     assertSloppyPhrase( "A X B A", "<B>A X B A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B> <B>X</B> B B <B>A</B> <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A X B B A A X B A A", "A <B>A X A</B> X B A <B>X B B A A</B> <B>X B A A</B>", 2, "X", "A", "A");
 
-    assertSloppyPhrase( "A A X A X B A", "A <B>A</B> <B>X</B> <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A Y A X B A", "A A Y <B>A</B> <B>X</B> B <B>A</B>", 2, "X", "A", "A");
-    assertSloppyPhrase( "A A Y A X B A A", "A A Y <B>A</B> <B>X</B> B <B>A</B> <B>A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A X A X B A", "A <B>A X A</B> X B A", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A Y A X B A", "A A Y <B>A X B A</B>", 2, "X", "A", "A");
+    assertSloppyPhrase( "A A Y A X B A A", "A A Y <B>A X B A</B> A", 2, "X", "A", "A");
     assertSloppyPhrase( "A A X A Y B A", null , 1, "X", "A", "A");
     close();
   }

@@ -740,10 +740,10 @@ public class PostingsHighlighter {
     }
 
     @Override
-    public int startOffset() throws IOException { throw new UnsupportedOperationException(); }
+    public int startOffset() throws IOException { return NO_MORE_POSITIONS; }
 
     @Override
-    public int endOffset() throws IOException { throw new UnsupportedOperationException(); }
+    public int endOffset() throws IOException { return NO_MORE_POSITIONS; }
 
     @Override
     public BytesRef getPayload() throws IOException { return null; }

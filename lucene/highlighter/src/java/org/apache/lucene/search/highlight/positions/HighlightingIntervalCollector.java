@@ -31,6 +31,7 @@ public class HighlightingIntervalCollector extends PositionsCollector {
   DocAndPositions docs[];
   
   public HighlightingIntervalCollector (int maxDocs) {
+    super(true);
     docs = new DocAndPositions[maxDocs];
   }
 

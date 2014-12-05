@@ -23,9 +23,8 @@ import java.util.Arrays;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.BytesRef;
 
-final class ExactPhraseScorer extends Scorer {
+final class ExactPhraseScorer extends PhraseScorer {
   private final int endMinus1;
   
   private final static int CHUNK = 4096;
@@ -33,9 +32,8 @@ final class ExactPhraseScorer extends Scorer {
   private int gen;
   private final int[] counts = new int[CHUNK];
   private final int[] gens = new int[CHUNK];
+  private final int[] offsets = new int[CHUNK];
 
-  
-  boolean noDocs;
   private final long cost;
 
   private final static class ChunkState {
@@ -58,8 +56,6 @@ final class ExactPhraseScorer extends Scorer {
   private final DocsEnum lead;
 
   private int docID = -1;
-
-  private int freq = -1;
 
   private final Similarity.SimScorer docScorer;
 
@@ -127,17 +123,6 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public int freq() throws IOException {
-    if (freq == -1) {
-      freq = 0;
-      while (nextPosition() != NO_MORE_DOCS) {
-        freq++;
-      }
-    }
-    return freq;
-  }
-  
-  @Override
   public int docID() {
     return docID;
   }
@@ -170,38 +155,33 @@ final class ExactPhraseScorer extends Scorer {
 
   private int firstPosition() throws IOException {
     resetPositions();
-    int pos = nextPosition();
+    int pos = doNextPosition();
     cached = true;
     return pos;
   }
 
   @Override
-  public int startPosition() throws IOException {
-    return posQueue[positionsInChunk - posRemaining];
+  protected int doStartPosition() throws IOException {
+    return posQueue[positionsInChunk - posRemaining - 1];
   }
 
   @Override
-  public int startOffset() throws IOException {
-    return -1;
+  protected int doStartOffset() throws IOException {
+    return offsetQueue[(positionsInChunk - posRemaining - 1) / 2];
   }
 
   @Override
-  public int endOffset() throws IOException {
-    return -1;
+  protected int doEndOffset() throws IOException {
+    return offsetQueue[(positionsInChunk - posRemaining - 1) / 2 + 1];
   }
 
   @Override
-  public BytesRef getPayload() throws IOException {
-    return null; // nocommit how to deal with payloads across multiple positions?
-  }
-
-  @Override
-  public int endPosition() throws IOException {
+  protected int doEndPosition() throws IOException {
     return startPosition() + chunkStates.length - 1;
   }
 
   @Override
-  public int nextPosition() throws IOException {
+  protected int doNextPosition() throws IOException {
     if (cached) {
       cached = false;
       return startPosition();
@@ -218,15 +198,21 @@ final class ExactPhraseScorer extends Scorer {
   }
 
   int[] posQueue = new int[8];
+  int[] offsetQueue = new int[16];
 
-  private void addPosition(int pos) {
+  private void addPosition(int pos, int beginOffset, int endOffset) {
     positionsInChunk++;
     if (posQueue.length < positionsInChunk) {
       int[] newQueue = new int[posQueue.length * 2];
       System.arraycopy(posQueue, 0, newQueue, 0, posQueue.length);
       posQueue = newQueue;
+      int[] newOffsets = new int[posQueue.length * 2];
+      System.arraycopy(offsetQueue, 0, newOffsets, 0, offsetQueue.length);
+      offsetQueue = newOffsets;
     }
-    posQueue[positionsInChunk] = pos;
+    posQueue[positionsInChunk - 1] = pos;
+    offsetQueue[(positionsInChunk - 1) * 2] = beginOffset;
+    offsetQueue[(positionsInChunk - 1) * 2 + 1] = endOffset;
   }
 
   private boolean findNextMatches() throws IOException {
@@ -259,6 +245,7 @@ final class ExactPhraseScorer extends Scorer {
             any = true;
             assert gens[posIndex] != gen;
             gens[posIndex] = gen;
+            offsets[posIndex] = cs.posEnum.startOffset();
           }
 
           if (cs.posUpto == cs.posLimit) {
@@ -318,7 +305,7 @@ final class ExactPhraseScorer extends Scorer {
             final int posIndex = cs.pos - chunkStart;
             if (posIndex >= 0 && gens[posIndex] == gen
                 && counts[posIndex] == endMinus1) {
-              addPosition(cs.pos);
+              addPosition(cs.pos, offsets[posIndex], cs.posEnum.endOffset());
               any = true;
             }
           }

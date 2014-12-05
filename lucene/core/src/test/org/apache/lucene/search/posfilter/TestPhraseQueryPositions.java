@@ -55,6 +55,11 @@ public class TestPhraseQueryPositions extends IntervalTestBase {
           TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
+    {
+      Document doc = new Document();
+      doc.add(newField("sloppy", "x a x b a", TextField.TYPE_STORED));
+      writer.addDocument(doc);
+    }
   }
 
   public void testOutOfOrderSloppyPhraseQuery() throws IOException {
@@ -69,6 +74,17 @@ public class TestPhraseQueryPositions extends IntervalTestBase {
     });
   }
 
+  public void testOverlappingOutOfOrderSloppyPhraseQuery() throws IOException {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("sloppy", "x"));
+    query.add(new Term("sloppy", "a"));
+    query.add(new Term("sloppy", "a"));
+    query.setSlop(2);
+    checkIntervals(query, searcher, new int[][]{
+        {2, 0, 4, 1, 4}
+    });
+  }
+
   public void testSloppyPhraseQuery() throws IOException {
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "pease"));
@@ -80,7 +96,7 @@ public class TestPhraseQueryPositions extends IntervalTestBase {
     });
   }
 
-  public void testSloppyPhraseQueryWithRepears() throws IOException {
+  public void testSloppyPhraseQueryWithRepeats() throws IOException {
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "pease"));
     query.add(new Term("field", "porridge"));

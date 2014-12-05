@@ -27,14 +27,12 @@ import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 
-final class SloppyPhraseScorer extends Scorer {
+final class SloppyPhraseScorer extends PhraseScorer {
   private PhrasePositions min, max;
 
-  private int freq;
   private float sloppyFreq;
 
   private final Similarity.SimScorer docScorer;
@@ -44,7 +42,12 @@ final class SloppyPhraseScorer extends Scorer {
   private final int numPostings;
   private final PhraseQueue pq; // for advancing min position
   
-  private int end; // current largest phrase position  
+  private int currentEnd; // current largest phrase position
+  private int currentRealEnd; // current largest phrase position, including phrase offset
+  private int currentEndOffset; // current largest phrase currentEnd offset
+
+  private int spanEnd;
+  private int spanOffsetEnd;
 
   private boolean hasRpts; // flag indicating that there are repetitions (as checked in first candidate doc)
   private boolean checkedRpts; // flag to only check for repetitions in first candidate doc
@@ -88,12 +91,12 @@ final class SloppyPhraseScorer extends Scorer {
 
   private int matchLength;
   private int startpos = -1;
-  private int endpos = -1;
+  private int startoffset = -1;
   private int startoffset = -1;
   private int endoffset = -1;
 
   @Override
-  public int nextPosition() throws IOException {
+  protected int doNextPosition() throws IOException {
     if (cached) {
       cached = false;
       return this.startPosition();
@@ -103,40 +106,43 @@ final class SloppyPhraseScorer extends Scorer {
       return NO_MORE_POSITIONS;
 
     PhrasePositions top = pq.pop();
-    matchLength = end - top.position;
+    matchLength = currentEnd - top.position;
     int next = pq.top().position;
     int pos = top.position + top.phraseOffset;
     int startoffset = top.startOffset();
-    int endoffset = top.endOffset();
+    spanEnd = currentRealEnd;
+    spanOffsetEnd = currentEndOffset;
     while (advancePP(top)) {
       if (hasRpts && !advanceRpts(top))
         break; // pps exhausted
       if (top.position > next) { // done minimizing current match-length
         if (matchLength <= slop) {
-          setSpan(pos, startoffset, endoffset);
+          setSpanStart(pos, startoffset);
           pq.add(top);
           return startpos;
         }
         pq.add(top);
         top = pq.pop();
         next = pq.top().position;
-        matchLength = end - top.position;
+        matchLength = currentEnd - top.position;
         pos = top.position + top.phraseOffset;
         startoffset = top.startOffset();
-        endoffset = top.endOffset();
+        spanEnd = currentRealEnd;
+        spanOffsetEnd = currentEndOffset;
       }
       else {
-        int matchLength2 = end - top.position;
+        int matchLength2 = currentEnd - top.position;
         pos = top.position + top.phraseOffset;
         startoffset = top.startOffset();
-        endoffset = top.endOffset();
+        spanEnd = currentRealEnd;
+        spanOffsetEnd = currentEndOffset;
         if (matchLength2 < matchLength)
           matchLength = matchLength2;
       }
     }
 
     if (matchLength <= slop) {
-      setSpan(pos, startoffset, endoffset);
+      setSpanStart(pos, startoffset);
       return startpos;
     }
 
@@ -144,19 +150,19 @@ final class SloppyPhraseScorer extends Scorer {
 
   }
 
-  private void setSpan(int topPos, int topStartOffset, int topEndOffset) throws IOException {
+  private void setSpanStart(int topPos, int topStartOffset) throws IOException {
     startpos = topPos;
-    endpos = topPos;
+    startoffset = topStartOffset;
     startoffset = topStartOffset;
     endoffset = topEndOffset;
     for (Object o : pq.getPPs()) {
       if (o == null)
         continue;
       PhrasePositions pp = (PhrasePositions) o;
-      startpos = Math.min(startpos, pp.position + pp.phraseOffset);
-      startoffset = Math.min(startoffset, pp.startOffset());
-      endpos = Math.max(endpos, pp.position + pp.phraseOffset);
-      endoffset = Math.max(endoffset, pp.endOffset());
+      if (pp.position != NO_MORE_POSITIONS) {
+        startpos = Math.min(startpos, pp.position + pp.phraseOffset);
+        startoffset = Math.min(startoffset, pp.startOffset());
+      }
     }
   }
 
@@ -169,18 +175,22 @@ final class SloppyPhraseScorer extends Scorer {
     freq = -1;
     sloppyFreq = -1;
     cached = false;
-    int pos = nextPosition();
+    int pos = doNextPosition();
     cached = true;
     return pos;
   }
 
-  /** advance a PhrasePosition and update 'end', return false if exhausted */
+  /** advance a PhrasePosition and update 'currentEnd', return false if exhausted */
   private boolean advancePP(PhrasePositions pp) throws IOException {
     if (!pp.nextPosition()) {
       return false;
     }
-    if (pp.position > end) {
-      end = pp.position;
+    if (pp.position > currentEnd) {
+      currentEnd = pp.position;
+    }
+    if (pp.position + pp.phraseOffset > currentRealEnd) {
+      currentRealEnd = pp.position + pp.phraseOffset;
+      currentEndOffset = pp.endOffset();
     }
     return true;
   }
@@ -265,7 +275,8 @@ final class SloppyPhraseScorer extends Scorer {
    * @return false if PPs are exhausted (and so current doc will not be a match) 
    */
   private boolean initPhrasePositions() throws IOException {
-    end = Integer.MIN_VALUE;
+    currentEnd = currentRealEnd = Integer.MIN_VALUE;
+    currentEndOffset = -1;
     if (!checkedRpts) {
       return initFirstTime();
     }
@@ -283,8 +294,12 @@ final class SloppyPhraseScorer extends Scorer {
     // position pps and build queue from list
     for (PhrasePositions pp=min,prev=null; prev!=max; pp=(prev=pp).next) {  // iterate cyclic list: done once handled max
       pp.firstPosition();
-      if (pp.position > end) {
-        end = pp.position;
+      if (pp.position > currentEnd) {
+        currentEnd = pp.position;
+      }
+      if (pp.position + pp.phraseOffset > currentRealEnd) {
+        currentRealEnd = pp.position + pp.phraseOffset;
+        currentEndOffset = pp.endOffset();
       }
       pq.add(pp);
     }
@@ -309,11 +324,15 @@ final class SloppyPhraseScorer extends Scorer {
   }
 
   /** Fill the queue (all pps are already placed */
-  private void fillQueue() {
+  private void fillQueue() throws IOException {
     pq.clear();
     for (PhrasePositions pp=min,prev=null; prev!=max; pp=(prev=pp).next) {  // iterate cyclic list: done once handled max
-      if (pp.position > end) {
-        end = pp.position;
+      if (pp.position > currentEnd) {
+        currentEnd = pp.position;
+      }
+      if (pp.position + pp.phraseOffset > currentRealEnd) {
+        currentRealEnd = pp.position + pp.phraseOffset;
+        currentEndOffset = pp.endOffset();
       }
       pq.add(pp);
     }
@@ -559,17 +578,6 @@ final class SloppyPhraseScorer extends Scorer {
     return tg;
   }
 
-  @Override
-  public int freq() throws IOException {
-    if (freq == -1) {
-      freq = 0;
-      while (nextPosition() != NO_MORE_POSITIONS) {
-        freq++;
-      }
-    }
-    return freq;
-  }
-
   /**
    * Score a candidate doc for all slop-valid position-combinations (matches)
    * encountered while traversing/hopping the PhrasePositions.
@@ -599,29 +607,24 @@ final class SloppyPhraseScorer extends Scorer {
   }
 
   @Override
-  public int startOffset() throws IOException {
+  protected int doStartOffset() throws IOException {
     return startoffset;
   }
 
   @Override
-  public int endOffset() throws IOException {
-    return endoffset;
+  protected int doEndOffset() throws IOException {
+    return spanOffsetEnd;
   }
 
   // TODO : getPayload on spans?
   @Override
-  public BytesRef getPayload() throws IOException {
-    return null;
-  }
-
-  @Override
-  public int startPosition() throws IOException {
+  protected int doStartPosition() throws IOException {
     return startpos;
   }
 
   @Override
-  public int endPosition() throws IOException {
-    return endpos;
+  protected int doEndPosition() throws IOException {
+    return spanEnd;
   }
 
   //  private void printQueue(PrintStream ps, PhrasePositions ext, String title) {
