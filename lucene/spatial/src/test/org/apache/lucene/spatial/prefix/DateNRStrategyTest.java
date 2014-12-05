@@ -27,6 +27,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Calendar;
 
 public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
@@ -63,12 +64,6 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
   @Repeat(iterations = ITERATIONS)
   public void testContains() throws IOException {
     testOperationRandomShapes(SpatialOperation.Contains);
-  }
-
-  @Test @Ignore("see LUCENE-5692")
-  @Repeat(iterations = ITERATIONS)
-  public void testDisjoint() throws IOException {
-    testOperationRandomShapes(SpatialOperation.IsDisjointTo);
   }
 
   @Test

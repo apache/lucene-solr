@@ -157,7 +157,9 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
 
     assertEquals("2014", tree.parseShape("[2014-01-01 TO 2014-12-31]").toString());
 
-    assertEquals("2014", tree.parseShape("[2014-01 TO 2014]").toString());
+    assertEquals("2014",    tree.parseShape("[2014-01 TO 2014]").toString());
+    assertEquals("2014-01", tree.parseShape("[2014 TO 2014-01]").toString());
+    assertEquals("2014-12", tree.parseShape("[2014-12 TO 2014]").toString());
 
     assertEquals("[2014 TO 2014-04-06]", tree.parseShape("[2014-01 TO 2014-04-06]").toString());
 
