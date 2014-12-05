@@ -16,9 +16,16 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Unit test of SolrEntityProcessor. A very basic test outside of the DIH.
@@ -53,7 +60,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
   private MockSolrEntityProcessor createAndInit(List<Doc> docs, int rowsNum) {
     MockSolrEntityProcessor processor = new MockSolrEntityProcessor(docs, rowsNum);
     HashMap<String,String> entityAttrs = new HashMap<String,String>(){{put(SolrEntityProcessor.SOLR_SERVER,"http://route:66/no");}};
-    processor.init(getContext(null, null, null, null, Collections.emptyList(), 
+    processor.init(getContext(null, null, null, null, Collections.<Map<String,String>>emptyList(),
         entityAttrs));
     return processor;
   }
