@@ -49,7 +49,7 @@ public class EntityProcessorBase extends EntityProcessor {
   
   protected DIHCacheSupport cacheSupport = null;
   
-  protected Zipper zipper;
+  private Zipper zipper;
 
 
   @Override
