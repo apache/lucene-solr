@@ -219,6 +219,9 @@ New Features
 
 * SOLR-6607: Managing requesthandlers throuh API (Noble Paul)
 
+* SOLR-4799: faster join using join="zipper" aka merge join for nested DIH EntityProcessors
+  (Mikhail Khludnev via Noble Paul)
+
 Bug Fixes
 ----------------------
 
@@ -276,14 +279,6 @@ Bug Fixes
 * SOLR-6631: DistributedQueue spinning on calling zookeeper getChildren()
   (Jessica Cheng Mallet, Mark Miller, Timothy Potter)
 
-* SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
-  causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
-
-* SOLR-6685: ConcurrentModificationException in Overseer Status API. (shalin)
-
-* SOLR-6706: /update/json/docs throws RuntimeException if a nested structure
-  contains a non-leaf float field (Noble Paul, shalin)
-
 * SOLR-6579:SnapPuller Replication blocks clean shutdown of tomcat
   (Philip Black-Knight via Noble Paul)
 
@@ -293,13 +288,6 @@ Bug Fixes
 * SOLR-6679: Remove suggester component from stock solrconfig.xml since
   it caused long startup times on lage indexes even when it wasn't used.
   (yonik)
-
-* SOLR-6662: better validation when parsing command-line options that expect a value
-  (Timothy Potter)
-
-* SOLR-6705: Better strategy for dealing with JVM specific options in the start
-  scripts; remove -XX:+AggressiveOpts and only set -XX:-UseSuperWord for Java 1.7u40
-  to u51. (Uwe Schindler, janhoy, hossman, Timothy Potter)
 
 * SOLR-6738: Admin UI - Escape Data on Plugins-View (steffkes)
 
@@ -409,10 +397,6 @@ Other Changes
 
 * SOLR-6651: Fix wrong timeout logged in waitForReplicasToComeUp. (shalin)
 
-* SOLR-6661: Adjust all example configurations to allow overriding error-prone 
-  relative paths for solrconfig.xml <lib> references with solr.install.dir 
-  system property; bin/solr scripts will set it appropriately. (ehatcher)
-
 * SOLR-6698: Solr is not consistent wrt ZkCredentialsProvider / ZkCredentialProvider.
   References to zkCredentialProvider in System properties or configurations should be
   changed to zkCredentialsProvider.  (Gregory Chanan)
@@ -487,9 +471,67 @@ Bug Fixes
 * SOLR-6510: The collapse QParser would throw a NPE when used on a DocValues field on
   an empty segment/index. (Christine Poerschke, David Smiley)
 
+* SOLR-6780: Fixed a bug in how default/appends/invariants params were affecting the set 
+  of all "keys" found in the request parameters, resulting in some key=value param pairs 
+  being duplicated.  This was noticably affecting some areas of the code where iteration 
+  was done over the set of all params: 
+    * literal.* in ExtractingRequestHandler
+    * facet.* in FacetComponent
+    * spellcheck.[dictionary name].* and spellcheck.collateParam.* in SpellCheckComponent
+    * olap.* in AnalyticsComponent
+  (Alexandre Rafalovitch & hossman)
+
+* SOLR-2927: Solr does not unregister all mbeans upon exception in constructor
+  causing memory leaks. (tom liu, Sharath Babu, Cyrille Roy, shalin)
+
+* SOLR-6685: ConcurrentModificationException in Overseer Status API. (shalin)
+
+* SOLR-6706: /update/json/docs throws RuntimeException if a nested structure
+  contains a non-leaf float field (Noble Paul, shalin)
+
+* SOLR-6610: Slow startup of new clusters because ZkController.publishAndWaitForDownStates
+  always times out. (Jessica Cheng Mallet, shalin, Noble Paul)
+
+* SOLR-6662: better validation when parsing command-line options that expect a value
+  (Timothy Potter)
+
+* SOLR-6732: Fix handling of leader-initiated recovery state was String in older versions
+  and is now a JSON map, caused backwards compatibility issues when doing rolling upgrades of
+  a live cluster while indexing (Timothy Potter)
+
+* SOLR-6705: Better strategy for dealing with JVM specific options in the start
+  scripts; remove -XX:+AggressiveOpts and only set -XX:-UseSuperWord for Java 1.7u40
+  to u51. (Uwe Schindler, janhoy, hossman, Timothy Potter)
+
+* SOLR-6726: better strategy for selecting the JMX RMI port based on SOLR_PORT in bin/solr
+  script (Timothy Potter)
+
+* SOLR-6795: distrib.singlePass returns score even though not asked for.
+  (Per Steffensen via shalin)
+
+* SOLR-6796: distrib.singlePass does not return correct set of fields for multi-fl-parameter
+  requests. (Per Steffensen via shalin)
+
+* SOLR-6776: Transaction log was not flushed at the end of update requests with softCommit
+  specified, which could lead to data loss if the server were killed immediately after the
+  update finished.  (Jeffery Yuan via yonik)
+
+Other Changes
+----------------------
+
+* SOLR-6661: Adjust all example configurations to allow overriding error-prone
+  relative paths for solrconfig.xml <lib> references with solr.install.dir
+  system property; bin/solr scripts will set it appropriately. (ehatcher)
+
+* SOLR-6694: Auto-detect JAVA_HOME using the Windows registry if it is not set
+  (janhoy, Timothy Potter)
+
+* SOLR-6653: bin/solr script should return error code >0 when something fails
+  (janhoy, Timothy Potter)
+
 ==================  4.10.2 ==================
 
-Bug Fixes
+Bug FixesAnalyticsComponent
 ----------------------
 
 * SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)

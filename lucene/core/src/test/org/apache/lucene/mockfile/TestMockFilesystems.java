@@ -27,6 +27,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -211,6 +212,30 @@ public class TestMockFilesystems extends LuceneTestCase {
     file.close();
   }
   
+  public void testVerboseFSNoSuchFileException() throws IOException {
+    Path dir = FilterPath.unwrap(createTempDir());
+    FileSystem fs = new VerboseFS(dir.getFileSystem(), InfoStream.NO_OUTPUT).getFileSystem(URI.create("file:///"));    
+    Path wrapped = new FilterPath(dir, fs);
+    try {
+      AsynchronousFileChannel.open(wrapped.resolve("doesNotExist.rip"));
+      fail("did not hit exception");
+    } catch (NoSuchFileException nsfe) {
+      // expected
+    }
+    try {
+      FileChannel.open(wrapped.resolve("doesNotExist.rip"));
+      fail("did not hit exception");
+    } catch (NoSuchFileException nsfe) {
+      // expected
+    }
+    try {
+      Files.newByteChannel(wrapped.resolve("stillopen"));
+      fail("did not hit exception");
+    } catch (NoSuchFileException nsfe) {
+      // expected
+    }
+  }
+
   public void testTooManyOpenFiles() throws IOException {
     int n = 60;
 

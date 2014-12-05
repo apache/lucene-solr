@@ -46,7 +46,7 @@
     <build-manifest title="Apache Solr Search Server"
                     implementation.title="org.apache.solr"/>
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
-    <war destfile="${dist}/solr-${version}${solr.war.suffix}.war"
+    <war destfile="${server.dir}/webapps/solr.war"
          webxml="web/WEB-INF/web.xml"
          manifest="${manifest.file}">
       <lib dir="${common-solr.dir}/core/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>

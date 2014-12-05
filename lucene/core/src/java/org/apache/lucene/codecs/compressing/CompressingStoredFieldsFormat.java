@@ -48,15 +48,16 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   private final String segmentSuffix;
   private final CompressionMode compressionMode;
   private final int chunkSize;
+  private final int maxDocsPerChunk;
 
   /**
    * Create a new {@link CompressingStoredFieldsFormat} with an empty segment 
    * suffix.
    * 
-   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(String, String, CompressionMode, int)
+   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(String, String, CompressionMode, int, int)
    */
-  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize) {
-    this(formatName, "", compressionMode, chunkSize);
+  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) {
+    this(formatName, "", compressionMode, chunkSize, maxDocsPerChunk);
   }
   
   /**
@@ -79,6 +80,8 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * <code>chunkSize</code> is the minimum byte size of a chunk of documents.
    * A value of <code>1</code> can make sense if there is redundancy across
    * fields.
+   * <code>maxDocsPerChunk</code> is an upperbound on how many docs may be stored
+   * in a single chunk. This is to bound the cpu costs for highly compressible data.
    * <p>
    * Higher values of <code>chunkSize</code> should improve the compression
    * ratio but will require more memory at indexing time and might make document
@@ -88,10 +91,11 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * @param formatName the name of the {@link StoredFieldsFormat}
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
+   * @param maxDocsPerChunk the maximum number of documents in a single chunk
    * @see CompressionMode
    */
   public CompressingStoredFieldsFormat(String formatName, String segmentSuffix, 
-                                       CompressionMode compressionMode, int chunkSize) {
+                                       CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) {
     this.formatName = formatName;
     this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
@@ -99,7 +103,10 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
       throw new IllegalArgumentException("chunkSize must be >= 1");
     }
     this.chunkSize = chunkSize;
-    
+    if (maxDocsPerChunk < 1) {
+      throw new IllegalArgumentException("maxDocsPerChunk must be >= 1");
+    }
+    this.maxDocsPerChunk = maxDocsPerChunk;
   }
 
   @Override
@@ -113,13 +120,13 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
     return new CompressingStoredFieldsWriter(directory, si, segmentSuffix, context,
-        formatName, compressionMode, chunkSize);
+        formatName, compressionMode, chunkSize, maxDocsPerChunk);
   }
 
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(compressionMode=" + compressionMode
-        + ", chunkSize=" + chunkSize + ")";
+        + ", chunkSize=" + chunkSize + ", maxDocsPerChunk=" + maxDocsPerChunk + ")";
   }
 
 }

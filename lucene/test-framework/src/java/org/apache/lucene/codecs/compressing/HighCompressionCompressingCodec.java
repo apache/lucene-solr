@@ -21,14 +21,16 @@ package org.apache.lucene.codecs.compressing;
 public class HighCompressionCompressingCodec extends CompressingCodec {
 
   /** Constructor that allows to configure the chunk size. */
-  public HighCompressionCompressingCodec(int chunkSize, boolean withSegmentSuffix) {
+  public HighCompressionCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix) {
     super("HighCompressionCompressingStoredFields",
           withSegmentSuffix ? "HighCompressionCompressingStoredFields" : "",
-          CompressionMode.HIGH_COMPRESSION, chunkSize);
+          CompressionMode.HIGH_COMPRESSION, chunkSize, maxDocsPerChunk);
   }
 
   /** Default constructor. */
   public HighCompressionCompressingCodec() {
-    this(1 << 14, false);
+    // no need to have a higher block length than 32KB since deflate splits
+    // into blocks of 32KB anyway, and this is a lower bound (try to avoid > 32KB)
+    this(24576, 512, false);
   }
 }

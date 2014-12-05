@@ -36,7 +36,7 @@ import org.apache.lucene.index.Terms;
  */
 public class TokenSources {
   /**
-   * A convenience method that tries to first get a TermPositionVector for the
+   * A convenience method that tries to first get a {@link TokenStreamFromTermVector} for the
    * specified docId, then, falls back to using the passed in
    * {@link org.apache.lucene.document.Document} to retrieve the TokenStream.
    * This is useful when you already have the document, but would prefer to use

@@ -54,9 +54,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   
   /** Extension of stored fields index file */
   public static final String FIELDS_INDEX_EXTENSION = "fdx";
-  
-  // hard limit on the maximum number of documents per chunk
-  static final int MAX_DOCUMENTS_PER_CHUNK = 128;
 
   static final int         STRING = 0x00;
   static final int       BYTE_ARR = 0x01;
@@ -82,6 +79,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private final CompressionMode compressionMode;
   private final Compressor compressor;
   private final int chunkSize;
+  private final int maxDocsPerChunk;
 
   private final GrowableByteArrayDataOutput bufferedDocs;
   private int[] numStoredFields; // number of stored fields
@@ -91,7 +89,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   /** Sole constructor. */
   public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
-      String formatName, CompressionMode compressionMode, int chunkSize) throws IOException {
+      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) throws IOException {
     assert directory != null;
     this.directory = directory;
     this.segment = si.name;
@@ -99,6 +97,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
     this.chunkSize = chunkSize;
+    this.maxDocsPerChunk = maxDocsPerChunk;
     this.docBase = 0;
     this.bufferedDocs = new GrowableByteArrayDataOutput(chunkSize);
     this.numStoredFields = new int[16];
@@ -210,7 +209,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private boolean triggerFlush() {
     return bufferedDocs.length >= chunkSize || // chunks of at least chunkSize bytes
-        numBufferedDocs >= MAX_DOCUMENTS_PER_CHUNK;
+        numBufferedDocs >= maxDocsPerChunk;
   }
 
   private void flush() throws IOException {

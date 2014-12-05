@@ -21,8 +21,10 @@ package org.apache.lucene.index;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 
@@ -65,6 +67,8 @@ public final class SegmentInfo {
   private Codec codec;
 
   private Map<String,String> diagnostics;
+  
+  private Map<String,String> attributes;
 
   // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
@@ -90,7 +94,7 @@ public final class SegmentInfo {
    */
   public SegmentInfo(Directory dir, Version version, String name, int docCount,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
-                     byte[] id) {
+                     byte[] id, Map<String,String> attributes) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = dir;
     this.version = version;
@@ -103,6 +107,7 @@ public final class SegmentInfo {
     if (id.length != StringHelper.ID_LENGTH) {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
     }
+    this.attributes = Objects.requireNonNull(attributes);
   }
 
   /**
@@ -267,4 +272,34 @@ public final class SegmentInfo {
   String namedForThisSegment(String file) {
     return name + IndexFileNames.stripSegmentName(file);
   }
+  
+  /**
+   * Get a codec attribute value, or null if it does not exist
+   */
+  public String getAttribute(String key) {
+    return attributes.get(key);
+  }
+  
+  /**
+   * Puts a codec attribute value.
+   * <p>
+   * This is a key-value mapping for the field that the codec can use to store
+   * additional metadata, and will be available to the codec when reading the
+   * segment via {@link #getAttribute(String)}
+   * <p>
+   * If a value already exists for the field, it will be replaced with the new
+   * value.
+   */
+  public String putAttribute(String key, String value) {
+    return attributes.put(key, value);
+  }
+  
+  /**
+   * Returns the internal codec attributes map.
+   * @return internal codec attributes map.
+   */
+  public Map<String,String> getAttributes() {
+    return attributes;
+  }
 }
+

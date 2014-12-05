@@ -38,6 +38,15 @@ IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
 
 REM Verify Java is available
 IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
+REM Try to detect JAVA_HOME from the registry
+IF NOT DEFINED JAVA_HOME (
+  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment" /v CurrentVersion') DO set CurVer=%%B
+  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment\!CurVer!" /v JavaHome') DO (
+    set JAVA_HOME=%%B
+    @echo Detected JAVA_HOME=%%B
+  )
+)
+
 IF NOT DEFINED JAVA_HOME goto need_java_home
 set JAVA_HOME=%JAVA_HOME:"=%
 "%JAVA_HOME%"\bin\java -version:1.8 -version > nul 2>&1
@@ -171,8 +180,6 @@ goto done
 @echo  -p port     Specify the port to start the Solr HTTP listener on; default is 8983
 @echo.
 @echo  -all        Find and stop all running Solr servers on this host
-@echo.
-@echo  -V          Verbose messages from this script
 @echo.
 goto done
 
@@ -505,7 +512,7 @@ IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 IF "%SCRIPT_CMD%"=="stop" (
   IF "%SOLR_PORT%"=="" (
     IF "%STOP_ALL%"=="1" (
-      for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
+      for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
         set SOME_SOLR_PORT=
         For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
         if NOT "!SOME_SOLR_PORT!"=="" (
@@ -587,12 +594,13 @@ IF "%SOLR_MODE%"=="solrcloud" (
 
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
+  IF "!RMI_PORT!"=="" set RMI_PORT=1%SOLR_PORT%
   set REMOTE_JMX_OPTS=-Dcom.sun.management.jmxremote ^
 -Dcom.sun.management.jmxremote.local.only=false ^
 -Dcom.sun.management.jmxremote.ssl=false ^
 -Dcom.sun.management.jmxremote.authenticate=false ^
--Dcom.sun.management.jmxremote.port=10%SOLR_PORT:~-2,2% ^
--Dcom.sun.management.jmxremote.rmi.port=10%SOLR_PORT:~-2,2%
+-Dcom.sun.management.jmxremote.port=!RMI_PORT! ^
+-Dcom.sun.management.jmxremote.rmi.port=!RMI_PORT!
 
 IF NOT "%SOLR_HOST%"=="" set REMOTE_JMX_OPTS=%REMOTE_JMX_OPTS% -Djava.rmi.server.hostname=%SOLR_HOST%
 ) ELSE (
@@ -636,17 +644,27 @@ IF "%verbose%"=="1" (
     @echo     SOLR_HOME       = %SOLR_HOME%
     @echo     SOLR_HOST       = %SOLR_HOST%
     @echo     SOLR_PORT       = %SOLR_PORT%
+    @echo     STOP_PORT       = %STOP_PORT%
+    @echo     SOLR_JAVA_MEM   = %SOLR_JAVA_MEM%
     @echo     GC_TUNE         = !GC_TUNE!
     @echo     GC_LOG_OPTS     = %GC_LOG_OPTS%
-    @echo     SOLR_JAVA_MEM   = %SOLR_JAVA_MEM%
-    @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
-    @echo     CLOUD_MODE_OPTS = %CLOUD_MODE_OPTS%
     @echo     SOLR_TIMEZONE   = %SOLR_TIMEZONE%
+
+    IF "%SOLR_MODE%"=="solrcloud" (
+      @echo     CLOUD_MODE_OPTS = %CLOUD_MODE_OPTS%
+    )
+
     IF NOT "%SOLR_OPTS%"=="" (
       @echo     SOLR_OPTS       = %SOLR_OPTS%
     )
+
     IF NOT "%SOLR_ADDL_ARGS%"=="" (
       @echo     SOLR_ADDL_ARGS  = %SOLR_ADDL_ARGS%
+    )
+
+    IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
+        @echo     RMI_PORT        = !RMI_PORT!
+        @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
     )
 )
 
@@ -887,7 +905,7 @@ goto done
 :get_info
 REM Find all Java processes, correlate with those listening on a port
 REM and then try to contact via that port using the status tool
-for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
+for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
   set SOME_SOLR_PORT=
   For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
   if NOT "!SOME_SOLR_PORT!"=="" (
@@ -994,7 +1012,7 @@ IF "!CREATE_REPFACT!"=="" set CREATE_REPFACT=1
 
 REM Find a port that Solr is running on
 if "!CREATE_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b %SOLR_TIP\bin% ^| findstr /i "^solr-.*\.port$"`) do (
+  for /f "usebackq" %%i in (`dir /b %SOLR_TIP%\bin ^| findstr /i "^solr-.*\.port$"`) do (
     set SOME_SOLR_PORT=
     For /F "Delims=" %%J In (%SOLR_TIP%\bin\%%i) do set SOME_SOLR_PORT=%%~J
     if NOT "!SOME_SOLR_PORT!"=="" (

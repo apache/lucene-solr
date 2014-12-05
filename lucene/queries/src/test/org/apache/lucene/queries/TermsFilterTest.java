@@ -46,11 +46,13 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
+
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
 public class TermsFilterTest extends LuceneTestCase {
 
@@ -336,4 +338,18 @@ public class TermsFilterTest extends LuceneTestCase {
                                               new Term("field1", "c"));
     assertEquals("field1:a field1:b field1:c", termsFilter.toString());
   }
+
+  public void testRamBytesUsed() {
+    List<Term> terms = new ArrayList<>();
+    final int numTerms = 1000 + random().nextInt(1000);
+    for (int i = 0; i < numTerms; ++i) {
+      terms.add(new Term("f", RandomStrings.randomUnicodeOfLength(random(), 10)));
+    }
+    TermsFilter filter = new TermsFilter(terms);
+    final long actualRamBytesUsed = RamUsageTester.sizeOf(filter);
+    final long expectedRamBytesUsed = filter.ramBytesUsed();
+    // error margin within 1%
+    assertEquals(actualRamBytesUsed, expectedRamBytesUsed, actualRamBytesUsed / 100);
+  }
+
 }

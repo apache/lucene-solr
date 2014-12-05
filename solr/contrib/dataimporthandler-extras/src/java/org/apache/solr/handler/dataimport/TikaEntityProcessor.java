@@ -69,6 +69,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
 
   @Override
   protected void firstInit(Context context) {
+    super.firstInit(context);
     try {
       String tikaConfigFile = context.getResolvedEntityAttribute("tikaConfig");
       if (tikaConfigFile == null) {
