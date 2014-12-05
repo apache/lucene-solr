@@ -895,8 +895,10 @@ else
   if [ "$SOLR_PID" != "" ]; then
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
   else
-    echo -e "No process found for Solr node running on port $SOLR_PORT"
-    exit 1
+    if [ "$SCRIPT_CMD" == "stop" ]; then
+      echo -e "No process found for Solr node running on port $SOLR_PORT"
+      exit 1
+    fi
   fi
 fi
 
