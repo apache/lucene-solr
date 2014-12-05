@@ -33,6 +33,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -48,6 +49,7 @@ import org.junit.BeforeClass;
  *
  * @see "Subclasses for actual tests"
  */
+@SuppressCodecs("Lucene3x")
 public abstract class BaseExplanationTestCase extends LuceneTestCase {
   protected static IndexSearcher searcher;
   protected static IndexReader reader;
