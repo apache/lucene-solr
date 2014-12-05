@@ -310,7 +310,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       dwpt = perThreadPool.reset(perThread, closed);
       numPending--;
       blockedFlushes.add(new BlockedFlush(dwpt, bytes));
-    }finally {
+    } finally {
       perThread.unlock();
     }
   }
@@ -611,20 +611,20 @@ final class DocumentsWriterFlushControl implements Accountable {
     return true;
   }
 
-  synchronized void abortFullFlushes(Set<String> newFiles) {
+  synchronized void abortFullFlushes() {
    try {
-     abortPendingFlushes(newFiles);
+     abortPendingFlushes();
    } finally {
      fullFlush = false;
    }
   }
   
-  synchronized void abortPendingFlushes(Set<String> newFiles) {
+  synchronized void abortPendingFlushes() {
     try {
       for (DocumentsWriterPerThread dwpt : flushQueue) {
         try {
           documentsWriter.subtractFlushedNumDocs(dwpt.getNumDocsInRAM());
-          dwpt.abort(newFiles);
+          dwpt.abort();
         } catch (Throwable ex) {
           // ignore - keep on aborting the flush queue
         } finally {
@@ -636,7 +636,7 @@ final class DocumentsWriterFlushControl implements Accountable {
           flushingWriters
               .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
           documentsWriter.subtractFlushedNumDocs(blockedFlush.dwpt.getNumDocsInRAM());
-          blockedFlush.dwpt.abort(newFiles);
+          blockedFlush.dwpt.abort();
         } catch (Throwable ex) {
           // ignore - keep on aborting the blocked queue
         } finally {

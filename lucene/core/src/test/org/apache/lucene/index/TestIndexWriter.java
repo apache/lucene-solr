@@ -906,6 +906,15 @@ public class TestIndexWriter extends LuceneTestCase {
       // LUCENE-2239: won't work with NIOFS/MMAP
       adder = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriterConfig conf = newIndexWriterConfig(random, new MockAnalyzer(random));
+      if (conf.getMergeScheduler() instanceof ConcurrentMergeScheduler) {
+        conf.setMergeScheduler(new SuppressingConcurrentMergeScheduler() {
+            @Override
+            protected boolean isOK(Throwable th) {
+              return th instanceof AlreadyClosedException ||
+                (th instanceof IllegalStateException && th.getMessage().contains("this writer hit an unrecoverable error"));
+            }
+          });
+      }
       IndexWriter w = new IndexWriter(adder, conf);
       Document doc = new Document();
       doc.add(newStringField(random, "id", "500", Field.Store.NO));
@@ -969,6 +978,15 @@ public class TestIndexWriter extends LuceneTestCase {
             }
             IndexWriterConfig conf = newIndexWriterConfig(random,
                                                           new MockAnalyzer(random)).setMaxBufferedDocs(2);
+            if (conf.getMergeScheduler() instanceof ConcurrentMergeScheduler) {
+              conf.setMergeScheduler(new SuppressingConcurrentMergeScheduler() {
+                  @Override
+                  protected boolean isOK(Throwable th) {
+                    return th instanceof AlreadyClosedException ||
+                      (th instanceof IllegalStateException && th.getMessage().contains("this writer hit an unrecoverable error"));
+                  }
+                });
+            }
             //conf.setInfoStream(log);
             w = new IndexWriter(dir, conf);
 
