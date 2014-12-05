@@ -18,13 +18,12 @@ package org.apache.lucene.index.memory;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -61,16 +60,15 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
-import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
-
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -190,10 +188,7 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
 public class MemoryIndex {
 
   /** info for each field: Map&lt;String fieldName, Info field&gt; */
-  private final HashMap<String,Info> fields = new HashMap<>();
-  
-  /** fields sorted ascending by fieldName; lazily computed on demand */
-  private transient Map.Entry<String,Info>[] sortedFields; 
+  private final SortedMap<String,Info> fields = new TreeMap<>();
   
   private final boolean storeOffsets;
   
@@ -203,29 +198,12 @@ public class MemoryIndex {
   private final IntBlockPool intBlockPool;
 //  private final IntBlockPool.SliceReader postingsReader;
   private final IntBlockPool.SliceWriter postingsWriter;
-  
-  private HashMap<String,FieldInfo> fieldInfos = new HashMap<>();
 
   private Counter bytesUsed;
 
   private boolean frozen = false;
 
   private Similarity normSimilarity = IndexSearcher.getDefaultSimilarity();
-  
-  /**
-   * Sorts term entries into ascending order; also works for
-   * Arrays.binarySearch() and Arrays.sort()
-   */
-  private static final Comparator<Object> termComparator = new Comparator<Object>() {
-    @Override
-    @SuppressWarnings({"unchecked","rawtypes"})
-    public int compare(Object o1, Object o2) {
-      if (o1 instanceof Map.Entry<?,?>) o1 = ((Map.Entry<?,?>) o1).getKey();
-      if (o2 instanceof Map.Entry<?,?>) o2 = ((Map.Entry<?,?>) o2).getKey();
-      if (o1 == o2) return 0;
-      return ((Comparable) o1).compareTo((Comparable) o2);
-    }
-  };
 
   /**
    * Constructs an empty instance.
@@ -247,7 +225,6 @@ public class MemoryIndex {
    */
   public MemoryIndex(boolean storeOffsets) {
     this(storeOffsets, 0);
-    
   }
   
   /**
@@ -296,7 +273,7 @@ public class MemoryIndex {
 
     addField(fieldName, stream, 1.0f, analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
   }
-  
+
   /**
    * Convenience method; Creates and returns a token stream that generates a
    * token for each keyword in the given collection, "as is", without any
@@ -429,10 +406,12 @@ public class MemoryIndex {
       int pos = -1;
       final BytesRefHash terms;
       final SliceByteStartArray sliceArray;
-      Info info = null;
+      Info info;
       long sumTotalTermFreq = 0;
       int offset = 0;
+      FieldInfo fieldInfo;
       if ((info = fields.get(fieldName)) != null) {
+        fieldInfo = info.fieldInfo;
         numTokens = info.numTokens;
         numOverlapTokens = info.numOverlapTokens;
         pos = info.lastPosition + positionIncrementGap;
@@ -442,16 +421,13 @@ public class MemoryIndex {
         sliceArray = info.sliceArray;
         sumTotalTermFreq = info.sumTotalTermFreq;
       } else {
+        fieldInfo = new FieldInfo(fieldName, fields.size(), false, false, false,
+            this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
+            DocValuesType.NONE, -1, null);
         sliceArray = new SliceByteStartArray(BytesRefHash.DEFAULT_CAPACITY);
         terms = new BytesRefHash(byteBlockPool, BytesRefHash.DEFAULT_CAPACITY, sliceArray);
       }
 
-      if (!fieldInfos.containsKey(fieldName)) {
-        fieldInfos.put(fieldName, 
-            new FieldInfo(fieldName, fieldInfos.size(), false, false, false,
-                          this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
-                          DocValuesType.NONE, -1, null));
-      }
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
@@ -488,8 +464,7 @@ public class MemoryIndex {
 
       // ensure infos.numTokens > 0 invariant; needed for correct operation of terms()
       if (numTokens > 0) {
-        fields.put(fieldName, new Info(terms, sliceArray, numTokens, numOverlapTokens, boost, pos, offsetAtt.endOffset() + offset, sumTotalTermFreq));
-        sortedFields = null;    // invalidate sorted view, if any
+        fields.put(fieldName, new Info(fieldInfo, terms, sliceArray, numTokens, numOverlapTokens, boost, pos, offsetAtt.endOffset() + offset, sumTotalTermFreq));
       }
     } catch (Exception e) { // can never happen
       throw new RuntimeException(e);
@@ -510,7 +485,13 @@ public class MemoryIndex {
   public void setSimilarity(Similarity similarity) {
     if (frozen)
       throw new IllegalArgumentException("Cannot set Similarity when MemoryIndex is frozen");
+    if (this.normSimilarity == similarity)
+      return;
     this.normSimilarity = similarity;
+    //invalidate any cached norms that may exist
+    for (Info info : fields.values()) {
+      info.norms = null;
+    }
   }
 
   /**
@@ -528,17 +509,16 @@ public class MemoryIndex {
 
   /**
    * Prepares the MemoryIndex for querying in a non-lazy way.
-   *
+   * <p>
    * After calling this you can query the MemoryIndex from multiple threads, but you
    * cannot subsequently add new data.
    */
   public void freeze() {
     this.frozen = true;
-    sortFields();
-    for (Map.Entry<String,Info> info : sortedFields) {
-      info.getValue().sortTerms();
+    for (Info info : fields.values()) {
+      info.sortTerms();
+      info.getNormDocValues();//lazily computed
     }
-    calculateNormValues();
   }
   
   /**
@@ -589,7 +569,7 @@ public class MemoryIndex {
        * NOT close the index reader!!! This avoids all sorts of
        * unnecessary baggage and locking in the Lucene IndexReader
        * superclass, all of which is completely unnecessary for this main
-       * memory index data structure without thread-safety claims.
+       * memory index data structure.
        * 
        * Wishing IndexReader would be an interface...
        * 
@@ -600,26 +580,6 @@ public class MemoryIndex {
     }   
   }
 
-  /** sorts into ascending order (on demand), reusing memory along the way */
-  private void sortFields() {
-    if (sortedFields == null) sortedFields = sort(fields);
-  }
-  
-  /** returns a view of the given map's entries, sorted ascending by key */
-  private static <K,V> Map.Entry<K,V>[] sort(HashMap<K,V> map) {
-    int size = map.size();
-    @SuppressWarnings("unchecked")
-    Map.Entry<K,V>[] entries = new Map.Entry[size];
-    
-    Iterator<Map.Entry<K,V>> iter = map.entrySet().iterator();
-    for (int i=0; i < size; i++) {
-      entries[i] = iter.next();
-    }
-    
-    if (size > 1) ArrayUtil.introSort(entries, termComparator);
-    return entries;
-  }
-  
   /**
    * Returns a String representation of the index data for debugging purposes.
    * 
@@ -627,13 +587,11 @@ public class MemoryIndex {
    */
   @Override
   public String toString() {
-    StringBuilder result = new StringBuilder(256);    
-    sortFields();   
+    StringBuilder result = new StringBuilder(256);
     int sumPositions = 0;
     int sumTerms = 0;
     final BytesRef spare = new BytesRef();
-    for (int i=0; i < sortedFields.length; i++) {
-      Map.Entry<String,Info> entry = sortedFields[i];
+    for (Map.Entry<String, Info> entry : fields.entrySet()) {
       String fieldName = entry.getKey();
       Info info = entry.getValue();
       info.sortTerms();
@@ -641,20 +599,20 @@ public class MemoryIndex {
       SliceByteStartArray sliceArray = info.sliceArray;
       int numPositions = 0;
       SliceReader postingsReader = new SliceReader(intBlockPool);
-      for (int j=0; j < info.terms.size(); j++) {
+      for (int j = 0; j < info.terms.size(); j++) {
         int ord = info.sortedTerms[j];
         info.terms.get(ord, spare);
         int freq = sliceArray.freq[ord];
         result.append("\t'" + spare + "':" + freq + ":");
         postingsReader.reset(sliceArray.start[ord], sliceArray.end[ord]);
         result.append(" [");
-        final int iters = storeOffsets ? 3 : 1; 
-        while(!postingsReader.endOfSlice()) {
+        final int iters = storeOffsets ? 3 : 1;
+        while (!postingsReader.endOfSlice()) {
           result.append("(");
-          
+
           for (int k = 0; k < iters; k++) {
             result.append(postingsReader.readInt());
-            if (k < iters-1) {
+            if (k < iters - 1) {
               result.append(", ");
             }
           }
@@ -662,13 +620,13 @@ public class MemoryIndex {
           if (!postingsReader.endOfSlice()) {
             result.append(",");
           }
-          
+
         }
         result.append("]");
         result.append("\n");
         numPositions += freq;
       }
-      
+
       result.append("\tterms=" + info.terms.size());
       result.append(", positions=" + numPositions);
       result.append("\n");
@@ -676,26 +634,31 @@ public class MemoryIndex {
       sumTerms += info.terms.size();
     }
     
-    result.append("\nfields=" + sortedFields.length);
+    result.append("\nfields=" + fields.size());
     result.append(", terms=" + sumTerms);
     result.append(", positions=" + sumPositions);
     return result.toString();
   }
   
   /**
-   * Index data structure for a field; Contains the tokenized term texts and
+   * Index data structure for a field; contains the tokenized term texts and
    * their positions.
    */
-  private static final class Info {
-    
+  private final class Info {
+
+    private final FieldInfo fieldInfo;
+
+    /** The norms for this field; computed on demand. */
+    private transient NumericDocValues norms;
+
     /**
      * Term strings and their positions for this field: Map &lt;String
      * termText, ArrayIntList positions&gt;
      */
-    private final BytesRefHash terms; 
+    private final BytesRefHash terms; // note unfortunate variable name class with Terms type
     
     private final SliceByteStartArray sliceArray;
-    
+
     /** Terms sorted ascending by term text; computed on demand */
     private transient int[] sortedTerms;
     
@@ -716,7 +679,8 @@ public class MemoryIndex {
     /** the last offset encountered in this field for multi field support*/
     private final int lastOffset;
 
-    public Info(BytesRefHash terms, SliceByteStartArray sliceArray, int numTokens, int numOverlapTokens, float boost, int lastPosition, int lastOffset, long sumTotalTermFreq) {
+    public Info(FieldInfo fieldInfo, BytesRefHash terms, SliceByteStartArray sliceArray, int numTokens, int numOverlapTokens, float boost, int lastPosition, int lastOffset, long sumTotalTermFreq) {
+      this.fieldInfo = fieldInfo;
       this.terms = terms;
       this.sliceArray = sliceArray; 
       this.numTokens = numTokens;
@@ -727,10 +691,6 @@ public class MemoryIndex {
       this.lastOffset = lastOffset;
     }
 
-    public long getSumTotalTermFreq() {
-      return sumTotalTermFreq;
-    }
-    
     /**
      * Sorts hashed terms into ascending order, reusing memory along the
      * way. Note that sorting is lazily delayed until required (often it's
@@ -740,12 +700,30 @@ public class MemoryIndex {
      * apart from more sophisticated Tries / prefix trees).
      */
     public void sortTerms() {
-      if (sortedTerms == null) 
+      if (sortedTerms == null) {
         sortedTerms = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+      }
     }
-        
-    public float getBoost() {
-      return boost;
+
+    public NumericDocValues getNormDocValues() {
+      if (norms == null) {
+        FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
+            numTokens, numOverlapTokens, 0, boost);
+        final long value = normSimilarity.computeNorm(invertState);
+        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
+        norms = new NumericDocValues() {
+
+          @Override
+          public long get(int docID) {
+            if (docID != 0)
+              throw new IndexOutOfBoundsException();
+            else
+              return value;
+          }
+
+        };
+      }
+      return norms;
     }
   }
   
@@ -776,10 +754,6 @@ public class MemoryIndex {
     private Info getInfo(String fieldName) {
       return fields.get(fieldName);
     }
-    
-    private Info getInfo(int pos) {
-      return sortedFields[pos].getValue();
-    }
 
     @Override
     public Bits getLiveDocs() {
@@ -788,7 +762,12 @@ public class MemoryIndex {
     
     @Override
     public FieldInfos getFieldInfos() {
-      return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
+      FieldInfo[] fieldInfos = new FieldInfo[fields.size()];
+      int i = 0;
+      for (Info info : fields.values()) {
+        fieldInfos[i++] = info.fieldInfo;
+      }
+      return new FieldInfos(fieldInfos);
     }
 
     @Override
@@ -829,98 +808,72 @@ public class MemoryIndex {
     private class MemoryFields extends Fields {
       @Override
       public Iterator<String> iterator() {
-        return new Iterator<String>() {
-          int upto = -1;
+        return fields.keySet().iterator();
+      }
 
+      @Override
+      public Terms terms(final String field) {
+        final Info info = fields.get(field);
+        if (info == null)
+          return null;
+
+        return new Terms() {
           @Override
-          public String next() {
-            upto++;
-            if (upto >= sortedFields.length) {
-              throw new NoSuchElementException();
-            }
-            return sortedFields[upto].getKey();
+          public TermsEnum iterator(TermsEnum reuse) {
+            return new MemoryTermsEnum(info);
           }
 
           @Override
-          public boolean hasNext() {
-            return upto+1 < sortedFields.length;
+          public long size() {
+            return info.terms.size();
           }
 
           @Override
-          public void remove() {
-            throw new UnsupportedOperationException();
+          public long getSumTotalTermFreq() {
+            return info.sumTotalTermFreq;
+          }
+
+          @Override
+          public long getSumDocFreq() {
+            // each term has df=1
+            return info.terms.size();
+          }
+
+          @Override
+          public int getDocCount() {
+            return size() > 0 ? 1 : 0;
+          }
+
+          @Override
+          public boolean hasFreqs() {
+            return true;
+          }
+
+          @Override
+          public boolean hasOffsets() {
+            return storeOffsets;
+          }
+
+          @Override
+          public boolean hasPositions() {
+            return true;
+          }
+
+          @Override
+          public boolean hasPayloads() {
+            return false;
           }
         };
       }
 
       @Override
-      public Terms terms(final String field) {
-        int i = Arrays.binarySearch(sortedFields, field, termComparator);
-        if (i < 0) {
-          return null;
-        } else {
-          final Info info = getInfo(i);
-          info.sortTerms();
-
-          return new Terms() {
-            @Override 
-            public TermsEnum iterator(TermsEnum reuse) {
-              return new MemoryTermsEnum(info);
-            }
-
-            @Override
-            public long size() {
-              return info.terms.size();
-            }
-
-            @Override
-            public long getSumTotalTermFreq() {
-              return info.getSumTotalTermFreq();
-            }
-
-            @Override
-            public long getSumDocFreq() {
-              // each term has df=1
-              return info.terms.size();
-            }
-
-            @Override
-            public int getDocCount() {
-              return info.terms.size() > 0 ? 1 : 0;
-            }
-
-            @Override
-            public boolean hasFreqs() {
-              return true;
-            }
-
-            @Override
-            public boolean hasOffsets() {
-              return storeOffsets;
-            }
-
-            @Override
-            public boolean hasPositions() {
-              return true;
-            }
-            
-            @Override
-            public boolean hasPayloads() {
-              return false;
-            }
-          };
-        }
-      }
-
-      @Override
       public int size() {
-        return sortedFields.length;
+        return fields.size();
       }
     }
   
     @Override
     public Fields fields() {
-      sortFields();
       return new MemoryFields();
     }
 
@@ -1208,44 +1161,20 @@ public class MemoryIndex {
     
     @Override
     public NumericDocValues getNormValues(String field) {
-      if (norms == null)
-        return calculateFieldNormValue(field);
-      return norms.get(field);
+      Info info = fields.get(field);
+      if (info == null) {
+        return null;
+      }
+      return info.getNormDocValues();
     }
 
   }
 
-  private Map<String, NumericDocValues> norms = null;
-
-  private NumericDocValues calculateFieldNormValue(String field) {
-    FieldInfo fieldInfo = fieldInfos.get(field);
-    if (fieldInfo == null)
-      return null;
-    Info info = fields.get(field);
-    int numTokens = info != null ? info.numTokens : 0;
-    int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
-    float boost = info != null ? info.getBoost() : 1.0f;
-    FieldInvertState invertState = new FieldInvertState(field, 0, numTokens, numOverlapTokens, 0, boost);
-    long value = normSimilarity.computeNorm(invertState);
-    if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + value + ":" + numTokens);
-    return new MemoryIndexNormDocValues(value);
-  }
-
-  private void calculateNormValues() {
-    norms = new HashMap<>();
-    for (String field : fieldInfos.keySet()) {
-      norms.put(field, calculateFieldNormValue(field));
-    }
-  }
-  
   /**
    * Resets the {@link MemoryIndex} to its initial state and recycles all internal buffers.
    */
   public void reset() {
-    this.fieldInfos.clear();
-    this.fields.clear();
-    this.sortedFields = null;
-    this.norms = null;
+    fields.clear();
     this.normSimilarity = IndexSearcher.getDefaultSimilarity();
     byteBlockPool.reset(false, false); // no need to 0-fill the buffers
     intBlockPool.reset(true, false); // here must must 0-fill since we use slices

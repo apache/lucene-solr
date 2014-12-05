@@ -100,7 +100,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     LeafReader reader = (LeafReader) searcher.getIndexReader();
     float n1 = reader.getNormValues("f1").get(0);
 
-    // Norms aren't cached, so we can change the Similarity
+    // Norms are re-computed when we change the Similarity
     mi.setSimilarity(new DefaultSimilarity() {
       @Override
       public float lengthNorm(FieldInvertState state) {
