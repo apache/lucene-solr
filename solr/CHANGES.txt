@@ -296,6 +296,13 @@ Bug Fixes
 
 * SOLR-6763: Shard leader elections should not persist across session expiry
   (Alan Woodward, Mark Miller)
+  
+* SOLR-3881: Avoid OOMs in LanguageIdentifierUpdateProcessor:
+  - Added langid.maxFieldValueChars and langid.maxTotalChars params to limit
+    input, by default 10k and 20k chars, respectively.
+  - Moved input concatenation to Tika implementation; the langdetect
+    implementation instead appends each input piece via the langdetect API.
+  (Vitaliy Zhovtyuk, Tomás Fernández Löbbe, Rob Tulloh, Steve Rowe)
 
 Optimizations
 ----------------------
