@@ -265,7 +265,8 @@ public class QueryScorer implements Scorer {
    * {@link CachingTokenFilter} are wrapped in a {@link CachingTokenFilter} to
    * ensure an efficient reset - if you are already using a different caching
    * {@link TokenStream} impl and you don't want it to be wrapped, set this to
-   * false.
+   * false. Note that term-vector based tokenstreams are detected and won't be
+   * wrapped either.
    */
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;
