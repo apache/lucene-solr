@@ -317,17 +317,17 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
 
     @Override
     public int nextPosition() throws IOException {
-      return -1;
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int startPosition() throws IOException {
-      return -1;
+      return NO_MORE_POSITIONS;
     }
 
     @Override
     public int endPosition() throws IOException {
-      return -1;
+      return NO_MORE_POSITIONS;
     }
 
     @Override
