@@ -349,7 +349,6 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextPosition() throws IOException {
-      assert false; // should be using FreqProxDocsAndPositionsEnum if you want positions
       return NO_MORE_POSITIONS;
     }
 
