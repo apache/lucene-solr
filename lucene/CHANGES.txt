@@ -358,6 +358,9 @@ Bug Fixes
 * LUCENE-5987: IndexWriter will now forcefully close itself on
   aborting exception (an exception that would otherwise cause silent
   data loss).  (Robert Muir, Mike McCandless)
+
+* LUCENE-6094: Allow IW.rollback to stop ConcurrentMergeScheduler even
+  when it's stalling because there are too many merges. (Mike McCandless)
   
 Documentation
 

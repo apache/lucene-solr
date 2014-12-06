@@ -482,4 +482,72 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  // LUCENE-6094
+  public void testHangDuringRollback() throws Throwable {
+    Directory dir = newMockDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(2);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    iwc.setMergePolicy(mp);
+    mp.setMergeFactor(2);
+    final CountDownLatch mergeStart = new CountDownLatch(1);
+    final CountDownLatch mergeFinish = new CountDownLatch(1);
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
+        @Override
+        protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
+          mergeStart.countDown();
+          try {
+            mergeFinish.await();
+          } catch (InterruptedException ie) {
+            throw new RuntimeException(ie);
+          }
+          super.doMerge(merge);
+        }
+      };
+    cms.setMaxMergesAndThreads(1, 1);
+    iwc.setMergeScheduler(cms);
+
+    final IndexWriter w = new IndexWriter(dir, iwc);
+    
+    w.addDocument(new Document());
+    w.addDocument(new Document());
+    // flush
+
+    w.addDocument(new Document());
+    w.addDocument(new Document());
+    // flush + merge
+
+    // Wait for merge to kick off
+    mergeStart.await();
+
+    new Thread() {
+      @Override
+      public void run() {
+        try {
+          w.addDocument(new Document());
+          w.addDocument(new Document());
+          // flush
+
+          w.addDocument(new Document());
+          // W/o the fix for LUCENE-6094 we would hang forever here:
+          w.addDocument(new Document());
+          // flush + merge
+          
+          // Now allow first merge to finish:
+          mergeFinish.countDown();
+
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }.start();
+
+    while (w.numDocs() != 8) {
+      Thread.sleep(10);
+    }
+
+    w.rollback();
+    dir.close();
+  }
 }
