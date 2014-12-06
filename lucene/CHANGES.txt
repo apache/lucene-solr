@@ -123,6 +123,9 @@ New Features
   queries provided that term vectors with positions, offsets, and payloads are present. This is the
   only highlighter that can highlight such queries accurately. (David Smiley)
 
+* LUCENE-5914: Add an option to Lucene50Codec to support either BEST_SPEED
+  or BEST_COMPRESSION for stored fields. (Adrien Grand, Robert Muir)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
