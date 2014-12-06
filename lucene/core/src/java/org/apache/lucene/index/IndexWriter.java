@@ -4465,7 +4465,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       synchronized(this) {
 
-        assert lastCommitChangeCount <= changeCount: "lastCommitChangeCount=" + lastCommitChangeCount + " changeCount=" + changeCount;
+        if (lastCommitChangeCount > changeCount) {
+          throw new IllegalStateException("lastCommitChangeCount=" + lastCommitChangeCount + ",changeCount=" + changeCount);
+        }
 
         if (pendingCommitChangeCount == lastCommitChangeCount) {
           if (infoStream.isEnabled("IW")) {
