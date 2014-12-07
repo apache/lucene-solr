@@ -20,7 +20,6 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader; // javadocs
@@ -83,32 +82,11 @@ interface FieldCache {
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
 
-  /**
-   * A parser instance for int values encoded by {@link NumericUtils}, e.g. when indexed
-   * via {@link IntField}/{@link NumericTokenStream}.
-   */
-  public static final Parser NUMERIC_UTILS_INT_PARSER = new Parser() {
-    @Override
-    public long parseValue(BytesRef term) {
-      return NumericUtils.prefixCodedToInt(term);
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedInts(terms.iterator(null));
-    }
-    
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_INT_PARSER"; 
-    }
-  };
-
   // nocommit rename
-  public static final Parser DOCUMENT2_INT_PARSER = new Parser() {
+  public static final Parser DOCUMENT_INT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document.bytesToInt(term);
+      return NumericUtils.bytesToInt(term);
     }
     
     @Override
@@ -118,38 +96,15 @@ interface FieldCache {
     
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".DOCUMENT2_INT_PARSER"; 
-    }
-  };
-
-  /**
-   * A parser instance for float values encoded with {@link NumericUtils}, e.g. when indexed
-   * via {@link FloatField}/{@link NumericTokenStream}.
-   */
-  public static final Parser NUMERIC_UTILS_FLOAT_PARSER = new Parser() {
-    @Override
-    public long parseValue(BytesRef term) {
-      int val = NumericUtils.prefixCodedToInt(term);
-      if (val<0) val ^= 0x7fffffff;
-      return val;
-    }
-    
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_FLOAT_PARSER"; 
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedInts(terms.iterator(null));
+      return FieldCache.class.getName()+".DOCUMENT_INT_PARSER"; 
     }
   };
 
   // nocommit rename
-  public static final Parser DOCUMENT2_FLOAT_PARSER = new Parser() {
+  public static final Parser DOCUMENT_FLOAT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document.sortableFloatBits(Document.bytesToInt(term));
+      return NumericUtils.floatToInt(NumericUtils.bytesToFloat(term));
     }
     
     @Override
@@ -159,35 +114,15 @@ interface FieldCache {
     
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".DOCUMENT2_FLOAT_PARSER"; 
-    }
-  };
-
-  /**
-   * A parser instance for long values encoded by {@link NumericUtils}, e.g. when indexed
-   * via {@link LongField}/{@link NumericTokenStream}.
-   */
-  public static final Parser NUMERIC_UTILS_LONG_PARSER = new Parser() {
-    @Override
-    public long parseValue(BytesRef term) {
-      return NumericUtils.prefixCodedToLong(term);
-    }
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_LONG_PARSER"; 
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+      return FieldCache.class.getName()+".DOCUMENT_FLOAT_PARSER"; 
     }
   };
 
   // nocommit rename
-  public static final Parser DOCUMENT2_LONG_PARSER = new Parser() {
+  public static final Parser DOCUMENT_LONG_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document.bytesToLong(term);
+      return NumericUtils.bytesToLong(term);
     }
     
     @Override
@@ -197,37 +132,17 @@ interface FieldCache {
     
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".DOCUMENT2_LONG_PARSER"; 
+      return FieldCache.class.getName()+".DOCUMENT_LONG_PARSER"; 
     }
   };
 
-  /**
-   * A parser instance for double values encoded with {@link NumericUtils}, e.g. when indexed
-   * via {@link DoubleField}/{@link NumericTokenStream}.
-   */
-  public static final Parser NUMERIC_UTILS_DOUBLE_PARSER = new Parser() {
-    @Override
-    public long parseValue(BytesRef term) {
-      long val = NumericUtils.prefixCodedToLong(term);
-      if (val<0) val ^= 0x7fffffffffffffffL;
-      return val;
-    }
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_DOUBLE_PARSER"; 
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
-    }
-  };
+  // nocommit half floats?
   
   // nocommit rename
-  public static final Parser DOCUMENT2_DOUBLE_PARSER = new Parser() {
+  public static final Parser DOCUMENT_DOUBLE_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return Document.sortableDoubleBits(Document.bytesToLong(term));
+      return NumericUtils.doubleToLong(NumericUtils.bytesToDouble(term));
     }
     
     @Override
@@ -237,7 +152,7 @@ interface FieldCache {
     
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".DOCUMENT2_DOUBLE_PARSER"; 
+      return FieldCache.class.getName()+".DOCUMENT_DOUBLE_PARSER"; 
     }
   };
 
@@ -314,11 +229,6 @@ interface FieldCache {
    *  subsequent calls will share the same cache entry. */
   public SortedDocValues getTermsIndex(LeafReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
-  /** Can be passed to {@link #getDocTermOrds} to filter for 32-bit numeric terms */
-  public static final BytesRef INT32_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_INT });
-  /** Can be passed to {@link #getDocTermOrds} to filter for 64-bit numeric terms */
-  public static final BytesRef INT64_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_LONG });
-  
   /**
    * Checks the internal cache for an appropriate entry, and if none is found, reads the term values
    * in <code>field</code> and returns a {@link DocTermOrds} instance, providing a method to retrieve

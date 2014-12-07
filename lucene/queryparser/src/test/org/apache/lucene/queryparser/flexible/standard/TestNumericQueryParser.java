@@ -32,7 +32,8 @@ import java.util.TimeZone;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.NumericType;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
@@ -48,12 +49,20 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-// nocommit cutover to FieldTypes
-@Ignore
 public class TestNumericQueryParser extends LuceneTestCase {
+
+  private static enum NumericType {
+    /** 32-bit integer numeric type */
+    INT, 
+    /** 64-bit long numeric type */
+    LONG, 
+    /** 32-bit float numeric type */
+    FLOAT, 
+    /** 64-bit double numeric type */
+    DOUBLE
+  }
   
   private static enum NumberType {
     NEGATIVE, ZERO, POSITIVE;
@@ -62,7 +71,6 @@ public class TestNumericQueryParser extends LuceneTestCase {
   final private static int[] DATE_STYLES = {DateFormat.FULL, DateFormat.LONG,
       DateFormat.MEDIUM, DateFormat.SHORT};
   
-  final private static int PRECISION_STEP = 8;
   final private static String FIELD_NAME = "field";
   private static Locale LOCALE;
   private static TimeZone TIMEZONE;
@@ -189,78 +197,29 @@ public class TestNumericQueryParser extends LuceneTestCase {
             .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000))
             .setMergePolicy(newLogMergePolicy()));
     
-    //Document doc = new Document();
-    HashMap<String,NumericConfig> numericConfigMap = new HashMap<>();
-    //HashMap<String,Field> numericFieldMap = new HashMap<>();
-    //qp.setNumericConfigMap(numericConfigMap);
-    
-    for (NumericType type : NumericType.values()) {
-      numericConfigMap.put(type.name(), new NumericConfig(PRECISION_STEP,
-          NUMBER_FORMAT, type));
-
-      /*
-      FieldType ft = new FieldType(IntField.TYPE_NOT_STORED);
-      ft.setNumericType(type);
-      ft.setStored(true);
-      ft.setNumericPrecisionStep(PRECISION_STEP);
-      ft.freeze();
-      */
-      // nocommit fixme
-      /*
-      FieldType ft = null;
-      final Field field;
-
-      switch(type) {
-      case INT:
-        // nocommit fixme
-        //field = new IntField(type.name(), 0, ft);
-        field = null;
-        break;
-      case FLOAT:
-        // nocommit fixme
-        //field = new FloatField(type.name(), 0.0f, ft);
-        field = null;
-        break;
-      case LONG:
-        // nocommit fixme
-        //field = new LongField(type.name(), 0l, ft);
-        field = null;
-        break;
-      case DOUBLE:
-        // nocommit fixme
-        //field = new DoubleField(type.name(), 0.0, ft);
-        field = null;
-        break;
-      default:
-        fail();
-        field = null;
-      }
-      numericFieldMap.put(type.name(), field);
-      doc.add(field);
-      */
-    }
-    
-    numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(PRECISION_STEP,
-        DATE_FORMAT, NumericType.LONG));
-    // nocommit fixme
-    //FieldType ft = new FieldType(LongField.TYPE_NOT_STORED);
-    //ft.setStored(true);
-    //ft.setNumericPrecisionStep(PRECISION_STEP);
-    // nocommit fixme
-    //    LongField dateField = new LongField(DATE_FIELD_NAME, 0l, ft);
-    //numericFieldMap.put(DATE_FIELD_NAME, dateField);
-    //    doc.add(dateField);
-    
     for (NumberType numberType : NumberType.values()) {
-      //setFieldValues(numberType, numericFieldMap);
-      //if (VERBOSE) System.out.println("Indexing document: " + doc);
-      //writer.addDocument(doc);
+      Document doc = writer.newDocument();
+      doc.addInt("INT", getNumberType(numberType, "INT").intValue());
+      doc.addLong("LONG", getNumberType(numberType, "LONG").longValue());
+      doc.addFloat("FLOAT", getNumberType(numberType, "FLOAT").floatValue());
+      doc.addDouble("DOUBLE", getNumberType(numberType, "DOUBLE").doubleValue());
+      doc.addDouble(DATE_FIELD_NAME, getNumberType(numberType, DATE_FIELD_NAME).longValue());
+      if (VERBOSE) System.out.println("Indexing document: " + doc);
+      writer.addDocument(doc);
     }
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
+
+    HashMap<String,NumericConfig> numericConfigMap = new HashMap<>();
+    qp.setNumericConfigMap(numericConfigMap);
+    FieldTypes fieldTypes = reader.getFieldTypes();
+    for (NumericType type : NumericType.values()) {
+      numericConfigMap.put(type.name(), new NumericConfig(NUMBER_FORMAT, fieldTypes));
+    }
+    numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(DATE_FORMAT, fieldTypes));
+
     writer.close();
-    
   }
   
   private static Number getNumberType(NumberType numberType, String fieldName) {
@@ -304,33 +263,6 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
   }
 
-  // nocommit fixme
-  /*
-  private static void setFieldValues(NumberType numberType,
-      HashMap<String,Field> numericFieldMap) {
-    
-    Number number = getNumberType(numberType, NumericType.DOUBLE
-        .name());
-    numericFieldMap.get(NumericType.DOUBLE.name()).setDoubleValue(
-        number.doubleValue());
-    
-    number = getNumberType(numberType, NumericType.INT.name());
-    numericFieldMap.get(NumericType.INT.name()).setIntValue(
-        number.intValue());
-    
-    number = getNumberType(numberType, NumericType.LONG.name());
-    numericFieldMap.get(NumericType.LONG.name()).setLongValue(
-        number.longValue());
-    
-    number = getNumberType(numberType, NumericType.FLOAT.name());
-    numericFieldMap.get(NumericType.FLOAT.name()).setFloatValue(
-        number.floatValue());
-    
-    number = getNumberType(numberType, DATE_FIELD_NAME);
-    numericFieldMap.get(DATE_FIELD_NAME).setLongValue(number.longValue());
-  }
-  */
-  
   private static int randomDateStyle(Random random) {
     return DATE_STYLES[random.nextInt(DATE_STYLES.length)];
   }
@@ -450,7 +382,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     }
     
     if (upperDateNumber != null) {
-    upperDateStr = ESCAPER.escape(
+      upperDateStr = ESCAPER.escape(
           DATE_FORMAT.format(new Date(upperDateNumber.longValue())), LOCALE,
           EscapeQuerySyntax.Type.STRING).toString();
     

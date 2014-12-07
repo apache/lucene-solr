@@ -1,20 +1,21 @@
 package org.apache.lucene.queryparser.xml.builders;
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.w3c.dom.Element;
-
-import java.io.IOException;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -45,7 +46,7 @@ public class TermsQueryBuilder implements QueryBuilder {
   }
 
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String text = DOMUtils.getNonBlankTextOrFail(e);
 

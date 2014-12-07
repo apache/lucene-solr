@@ -1,14 +1,15 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -38,11 +39,11 @@ public class SpanOrBuilder extends SpanBuilderBase {
   }
 
   @Override
-  public SpanQuery getSpanQuery(Element e) throws ParserException {
+  public SpanQuery getSpanQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     List<SpanQuery> clausesList = new ArrayList<>();
     for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling()) {
       if (kid.getNodeType() == Node.ELEMENT_NODE) {
-        SpanQuery clause = factory.getSpanQuery((Element) kid);
+        SpanQuery clause = factory.getSpanQuery(fieldTypes, (Element) kid);
         clausesList.add(clause);
       }
     }

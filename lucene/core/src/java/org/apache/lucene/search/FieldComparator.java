@@ -19,14 +19,15 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 
 /**
  * Expert: a FieldComparator compares hits so as to determine their
@@ -277,7 +278,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareBottom(int doc) {
-      double v2 = Double.longBitsToDouble(currentReaderValues.get(doc));
+      double v2 = NumericUtils.longToDouble(currentReaderValues.get(doc));
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -289,7 +290,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      double v2 = Double.longBitsToDouble(currentReaderValues.get(doc));
+      double v2 = NumericUtils.longToDouble(currentReaderValues.get(doc));
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -316,7 +317,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareTop(int doc) {
-      double docValue = Double.longBitsToDouble(currentReaderValues.get(doc));
+      double docValue = NumericUtils.longToDouble(currentReaderValues.get(doc));
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
@@ -350,7 +351,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) {
       // TODO: are there sneaky non-branch ways to compute sign of float?
-      float v2 = Float.intBitsToFloat((int)currentReaderValues.get(doc));
+      float v2 = NumericUtils.intToFloat((int)currentReaderValues.get(doc));
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -362,7 +363,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      float v2 =  Float.intBitsToFloat((int)currentReaderValues.get(doc));
+      float v2 =  NumericUtils.intToFloat((int)currentReaderValues.get(doc));
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -389,7 +390,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareTop(int doc) {
-      float docValue = Float.intBitsToFloat((int)currentReaderValues.get(doc));
+      float docValue = NumericUtils.intToFloat((int)currentReaderValues.get(doc));
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
@@ -1047,7 +1048,6 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareValues(BytesRef val1, BytesRef val2) {
-      // missing always sorts first:
       if (val1 == null) {
         if (val2 == null) {
           return 0;

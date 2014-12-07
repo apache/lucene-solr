@@ -20,7 +20,6 @@ package org.apache.lucene.sandbox.queries;
 import java.text.Collator;
 
 import org.apache.lucene.search.MultiTermQueryWrapperFilter;
-import org.apache.lucene.search.NumericRangeFilter; // javadoc
 import org.apache.lucene.search.DocValuesRangeFilter; // javadoc
 
 /**

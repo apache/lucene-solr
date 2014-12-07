@@ -38,7 +38,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * @lucene.experimental */
 
-public class Document2StoredFieldVisitor extends StoredFieldVisitor {
+public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   private final Document doc;
   private final Set<String> fieldsToAdd;
   private final FieldTypes fieldTypes;
@@ -47,14 +47,14 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
    * Load only fields named in the provided <code>Set&lt;String&gt;</code>. 
    * @param fieldsToAdd Set of fields to load, or <code>null</code> (all fields).
    */
-  public Document2StoredFieldVisitor(FieldTypes fieldTypes, Set<String> fieldsToAdd) {
+  public DocumentStoredFieldVisitor(FieldTypes fieldTypes, Set<String> fieldsToAdd) {
     doc = new Document(fieldTypes, false);
     this.fieldTypes = fieldTypes;
     this.fieldsToAdd = fieldsToAdd;
   }
 
   /** Load only fields named in the provided fields. */
-  public Document2StoredFieldVisitor(FieldTypes fieldTypes, String... fields) {
+  public DocumentStoredFieldVisitor(FieldTypes fieldTypes, String... fields) {
     doc = new Document(fieldTypes, false);
     this.fieldTypes = fieldTypes;
     fieldsToAdd = new HashSet<>(fields.length);
@@ -64,7 +64,7 @@ public class Document2StoredFieldVisitor extends StoredFieldVisitor {
   }
 
   /** Load all stored fields. */
-  public Document2StoredFieldVisitor(FieldTypes fieldTypes) {
+  public DocumentStoredFieldVisitor(FieldTypes fieldTypes) {
     doc = new Document(fieldTypes, false);
     this.fieldTypes = fieldTypes;
     this.fieldsToAdd = null;

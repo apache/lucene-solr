@@ -3,14 +3,15 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
+import java.util.Map;
+
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.*;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.w3c.dom.Element;
-
-import java.util.Map;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -61,7 +62,7 @@ public class CachedFilterBuilder implements FilterBuilder {
   }
 
   @Override
-  public synchronized Filter getFilter(Element e) throws ParserException {
+  public synchronized Filter getFilter(FieldTypes fieldTypes, Element e) throws ParserException {
     Element childElement = DOMUtils.getFirstChildOrFail(e);
 
     if (filterCache == null) {
@@ -75,10 +76,10 @@ public class CachedFilterBuilder implements FilterBuilder {
     Query q = null;
     Filter f = null;
     if (qb != null) {
-      q = qb.getQuery(childElement);
+      q = qb.getQuery(fieldTypes, childElement);
       cacheKey = q;
     } else {
-      f = filterFactory.getFilter(childElement);
+      f = filterFactory.getFilter(fieldTypes, childElement);
       cacheKey = f;
     }
     Filter cachedFilter = filterCache.get(cacheKey);

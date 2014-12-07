@@ -10,11 +10,12 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.mlt.MoreLikeThisQuery;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -54,7 +55,7 @@ public class LikeThisQueryBuilder implements QueryBuilder {
     * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
     */
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     String fieldsList = e.getAttribute("fieldNames"); //a comma-delimited list of fields
     String fields[] = defaultFieldNames;
     if ((fieldsList != null) && (fieldsList.trim().length() > 0)) {

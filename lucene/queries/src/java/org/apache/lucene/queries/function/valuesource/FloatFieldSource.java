@@ -20,12 +20,13 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
@@ -52,7 +53,7 @@ public class FloatFieldSource extends FieldCacheSource {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-        return Float.intBitsToFloat((int)arr.get(doc));
+        return NumericUtils.intToFloat((int)arr.get(doc));
       }
 
       @Override

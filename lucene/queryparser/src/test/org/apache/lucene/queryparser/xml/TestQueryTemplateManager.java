@@ -94,7 +94,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
       Document doc = qtm.getQueryAsDOM(queryFormProperties, queryFormProperties.getProperty("template"));
 
       //Parse the XML query using the XML parser
-      Query q = builder.getQuery(doc.getDocumentElement());
+      Query q = builder.getQuery(searcher.getFieldTypes(), doc.getDocumentElement());
 
       //Run the query
       int h = searcher.search(q, null, 1000).totalHits;
@@ -154,7 +154,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
     searcher = newSearcher(reader);
 
     //initialize the parser
-    builder = new CorePlusExtensionsParser("artist", analyzer);
+    builder = new CorePlusExtensionsParser(reader.getFieldTypes(), "artist", analyzer);
 
   }
 

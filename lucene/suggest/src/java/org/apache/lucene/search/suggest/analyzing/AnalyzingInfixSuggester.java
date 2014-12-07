@@ -94,9 +94,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *  this suggester best applies when there is a strong
  *  a-priori ranking of all the suggestions.
  *
- *  <p>This suggester supports contexts, however the
- *  contexts must be valid utf8 (arbitrary binary terms will
- *  not work).
+ *  <p>This suggester supports arbitrary binary contexts.
  *
  * @lucene.experimental */    
 
@@ -328,9 +326,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
     if (contexts != null) {
       for(BytesRef context : contexts) {
-        // TODO: if we had a BinaryTermField we could fix
-        // this "must be valid ut8f" limitation:
-        doc.addAtom(CONTEXTS_FIELD_NAME, context.utf8ToString());
+        doc.addAtom(CONTEXTS_FIELD_NAME, context);
       }
     }
     return doc;
@@ -485,7 +481,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         // do not make a subquery if all context booleans are must not
         if (allMustNot == true) {
           for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
-            query.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey().utf8ToString())), BooleanClause.Occur.MUST_NOT);
+            query.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey())), BooleanClause.Occur.MUST_NOT);
           }
 
         } else {
@@ -499,7 +495,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
             // TODO: if we had a BinaryTermField we could fix
             // this "must be valid ut8f" limitation:
-            sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey().utf8ToString())), entry.getValue());
+            sub.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, entry.getKey())), entry.getValue());
           }
         }
       }

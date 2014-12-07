@@ -491,7 +491,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     min[0] = 17;
     byte[] max = new byte[1];
     max[0] = 18;
-    assertEquals(2, s.search(new ConstantScoreQuery(fieldTypes.newRangeFilter("field", min, true, max, true)), 1).totalHits);
+    assertEquals(2, s.search(new ConstantScoreQuery(fieldTypes.newBinaryRangeFilter("field", min, true, max, true)), 1).totalHits);
 
     r.close();
     w.close();

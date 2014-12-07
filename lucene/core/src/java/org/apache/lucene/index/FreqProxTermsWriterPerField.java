@@ -30,7 +30,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 final class FreqProxTermsWriterPerField extends TermsHashPerField {
 
   private FreqProxPostingsArray freqProxPostingsArray;
-
   final boolean hasFreq;
   final boolean hasProx;
   final boolean hasOffsets;
@@ -46,8 +45,8 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
    *  segment. */
   boolean sawPayloads;
 
-  public FreqProxTermsWriterPerField(FieldInvertState invertState, TermsHash termsHash, FieldInfo fieldInfo, TermsHashPerField nextPerField) {
-    super(fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? 2 : 1, invertState, termsHash, nextPerField, fieldInfo);
+  public FreqProxTermsWriterPerField(FieldInvertState invertState, TermsHash termsHash, FieldInfo fieldInfo, TermsHashPerField nextPerField, boolean rightJustifyTerms) {
+    super(fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? 2 : 1, invertState, termsHash, nextPerField, fieldInfo, rightJustifyTerms);
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
     assert indexOptions != IndexOptions.NONE;
     hasFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;

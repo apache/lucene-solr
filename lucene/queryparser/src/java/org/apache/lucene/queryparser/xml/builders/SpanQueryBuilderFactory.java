@@ -1,12 +1,13 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Element;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,8 +33,8 @@ public class SpanQueryBuilderFactory implements SpanQueryBuilder {
   private final Map<String, SpanQueryBuilder> builders = new HashMap<>();
 
   @Override
-  public Query getQuery(Element e) throws ParserException {
-    return getSpanQuery(e);
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
+    return getSpanQuery(fieldTypes, e);
   }
 
   public void addBuilder(String nodeName, SpanQueryBuilder builder) {
@@ -41,12 +42,12 @@ public class SpanQueryBuilderFactory implements SpanQueryBuilder {
   }
 
   @Override
-  public SpanQuery getSpanQuery(Element e) throws ParserException {
+  public SpanQuery getSpanQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     SpanQueryBuilder builder = builders.get(e.getNodeName());
     if (builder == null) {
       throw new ParserException("No SpanQueryObjectBuilder defined for node " + e.getNodeName());
     }
-    return builder.getSpanQuery(e);
+    return builder.getSpanQuery(fieldTypes, e);
   }
 
 }

@@ -612,10 +612,10 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     doc = writer.newDocument();
-    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
-    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
-    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
-    doc.addStored("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    doc.addLargeText("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    doc.addLargeText("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    doc.addLargeText("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
+    doc.addLargeText("content", "aaa bbb ccc ddd eee fff ggg hhh iii");
     for(int i=0;i<10;i++) {
       writer.addDocument(doc);
     }

@@ -3,11 +3,12 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.TermRangeFilter;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,7 +34,7 @@ import org.w3c.dom.Element;
 public class RangeFilterBuilder implements FilterBuilder {
 
   @Override
-  public Filter getFilter(Element e) throws ParserException {
+  public Filter getFilter(FieldTypes fieldTypes, Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritance(e, "fieldName");
 
     String lowerTerm = e.getAttribute("lowerTerm");

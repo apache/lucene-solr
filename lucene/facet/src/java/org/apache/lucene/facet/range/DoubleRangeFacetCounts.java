@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
 
 /** {@link Facets} implementation that computes counts for
  *  dynamic double ranges from a provided {@link
@@ -83,8 +84,8 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
     for(int i=0;i<ranges.length;i++) {
       DoubleRange range = ranges[i];
       longRanges[i] =  new LongRange(range.label,
-                                     Document.doubleToSortableLong(range.minIncl), true,
-                                     Document.doubleToSortableLong(range.maxIncl), true);
+                                     NumericUtils.doubleToLong(range.minIncl), true,
+                                     NumericUtils.doubleToLong(range.maxIncl), true);
     }
 
     LongRangeCounter counter = new LongRangeCounter(longRanges);
@@ -119,7 +120,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
         }
         // Skip missing docs:
         if (fv.exists(doc)) {
-          counter.add(Document.doubleToSortableLong(fv.doubleVal(doc)));
+          counter.add(NumericUtils.doubleToLong(fv.doubleVal(doc)));
         } else {
           missingCount++;
         }

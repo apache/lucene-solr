@@ -86,7 +86,7 @@ abstract class TermsHash {
     }
   }
 
-  abstract TermsHashPerField addField(FieldInvertState fieldInvertState, FieldInfo fieldInfo);
+  abstract TermsHashPerField addField(FieldInvertState fieldInvertState, FieldInfo fieldInfo, boolean rightJustifyTerms);
 
   void finishDocument() throws IOException {
     if (nextTermsHash != null) {

@@ -99,9 +99,10 @@ public abstract class FieldsConsumer implements Closeable {
       docBase += maxDoc;
     }
 
-    Fields mergedFields = new MappedMultiFields(mergeState, 
-                                                new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
-                                                                slices.toArray(ReaderSlice.EMPTY_ARRAY)));
+    MultiFields mf = new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+                                     slices.toArray(ReaderSlice.EMPTY_ARRAY));
+    mf.setFieldTypes(mergeState.fieldTypes);
+    Fields mergedFields = new MappedMultiFields(mergeState, mf);
     write(mergedFields);
   }
 

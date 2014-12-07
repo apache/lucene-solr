@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -41,23 +40,6 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
     types = factory.getStopTypes();
     assertTrue("types is null and it shouldn't be", types != null);
     assertTrue("types Size: " + types.size() + " is not: " + 4, types.size() == 4);
-  }
-
-  public void testCreationWithBlackList() throws Exception {
-    TokenFilterFactory factory = tokenFilterFactory("Type",
-        "types", "stoptypes-1.txt, stoptypes-2.txt");
-    NumericTokenStream input = new NumericTokenStream();
-    input.setIntValue(123);
-    factory.create(input);
-  }
-  
-  public void testCreationWithWhiteList() throws Exception {
-    TokenFilterFactory factory = tokenFilterFactory("Type",
-        "types", "stoptypes-1.txt, stoptypes-2.txt",
-        "useWhitelist", "true");
-    NumericTokenStream input = new NumericTokenStream();
-    input.setIntValue(123);
-    factory.create(input);
   }
 
   public void testMissingTypesParameter() throws Exception {

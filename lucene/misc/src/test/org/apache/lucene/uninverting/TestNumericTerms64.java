@@ -99,7 +99,7 @@ public class TestNumericTerms64 extends LuceneTestCase {
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
-      Query tq = new ConstantScoreQuery(fieldTypes.newRangeFilter(field, lower, true, upper, true));
+      Query tq = new ConstantScoreQuery(fieldTypes.newLongRangeFilter(field, lower, true, upper, true));
       TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;

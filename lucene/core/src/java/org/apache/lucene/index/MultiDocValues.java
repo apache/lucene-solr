@@ -521,7 +521,7 @@ public class MultiDocValues {
         slices[i] = new ReaderSlice(0, 0, i);
         indexes[i] = new TermsEnumIndex(subs[segmentMap.newToOld(i)], i);
       }
-      MultiTermsEnum mte = new MultiTermsEnum(slices);
+      MultiTermsEnum mte = new MultiTermsEnum(slices, -1);
       mte.reset(indexes);
       long globalOrd = 0;
       while (mte.next() != null) {        

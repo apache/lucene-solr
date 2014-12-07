@@ -23,7 +23,7 @@ import java.util.StringTokenizer;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Document2StoredFieldVisitor;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.IndexReader;
 
 /**
@@ -58,7 +58,7 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
     if (fieldsToLoad == null) {
       return ir.document(id);
     } else {
-      Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(ir.getFieldTypes(), fieldsToLoad);
+      DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(ir.getFieldTypes(), fieldsToLoad);
       ir.document(id, visitor);
       return visitor.getDocument();
     }

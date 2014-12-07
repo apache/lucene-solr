@@ -106,11 +106,11 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getNumerics(readerA, "theDouble", FieldCache.DOCUMENT2_DOUBLE_PARSER, false);
-    cache.getNumerics(readerAclone, "theDouble", FieldCache.DOCUMENT2_DOUBLE_PARSER, false);
-    cache.getNumerics(readerB, "theDouble", FieldCache.DOCUMENT2_DOUBLE_PARSER, false);
+    cache.getNumerics(readerA, "theDouble", FieldCache.DOCUMENT_DOUBLE_PARSER, false);
+    cache.getNumerics(readerAclone, "theDouble", FieldCache.DOCUMENT_DOUBLE_PARSER, false);
+    cache.getNumerics(readerB, "theDouble", FieldCache.DOCUMENT_DOUBLE_PARSER, false);
 
-    cache.getNumerics(readerX, "theInt", FieldCache.DOCUMENT2_INT_PARSER, false);
+    cache.getNumerics(readerX, "theInt", FieldCache.DOCUMENT_INT_PARSER, false);
 
     // // // 
 
@@ -129,7 +129,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getNumerics(readerX, "theInt", FieldCache.DOCUMENT2_INT_PARSER, false);
+    cache.getNumerics(readerX, "theInt", FieldCache.DOCUMENT_INT_PARSER, false);
     cache.getTerms(readerX, "theInt", false);
 
     // // // 

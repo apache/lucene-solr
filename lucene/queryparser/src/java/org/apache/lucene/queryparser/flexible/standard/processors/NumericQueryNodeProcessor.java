@@ -100,20 +100,6 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
                         .getCanonicalName()), e);
               }
               
-              switch (numericConfig.getType()) {
-                case LONG:
-                  number = number.longValue();
-                  break;
-                case INT:
-                  number = number.intValue();
-                  break;
-                case DOUBLE:
-                  number = number.doubleValue();
-                  break;
-                case FLOAT:
-                  number = number.floatValue();
-              }
-              
             } else {
               throw new QueryNodeParseException(new MessageImpl(
                   QueryParserMessages.NUMERIC_CANNOT_BE_EMPTY, fieldNode.getFieldAsString()));

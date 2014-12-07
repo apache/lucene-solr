@@ -1,6 +1,7 @@
 package org.apache.lucene.queryparser.xml;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.xml.builders.*;
 
@@ -34,8 +35,8 @@ public class CorePlusExtensionsParser extends CoreParser {
    *
    * @param parser A QueryParser which will be synchronized on during parse calls.
    */
-  public CorePlusExtensionsParser(Analyzer analyzer, QueryParser parser) {
-    this(null, analyzer, parser);
+  public CorePlusExtensionsParser(FieldTypes fieldTypes, Analyzer analyzer, QueryParser parser) {
+    this(fieldTypes, null, analyzer, parser);
   }
 
   /**
@@ -43,12 +44,12 @@ public class CorePlusExtensionsParser extends CoreParser {
    *
    * @param defaultField The default field name used by QueryParsers constructed for UserQuery tags
    */
-  public CorePlusExtensionsParser(String defaultField, Analyzer analyzer) {
-    this(defaultField, analyzer, null);
+  public CorePlusExtensionsParser(FieldTypes fieldTypes, String defaultField, Analyzer analyzer) {
+    this(fieldTypes, defaultField, analyzer, null);
   }
 
-  private CorePlusExtensionsParser(String defaultField, Analyzer analyzer, QueryParser parser) {
-    super(defaultField, analyzer, parser);
+  private CorePlusExtensionsParser(FieldTypes fieldTypes, String defaultField, Analyzer analyzer, QueryParser parser) {
+    super(fieldTypes, defaultField, analyzer, parser);
     filterFactory.addBuilder("TermsFilter", new TermsFilterBuilder(analyzer));
     filterFactory.addBuilder("BooleanFilter", new BooleanFilterBuilder(filterFactory));
     filterFactory.addBuilder("DuplicateFilter", new DuplicateFilterBuilder());

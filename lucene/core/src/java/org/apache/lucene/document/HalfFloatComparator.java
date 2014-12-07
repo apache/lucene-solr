@@ -18,6 +18,8 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.util.HalfFloat;
+import org.apache.lucene.util.NumericUtils;
 
 // nocommit can't we do all numeric comparators this way?  if we fix all numeric dv to write sortable versions?
 class HalfFloatComparator extends FieldComparator.NumericComparator<Float> {
@@ -33,7 +35,7 @@ class HalfFloatComparator extends FieldComparator.NumericComparator<Float> {
   public HalfFloatComparator(int numHits, String field, Float missingValue) {
     super(field, missingValue);
     values = new short[numHits];
-    missingShortValue = (short) Document.sortableHalfFloatBits(HalfFloat.floatToIntBits(missingValue));
+    missingShortValue = (short) NumericUtils.sortableHalfFloatBits(HalfFloat.floatToShortBits(missingValue));
   }
     
   @Override
@@ -73,12 +75,12 @@ class HalfFloatComparator extends FieldComparator.NumericComparator<Float> {
 
   @Override
   public void setTopValue(Float value) {
-    topValue = (short) Document.sortableHalfFloatBits(HalfFloat.floatToIntBits(value));
+    topValue = (short) NumericUtils.sortableHalfFloatBits(HalfFloat.floatToShortBits(value));
   }
 
   @Override
   public Float value(int slot) {
-    return Document.sortableShortToFloat(values[slot]);
+    return NumericUtils.shortToHalfFloat(values[slot]);
   }
 
   @Override

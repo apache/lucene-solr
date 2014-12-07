@@ -574,7 +574,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
     void setInvertState() {
       invertState = new FieldInvertState(fieldInfo.name);
-      termsHashPerField = termsHash.addField(invertState, fieldInfo);
+      termsHashPerField = termsHash.addField(invertState, fieldInfo, docWriter.writer.rightJustifyTerms(fieldInfo.name));
       if (fieldInfo.omitsNorms() == false) {
         assert norms == null;
         // Even if no documents actually succeed in setting a norm, we still write norms for this segment:

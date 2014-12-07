@@ -1,9 +1,10 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.spans.SpanFirstQuery;
-import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.spans.SpanFirstQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,10 +35,10 @@ public class SpanFirstBuilder extends SpanBuilderBase {
   }
 
   @Override
-  public SpanQuery getSpanQuery(Element e) throws ParserException {
+  public SpanQuery getSpanQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     int end = DOMUtils.getAttribute(e, "end", 1);
     Element child = DOMUtils.getFirstChildElement(e);
-    SpanQuery q = factory.getSpanQuery(child);
+    SpanQuery q = factory.getSpanQuery(fieldTypes, child);
 
     SpanFirstQuery sfq = new SpanFirstQuery(q, end);
 

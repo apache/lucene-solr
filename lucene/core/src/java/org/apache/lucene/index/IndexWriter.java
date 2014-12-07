@@ -889,6 +889,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   public Document newDocument() {
+    ensureOpen();
     return new Document(fieldTypes);
   }
   
@@ -1939,6 +1940,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       bufferedUpdatesStream.clear();
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
       docWriter.abort(this); // don't sync on IW here
+      fieldTypes.close();
       synchronized(this) {
 
         if (pendingCommit != null) {
@@ -4618,18 +4620,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   // nocommit explore other optos once we know field is unique
 
-  synchronized LiveUniqueValues getUniqueValues(String uidFieldName) {
+  synchronized LiveUniqueValues getUniqueValues(String fieldName) {
     LiveUniqueValues v;
-    if (fieldTypes.getIsUnique(uidFieldName)) {
-      v = uniqueValues.get(uidFieldName);
+    if (fieldTypes.getIsUnique(fieldName)) {
+      v = uniqueValues.get(fieldName);
       if (v == null) {
-        v = new LiveUniqueValues(uidFieldName, readerManager);
-        uniqueValues.put(uidFieldName, v);
+        v = new LiveUniqueValues(fieldName, readerManager);
+        uniqueValues.put(fieldName, v);
       }
     } else {
       v = null;
     }
 
     return v;
+  }
+
+  boolean rightJustifyTerms(String fieldName) {
+    return fieldTypes.rightJustifyTerms(fieldName);
   }
 }

@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document2StoredFieldVisitor; // javadocs
+import org.apache.lucene.document.DocumentStoredFieldVisitor; // javadocs
 
 /**
  * Expert: provides a low-level means of accessing the stored field

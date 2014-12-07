@@ -1,6 +1,7 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
@@ -44,7 +45,7 @@ public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
   }
 
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     NodeList nl = e.getElementsByTagName("Field");
     int maxNumTerms = DOMUtils.getAttribute(e, "maxNumTerms", DEFAULT_MAX_NUM_TERMS);
     FuzzyLikeThisQuery fbq = new FuzzyLikeThisQuery(maxNumTerms, analyzer);

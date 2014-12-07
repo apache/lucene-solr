@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MergedIterator;
@@ -79,7 +80,7 @@ public final class MultiFields extends Fields {
           return fields.get(0);
         } else {
           return new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
-                                         slices.toArray(ReaderSlice.EMPTY_ARRAY));
+                                 slices.toArray(ReaderSlice.EMPTY_ARRAY));
         }
     }
   }
@@ -185,6 +186,12 @@ public final class MultiFields extends Fields {
     this.subSlices = subSlices;
   }
 
+  private FieldTypes fieldTypes;
+
+  public void setFieldTypes(FieldTypes fieldTypes) {
+    this.fieldTypes = fieldTypes;
+  }
+
   @SuppressWarnings({"unchecked","rawtypes"})
   @Override
   public Iterator<String> iterator() {
@@ -200,7 +207,6 @@ public final class MultiFields extends Fields {
     Terms result = terms.get(field);
     if (result != null)
       return result;
-
 
     // Lazy init: first time this field is requested, we
     // create & add to terms:
@@ -221,7 +227,7 @@ public final class MultiFields extends Fields {
       // is unbounded.
     } else {
       result = new MultiTerms(subs2.toArray(Terms.EMPTY_ARRAY),
-          slices2.toArray(ReaderSlice.EMPTY_ARRAY));
+                              slices2.toArray(ReaderSlice.EMPTY_ARRAY), fieldTypes != null && fieldTypes.rightJustifyTerms(field));
       terms.put(field, result);
     }
 

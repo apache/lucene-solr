@@ -3,13 +3,14 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.BooleanFilter;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.queries.FilterClause;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Filter;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -43,7 +44,7 @@ public class BooleanFilterBuilder implements FilterBuilder {
   }
 
   @Override
-  public Filter getFilter(Element e) throws ParserException {
+  public Filter getFilter(FieldTypes fieldTypes, Element e) throws ParserException {
     BooleanFilter bf = new BooleanFilter();
     NodeList nl = e.getChildNodes();
 
@@ -54,7 +55,7 @@ public class BooleanFilterBuilder implements FilterBuilder {
         BooleanClause.Occur occurs = BooleanQueryBuilder.getOccursValue(clauseElem);
 
         Element clauseFilter = DOMUtils.getFirstChildOrFail(clauseElem);
-        Filter f = factory.getFilter(clauseFilter);
+        Filter f = factory.getFilter(fieldTypes, clauseFilter);
         bf.add(new FilterClause(f, occurs));
       }
     }

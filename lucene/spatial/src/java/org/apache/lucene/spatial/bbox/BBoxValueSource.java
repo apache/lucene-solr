@@ -29,6 +29,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
 import com.spatial4j.core.shape.Rectangle;
 
 /**
@@ -69,10 +70,10 @@ class BBoxValueSource extends ValueSource {
           return null;
         } else {
           rect.reset(
-                     Document.longToDouble(minX.get(doc)),
-                     Document.longToDouble(maxX.get(doc)),
-                     Document.longToDouble(minY.get(doc)),
-                     Document.longToDouble(maxY.get(doc)));
+                     NumericUtils.longToDouble(minX.get(doc)),
+                     NumericUtils.longToDouble(maxX.get(doc)),
+                     NumericUtils.longToDouble(minY.get(doc)),
+                     NumericUtils.longToDouble(maxY.get(doc)));
           return rect;
         }
       }

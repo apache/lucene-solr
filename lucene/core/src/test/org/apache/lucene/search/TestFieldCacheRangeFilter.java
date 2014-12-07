@@ -58,69 +58,70 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
         
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));
+    FieldTypes fieldTypes = search.getFieldTypes();
 
     // test id, bounded on both ends
-    result = search.search(q, DocValuesRangeFilter.newStringRange("id",minIP,maxIP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,T,maxIP,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,maxIP,T,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,T,maxIP,F), numDocs).scoreDocs;
     assertEquals("all but last", numDocs-1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,maxIP,F,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,F,maxIP,T), numDocs).scoreDocs;
     assertEquals("all but first", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,maxIP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,F,maxIP,F), numDocs).scoreDocs;
     assertEquals("all but ends", numDocs-2, result.length);
     
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",medIP,maxIP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",medIP,T,maxIP,T), numDocs).scoreDocs;
     assertEquals("med and up", 1+ maxId-medId, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,medIP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,T,medIP,T), numDocs).scoreDocs;
     assertEquals("up to med", 1+ medId-minId, result.length);
 
     // unbounded id
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",null,null,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",(String)null,T,null,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,null,T,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,T,null,F), numDocs).scoreDocs;
     assertEquals("min and up", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",null,maxIP,F,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",null,F,maxIP,T), numDocs).scoreDocs;
     assertEquals("max and down", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,null,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,F,null,F), numDocs).scoreDocs;
     assertEquals("not min, but up", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",null,maxIP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",null,F,maxIP,F), numDocs).scoreDocs;
     assertEquals("not max, but down", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",medIP,maxIP,T,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",medIP,T,maxIP,F), numDocs).scoreDocs;
     assertEquals("med and up, not max", maxId-medId, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,medIP,F,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,F,medIP,T), numDocs).scoreDocs;
     assertEquals("not min, up to med", medId-minId, result.length);
 
     // very small sets
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,minIP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,F,minIP,F), numDocs).scoreDocs;
     assertEquals("min,min,F,F", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",medIP,medIP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",medIP,F,medIP,F), numDocs).scoreDocs;
     assertEquals("med,med,F,F", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",maxIP,maxIP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",maxIP,F,maxIP,F), numDocs).scoreDocs;
     assertEquals("max,max,F,F", 0, result.length);
                      
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",minIP,minIP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",minIP,T,minIP,T), numDocs).scoreDocs;
     assertEquals("min,min,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",null,minIP,F,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",null,F,minIP,T), numDocs).scoreDocs;
     assertEquals("nul,min,F,T", 1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",maxIP,maxIP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",maxIP,T,maxIP,T), numDocs).scoreDocs;
     assertEquals("max,max,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",maxIP,null,T,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",maxIP,T,null,F), numDocs).scoreDocs;
     assertEquals("max,nul,T,T", 1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("id",medIP,medIP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("id",medIP,T,medIP,T), numDocs).scoreDocs;
     assertEquals("med,med,T,T", 1, result.length);
   }
 
@@ -142,47 +143,48 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // test extremes, bounded on both ends
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,maxRP,T,T), numDocs).scoreDocs;
+    FieldTypes fieldTypes = search.getFieldTypes();
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,T,maxRP,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,maxRP,T,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,T,maxRP,F), numDocs).scoreDocs;
     assertEquals("all but biggest", numDocs-1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,maxRP,F,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,F,maxRP,T), numDocs).scoreDocs;
     assertEquals("all but smallest", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,maxRP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,F,maxRP,F), numDocs).scoreDocs;
     assertEquals("all but extremes", numDocs-2, result.length);
     
     // unbounded
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,null,T,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,T,null,F), numDocs).scoreDocs;
     assertEquals("smallest and up", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",null,maxRP,F,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",null,F,maxRP,T), numDocs).scoreDocs;
     assertEquals("biggest and down", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,null,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,F,null,F), numDocs).scoreDocs;
     assertEquals("not smallest, but up", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",null,maxRP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",null,F,maxRP,F), numDocs).scoreDocs;
     assertEquals("not biggest, but down", numDocs-1, result.length);
         
     // very small sets
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,minRP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,F,minRP,F), numDocs).scoreDocs;
     assertEquals("min,min,F,F", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",maxRP,maxRP,F,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",maxRP,F,maxRP,F), numDocs).scoreDocs;
     assertEquals("max,max,F,F", 0, result.length);
                      
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",minRP,minRP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",minRP,T,minRP,T), numDocs).scoreDocs;
     assertEquals("min,min,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",null,minRP,F,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",null,F,minRP,T), numDocs).scoreDocs;
     assertEquals("nul,min,F,T", 1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",maxRP,maxRP,T,T), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",maxRP,T,maxRP,T), numDocs).scoreDocs;
     assertEquals("max,max,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newStringRange("rand",maxRP,null,T,F), numDocs).scoreDocs;
+    result = search.search(q, fieldTypes.newDocValuesRangeFilter("rand",maxRP,T,null,F), numDocs).scoreDocs;
     assertEquals("max,nul,T,T", 1, result.length);
   }
   
@@ -205,75 +207,76 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // test id, bounded on both ends
         
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    FieldTypes fieldTypes = search.getFieldTypes();
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,T,maxIdO,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,maxIdO,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,T,maxIdO,F), numDocs).scoreDocs;
     assertEquals("all but last", numDocs-1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,maxIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,F,maxIdO,T), numDocs).scoreDocs;
     assertEquals("all but first", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,maxIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,F,maxIdO,F), numDocs).scoreDocs;
     assertEquals("all but ends", numDocs-2, result.length);
     
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",medIdO,maxIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",medIdO,T,maxIdO,T), numDocs).scoreDocs;
     assertEquals("med and up", 1+ maxId-medId, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,medIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,T,medIdO,T), numDocs).scoreDocs;
     assertEquals("up to med", 1+ medId-minId, result.length);
     
     // unbounded id
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",null,null,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",(Integer) null,T,null,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,null,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,T,null,F), numDocs).scoreDocs;
     assertEquals("min and up", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",null,maxIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",null,F,maxIdO,T), numDocs).scoreDocs;
     assertEquals("max and down", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,F,null,F), numDocs).scoreDocs;
     assertEquals("not min, but up", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",null,maxIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",null,F,maxIdO,F), numDocs).scoreDocs;
     assertEquals("not max, but down", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",medIdO,maxIdO,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",medIdO,T,maxIdO,F), numDocs).scoreDocs;
     assertEquals("med and up, not max", maxId-medId, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,medIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,F,medIdO,T), numDocs).scoreDocs;
     assertEquals("not min, up to med", medId-minId, result.length);
 
     // very small sets
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,minIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,F,minIdO,F), numDocs).scoreDocs;
     assertEquals("min,min,F,F", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",medIdO,medIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",medIdO,F,medIdO,F), numDocs).scoreDocs;
     assertEquals("med,med,F,F", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",maxIdO,maxIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",maxIdO,F,maxIdO,F), numDocs).scoreDocs;
     assertEquals("max,max,F,F", 0, result.length);
                      
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",minIdO,minIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",minIdO,T,minIdO,T), numDocs).scoreDocs;
     assertEquals("min,min,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",null,minIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",null,F,minIdO,T), numDocs).scoreDocs;
     assertEquals("nul,min,F,T", 1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",maxIdO,maxIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",maxIdO,T,maxIdO,T), numDocs).scoreDocs;
     assertEquals("max,max,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",maxIdO,null,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",maxIdO,T,null,F), numDocs).scoreDocs;
     assertEquals("max,nul,T,T", 1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",medIdO,medIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",medIdO,T,medIdO,T), numDocs).scoreDocs;
     assertEquals("med,med,T,T", 1, result.length);
     
     // special cases
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",Integer.valueOf(Integer.MAX_VALUE),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",Integer.valueOf(Integer.MAX_VALUE),F,null,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",null,Integer.valueOf(Integer.MIN_VALUE),F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",null,F,Integer.valueOf(Integer.MIN_VALUE),F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",maxIdO,minIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",maxIdO,T,minIdO,T), numDocs).scoreDocs;
     assertEquals("inverse range", 0, result.length);
   }
   
@@ -296,75 +299,76 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // test id, bounded on both ends
         
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    FieldTypes fieldTypes = search.getFieldTypes();
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,T,maxIdO,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,maxIdO,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,T,maxIdO,F), numDocs).scoreDocs;
     assertEquals("all but last", numDocs-1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,maxIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,F,maxIdO,T), numDocs).scoreDocs;
     assertEquals("all but first", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,maxIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,F,maxIdO,F), numDocs).scoreDocs;
     assertEquals("all but ends", numDocs-2, result.length);
     
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",medIdO,maxIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",medIdO,T,maxIdO,T), numDocs).scoreDocs;
     assertEquals("med and up", 1+ maxId-medId, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,medIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,T,medIdO,T), numDocs).scoreDocs;
     assertEquals("up to med", 1+ medId-minId, result.length);
     
     // unbounded id
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",null,null,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",(Long) null,T,null,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,null,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,T,null,F), numDocs).scoreDocs;
     assertEquals("min and up", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",null,maxIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",null,F,maxIdO,T), numDocs).scoreDocs;
     assertEquals("max and down", numDocs, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,F,null,F), numDocs).scoreDocs;
     assertEquals("not min, but up", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",null,maxIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",null,F,maxIdO,F), numDocs).scoreDocs;
     assertEquals("not max, but down", numDocs-1, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",medIdO,maxIdO,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",medIdO,T,maxIdO,F), numDocs).scoreDocs;
     assertEquals("med and up, not max", maxId-medId, result.length);
         
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,medIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,F,medIdO,T), numDocs).scoreDocs;
     assertEquals("not min, up to med", medId-minId, result.length);
 
     // very small sets
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,minIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,F,minIdO,F), numDocs).scoreDocs;
     assertEquals("min,min,F,F", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",medIdO,medIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",medIdO,F,medIdO,F), numDocs).scoreDocs;
     assertEquals("med,med,F,F", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",maxIdO,maxIdO,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",maxIdO,F,maxIdO,F), numDocs).scoreDocs;
     assertEquals("max,max,F,F", 0, result.length);
                      
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",minIdO,minIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",minIdO,T,minIdO,T), numDocs).scoreDocs;
     assertEquals("min,min,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",null,minIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",null,F,minIdO,T), numDocs).scoreDocs;
     assertEquals("nul,min,F,T", 1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",maxIdO,maxIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",maxIdO,T,maxIdO,T), numDocs).scoreDocs;
     assertEquals("max,max,T,T", 1, result.length);
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",maxIdO,null,T,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",maxIdO,T,null,F), numDocs).scoreDocs;
     assertEquals("max,nul,T,T", 1, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",medIdO,medIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",medIdO,T,medIdO,T), numDocs).scoreDocs;
     assertEquals("med,med,T,T", 1, result.length);
     
     // special cases
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",Long.valueOf(Long.MAX_VALUE),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",Long.valueOf(Long.MAX_VALUE),F,null,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",null,Long.valueOf(Long.MIN_VALUE),F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",null,F,Long.valueOf(Long.MIN_VALUE),F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newLongRange("id_long",maxIdO,minIdO,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_long",maxIdO,T,minIdO,T), numDocs).scoreDocs;
     assertEquals("inverse range", 0, result.length);
   }
   
@@ -383,19 +387,20 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));
 
-    result = search.search(q,DocValuesRangeFilter.newFloatRange("id_float",minIdO,medIdO,T,T), numDocs).scoreDocs;
+    FieldTypes fieldTypes = search.getFieldTypes();
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_float",minIdO,T,medIdO,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs/2, result.length);
     int count = 0;
-    result = search.search(q,DocValuesRangeFilter.newFloatRange("id_float",null,medIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_float",null,F,medIdO,T), numDocs).scoreDocs;
     count += result.length;
-    result = search.search(q,DocValuesRangeFilter.newFloatRange("id_float",medIdO,null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_float",medIdO,F,null,F), numDocs).scoreDocs;
     count += result.length;
     assertEquals("sum of two concenatted ranges", numDocs, count);
-    result = search.search(q,DocValuesRangeFilter.newFloatRange("id_float",null,null,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_float",(Float) null,T,null,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
-    result = search.search(q,DocValuesRangeFilter.newFloatRange("id_float",Float.valueOf(Float.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_float",Float.valueOf(Float.POSITIVE_INFINITY),F,null,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newFloatRange("id_float",null,Float.valueOf(Float.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_float",null,F,Float.valueOf(Float.NEGATIVE_INFINITY),F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
   }
   
@@ -412,19 +417,20 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));
 
-    result = search.search(q,DocValuesRangeFilter.newDoubleRange("id_double",minIdO,medIdO,T,T), numDocs).scoreDocs;
+    FieldTypes fieldTypes = search.getFieldTypes();
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_double",minIdO,T,medIdO,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs/2, result.length);
     int count = 0;
-    result = search.search(q,DocValuesRangeFilter.newDoubleRange("id_double",null,medIdO,F,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_double",null,F,medIdO,T), numDocs).scoreDocs;
     count += result.length;
-    result = search.search(q,DocValuesRangeFilter.newDoubleRange("id_double",medIdO,null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_double",medIdO,F,null,F), numDocs).scoreDocs;
     count += result.length;
     assertEquals("sum of two concenatted ranges", numDocs, count);
-    result = search.search(q,DocValuesRangeFilter.newDoubleRange("id_double",null,null,T,T), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_double",(Double) null,T,null,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
-    result = search.search(q,DocValuesRangeFilter.newDoubleRange("id_double",Double.valueOf(Double.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_double",Double.valueOf(Double.POSITIVE_INFINITY),F,null,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
-    result = search.search(q,DocValuesRangeFilter.newDoubleRange("id_double",null, Double.valueOf(Double.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_double",null,F,Double.valueOf(Double.NEGATIVE_INFINITY),F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
   }
   
@@ -453,19 +459,19 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",-20,20,T,T), 100).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",-20,T,20,T), 100).scoreDocs;
     assertEquals("find all", 40, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",0,20,T,T), 100).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",0,T,20,T), 100).scoreDocs;
     assertEquals("find all", 20, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",-20,0,T,T), 100).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",-20,T,0,T), 100).scoreDocs;
     assertEquals("find all", 20, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",10,20,T,T), 100).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",10,T,20,T), 100).scoreDocs;
     assertEquals("find all", 11, result.length);
 
-    result = search.search(q,DocValuesRangeFilter.newIntRange("id_int",-20,-10,T,T), 100).scoreDocs;
+    result = search.search(q,fieldTypes.newDocValuesRangeFilter("id_int",-20,T,-10,T), 100).scoreDocs;
     assertEquals("find all", 11, result.length);
     reader.close();
     dir.close();

@@ -35,8 +35,8 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -407,7 +407,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
-    
+    FieldTypes fieldTypes = iw.getFieldTypes();
     final int docCount = atLeast(200);
     final byte[][][] data = new byte [docCount][][];
     for (int i = 0; i < docCount; ++i) {
@@ -448,7 +448,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     for (int i = 0; i < 10; ++i) {
       final int min = random().nextInt(data.length);
       final int max = min + random().nextInt(20);
-      iw.deleteDocuments(NumericRangeQuery.newIntRange("id", min, max, true, false));
+      iw.deleteDocuments(new ConstantScoreQuery(fieldTypes.newIntRangeFilter("id", min, true, max, false)));
     }
 
     iw.forceMerge(2); // force merges with deletions

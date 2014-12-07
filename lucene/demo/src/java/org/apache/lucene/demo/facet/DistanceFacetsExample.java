@@ -173,7 +173,7 @@ public class DistanceFacetsExample implements Closeable {
     BooleanFilter f = new BooleanFilter();
 
     // Add latitude range filter:
-    f.add(fieldTypes.newRangeFilter("latitude", Math.toDegrees(minLat), true, Math.toDegrees(maxLat), true),
+    f.add(fieldTypes.newDoubleRangeFilter("latitude", Math.toDegrees(minLat), true, Math.toDegrees(maxLat), true),
           BooleanClause.Occur.MUST);
 
     // Add longitude range filter:
@@ -181,13 +181,13 @@ public class DistanceFacetsExample implements Closeable {
       // The bounding box crosses the international date
       // line:
       BooleanFilter lonF = new BooleanFilter();
-      lonF.add(fieldTypes.newRangeFilter("longitude", Math.toDegrees(minLng), true, null, true),
+      lonF.add(fieldTypes.newDoubleRangeFilter("longitude", Math.toDegrees(minLng), true, null, true),
                BooleanClause.Occur.SHOULD);
-      lonF.add(fieldTypes.newRangeFilter("longitude", null, true, Math.toDegrees(maxLng), true),
+      lonF.add(fieldTypes.newDoubleRangeFilter("longitude", null, true, Math.toDegrees(maxLng), true),
                BooleanClause.Occur.SHOULD);
       f.add(lonF, BooleanClause.Occur.MUST);
     } else {
-      f.add(fieldTypes.newRangeFilter("longitude", Math.toDegrees(minLng), true, Math.toDegrees(maxLng), true),
+      f.add(fieldTypes.newDoubleRangeFilter("longitude", Math.toDegrees(minLng), true, Math.toDegrees(maxLng), true),
             BooleanClause.Occur.MUST);
     }
 

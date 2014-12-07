@@ -247,46 +247,4 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals(2, termPositions.nextPosition());
     reader.close();
   }
-
-  /**
-   * Test adding two fields with the same name, one indexed
-   * the other stored only. The omitNorms and omitTermFreqAndPositions setting
-   * of the stored field should not affect the indexed one (LUCENE-1590)
-   */
-  public void testLUCENE_1590() throws Exception {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    FieldTypes fieldTypes = writer.getFieldTypes();
-    // f1 has no norms
-    fieldTypes.disableNorms("f1");
-    fieldTypes.disableHighlighting("f1");
-    fieldTypes.setIndexOptions("f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    fieldTypes.setMultiValued("f1");
-    fieldTypes.setMultiValued("f2");
-
-    Document doc = writer.newDocument();
-    doc.addLargeText("f1", "v1");
-    doc.addStored("f1", "v2");
-
-    // f2 has no TF
-    fieldTypes.disableHighlighting("f2");
-    fieldTypes.setIndexOptions("f2", IndexOptions.DOCS);
-    doc.addLargeText("f2", "v1");
-    doc.addStored("f2", "v2");
-
-    writer.addDocument(doc);
-    writer.forceMerge(1); // be sure to have a single segment
-    writer.close();
-
-    TestUtil.checkIndex(dir);
-
-    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
-    FieldInfos fi = reader.getFieldInfos();
-    // f1
-    assertFalse("f1 should have no norms", fi.fieldInfo("f1").hasNorms());
-    assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").getIndexOptions());
-    // f2
-    assertTrue("f2 should have norms", fi.fieldInfo("f2").hasNorms());
-    assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
-    reader.close();
-  }
 }

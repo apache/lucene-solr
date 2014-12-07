@@ -69,8 +69,8 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       if (lower>upper) {
         int a=lower; lower=upper; upper=a;
       }
-      Query cq = new ConstantScoreQuery(fieldTypes.newRangeFilter("asc", format.format(lower), true, format.format(upper), true));
-      Query tq = new ConstantScoreQuery(fieldTypes.newRangeFilter("trie", lower, true, upper, true));
+      Query cq = new ConstantScoreQuery(fieldTypes.newStringRangeFilter("asc", format.format(lower), true, format.format(upper), true));
+      Query tq = new ConstantScoreQuery(fieldTypes.newIntRangeFilter("trie", lower, true, upper, true));
       TopDocs trTopDocs = searcher.search(cq, 1);
       TopDocs nrTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits);

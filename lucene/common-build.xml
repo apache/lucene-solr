@@ -167,7 +167,7 @@
   <!-- nocommit put back
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options -Xdoclint:all/protected -Xdoclint:-html -Xdoclint:-missing"/>
   -->
-  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
+  <property name="javac.args" value=""/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/8/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>

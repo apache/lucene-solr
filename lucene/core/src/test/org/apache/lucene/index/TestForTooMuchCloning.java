@@ -70,7 +70,7 @@ public class TestForTooMuchCloning extends LuceneTestCase {
     assertTrue(hits.totalHits > 0);
     final int queryCloneCount = dir.getInputCloneCount() - cloneCount;
     //System.out.println("query clone count=" + queryCloneCount);
-    assertTrue("too many calls to IndexInput.clone during TermRangeQuery: " + queryCloneCount, queryCloneCount < 50);
+    assertTrue("too many calls to IndexInput.clone during TermRangeQuery: " + queryCloneCount, queryCloneCount < 60);
     r.close();
     dir.close();
   }

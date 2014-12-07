@@ -17,28 +17,49 @@ package org.apache.lucene.queryparser.xml.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.NumericRangeFilter;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.BeforeClass;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 public class TestNumericRangeFilterBuilder extends LuceneTestCase {
+
+  private static FieldTypes fieldTypes;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = newIndexWriter(dir);
+    org.apache.lucene.document.Document doc = w.newDocument();
+    doc.addInt("AGE_INT", 14);
+    doc.addLong("AGE_LONG", 14L);
+    doc.addFloat("AGE_FLOAT", 14F);
+    doc.addDouble("AGE_DOUBLE", 14D);
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w, true);
+    fieldTypes = r.getFieldTypes();
+    w.close();
+    r.close();
+    dir.close();
+  }
 
   public void testGetFilterHandleNumericParseErrorStrict() throws Exception {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
@@ -47,7 +68,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
     Document doc = getDocumentFromString(xml);
     try {
-      filterBuilder.getFilter(doc.getDocumentElement());
+      filterBuilder.getFilter(fieldTypes, doc.getDocumentElement());
     } catch (ParserException e) {
       return;
     }
@@ -58,9 +79,9 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(false);
 
-    String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
+    String xml = "<NumericRangeFilter fieldName='AGE_INT' type='int' lowerTerm='-1' upperTerm='NaN'/>";
     Document doc = getDocumentFromString(xml);
-    Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
+    Filter filter = filterBuilder.getFilter(fieldTypes, doc.getDocumentElement());
     Directory ramDir = newDirectory();
     IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(null));
     writer.commit();
@@ -85,29 +106,25 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);
 
-    String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10'/>";
+    String xml = "<NumericRangeFilter fieldName='AGE_INT' type='int' lowerTerm='-1' upperTerm='10'/>";
     Document doc = getDocumentFromString(xml);
-    Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeFilter<?>);
+    Filter filter = filterBuilder.getFilter(fieldTypes, doc.getDocumentElement());
+    assertTrue(filter instanceof TermRangeFilter);
+    assertTrue(filter.toString(), filter.toString().contains("[-1 TO 10]"));
+    TermRangeFilter numRangeFilter = (TermRangeFilter) filter;
+    assertEquals("AGE_INT", numRangeFilter.getField());
+    assertTrue(numRangeFilter.includesLower());
+    assertTrue(numRangeFilter.includesUpper());
 
-    NumericRangeFilter<Integer> numRangeFilter = (NumericRangeFilter<Integer>) filter;
-    assertEquals(Integer.valueOf(-1), numRangeFilter.getMin());
-    assertEquals(Integer.valueOf(10), numRangeFilter.getMax());
-    assertEquals("AGE", numRangeFilter.getField());
-    assertTrue(numRangeFilter.includesMin());
-    assertTrue(numRangeFilter.includesMax());
-
-    String xml2 = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
+    String xml2 = "<NumericRangeFilter fieldName='AGE_INT' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
-    Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeFilter);
-
-    NumericRangeFilter<Integer> numRangeFilter2 = (NumericRangeFilter) filter2;
-    assertEquals(Integer.valueOf(-1), numRangeFilter2.getMin());
-    assertEquals(Integer.valueOf(10), numRangeFilter2.getMax());
-    assertEquals("AGE", numRangeFilter2.getField());
-    assertTrue(numRangeFilter2.includesMin());
-    assertFalse(numRangeFilter2.includesMax());
+    Filter filter2 = filterBuilder.getFilter(fieldTypes, doc2.getDocumentElement());
+    assertTrue(filter2 instanceof TermRangeFilter);
+    assertTrue(filter2.toString(), filter2.toString().contains("[-1 TO 10}"));
+    TermRangeFilter numRangeFilter2 = (TermRangeFilter) filter2;
+    assertEquals("AGE_INT", numRangeFilter2.getField());
+    assertTrue(numRangeFilter2.includesLower());
+    assertFalse(numRangeFilter2.includesUpper());
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
@@ -115,28 +132,27 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);
 
-    String xml = "<NumericRangeFilter fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
+    String xml = "<NumericRangeFilter fieldName='AGE_LONG' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
     Document doc = getDocumentFromString(xml);
-    Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeFilter<?>);
+    Filter filter = filterBuilder.getFilter(fieldTypes, doc.getDocumentElement());
+    assertTrue(filter instanceof TermRangeFilter);
+    assertTrue(filter.toString(), filter.toString().contains("[-2321 TO 60000000]"));
 
-    NumericRangeFilter<Long> numRangeFilter = (NumericRangeFilter) filter;
-    assertEquals(Long.valueOf(-2321L), numRangeFilter.getMin());
-    assertEquals(Long.valueOf(60000000L), numRangeFilter.getMax());
-    assertEquals("AGE", numRangeFilter.getField());
-    assertTrue(numRangeFilter.includesMin());
-    assertTrue(numRangeFilter.includesMax());
+    TermRangeFilter numRangeFilter = (TermRangeFilter) filter;
+    assertEquals("AGE_LONG", numRangeFilter.getField());
+    assertTrue(numRangeFilter.includesLower());
+    assertTrue(numRangeFilter.includesUpper());
 
-    String xml2 = "<NumericRangeFilter fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
+    String xml2 = "<NumericRangeFilter fieldName='AGE_LONG' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
-    Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeFilter<?>);
-    NumericRangeFilter<Long> numRangeFilter2 = (NumericRangeFilter) filter2;
-    assertEquals(Long.valueOf(-2321L), numRangeFilter2.getMin());
-    assertEquals(Long.valueOf(60000000L), numRangeFilter2.getMax());
-    assertEquals("AGE", numRangeFilter2.getField());
-    assertTrue(numRangeFilter2.includesMin());
-    assertFalse(numRangeFilter2.includesMax());
+    Filter filter2 = filterBuilder.getFilter(fieldTypes, doc2.getDocumentElement());
+    assertTrue(filter2 instanceof TermRangeFilter);
+    assertTrue(filter2.toString(), filter2.toString().contains("[-2321 TO 60000000}"));
+
+    TermRangeFilter numRangeFilter2 = (TermRangeFilter) filter2;
+    assertEquals("AGE_LONG", numRangeFilter2.getField());
+    assertTrue(numRangeFilter2.includesLower());
+    assertFalse(numRangeFilter2.includesUpper());
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
@@ -144,30 +160,26 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);
 
-    String xml = "<NumericRangeFilter fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
+    String xml = "<NumericRangeFilter fieldName='AGE_DOUBLE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
     Document doc = getDocumentFromString(xml);
 
-    Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeFilter<?>);
+    Filter filter = filterBuilder.getFilter(fieldTypes, doc.getDocumentElement());
+    assertTrue(filter instanceof TermRangeFilter);
+    assertTrue(filter.toString(), filter.toString().contains("[-23.21 TO 60000.00023]"));
+    TermRangeFilter numRangeFilter = (TermRangeFilter) filter;
+    assertEquals("AGE_DOUBLE", numRangeFilter.getField());
+    assertTrue(numRangeFilter.includesLower());
+    assertTrue(numRangeFilter.includesUpper());
 
-    NumericRangeFilter<Double> numRangeFilter = (NumericRangeFilter) filter;
-    assertEquals(Double.valueOf(-23.21d), numRangeFilter.getMin());
-    assertEquals(Double.valueOf(60000.00023d), numRangeFilter.getMax());
-    assertEquals("AGE", numRangeFilter.getField());
-    assertTrue(numRangeFilter.includesMin());
-    assertTrue(numRangeFilter.includesMax());
-
-    String xml2 = "<NumericRangeFilter fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
+    String xml2 = "<NumericRangeFilter fieldName='AGE_DOUBLE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
-    Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeFilter<?>);
-
-    NumericRangeFilter<Double> numRangeFilter2 = (NumericRangeFilter) filter2;
-    assertEquals(Double.valueOf(-23.21d), numRangeFilter2.getMin());
-    assertEquals(Double.valueOf(60000.00023d), numRangeFilter2.getMax());
-    assertEquals("AGE", numRangeFilter2.getField());
-    assertTrue(numRangeFilter2.includesMin());
-    assertFalse(numRangeFilter2.includesMax());
+    Filter filter2 = filterBuilder.getFilter(fieldTypes, doc2.getDocumentElement());
+    assertTrue(filter2 instanceof TermRangeFilter);
+    assertTrue(filter2.toString(), filter2.toString().contains("[-23.21 TO 60000.00023}"));
+    TermRangeFilter numRangeFilter2 = (TermRangeFilter) filter2;
+    assertEquals("AGE_DOUBLE", numRangeFilter2.getField());
+    assertTrue(numRangeFilter2.includesLower());
+    assertFalse(numRangeFilter2.includesUpper());
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
@@ -175,31 +187,27 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);
 
-    String xml = "<NumericRangeFilter fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
+    String xml = "<NumericRangeFilter fieldName='AGE_FLOAT' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
     Document doc = getDocumentFromString(xml);
 
-    Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeFilter<?>);
+    Filter filter = filterBuilder.getFilter(fieldTypes, doc.getDocumentElement());
+    assertTrue(filter instanceof TermRangeFilter);
+    assertTrue(filter.toString(), filter.toString().contains("[-2.321432 TO 32432.23]"));
+    TermRangeFilter numRangeFilter = (TermRangeFilter) filter;
+    assertEquals("AGE_FLOAT", numRangeFilter.getField());
+    assertTrue(numRangeFilter.includesLower());
+    assertTrue(numRangeFilter.includesUpper());
 
-    NumericRangeFilter<Float> numRangeFilter = (NumericRangeFilter) filter;
-    assertEquals(Float.valueOf(-2.321432f), numRangeFilter.getMin());
-    assertEquals(Float.valueOf(32432.23f), numRangeFilter.getMax());
-    assertEquals("AGE", numRangeFilter.getField());
-    assertTrue(numRangeFilter.includesMin());
-    assertTrue(numRangeFilter.includesMax());
-
-    String xml2 = "<NumericRangeFilter fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
+    String xml2 = "<NumericRangeFilter fieldName='AGE_FLOAT' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
     Document doc2 = getDocumentFromString(xml2);
 
-    Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeFilter<?>);
-    
-    NumericRangeFilter<Float> numRangeFilter2 = (NumericRangeFilter) filter2;
-    assertEquals(Float.valueOf(-2.321432f), numRangeFilter2.getMin());
-    assertEquals(Float.valueOf(32432.23f), numRangeFilter2.getMax());
-    assertEquals("AGE", numRangeFilter2.getField());
-    assertTrue(numRangeFilter2.includesMin());
-    assertFalse(numRangeFilter2.includesMax());
+    Filter filter2 = filterBuilder.getFilter(fieldTypes, doc2.getDocumentElement());
+    assertTrue(filter2 instanceof TermRangeFilter);
+    assertTrue(filter2.toString(), filter2.toString().contains("[-2.321432 TO 32432.23}"));
+    TermRangeFilter numRangeFilter2 = (TermRangeFilter) filter2;
+    assertEquals("AGE_FLOAT", numRangeFilter2.getField());
+    assertTrue(numRangeFilter2.includesLower());
+    assertFalse(numRangeFilter2.includesUpper());
   }
 
   private static Document getDocumentFromString(String str)

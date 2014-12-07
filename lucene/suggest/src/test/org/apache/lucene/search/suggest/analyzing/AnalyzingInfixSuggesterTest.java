@@ -882,8 +882,62 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     for(String value : values) {
       result.add(new BytesRef(value));
     }
-
     return result;
+  }
+
+  private Set<BytesRef> asSet(byte[]... values) {
+    HashSet<BytesRef> result = new HashSet<>();
+    for(byte[] value : values) {
+      result.add(new BytesRef(value));
+    }
+    return result;
+  }
+
+  public void testBinaryContext() throws Exception {
+    Input keys[] = new Input[] {
+      new Input("lend me your ear", 8, new BytesRef("foobar"), asSet(new byte[1], new byte[4])),
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz"), asSet(new byte[1], new byte[3]))
+    };
+
+    Path tempDir = createTempDir();
+
+    for(int iter=0;iter<2;iter++) {
+      AnalyzingInfixSuggester suggester;
+      Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+      if (iter == 0) {
+        suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
+        suggester.build(new InputArrayIterator(keys));
+      } else {
+        // Test again, after close/reopen:
+        suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
+      }
+
+      // Both have new byte[1] context:
+      List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), asSet(new byte[1]), 10, true, true);
+      assertEquals(2, results.size());
+
+      LookupResult result = results.get(0);
+      assertEquals("a penny saved is a penny earned", result.key);
+      assertEquals("a penny saved is a penny <b>ear</b>ned", result.highlightKey);
+      assertEquals(10, result.value);
+      assertEquals(new BytesRef("foobaz"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef(new byte[1])));
+      assertTrue(result.contexts.contains(new BytesRef(new byte[3])));
+
+      result = results.get(1);
+      assertEquals("lend me your ear", result.key);
+      assertEquals("lend me your <b>ear</b>", result.highlightKey);
+      assertEquals(8, result.value);
+      assertEquals(new BytesRef("foobar"), result.payload);
+      assertNotNull(result.contexts);
+      assertEquals(2, result.contexts.size());
+      assertTrue(result.contexts.contains(new BytesRef(new byte[1])));
+      assertTrue(result.contexts.contains(new BytesRef(new byte[4])));
+
+      suggester.close();
+    }
   }
 
   // LUCENE-5528

@@ -146,7 +146,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         } else if (r == index.minR) {
           minCount++;
         }
-        doc.addShortText("rand", pad(r));
+        doc.addAtom("rand", pad(r));
         doc.addShortText("body", "body");
         writer.addDocument(doc);
       }

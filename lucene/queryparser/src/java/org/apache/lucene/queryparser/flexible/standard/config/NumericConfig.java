@@ -19,8 +19,7 @@ package org.apache.lucene.queryparser.flexible.standard.config;
 
 import java.text.NumberFormat;
 
-import org.apache.lucene.document.NumericType;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.document.FieldTypes;
 
 /**
  * This class holds the configuration used to parse numeric queries and create
@@ -31,56 +30,28 @@ import org.apache.lucene.search.NumericRangeQuery;
  */
 public class NumericConfig {
   
-  private int precisionStep;
-  
   private NumberFormat format;
   
-  private NumericType type;
+  private final FieldTypes fieldTypes;
   
   /**
    * Constructs a {@link NumericConfig} object.
    * 
-   * @param precisionStep
-   *          the precision used to index the numeric values
    * @param format
    *          the {@link NumberFormat} used to parse a {@link String} to
    *          {@link Number}
    * @param type
    *          the numeric type used to index the numeric values
    * 
-   * @see NumericConfig#setPrecisionStep(int)
    * @see NumericConfig#setNumberFormat(NumberFormat)
-   * @see #setType(org.apache.lucene.document.FieldType.NumericType)
    */
-  public NumericConfig(int precisionStep, NumberFormat format,
-      NumericType type) {
-    setPrecisionStep(precisionStep);
+  public NumericConfig(NumberFormat format, FieldTypes fieldTypes) {
     setNumberFormat(format);
-    setType(type);
-    
+    this.fieldTypes = fieldTypes;
   }
-  
-  /**
-   * Returns the precision used to index the numeric values
-   * 
-   * @return the precision used to index the numeric values
-   * 
-   * @see NumericRangeQuery#getPrecisionStep()
-   */
-  public int getPrecisionStep() {
-    return precisionStep;
-  }
-  
-  /**
-   * Sets the precision used to index the numeric values
-   * 
-   * @param precisionStep
-   *          the precision used to index the numeric values
-   * 
-   * @see NumericRangeQuery#getPrecisionStep()
-   */
-  public void setPrecisionStep(int precisionStep) {
-    this.precisionStep = precisionStep;
+
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
   }
   
   /**
@@ -93,31 +64,7 @@ public class NumericConfig {
   public NumberFormat getNumberFormat() {
     return format;
   }
-  
-  /**
-   * Returns the numeric type used to index the numeric values
-   * 
-   * @return the numeric type used to index the numeric values
-   */
-  public NumericType getType() {
-    return type;
-  }
-  
-  /**
-   * Sets the numeric type used to index the numeric values
-   * 
-   * @param type the numeric type used to index the numeric values
-   */
-  public void setType(NumericType type) {
-    
-    if (type == null) {
-      throw new IllegalArgumentException("type cannot be null!");
-    }
-    
-    this.type = type;
-    
-  }
-  
+
   /**
    * Sets the {@link NumberFormat} used to parse a {@link String} to
    * {@link Number}
@@ -144,9 +91,7 @@ public class NumericConfig {
     if (obj instanceof NumericConfig) {
       NumericConfig other = (NumericConfig) obj;
       
-      if (this.precisionStep == other.precisionStep
-          && this.type == other.type
-          && (this.format == other.format || (this.format.equals(other.format)))) {
+      if (this.format == other.format || (this.format.equals(other.format))) {
         return true;
       }
       

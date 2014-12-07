@@ -492,35 +492,6 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     dir.close();
   }
   
-  // LUCENE-1008
-  public void testNoTermVectorAfterTermVector() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    FieldTypes fieldTypes = iw.getFieldTypes();
-    fieldTypes.enableTermVectors("tvtest");
-    fieldTypes.enableTermVectorOffsets("tvtest");
-    fieldTypes.enableTermVectorPositions("tvtest");
-    fieldTypes.setMultiValued("tvtest");
-
-    Document document = iw.newDocument();
-    document.addLargeText("tvtest", "a b c");
-    iw.addDocument(document);
-    document = iw.newDocument();
-    document.addLargeText("tvtest", "x y z");
-    iw.addDocument(document);
-    // Make first segment
-    iw.commit();
-
-    document.addStored("tvtest", "a b c");
-    iw.addDocument(document);
-    // Make 2nd segment
-    iw.commit();
-
-    iw.forceMerge(1);
-    iw.close();
-    dir.close();
-  }
-
   // LUCENE-5611: don't abort segment when term vector settings are wrong
   public void testNoAbortOnBadTVSettings() throws Exception {
     Directory dir = newDirectory();

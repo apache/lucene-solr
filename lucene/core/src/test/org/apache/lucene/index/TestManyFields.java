@@ -100,7 +100,7 @@ public class TestManyFields extends LuceneTestCase {
         String longTerm = b.toString();
 
         Document doc = writer.newDocument();
-        doc.addStored("field", longTerm);
+        doc.addLargeText("field", longTerm);
         writer.addDocument(doc);
       }
     }

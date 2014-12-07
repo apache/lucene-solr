@@ -1,8 +1,9 @@
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery; // javadocs
-import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,8 +28,8 @@ import org.w3c.dom.Element;
 public abstract class SpanBuilderBase implements SpanQueryBuilder {
   
   @Override
-  public Query getQuery(Element e) throws ParserException {
-    return getSpanQuery(e);
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
+    return getSpanQuery(fieldTypes, e);
   }
 
 }

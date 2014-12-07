@@ -1,9 +1,10 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.spans.SpanNotQuery;
-import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.spans.SpanNotQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,15 +35,15 @@ public class SpanNotBuilder extends SpanBuilderBase {
   }
 
   @Override
-  public SpanQuery getSpanQuery(Element e) throws ParserException {
+  public SpanQuery getSpanQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     Element includeElem = DOMUtils.getChildByTagOrFail(e, "Include");
     includeElem = DOMUtils.getFirstChildOrFail(includeElem);
 
     Element excludeElem = DOMUtils.getChildByTagOrFail(e, "Exclude");
     excludeElem = DOMUtils.getFirstChildOrFail(excludeElem);
 
-    SpanQuery include = factory.getSpanQuery(includeElem);
-    SpanQuery exclude = factory.getSpanQuery(excludeElem);
+    SpanQuery include = factory.getSpanQuery(fieldTypes, includeElem);
+    SpanQuery exclude = factory.getSpanQuery(fieldTypes, excludeElem);
 
     SpanNotQuery snq = new SpanNotQuery(include, exclude);
 

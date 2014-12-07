@@ -27,7 +27,6 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -63,7 +62,7 @@ import com.spatial4j.core.shape.Shape;
  * <p>
  * <b>Implementation:</b>
  * <p>
- * This is a simple Strategy.  Search works with {@link NumericRangeQuery}s on
+ * This is a simple Strategy.  Search works with range queries on
  * an x and y pair of fields.  A Circle query does the same bbox query but adds a
  * ValueSource filter on
  * {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
@@ -243,7 +242,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   private Query rangeQuery(FieldTypes fieldTypes, String fieldName, Double min, Double max) {
-    return new ConstantScoreQuery(fieldTypes.newRangeFilter(
+    return new ConstantScoreQuery(fieldTypes.newDoubleRangeFilter(
         fieldName,
         min,
         true,

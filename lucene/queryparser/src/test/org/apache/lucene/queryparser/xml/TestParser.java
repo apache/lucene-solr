@@ -57,8 +57,6 @@ public class TestParser extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-    //initialize the parser
-    builder = new CorePlusExtensionsParser("contents", analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
         TestParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
@@ -80,7 +78,8 @@ public class TestParser extends LuceneTestCase {
     writer.close();
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
-
+    //initialize the parser
+    builder = new CorePlusExtensionsParser(reader.getFieldTypes(), "contents", analyzer);
   }
 
   @AfterClass
@@ -202,15 +201,11 @@ public class TestParser extends LuceneTestCase {
     assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);
   }
 
-  @Ignore
-  // nocommit
   public void testNumericRangeFilterQueryXML() throws ParserException, IOException {
     Query q = parse("NumericRangeFilterQuery.xml");
     dumpResults("NumericRangeFilter", q, 5);
   }
 
-  @Ignore
-  // nocommit
   public void testNumericRangeQueryQueryXML() throws ParserException, IOException {
     Query q = parse("NumericRangeQueryQuery.xml");
     dumpResults("NumericRangeQuery", q, 5);

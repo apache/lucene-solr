@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.flexible.standard.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.NumericType;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -26,7 +26,9 @@ import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
 
 /**
  * Builds {@link NumericRangeQuery}s out of {@link NumericRangeQueryNode}s.
@@ -44,7 +46,7 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
   }
   
   @Override
-  public NumericRangeQuery<? extends Number> build(QueryNode queryNode)
+  public Query build(QueryNode queryNode)
       throws QueryNodeException {
     NumericRangeQueryNode numericRangeNode = (NumericRangeQueryNode) queryNode;
     
@@ -55,38 +57,46 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
     Number upperNumber = upperNumericNode.getValue();
     
     NumericConfig numericConfig = numericRangeNode.getNumericConfig();
-    NumericType numberType = numericConfig.getType();
+    FieldTypes fieldTypes = numericConfig.getFieldTypes();
     String field = StringUtils.toString(numericRangeNode.getField());
     boolean minInclusive = numericRangeNode.isLowerInclusive();
     boolean maxInclusive = numericRangeNode.isUpperInclusive();
-    int precisionStep = numericConfig.getPrecisionStep();
-    
-    switch (numberType) {
-      
-      case LONG:
-        return NumericRangeQuery.newLongRange(field, precisionStep,
-            (Long) lowerNumber, (Long) upperNumber, minInclusive, maxInclusive);
-      
-      case INT:
-        return NumericRangeQuery.newIntRange(field, precisionStep,
-            (Integer) lowerNumber, (Integer) upperNumber, minInclusive,
-            maxInclusive);
-      
-      case FLOAT:
-        return NumericRangeQuery.newFloatRange(field, precisionStep,
-            (Float) lowerNumber, (Float) upperNumber, minInclusive,
-            maxInclusive);
-      
-      case DOUBLE:
-        return NumericRangeQuery.newDoubleRange(field, precisionStep,
-            (Double) lowerNumber, (Double) upperNumber, minInclusive,
-            maxInclusive);
-        
-        default :
-          throw new QueryNodeException(new MessageImpl(
-            QueryParserMessages.UNSUPPORTED_NUMERIC_DATA_TYPE, numberType));
-        
+
+    // TODO: we should here check that the incoming Number is correct type:
+    Filter filter;
+    switch (fieldTypes.getValueType(field)) {
+    case INT:
+      filter = fieldTypes.newIntRangeFilter(field,
+                                            lowerNumber == null ? null : Integer.valueOf(lowerNumber.intValue()),
+                                            minInclusive,
+                                            upperNumber == null ? null : Integer.valueOf(upperNumber.intValue()),
+                                            maxInclusive);
+      break;
+    case LONG:
+      filter = fieldTypes.newLongRangeFilter(field,
+                                             lowerNumber == null ? null : Long.valueOf(lowerNumber.longValue()),
+                                             minInclusive,
+                                             upperNumber == null ? null : Long.valueOf(upperNumber.longValue()),
+                                             maxInclusive);
+      break;
+    case FLOAT:
+      filter = fieldTypes.newFloatRangeFilter(field,
+                                              lowerNumber == null ? null : Float.valueOf(lowerNumber.floatValue()),
+                                              minInclusive,
+                                              upperNumber == null ? null : Float.valueOf(upperNumber.floatValue()),
+                                              maxInclusive);
+      break;
+    case DOUBLE:
+      filter = fieldTypes.newDoubleRangeFilter(field,
+                                               lowerNumber == null ? null : Double.valueOf(lowerNumber.doubleValue()),
+                                               minInclusive,
+                                               upperNumber == null ? null : Double.valueOf(upperNumber.doubleValue()),
+                                               maxInclusive);
+      break;
+    default:
+      throw new IllegalArgumentException("field \"" + field + "\": cannot create numeric query: unhandled valueType " + fieldTypes.getValueType(field));
     }
+
+    return new ConstantScoreQuery(filter);
   }
-  
 }

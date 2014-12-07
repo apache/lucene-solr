@@ -1,10 +1,11 @@
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queries.BoostingQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,15 +38,15 @@ public class BoostingQueryBuilder implements QueryBuilder {
   }
 
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     Element mainQueryElem = DOMUtils.getChildByTagOrFail(e, "Query");
     mainQueryElem = DOMUtils.getFirstChildOrFail(mainQueryElem);
-    Query mainQuery = factory.getQuery(mainQueryElem);
+    Query mainQuery = factory.getQuery(fieldTypes, mainQueryElem);
 
     Element boostQueryElem = DOMUtils.getChildByTagOrFail(e, "BoostQuery");
     float boost = DOMUtils.getAttribute(boostQueryElem, "boost", DEFAULT_BOOST);
     boostQueryElem = DOMUtils.getFirstChildOrFail(boostQueryElem);
-    Query boostQuery = factory.getQuery(boostQueryElem);
+    Query boostQuery = factory.getQuery(fieldTypes, boostQueryElem);
 
     BoostingQuery bq = new BoostingQuery(mainQuery, boostQuery, boost);
 

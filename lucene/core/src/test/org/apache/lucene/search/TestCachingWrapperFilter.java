@@ -249,17 +249,20 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testIsCacheAble() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.addDocument(writer.newDocument());
+    Document doc = writer.newDocument();
+    doc.addInt("test", 17);
+    writer.addDocument(doc);
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
+    FieldTypes fieldTypes = reader.getFieldTypes();
 
     // not cacheable:
     assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
     // returns default empty docidset, always cacheable:
-    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
+    assertDocIdSetCacheable(reader, fieldTypes.newIntRangeFilter("test", Integer.valueOf(10000), true, Integer.valueOf(-10000), true), true);
     // is cacheable:
-    assertDocIdSetCacheable(reader, DocValuesRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), false);
+    assertDocIdSetCacheable(reader, fieldTypes.newDocValuesRangeFilter("test", Integer.valueOf(10), true, Integer.valueOf(20), true), false);
     // a fixedbitset filter is always cacheable
     assertDocIdSetCacheable(reader, new Filter() {
       @Override

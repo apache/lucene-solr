@@ -36,7 +36,6 @@ import org.apache.lucene.index.Term;
     <li> {@link FuzzyQuery}
     <li> {@link RegexpQuery}
     <li> {@link TermRangeQuery}
-    <li> {@link NumericRangeQuery}
     <li> {@link ConstantScoreQuery}
     <li> {@link DisjunctionMaxQuery}
     <li> {@link MatchAllDocsQuery}

@@ -1,9 +1,10 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,7 +29,7 @@ import org.w3c.dom.Element;
 public class MatchAllDocsQueryBuilder implements QueryBuilder {
   
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     return new MatchAllDocsQuery();
   }
 }

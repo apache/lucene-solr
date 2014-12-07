@@ -47,6 +47,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     FieldTypes fieldTypes = w.getFieldTypes();
+    // nocommit must also disable "number" and "sorted", but trunk is buggy here (indexes doc values)
     fieldTypes.disableSorting("bytes");
     final List<Long> numbers = new ArrayList<>();
     final List<BytesRef> binary = new ArrayList<>();
@@ -82,9 +83,6 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
           @Override
           public void run() {
             try {
-              //NumericDocValues ndv = ar.getNumericDocValues("number");
-              NumericDocValues ndv = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_LONG_PARSER, false);
-              //BinaryDocValues bdv = ar.getBinaryDocValues("bytes");
               BinaryDocValues bdv = FieldCache.DEFAULT.getTerms(ar, "bytes", false);
               SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
               startingGun.await();
@@ -93,16 +91,16 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
                 int docID = threadRandom.nextInt(numDocs);
                 switch(threadRandom.nextInt(4)) {
                 case 0:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_INT_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_INT_PARSER, false).get(docID));
                   break;
                 case 1:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_LONG_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_LONG_PARSER, false).get(docID));
                   break;
                 case 2:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_FLOAT_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_FLOAT_PARSER, false).get(docID));
                   break;
                 case 3:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOCUMENT_DOUBLE_PARSER, false).get(docID));
                   break;
                 }
                 BytesRef term = bdv.get(docID);

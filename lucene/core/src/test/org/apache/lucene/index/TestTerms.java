@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestTerms extends LuceneTestCase {
@@ -100,8 +101,8 @@ public class TestTerms extends LuceneTestCase {
     
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, Document.bytesToInt(terms.getMin()));
-    assertEquals(maxValue, Document.bytesToInt(terms.getMax()));
+    assertEquals(minValue, NumericUtils.bytesToInt(terms.getMin()));
+    assertEquals(maxValue, NumericUtils.bytesToInt(terms.getMax()));
 
     r.close();
     w.close();
@@ -126,8 +127,8 @@ public class TestTerms extends LuceneTestCase {
     IndexReader r = w.getReader();
 
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, Document.bytesToLong(terms.getMin()));
-    assertEquals(maxValue, Document.bytesToLong(terms.getMax()));
+    assertEquals(minValue, NumericUtils.bytesToLong(terms.getMin()));
+    assertEquals(maxValue, NumericUtils.bytesToLong(terms.getMax()));
 
     r.close();
     w.close();
@@ -151,8 +152,8 @@ public class TestTerms extends LuceneTestCase {
     
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, Document.bytesToFloat(terms.getMin()), 0.0f);
-    assertEquals(maxValue, Document.bytesToFloat(terms.getMax()), 0.0f);
+    assertEquals(minValue, NumericUtils.bytesToFloat(terms.getMin()), 0.0f);
+    assertEquals(maxValue, NumericUtils.bytesToFloat(terms.getMax()), 0.0f);
 
     r.close();
     w.close();
@@ -178,8 +179,8 @@ public class TestTerms extends LuceneTestCase {
 
     Terms terms = MultiFields.getTerms(r, "field");
 
-    assertEquals(minValue, Document.bytesToDouble(terms.getMin()), 0.0);
-    assertEquals(maxValue, Document.bytesToDouble(terms.getMax()), 0.0);
+    assertEquals(minValue, NumericUtils.bytesToDouble(terms.getMin()), 0.0);
+    assertEquals(maxValue, NumericUtils.bytesToDouble(terms.getMax()), 0.0);
 
     r.close();
     w.close();

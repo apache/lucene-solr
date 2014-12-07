@@ -80,7 +80,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
           getServletContext().getResourceAsStream("/WEB-INF/" + xslFile));
 
       //initialize an XML Query Parser for use by all threads
-      xmlParser = new CorePlusExtensionsParser(defaultStandardQueryParserField, analyzer);
+      xmlParser = new CorePlusExtensionsParser(searcher.getFieldTypes(), defaultStandardQueryParserField, analyzer);
     } catch (Exception e) {
       throw new ServletException("Error loading query template", e);
     }
@@ -104,7 +104,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
       org.w3c.dom.Document xmlQuery = queryTemplateManager.getQueryAsDOM(completedFormFields);
 
       //Parse the XML to produce a Lucene query
-      Query query = xmlParser.getQuery(xmlQuery.getDocumentElement());
+      Query query = xmlParser.getQuery(searcher.getFieldTypes(), xmlQuery.getDocumentElement());
 
       //Run the query
       TopDocs topDocs = searcher.search(query, 10);

@@ -1,13 +1,14 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 import org.w3c.dom.Element;
 
 /*
@@ -58,7 +59,7 @@ public class UserInputQueryBuilder implements QueryBuilder {
     */
 
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     String text = DOMUtils.getText(e);
     try {
       Query q = null;

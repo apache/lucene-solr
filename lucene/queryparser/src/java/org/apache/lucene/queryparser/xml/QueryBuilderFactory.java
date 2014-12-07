@@ -3,10 +3,11 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.util.HashMap;
+
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
-
-import java.util.HashMap;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,12 +33,12 @@ public class QueryBuilderFactory implements QueryBuilder {
   HashMap<String, QueryBuilder> builders = new HashMap<>();
 
   @Override
-  public Query getQuery(Element n) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element n) throws ParserException {
     QueryBuilder builder = builders.get(n.getNodeName());
     if (builder == null) {
       throw new ParserException("No QueryObjectBuilder defined for node " + n.getNodeName());
     }
-    return builder.getQuery(n);
+    return builder.getQuery(fieldTypes, n);
   }
 
   public void addBuilder(String nodeName, QueryBuilder builder) {

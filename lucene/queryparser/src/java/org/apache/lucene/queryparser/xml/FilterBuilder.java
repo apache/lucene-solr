@@ -3,6 +3,7 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Filter;
 import org.w3c.dom.Element;
 /*
@@ -27,5 +28,5 @@ import org.w3c.dom.Element;
  */
 public interface FilterBuilder {
 
-   public Filter getFilter(Element e) throws ParserException;
+   public Filter getFilter(FieldTypes fieldTypes, Element e) throws ParserException;
 }

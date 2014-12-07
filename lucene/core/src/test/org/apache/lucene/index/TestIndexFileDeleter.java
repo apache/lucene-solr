@@ -468,6 +468,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
           doc.addLargeText("field", "some text");
           w.addDocument(doc);
         }
+      } catch (AlreadyClosedException ace) {
+        // ok
       } catch (IOException ioe) {
         if (ioe.getMessage().contains("background merge hit exception")) {
           Throwable cause = ioe.getCause();

@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
  * same field, {@link DocValuesRangeFilter} may have significantly better performance. 
  * @since 2.9
  */
-public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery> {
+public class LeftZeroPadTermRangeFilter extends MultiTermQueryWrapperFilter<LeftZeroPadTermRangeQuery> {
   private final String desc;
 
   /**
@@ -45,43 +45,12 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery>
    *  lowerTerm is null and includeLower is true (similar for upperTerm
    *  and includeUpper)
    */
-  public TermRangeFilter(String fieldName, BytesRef lowerTerm, BytesRef upperTerm,
-                         boolean includeLower, boolean includeUpper) {
-    super(new TermRangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper));
-    this.desc = null;
-  }
-
-  public TermRangeFilter(String fieldName, BytesRef lowerTerm, BytesRef upperTerm,
+  public LeftZeroPadTermRangeFilter(String fieldName, BytesRef lowerTerm, BytesRef upperTerm,
                          boolean includeLower, boolean includeUpper, String desc) {
-    super(new TermRangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper));
+    super(new LeftZeroPadTermRangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper));
     this.desc = desc;
   }
 
-  /**
-   * Factory that creates a new TermRangeFilter using Strings for term text.
-   */
-  public static TermRangeFilter newStringRange(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper) {
-    BytesRef lower = lowerTerm == null ? null : new BytesRef(lowerTerm);
-    BytesRef upper = upperTerm == null ? null : new BytesRef(upperTerm);
-    return new TermRangeFilter(field, lower, upper, includeLower, includeUpper);
-  }
-  
-  /**
-   * Constructs a filter for field <code>fieldName</code> matching
-   * less than or equal to <code>upperTerm</code>.
-   */
-  public static TermRangeFilter Less(String fieldName, BytesRef upperTerm) {
-    return new TermRangeFilter(fieldName, null, upperTerm, false, true);
-  }
-
-  /**
-   * Constructs a filter for field <code>fieldName</code> matching
-   * greater than or equal to <code>lowerTerm</code>.
-   */
-  public static TermRangeFilter More(String fieldName, BytesRef lowerTerm) {
-    return new TermRangeFilter(fieldName, lowerTerm, null, true, false);
-  }
-  
   /** Returns the lower value of this range filter */
   public BytesRef getLowerTerm() { return query.getLowerTerm(); }
 

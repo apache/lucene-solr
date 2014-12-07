@@ -17,7 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermRangeQuery;
 

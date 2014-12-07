@@ -37,6 +37,8 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.HalfFloat;
+import org.apache.lucene.util.NumericUtils;
 
 // nocommit clearly spell out which field defaults to what settings, e.g. that atom is not sorted by default
 
@@ -150,19 +152,19 @@ public class Document implements Iterable<IndexableField> {
 
       switch (fieldType.valueType) {
       case INT:
-        return getReusedBinaryTokenStream(intToBytes(((Number) value).intValue()), reuse);
+        return getReusedBinaryTokenStream(NumericUtils.intToBytes(((Number) value).intValue()), reuse);
       case HALF_FLOAT:
-        return getReusedBinaryTokenStream(halfFloatToSortableBytes(((Number) value).floatValue()), reuse);
+        return getReusedBinaryTokenStream(NumericUtils.halfFloatToBytes(((Number) value).floatValue()), reuse);
       case FLOAT:
-        return getReusedBinaryTokenStream(floatToSortableBytes(((Number) value).floatValue()), reuse);
+        return getReusedBinaryTokenStream(NumericUtils.floatToBytes(((Number) value).floatValue()), reuse);
       case LONG:
-        return getReusedBinaryTokenStream(longToBytes(((Number) value).longValue()), reuse);
+        return getReusedBinaryTokenStream(NumericUtils.longToBytes(((Number) value).longValue()), reuse);
       case DOUBLE:
-        return getReusedBinaryTokenStream(doubleToSortableBytes(((Number) value).doubleValue()), reuse);
+        return getReusedBinaryTokenStream(NumericUtils.doubleToBytes(((Number) value).doubleValue()), reuse);
       case BIG_INT:
-        return getReusedBinaryTokenStream(new BytesRef(((BigInteger) value).toByteArray()), reuse);
+        return getReusedBinaryTokenStream(NumericUtils.bigIntToBytes(((BigInteger) value)), reuse);
       case DATE:
-        return getReusedBinaryTokenStream(longToBytes(((Date) value).getTime()), reuse);
+        return getReusedBinaryTokenStream(NumericUtils.longToBytes(((Date) value).getTime()), reuse);
       case ATOM:
         if (fieldType.minTokenLength != null) {
           if (value instanceof String) {
@@ -285,30 +287,17 @@ public class Document implements Iterable<IndexableField> {
       case LONG:
         return (Number) value;
       case HALF_FLOAT:
-        int shortBits = HalfFloat.floatToIntBits((Float) value);
+        short shortBits = HalfFloat.floatToShortBits((Float) value);
         // nocommit different from other numerics:
-        shortBits = sortableHalfFloatBits(shortBits);
-        assert shortBits >= 0 && shortBits <= Short.MAX_VALUE;
-        return Integer.valueOf(shortBits);
+        shortBits = NumericUtils.sortableHalfFloatBits(shortBits);
+        // nocommit
+        //assert shortBits >= Short.MIN_VALUE && shortBits <= Short.MAX_VALUE: "shortBits=" + shortBits;
+        return Short.valueOf(shortBits);
         //return Integer.valueOf(Float.floatToRawIntBits((Float) value));
       case FLOAT:
-        // nocommit i shouldn't do sortableFloatBits?  but why does ot TestSortedNumericSortField.testFloat fail?
-        int intBits = Float.floatToIntBits((Float) value);
-        if (fieldType.multiValued) {
-          // nocommit this is weird?
-          intBits = sortableFloatBits(intBits);
-        }
-        return Integer.valueOf(intBits);
-        //return Integer.valueOf(Float.floatToRawIntBits((Float) value));
+        return Integer.valueOf(NumericUtils.floatToInt((Float) value));
       case DOUBLE:
-        // nocommit i shouldn't do sortableDoubleBits?
-        long longBits = Double.doubleToLongBits((Double) value);
-        if (fieldType.multiValued) {
-          // nocommit this is weird?
-          longBits = sortableDoubleBits(longBits);
-        }
-        return Long.valueOf(longBits);
-        //return Long.valueOf(Double.doubleToRawLongBits((Double) value));
+        return Long.valueOf(NumericUtils.doubleToLong((Double) value));
       case DATE:
         return Long.valueOf(((Date) value).getTime());
       case BOOLEAN:
@@ -371,7 +360,7 @@ public class Document implements Iterable<IndexableField> {
         return new BytesRef(bytes);
       } else if (fieldType.valueType == FieldTypes.ValueType.INET_ADDRESS) {
         return new BytesRef(((InetAddress) value).getAddress());
-      } else if (fieldType.valueType == FieldTypes.ValueType.BIG_INT) {
+      } else if (fieldType.valueType == FieldTypes.ValueType.BIG_INT) { 
         return new BytesRef(((BigInteger) value).toByteArray());
       } else if (value instanceof BytesRef) {
         return (BytesRef) value;
@@ -601,6 +590,26 @@ public class Document implements Iterable<IndexableField> {
 
   // nocommit throw exc if this field was already indexed/dvd?
   /** Default: store this value. */
+  // nocommit testme, or remove?
+  public void addStoredLong(String fieldName, long value) {
+    if (changeSchema) {
+      fieldTypes.recordStoredValueType(fieldName, FieldTypes.ValueType.LONG);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  // nocommit throw exc if this field was already indexed/dvd?
+  /** Default: store this value. */
+  // nocommit testme, or remove?
+  public void addStoredFloat(String fieldName, float value) {
+    if (changeSchema) {
+      fieldTypes.recordStoredValueType(fieldName, FieldTypes.ValueType.FLOAT);
+    }
+    fields.add(new FieldValue(fieldName, value));
+  }
+
+  // nocommit throw exc if this field was already indexed/dvd?
+  /** Default: store this value. */
   public void addStoredDouble(String fieldName, double value) {
     if (changeSchema) {
       fieldTypes.recordStoredValueType(fieldName, FieldTypes.ValueType.DOUBLE);
@@ -728,6 +737,10 @@ public class Document implements Iterable<IndexableField> {
 
   /** Default: support for range filtering/querying and sorting (using numeric doc values). */
   public void addBigInteger(String fieldName, BigInteger value) {
+    if (value.compareTo(BigInteger.ZERO) < 0) {
+      // nocommit can we fix this...
+      throw new IllegalArgumentException("field=\"" + fieldName + "\": value must be non-negative; got " + value);
+    }
     if (changeSchema) {
       fieldTypes.recordValueType(fieldName, FieldTypes.ValueType.BIG_INT);
     }
@@ -841,161 +854,6 @@ public class Document implements Iterable<IndexableField> {
         return;
       }
     }
-  }
-
-  // nocommit public just for TestBlockJoin ...
-  public static BytesRef intToBytes(int v) {
-    int sortableBits = v ^ 0x80000000;
-    BytesRef token = new BytesRef(4);
-    token.length = 4;
-    int index = 3;
-    while (index >= 0) {
-      token.bytes[index] = (byte) (sortableBits & 0xff);
-      index--;
-      sortableBits >>>= 8;
-    }
-    return token;
-  }
-
-  public static BytesRef shortToBytes(short v) {
-    int sortableBits = v ^ 0x8000;
-    BytesRef token = new BytesRef(2);
-    token.length = 2;
-    int index = 1;
-    while (index >= 0) {
-      token.bytes[index] = (byte) (sortableBits & 0xff);
-      index--;
-      sortableBits >>>= 8;
-    }
-    return token;
-  }
-
-  public static BytesRef floatToSortableBytes(float value) {
-    return intToBytes(sortableFloatBits(Float.floatToIntBits(value)));
-  }
-
-  public static BytesRef halfFloatToSortableBytes(float value) {
-    return shortToBytes((short) sortableHalfFloatBits(HalfFloat.floatToIntBits(value)));
-  }
-
-  public static int floatToSortableInt(float value) {
-    return sortableFloatBits(Float.floatToIntBits(value));
-  }
-
-  /** Converts numeric DV field back to double. */
-  public static double sortableLongToDouble(long v) {
-    return Double.longBitsToDouble(sortableDoubleBits(v));
-  }
-
-  /** Converts numeric DV field back to double. */
-  public static double longToDouble(long v) {
-    return Double.longBitsToDouble(v);
-  }
-
-  /** Converts numeric DV field back to float. */
-  public static float sortableIntToFloat(int v) {
-    return Float.intBitsToFloat(sortableFloatBits(v));
-  }
-
-  /** Converts numeric DV field back to float. */
-  public static float intToFloat(int v) {
-    return Float.intBitsToFloat(v);
-  }
-
-  /** Converts numeric DV field back to float. */
-  public static float sortableShortToFloat(short v) {
-    return HalfFloat.intBitsToFloat(sortableHalfFloatBits(v));
-  }
-
-  // nocommit move elsewhere?
-  public static int bytesToInt(BytesRef bytes) {
-    if (bytes.length != 4) {
-      throw new IllegalArgumentException("incoming bytes should be length=4; got length=" + bytes.length);
-    }
-    int sortableBits = 0;
-    for(int i=0;i<4;i++) {
-      sortableBits = (sortableBits << 8) | bytes.bytes[bytes.offset + i] & 0xff;
-    }
-
-    return sortableBits ^ 0x80000000;
-  }
-
-  // nocommit move elsewhere?
-  public static int bytesToShort(BytesRef bytes) {
-    if (bytes.length != 2) {
-      throw new IllegalArgumentException("incoming bytes should be length=2; got length=" + bytes.length);
-    }
-    int sortableBits = 0;
-    for(int i=0;i<2;i++) {
-      sortableBits = (sortableBits << 8) | bytes.bytes[bytes.offset + i] & 0xff;
-    }
-
-    return sortableBits ^ 0x8000;
-  }
-
-  public static BytesRef longToBytes(long v) {
-    long sortableBits = v ^ 0x8000000000000000L;
-    BytesRef token = new BytesRef(8);
-    token.length = 8;
-    int index = 7;
-    while (index >= 0) {
-      token.bytes[index] = (byte) (sortableBits & 0xff);
-      index--;
-      sortableBits >>>= 8;
-    }
-    return token;
-  }
-
-  public static BytesRef doubleToSortableBytes(double value) {
-    return longToBytes(sortableDoubleBits(Double.doubleToLongBits(value)));
-  }
-
-  public static long doubleToSortableLong(double value) {
-    return sortableDoubleBits(Double.doubleToLongBits(value));
-  }
-
-  // nocommit move elsewhere?
-  public static long bytesToLong(BytesRef bytes) {
-    if (bytes.length != 8) {
-      throw new IllegalArgumentException("incoming bytes should be length=8; got length=" + bytes.length);
-    }
-    long sortableBits = 0;
-    for(int i=0;i<8;i++) {
-      sortableBits = (sortableBits << 8) | bytes.bytes[bytes.offset + i] & 0xff;
-    }
-
-    return sortableBits ^ 0x8000000000000000L;
-  }
-
-  // nocommit move elsewhere?
-  public static float bytesToFloat(BytesRef bytes) {
-    return Float.intBitsToFloat(sortableFloatBits(bytesToInt(bytes)));
-  }
-
-  // nocommit move elsewhere?
-  public static float bytesToHalfFloat(BytesRef bytes) {
-    return HalfFloat.intBitsToFloat(sortableHalfFloatBits(bytesToShort(bytes)));
-  }
-
-  // nocommit move elsewhere?
-  public static double bytesToDouble(BytesRef bytes) {
-    return Double.longBitsToDouble(sortableDoubleBits(bytesToLong(bytes)));
-  }
-
-  /** Converts IEEE 754 representation of a double to sortable order (or back to the original) */
-  public static long sortableDoubleBits(long bits) {
-    return bits ^ (bits >> 63) & 0x7fffffffffffffffL;
-  }
-  
-  /** Converts IEEE 754 representation of a float to sortable order (or back to the original) */
-  public static int sortableFloatBits(int bits) {
-    return bits ^ (bits >> 31) & 0x7fffffff;
-  }
-
-  /** Converts IEEE 754 representation of a half float to sortable order (or back to the original) */
-  // nocommit short?
-  public static int sortableHalfFloatBits(int bits) {
-    return bits ^ (bits >> 15) & 0x7fff;
   }
 
   public Boolean getBoolean(String fieldName) {

@@ -114,24 +114,6 @@ public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
             
             }
             
-            switch (numericConfig.getType()) {
-              case LONG:
-                if (upperNumber != null) upperNumber = upperNumber.longValue();
-                if (lowerNumber != null) lowerNumber = lowerNumber.longValue();
-                break;
-              case INT:
-                if (upperNumber != null) upperNumber = upperNumber.intValue();
-                if (lowerNumber != null) lowerNumber = lowerNumber.intValue();
-                break;
-              case DOUBLE:
-                if (upperNumber != null) upperNumber = upperNumber.doubleValue();
-                if (lowerNumber != null) lowerNumber = lowerNumber.doubleValue();
-                break;
-              case FLOAT:
-                if (upperNumber != null) upperNumber = upperNumber.floatValue();
-                if (lowerNumber != null) lowerNumber = lowerNumber.floatValue();
-            }
-            
             NumericQueryNode lowerNode = new NumericQueryNode(
                 termRangeNode.getField(), lowerNumber, numberFormat);
             NumericQueryNode upperNode = new NumericQueryNode(

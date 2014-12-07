@@ -3,6 +3,7 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -33,7 +34,7 @@ import org.w3c.dom.Element;
 public class DuplicateFilterBuilder implements FilterBuilder {
 
   @Override
-  public Filter getFilter(Element e) throws ParserException {
+  public Filter getFilter(FieldTypes fieldTypes, Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     DuplicateFilter df = new DuplicateFilter(fieldName);
 

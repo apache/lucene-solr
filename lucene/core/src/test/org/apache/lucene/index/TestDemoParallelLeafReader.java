@@ -1155,7 +1155,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       checkAllNumberDVs(r);
       IndexSearcher s = newSearcher(r);
       testNumericDVSort(s);
-      testNumericRangeQuery(s);
+      testRanges(s);
     } finally {
       reindexer.mgr.release(r);
     }
@@ -1177,7 +1177,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       checkAllNumberDVs(r);
       IndexSearcher s = newSearcher(r);
       testNumericDVSort(s);
-      testNumericRangeQuery(s);
+      testRanges(s);
     } finally {
       reindexer.mgr.release(r);
     }
@@ -1196,7 +1196,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       checkAllNumberDVs(r);
       IndexSearcher s = newSearcher(r);
       testNumericDVSort(s);
-      testNumericRangeQuery(s);
+      testRanges(s);
     } finally {
       reindexer.mgr.release(r);
     }
@@ -1248,7 +1248,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           checkAllNumberDVs(r);
           IndexSearcher s = newSearcher(r);
           testNumericDVSort(s);
-          testNumericRangeQuery(s);
+          testRanges(s);
         } finally {
           reindexer.mgr.release(r);
         }
@@ -1327,7 +1327,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
   }
 
-  private static void testNumericRangeQuery(IndexSearcher s) throws IOException {
+  private static void testRanges(IndexSearcher s) throws IOException {
     NumericDocValues numbers = MultiDocValues.getNumericValues(s.getIndexReader(), "number");
     FieldTypes fieldTypes = s.getFieldTypes();
     for(int i=0;i<100;i++) {
@@ -1340,7 +1340,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         max = x;
       }
 
-      TopDocs hits = s.search(new ConstantScoreQuery(fieldTypes.newRangeFilter("number", min, true, max, true)), 100);
+      TopDocs hits = s.search(new ConstantScoreQuery(fieldTypes.newLongRangeFilter("number", min, true, max, true)), 100);
       for(ScoreDoc scoreDoc : hits.scoreDocs) {
         long value = Long.parseLong(s.doc(scoreDoc.doc).getString("text").split(" ")[1]);
         assertTrue(value >= min);

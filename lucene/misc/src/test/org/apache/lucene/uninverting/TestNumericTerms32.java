@@ -103,7 +103,7 @@ public class TestNumericTerms32 extends LuceneTestCase {
       if (lower>upper) {
         int a=lower; lower=upper; upper=a;
       }
-      Query tq = new ConstantScoreQuery(fieldTypes.newRangeFilter(field, lower, true, upper, true));
+      Query tq = new ConstantScoreQuery(fieldTypes.newIntRangeFilter(field, lower, true, upper, true));
       TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.Type.INT, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;

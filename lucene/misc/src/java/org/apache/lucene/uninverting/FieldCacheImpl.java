@@ -883,7 +883,7 @@ class FieldCacheImpl implements FieldCache {
   // should share it...
   public SortedSetDocValues getDocTermOrds(LeafReader reader, String field, BytesRef prefix) throws IOException {
     // not a general purpose filtering mechanism...
-    assert prefix == null || prefix == INT32_TERM_PREFIX || prefix == INT64_TERM_PREFIX;
+    assert prefix == null;
     
     SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv != null) {

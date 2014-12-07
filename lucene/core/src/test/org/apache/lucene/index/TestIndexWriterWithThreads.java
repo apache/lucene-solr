@@ -75,11 +75,10 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       final long stopTime = System.currentTimeMillis() + 200;
 
       do {
-        Document doc = writer.newDocument();
-        doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
-        doc.addInt("dv", 5);
         try {
-          // nocommit wtf?  id was never indexed in the doc?
+          Document doc = writer.newDocument();
+          doc.addLargeText("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj");
+          doc.addInt("dv", 5);
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
           addCount++;
         } catch (IOException ioe) {

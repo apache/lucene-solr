@@ -1,19 +1,20 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.FilterBuilder;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Element;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.FilterBuilder;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.BytesRef;
+import org.w3c.dom.Element;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,7 +50,7 @@ public class TermsFilterBuilder implements FilterBuilder {
     * @see org.apache.lucene.xmlparser.FilterBuilder#process(org.w3c.dom.Element)
     */
   @Override
-  public Filter getFilter(Element e) throws ParserException {
+  public Filter getFilter(FieldTypes fieldTypes, Element e) throws ParserException {
     List<BytesRef> terms = new ArrayList<>();
     String text = DOMUtils.getNonBlankTextOrFail(e);
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");

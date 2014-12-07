@@ -50,10 +50,12 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocValuesRangeFilter;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeftZeroPadTermRangeFilter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
@@ -64,6 +66,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
@@ -74,11 +77,10 @@ import org.apache.lucene.store.RAMInputStream;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 // TODO
-//   - explore what it'd be like to add other higher level types?
-//     - BigInt, BigDecimal, IPV6
 //   - what about sparse fields... anything for us to do...
 //   - payloads just stay write once in their own way?
 //   - how to handle old indices w/ no field types yet?
@@ -93,8 +95,6 @@ import org.apache.lucene.util.Version;
 //       - numeric range queries "just work"
 //     - creating queries, catching invalid field names, no positions indexed, etc.
 //     - prox queries can verify field was indexed w/ positions
-//   - move analyzer out of IW/IWC into Field/FieldType/s only?
-//   - why does STS fill offset...
 
 // tie into query parser
 //   default operators?
@@ -104,48 +104,45 @@ import org.apache.lucene.util.Version;
 // tie into faceting
 // tie into index sorting
 
+// nocommit should we just default to StandardAnalyzer
+
+// nocommit it's ridiculous to have the "sort missing as 0" option/default for numerics
+
+// nocommit how to allow extending this?
+//   - geo
+//   - expressions
+//   - facets (FacetsConfig)
+//   - doc blocks (nested) / joins
+
+// fold in compressing stored fields format params...how
+
+// nocommit icu collation field is difficult now
+
 // nocommit sugar API to retrieve values from DVs or stored fields or whatever?
 
 // nocommit how will future back-compat work?  segment must store field types as of when it was written?
 
-// nocommit how to make this more extensible?  e.g. so I can say "this field will facet, hierarchical, etc."
-
-
-// nocommit expose DocValuesRangeFilter?
-
 // nocommit PH should take this and validate highlighting was enabled?
-
-// nocommit a segment should store the field type as of when it was written?  on upgrade/reindex we can use that?
-
-// nocommit addStored should take numbers too?
-
-// nocommit should we detect if we are used to change schema after the IW holding us is closed?
 
 // nocommit run all monster tests
 
-// nocommit cutover AnalyzingInfixSuggester to binary atom for contexts
-
-// nocommit is it bad that you can no longer add e.g. a stored value separately from a custom token stream?
-
-// nocommit byte, short?
-
 // nocommit iterator over all fields / types?
-
-// nocommit proxy sort field
 
 // nocommit allow adding array of atom values?  fieldnamesfield would use it?
 
 // nocommit optimize field exists filter to MatchAllBits when all docs in the seg have the field; same opto as range query when min < terms.min & max > terms.max
 
-// nocomit should exists filter use docsWithField?
+// nocommit should exists filter use docsWithField?
+
+// nocommit xlog is easier w/ schema?
 
 // nocommit use better pf when field is unique
 
 // nocommit filter caching?  parent docs filter?
 
-// nocommit do we allow mixing of binary and non-binary atom?
+// nocommit we could track here which fields are actually searched/filtered on ... and e.g. make use of this during warmers ...
 
-// nocommit index field names the doc has?
+// nocommit do we allow mixing of binary and non-binary atom?
 
 // nocommit fix simple qp to optionally take this?
 
@@ -158,27 +155,24 @@ import org.apache.lucene.util.Version;
 
 // nocommit move to oal.index?
 
-// nocommit per-field norms format?  then we can commit these "tradeoffs"
+// NO
+//   - dynamic fields
+//   - can we somehow always store a "source"?  can be handled above
+//   - default value (value used if the field is null/missing): this seems silly wasteful, and layer above can handle it
+//   - sort proxy field ("when I sort by X you should actually sort by Y"): can be handled above
 
-// nocommit default value?
+// nocommit highlight proxy field (LUCENE-6061)
 
-// nocommit can we have test infra that randomly reopens writer?
 
-// nocommit getTermFilter?
-
-// nocommit facets?
+// LATER
+//   - can we have test infra that randomly reopens writer?
+//   - newTermFilter?
 
 // nocommit live values?
-
-// nocommit expr fields?
 
 // nocommit default qp operator
 
 // nocommit copy field?
-
-// nocommit sort proxy field?
-
-// nocommit highlight proxy field (LUCENE-6061)
 
 // nocommit controlling compression of stored fields, norms
 
@@ -189,8 +183,6 @@ import org.apache.lucene.util.Version;
 // nocommit maybe have a settable global default for "stored"?
 
 // nocommit can/should we validate field names here?
-
-// nocommit can we somehow always store a "source"?
 
 // nocommit make ValueType public?  add setter so you can set that too?
 
@@ -206,19 +198,19 @@ import org.apache.lucene.util.Version;
 
 // nocommit can we require use of analyzer factories?
 
-// nocommit what schema options does solr/ES offer
-
 // nocommit accent removal and lowercasing for wildcards should just work
 
 // separate analyzer for phrase queries in suggesters
 
-// nocommit Index class?  enforcing unique id, xlog?
+// nocommit Index class? xlog?
 
 // nocommit how to randomize IWC?  RIW?
 
 // nocommit fix all change methods to call validate / rollback
 
 // nocommit can we move multi-field-ness out of IW?  so IW only gets a single instance of each field
+
+// nocommit should mulit-valued fields be added as straight array?
 
 // nocommit nested/parent/child docs?
 
@@ -229,8 +221,6 @@ import org.apache.lucene.util.Version;
 // nocomit hierarchical fields?
 
 // nocommit required?  not null?
-
-// nocommit BigInt?
 
 // nocommit BigDecimal?
 
@@ -244,7 +234,7 @@ public class FieldTypes {
 
   public static final int DEFAULT_OFFSET_GAP = 1;
 
-  enum ValueType {
+  public enum ValueType {
     NONE,
     TEXT,
     SHORT_TEXT,
@@ -259,7 +249,6 @@ public class FieldTypes {
     BOOLEAN,
     DATE,
     INET_ADDRESS,
-    // nocommit primary_key?
   }
 
   // nocommit should we have a "resolution" for Date field?
@@ -287,6 +276,8 @@ public class FieldTypes {
   /** Used only in memory to record when something changed. */
   private long changeCount;
 
+  private volatile boolean closed;
+
   /** Just like current oal.document.FieldType, except for each setting it can also record "not-yet-set". */
   class FieldType implements IndexableFieldType, Cloneable {
     private final String name;
@@ -305,6 +296,7 @@ public class FieldTypes {
 
     /** Copy constructor. */
     FieldType(FieldType other) {
+      // nocommit how to make sure nothing is missing here?  can/should we just use default clone impl?
       this.name = other.name;
       this.createdVersion = other.createdVersion;
       this.valueType = other.valueType;
@@ -414,6 +406,7 @@ public class FieldTypes {
 
     Locale sortLocale;
     Collator sortCollator;
+    SortKey sortKey;
 
     boolean validate() {
       switch (valueType) {
@@ -437,11 +430,11 @@ public class FieldTypes {
         }
         if (valueType == ValueType.BIG_INT) {
           if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET)) {
-            illegalState(name, "type " + valueType + " must use SORTED or SORTED_SET docValuesType (got: " + docValuesType + ")");
+            illegalState(name, "type " + valueType + " must use SORTED or SORTED_SET docValuesType; got: " + docValuesType);
           }
         } else {
           if (docValuesType != DocValuesType.NONE && (docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC)) {
-            illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType (got: " + docValuesType + ")");
+            illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType; got: " + docValuesType);
           }
         }
         if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
@@ -488,7 +481,7 @@ public class FieldTypes {
           illegalState(name, "type " + valueType + " cannot have a queryAnalyzer");
         }
         if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.BINARY && docValuesType != DocValuesType.SORTED && docValuesType != DocValuesType.SORTED_SET) {
-          illegalState(name, "type " + valueType + " must use BINARY, SORTED or SORTED_SET docValuesType (got: " + docValuesType + ")");
+          illegalState(name, "type " + valueType + " must use BINARY, SORTED or SORTED_SET docValuesType; got: " + docValuesType);
         }
         if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS) > 0) {
           // nocommit too anal?
@@ -529,7 +522,7 @@ public class FieldTypes {
           illegalState(name, "type " + valueType + " cannot index norms");
         }
         if (docValuesType != DocValuesType.NONE && docValuesType != DocValuesType.NUMERIC && docValuesType != DocValuesType.SORTED_NUMERIC) {
-          illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType (got: " + docValuesType + ")");
+          illegalState(name, "type " + valueType + " must use NUMERIC or SORTED_NUMERIC docValuesType; got: " + docValuesType);
         }
         if (minTokenLength != null) {
           illegalState(name, "type " + valueType + " cannot set min/max token length");
@@ -543,6 +536,10 @@ public class FieldTypes {
       }
 
       // nocommit more checks
+
+      if (sortKey != null && valueType != ValueType.ATOM) {
+        illegalState(name, "sortKey can only be set for ATOM fields; got value type=" + valueType);
+      }
 
       if (multiValued == Boolean.TRUE &&
           (docValuesType == DocValuesType.NUMERIC ||
@@ -597,10 +594,10 @@ public class FieldTypes {
           }
         } else {
           if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && indexAnalyzer != null) {
-            illegalState(name, "can only setIndexAnalyzer for short text and large text fields; got valueType=" + valueType);
+            illegalState(name, "can only setIndexAnalyzer for short text and large text fields; got value type=" + valueType);
           }
           if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT && queryAnalyzer != null) {
-            illegalState(name, "can only setQueryAnalyzer for short text and large text fields; got valueType=" + valueType);
+            illegalState(name, "can only setQueryAnalyzer for short text and large text fields; got value type=" + valueType);
           }
           if (isUnique == Boolean.TRUE && indexOptions != IndexOptions.DOCS) {
             illegalState(name, "unique fields should be indexed with IndexOptions.DOCS; got indexOptions=" + indexOptions);
@@ -638,7 +635,7 @@ public class FieldTypes {
 
       if (highlighted == Boolean.TRUE) {
         if (valueType != ValueType.TEXT && valueType != ValueType.SHORT_TEXT) {
-          illegalState(name, "can only enable highlighting for TEXT or SHORT_TEXT fields; got valueType=" + valueType);
+          illegalState(name, "can only enable highlighting for TEXT or SHORT_TEXT fields; got value type=" + valueType);
         }
         if (indexOptions != IndexOptions.NONE && indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
           illegalState(name, "must index with IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS when highlighting is enabled");
@@ -705,7 +702,7 @@ public class FieldTypes {
       b.append("field \"");
       b.append(name);
       b.append("\":\n");
-      b.append("  valueType: ");
+      b.append("  value type: ");
       b.append(valueType);
       b.append('\n');
 
@@ -931,7 +928,7 @@ public class FieldTypes {
         out.writeByte((byte) 13);
         break;
       default:
-        throw new AssertionError("missing ValueType in switch");
+        throw new AssertionError("missing value type in switch");
       }
 
       if (docValuesTypeSet == false) {
@@ -1074,7 +1071,7 @@ public class FieldTypes {
         valueType = ValueType.INET_ADDRESS;
         break;
       default:
-        throw new CorruptIndexException("invalid byte for ValueType: " + b, in);
+        throw new CorruptIndexException("invalid byte for value type: " + b, in);
       }
 
       b = in.readByte();
@@ -2406,7 +2403,7 @@ public class FieldTypes {
   public synchronized void setDocValuesType(String fieldName, DocValuesType dvType) {
     ensureWritable();
     if (dvType == null) {
-      throw new NullPointerException("docValueType cannot be null (field: \"" + fieldName + "\")");
+      throw new NullPointerException("docValuesType cannot be null (field: \"" + fieldName + "\")");
     }
     FieldType current = fields.get(fieldName);
     if (current == null) {
@@ -2539,7 +2536,7 @@ public class FieldTypes {
     }
   }
 
-  synchronized void recordLargeTextType(String fieldName, boolean allowStored, boolean indexed) {
+  synchronized void recordLargeTextType(String fieldName, boolean allowStored, boolean allowIndexed) {
     ensureWritable();
     indexedDocs = true;
     FieldType current = fields.get(fieldName);
@@ -2547,14 +2544,14 @@ public class FieldTypes {
       current = newFieldType(fieldName);
       current.valueType = ValueType.TEXT;
       fields.put(fieldName, current);
-      setDefaults(current);
       if (allowStored == false) {
         current.stored = Boolean.FALSE;
       }
-      if (indexed == false) {
-        current.indexOptions = IndexOptions.NONE;
+      if (allowIndexed == false) {
+        assert current.indexOptions == IndexOptions.NONE: "got " + current.indexOptions;
         current.indexOptionsSet = true;
       }
+      setDefaults(current);
       changed();
     } else if (current.valueType == ValueType.NONE) {
       // This can happen if e.g. the app first calls FieldTypes.setStored(...)
@@ -2569,10 +2566,12 @@ public class FieldTypes {
             current.stored = Boolean.FALSE;
           }
         }
-        if (indexed == false) {
+        if (allowIndexed == false) {
           if (current.indexOptionsSet == false) {
             assert current.indexOptions == IndexOptions.NONE;
             current.indexOptionsSet = true;
+          } else if (current.indexOptions != IndexOptions.NONE) {
+            illegalState(fieldName, "this field is already indexed with indexOptions=" + current.indexOptions);
           }
         }
         current.validate();
@@ -2586,6 +2585,10 @@ public class FieldTypes {
       changed();
     } else if (current.valueType != ValueType.TEXT) {
       illegalState(fieldName, "cannot change from value type " + current.valueType + " to " + ValueType.TEXT);
+    } else if (allowIndexed == false && current.indexOptionsSet && current.indexOptions != IndexOptions.NONE) {
+      illegalState(fieldName, "this field is already indexed with indexOptions=" + current.indexOptions);
+    } else if (allowStored == false && current.stored == Boolean.TRUE) {
+      illegalState(fieldName, "this field was already enabled for storing");
     }
   }
 
@@ -2602,7 +2605,25 @@ public class FieldTypes {
       current.sortCollator = Collator.getInstance(locale);
       changed();
     }
+  }
 
+  public static interface SortKey {
+    Comparable getKey(Object o);
+  }
+
+  // nocommit enforce only ATOM:
+  /** NOTE: does not persist; you must set this each time you open a new reader. */
+  public void setSortKey(String fieldName, SortKey sortKey) {
+    FieldType current = fields.get(fieldName);
+    if (current == null) {
+      current = newFieldType(fieldName);
+      current.sortKey = sortKey;
+      fields.put(fieldName, current);
+    } else if (current.valueType == ValueType.ATOM) {
+      current.sortKey = sortKey;
+    } else {
+      illegalState(fieldName, "sortKey can only be set for ATOM fields; got value type=" + current.valueType);
+    }
   }
 
   public Locale getSortLocale(String fieldName) {
@@ -2979,10 +3000,10 @@ public class FieldTypes {
 
     switch (fieldType.valueType) {
     case INT:
-      bytes = Document.intToBytes(token);
+      bytes = NumericUtils.intToBytes(token);
       break;
     default:
-      illegalState(fieldName, "cannot create int term query when valueType=" + fieldType.valueType);
+      illegalState(fieldName, "cannot create int term query when value type=" + fieldType.valueType);
       // Dead code but javac disagrees:
       bytes = null;
     }
@@ -3009,10 +3030,10 @@ public class FieldTypes {
 
     switch (fieldType.valueType) {
     case LONG:
-      bytes = Document.longToBytes(token);
+      bytes = NumericUtils.longToBytes(token);
       break;
     default:
-      illegalState(fieldName, "cannot create long term query when valueType=" + fieldType.valueType);
+      illegalState(fieldName, "cannot create long term query when value type=" + fieldType.valueType);
       // Dead code but javac disagrees:
       bytes = null;
     }
@@ -3038,7 +3059,7 @@ public class FieldTypes {
 
     // Field must be binary:
     if (fieldType.valueType != ValueType.BINARY && fieldType.valueType != ValueType.ATOM) {
-      illegalState(fieldName, "binary term query must have valueType BINARY or ATOM; got " + fieldType.valueType);
+      illegalState(fieldName, "binary term query must have value type BINARY or ATOM; got " + fieldType.valueType);
     }
 
     return new TermQuery(new Term(fieldName, new BytesRef(token)));
@@ -3056,7 +3077,7 @@ public class FieldTypes {
 
     // Field must be text:
     if (fieldType.valueType != ValueType.TEXT && fieldType.valueType != ValueType.SHORT_TEXT && fieldType.valueType != ValueType.ATOM) {
-      illegalState(fieldName, "string term query must have valueType TEXT, SHORT_TEXT or ATOM; got " + fieldType.valueType);
+      illegalState(fieldName, "string term query must have value type TEXT, SHORT_TEXT or ATOM; got " + fieldType.valueType);
     }
 
     return new TermQuery(new Term(fieldName, token));
@@ -3074,7 +3095,7 @@ public class FieldTypes {
 
     // Field must be boolean:
     if (fieldType.valueType != ValueType.BOOLEAN) {
-      illegalState(fieldName, "boolean term query must have valueType BOOLEAN; got " + fieldType.valueType);
+      illegalState(fieldName, "boolean term query must have value type BOOLEAN; got " + fieldType.valueType);
     }
 
     byte[] value = new byte[1];
@@ -3097,17 +3118,309 @@ public class FieldTypes {
 
     // Field must be InetAddress:
     if (fieldType.valueType != ValueType.INET_ADDRESS) {
-      illegalState(fieldName, "inet address term query must have valueType INET_ADDRESS; got " + fieldType.valueType);
+      illegalState(fieldName, "inet address term query must have value type INET_ADDRESS; got " + fieldType.valueType);
     }
 
     return new TermQuery(new Term(fieldName, new BytesRef(token.getAddress())));
   }
 
-  // nocommit split to newInt/Float/etc./Range
-
   // nocommit More, Less?
 
-  // nocommit not great that the toString of the filter returned here is ... not easy to understand
+  private String getRangeFilterDesc(FieldType fieldType, Object min, boolean minInclusive, Object max, boolean maxInclusive) {
+    StringBuilder sb = new StringBuilder();
+    if (minInclusive) {
+      sb.append('[');
+    } else {
+      sb.append('{');
+    }
+    if (min == null) {
+      sb.append('*');
+    } else {
+      sb.append(min);
+    }
+    sb.append(" TO ");
+    if (max == null) {
+      sb.append('*');
+    } else {
+      sb.append(max);
+    }      
+    if (maxInclusive) {
+      sb.append(']');
+    } else {
+      sb.append('}');
+    }
+    return sb.toString();
+  }
+
+  public Filter newDocValuesRangeFilter(String fieldName, Date min, boolean minInclusive, Date max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be DATE type:
+    if (fieldType.valueType != ValueType.DATE) {
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed as value type DATE; got: " + fieldType.valueType);
+    }
+
+    // Field must have doc values:
+    if (fieldType.docValuesType != DocValuesType.NUMERIC) {
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed with NUMERIC doc values; got: " + fieldType.docValuesType);
+    }
+
+    return DocValuesRangeFilter.newLongRange(fieldName,
+                                             min == null ? null : min.getTime(),
+                                             max == null ? null : max.getTime(),
+                                             minInclusive, maxInclusive,
+                                             getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  public Filter newDocValuesRangeFilter(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must have doc values:
+    if (fieldType.docValuesType != DocValuesType.NUMERIC) {
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed with NUMERIC doc values; got: " + fieldType.docValuesType);
+    }
+
+    String desc = getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive);
+
+    switch (fieldType.valueType) {
+    case INT:
+      return DocValuesRangeFilter.newIntRange(fieldName,
+                                              min == null ? null : min.intValue(),
+                                              max == null ? null : max.intValue(),
+                                              minInclusive,
+                                              maxInclusive,
+                                              desc);
+    case LONG:
+      return DocValuesRangeFilter.newLongRange(fieldName,
+                                               min == null ? null : min.longValue(),
+                                               max == null ? null : max.longValue(),
+                                               minInclusive,
+                                               maxInclusive,
+                                               desc);
+    case FLOAT:
+      return DocValuesRangeFilter.newFloatRange(fieldName,
+                                                min == null ? null : min.floatValue(),
+                                                max == null ? null : max.floatValue(),
+                                                minInclusive,
+                                                maxInclusive,
+                                                desc);
+    case DOUBLE:
+      return DocValuesRangeFilter.newDoubleRange(fieldName,
+                                                 min == null ? null : min.doubleValue(),
+                                                 max == null ? null : max.doubleValue(),
+                                                 minInclusive,
+                                                 maxInclusive,
+                                                 desc);
+    case HALF_FLOAT:
+      return DocValuesRangeFilter.newHalfFloatRange(fieldName,
+                                                    min == null ? null : min.floatValue(),
+                                                    max == null ? null : max.floatValue(),
+                                                    minInclusive,
+                                                    maxInclusive,
+                                                    desc);
+
+    default:
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed with a numeric value type; got: " + fieldType.valueType);
+      return null;
+    }
+  }
+
+  public Filter newDocValuesRangeFilter(String fieldName, byte[] minTerm, boolean minInclusive, byte[] maxTerm, boolean maxInclusive) {
+    return newDocValuesRangeFilter(fieldName, minTerm == null ? null : new BytesRef(minTerm), minInclusive, maxTerm == null ? null : new BytesRef(maxTerm), maxInclusive);
+  }
+
+  public Filter newDocValuesRangeFilter(String fieldName, String minTerm, boolean minInclusive, String maxTerm, boolean maxInclusive) {
+    return newDocValuesRangeFilter(fieldName, minTerm == null ? null : new BytesRef(minTerm), minInclusive, maxTerm == null ? null : new BytesRef(maxTerm), maxInclusive);
+  }
+
+  public Filter newDocValuesRangeFilter(String fieldName, BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
+
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must have sorted doc values:
+    if (fieldType.docValuesType != DocValuesType.SORTED && fieldType.docValuesType != DocValuesType.SORTED_SET) {
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed with SORTED or SORTED_SET doc values; got: " + fieldType.docValuesType);
+    }
+
+    if (fieldType.valueType != ValueType.ATOM && fieldType.valueType != ValueType.BINARY) {
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed as value type ATOM or BINARY; got: " + fieldType.valueType);
+    }
+
+    return DocValuesRangeFilter.newBytesRefRange(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                                                 getRangeFilterDesc(fieldType, minTerm, minInclusive, maxTerm, maxInclusive));
+  }
+
+  public Filter newDocValuesRangeFilter(String fieldName, InetAddress min, boolean minInclusive, InetAddress max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be InetAddress type:
+    if (fieldType.valueType != ValueType.INET_ADDRESS) {
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed as value type INET_ADDRESS; got: " + fieldType.valueType);
+    }
+
+    // Field must have sorted doc values:
+    if (fieldType.docValuesType != DocValuesType.SORTED && fieldType.docValuesType != DocValuesType.SORTED_SET) {
+      illegalState(fieldName, "cannot create doc values range query: this field was not indexed with SORTED or SORTED_SET doc values; got: " + fieldType.docValuesType);
+    }
+
+    BytesRef minTerm = min == null ? null : new BytesRef(min.getAddress());
+    BytesRef maxTerm = max == null ? null : new BytesRef(max.getAddress());
+
+    return DocValuesRangeFilter.newBytesRefRange(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                                                 getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  // nocommit split to newInt/Float/etc./Range
+
+  public Filter newIntRangeFilter(String fieldName, Integer min, boolean minInclusive, Integer max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
+    }
+
+    if (fieldType.valueType != ValueType.INT) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type INT; got: " + fieldType.valueType);
+    }
+
+    BytesRef minTerm = min == null ? null : NumericUtils.intToBytes(min.intValue());
+    BytesRef maxTerm = max == null ? null : NumericUtils.intToBytes(max.intValue());
+
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  public Filter newLongRangeFilter(String fieldName, Long min, boolean minInclusive, Long max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
+    }
+
+    if (fieldType.valueType != ValueType.LONG) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type LONG; got: " + fieldType.valueType);
+    }
+
+    BytesRef minTerm = min == null ? null : NumericUtils.longToBytes(min.longValue());
+    BytesRef maxTerm = max == null ? null : NumericUtils.longToBytes(max.longValue());
+
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  public Filter newBigIntRangeFilter(String fieldName, BigInteger min, boolean minInclusive, BigInteger max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
+    }
+
+    if (fieldType.valueType != ValueType.BIG_INT) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type BIG_INT; got: " + fieldType.valueType);
+    }
+
+    BytesRef minTerm = min == null ? null : NumericUtils.bigIntToBytes(min);
+    BytesRef maxTerm = max == null ? null : NumericUtils.bigIntToBytes(max);
+
+    return new LeftZeroPadTermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                                          getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  public Filter newHalfFloatRangeFilter(String fieldName, Float min, boolean minInclusive, Float max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
+    }
+
+    if (fieldType.valueType != ValueType.HALF_FLOAT) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type HALF_FLOAT; got: " + fieldType.valueType);
+    }
+
+    BytesRef minTerm = min == null ? null : NumericUtils.halfFloatToBytes(min.floatValue());
+    BytesRef maxTerm = max == null ? null : NumericUtils.halfFloatToBytes(max.floatValue());
+
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  public Filter newFloatRangeFilter(String fieldName, Float min, boolean minInclusive, Float max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
+    }
+
+    if (fieldType.valueType != ValueType.FLOAT) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type FLOAT; got: " + fieldType.valueType);
+    }
+
+    BytesRef minTerm = min == null ? null : NumericUtils.floatToBytes(min.floatValue());
+    BytesRef maxTerm = max == null ? null : NumericUtils.floatToBytes(max.floatValue());
+
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  public Filter newDoubleRangeFilter(String fieldName, Double min, boolean minInclusive, Double max, boolean maxInclusive) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    // Field must be indexed:
+    if (fieldType.indexOptions == IndexOptions.NONE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
+    }
+
+    if (fieldType.fastRanges != Boolean.TRUE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
+    }
+
+    if (fieldType.valueType != ValueType.DOUBLE) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type DOUBLE; got: " + fieldType.valueType);
+    }
+
+    BytesRef minTerm = min == null ? null : NumericUtils.doubleToBytes(min.doubleValue());
+    BytesRef maxTerm = max == null ? null : NumericUtils.doubleToBytes(max.doubleValue());
+
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+  }
+
+  /*
   public Filter newRangeFilter(String fieldName, Number min, boolean minInclusive, Number max, boolean maxInclusive) {
 
     // Field must exist:
@@ -3115,11 +3428,11 @@ public class FieldTypes {
 
     // Field must be indexed:
     if (fieldType.indexOptions == IndexOptions.NONE) {
-      illegalState(fieldName, "cannot create range query: this field was not indexed");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
     }
 
     if (fieldType.fastRanges != Boolean.TRUE) {
-      illegalState(fieldName, "this field was not indexed for fast ranges");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
     }
 
     // nocommit should we really take Number here?  it's too weakly typed?  you could ask for float range on an int field?  should we
@@ -3131,89 +3444,85 @@ public class FieldTypes {
     
     switch (fieldType.valueType) {
     case INT:
-      minTerm = min == null ? null : Document.intToBytes(min.intValue());
-      maxTerm = max == null ? null : Document.intToBytes(max.intValue());
+      minTerm = min == null ? null : NumericUtils.intToBytes(min.intValue());
+      maxTerm = max == null ? null : NumericUtils.intToBytes(max.intValue());
       break;
 
     case HALF_FLOAT:
-      minTerm = min == null ? null : Document.halfFloatToSortableBytes(min.floatValue());
-      maxTerm = max == null ? null : Document.halfFloatToSortableBytes(max.floatValue());
+      minTerm = min == null ? null : NumericUtils.halfFloatToBytes(min.floatValue());
+      maxTerm = max == null ? null : NumericUtils.halfFloatToBytes(max.floatValue());
       break;
 
     case FLOAT:
-      minTerm = min == null ? null : Document.floatToSortableBytes(min.floatValue());
-      maxTerm = max == null ? null : Document.floatToSortableBytes(max.floatValue());
+      minTerm = min == null ? null : NumericUtils.floatToBytes(min.floatValue());
+      maxTerm = max == null ? null : NumericUtils.floatToBytes(max.floatValue());
       break;
 
     case LONG:
-      minTerm = min == null ? null : Document.longToBytes(min.longValue());
-      maxTerm = max == null ? null : Document.longToBytes(max.longValue());
+      minTerm = min == null ? null : NumericUtils.longToBytes(min.longValue());
+      maxTerm = max == null ? null : NumericUtils.longToBytes(max.longValue());
       break;
 
     case DOUBLE:
-      minTerm = min == null ? null : Document.doubleToSortableBytes(min.doubleValue());
-      maxTerm = max == null ? null : Document.doubleToSortableBytes(max.doubleValue());
+      minTerm = min == null ? null : NumericUtils.doubleToBytes(min.doubleValue());
+      maxTerm = max == null ? null : NumericUtils.doubleToBytes(max.doubleValue());
       break;
 
     case BIG_INT:
-      minTerm = min == null ? null : new BytesRef(((BigInteger) min).toByteArray());
-      maxTerm = max == null ? null :  new BytesRef(((BigInteger) max).toByteArray());
+      minTerm = min == null ? null : NumericUtils.bigIntToBytes((BigInteger) min);
+      maxTerm = max == null ? null : NumericUtils.bigIntToBytes((BigInteger) max);
       break;
 
     default:
-      illegalState(fieldName, "cannot create numeric range query on non-numeric field; got valueType=" + fieldType.valueType);
+      illegalState(fieldName, "cannot create numeric range filter on non-numeric field; got value type=" + fieldType.valueType);
 
       // Dead code but javac disagrees:
       return null;
     }
-    StringBuilder sb = new StringBuilder();
-    sb.append(fieldType.valueType);
-    sb.append(':');
-    if (min != null) {
-      sb.append(min);
-      sb.append(" (");
-      sb.append(minInclusive ? "incl" : "excl");
-      sb.append(')');
+
+    if (fieldType.valueType == ValueType.BIG_INT) {
+      return new LeftZeroPadTermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                                            getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
+    } else {
+      return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                                 getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
     }
-    sb.append(" to ");
-    if (max != null) {
-      sb.append(max);
-      sb.append(" (");
-      sb.append(maxInclusive ? "incl" : "excl");
-      sb.append(')');
-    }
+  }
+  */
 
-    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive, sb.toString());
+  public Filter newBinaryRangeFilter(String fieldName, byte[] minTerm, boolean minInclusive, byte[] maxTerm, boolean maxInclusive) {
+    return newBinaryRangeFilter(fieldName, minTerm == null ? null : new BytesRef(minTerm), minInclusive, maxTerm == null ? null : new BytesRef(maxTerm), maxInclusive);
   }
 
-  public Filter newRangeFilter(String fieldName, byte[] minTerm, boolean minInclusive, byte[] maxTerm, boolean maxInclusive) {
-    return newRangeFilter(fieldName, new BytesRef(minTerm), minInclusive, new BytesRef(maxTerm), maxInclusive);
+  public Filter newStringRangeFilter(String fieldName, String minTerm, boolean minInclusive, String maxTerm, boolean maxInclusive) {
+    return newBinaryRangeFilter(fieldName, minTerm == null ? null : new BytesRef(minTerm), minInclusive, maxTerm == null ? null : new BytesRef(maxTerm), maxInclusive);
   }
 
-  public Filter newRangeFilter(String fieldName, String minTerm, boolean minInclusive, String maxTerm, boolean maxInclusive) {
-    return newRangeFilter(fieldName, new BytesRef(minTerm), minInclusive, new BytesRef(maxTerm), maxInclusive);
-  }
-
-  public Filter newRangeFilter(String fieldName, BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
+  public Filter newBinaryRangeFilter(String fieldName, BytesRef minTerm, boolean minInclusive, BytesRef maxTerm, boolean maxInclusive) {
 
     // Field must exist:
     FieldType fieldType = getFieldType(fieldName);
 
     // Field must be indexed:
     if (fieldType.indexOptions == IndexOptions.NONE) {
-      illegalState(fieldName, "cannot create range query: this field was not indexed");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
     }
 
     if (fieldType.fastRanges != Boolean.TRUE) {
-      illegalState(fieldName, "this field was not indexed for fast ranges");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
     }
 
-    // nocommit verify type is BINARY or ATOM?
+    if (fieldType.valueType != ValueType.ATOM && fieldType.valueType != ValueType.BINARY) {
+      illegalState(fieldName, "cannot create range filter: this field was not indexed as value type ATOM or BINARY; got: " + fieldType.valueType);
+    }
 
-    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, minTerm, minInclusive, maxTerm, maxInclusive));
   }
 
-  // nocommit Date sugar for a range query matching a specific hour/day/month/year/etc.?  need locale/timezone... should we use DateTools?
+  // nocommit newRangeFilter(Date)
+
+  // nocommit Date sugar for a range filter matching a specific hour/day/month/year/etc.?  need locale/timezone... should we use DateTools?
 
   public Filter newRangeFilter(String fieldName, Date min, boolean minInclusive, Date max, boolean maxInclusive) {
 
@@ -3222,21 +3531,22 @@ public class FieldTypes {
 
     // Field must be indexed:
     if (fieldType.indexOptions == IndexOptions.NONE) {
-      illegalState(fieldName, "cannot create range query: this field was not indexed");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
     }
 
     if (fieldType.valueType != ValueType.DATE) {
-      illegalState(fieldName, "cannot create range query: expected valueType=DATE but got: " + fieldType.valueType);
+      illegalState(fieldName, "cannot create range filter: expected value type=DATE but got: " + fieldType.valueType);
     }
 
     if (fieldType.fastRanges != Boolean.TRUE) {
-      illegalState(fieldName, "this field was not indexed for fast ranges");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
     }
 
-    BytesRef minTerm = min == null ? null : Document.longToBytes(min.getTime());
-    BytesRef maxTerm = max == null ? null : Document.longToBytes(max.getTime());
+    BytesRef minTerm = min == null ? null : NumericUtils.longToBytes(min.getTime());
+    BytesRef maxTerm = max == null ? null : NumericUtils.longToBytes(max.getTime());
 
-    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
   }
 
   // nocommit also add "range filter using net mask" sugar version
@@ -3247,21 +3557,22 @@ public class FieldTypes {
 
     // Field must be indexed:
     if (fieldType.indexOptions == IndexOptions.NONE) {
-      illegalState(fieldName, "cannot create range query: this field was not indexed");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed");
     }
 
     if (fieldType.valueType != ValueType.INET_ADDRESS) {
-      illegalState(fieldName, "cannot create range query: expected valueType=INET_ADDRESS but got: " + fieldType.valueType);
+      illegalState(fieldName, "cannot create range filter: expected value type=INET_ADDRESS but got: " + fieldType.valueType);
     }
 
     if (fieldType.fastRanges != Boolean.TRUE) {
-      illegalState(fieldName, "this field was not indexed for fast ranges");
+      illegalState(fieldName, "cannot create range filter: this field was not indexed for fast ranges");
     }
 
     BytesRef minTerm = min == null ? null : new BytesRef(min.getAddress());
     BytesRef maxTerm = max == null ? null : new BytesRef(max.getAddress());
 
-    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive);
+    return new TermRangeFilter(fieldName, minTerm, maxTerm, minInclusive, maxInclusive,
+                               getRangeFilterDesc(fieldType, min, minInclusive, max, maxInclusive));
   }
 
   // nocommit newPhraseQuery?
@@ -3373,7 +3684,7 @@ public class FieldTypes {
           sortField = new SortField(fieldName, compSource, reverse) {
               @Override
               public String toString() {
-                return "<halffloat" + ": \"" + fieldName + "\" missingValue=" + missingValue + ">";
+                return "<halffloat" + ": \"" + fieldName + "\" missingLast=" + fieldType.sortMissingLast + ">";
               }
             };
 
@@ -3465,50 +3776,7 @@ public class FieldTypes {
 
     case BIG_INT:
       // nocommit fixme
-      {
-        SortField sortField;
-        if (fieldType.multiValued == Boolean.TRUE) {
-          // nocommit todo
-          throw new UnsupportedOperationException();
-        } else {
-
-          final Float missingValue;
-
-          if (fieldType.sortMissingLast == Boolean.TRUE) {
-            if (reverse.booleanValue()) {
-              missingValue = Float.NEGATIVE_INFINITY;
-            } else {
-              missingValue = Float.POSITIVE_INFINITY;
-            }
-          } else {
-            assert fieldType.sortMissingLast == Boolean.FALSE;
-            if (reverse.booleanValue()) {
-              missingValue = Float.POSITIVE_INFINITY;
-            } else {
-              missingValue = Float.NEGATIVE_INFINITY;
-            }
-          }
-
-          FieldComparatorSource compSource = new FieldComparatorSource() {
-              @Override
-              public FieldComparator<Float> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
-                return new HalfFloatComparator(numHits, fieldName, missingValue);
-              }
-            };
-
-          sortField = new SortField(fieldName, compSource, reverse) {
-              @Override
-              public String toString() {
-                return "<halffloat" + ": \"" + fieldName + "\" missingValue=" + missingValue + ">";
-              }
-            };
-
-          // nocommit not needed?
-          sortField.setMissingValue(missingValue);
-        }
-
-        return sortField;
-      }
+      throw new UnsupportedOperationException();
 
     case SHORT_TEXT:
     case ATOM:
@@ -3520,6 +3788,21 @@ public class FieldTypes {
         if (fieldType.multiValued == Boolean.TRUE) {
           // nocommit need to be able to set selector...
           sortField = new SortedSetSortField(fieldName, reverse);
+        } else if (fieldType.sortKey != null) {
+          FieldComparatorSource compSource = new FieldComparatorSource() {
+              @Override
+              public FieldComparator<BytesRef> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
+                return new SortKeyComparator(numHits, fieldName, fieldType.sortMissingLast == Boolean.TRUE, fieldType.sortKey);
+              }
+            };
+
+          sortField = new SortField(fieldName, compSource, reverse) {
+              @Override
+              public String toString() {
+                return "<custom-sort-key" + ": \"" + fieldName + "\" missingLast=" + fieldType.sortMissingLast + ">";
+              }
+            };
+
         } else if (fieldType.docValuesType == DocValuesType.BINARY) {
           sortField = new SortField(fieldName, SortField.Type.STRING_VAL, reverse);
         } else {
@@ -3545,7 +3828,7 @@ public class FieldTypes {
 
     default:
       // BUG
-      illegalState(fieldName, "unhandled sort case, valueType=" + fieldType.valueType);
+      illegalState(fieldName, "unhandled sort case, value type=" + fieldType.valueType);
 
       // Dead code but javac disagrees:
       return null;
@@ -3577,8 +3860,16 @@ public class FieldTypes {
     if (readOnly) {
       throw new IllegalStateException("cannot make changes to a read-only FieldTypes (it was opened from an IndexReader, not an IndexWriter)");
     }
+    if (closed) {
+      throw new AlreadyClosedException("this FieldTypes has been closed");
+    }
   }
 
+  // nocommit make this private, ie only IW can invoke it
+  public void close() {
+    closed = true;
+  }
+  
   static void illegalState(String fieldName, String message) {
     throw new IllegalStateException("field \"" + fieldName + "\": " + message);
   }
@@ -3795,6 +4086,19 @@ public class FieldTypes {
     } else {
       throw new CorruptIndexException("invalid byte for nullable string: " + b, in);
     }
+  }
+
+  /** Returns true if terms should be left-zero-padded (sorted as if they were right-justified). */
+  public boolean rightJustifyTerms(String fieldName) {
+    FieldType fieldType = fields.get(fieldName);
+    return fieldType != null && fieldType.valueType == ValueType.BIG_INT;
+  }
+
+  public ValueType getValueType(String fieldName) {
+    // Field must exist:
+    FieldType fieldType = getFieldType(fieldName);
+
+    return fieldType.valueType;
   }
 
   // nocommit add sugar to wrap long NDVs as float/double?

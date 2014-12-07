@@ -48,6 +48,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
@@ -322,7 +323,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                             TestUtil.nextInt(random(), 2, 10));
                                             
 
-    final NumericDocValues docIDToID = FieldCache.DEFAULT.getNumerics(r, "id", FieldCache.DOCUMENT2_INT_PARSER, false);
+    final NumericDocValues docIDToID = FieldCache.DEFAULT.getNumerics(r, "id", FieldCache.DOCUMENT_INT_PARSER, false);
     /*
       for(int docID=0;docID<subR.maxDoc();docID++) {
       System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
@@ -462,10 +463,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document.bytesToInt(value));
+    assertEquals(-3, NumericUtils.bytesToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document.bytesToInt(value));
+    assertEquals(5, NumericUtils.bytesToInt(value));
     
     ir.close();
     dir.close();
@@ -506,10 +507,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document.bytesToLong(value));
+    assertEquals(-3, NumericUtils.bytesToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document.bytesToLong(value));
+    assertEquals(5, NumericUtils.bytesToLong(value));
     
     ir.close();
     dir.close();

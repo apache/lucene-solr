@@ -20,13 +20,14 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 
@@ -52,7 +53,7 @@ public class DoubleFieldSource extends FieldCacheSource {
     return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {
-        return Double.longBitsToDouble(arr.get(doc));
+        return NumericUtils.longToDouble(arr.get(doc));
       }
 
       @Override

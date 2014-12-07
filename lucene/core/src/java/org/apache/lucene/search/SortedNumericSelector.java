@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.util.NumericUtils;
 
 /** 
  * Selects a value from the document's list to use as the representative value 
@@ -81,14 +82,14 @@ public class SortedNumericSelector {
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
-            return Document.sortableFloatBits((int) view.get(docID));
+            return (int) view.get(docID);
           }
         };
       case DOUBLE:
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
-            return Document.sortableDoubleBits(view.get(docID));
+            return view.get(docID);
           }
         };
       default:

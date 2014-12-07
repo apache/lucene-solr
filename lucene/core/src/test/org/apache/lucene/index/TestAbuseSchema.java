@@ -807,4 +807,80 @@ public class TestAbuseSchema extends LuceneTestCase {
     dir.close();
   }
 
+  // LUCENE-1008
+  public void testNoTermVectorAfterTermVector() throws IOException {
+    Directory dir = newDirectory();
+    Analyzer a = new MockAnalyzer(random());    
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    List<LowSchemaField> document = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(a, "tvtest", "a b c", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    field.enableTermVectors(true, true, true);
+    document.add(field);
+    iw.addDocument(document);
+
+    document = new ArrayList<>();
+    field = new LowSchemaField(a, "tvtest", "x y z", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    field.enableTermVectors(true, true, true);
+    document.add(field);
+    iw.addDocument(document);
+
+    // Make first segment
+    iw.commit();
+
+    document = new ArrayList<>();
+    field = new LowSchemaField(a, "tvtest", "a b c", IndexOptions.NONE, false);
+    document.add(field);
+    iw.addDocument(document);
+    // Make 2nd segment
+    iw.commit();
+
+    iw.forceMerge(1);
+    iw.close();
+    dir.close();
+  }
+
+  /**
+   * Test adding two fields with the same name, one indexed
+   * the other stored only. The omitNorms and omitTermFreqAndPositions setting
+   * of the stored field should not affect the indexed one (LUCENE-1590)
+   */
+  public void testLUCENE_1590() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Analyzer a = new MockAnalyzer(random());
+
+    List<LowSchemaField> doc = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(a, "f1", "v1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+    field.disableNorms();
+    doc.add(field);
+
+    field = new LowSchemaField(a, "f1", "v2", IndexOptions.NONE, false);
+    doc.add(field);
+
+    // f2 has no TF
+    field = new LowSchemaField(a, "f2", "v1", IndexOptions.DOCS, true);
+    doc.add(field);
+
+    field = new LowSchemaField(a, "f2", "v2", IndexOptions.NONE, false);
+    doc.add(field);
+
+    writer.addDocument(doc);
+    writer.forceMerge(1); // be sure to have a single segment
+    writer.close();
+
+    TestUtil.checkIndex(dir);
+
+    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
+    FieldInfos fi = reader.getFieldInfos();
+    // f1
+    assertFalse("f1 should have no norms", fi.fieldInfo("f1").hasNorms());
+    assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").getIndexOptions());
+    // f2
+    assertTrue("f2 should have norms", fi.fieldInfo("f2").hasNorms());
+    assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
+    reader.close();
+    dir.close();
+  }
+
 }

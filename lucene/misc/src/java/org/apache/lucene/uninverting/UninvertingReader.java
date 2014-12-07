@@ -216,28 +216,19 @@ public class UninvertingReader extends FilterLeafReader {
     return fieldInfos;
   }
 
-  private boolean isFieldType(String field) {
-    try {
-      getFieldTypes().getIndexableFieldType(field);
-      return true;
-    } catch (IllegalArgumentException iae) {
-      return false;
-    }
-  }
-
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     Type v = getType(field);
     if (v != null) {
       switch (v) {
         case INTEGER:
-          return FieldCache.DEFAULT.getNumerics(in, field, isFieldType(field) ? FieldCache.DOCUMENT2_INT_PARSER : FieldCache.NUMERIC_UTILS_INT_PARSER, true);
+          return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.DOCUMENT_INT_PARSER, true);
         case FLOAT:
-          return FieldCache.DEFAULT.getNumerics(in, field, isFieldType(field) ? FieldCache.DOCUMENT2_FLOAT_PARSER : FieldCache.NUMERIC_UTILS_FLOAT_PARSER, true);
+          return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.DOCUMENT_FLOAT_PARSER, true);
         case LONG:
-          return FieldCache.DEFAULT.getNumerics(in, field, isFieldType(field) ? FieldCache.DOCUMENT2_LONG_PARSER : FieldCache.NUMERIC_UTILS_LONG_PARSER, true);
+          return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.DOCUMENT_LONG_PARSER, true);
         case DOUBLE:
-          return FieldCache.DEFAULT.getNumerics(in, field, isFieldType(field) ? FieldCache.DOCUMENT2_DOUBLE_PARSER : FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, true);
+          return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.DOCUMENT_DOUBLE_PARSER, true);
       }
     }
     return super.getNumericDocValues(field);
@@ -270,10 +261,10 @@ public class UninvertingReader extends FilterLeafReader {
       switch (v) {
       case SORTED_SET_INTEGER:
       case SORTED_SET_FLOAT: 
-        return FieldCache.DEFAULT.getDocTermOrds(in, field, isFieldType(field) ? null : FieldCache.INT32_TERM_PREFIX);
+        return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
       case SORTED_SET_LONG:
       case SORTED_SET_DOUBLE:
-        return FieldCache.DEFAULT.getDocTermOrds(in, field, isFieldType(field) ? null : FieldCache.INT64_TERM_PREFIX);
+        return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
       case SORTED_SET_BINARY:
         return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
       }

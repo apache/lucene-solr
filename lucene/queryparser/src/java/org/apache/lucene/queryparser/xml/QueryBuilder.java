@@ -1,7 +1,9 @@
 package org.apache.lucene.queryparser.xml;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,11 +20,12 @@ import org.w3c.dom.Element;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Implemented by objects that produce Lucene Query objects from XML streams. Implementations are
  * expected to be thread-safe so that they can be used to simultaneously parse multiple XML documents.
  */
 public interface QueryBuilder {
 
-  public Query getQuery(Element e) throws ParserException;
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException;
 }

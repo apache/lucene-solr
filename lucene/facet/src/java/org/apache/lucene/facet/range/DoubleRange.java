@@ -28,6 +28,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
 
 /** Represents a range over double values.
  *
@@ -91,8 +92,8 @@ public final class DoubleRange extends Range {
 
   LongRange toLongRange() {
     return new LongRange(label,
-                         Document.doubleToSortableLong(minIncl), true,
-                         Document.doubleToSortableLong(maxIncl), true);
+                         NumericUtils.doubleToLong(minIncl), true,
+                         NumericUtils.doubleToLong(maxIncl), true);
   }
 
   @Override

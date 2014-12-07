@@ -106,7 +106,6 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
   @Test
   public void testDistanceOrder() throws IOException {
-    System.out.println("TEST: strategy=" + strategy);
     adoc("100", ctx.makePoint(2, 1));
     adoc("101", ctx.makePoint(-1, 4));
     adoc("103", (Shape)null);//test score for nothing

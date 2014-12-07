@@ -494,7 +494,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testNumericRangeQuery() throws Exception {
     // doesn't currently highlight, but make sure it doesn't cause exception either
-    query = new ConstantScoreQuery(reader.getFieldTypes().newRangeFilter(NUMERIC_FIELD_NAME, 2, true, 6, true));
+    query = new ConstantScoreQuery(reader.getFieldTypes().newIntRangeFilter(NUMERIC_FIELD_NAME, 2, true, 6, true));
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;

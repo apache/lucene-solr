@@ -844,14 +844,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
 
     @Override
     public BytesRef next() throws IOException {
-      //System.out.println("te.next");
       current = fstEnum.next();
       if (current == null) {
-        //System.out.println("  END");
         return null;
       }
       didDecode = false;
-      //System.out.println("  term=" + field.name + ":" + current.input.utf8ToString());
       return current.input;
     }
 

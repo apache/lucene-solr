@@ -98,7 +98,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newIntRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
@@ -152,7 +152,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newIntRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     // Define parent document criteria (find a resident in the UK)
     Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
@@ -234,7 +234,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     FieldTypes fieldTypes = s.getFieldTypes();
 
-    MultiTermQuery qc = new TermRangeQuery("year", Document.intToBytes(2007), Document.intToBytes(2007), true, true);
+    MultiTermQuery qc = new TermRangeQuery("year", NumericUtils.intToBytes(2007), NumericUtils.intToBytes(2007), true, true);
     // Hacky: this causes the query to need 2 rewrite
     // iterations: 
     qc.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
@@ -306,7 +306,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newIntRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     // Define parent document criteria (find a resident in the UK)
     Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
@@ -413,7 +413,7 @@ public class TestBlockJoin extends LuceneTestCase {
     FieldTypes fieldTypes = s.getFieldTypes();
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(
-        new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 1990, true, 2010, true)),
+        new ConstantScoreQuery(fieldTypes.newIntRangeFilter("year", 1990, true, 2010, true)),
         new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume")))),
         ScoreMode.Total
     );
@@ -1077,11 +1077,11 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childJobQuery = new BooleanQuery();
     childJobQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childJobQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
+    childJobQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newIntRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     BooleanQuery childQualificationQuery = new BooleanQuery();
     childQualificationQuery.add(new BooleanClause(new TermQuery(new Term("qualification", "maths")), Occur.MUST));
-    childQualificationQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 1980, true, 2000, true)), Occur.MUST));
+    childQualificationQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newIntRangeFilter("year", 1980, true, 2000, true)), Occur.MUST));
 
 
     // Define parent document criteria (find a resident in the UK)
@@ -1226,7 +1226,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery childQuery = new BooleanQuery();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
+    childQuery.add(new BooleanClause(new ConstantScoreQuery(fieldTypes.newIntRangeFilter("year", 2006, true, 2011, true)), Occur.MUST));
 
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:

@@ -178,6 +178,25 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     return utf8SortedAsUnicodeSortOrder;
   }
 
+  private final static Comparator<BytesRef> rightJustifiedComparator = new Comparator<BytesRef>() {
+    @Override
+    public int compare(BytesRef a, BytesRef b) {
+      //assert a.length == 0 || a.bytes[a.offset] != 0;
+      //assert b.length == 0 || b.bytes[b.offset] != 0;
+      if (a.length < b.length) {
+        return -1;
+      } else if (a.length > b.length) {
+        return 1;
+      } else {
+        return utf8SortedAsUnicodeSortOrder.compare(a, b);
+      }
+    }
+  };
+
+  public static Comparator<BytesRef> getRightJustifiedComparator() {
+    return rightJustifiedComparator;
+  }
+
   private static class UTF8SortedAsUnicodeComparator implements Comparator<BytesRef> {
     // Only singleton
     private UTF8SortedAsUnicodeComparator() {};

@@ -25,6 +25,8 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.HalfFloat;
+import org.apache.lucene.util.NumericUtils;
 
 /**
  * A range filter built on top of numeric doc values field 
@@ -65,13 +67,15 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
   final T upperVal;
   final boolean includeLower;
   final boolean includeUpper;
-  
-  private DocValuesRangeFilter(String field, T lowerVal, T upperVal, boolean includeLower, boolean includeUpper) {
+  final String desc;
+
+  private DocValuesRangeFilter(String field, T lowerVal, T upperVal, boolean includeLower, boolean includeUpper, String desc) {
     this.field = field;
     this.lowerVal = lowerVal;
     this.upperVal = upperVal;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
+    this.desc = desc;
   }
   
   /** This method is implemented for each data type */
@@ -83,8 +87,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
    * fields containing zero or one term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static DocValuesRangeFilter<String> newStringRange(String field, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-    return new DocValuesRangeFilter<String>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<String> newStringRange(String field, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper, String desc) {
+    return new DocValuesRangeFilter<String>(field, lowerVal, upperVal, includeLower, includeUpper, desc) {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
@@ -140,8 +144,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
    * of the values to <code>null</code>.
    */
   // TODO: bogus that newStringRange doesnt share this code... generics hell
-  public static DocValuesRangeFilter<BytesRef> newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper) {
-    return new DocValuesRangeFilter<BytesRef>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<BytesRef> newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper, String desc) {
+    return new DocValuesRangeFilter<BytesRef>(field, lowerVal, upperVal, includeLower, includeUpper, desc) {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
@@ -196,8 +200,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
    * int fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static DocValuesRangeFilter<Integer> newIntRange(String field, Integer lowerVal, Integer upperVal, boolean includeLower, boolean includeUpper) {
-    return new DocValuesRangeFilter<Integer>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Integer> newIntRange(String field, Integer lowerVal, Integer upperVal, boolean includeLower, boolean includeUpper, String desc) {
+    return new DocValuesRangeFilter<Integer>(field, lowerVal, upperVal, includeLower, includeUpper, desc) {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final int inclusiveLowerPoint, inclusiveUpperPoint;
@@ -238,8 +242,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
    * long fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static DocValuesRangeFilter<Long> newLongRange(String field, Long lowerVal, Long upperVal, boolean includeLower, boolean includeUpper) {
-    return new DocValuesRangeFilter<Long>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Long> newLongRange(String field, Long lowerVal, Long upperVal, boolean includeLower, boolean includeUpper, String desc) {
+    return new DocValuesRangeFilter<Long>(field, lowerVal, upperVal, includeLower, includeUpper, desc) {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         final long inclusiveLowerPoint, inclusiveUpperPoint;
@@ -280,8 +284,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
    * float fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static DocValuesRangeFilter<Float> newFloatRange(String field, Float lowerVal, Float upperVal, boolean includeLower, boolean includeUpper) {
-    return new DocValuesRangeFilter<Float>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Float> newFloatRange(String field, Float lowerVal, Float upperVal, boolean includeLower, boolean includeUpper, String desc) {
+    return new DocValuesRangeFilter<Float>(field, lowerVal, upperVal, includeLower, includeUpper, desc) {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
@@ -291,8 +295,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
           float f = lowerVal.floatValue();
           if (!includeUpper && f > 0.0f && Float.isInfinite(f))
             return null;
-          int i = Document.floatToSortableInt(f);
-          inclusiveLowerPoint = Document.sortableIntToFloat(includeLower ? i : (i + 1));
+          int i = NumericUtils.floatToInt(f);
+          inclusiveLowerPoint = NumericUtils.intToFloat(includeLower ? i : (i + 1));
         } else {
           inclusiveLowerPoint = Float.NEGATIVE_INFINITY;
         }
@@ -300,8 +304,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
           float f = upperVal.floatValue();
           if (!includeUpper && f < 0.0f && Float.isInfinite(f))
             return null;
-          int i = Document.floatToSortableInt(f);
-          inclusiveUpperPoint = Document.sortableIntToFloat(includeUpper ? i : (i - 1));
+          int i = NumericUtils.floatToInt(f);
+          inclusiveUpperPoint = NumericUtils.intToFloat(includeUpper ? i : (i - 1));
         } else {
           inclusiveUpperPoint = Float.POSITIVE_INFINITY;
         }
@@ -326,8 +330,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
    * double fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static DocValuesRangeFilter<Double> newDoubleRange(String field, Double lowerVal, Double upperVal, boolean includeLower, boolean includeUpper) {
-    return new DocValuesRangeFilter<Double>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Double> newDoubleRange(String field, Double lowerVal, Double upperVal, boolean includeLower, boolean includeUpper, String desc) {
+    return new DocValuesRangeFilter<Double>(field, lowerVal, upperVal, includeLower, includeUpper, desc) {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
@@ -337,8 +341,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
           double f = lowerVal.doubleValue();
           if (!includeUpper && f > 0.0 && Double.isInfinite(f))
             return null;
-          long i = Document.doubleToSortableLong(f);
-          inclusiveLowerPoint = Document.sortableLongToDouble(includeLower ? i : (i + 1L));
+          long i = NumericUtils.doubleToLong(f);
+          inclusiveLowerPoint = NumericUtils.longToDouble(includeLower ? i : (i + 1L));
         } else {
           inclusiveLowerPoint = Double.NEGATIVE_INFINITY;
         }
@@ -346,8 +350,8 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
           double f = upperVal.doubleValue();
           if (!includeUpper && f < 0.0 && Double.isInfinite(f))
             return null;
-          long i = Document.doubleToSortableLong(f);
-          inclusiveUpperPoint = Document.sortableLongToDouble(includeUpper ? i : (i - 1L));
+          long i = NumericUtils.doubleToLong(f);
+          inclusiveUpperPoint = NumericUtils.longToDouble(includeUpper ? i : (i - 1L));
         } else {
           inclusiveUpperPoint = Double.POSITIVE_INFINITY;
         }
@@ -368,15 +372,77 @@ public abstract class DocValuesRangeFilter<T> extends Filter {
     };
   }
   
+  /**
+   * Creates a numeric range filter using {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}. This works with all
+   * half-float fields containing exactly one numeric term in the field. The range can be half-open by setting one
+   * of the values to <code>null</code>.
+   */
+  public static DocValuesRangeFilter<Float> newHalfFloatRange(String field, Float lowerVal, Float upperVal, boolean includeLower, boolean includeUpper, String desc) {
+    return new DocValuesRangeFilter<Float>(field, lowerVal, upperVal, includeLower, includeUpper, desc) {
+      @Override
+      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+        // we transform the floating point numbers to sortable shorts
+        // using NumericUtils to easier find the next bigger/lower value
+
+        final short inclusiveLowerShort;
+        if (lowerVal != null) {
+          float f = lowerVal.floatValue();
+          short s = NumericUtils.halfFloatToShort(f);
+          if (includeLower == false) {
+            if (s == Short.MAX_VALUE) {
+              return null;
+            }
+            s++;
+          }
+          inclusiveLowerShort = s;
+        } else {
+          inclusiveLowerShort = NumericUtils.halfFloatToShort(Float.NEGATIVE_INFINITY);
+        }
+
+        final short inclusiveUpperShort;
+        if (upperVal != null) {
+          float f = upperVal.floatValue();
+          short s = NumericUtils.halfFloatToShort(f);
+          if (includeUpper == false) {
+            if (s == Short.MIN_VALUE) {
+              return null;
+            }
+            s--;
+          }
+          inclusiveUpperShort = s;
+        } else {
+          inclusiveUpperShort = NumericUtils.halfFloatToShort(Float.POSITIVE_INFINITY);
+        }
+        
+        if (inclusiveLowerShort > inclusiveUpperShort) {
+          return null;
+        }
+
+        final NumericDocValues values = DocValues.getNumeric(context.reader(), field);
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
+          @Override
+          protected boolean matchDoc(int doc) {
+            final short value = (short) values.get(doc);
+            return value >= inclusiveLowerShort && value <= inclusiveUpperShort;
+          }
+        };
+      }
+    };
+  }
+  
   @Override
   public final String toString() {
-    final StringBuilder sb = new StringBuilder(field).append(":");
-    return sb.append(includeLower ? '[' : '{')
-      .append((lowerVal == null) ? "*" : lowerVal.toString())
-      .append(" TO ")
-      .append((upperVal == null) ? "*" : upperVal.toString())
-      .append(includeUpper ? ']' : '}')
-      .toString();
+    if (desc == null) {
+      final StringBuilder sb = new StringBuilder(field).append(":");
+      return sb.append(includeLower ? '[' : '{')
+        .append((lowerVal == null) ? "*" : lowerVal.toString())
+        .append(" TO ")
+        .append((upperVal == null) ? "*" : upperVal.toString())
+        .append(includeUpper ? ']' : '}')
+        .toString();
+    } else {
+      return desc;
+    }
   }
 
   @Override

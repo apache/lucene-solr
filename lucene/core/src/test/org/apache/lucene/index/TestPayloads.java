@@ -366,6 +366,9 @@ public class TestPayloads extends LuceneTestCase {
     }
   }
 
+  /**
+   * This Analyzer uses an MockTokenizer and PayloadFilter.
+   */
   private static class PayloadAnalyzer extends Analyzer {
     Map<String,PayloadData> fieldToData = new HashMap<>();
 
@@ -396,7 +399,6 @@ public class TestPayloads extends LuceneTestCase {
    * This Filter adds payloads to the tokens.
    */
   private static class PayloadFilter extends TokenFilter {
-    private int startOffset;
     PayloadAttribute payloadAtt;
     CharTermAttribute termAttribute;
     private Map<String,PayloadData> fieldToData;

@@ -15,9 +15,10 @@ package org.apache.lucene.queryparser.xml.builders;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.w3c.dom.Element;
 
 /**
@@ -25,5 +26,5 @@ import org.w3c.dom.Element;
  */
 public interface SpanQueryBuilder extends QueryBuilder {
 
-  public SpanQuery getSpanQuery(Element e) throws ParserException;
+  public SpanQuery getSpanQuery(FieldTypes fieldTypes, Element e) throws ParserException;
 }

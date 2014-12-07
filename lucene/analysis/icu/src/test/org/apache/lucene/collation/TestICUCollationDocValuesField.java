@@ -104,7 +104,7 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
       String end = TestUtil.randomSimpleString(random());
       BytesRef lowerVal = new BytesRef(collator.getCollationKey(start).toByteArray());
       BytesRef upperVal = new BytesRef(collator.getCollationKey(end).toByteArray());
-      Query query = new ConstantScoreQuery(DocValuesRangeFilter.newBytesRefRange("collated", lowerVal, upperVal, true, true));
+      Query query = new ConstantScoreQuery(DocValuesRangeFilter.newBytesRefRange("collated", lowerVal, upperVal, true, true, null));
       doTestRanges(is, start, end, query, collator);
     }
     

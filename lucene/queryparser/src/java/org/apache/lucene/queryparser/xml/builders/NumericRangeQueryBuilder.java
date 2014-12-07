@@ -17,12 +17,14 @@ package org.apache.lucene.queryparser.xml.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.NumericUtils;
 import org.w3c.dom.Element;
 
 /**
@@ -88,37 +90,29 @@ import org.w3c.dom.Element;
 public class NumericRangeQueryBuilder implements QueryBuilder {
 
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Query getQuery(FieldTypes fieldTypes, Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
     String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
     boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
     boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
-    int precisionStep = DOMUtils.getAttribute(e, "precisionStep", NumericUtils.PRECISION_STEP_DEFAULT);
 
     String type = DOMUtils.getAttribute(e, "type", "int");
+
     try {
-      Query filter;
+      Filter filter;
       if (type.equalsIgnoreCase("int")) {
-        filter = NumericRangeQuery.newIntRange(field, precisionStep, Integer
-            .valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        filter = fieldTypes.newIntRangeFilter(field, Integer.valueOf(lowerTerm), lowerInclusive, Integer.valueOf(upperTerm), upperInclusive);
       } else if (type.equalsIgnoreCase("long")) {
-        filter = NumericRangeQuery.newLongRange(field, precisionStep, Long
-            .valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        filter = fieldTypes.newLongRangeFilter(field, Long.valueOf(lowerTerm), lowerInclusive, Long.valueOf(upperTerm), upperInclusive);
       } else if (type.equalsIgnoreCase("double")) {
-        filter = NumericRangeQuery.newDoubleRange(field, precisionStep, Double
-            .valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        filter = fieldTypes.newDoubleRangeFilter(field, Double.valueOf(lowerTerm), lowerInclusive, Double.valueOf(upperTerm), upperInclusive);
       } else if (type.equalsIgnoreCase("float")) {
-        filter = NumericRangeQuery.newFloatRange(field, precisionStep, Float
-            .valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        filter = fieldTypes.newFloatRangeFilter(field, Float.valueOf(lowerTerm), lowerInclusive, Float.valueOf(upperTerm), upperInclusive);
       } else {
         throw new ParserException("type attribute must be one of: [long, int, double, float]");
       }
-      return filter;
+      return new ConstantScoreQuery(filter);
     } catch (NumberFormatException nfe) {
       throw new ParserException("Could not parse lowerTerm or upperTerm into a number", nfe);
     }

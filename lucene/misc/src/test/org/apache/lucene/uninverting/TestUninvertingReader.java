@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestUninvertingReader extends LuceneTestCase {
@@ -70,10 +71,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document.bytesToInt(value));
+    assertEquals(-3, NumericUtils.bytesToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document.bytesToInt(value));
+    assertEquals(5, NumericUtils.bytesToInt(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -115,10 +116,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3f, Document.bytesToFloat(value), 0.0f);
+    assertEquals(-3f, NumericUtils.bytesToFloat(value), 0.0f);
     
     value = v.lookupOrd(1);
-    assertEquals(5f, Document.bytesToFloat(value), 0.0f);
+    assertEquals(5f, NumericUtils.bytesToFloat(value), 0.0f);
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -159,10 +160,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, Document.bytesToLong(value));
+    assertEquals(-3, NumericUtils.bytesToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, Document.bytesToLong(value));
+    assertEquals(5, NumericUtils.bytesToLong(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -203,10 +204,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3d, Document.bytesToDouble(value), 0.0);
+    assertEquals(-3d, NumericUtils.bytesToDouble(value), 0.0);
     
     value = v.lookupOrd(1);
-    assertEquals(5d, Document.bytesToDouble(value), 0.0);
+    assertEquals(5d, NumericUtils.bytesToDouble(value), 0.0);
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();

@@ -27,7 +27,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Document2StoredFieldVisitor;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits; // javadocs
@@ -374,7 +374,7 @@ public abstract class IndexReader implements Closeable {
   // Document returned here contains that class not
   // IndexableField
   public final Document document(int docID) throws IOException {
-    final Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(getFieldTypes());
+    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(getFieldTypes());
     document(docID, visitor);
     return visitor.getDocument();
   }
@@ -386,7 +386,7 @@ public abstract class IndexReader implements Closeable {
    */
   public final Document document(int docID, Set<String> fieldsToLoad)
       throws IOException {
-    final Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(getFieldTypes(), fieldsToLoad);
+    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(getFieldTypes(), fieldsToLoad);
     document(docID, visitor);
     return visitor.getDocument();
   }

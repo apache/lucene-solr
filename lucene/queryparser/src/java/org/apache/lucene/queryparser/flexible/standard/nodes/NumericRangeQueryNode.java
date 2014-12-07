@@ -17,7 +17,6 @@ package org.apache.lucene.queryparser.flexible.standard.nodes;
  * the License.
  */
 
-import org.apache.lucene.document.NumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
@@ -53,25 +52,6 @@ public class NumericRangeQueryNode extends
     setBounds(lower, upper, lowerInclusive, upperInclusive, numericConfig);
   }
   
-  private static NumericType getNumericDataType(Number number) throws QueryNodeException {
-    
-    if (number instanceof Long) {
-      return NumericType.LONG;
-    } else if (number instanceof Integer) {
-      return NumericType.INT;
-    } else if (number instanceof Double) {
-      return NumericType.DOUBLE;
-    } else if (number instanceof Float) {
-      return NumericType.FLOAT;
-    } else {
-      throw new QueryNodeException(
-          new MessageImpl(
-              QueryParserMessages.NUMBER_CLASS_NOT_SUPPORTED_BY_NUMERIC_RANGE_QUERY,
-              number.getClass()));
-    }
-    
-  }
-  
   /**
    * Sets the upper and lower bounds of this range query node and the
    * {@link NumericConfig} associated with these bounds.
@@ -88,34 +68,6 @@ public class NumericRangeQueryNode extends
     
     if (numericConfig == null) {
       throw new IllegalArgumentException("numericConfig cannot be null!");
-    }
-    
-    NumericType lowerNumberType, upperNumberType;
-    
-    if (lower != null && lower.getValue() != null) {
-      lowerNumberType = getNumericDataType(lower.getValue());
-    } else {
-      lowerNumberType = null;
-    }
-    
-    if (upper != null && upper.getValue() != null) {
-      upperNumberType = getNumericDataType(upper.getValue());
-    } else {
-      upperNumberType = null;
-    }
-    
-    if (lowerNumberType != null
-        && !lowerNumberType.equals(numericConfig.getType())) {
-      throw new IllegalArgumentException(
-          "lower value's type should be the same as numericConfig type: "
-              + lowerNumberType + " != " + numericConfig.getType());
-    }
-    
-    if (upperNumberType != null
-        && !upperNumberType.equals(numericConfig.getType())) {
-      throw new IllegalArgumentException(
-          "upper value's type should be the same as numericConfig type: "
-              + upperNumberType + " != " + numericConfig.getType());
     }
     
     super.setBounds(lower, upper, lowerInclusive, upperInclusive);
@@ -137,9 +89,7 @@ public class NumericRangeQueryNode extends
     StringBuilder sb = new StringBuilder("<numericRange lowerInclusive='");
     
     sb.append(isLowerInclusive()).append("' upperInclusive='").append(
-        isUpperInclusive()).append(
-        "' precisionStep='" + numericConfig.getPrecisionStep()).append(
-        "' type='" + numericConfig.getType()).append("'>\n");
+        isUpperInclusive()).append("'>\n");
     
     sb.append(getLowerBound()).append('\n');
     sb.append(getUpperBound()).append('\n');

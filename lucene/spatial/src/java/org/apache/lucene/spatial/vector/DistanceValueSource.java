@@ -28,6 +28,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.NumericUtils;
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 
@@ -89,7 +90,7 @@ public class DistanceValueSource extends ValueSource {
         // make sure it has minX and area
         if (validX.get(doc)) {
           assert validY.get(doc);
-          return calculator.distance(from, Document.longToDouble(ptX.get(doc)), Document.longToDouble(ptY.get(doc))) * multiplier;
+          return calculator.distance(from, NumericUtils.longToDouble(ptX.get(doc)), NumericUtils.longToDouble(ptY.get(doc))) * multiplier;
         }
         return nullValue;
       }
