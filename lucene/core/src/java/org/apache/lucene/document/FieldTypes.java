@@ -606,6 +606,10 @@ public class FieldTypes {
       }
 
       // nocommit must check that if fastRanges is on, you have a PF that supports it
+      
+      if (fastRanges == Boolean.TRUE && indexOptions != IndexOptions.DOCS) {
+        illegalState(name, "fastRanges is only possible when indexOptions=DOCS; got: " + indexOptions);
+      }
 
       if (analyzerPositionGap != null) {
         if (indexOptions == IndexOptions.NONE) {

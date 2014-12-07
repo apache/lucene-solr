@@ -30,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
@@ -839,50 +838,32 @@ public class QueryComponent extends SearchComponent
 
     boolean shardQueryIncludeScore = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0 || rb.getSortSpec().includesScore();
     if (distribSinglePass) {
-      String fl = rb.req.getParams().get(CommonParams.FL);
-      if (fl == null) {
-        if (fields.getRequestedFieldNames() == null && fields.wantsAllFields()) {
-          fl = "*";
-        } else  {
-          fl = "";
-          for (String s : fields.getRequestedFieldNames()) {
-            fl += s + ",";
-          }
-        }
-      }
-      if (!fields.wantsField(keyFieldName))  {
-        // the user has not requested the unique key but
-        // we still need to add it otherwise mergeIds can't work
-        if (fl.endsWith(",")) {
-          fl += keyFieldName;
-        } else  {
-          fl += "," + keyFieldName;
-        }
-      }
-      sreq.params.set(CommonParams.FL, updateFl(fl, shardQueryIncludeScore));
-    } else {
-      // in this first phase, request only the unique key field and any fields needed for merging.
-      if (shardQueryIncludeScore) {
-        sreq.params.set(CommonParams.FL, keyFieldName + ",score");
+      String[] fls = rb.req.getParams().getParams(CommonParams.FL);
+      if (fls != null && fls.length > 0 && (fls.length != 1 || !fls[0].isEmpty())) {
+        // If the outer request contains actual FL's use them...
+        sreq.params.set(CommonParams.FL, fls);
       } else {
-        sreq.params.set(CommonParams.FL, keyFieldName);
+        // ... else we need to explicitly ask for all fields, because we are going to add
+        // additional fields below
+        sreq.params.set(CommonParams.FL, "*");
       }
     }
+    StringBuilder additionalFL = new StringBuilder();
+    boolean additionalAdded = false;
+    if (!distribSinglePass || !fields.wantsField(keyFieldName)) 
+      additionalAdded = addFL(additionalFL, keyFieldName, additionalAdded);
+    if ((!distribSinglePass || !fields.wantsScore()) && shardQueryIncludeScore) 
+      additionalAdded = addFL(additionalFL, "score", additionalAdded);
+    if (additionalAdded) sreq.params.add(CommonParams.FL, additionalFL.toString());
 
     rb.addRequest(this, sreq);
   }
-
-
-  String updateFl(String originalFields, boolean includeScoreIfMissing) {
-    if (includeScoreIfMissing && !scorePattern.matcher(originalFields).find()) {
-      return originalFields + ",score";
-    } else {
-      return originalFields;
-    }
+  
+  private boolean addFL(StringBuilder fl, String field, boolean additionalAdded) {
+    if (additionalAdded) fl.append(",");
+    fl.append(field);
+    return true;
   }
-
-  private static final Pattern scorePattern = Pattern.compile("\\bscore\\b");
-
 
   private void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
       List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
@@ -1257,6 +1238,10 @@ public class QueryComponent extends SearchComponent
           if (sdoc != null) {
             if (returnScores) {
               doc.setField("score", sdoc.score);
+            } else {
+              // Score might have been added (in createMainQuery) to shard-requests (and therefore in shard-response-docs)
+              // Remove score if the outer request did not ask for it returned
+              doc.remove("score");
             }
             if (removeKeyField) {
               doc.removeFields(keyFieldName);

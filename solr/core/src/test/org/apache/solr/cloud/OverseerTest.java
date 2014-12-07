@@ -909,11 +909,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       mockController = new MockZKController(server.getZkAddress(), "node1");
 
-      for (int i=0; i<100; i++)  {
+      final int MAX_COLLECTIONS = 10, MAX_CORES = 10, MAX_STATE_CHANGES = 20000, STATE_FORMAT = 2;
+
+      for (int i=0; i<MAX_COLLECTIONS; i++)  {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
             "name", "perf" + i,
             ZkStateReader.NUM_SHARDS_PROP, "1",
-            "stateFormat", "2",
+            "stateFormat", String.valueOf(STATE_FORMAT),
             ZkStateReader.REPLICATION_FACTOR, "1",
             ZkStateReader.MAX_SHARDS_PER_NODE, "1"
             );
@@ -922,7 +924,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         controllerClient.makePath("/collections/perf" + i, true);
       }
 
-      for (int i = 0, j = 0, k = 0; i < 20000; i++, j++, k++) {
+      for (int i = 0, j = 0, k = 0; i < MAX_STATE_CHANGES; i++, j++, k++) {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
             ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING,
             ZkStateReader.NODE_NAME_PROP,  "node1",
@@ -934,8 +936,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
             + "/solr/");
         DistributedQueue q = Overseer.getInQueue(controllerClient);
         q.offer(ZkStateReader.toJSON(m));
-        if (j == 99) j = 0;
-        if (k == 9) k = 0;
+        if (j >= MAX_COLLECTIONS - 1) j = 0;
+        if (k >= MAX_CORES - 1) k = 0;
         if (i > 0 && i % 100 == 0) log.info("Published {} items", i);
       }
 

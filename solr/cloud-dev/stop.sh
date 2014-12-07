@@ -11,22 +11,22 @@ die () {
 
 [ "$#" -eq 1 ] || die "1 argument required, $# provided, usage: stop.sh {numServers}"
 
-cd ../example
+cd ../server
 
 for (( i=1; i <= $numServers; i++ ))
 do
   stopPort=`expr $baseStopPort + $i`
-  echo "stopping example$i, stop port is $stopPort"
-  cd ../example$i
+  echo "stopping server$i, stop port is $stopPort"
+  cd ../server$i
   java -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar --stop
 done
 
 
-mkdir ../example-lastlogs
+mkdir ../server-lastlogs
 
 for (( i=1; i <= $numServers; i++ ))
 do
-   cd ../example$i
+   cd ../server$i
 
   jettyPort=`expr $baseJettyPort + $i`
   echo "Make sure jetty stops and wait for it: $jettyPort"
@@ -41,8 +41,8 @@ do
   fi
   
   # save the last shutdown logs
-  echo "copy example$i.log to lastlogs"
-  cp -r -f example$i.log ../example-lastlogs/example-last$i.log
+  echo "copy server$i.log to lastlogs"
+  cp -r -f server$i.log ../server-lastlogs/server-last$i.log
 done
 
 # stop zk runner

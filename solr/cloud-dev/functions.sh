@@ -9,8 +9,8 @@ rebuild() {
 	cd ..
 	rm -r -f dist
 	rm -r -f build
-	rm -r -f example/solr/zoo_data
-	rm -f example/example.log
+	rm -r -f server/solr/zoo_data
+	rm -f server/server.log
 	ant example dist
 }
 
@@ -22,8 +22,8 @@ setports() {
 reinstall() {
 	echo "Reinstalling instance $1"
 	cd ..
-	rm -rf  example$1
-	cp -r -f example example$1
+	rm -rf  server$1
+	cp -r -f server server$1
 }
 
 start() {
@@ -33,14 +33,14 @@ start() {
 	echo "Starting instance $1"
 
 	setports $1
-	cd ../example$1
-	java $JAVA_OPTS -Djetty.port=$PORT $OPT -DSTOP.PORT=$STOP_PORT -DSTOP.KEY=key -jar start.jar 1>example$1.log 2>&1 &
+	cd ../server$1
+	java $JAVA_OPTS -Djetty.port=$PORT $OPT -DSTOP.PORT=$STOP_PORT -DSTOP.KEY=key -jar start.jar 1>server$1.log 2>&1 &
 }
 
 stop() {
 	echo "Stopping instance $1"
 	setports $1
-	cd ../example$1
+	cd ../server$1
 	java -DSTOP.PORT=$STOP_PORT -DSTOP.KEY=key -jar start.jar --stop
 }
 
@@ -61,13 +61,13 @@ status() {
 }
 
 cleanlogs() {
-    cd ../example$1
-	mv example$1.log example$1.oldlog
+    cd ../server$1
+	mv server$1.log server$1.oldlog
 }
 
 taillogs() {
-	cd ../example$1
-	tail -f example$1.log
+	cd ../server$1
+	tail -f server$1.log
 }
 
 createshard() {

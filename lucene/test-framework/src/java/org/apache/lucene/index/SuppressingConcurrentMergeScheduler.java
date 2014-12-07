@@ -1,4 +1,5 @@
-package org.apache.lucene.index.memory;
+package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,24 +17,25 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.NumericDocValues;
+import java.io.IOException;
 
-/**
- * 
- * @lucene.internal
- */
-class MemoryIndexNormDocValues extends NumericDocValues {
-  private final long value;
-  public MemoryIndexNormDocValues(long value) {
-    this.value = value;
-  }
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.IOUtils;
 
+/** A {@link ConcurrentMergeScheduler} that ignores AlreadyClosedException. */
+public abstract class SuppressingConcurrentMergeScheduler extends ConcurrentMergeScheduler {
   @Override
-  public long get(int docID) {
-    if (docID != 0)
-      throw new IndexOutOfBoundsException();
-    else
-      return value;
+  protected void handleMergeException(Throwable exc) {
+    while (true) {
+      if (isOK(exc)) {
+        return;
+      }
+      exc = exc.getCause();
+      if (exc == null) {
+        super.handleMergeException(exc);
+      }
+    }
   }
 
+  protected abstract boolean isOK(Throwable t);
 }

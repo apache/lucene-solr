@@ -248,11 +248,6 @@
     <!--
     <unlockOnStartup>false</unlockOnStartup>
       -->
-    
-    <!-- Expert: Controls how often Lucene loads terms into memory
-         Default is 128 and is likely good for most everyone.
-      -->
-    <!-- <termIndexInterval>128</termIndexInterval> -->
 
     <!-- If true, IndexReaders will be reopened (often more efficient)
          instead of closed and then opened. Default: true

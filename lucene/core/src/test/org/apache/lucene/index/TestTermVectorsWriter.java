@@ -47,6 +47,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.setAnalyzerOffsetGap("field", 0);
     fieldTypes.setAnalyzerPositionGap("field", 0);
     fieldTypes.setDocValuesType("field", DocValuesType.NONE);
+    fieldTypes.disableFastRanges("field");
     fieldTypes.enableTermVectors("field");
     fieldTypes.enableTermVectorOffsets("field");
     fieldTypes.enableTermVectorPositions("field");

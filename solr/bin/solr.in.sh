@@ -61,6 +61,9 @@ GC_TUNE="-XX:NewRatio=3 \
 # (recommended in production environments)
 ENABLE_REMOTE_JMX_OPTS="true"
 
+# The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+# RMI_PORT=18983
+
 # Anything you add to the SOLR_OPTS variable will be included in the java
 # start command line as-is, in ADDITION to other options. If you specify the
 # -a option on start script, those options will be appended as well. Examples:

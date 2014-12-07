@@ -125,7 +125,6 @@ public class TestRestManager extends SolrRestletTestBase {
     Set<String> reservedEndpoints = registry.getReservedEndpoints();
     assertTrue(reservedEndpoints.size() > 2);
     assertTrue(reservedEndpoints.contains(RestManager.SCHEMA_BASE_PATH + RestManager.MANAGED_ENDPOINT));
-    assertTrue(reservedEndpoints.contains(RestManager.CONFIG_BASE_PATH + RestManager.MANAGED_ENDPOINT));
     for (String endpoint : reservedEndpoints) {
 
       try {

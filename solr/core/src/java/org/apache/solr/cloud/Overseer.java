@@ -17,32 +17,26 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -55,7 +49,6 @@ import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -75,7 +68,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Cluster leader. Responsible node assignments, cluster state file?
+ * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
+ * collections, shards, replicas and setting various properties.
  */
 public class Overseer implements Closeable {
   public static final String QUEUE_OPERATION = "operation";
@@ -98,8 +92,6 @@ public class Overseer implements Closeable {
 
   static enum LeaderStatus {DONT_KNOW, NO, YES}
 
-  private long lastUpdatedTime = 0;
-
   private class ClusterStateUpdater implements Runnable, Closeable {
     
     private final ZkStateReader reader;
@@ -121,10 +113,6 @@ public class Overseer implements Closeable {
 
     private Map clusterProps;
     private boolean isClosed = false;
-
-    private final Map<String, Object> updateNodes = new LinkedHashMap<>();
-    private boolean isClusterStateModified = false;
-
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
@@ -178,35 +166,18 @@ public class Overseer implements Closeable {
                 }
                 else if (LeaderStatus.YES == isLeader) {
                   final ZkNodeProps message = ZkNodeProps.load(head);
-                  final String operation = message.getStr(QUEUE_OPERATION);
-                  final TimerContext timerContext = stats.time(operation);
-                  try {
-                    ZkWriteCommand zkWriteCommand = processMessage(clusterState, message, operation, workQueue.getStats().getQueueLength());
-                    clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommand);
-                    stats.success(operation);
-                  } catch (Exception e) {
-                    // generally there is nothing we can do - in most cases, we have
-                    // an issue that will fail again on retry or we cannot communicate with     a
-                    // ZooKeeper in which case another Overseer should take over
-                    // TODO: if ordering for the message is not important, we could
-                    // track retries and put it back on the end of the queue
-                    log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
-                    stats.error(operation);
-                  } finally {
-                    timerContext.stop();
-                  }
-                  if (zkStateWriter.hasPendingUpdates())  {
-                    clusterState = zkStateWriter.writePendingUpdates();
-                  }
+                  log.info("processMessage: queueSize: {}, message = {}", workQueue.getStats().getQueueLength(), message);
+                  clusterState = processQueueItem(message, clusterState, zkStateWriter);
                   workQueue.poll(); // poll-ing removes the element we got by peek-ing
                 }
                 else {
                   log.info("am_i_leader unclear {}", isLeader);                  
                   // re-peek below in case our 'head' value is out-of-date by now
                 }
-                
                 head = workQueue.peek();
               }
+              // force flush at the end of the loop
+              clusterState = zkStateWriter.writePendingUpdates();
             }
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
@@ -226,8 +197,6 @@ public class Overseer implements Closeable {
       }
       
       log.info("Starting to work on the main queue");
-      int lastStateFormat = -1; // sentinel
-      String lastCollectionName = null;
       try {
         ZkStateWriter zkStateWriter = new ZkStateWriter(reader, stats);
         ClusterState clusterState = null;
@@ -269,90 +238,37 @@ public class Overseer implements Closeable {
                 // the state queue, items would have been left in the
                 // work queue so let's process those first
                 byte[] data = workQueue.peek();
+                boolean hadWorkItems = data != null;
                 while (data != null)  {
                   final ZkNodeProps message = ZkNodeProps.load(data);
-                  final String operation = message.getStr(QUEUE_OPERATION);
-                  final TimerContext timerContext = stats.time(operation);
-                  try {
-                    ZkWriteCommand zkWriteCommand = processMessage(clusterState, message, operation, workQueue.getStats().getQueueLength());
-                    clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommand);
-                    stats.success(operation);
-                  } catch (Exception e) {
-                    // generally there is nothing we can do - in most cases, we have
-                    // an issue that will fail again on retry or we cannot communicate with     a
-                    // ZooKeeper in which case another Overseer should take over
-                    // TODO: if ordering for the message is not important, we could
-                    // track retries and put it back on the end of the queue
-                    log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
-                    stats.error(operation);
-                  } finally {
-                    timerContext.stop();
-                  }
-                  if (zkStateWriter.hasPendingUpdates())  {
-                    clusterState = zkStateWriter.writePendingUpdates();
-                  }
+                  log.info("processMessage: queueSize: {}, message = {}", workQueue.getStats().getQueueLength(), message);
+                  clusterState = processQueueItem(message, clusterState, zkStateWriter);
                   workQueue.poll(); // poll-ing removes the element we got by peek-ing
                   data = workQueue.peek();
+                }
+                // force flush at the end of the loop
+                if (hadWorkItems) {
+                  clusterState = zkStateWriter.writePendingUpdates();
                 }
               }
 
               while (head != null) {
                 final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
-                final String operation = message.getStr(QUEUE_OPERATION);
-
-                // we batch updates for the main cluster state together (stateFormat=1)
-                // but if we encounter a message for a collection with a stateFormat different than the last
-                // then we stop batching at that point
-                String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-                if (collection == null) collection = message.getStr("name");
-                if (collection != null) {
-                  DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-                  if (lastStateFormat != -1 && docCollection != null && docCollection.getStateFormat() != lastStateFormat)  {
-                    lastStateFormat = docCollection.getStateFormat();
-                    // we don't want to mix batching of different state formats together because that makes
-                    // it harder to guarantee atomicity of ZK writes
-                    break;
-                  }
-                  if (docCollection != null)  {
-                    lastStateFormat = docCollection.getStateFormat();
-                  }
-                }
-
-                final TimerContext timerContext = stats.time(operation);
-                try {
-                  ZkWriteCommand zkWriteCommand = processMessage(clusterState, message, operation, stateUpdateQueue.getStats().getQueueLength());
-                  clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommand);
-                  stats.success(operation);
-                } catch (Exception e) {
-                  // generally there is nothing we can do - in most cases, we have
-                  // an issue that will fail again on retry or we cannot communicate with
-                  // ZooKeeper in which case another Overseer should take over
-                  // TODO: if ordering for the message is not important, we could
-                  // track retries and put it back on the end of the queue
-                  log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
-                  stats.error(operation);
-                } finally {
-                  timerContext.stop();
-                }
+                log.info("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
+                clusterState = processQueueItem(message, clusterState, zkStateWriter);
                 workQueue.offer(head.getBytes());
 
                 stateUpdateQueue.poll();
 
-                if (isClosed || System.nanoTime() - lastUpdatedTime > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) break;
-                if (!updateNodes.isEmpty() && !collection.equals(lastCollectionName)) {
-                  lastCollectionName = collection;
-                  break;
-                }
-                lastCollectionName = collection;
+                if (isClosed) break;
                 // if an event comes in the next 100ms batch it together
                 head = stateUpdateQueue.peek(100);
               }
-              if (zkStateWriter.hasPendingUpdates())  {
-                clusterState = zkStateWriter.writePendingUpdates();
-                lastUpdatedTime = zkStateWriter.getLastUpdatedTime();
-              }
+              // we should force write all pending updates because the next iteration might sleep until there
+              // are more items in the main queue
+              clusterState = zkStateWriter.writePendingUpdates();
               // clean work queue
-              while (workQueue.poll() != null) ;
+              while (workQueue.poll() != null);
 
             } catch (KeeperException e) {
               if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
@@ -381,6 +297,30 @@ public class Overseer implements Closeable {
           }
         }.start();
       }
+    }
+
+    private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter) throws KeeperException, InterruptedException {
+      final String operation = message.getStr(QUEUE_OPERATION);
+      ZkWriteCommand zkWriteCommand = null;
+      final TimerContext timerContext = stats.time(operation);
+      try {
+        zkWriteCommand = processMessage(clusterState, message, operation);
+        stats.success(operation);
+      } catch (Exception e) {
+        // generally there is nothing we can do - in most cases, we have
+        // an issue that will fail again on retry or we cannot communicate with     a
+        // ZooKeeper in which case another Overseer should take over
+        // TODO: if ordering for the message is not important, we could
+        // track retries and put it back on the end of the queue
+        log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
+        stats.error(operation);
+      } finally {
+        timerContext.stop();
+      }
+      if (zkWriteCommand != null) {
+        clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommand);
+      }
+      return clusterState;
     }
 
     private void checkIfIamStillLeader() {
@@ -423,8 +363,7 @@ public class Overseer implements Closeable {
     }
 
     private ZkWriteCommand processMessage(ClusterState clusterState,
-        final ZkNodeProps message, final String operation, int queueSize) {
-      log.info("processMessage: queueSize: {}, message = {}", queueSize, message);
+        final ZkNodeProps message, final String operation) {
       CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(operation);
       if (collectionAction != null) {
         switch (collectionAction) {
@@ -445,7 +384,7 @@ public class Overseer implements Closeable {
           case DELETEREPLICAPROP:
             return new ReplicaMutator(getZkStateReader()).removeReplicaProperty(clusterState, message);
           case BALANCESHARDUNIQUE:
-            ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(this, clusterState, message);
+            ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(clusterState, message);
             if (dProp.balanceProperty()) {
               String collName = message.getStr(ZkStateReader.COLLECTION_PROP);
               return new ZkWriteCommand(collName, dProp.getDocCollection());
@@ -557,55 +496,6 @@ public class Overseer implements Closeable {
       return LeaderStatus.NO;
     }
 
-
-
-
-    private ClusterState updateSlice(ClusterState state, String collectionName, Slice slice) {
-        DocCollection newCollection = null;
-        DocCollection coll = state.getCollectionOrNull(collectionName) ;
-        Map<String,Slice> slices;
-        
-        if (coll == null) {
-          //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
-          // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
-          slices = new LinkedHashMap<>(1);
-          slices.put(slice.getName(), slice);
-          Map<String,Object> props = new HashMap<>(1);
-          props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name",ImplicitDocRouter.NAME));
-          newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
-        } else {
-          slices = new LinkedHashMap<>(coll.getSlicesMap()); // make a shallow copy
-          slices.put(slice.getName(), slice);
-          newCollection = coll.copyWithSlices(slices);
-        }
-
-        // System.out.println("###!!!### NEW CLUSTERSTATE: " + JSONUtil.toJSON(newCollections));
-
-        return newState(state, singletonMap(collectionName, newCollection));
-      }
-      
-    private ClusterState newState(ClusterState state, Map<String, DocCollection> colls) {
-      for (Entry<String, DocCollection> e : colls.entrySet()) {
-        DocCollection c = e.getValue();
-        if (c == null) {
-          isClusterStateModified = true;
-          state = state.copyWith(e.getKey(), null);
-          updateNodes.put(ZkStateReader.getCollectionPath(e.getKey()) ,null);
-          continue;
-        }
-
-        if (c.getStateFormat() > 1) {
-          updateNodes.put(ZkStateReader.getCollectionPath(c.getName()),
-              new ClusterState(-1, Collections.<String>emptySet(), singletonMap(c.getName(), c)));
-        } else {
-          isClusterStateModified = true;
-        }
-        state = state.copyWith(e.getKey(), c);
-
-      }
-      return state;
-    }
-
     @Override
       public void close() {
         this.isClosed = true;
@@ -614,7 +504,6 @@ public class Overseer implements Closeable {
   }
   // Class to encapsulate processing replica properties that have at most one replica hosting a property per slice.
   private class ExclusiveSliceProperty {
-    private ClusterStateUpdater updater;
     private ClusterState clusterState;
     private final boolean onlyActiveNodes;
     private final String property;
@@ -636,8 +525,7 @@ public class Overseer implements Closeable {
 
     private int assigned = 0;
 
-    ExclusiveSliceProperty(ClusterStateUpdater updater, ClusterState clusterState, ZkNodeProps message) {
-      this.updater = updater;
+    ExclusiveSliceProperty(ClusterState clusterState, ZkNodeProps message) {
       this.clusterState = clusterState;
       String tmp = message.getStr(ZkStateReader.PROPERTY_PROP);
       if (StringUtils.startsWith(tmp, OverseerCollectionProcessor.COLL_PROP_PREFIX) == false) {
@@ -898,7 +786,8 @@ public class Overseer implements Closeable {
 
       balanceUnassignedReplicas();
       for (Slice newSlice : changedSlices.values()) {
-        clusterState = updater.updateSlice(clusterState, collectionName, newSlice);
+        DocCollection docCollection = CollectionMutator.updateSlice(collectionName, clusterState.getCollection(collectionName), newSlice);
+        clusterState = ClusterStateMutator.newState(clusterState, collectionName, docCollection);
       }
       return true;
     }

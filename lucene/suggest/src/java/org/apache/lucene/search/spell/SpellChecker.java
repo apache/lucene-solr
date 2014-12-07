@@ -496,6 +496,7 @@ public class SpellChecker implements java.io.Closeable {
         fieldTypes.setMultiValued("start" + ng);
 
         fieldTypes.disableStored("gram" + ng);
+        fieldTypes.disableFastRanges("gram" + ng);
         fieldTypes.setIndexOptions("gram" + ng, IndexOptions.DOCS_AND_FREQS);
         fieldTypes.disableSorting("gram" + ng);
         fieldTypes.setMultiValued("gram" + ng);

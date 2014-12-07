@@ -36,16 +36,16 @@ public abstract class CompressingCodec extends FilterCodec {
   /**
    * Create a random instance.
    */
-  public static CompressingCodec randomInstance(Random random, int chunkSize, boolean withSegmentSuffix) {
+  public static CompressingCodec randomInstance(Random random, int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix) {
     switch (random.nextInt(4)) {
     case 0:
-      return new FastCompressingCodec(chunkSize, withSegmentSuffix);
+      return new FastCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix);
     case 1:
-      return new FastDecompressionCompressingCodec(chunkSize, withSegmentSuffix);
+      return new FastDecompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix);
     case 2:
-      return new HighCompressionCompressingCodec(chunkSize, withSegmentSuffix);
+      return new HighCompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix);
     case 3:
-      return new DummyCompressingCodec(chunkSize, withSegmentSuffix);
+      return new DummyCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix);
     default:
       throw new AssertionError();
     }
@@ -56,14 +56,14 @@ public abstract class CompressingCodec extends FilterCodec {
    * suffix
    */
   public static CompressingCodec randomInstance(Random random) {
-    return randomInstance(random, RandomInts.randomIntBetween(random, 1, 500), false);
+    return randomInstance(random, RandomInts.randomIntBetween(random, 1, 1 << 15), RandomInts.randomIntBetween(random, 64, 1024), false);
   }
   
   /**
    * Creates a random {@link CompressingCodec} that is using a segment suffix
    */
   public static CompressingCodec randomInstance(Random random, boolean withSegmentSuffix) {
-    return randomInstance(random, RandomInts.randomIntBetween(random, 1, 500), withSegmentSuffix);
+    return randomInstance(random, RandomInts.randomIntBetween(random, 1, 1 << 15), RandomInts.randomIntBetween(random, 64, 1024), withSegmentSuffix);
   }
 
   private final CompressingStoredFieldsFormat storedFieldsFormat;
@@ -72,17 +72,17 @@ public abstract class CompressingCodec extends FilterCodec {
   /**
    * Creates a compressing codec with a given segment suffix
    */
-  public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize) {
+  public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) {
     super(name, TestUtil.getDefaultCodec());
-    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize);
+    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk);
     this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize);
   }
   
   /**
    * Creates a compressing codec with an empty segment suffix
    */
-  public CompressingCodec(String name, CompressionMode compressionMode, int chunkSize) {
-    this(name, "", compressionMode, chunkSize);
+  public CompressingCodec(String name, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) {
+    this(name, "", compressionMode, chunkSize, maxDocsPerChunk);
   }
 
   @Override

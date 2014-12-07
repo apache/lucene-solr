@@ -25,6 +25,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
+import org.junit.BeforeClass;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -47,6 +48,16 @@ import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
   static final Logger log =  LoggerFactory.getLogger(TestBulkSchemaConcurrent.class);
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
+
+  @BeforeClass
+  public static void initSysProperties() {
+    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("enable.update.log", "true");
+  }
+
+  protected String getCloudSolrConfig() {
+    return "solrconfig-managed-schema.xml";
+  }
 
   private void setupHarnesses() {
     for (final SolrServer client : clients) {
@@ -101,7 +112,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     }
 
-    assertTrue(success);
+    assertTrue(collectErrors.toString(), success);
 
 
   }
@@ -138,7 +149,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
 
     RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
-    payload = payload.replace("replaceFieldA1", aField);
+    payload = payload.replace("replaceFieldA", aField);
 
     payload = payload.replace("replaceDynamicField", dynamicFldName);
     payload = payload.replace("dynamicFieldLol","lol"+seed);

@@ -16,6 +16,7 @@ package org.apache.lucene.search.highlight;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,13 +30,13 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
@@ -43,7 +44,18 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.queries.CommonTermsQuery;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -65,7 +77,7 @@ import org.apache.lucene.util.IOUtils;
 public class WeightedSpanTermExtractor {
 
   private String fieldName;
-  private TokenStream tokenStream;
+  private TokenStream tokenStream;//set subsequent to getWeightedSpanTerms* methods
   private String defaultField;
   private boolean expandMultiTermQuery;
   private boolean cachedTokenStream;
@@ -209,6 +221,8 @@ public class WeightedSpanTermExtractor {
         sp.setBoost(query.getBoost());
         extractWeightedSpanTerms(terms, sp);
       }
+    } else if (query instanceof MatchAllDocsQuery) {
+      //nothing
     } else {
       Query origQuery = query;
       if (query instanceof MultiTermQuery) {
@@ -357,18 +371,39 @@ public class WeightedSpanTermExtractor {
 
   protected LeafReaderContext getLeafContext() throws IOException {
     if (internalReader == null) {
-      if(wrapToCaching && !(tokenStream instanceof CachingTokenFilter)) {
-        assert !cachedTokenStream;
-        tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
-        cachedTokenStream = true;
+      boolean cacheIt = wrapToCaching && !(tokenStream instanceof CachingTokenFilter);
+
+      // If it's from term vectors, simply wrap the underlying Terms in a reader
+      if (tokenStream instanceof TokenStreamFromTermVector) {
+        cacheIt = false;
+        Terms termVectorTerms = ((TokenStreamFromTermVector) tokenStream).getTermVectorTerms();
+        if (termVectorTerms.hasPositions() && termVectorTerms.hasOffsets()) {
+          internalReader = new TermVectorLeafReader(DelegatingLeafReader.FIELD_NAME, termVectorTerms);
+        }
       }
-      final MemoryIndex indexer = new MemoryIndex(true);
-      indexer.addField(DelegatingLeafReader.FIELD_NAME, tokenStream);
-      tokenStream.reset();
-      final IndexSearcher searcher = indexer.createSearcher();
-      // MEM index has only atomic ctx
-      internalReader = new DelegatingLeafReader(((LeafReaderContext)searcher.getTopReaderContext()).reader());
+
+      // Use MemoryIndex (index/invert this tokenStream now)
+      if (internalReader == null) {
+        final MemoryIndex indexer = new MemoryIndex(true);
+        if (cacheIt) {
+          assert !cachedTokenStream;
+          tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
+          cachedTokenStream = true;
+          indexer.addField(DelegatingLeafReader.FIELD_NAME, tokenStream);
+        } else {
+          indexer.addField(DelegatingLeafReader.FIELD_NAME,
+              new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
+        }
+        tokenStream.reset();//reset to beginning when we return
+        final IndexSearcher searcher = indexer.createSearcher();
+        // MEM index has only atomic ctx
+        internalReader = ((LeafReaderContext) searcher.getTopReaderContext()).reader();
+      }
+
+      //Now wrap it so we always use a common field.
+      this.internalReader = new DelegatingLeafReader(internalReader);
     }
+
     return internalReader.getContext();
   }
   
@@ -532,7 +567,7 @@ public class WeightedSpanTermExtractor {
 
     return terms;
   }
-  
+
   protected void collectSpanQueryFields(SpanQuery spanQuery, Set<String> fieldNames) {
     if (spanQuery instanceof FieldMaskingSpanQuery) {
       collectSpanQueryFields(((FieldMaskingSpanQuery)spanQuery).getMaskedQuery(), fieldNames);
@@ -622,8 +657,11 @@ public class WeightedSpanTermExtractor {
   public boolean isCachedTokenStream() {
     return cachedTokenStream;
   }
-  
+
+  /** Returns the tokenStream which may have been wrapped in a CachingTokenFilter.
+   * getWeightedSpanTerms* sets the tokenStream, so don't call this before. */
   public TokenStream getTokenStream() {
+    assert tokenStream != null;
     return tokenStream;
   }
   
@@ -632,12 +670,16 @@ public class WeightedSpanTermExtractor {
    * {@link CachingTokenFilter} are wrapped in a {@link CachingTokenFilter} to
    * ensure an efficient reset - if you are already using a different caching
    * {@link TokenStream} impl and you don't want it to be wrapped, set this to
-   * false.
+   * false. This setting is ignored when a term vector based TokenStream is supplied,
+   * since it can be reset efficiently.
    */
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;
   }
 
+  /** A threshold of number of characters to analyze. When a TokenStream based on
+   * term vectors with offsets and positions are supplied, this setting
+   * does not apply. */
   protected final void setMaxDocCharsToAnalyze(int maxDocCharsToAnalyze) {
     this.maxDocCharsToAnalyze = maxDocCharsToAnalyze;
   }

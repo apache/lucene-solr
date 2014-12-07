@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 abstract class DocConsumer {
-  abstract void processDocument(Term delTerm) throws IOException;
-  abstract void flush(final SegmentWriteState state) throws IOException;
+  abstract void processDocument(Term delTerm) throws IOException, AbortingException;
+  abstract void flush(final SegmentWriteState state) throws IOException, AbortingException;
   abstract void abort();
 }

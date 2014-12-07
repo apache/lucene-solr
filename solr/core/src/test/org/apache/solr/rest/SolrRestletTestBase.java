@@ -47,10 +47,6 @@ abstract public class SolrRestletTestBase extends RestTestBase {
     solrSchemaRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
     extraServlets.put(solrSchemaRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
-    final ServletHolder solrConfigRestApi = new ServletHolder("SolrConfigRestApi", ServerServlet.class);
-    solrConfigRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrConfigRestApi");
-    extraServlets.put(solrConfigRestApi, "/config/*");
-
     createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
   }
 }

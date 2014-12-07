@@ -37,6 +37,7 @@ final class RateLimitedIndexOutput extends IndexOutput {
   private long currentMinPauseCheckBytes;
 
   RateLimitedIndexOutput(final RateLimiter rateLimiter, final IndexOutput delegate) {
+    super("RateLimitedIndexOutput(" + delegate + ")");
     this.delegate = delegate;
     this.rateLimiter = rateLimiter;
     this.currentMinPauseCheckBytes = rateLimiter.getMinPauseCheckBytes();

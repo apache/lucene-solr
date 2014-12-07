@@ -70,7 +70,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
       success = true;
     } finally {
       if (!success) {
-        abort();
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }
@@ -149,14 +149,6 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
         newLine();
       }
     }
-  }
-
-  @Override
-  public void abort() {
-    try {
-      close();
-    } catch (Throwable ignored) {}
-    IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
   }
 
   @Override

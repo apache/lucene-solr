@@ -544,8 +544,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
-  // LUCENE-1072: make sure an errant exception on flushing
-  // one segment only takes out those docs in that one flush
+  // make sure an aborting exception closes the writer:
   public void testDocumentsWriterAbort() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
@@ -558,20 +557,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     String contents = "aa bb cc dd ee ff gg hh ii jj kk";
     doc.addLargeText("content", contents);
     boolean hitError = false;
-    for(int i=0;i<200;i++) {
-      try {
-        writer.addDocument(doc);
-      } catch (IOException ioe) {
-        // only one flush should fail:
-        assertFalse(hitError);
-        hitError = true;
-      }
+    writer.addDocument(doc);
+    try {
+      writer.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IOException ioe) {
+      // only one flush should fail:
+      assertFalse(hitError);
+      hitError = true;
+      assertTrue(writer.deleter.isClosed());
+      assertTrue(writer.isClosed());
     }
-    assertTrue(hitError);
-    writer.close();
-    IndexReader reader = DirectoryReader.open(dir);
-    assertEquals(198, reader.docFreq(new Term("content", "aa")));
-    reader.close();
+    assertFalse(DirectoryReader.indexExists(dir));
     dir.close();
   }
 
@@ -1250,6 +1247,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         new FailOnTermVectors(FailOnTermVectors.AFTER_INIT_STAGE),
         new FailOnTermVectors(FailOnTermVectors.INIT_STAGE), };
     int num = atLeast(1);
+    iters:
     for (int j = 0; j < num; j++) {
       for (FailOnTermVectors failure : failures) {
         MockDirectoryWrapper dir = newMockDirectory();
@@ -1260,12 +1258,16 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         for (int i = 0; i < numDocs; i++) {
           Document doc = w.newDocument();
           doc.addLargeText("field", "a field");
-          // random TV
           try {
             w.addDocument(doc);
             assertFalse(fieldTypes.getTermVectors("field"));
           } catch (RuntimeException e) {
             assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
+            // This is an aborting exception, so writer is closed:
+            assertTrue(w.deleter.isClosed());
+            assertTrue(w.isClosed());
+            dir.close();
+            continue iters;
           }
           if (random().nextInt(20) == 0) {
             w.commit();

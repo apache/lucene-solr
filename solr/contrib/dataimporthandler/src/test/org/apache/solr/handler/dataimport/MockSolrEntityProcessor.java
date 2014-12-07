@@ -31,10 +31,6 @@ public class MockSolrEntityProcessor extends SolrEntityProcessor {
 
   private int rows;
 
-  public MockSolrEntityProcessor(List<SolrTestCaseJ4.Doc> docsData) {
-    this(docsData, ROWS_DEFAULT);
-  }
-
   public MockSolrEntityProcessor(List<SolrTestCaseJ4.Doc> docsData, int rows) {
     this.docsData = docsData;
     this.rows = rows;

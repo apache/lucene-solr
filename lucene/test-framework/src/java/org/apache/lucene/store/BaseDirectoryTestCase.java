@@ -1031,5 +1031,14 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
     dir.close();
   }
+
+  // LUCENE-6084
+  public void testIndexOutputToString() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    IndexOutput out = dir.createOutput("camelCase.txt", newIOContext(random()));
+    assertTrue(out.toString(), out.toString().contains("camelCase.txt"));
+    out.close();
+    dir.close();
+  }
 }
 

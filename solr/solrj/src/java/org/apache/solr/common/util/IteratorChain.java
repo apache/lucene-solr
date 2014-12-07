@@ -23,8 +23,10 @@ import java.util.List;
 
 /** Chain several Iterators, so that this iterates
  *  over all of them in sequence.
+ *
+ * @deprecated This class is no longer used by Solr, and may be removed in future versions
  */
-
+@Deprecated
 public class IteratorChain<E> implements Iterator<E> {
 
   private final List<Iterator<E>> iterators = new ArrayList<>();

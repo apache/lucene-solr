@@ -60,7 +60,6 @@ public class RestManager {
   public static final Logger log = LoggerFactory.getLogger(RestManager.class);
   
   public static final String SCHEMA_BASE_PATH = "/schema";
-  public static final String CONFIG_BASE_PATH = "/config";
   public static final String MANAGED_ENDPOINT = "/managed";
   
   // used for validating resourceIds provided during registration
@@ -118,15 +117,12 @@ public class RestManager {
     private final Pattern reservedEndpointsPattern;
 
     public Registry() {
-      reservedEndpoints.add(CONFIG_BASE_PATH + MANAGED_ENDPOINT);
       reservedEndpoints.add(SCHEMA_BASE_PATH + MANAGED_ENDPOINT);
 
       for (String reservedEndpoint : SolrSchemaRestApi.getReservedEndpoints()) {
         reservedEndpoints.add(reservedEndpoint);
       }
-      for (String reservedEndpoint : SolrConfigRestApi.getReservedEndpoints()) {
-        reservedEndpoints.add(reservedEndpoint);
-      }
+
       reservedEndpointsPattern = getReservedEndpointsPattern();
     }
 
@@ -192,8 +188,8 @@ public class RestManager {
       Matcher resourceIdValidator = resourceIdRegex.matcher(resourceId);
       if (!resourceIdValidator.matches()) {
         String errMsg = String.format(Locale.ROOT,
-            "Invalid resourceId '%s'; must start with %s or %s.",
-            resourceId, CONFIG_BASE_PATH, SCHEMA_BASE_PATH);
+            "Invalid resourceId '%s'; must start with  %s.",
+            resourceId,  SCHEMA_BASE_PATH);
         throw new SolrException(ErrorCode.SERVER_ERROR, errMsg);        
       }
          
@@ -603,7 +599,6 @@ public class RestManager {
     endpoint = new RestManagerManagedResource(this);
     endpoint.loadManagedDataAndNotify(null); // no observers for my endpoint
     // responds to requests to /config/managed and /schema/managed
-    managed.put(CONFIG_BASE_PATH+MANAGED_ENDPOINT, endpoint);
     managed.put(SCHEMA_BASE_PATH+MANAGED_ENDPOINT, endpoint);
             
     // init registered managed resources
@@ -734,10 +729,7 @@ public class RestManager {
    * @param router - Restlet Router
    */
   public synchronized void attachManagedResources(String routerPath, Router router) {
-    
-    if (CONFIG_BASE_PATH.equals(routerPath)) {
-      this.configRouter = router;
-    } else if (SCHEMA_BASE_PATH.equals(routerPath)) {
+    if (SCHEMA_BASE_PATH.equals(routerPath)) {
       this.schemaRouter = router;
     } else {
       throw new SolrException(ErrorCode.SERVER_ERROR, 

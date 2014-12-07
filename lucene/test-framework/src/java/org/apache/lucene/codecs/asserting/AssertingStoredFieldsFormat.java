@@ -143,11 +143,6 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public void abort() {
-      in.abort();
-    }
-
-    @Override
     public void finish(FieldInfos fis, int numDocs) throws IOException {
       assert docStatus == (numDocs > 0 ? Status.FINISHED : Status.UNDEFINED);
       in.finish(fis, numDocs);

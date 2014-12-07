@@ -232,20 +232,34 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
   public Shape toRangeShape(Shape start, Shape end) {
     if (!(start instanceof LevelledValue && end instanceof LevelledValue))
       throw new IllegalArgumentException("Must pass "+LevelledValue.class+" but got "+start.getClass());
-    LevelledValue minLV = (LevelledValue) start;
-    LevelledValue maxLV = (LevelledValue) end;
-    if (minLV.equals(maxLV))
-      return minLV;
-    //Optimize precision of the range, e.g. April 1st to April 30th is April.
-    minLV = minLV.getLVAtLevel(truncateStartVals(minLV, 0));
-    maxLV = maxLV.getLVAtLevel(truncateEndVals(maxLV, 0));
-    int cmp = comparePrefixLV(minLV, maxLV);
+    LevelledValue startLV = (LevelledValue) start;
+    LevelledValue endLV = (LevelledValue) end;
+    //note: this normalization/optimization process is actually REQUIRED based on assumptions elsewhere.
+    //Normalize start & end
+    startLV = startLV.getLVAtLevel(truncateStartVals(startLV, 0)); // chops off trailing min-vals (zeroes)
+    endLV = endLV.getLVAtLevel(truncateEndVals(endLV, 0)); // chops off trailing max-vals
+    //Optimize to just start or end if it's equivalent, e.g. April to April 1st is April 1st.
+    int cmp = comparePrefixLV(startLV, endLV);
     if (cmp > 0) {
       throw new IllegalArgumentException("Wrong order: "+start+" TO "+end);
     }
-    if (cmp == 0 && minLV.getLevel() == maxLV.getLevel())
-      return minLV;
-    return new NRShape(minLV, maxLV);
+    if (cmp == 0) {//one is a prefix of the other
+      if (startLV.getLevel() == endLV.getLevel()) {
+        //same
+        return startLV;
+      } else if (endLV.getLevel() > startLV.getLevel()) {
+        // e.g. April to April 1st
+        if (truncateStartVals(endLV, startLV.getLevel()) == startLV.getLevel()) {
+          return endLV;
+  }
+      } else {//minLV level > maxLV level
+        // e.g. April 30 to April
+        if (truncateEndVals(startLV, endLV.getLevel()) == endLV.getLevel()) {
+          return startLV;
+        }
+      }
+    }
+    return new NRShape(startLV, endLV);
   }
 
   /** From lv.getLevel on up, it returns the first Level seen with val != 0. It doesn't check past endLevel. */

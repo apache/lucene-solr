@@ -19,14 +19,93 @@ package org.apache.solr.common.params;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
 
 /**
  */
-public class SolrParamTest extends LuceneTestCase 
-{  
+public class SolrParamTest extends LuceneTestCase {  
+
+  public void testParamIterators() {
+
+    ModifiableSolrParams aaa = new ModifiableSolrParams();
+    aaa.add("foo", "a1");
+    aaa.add("foo", "a2");
+
+    assertIterSize("aaa: foo", 1, aaa);
+    assertIterSize("required aaa: foo", 1, aaa.required());
+
+    assertEquals(new String[] { "a1", "a2" }, aaa.getParams("foo"));
+
+    aaa.add("yak", "a3");
+
+    assertIterSize("aaa: foo & yak", 2, aaa);
+    assertIterSize("required aaa: foo & yak", 2, aaa.required());
+
+    assertEquals(new String[] { "a1", "a2" }, aaa.getParams("foo"));
+    assertEquals(new String[] { "a3" }, aaa.getParams("yak"));
+
+    ModifiableSolrParams bbb = new ModifiableSolrParams();
+    bbb.add("foo", "b1");
+    bbb.add("foo", "b2");
+    bbb.add("zot", "b3");
+
+    assertIterSize("bbb: foo & zot", 2, bbb);
+    assertIterSize("required bbb: foo & zot", 2, bbb.required());
+
+    assertEquals(new String[] { "b1", "b2" }, bbb.getParams("foo"));
+    assertEquals(new String[] { "b3" }, bbb.getParams("zot"));
+
+    SolrParams def = SolrParams.wrapDefaults(aaa, bbb);
+
+    assertIterSize("def: aaa + bbb", 3, def);
+    assertIterSize("required def: aaa + bbb", 3, def.required());
+
+    assertEquals(new String[] { "a1", "a2" }, def.getParams("foo"));
+    assertEquals(new String[] { "a3" }, def.getParams("yak"));
+    assertEquals(new String[] { "b3" }, def.getParams("zot"));
+
+    SolrParams append = SolrParams.wrapAppended(aaa, bbb);
+
+    assertIterSize("append: aaa + bbb", 3, append);
+    assertIterSize("required appended: aaa + bbb", 3, append.required());
+
+    assertEquals(new String[] { "a1", "a2", "b1", "b2", }, append.getParams("foo"));
+    assertEquals(new String[] { "a3" }, append.getParams("yak"));
+    assertEquals(new String[] { "b3" }, append.getParams("zot"));
+
+  }
+
+  public void testModParamAddParams() {
+
+    ModifiableSolrParams aaa = new ModifiableSolrParams();
+    aaa.add("foo", "a1");
+    aaa.add("foo", "a2");
+    aaa.add("yak", "a3");
+    
+    ModifiableSolrParams bbb = new ModifiableSolrParams();
+    bbb.add("foo", "b1");
+    bbb.add("foo", "b2");
+    bbb.add("zot", "b3");
+    
+    SolrParams def = SolrParams.wrapDefaults(aaa, bbb);
+    assertEquals(new String[] { "a1", "a2" }, def.getParams("foo"));
+    assertEquals(new String[] { "a3" }, def.getParams("yak"));
+    assertEquals(new String[] { "b3" }, def.getParams("zot"));
+
+    ModifiableSolrParams combined = new ModifiableSolrParams();
+    combined.add(def);
+
+    assertEquals(new String[] { "a1", "a2" }, combined.getParams("foo"));
+    assertEquals(new String[] { "a3" }, combined.getParams("yak"));
+    assertEquals(new String[] { "b3" }, combined.getParams("zot"));
+
+  }
+
   public void testGetParams() {
     Map<String,String> pmap = new HashMap<>();
     pmap.put( "str"        , "string"   );
@@ -194,4 +273,18 @@ public class SolrParamTest extends LuceneTestCase
     }
     return 200;
   }
+
+  static <T> List<T> iterToList(Iterator<T> iter) {
+    List<T> result = new ArrayList<>();
+    while (iter.hasNext()) {
+      result.add(iter.next());
+    }
+    return result;
+  }
+
+  static void assertIterSize(String msg, int expectedSize, SolrParams p) {
+    List<String> keys = iterToList(p.getParameterNamesIterator());
+    assertEquals(msg + " " + keys.toString(), expectedSize, keys.size());
+  }
+
 }

@@ -146,7 +146,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     try {
       assertNotNull(new RandomIndexWriter(random(), dir, conf));
       fail("should have hit AlreadySetException");
-    } catch (AlreadySetException e) {
+    } catch (IllegalStateException ise) {
       // expected
     }
 

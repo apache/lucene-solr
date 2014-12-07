@@ -116,8 +116,7 @@ public abstract class BaseSolrResource extends ServerResource {
             responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
             contentType = responseWriter.getContentType(solrRequest, solrResponse);
             final String path = getRequest().getRootRef().getPath();
-            if ( ! RestManager.SCHEMA_BASE_PATH.equals(path)
-                && ! RestManager.CONFIG_BASE_PATH.equals(path)) {
+            if ( ! RestManager.SCHEMA_BASE_PATH.equals(path)) {
               // don't set webapp property on the request when context and core/collection are excluded 
               final int cutoffPoint = path.indexOf("/", 1);
               final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);

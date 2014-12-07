@@ -20,7 +20,9 @@ package org.apache.solr.handler.component;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.BeforeClass;
 
@@ -115,6 +117,17 @@ public class DistributedQueryComponentOptimizationTest extends BaseDistributedSe
 
     verifySinglePass("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
     verifySinglePass("q", "id:19", "fl", "id,dynamic,cat*", "sort", "payload asc", "distrib.singlePass", "true");
+
+    // see SOLR-6795, distrib.singlePass=true would return score even when not asked for
+    handle.clear();
+    handle.put("timestamp", SKIPVAL);
+    handle.put("_version_", SKIPVAL);
+    // we don't to compare maxScore because most distributed requests return it anyway (just because they have score already)
+    handle.put("maxScore", SKIPVAL);
+    query("q", "{!func}id", ShardParams.DISTRIB_SINGLE_PASS, "true");
+
+    // fix for a bug where not all fields are returned if using multiple fl parameters, see SOLR-6796
+    query("q","*:*", "fl", "id", "fl","dynamic","sort","payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
   }
 
   private void verifySinglePass(String... q) throws SolrServerException {

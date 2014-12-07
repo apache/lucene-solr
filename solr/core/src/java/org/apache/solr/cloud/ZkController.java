@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -2010,15 +2011,17 @@ public final class ZkController {
 
     Map<String,Object> stateObj = null;
     if (stateData != null && stateData.length > 0) {
-      Object parsedJson = ZkStateReader.fromJSON(stateData);
-      if (parsedJson instanceof Map) {
-        stateObj = (Map<String,Object>)parsedJson;
-      } else if (parsedJson instanceof String) {
-        // old format still in ZK
-        stateObj = new LinkedHashMap<>();
-        stateObj.put("state", (String)parsedJson);
+      // TODO: Remove later ... this is for upgrading from 4.8.x to 4.10.3 (see: SOLR-6732)
+      if (stateData[0] == (byte)'{') {
+        Object parsedJson = ZkStateReader.fromJSON(stateData);
+        if (parsedJson instanceof Map) {
+          stateObj = (Map<String,Object>)parsedJson;
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Leader-initiated recovery state data is invalid! "+parsedJson);
+        }
       } else {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Leader-initiated recovery state data is invalid! "+parsedJson);
+        // old format still in ZK
+        stateObj = ZkNodeProps.makeMap("state", new String(stateData, StandardCharsets.UTF_8));
       }
     }
 
@@ -2051,7 +2054,7 @@ public final class ZkController {
       log.warn(exc.getMessage(), exc);
     }
     if (stateObj == null)
-      stateObj = new LinkedHashMap<>();
+      stateObj = ZkNodeProps.makeMap();
 
     stateObj.put("state", state);
     // only update the createdBy value if its not set
@@ -2123,7 +2126,7 @@ public final class ZkController {
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
-    String errMsg = "Failed to persist resource at {0} - version mismatch {1}";
+    String errMsg = "Failed to persist resource at {0} - old {1}";
     try {
       try {
         zkClient.setData(resourceLocation , content,znodeVersion, true);
@@ -2136,7 +2139,7 @@ public final class ZkController {
           } catch (KeeperException.NodeExistsException nee) {
             try {
               Stat stat = zkClient.exists(resourceLocation, null, true);
-              log.info("failed to set data version in zk is {} and expected version is {} ", stat.getVersion(),znodeVersion);
+              log.info("failed to set data version in zk is {0} and expected version is {1} ", stat.getVersion(),znodeVersion);
             } catch (Exception e1) {
               log.warn("could not get stat");
             }
@@ -2148,7 +2151,15 @@ public final class ZkController {
       }
 
     } catch (KeeperException.BadVersionException bve){
-      log.info(MessageFormat.format(errMsg,resourceLocation));
+      int v = -1;
+      try {
+        Stat stat = zkClient.exists(resourceLocation, null, true);
+        v = stat.getVersion();
+      } catch (Exception e) {
+        log.error(e.getMessage());
+
+      }
+      log.info(MessageFormat.format(errMsg+ " zkVersion= "+v,resourceLocation,znodeVersion));
       throw new ResourceModifiedInZkException(ErrorCode.CONFLICT, MessageFormat.format(errMsg,resourceLocation,znodeVersion) + ", retry.");
     }catch (ResourceModifiedInZkException e){
       throw e;

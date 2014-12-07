@@ -25,52 +25,48 @@ cd ..
 
 for (( i=1; i <= $numServers; i++ ))
 do
- rm -r -f example$i
+ echo "try to remove existing directory: server$i"
+ rm -r -f server$i
 done
 
 
 rm -r -f dist
 rm -r -f build
-rm -r -f example/solr/zoo_data
-rm -r -f example/solr/collection1/data
-rm -f example/example.log
+rm -r -f server/solr/zoo_data
+rm -f server/server.log
 
 ant -f ../build.xml clean
 ant example dist
 
-rm -r example/solr-webapp/*
-unzip example/webapps/solr.war -d example/solr-webapp/webapp
+rm -r server/solr-webapp/*
+unzip server/webapps/solr.war -d server/solr-webapp/webapp
 
 for (( i=1; i <= $numServers; i++ ))
 do
- echo "create example$i"
- cp -r -f example example$i
+ echo "create server$i"
+ cp -r -f server server$i
 done
   
-
-rm -r -f examplezk
-cp -r -f example examplezk
-cp core/src/test-files/solr/solr-no-core.xml examplezk/solr/solr.xml
-rm -r -f examplezk/solr/collection1/core.properties
-cd examplezk
+rm -r -f serverzk
+cp -r -f server serverzk
+cp core/src/test-files/solr/solr-no-core.xml serverzk/solr/solr.xml
+rm -r -f serverzk/solr/collection1/core.properties
+cd serverzk
 stopPort=1313
 jettyPort=8900
-exec -a jettyzk java -Xmx512m $JAVA_OPTS -Djetty.port=$jettyPort -DhostPort=$jettyPort -DzkRun=localhost:9900/solr -DzkHost=$zkAddress -DzkRunOnly=true -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>examplezk.log 2>&1 &
+exec -a jettyzk java -Xmx512m $JAVA_OPTS -Djetty.port=$jettyPort -DhostPort=$jettyPort -DzkRun=localhost:9900/solr -DzkHost=$zkAddress -DzkRunOnly=true -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>serverzk.log 2>&1 &
 cd ..
 
 # upload config files
-java -classpath "example1/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/*" $JAVA_OPTS org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost $zkAddress -solrhome example1/solr
+java -classpath "server/solr-webapp/webapp/WEB-INF/lib/*:server/lib/ext/*" $JAVA_OPTS org.apache.solr.cloud.ZkCLI -zkhost $zkAddress -cmd upconfig --confdir server/solr/configsets/basic_configs --confname basic_configs
   
-cd example
+cd server
 
 for (( i=1; i <= $numServers; i++ ))
 do
-  echo "starting example$i"
-  cd ../example$i
+  echo "starting server$i"
+  cd ../server$i
   stopPort=`expr $baseStopPort + $i`
   jettyPort=`expr $baseJettyPort + $i`
-  exec -a jetty java -Xmx1g $JAVA_OPTS -DnumShards=$numShards -Djetty.port=$jettyPort -DzkHost=$zkAddress -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>example$i.log 2>&1 &
+  exec -a jetty java -Xmx1g $JAVA_OPTS -DnumShards=$numShards -Djetty.port=$jettyPort -DzkHost=$zkAddress -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>server$i.log 2>&1 &
 done
-
-
-
