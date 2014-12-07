@@ -357,10 +357,8 @@ final class DefaultIndexingChain extends DocConsumer {
         fp = getOrAddField(fieldName, fieldType, false);
       }
       if (fieldType.stored()) {
-        boolean success = false;
         try {
           storedFieldsWriter.writeField(fp.fieldInfo, field);
-          success = true;
         } catch (Throwable th) {
           throw new AbortingException(th);
         }
