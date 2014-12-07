@@ -24,6 +24,8 @@ import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.impl.RectangleImpl;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.AbstractSpatialFieldType;
@@ -40,6 +42,7 @@ import java.util.Arrays;
  * Test Solr 4's new spatial capabilities from the new Lucene spatial module. Don't thoroughly test it here because
  * Lucene spatial has its own tests.  Some of these tests were ported from Solr 3 spatial tests.
  */
+@SuppressCodecs({"Lucene3x", "Appending", "Lucene40", "Lucene41"})//sometimes we need DocValues
 public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   private String fieldName;
