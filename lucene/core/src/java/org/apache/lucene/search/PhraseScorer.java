@@ -2,7 +2,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.posfilter.Interval;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -23,12 +23,26 @@ import org.apache.lucene.util.BytesRef;
 
 public abstract class PhraseScorer extends Scorer {
 
+  static class PositionSnapshot {
+    int begin;
+    int end;
+    int offsetBegin;
+    int offsetEnd;
+
+    public PositionSnapshot(DocsEnum docsEnum) throws IOException {
+      this.begin = docsEnum.startPosition();
+      this.end = docsEnum.endPosition();
+      this.offsetBegin = docsEnum.startOffset();
+      this.offsetEnd = docsEnum.endOffset();
+    }
+  }
+
   protected PhraseScorer(Weight weight) {
     super(weight);
   }
 
   protected int freq = -1;
-  protected Interval[] positionCache = new Interval[4];
+  protected PositionSnapshot[] positionCache = new PositionSnapshot[4];
   private int currentPos = -1;
 
   @Override
@@ -44,11 +58,11 @@ public abstract class PhraseScorer extends Scorer {
     int f = 0;
     while (doNextPosition() != NO_MORE_POSITIONS) {
       if (f >= positionCache.length) {
-        Interval[] newCache = new Interval[positionCache.length * 2];
+        PositionSnapshot[] newCache = new PositionSnapshot[positionCache.length * 2];
         System.arraycopy(positionCache, 0, newCache, 0, positionCache.length);
         positionCache = newCache;
       }
-      positionCache[f] = new Interval(this);
+      positionCache[f] = new PositionSnapshot(this);
       f++;
     }
     this.freq = f;

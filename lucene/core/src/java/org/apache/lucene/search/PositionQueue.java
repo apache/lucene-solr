@@ -3,7 +3,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -24,11 +23,12 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
 
-  public class DocsEnumRef {
+  public class DocsEnumRef implements Comparable<DocsEnumRef> {
 
     public final DocsEnum docsEnum;
     public final int ord;
-    public Interval interval = new Interval();
+    public int start;
+    public int end;
 
     public DocsEnumRef(DocsEnum docsEnum, int ord) {
       this.docsEnum = docsEnum;
@@ -38,17 +38,28 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
     public int nextPosition() throws IOException {
       assert docsEnum.docID() != -1;
       if (docsEnum.docID() == DocsEnum.NO_MORE_DOCS || docsEnum.docID() != docId
-            || docsEnum.nextPosition() == DocsEnum.NO_MORE_POSITIONS)
-        interval.setMaximum();
-      else
-        interval.update(this.docsEnum);
-      return interval.begin;
+          || docsEnum.nextPosition() == DocsEnum.NO_MORE_POSITIONS) {
+        start = end = DocsEnum.NO_MORE_POSITIONS;
+      }
+      else {
+        start = docsEnum.startPosition();
+        end = docsEnum.endPosition();
+      }
+      return start;
     }
 
+    @Override
+    public int compareTo(DocsEnumRef o) {
+      if (this.docsEnum.docID() < o.docsEnum.docID())
+        return -1;
+      if (this.docsEnum.docID() > o.docsEnum.docID())
+        return 1;
+      return Integer.compare(this.start, o.start);
+    }
   }
 
   boolean positioned = false;
-  Interval current = new Interval();
+  int pos = -1;
   int docId = -1;
   protected int queuesize;
 
@@ -75,30 +86,23 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
     if (!positioned) {
       init();
       positioned = true;
-      current.update(top().interval);
-      return current.begin;
+      return pos = top().start;
     }
-    if (current.begin == DocsEnum.NO_MORE_POSITIONS)
+    if (pos == DocsEnum.NO_MORE_POSITIONS)
       return DocsEnum.NO_MORE_POSITIONS;
     if (top().nextPosition() == DocsEnum.NO_MORE_POSITIONS)
       queuesize--;
     updateInternalIntervals();
     updateTop();
-    current.update(top().interval);
-    //System.out.println("PQ: " + current.toString());
-    return current.begin;
+    return pos = top().start;
   }
 
   @Override
   protected boolean lessThan(DocsEnumRef a, DocsEnumRef b) {
-    if (a.docsEnum.docID() < b.docsEnum.docID())
-      return true;
-    if (a.docsEnum.docID() > b.docsEnum.docID())
-      return false;
-    return a.interval.begin < b.interval.begin;
+    return a.compareTo(b) < 0;
   }
 
-  protected void updateInternalIntervals() {}
+  protected void updateInternalIntervals() throws IOException {}
 
   /**
    * Must be called after the scorers have been advanced
@@ -110,19 +114,19 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
   }
 
   public int startPosition() throws IOException {
-    return current.begin;
+    return top().docsEnum.startPosition();
   }
 
   public int endPosition() throws IOException {
-    return current.end;
+    return top().docsEnum.endPosition();
   }
 
   public int startOffset() throws IOException {
-    return current.offsetBegin;
+    return top().docsEnum.startOffset();
   }
 
   public int endOffset() throws IOException {
-    return current.offsetEnd;
+    return top().docsEnum.endOffset();
   }
 
   public BytesRef getPayload() throws IOException {

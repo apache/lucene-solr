@@ -17,27 +17,30 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PositionsCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-
-import java.io.IOException;
 
 public abstract class IntervalTestBase extends LuceneTestCase {
 
@@ -45,79 +48,50 @@ public abstract class IntervalTestBase extends LuceneTestCase {
   protected IndexReader reader;
   protected IndexSearcher searcher;
 
-  public static class AssertingPositionsCollector extends PositionsCollector {
+  enum AssertionType { POSITIONS, OFFSETS }
 
-    enum AssertionType { POSITIONS, OFFSETS }
+  protected static void checkMatches(Scorer scorer, int[][] expectedResults, AssertionType type) throws IOException {
 
-    private final int[][] expectedResults;
-    private final AssertionType type;
+    int doc;
+    int docUpto = -1;
 
-    private int docUpto = -1;
-    private int posUpto = -1;
+    while ((doc = scorer.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
 
-    private int currentDoc = -1;
-    private int posRemaining = 0;
+      docUpto++;
+      if (doc != expectedResults[docUpto][0])
+        fail("Expected next hit in document " + expectedResults[docUpto][0] + " but was in " + doc);
 
-    public AssertingPositionsCollector(int[][] expectedResults, AssertionType type) {
-      this.expectedResults = expectedResults;
-      this.type = type;
-    }
+      int posUpto = 0;
+      while (scorer.nextPosition() != DocsEnum.NO_MORE_POSITIONS) {
 
-    @Override
-    public int postingFeatures() {
-      if (type == AssertionType.POSITIONS)
-        return DocsEnum.FLAG_POSITIONS;
-      else
-        return DocsEnum.FLAG_OFFSETS;
-    }
+        if (posUpto > ((expectedResults[docUpto].length - 1) / 2) - 1)
+          fail("Unexpected hit in document " + doc + ": " + scorer.toString());
 
-    @Override
-    protected void collectPosition(int doc, Interval interval) {
-
-      if (doc != currentDoc) {
-        if (posRemaining > 0) {
-          int missingPos = expectedResults[docUpto].length - (posRemaining * 2);
-          fail("Missing expected hit in document " + expectedResults[docUpto][0] + ": [" +
-              expectedResults[docUpto][missingPos] + ", " + expectedResults[docUpto][missingPos + 1] + "]");
+        if (type == AssertionType.POSITIONS) {
+          if (expectedResults[docUpto][posUpto * 2 + 1] != scorer.startPosition() ||
+              expectedResults[docUpto][posUpto * 2 + 2] != scorer.endPosition())
+            fail("Expected next position in document " + doc + " to be [" + expectedResults[docUpto][posUpto * 2 + 1] + ", " +
+                expectedResults[docUpto][posUpto * 2 + 2] + "] but was [" + scorer.startPosition() + ", " + scorer.endPosition() + "]");
+        } else {
+          // check offsets
+          if (expectedResults[docUpto][posUpto * 2 + 1] != scorer.startOffset() ||
+              expectedResults[docUpto][posUpto * 2 + 2] != scorer.endOffset())
+            fail("Expected next offset in document to be [" + expectedResults[docUpto][posUpto * 2 + 1] + ", " +
+                expectedResults[docUpto][posUpto * 2 + 2] + "] but was [" + scorer.startOffset() + ", " + scorer.endOffset() + "]");
         }
-        docUpto++;
-        if (docUpto > expectedResults.length - 1)
-          fail("Unexpected hit in document " + doc + ": " + interval.toString());
 
-        currentDoc = expectedResults[docUpto][0];
-        posUpto = -1;
-        posRemaining = (expectedResults[docUpto].length - 1) / 2;
+        posUpto++;
       }
 
-      if (doc != currentDoc)
-        fail("Expected next hit in document " + currentDoc + " but was in " + doc + ": " + interval.toString());
+      if (posUpto < (expectedResults[docUpto].length - 1) / 2)
+        fail("Missing expected hit in document " + expectedResults[docUpto][0] + ": [" +
+            expectedResults[docUpto][posUpto] + ", " + expectedResults[docUpto][posUpto + 1] + "]");
 
-      posUpto++;
-      posRemaining--;
-
-      if (posUpto > ((expectedResults[docUpto].length - 1) / 2) - 1)
-        fail("Unexpected hit in document " + doc + ": " + interval.toString());
-
-      if (type == AssertionType.POSITIONS) {
-        if (expectedResults[docUpto][posUpto * 2 + 1] != interval.begin ||
-            expectedResults[docUpto][posUpto * 2 + 2] != interval.end)
-          fail("Expected next position in document to be [" + expectedResults[docUpto][posUpto * 2 + 1] + ", " +
-              expectedResults[docUpto][posUpto * 2 + 2] + "] but was [" + interval.begin + ", " + interval.end + "]");
-      }
-      else {
-        // check offsets
-        if (expectedResults[docUpto][posUpto * 2 + 1] != interval.offsetBegin ||
-            expectedResults[docUpto][posUpto * 2 + 2] != interval.offsetEnd)
-          fail("Expected next offset in document to be [" + expectedResults[docUpto][posUpto * 2 + 1] + ", " +
-              expectedResults[docUpto][posUpto * 2 + 2] + "] but was [" + interval.offsetBegin + ", " + interval.offsetEnd + "]");
-      }
     }
 
-    public void assertAllMatched() {
-      if (docUpto < expectedResults.length - 1) {
-        fail("Expected a hit in document " + expectedResults[docUpto + 1][0]);
-      }
-    }
+    if (docUpto < expectedResults.length - 1)
+      fail("Missing expected match to document " + expectedResults[docUpto + 1][0]);
+
   }
 
   /**
@@ -132,10 +106,10 @@ public abstract class IntervalTestBase extends LuceneTestCase {
    */
   public static void checkIntervalOffsets(Query q, IndexSearcher searcher, int[][] expectedResults) throws IOException {
 
-    //MatchCollector m = new MatchCollector();
-    AssertingPositionsCollector c = new AssertingPositionsCollector(expectedResults, AssertingPositionsCollector.AssertionType.OFFSETS);
-    searcher.search(q, c);
-    c.assertAllMatched();
+    Weight weight = searcher.createNormalizedWeight(q);
+    LeafReaderContext ctx = (LeafReaderContext) searcher.getTopReaderContext();
+    Scorer scorer = weight.scorer(ctx, DocsEnum.FLAG_OFFSETS, ctx.reader().getLiveDocs());
+    checkMatches(scorer, expectedResults, AssertionType.OFFSETS);
 
   }
 
@@ -151,9 +125,10 @@ public abstract class IntervalTestBase extends LuceneTestCase {
    */
   public static void checkIntervals(Query q, IndexSearcher searcher, int[][] expectedResults) throws IOException {
 
-    AssertingPositionsCollector c = new AssertingPositionsCollector(expectedResults, AssertingPositionsCollector.AssertionType.POSITIONS);
-    searcher.search(q, c);
-    c.assertAllMatched();
+    Weight weight = searcher.createNormalizedWeight(q);
+    LeafReaderContext ctx = (LeafReaderContext) searcher.getTopReaderContext();
+    Scorer scorer = weight.scorer(ctx, DocsEnum.FLAG_POSITIONS, ctx.reader().getLiveDocs());
+    checkMatches(scorer, expectedResults, AssertionType.POSITIONS);
 
   }
 
@@ -177,7 +152,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     //config.setCodec(Codec.forName("Asserting"));
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, config);
     addDocs(writer);
-    reader = writer.getReader();
+    reader = SlowCompositeReaderWrapper.wrap(writer.getReader());
     writer.close();
     searcher = new IndexSearcher(reader);
   }

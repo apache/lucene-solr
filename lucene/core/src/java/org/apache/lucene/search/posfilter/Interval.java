@@ -16,14 +16,14 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.DocsEnum;
 
 /**
  * Represents a section of a document that matches a query
  */
-public class Interval implements Cloneable {
+class Interval implements Cloneable {
 
   /** The position of the start of this Interval */
   public int begin;
@@ -79,6 +79,20 @@ public class Interval implements Cloneable {
     this.offsetBegin = start.offsetBegin;
     this.end = end.end;
     this.offsetEnd = end.offsetEnd;
+  }
+
+  public void update(DocsEnum start, Interval end) throws IOException {
+    this.begin = start.startPosition();
+    this.offsetBegin = start.startOffset();
+    this.end = end.end;
+    this.offsetEnd = end.offsetEnd;
+  }
+
+  public void update(Interval start, DocsEnum end) throws IOException {
+    this.begin = start.begin;
+    this.offsetBegin = start.offsetBegin;
+    this.end = end.endPosition();
+    this.offsetEnd = end.endOffset();
   }
 
   /**
