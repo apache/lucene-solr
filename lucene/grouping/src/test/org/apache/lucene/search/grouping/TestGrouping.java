@@ -40,7 +40,6 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -910,7 +909,7 @@ public class TestGrouping extends LuceneTestCase {
             }
           } else {
             // Collect only into cache, then replay multiple times:
-            c = cCache = CachingCollector.create(false, DocsEnum.FLAG_FREQS, true, maxCacheMB);
+            c = cCache = CachingCollector.create(false, true, maxCacheMB);
           }
         } else {
           cCache = null;

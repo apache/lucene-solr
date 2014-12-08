@@ -92,7 +92,8 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
       return DocsEnum.NO_MORE_POSITIONS;
     if (top().nextPosition() == DocsEnum.NO_MORE_POSITIONS)
       queuesize--;
-    updateInternalIntervals();
+    else
+      updateInternalIntervals();
     updateTop();
     return pos = top().start;
   }
