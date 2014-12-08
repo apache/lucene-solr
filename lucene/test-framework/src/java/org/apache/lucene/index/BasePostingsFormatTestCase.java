@@ -1583,7 +1583,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                       if (random().nextBoolean()) {
                         docs = termsEnum.docs(null, docs, DocsEnum.FLAG_FREQS);
                       } else {
-                        docs = termsEnum.docsAndPositions(null, null, 0);
+                        docs = termsEnum.docsAndPositions(null, null, DocsEnum.FLAG_POSITIONS);
                       }
                       int docFreq = 0;
                       long totalTermFreq = 0;
