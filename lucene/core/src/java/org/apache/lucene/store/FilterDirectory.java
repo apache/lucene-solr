@@ -31,6 +31,15 @@ import java.util.Collection;
  *  @lucene.internal */
 public class FilterDirectory extends Directory {
 
+  /** Get the wrapped instance by <code>dir</code> as long as this reader is
+   *  an instance of {@link FilterDirectory}.  */
+  public static Directory unwrap(Directory dir) {
+    while (dir instanceof FilterDirectory) {
+      dir = ((FilterDirectory) dir).in;
+    }
+    return dir;
+  }
+
   protected final Directory in;
 
   /** Sole constructor, typically called from sub-classes. */

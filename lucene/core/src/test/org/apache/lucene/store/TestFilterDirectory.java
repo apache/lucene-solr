@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,5 +40,12 @@ public class TestFilterDirectory extends LuceneTestCase {
       }
     }
   }
-  
+
+  public void testUnwrap() throws IOException {
+    Directory dir = FSDirectory.open(createTempDir());
+    FilterDirectory dir2 = new FilterDirectory(dir);
+    assertEquals(dir, dir2.getDelegate());
+    assertEquals(dir, FilterDirectory.unwrap(dir2));
+    dir2.close();
+  }
 }
