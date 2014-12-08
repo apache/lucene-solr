@@ -2268,7 +2268,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   /** Aborts running merges.  Be careful when using this
    *  method: when you abort a long-running merge, you lose
-   *  a lot of work that must later be redone. */
+   *  a lot of work that must later be redone.
+   *
+   * @deprecated This will be removed in 5.0 */
+  @Deprecated
   public synchronized void abortMerges() {
     stopMerges = true;
 
@@ -2316,7 +2319,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * <p>It is guaranteed that any merges started prior to calling this method
    *    will have completed once this method completes.</p>
+   *
+   * @deprecated This will be removed in Lucene 5.x.  Interact with {@link ConcurrentMergeScheduler} if you really must know the specific
+   * timing of merges.
    */
+  @Deprecated
   public void waitForMerges() throws IOException {
 
     // Give merge scheduler last chance to run, in case
