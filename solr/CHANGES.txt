@@ -545,6 +545,8 @@ Other Changes
 * SOLR-6653: bin/solr script should return error code >0 when something fails
   (janhoy, Timothy Potter)
 
+* SOLR-6829: Added getter/setter for lastException in DIH's ContextImpl (ehatcher)
+
 ==================  4.10.2 ==================
 
 Bug FixesAnalyticsComponent
