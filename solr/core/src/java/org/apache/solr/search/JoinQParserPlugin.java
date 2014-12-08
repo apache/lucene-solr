@@ -16,6 +16,13 @@
  */
 package org.apache.solr.search;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -49,13 +56,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.RefCounted;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 public class JoinQParserPlugin extends QParserPlugin {
   public static final String NAME = "join";
@@ -556,7 +556,32 @@ class JoinQuery extends Query {
 
     @Override
     public int nextPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override

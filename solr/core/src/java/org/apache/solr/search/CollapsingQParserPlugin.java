@@ -17,6 +17,11 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+
 import com.carrotsearch.hppc.FloatArrayList;
 import com.carrotsearch.hppc.IntIntOpenHashMap;
 import com.carrotsearch.hppc.IntOpenHashSet;
@@ -47,11 +52,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
 
@@ -355,7 +355,32 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public int nextPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     public int advance(int i) {

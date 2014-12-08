@@ -1,5 +1,9 @@
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
@@ -14,11 +18,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -202,7 +203,32 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
 
     @Override
     public int nextPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override

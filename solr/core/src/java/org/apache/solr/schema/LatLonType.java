@@ -16,14 +16,20 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -39,6 +45,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.DelegatingCollector;
@@ -47,12 +54,6 @@ import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.util.SpatialUtils;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 
 /**
@@ -483,7 +484,32 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
     @Override
     public int nextPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return NO_MORE_POSITIONS;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
       return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
     }
 
     @Override
