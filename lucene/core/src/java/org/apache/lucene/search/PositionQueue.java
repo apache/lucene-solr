@@ -54,6 +54,10 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
         return -1;
       if (this.docsEnum.docID() > o.docsEnum.docID())
         return 1;
+      if (this.start == DocsEnum.NO_MORE_POSITIONS)
+        return 1;
+      if (o.start == DocsEnum.NO_MORE_POSITIONS)
+        return -1;
       return Integer.compare(this.start, o.start);
     }
   }

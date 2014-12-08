@@ -17,11 +17,11 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
 
 /**
  * A query that matches if a set of subqueries also match, and are within

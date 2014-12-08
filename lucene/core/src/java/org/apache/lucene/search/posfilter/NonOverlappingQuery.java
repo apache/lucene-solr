@@ -136,6 +136,8 @@ public final class NonOverlappingQuery extends PositionFilterQuery {
 
   static class BrouwerianScorer extends PositionFilteredScorer {
 
+    private static final int UNPOSITIONED = -2;
+
     private final Scorer subtrahend;
     private Interval subtInterval = new Interval();
     private int subtPosition = -1;
@@ -151,7 +153,7 @@ public final class NonOverlappingQuery extends PositionFilterQuery {
       if (this.subtrahend == null || this.subtrahend.docID() == NO_MORE_DOCS || this.subtrahend.advance(doc) != doc)
         subtPosition = NO_MORE_POSITIONS;
       else
-        subtPosition = -1;
+        subtPosition = UNPOSITIONED;
       this.subtInterval.reset();
     }
 

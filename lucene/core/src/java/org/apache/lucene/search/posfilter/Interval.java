@@ -179,7 +179,7 @@ class Interval implements Cloneable {
    */
   public void setMaximum() {
     offsetBegin = offsetEnd = -1;
-    begin = end = Integer.MAX_VALUE;
+    begin = end = DocsEnum.NO_MORE_POSITIONS;
   }
   
   @Override

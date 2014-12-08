@@ -51,7 +51,7 @@ public abstract class DocsEnum extends DocIdSetIterator {
    *  if you require payloads in the returned enum. */
   public static final int FLAG_PAYLOADS = 0xB;
 
-  public static final int NO_MORE_POSITIONS = Integer.MAX_VALUE;
+  public static final int NO_MORE_POSITIONS = -1;
 
   private AttributeSource atts = null;
 
