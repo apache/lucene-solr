@@ -300,8 +300,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   protected synchronized int mergeThreadCount() {
     int count = 0;
     for (MergeThread mt : mergeThreads) {
-      if (mt.isAlive() && mt.getCurrentMerge() != null) {
-        count++;
+      if (mt.isAlive()) {
+        MergePolicy.OneMerge merge = mt.getCurrentMerge();
+        if (merge != null && merge.isAborted() == false) {
+          count++;
+        }
       }
     }
     return count;
@@ -350,7 +353,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           message("    too many merges; stalling...");
         }
         try {
-          wait();
+          // Only wait 0.25 seconds, so if all merges are aborted (by IW.rollback) we notice:
+          wait(250);
         } catch (InterruptedException ie) {
           throw new ThreadInterruptedException(ie);
         }

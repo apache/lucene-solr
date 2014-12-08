@@ -41,6 +41,9 @@ Bug fixes
 
 * LUCENE-6055: PayloadAttribute.clone() now does a deep clone of the underlying
   bytes. (Shai Erera)
+
+* LUCENE-6094: Allow IW.rollback to stop ConcurrentMergeScheduler even
+  when it's stalling because there are too many merges. (Mike McCandless)
   
 Documentation
 

@@ -204,8 +204,8 @@ public abstract class MergePolicy {
       while (paused) {
         try {
           // In theory we could wait() indefinitely, but we
-          // do 1000 msec, defensively
-          wait(1000);
+          // do 250 msec, defensively
+          wait(250);
         } catch (InterruptedException ie) {
           throw new RuntimeException(ie);
         }
