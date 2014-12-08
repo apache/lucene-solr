@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.ThreadInterruptedException;
-
-import java.io.IOException;
 
 /**
  * The {@link TimeLimitingCollector} is used to timeout search requests that
@@ -155,11 +155,6 @@ public class TimeLimitingCollector implements Collector {
       }
       
     };
-  }
-
-  @Override
-  public int postingFeatures() {
-    return collector.postingFeatures();
   }
 
   /**

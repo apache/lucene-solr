@@ -17,22 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Scorer.ChildScorer;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +24,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.Scorer.ChildScorer;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 // TODO: refactor to a base class, that collects freqs from the scorer tree
 // and test all queries with it
@@ -253,11 +252,6 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
           return false;
         }
       };
-    }
-
-    @Override
-    public int postingFeatures() {
-      return DocsEnum.FLAG_NONE;
     }
 
     private static void summarizeScorer(final StringBuilder builder, final Scorer scorer, final int indent) {

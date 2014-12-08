@@ -17,9 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * <p>Expert: Collectors are primarily meant to be used to
@@ -72,10 +72,5 @@ public interface Collector {
    *          next atomic reader context
    */
   LeafCollector getLeafCollector(LeafReaderContext context) throws IOException;
-  
-  /**
-   * Returns the posting features required by this collector.
-   */
-  public int postingFeatures();
   
 }

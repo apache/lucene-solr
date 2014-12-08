@@ -128,11 +128,6 @@ public abstract class CachingCollector extends FilterCollector {
       docs = new ArrayList<>();
     }
 
-    @Override
-    public int postingFeatures() {
-      return in.postingFeatures();
-    }
-
     protected NoScoreCachingLeafCollector wrap(LeafCollector in, int maxDocsToCache) {
       return new NoScoreCachingLeafCollector(in, maxDocsToCache);
     }
@@ -341,16 +336,11 @@ public abstract class CachingCollector extends FilterCollector {
    * @param acceptDocsOutOfOrder
    *          whether documents are allowed to be collected out-of-order
    */
-  public static CachingCollector create(final boolean acceptDocsOutOfOrder, final int flags, boolean cacheScores, double maxRAMMB) {
+  public static CachingCollector create(final boolean acceptDocsOutOfOrder, boolean cacheScores, double maxRAMMB) {
     Collector other = new SimpleCollector() {
       @Override
       public boolean acceptsDocsOutOfOrder() {
         return acceptDocsOutOfOrder;
-      }
-
-      @Override
-      public int postingFeatures() {
-        return flags;
       }
 
       @Override

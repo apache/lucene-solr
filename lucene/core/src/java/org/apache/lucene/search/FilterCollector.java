@@ -1,8 +1,8 @@
 package org.apache.lucene.search;
 
-import org.apache.lucene.index.LeafReaderContext;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.LeafReaderContext;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,11 +38,6 @@ public class FilterCollector implements Collector {
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     return in.getLeafCollector(context);
-  }
-
-  @Override
-  public int postingFeatures() {
-    return in.postingFeatures();
   }
 
   @Override

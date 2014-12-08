@@ -22,13 +22,32 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Random;
 
-import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import com.carrotsearch.randomizedtesting.annotations.Seed;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+@Seed("1614EBB06B1F4D76:B454400327B737DA")
 public class TestSearchForDuplicates extends LuceneTestCase {
 
   static final String PRIORITY_FIELD ="priority";
