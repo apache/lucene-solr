@@ -740,10 +740,10 @@ public class PostingsHighlighter {
     }
 
     @Override
-    public int startOffset() throws IOException { return -1; }
+    public int startOffset() throws IOException { return Integer.MAX_VALUE; }
 
     @Override
-    public int endOffset() throws IOException { return -1; }
+    public int endOffset() throws IOException { return Integer.MAX_VALUE; }
 
     @Override
     public BytesRef getPayload() throws IOException { return null; }
