@@ -50,11 +50,12 @@ public class ContextImpl extends Context {
 
   private Map<String, Object> entitySession, globalSession;
 
+  private Exception lastException = null;
+
   DocBuilder.DocWrapper doc;
 
   DocBuilder docBuilder;
 
-  Exception lastException = null;
 
 
   public ContextImpl(EntityProcessorWrapper epw, VariableResolver resolver,
@@ -255,4 +256,8 @@ public class ContextImpl extends Context {
   public String replaceTokens(String template) {
     return resolver.replaceTokens(template);
   }
+
+  public Exception getLastException() { return lastException; }
+
+  public void setLastException(Exception lastException) {this.lastException = lastException; }
 }

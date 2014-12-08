@@ -171,7 +171,7 @@ public class DocBuilder {
       currentProcess = Context.FULL_DUMP;
     }
     ContextImpl ctx = new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this);
-    ctx.lastException = lastException;
+    ctx.setLastException(lastException);
     listener.onEvent(ctx);
   }
 
