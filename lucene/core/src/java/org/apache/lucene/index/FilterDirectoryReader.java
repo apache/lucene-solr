@@ -33,6 +33,15 @@ import java.util.List;
  */
 public abstract class FilterDirectoryReader extends DirectoryReader {
 
+  /** Get the wrapped instance by <code>reader</code> as long as this reader is
+   *  an instance of {@link FilterDirectoryReader}.  */
+  public static DirectoryReader unwrap(DirectoryReader reader) {
+    while (reader instanceof FilterDirectoryReader) {
+      reader = ((FilterDirectoryReader) reader).in;
+    }
+    return reader;
+  }
+
   /**
    * Factory class passed to FilterDirectoryReader constructor that allows
    * subclasses to wrap the filtered DirectoryReader's subreaders.  You
@@ -125,4 +134,8 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
     in.doClose();
   }
 
+  /** Returns the wrapped {@link DirectoryReader}. */
+  public DirectoryReader getDelegate() {
+    return in;
+  }
 }

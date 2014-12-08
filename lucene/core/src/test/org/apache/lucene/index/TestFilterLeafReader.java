@@ -192,4 +192,17 @@ public class TestFilterLeafReader extends LuceneTestCase {
     checkOverrideMethods(FilterLeafReader.FilterDocsAndPositionsEnum.class);
   }
 
+  public void testUnwrap() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    w.addDocument(new Document());
+    DirectoryReader dr = w.getReader();
+    LeafReader r = dr.leaves().get(0).reader();
+    FilterLeafReader r2 = new FilterLeafReader(r);
+    assertEquals(r, r2.getDelegate());
+    assertEquals(r, FilterLeafReader.unwrap(r2));
+    w.close();
+    dr.close();
+    dir.close();
+  }
 }
