@@ -83,7 +83,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   @Override
-  public void flush(SegmentWriteState state) throws IOException {
+  public void flush(SegmentWriteState state) throws IOException, AbortingException {
 
     // NOTE: caller (DocumentsWriterPerThread) handles
     // aborting on any exception from this method
@@ -176,7 +176,7 @@ final class DefaultIndexingChain extends DocConsumer {
   /** Catch up for all docs before us that had no stored
    *  fields, or hit non-aborting exceptions before writing
    *  stored fields. */
-  private void fillStoredFields(int docID) throws IOException {
+  private void fillStoredFields(int docID) throws IOException, AbortingException {
     while (lastStoredDocID < docID) {
       startStoredFields();
       finishStoredFields();
@@ -253,36 +253,28 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Calls StoredFieldsWriter.startDocument, aborting the
    *  segment if it hits any exception. */
-  private void startStoredFields() throws IOException {
-    boolean success = false;
+  private void startStoredFields() throws IOException, AbortingException {
     try {
       initStoredFieldsWriter();
       storedFieldsWriter.startDocument();
-      success = true;
-    } finally {
-      if (success == false) {
-        docWriter.setAborting();        
-      }
+    } catch (Throwable th) {
+      throw new AbortingException(th);
     }
     lastStoredDocID++;
   }
 
   /** Calls StoredFieldsWriter.finishDocument, aborting the
    *  segment if it hits any exception. */
-  private void finishStoredFields() throws IOException {
-    boolean success = false;
+  private void finishStoredFields() throws IOException, AbortingException {
     try {
       storedFieldsWriter.finishDocument();
-      success = true;
-    } finally {
-      if (success == false) {
-        docWriter.setAborting();        
-      }
+    } catch (Throwable th) {
+      throw new AbortingException(th);
     }
   }
 
   @Override
-  public void processDocument() throws IOException {
+  public void processDocument() throws IOException, AbortingException {
 
     // How many indexed field names we've seen (collapses
     // multiple field instances by the same name):
@@ -325,16 +317,12 @@ final class DefaultIndexingChain extends DocConsumer {
       }
     }
 
-    boolean success = false;
     try {
       termsHash.finishDocument();
-      success = true;
-    } finally {
-      if (success == false) {
-        // Must abort, on the possibility that on-disk term
-        // vectors are now corrupt:
-        docWriter.setAborting();
-      }
+    } catch (Throwable th) {
+      // Must abort, on the possibility that on-disk term
+      // vectors are now corrupt:
+      throw new AbortingException(th);
     }
 
     // Add stored fields:
@@ -352,9 +340,12 @@ final class DefaultIndexingChain extends DocConsumer {
         
         PerField fp = getOrAddField(fieldName, fieldType, false);
         if (fieldType.stored()) {
-          abort = true;
-          storedFieldsWriter.writeField(fp.fieldInfo, field);
-          abort = false;
+          try {
+            storedFieldsWriter.writeField(fp.fieldInfo, field);
+          } catch (Throwable th) {
+            abort = true;
+            throw new AbortingException(th);
+          }
         }
 
         DocValuesType dvType = fieldType.docValuesType();
@@ -366,9 +357,7 @@ final class DefaultIndexingChain extends DocConsumer {
         }
       }
     } finally {
-      if (abort) {
-        docWriter.setAborting();
-      } else {
+      if (abort == false) {
         finishStoredFields();
       }
     }
@@ -575,7 +564,7 @@ final class DefaultIndexingChain extends DocConsumer {
     /** Inverts one field for one document; first is true
      *  if this is the first time we are seeing this field
      *  name in this document. */
-    public void invert(IndexableField field, boolean first) throws IOException {
+    public void invert(IndexableField field, boolean first) throws IOException, AbortingException {
       if (first) {
         // First time we're seeing this field (indexed) in
         // this document:
@@ -602,7 +591,6 @@ final class DefaultIndexingChain extends DocConsumer {
        * when we fail. We expect some caller to eventually deal with the real exception, so we don't want any 'catch' clauses,
        * but rather a finally that takes note of the problem.
        */
-      boolean aborting = false;
       boolean succeededInProcessingField = false;
       try (TokenStream stream = tokenStream = field.tokenStream(docState.analyzer, tokenStream)) {
         // reset the TokenStream to the first token
@@ -654,9 +642,21 @@ final class DefaultIndexingChain extends DocConsumer {
           // internal state of the terms hash is now
           // corrupt and should not be flushed to a
           // new segment:
-          aborting = true;
-          termsHashPerField.add();
-          aborting = false;
+          try {
+            termsHashPerField.add();
+          } catch (MaxBytesLengthExceededException e) {
+            byte[] prefix = new byte[30];
+            BytesRef bigTerm = invertState.termAttribute.getBytesRef();
+            System.arraycopy(bigTerm.bytes, bigTerm.offset, prefix, 0, 30);
+            String msg = "Document contains at least one immense term in field=\"" + fieldInfo.name + "\" (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + Arrays.toString(prefix) + "...', original message: " + e.getMessage();
+            if (docState.infoStream.isEnabled("IW")) {
+              docState.infoStream.message("IW", "ERROR: " + msg);
+            }
+            // Document will be deleted above:
+            throw new IllegalArgumentException(msg, e);
+          } catch (Throwable th) {
+            throw new AbortingException(th);
+          }
         }
 
         // trigger streams to perform end-of-stream operations
@@ -669,22 +669,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
         /* if there is an exception coming through, we won't set this to true here:*/
         succeededInProcessingField = true;
-      } catch (MaxBytesLengthExceededException e) {
-        aborting = false;
-        byte[] prefix = new byte[30];
-        BytesRef bigTerm = invertState.termAttribute.getBytesRef();
-        System.arraycopy(bigTerm.bytes, bigTerm.offset, prefix, 0, 30);
-        String msg = "Document contains at least one immense term in field=\"" + fieldInfo.name + "\" (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + Arrays.toString(prefix) + "...', original message: " + e.getMessage();
-        if (docState.infoStream.isEnabled("IW")) {
-          docState.infoStream.message("IW", "ERROR: " + msg);
-        }
-        // Document will be deleted above:
-        throw new IllegalArgumentException(msg, e);
       } finally {
-        if (succeededInProcessingField == false && aborting) {
-          docState.docWriter.setAborting();
-        }
-
         if (!succeededInProcessingField && docState.infoStream.isEnabled("DW")) {
           docState.infoStream.message("DW", "An exception was thrown while processing field " + fieldInfo.name);
         }

@@ -19,8 +19,23 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-abstract class DocConsumer {
-  abstract void processDocument() throws IOException, AbortingException;
-  abstract void flush(final SegmentWriteState state) throws IOException, AbortingException;
-  abstract void abort();
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.IOUtils;
+
+/** A {@link ConcurrentMergeScheduler} that ignores AlreadyClosedException. */
+public abstract class SuppressingConcurrentMergeScheduler extends ConcurrentMergeScheduler {
+  @Override
+  protected void handleMergeException(Throwable exc) {
+    while (true) {
+      if (isOK(exc)) {
+        return;
+      }
+      exc = exc.getCause();
+      if (exc == null) {
+        super.handleMergeException(exc);
+      }
+    }
+  }
+
+  protected abstract boolean isOK(Throwable t);
 }

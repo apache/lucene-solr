@@ -112,9 +112,9 @@ class DocumentsWriterPerThread {
    *  updating the index files) and must discard all
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
-  void abort(Set<String> createdFiles) {
+  void abort() {
     //System.out.println(Thread.currentThread().getName() + ": now abort seg=" + segmentInfo.name);
-    hasAborted = aborting = true;
+    aborted = true;
     try {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "now abort");
@@ -125,9 +125,7 @@ class DocumentsWriterPerThread {
       }
 
       pendingUpdates.clear();
-      createdFiles.addAll(directory.getCreatedFiles());
     } finally {
-      aborting = false;
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "done abort");
       }
@@ -145,8 +143,7 @@ class DocumentsWriterPerThread {
   // Updates for our still-in-RAM (to be flushed next) segment
   final BufferedUpdates pendingUpdates;
   private final SegmentInfo segmentInfo;     // Current segment we are working on
-  boolean aborting = false;   // True if an abort is pending
-  boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
+  boolean aborted = false;   // True if we aborted
 
   private final FieldInfos.Builder fieldInfos;
   private final InfoStream infoStream;
@@ -189,20 +186,10 @@ class DocumentsWriterPerThread {
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
   }
   
-  void setAborting() {
-    aborting = true;
-  }
-
   public FieldInfos.Builder getFieldInfosBuilder() {
     return fieldInfos;
   }
 
-  boolean checkAndResetHasAborted() {
-    final boolean retval = hasAborted;
-    hasAborted = false;
-    return retval;
-  }
-  
   final void testPoint(String message) {
     if (infoStream.isEnabled("TP")) {
       infoStream.message("TP", message);
@@ -219,7 +206,7 @@ class DocumentsWriterPerThread {
     }
   }
 
-  public void updateDocument(IndexDocument doc, Analyzer analyzer, Term delTerm) throws IOException {
+  public void updateDocument(IndexDocument doc, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
     docState.doc = doc;
@@ -245,19 +232,15 @@ class DocumentsWriterPerThread {
       success = true;
     } finally {
       if (!success) {
-        if (!aborting) {
-          // mark document as deleted
-          deleteDocID(docState.docID);
-          numDocsInRAM++;
-        } else {
-          abort(filesToDelete);
-        }
+        // mark document as deleted
+        deleteDocID(docState.docID);
+        numDocsInRAM++;
       }
     }
     finishDocument(delTerm);
   }
 
-  public int updateDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer, Term delTerm) throws IOException {
+  public int updateDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
@@ -286,14 +269,9 @@ class DocumentsWriterPerThread {
           success = true;
         } finally {
           if (!success) {
-            // An exc is being thrown...
-            if (!aborting) {
-              // Incr here because finishDocument will not
-              // be called (because an exc is being thrown):
-              numDocsInRAM++;
-            } else {
-              abort(filesToDelete);
-            }
+            // Incr here because finishDocument will not
+            // be called (because an exc is being thrown):
+            numDocsInRAM++;
           }
         }
         finishDocument(null);
@@ -310,7 +288,7 @@ class DocumentsWriterPerThread {
       }
 
     } finally {
-      if (!allDocsIndexed && !aborting) {
+      if (!allDocsIndexed && !aborted) {
         // the iterator threw an exception that is not aborting 
         // go and mark all docs from this block as deleted
         int docID = numDocsInRAM-1;
@@ -403,7 +381,7 @@ class DocumentsWriterPerThread {
   }
 
   /** Flush all pending docs to a new segment */
-  FlushedSegment flush() throws IOException {
+  FlushedSegment flush() throws IOException, AbortingException {
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setDocCount(numDocsInRAM);
@@ -424,7 +402,7 @@ class DocumentsWriterPerThread {
       pendingUpdates.docIDs.clear();
     }
 
-    if (aborting) {
+    if (aborted) {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush: skip because aborting is set");
       }
@@ -434,8 +412,6 @@ class DocumentsWriterPerThread {
     if (infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
     }
-
-    boolean success = false;
 
     try {
       consumer.flush(flushState);
@@ -476,13 +452,11 @@ class DocumentsWriterPerThread {
       FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
                                              segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
       sealFlushedSegment(fs);
-      success = true;
 
       return fs;
-    } finally {
-      if (!success) {
-        abort(filesToDelete);
-      }
+    } catch (Throwable th) {
+      abort();
+      throw new AbortingException(th);
     }
   }
   
@@ -603,7 +577,7 @@ class DocumentsWriterPerThread {
   @Override
   public String toString() {
     return "DocumentsWriterPerThread [pendingDeletes=" + pendingUpdates
-      + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborting=" + aborting + ", numDocsInRAM="
+      + ", segment=" + (segmentInfo != null ? segmentInfo.name : "null") + ", aborted=" + aborted + ", numDocsInRAM="
         + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
   }
   

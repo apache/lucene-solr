@@ -17,10 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-abstract class DocConsumer {
-  abstract void processDocument() throws IOException, AbortingException;
-  abstract void flush(final SegmentWriteState state) throws IOException, AbortingException;
-  abstract void abort();
+/** Thrown and caught internally in {@link IndexWriter} methods when an {@code IOException} would cause it to
+ *  lose previously indexed documents.  When this happens, the {@link IndexWriter} is forcefully 
+ *  closed, using {@link IndexWriter#rollback}). */
+class AbortingException extends Exception {
+  AbortingException(Throwable cause) {
+    super(cause);
+  }
 }

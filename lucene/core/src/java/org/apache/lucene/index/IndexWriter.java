@@ -405,7 +405,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
         boolean success = false;
         try {
-          anySegmentFlushed = docWriter.flushAllThreads(this);
+          anySegmentFlushed = docWriter.flushAllThreads();
           if (!anySegmentFlushed) {
             // prevent double increment since docWriter#doFlush increments the flushcount
             // if we flushed anything.
@@ -422,8 +422,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
             }
           }
-        } catch (OutOfMemoryError oom) {
-          tragicEvent(oom, "getReader");
+        } catch (AbortingException | OutOfMemoryError tragedy) {
+          tragicEvent(tragedy, "getReader");
           // never reached but javac disagrees:
           return null;
         } finally {
@@ -1231,8 +1231,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "updateDocuments");
+    } catch (AbortingException | OutOfMemoryError tragedy) {
+      tragicEvent(tragedy, "updateDocuments");
     }
   }
 
@@ -1401,8 +1401,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "updateDocument");
+    } catch (AbortingException | OutOfMemoryError tragedy) {
+      tragicEvent(tragedy, "updateDocument");
     }
   }
 
@@ -2723,7 +2723,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           boolean flushSuccess = false;
           boolean success = false;
           try {
-            anySegmentsFlushed = docWriter.flushAllThreads(this);
+            anySegmentsFlushed = docWriter.flushAllThreads();
             if (!anySegmentsFlushed) {
               // prevent double increment since docWriter#doFlush increments the flushcount
               // if we flushed anything.
@@ -2766,8 +2766,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             doAfterFlush();
           }
         }
-      } catch (OutOfMemoryError oom) {
-        tragicEvent(oom, "prepareCommit");
+      } catch (AbortingException | OutOfMemoryError tragedy) {
+        tragicEvent(tragedy, "prepareCommit");
       }
      
       boolean success = false;
@@ -3008,7 +3008,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
       boolean flushSuccess = false;
         try {
-          anySegmentFlushed = docWriter.flushAllThreads(this);
+          anySegmentFlushed = docWriter.flushAllThreads();
           flushSuccess = true;
         } finally {
           docWriter.finishFullFlush(flushSuccess);
@@ -3025,8 +3025,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         success = true;
         return anySegmentFlushed;
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "doFlush");
+    } catch (AbortingException | OutOfMemoryError tragedy) {
+      tragicEvent(tragedy, "doFlush");
       // never hit
       return false;
     } finally {
@@ -4253,7 +4253,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       synchronized(this) {
 
-        assert lastCommitChangeCount <= changeCount: "lastCommitChangeCount=" + lastCommitChangeCount + " changeCount=" + changeCount;
+        if (lastCommitChangeCount > changeCount) {
+          throw new IllegalStateException("lastCommitChangeCount=" + lastCommitChangeCount + ",changeCount=" + changeCount);
+        }
 
         if (pendingCommitChangeCount == lastCommitChangeCount) {
           if (infoStream.isEnabled("IW")) {
@@ -4381,19 +4383,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     public abstract void warm(LeafReader reader) throws IOException;
   }
 
-  private void tragicEvent(Throwable tragedy, String location) {
+  void tragicEvent(Throwable tragedy, String location) throws IOException {
+    // unbox our internal AbortingException
+    if (tragedy instanceof AbortingException) {
+      tragedy = tragedy.getCause();
+    }
     // We cannot hold IW's lock here else it can lead to deadlock:
     assert Thread.holdsLock(this) == false;
 
+    // How can it be a tragedy when nothing happened?
+    assert tragedy != null;
+
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "hit " + tragedy.getClass().getSimpleName() + " inside " + location);
+      infoStream.message("IW", "hit tragic " + tragedy.getClass().getSimpleName() + " inside " + location);
     }
+
     synchronized (this) {
-      // its possible you could have a really bad day
+      // it's possible you could have a really bad day
       if (this.tragedy == null) {
         this.tragedy = tragedy;
       }
     }
+
     // if we are already closed (e.g. called by rollback), this will be a no-op.
     synchronized(commitLock) {
       if (closing == false) {
@@ -4405,7 +4416,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       }
     }
-    IOUtils.reThrowUnchecked(tragedy);
+
+    IOUtils.reThrow(tragedy);
   }
 
   // Used for testing.  Current points:
@@ -4571,11 +4583,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
   
   private boolean processEvents(Queue<Event> queue, boolean triggerMerge, boolean forcePurge) throws IOException {
-    Event event;
     boolean processed = false;
-    while((event = queue.poll()) != null)  {
-      processed = true;
-      event.process(this, triggerMerge, forcePurge);
+    if (tragedy == null) {
+      Event event;
+      while((event = queue.poll()) != null)  {
+        processed = true;
+        event.process(this, triggerMerge, forcePurge);
+      }
     }
     return processed;
   }

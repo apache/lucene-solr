@@ -632,11 +632,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           modifier.rollback();
         }
 
-        // If the close() succeeded, make sure there are
-        // no unreferenced files.
+        // If the close() succeeded, make sure index is OK:
         if (success) {
           TestUtil.checkIndex(dir);
-          TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
         }
         dir.setRandomIOExceptionRate(randomIOExceptionRate);
         dir.setMaxSizeInBytes(maxSizeInBytes);
@@ -922,8 +920,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         break;
       }
     }
+    assertTrue(modifier.deleter.isClosed());
 
-    modifier.close();
     TestIndexWriter.assertNoUnreferencedFiles(dir, "docsWriter.abort() failed to delete unreferenced files");
     dir.close();
   }

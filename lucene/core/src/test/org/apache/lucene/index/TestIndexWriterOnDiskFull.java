@@ -57,6 +57,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       }
       boolean doAbort = pass == 1;
       long diskFree = TestUtil.nextInt(random(), 100, 300);
+      boolean indexExists = false;
       while(true) {
         if (VERBOSE) {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
@@ -82,6 +83,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             System.out.println("TEST: done adding docs; now commit");
           }
           writer.commit();
+          indexExists = true;
         } catch (IOException e) {
           if (VERBOSE) {
             System.out.println("TEST: exception on addDoc");
@@ -118,9 +120,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
           //_TestUtil.syncConcurrentMerges(ms);
 
-          if (TestUtil.anyFilesExceptWriteLock(dir)) {
-            assertNoUnreferencedFiles(dir, "after disk full during addDocument");
-            
+          if (indexExists) {
             // Make sure reader can open the index:
             DirectoryReader.open(dir).close();
           }
@@ -548,25 +548,9 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       writer.addDocument(doc);
       fail("did not hit disk full");
     } catch (IOException ioe) {
+      assertTrue(writer.deleter.isClosed());
+      assertTrue(writer.isClosed());
     }
-    // Without fix for LUCENE-1130: this call will hang:
-    try {
-      writer.addDocument(doc);
-      fail("did not hit disk full");
-    } catch (IOException ioe) {
-    }
-    try {
-      writer.commit();
-      fail("did not hit disk full");
-    } catch (IOException ioe) {
-    } finally {
-      writer.close();
-    }
-
-    // Make sure once disk space is avail again, we can
-    // cleanly close:
-    dir.setMaxSizeInBytes(0);
-    writer.close();
     dir.close();
   }
   

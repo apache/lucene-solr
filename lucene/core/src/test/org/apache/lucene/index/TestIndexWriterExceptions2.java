@@ -40,14 +40,15 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Rethrow;
+import org.apache.lucene.util.TestUtil;
 
 /** 
  * Causes a bunch of non-aborting and aborting exceptions and checks that
@@ -63,6 +64,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
       ((MockDirectoryWrapper)dir).setUseSlowOpenClosers(false);
+      ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
     }
     
     // log all exceptions we hit, in case we fail (for debugging)
@@ -96,11 +98,12 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     // just for now, try to keep this test reproducible
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);
-    
+
     int numDocs = atLeast(500);
     
     IndexWriter iw = new IndexWriter(dir, conf);
     try {
+      boolean allowAlreadyClosed = false;
       for (int i = 0; i < numDocs; i++) {
         // TODO: add crankyDocValuesFields, etc
         Document doc = new Document();
@@ -136,10 +139,21 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             } else if (thingToDo == 2) {
               iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
             }
+          } catch (AlreadyClosedException ace) {
+            // OK: writer was closed by abort; we just reopen now:
+            assertTrue(iw.deleter.isClosed());
+            assertTrue(allowAlreadyClosed);
+            allowAlreadyClosed = false;
+            conf = newIndexWriterConfig(analyzer);
+            // just for now, try to keep this test reproducible
+            conf.setMergeScheduler(new SerialMergeScheduler());
+            conf.setCodec(codec);
+            iw = new IndexWriter(dir, conf);            
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
               exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
               e.printStackTrace(exceptionStream);
+              allowAlreadyClosed = true;
             } else {
               Rethrow.rethrow(e);
             }
@@ -159,10 +173,21 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             if (random().nextBoolean()) {
               iw.deleteDocuments(new Term("id", Integer.toString(i)), new Term("id", Integer.toString(-i)));
             }
+          } catch (AlreadyClosedException ace) {
+            // OK: writer was closed by abort; we just reopen now:
+            assertTrue(iw.deleter.isClosed());
+            assertTrue(allowAlreadyClosed);
+            allowAlreadyClosed = false;
+            conf = newIndexWriterConfig(analyzer);
+            // just for now, try to keep this test reproducible
+            conf.setMergeScheduler(new SerialMergeScheduler());
+            conf.setCodec(codec);
+            iw = new IndexWriter(dir, conf);            
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
               exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
               e.printStackTrace(exceptionStream);
+              allowAlreadyClosed = true;
             } else {
               Rethrow.rethrow(e);
             }
@@ -186,10 +211,21 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             if (DirectoryReader.indexExists(dir)) {
               TestUtil.checkIndex(dir);
             }
+          } catch (AlreadyClosedException ace) {
+            // OK: writer was closed by abort; we just reopen now:
+            assertTrue(iw.deleter.isClosed());
+            assertTrue(allowAlreadyClosed);
+            allowAlreadyClosed = false;
+            conf = newIndexWriterConfig(analyzer);
+            // just for now, try to keep this test reproducible
+            conf.setMergeScheduler(new SerialMergeScheduler());
+            conf.setCodec(codec);
+            iw = new IndexWriter(dir, conf);            
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
               exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
               e.printStackTrace(exceptionStream);
+              allowAlreadyClosed = true;
             } else {
               Rethrow.rethrow(e);
             }

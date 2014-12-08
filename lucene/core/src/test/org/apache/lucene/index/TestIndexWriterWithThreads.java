@@ -110,6 +110,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
             }
             break;
           }
+        } catch (AlreadyClosedException ace) {
+          // OK: abort closes the writer
+          break;
         } catch (Throwable t) {
           //t.printStackTrace(System.out);
           if (noErrors) {
@@ -166,6 +169,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       dir.setMaxSizeInBytes(0);
       try {
         writer.commit();
+      } catch (AlreadyClosedException ace) {
+        // OK: abort closes the writer
+        assertTrue(writer.deleter.isClosed());
       } finally {
         writer.close();
       }
@@ -300,6 +306,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         writer.commit();
         writer.close();
         success = true;
+      } catch (AlreadyClosedException ace) {
+        // OK: abort closes the writer
+        assertTrue(writer.deleter.isClosed());
       } catch (IOException ioe) {
         writer.rollback();
         failure.clearDoFail();
@@ -329,10 +338,22 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void _testSingleThreadFailure(MockDirectoryWrapper.Failure failure) throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                .setMaxBufferedDocs(2)
-                                                .setMergeScheduler(new ConcurrentMergeScheduler())
-                                                .setCommitOnClose(false));
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+      .setMaxBufferedDocs(2)
+      .setMergeScheduler(new ConcurrentMergeScheduler())
+      .setCommitOnClose(false);
+
+    if (iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler) {
+      iwc.setMergeScheduler(new SuppressingConcurrentMergeScheduler() {
+          @Override
+          protected boolean isOK(Throwable th) {
+            return th instanceof AlreadyClosedException ||
+              (th instanceof IllegalStateException && th.getMessage().contains("this writer hit an unrecoverable error"));
+          }
+        });
+    }
+
+    IndexWriter writer = new IndexWriter(dir, iwc);
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
@@ -353,11 +374,13 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     } catch (IOException ioe) {
     }
     failure.clearDoFail();
-    writer.addDocument(doc);
     try {
+      writer.addDocument(doc);
       writer.commit();
-    } finally {
       writer.close();
+    } catch (AlreadyClosedException ace) {
+      // OK: abort closes the writer
+      assertTrue(writer.deleter.isClosed());
     }
     dir.close();
   }

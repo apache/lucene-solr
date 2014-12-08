@@ -142,6 +142,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    *           if this config is already attached to a writer.
    */
   IndexWriterConfig setIndexWriter(IndexWriter writer) {
+    if (this.writer.get() != null) {
+      throw new IllegalStateException("do not share IndexWriterConfig instances across IndexWriters");
+    }
     this.writer.set(writer);
     return this;
   }

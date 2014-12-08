@@ -52,6 +52,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LiveFieldValues;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -597,8 +598,21 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
+    try {
+      w.addDocument(doc);
+      fail("should have hit exc");
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
+    dir.close();
+  }
 
-    doc = new Document();
+  public void testInvalidVersions2() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
     // Long.MAX_VALUE:
     doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
     try {
@@ -608,7 +622,12 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    w.close();
+    try {
+      w.addDocument(doc);
+      fail("should have hit exc");
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
     dir.close();
   }
 
