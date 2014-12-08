@@ -435,16 +435,16 @@ public class TestIndexWriterReader extends LuceneTestCase {
     void close(boolean doWait) throws Throwable {
       didClose = true;
       if (doWait) {
-        mainWriter.waitForMerges();
+        mainWriter.close();
       } else {
-        mainWriter.abortMerges();
+        mainWriter.rollback();
       }
-      mainWriter.close();
     }
 
     void closeDir() throws Throwable {
-      for (int i = 0; i < numDirs; i++)
+      for (int i = 0; i < numDirs; i++) {
         readers[i].close();
+      }
       addDir.close();
     }
     

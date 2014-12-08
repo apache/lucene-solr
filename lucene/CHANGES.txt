@@ -295,6 +295,10 @@ API Changes
   won't be trappy if codec tries to use them during docvalues updates.
   (Robert Muir)
 
+* LUCENE-6097: Remove dangerous / overly expert
+  IndexWriter.abortMerges and waitForMerges methods.  (Robert Muir,
+  Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
