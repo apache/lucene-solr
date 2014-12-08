@@ -105,7 +105,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     );
   }
 
-  public void doTestMode(final Normalizer2 normalizer, int maxLength, int iterations) throws IOException {
+  public void doTestMode(final Normalizer2 normalizer, int maxLength, int iterations, final int bufferSize) throws IOException {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
@@ -114,7 +114,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
 
       @Override
       protected Reader initReader(String fieldName, Reader reader) {
-        return new ICUNormalizer2CharFilter(reader, normalizer);
+        return new ICUNormalizer2CharFilter(reader, normalizer, bufferSize);
       }
     };
 
@@ -132,43 +132,43 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
   }
 
   public void testNFC() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.COMPOSE), 20, RANDOM_MULTIPLIER*1000);
+    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.COMPOSE), 20, RANDOM_MULTIPLIER*1000, 128);
   }
   
   public void testNFCHuge() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.COMPOSE), 8192, RANDOM_MULTIPLIER*100);
+    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.COMPOSE), 256, RANDOM_MULTIPLIER*500, 16);
   }
 
   public void testNFD() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.DECOMPOSE), 20, RANDOM_MULTIPLIER*1000);
+    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.DECOMPOSE), 20, RANDOM_MULTIPLIER*1000, 128);
   }
   
   public void testNFDHuge() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.DECOMPOSE), 8192, RANDOM_MULTIPLIER*100);
+    doTestMode(Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.DECOMPOSE), 256, RANDOM_MULTIPLIER*500, 16);
   }
 
   public void testNFKC() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE), 20, RANDOM_MULTIPLIER*1000);
+    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE), 20, RANDOM_MULTIPLIER*1000, 128);
   }
   
   public void testNFKCHuge() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE), 8192, RANDOM_MULTIPLIER*100);
+    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE), 256, RANDOM_MULTIPLIER*500, 16);
   }
 
   public void testNFKD() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.DECOMPOSE), 20, RANDOM_MULTIPLIER*1000);
+    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.DECOMPOSE), 20, RANDOM_MULTIPLIER*1000, 128);
   }
   
   public void testNFKDHuge() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.DECOMPOSE), 8192, RANDOM_MULTIPLIER*100);
+    doTestMode(Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.DECOMPOSE), 256, RANDOM_MULTIPLIER*500, 16);
   }
 
   public void testNFKC_CF() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE), 20, RANDOM_MULTIPLIER*1000);
+    doTestMode(Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE), 20, RANDOM_MULTIPLIER*1000, 128);
   }
   
   public void testNFKC_CFHuge() throws Exception {
-    doTestMode(Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE), 8192, RANDOM_MULTIPLIER*100);
+    doTestMode(Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE), 256, RANDOM_MULTIPLIER*500, 16);
   }
 
   public void testRandomStrings() throws IOException {
@@ -186,7 +186,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
     // huge strings
-    checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), a, 25*RANDOM_MULTIPLIER, 8192);
 
     // nfkd
     a = new Analyzer() {
@@ -202,7 +202,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
     // huge strings
-    checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), a, 25*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testCuriousString() throws Exception {
@@ -408,7 +408,7 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
         return new ICUNormalizer2CharFilter(reader, Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
       }
     };
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 25; i++) {
       checkAnalysisConsistency(random(), a, false, text);
     }
   }
