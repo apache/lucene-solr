@@ -87,13 +87,13 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     assertEquals(2,rsp.getResults().getNumFound());
 
     SolrDocument doc = rsp.getResults().get(0);
-    String src = (String) doc.getFieldValue("_src");
+    String src = (String) doc.getFieldValue("_src_");
     Map m = (Map) ObjectBuilder.fromJSON(src);
     assertEquals("abc1",m.get("id"));
     assertEquals("name1",m.get("name"));
 
     doc = rsp.getResults().get(1);
-    src = (String) doc.getFieldValue("_src");
+    src = (String) doc.getFieldValue("_src_");
     m = (Map) ObjectBuilder.fromJSON(src);
     assertEquals("name2",m.get("name"));
 
