@@ -134,6 +134,16 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public int getInputCloneCount() {
     return inputCloneCount.get();
   }
+  
+  boolean verboseClone;
+  
+  /** 
+   * If set to true, we print a fake exception
+   * with filename and stacktrace on every indexinput clone()
+   */
+  public void setVerboseClone(boolean v) {
+    verboseClone = v;
+  }
 
   public void setTrackDiskUsage(boolean v) {
     trackDiskUsage = v;
