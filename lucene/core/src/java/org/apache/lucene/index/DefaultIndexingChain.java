@@ -258,7 +258,7 @@ final class DefaultIndexingChain extends DocConsumer {
       initStoredFieldsWriter();
       storedFieldsWriter.startDocument();
     } catch (Throwable th) {
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
     lastStoredDocID++;
   }
@@ -269,7 +269,7 @@ final class DefaultIndexingChain extends DocConsumer {
     try {
       storedFieldsWriter.finishDocument();
     } catch (Throwable th) {
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
   }
 
@@ -317,7 +317,7 @@ final class DefaultIndexingChain extends DocConsumer {
     } catch (Throwable th) {
       // Must abort, on the possibility that on-disk term
       // vectors are now corrupt:
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
   }
   
@@ -360,7 +360,7 @@ final class DefaultIndexingChain extends DocConsumer {
         try {
           storedFieldsWriter.writeField(fp.fieldInfo, field);
         } catch (Throwable th) {
-          throw new AbortingException(th);
+          throw AbortingException.wrap(th);
         }
       }
     }
@@ -666,7 +666,7 @@ final class DefaultIndexingChain extends DocConsumer {
             // Document will be deleted above:
             throw new IllegalArgumentException(msg, e);
           } catch (Throwable th) {
-            throw new AbortingException(th);
+            throw AbortingException.wrap(th);
           }
         }
 
