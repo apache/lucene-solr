@@ -456,7 +456,7 @@ class DocumentsWriterPerThread {
       return fs;
     } catch (Throwable th) {
       abort();
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
   }
   
