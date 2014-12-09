@@ -105,16 +105,6 @@ if __name__ == '__main__':
   public void clear() {
     Arrays.fill(values, %s0L);
   }
-
-  @Override
-  public Object getArray() {
-    return values;
-  }
-
-  @Override
-  public boolean hasArray() {
-    return true;
-  }
 """ %(MASKS[bpv], CASTS[bpv], CASTS[bpv]))
 
     if bpv == 64:

@@ -178,7 +178,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   public void fill(int fromIndex, int toIndex, long val) {
     assert fromIndex >= 0;
     assert fromIndex <= toIndex;
-    assert PackedInts.bitsRequired(val) <= bitsPerValue;
+    assert PackedInts.unsignedBitsRequired(val) <= bitsPerValue;
 
     final int valuesPerBlock = 64 / bitsPerValue;
     if (toIndex - fromIndex <= valuesPerBlock << 1) {
