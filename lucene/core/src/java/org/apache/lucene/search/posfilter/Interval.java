@@ -62,13 +62,6 @@ class Interval implements Cloneable {
     this(Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
   }
 
-  public Interval(DocsEnum docsEnum) throws IOException {
-    this.begin = docsEnum.startPosition();
-    this.end = docsEnum.endPosition();
-    this.offsetBegin = docsEnum.startOffset();
-    this.offsetEnd = docsEnum.endOffset();
-  }
-
   /**
    * Update to span the range defined by two other Intervals.
    * @param start the first Interval
@@ -106,36 +99,6 @@ class Interval implements Cloneable {
   }
 
   /**
-   * Compare with another Interval.
-   * @param other the comparator
-   * @return true if both start and end positions are less than
-   *              or equal to the comparator's.
-   */
-  public boolean lessThan(Interval other) {
-    return begin <= other.begin && end <= other.end;
-  }
-
-  /**
-   * Compare with another Interval
-   * @param other the comparator
-   * @return true if both start and end positions are greater then
-   *              the comparator's.
-   */
-  public boolean greaterThanExclusive(Interval other) {
-    return begin > other.begin && end > other.end;
-  }
-
-  /**
-   * Compare with another Interval
-   * @param other the comparator
-   * @return true if both start and end positions are greater then
-   *              of equal to the comparator's.
-   */
-  public boolean greaterThan(Interval other) {
-    return begin >= other.begin && end >= other.end;
-  }
-
-  /**
    * Compare with another Interval
    * @param other the comparator
    * @return true if this Interval contains the comparator
@@ -151,17 +114,6 @@ class Interval implements Cloneable {
    */
   public boolean overlaps(Interval other) {
     return this.contains(other) || other.contains(this);
-  }
-
-  /**
-   * Set all values of this Interval to be equal to another's
-   * @param other the Interval to copy
-   */
-  public void copy(Interval other) {
-    begin = other.begin;
-    end = other.end;
-    offsetBegin = other.offsetBegin;
-    offsetEnd = other.offsetEnd;
   }
 
   /**

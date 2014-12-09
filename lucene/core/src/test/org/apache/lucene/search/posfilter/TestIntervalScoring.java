@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TopDocs;
 
@@ -38,16 +39,23 @@ public class TestIntervalScoring extends IntervalTestBase {
   }
 
   private String[] docFields = {
-      "Should we, could we, would we?",
+      "Should we could we would we?",
       "It should -  would it?",
       "It shouldn't",
-      "Should we, should we, should we"
+      "Should we should we should we"
   };
 
   public void testOrderedNearQueryScoring() throws IOException {
     OrderedNearQuery q = new OrderedNearQuery(10, makeTermQuery("should"),
                                                   makeTermQuery("would"));
     checkScores(q, searcher, 1, 0);
+  }
+
+  public void testUnorderedNearQueryScoring() throws IOException {
+
+    Query q = new UnorderedNearQuery(10, makeTermQuery("we"), makeTermQuery("should"));
+    checkScores(q, searcher, 3, 0);
+
   }
 
   public void testEmptyMultiTermQueryScoring() throws IOException {
