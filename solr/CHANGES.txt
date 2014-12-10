@@ -228,6 +228,8 @@ New Features
 * SOLR-4799: faster join using join="zipper" aka merge join for nested DIH EntityProcessors
   (Mikhail Khludnev via Noble Paul)
 
+* SOLR-6787: API to manage blobs in Solr (Noble Paul)
+
 Bug Fixes
 ----------------------
 
