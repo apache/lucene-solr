@@ -681,10 +681,7 @@ public class SolrRequestParsers
         if (ServletFileUpload.isMultipartContent(req)) {
           return multipart.parseParamsAndFillStreams(req, streams);
         }
-        if (req.getContentType() != null) {
-          return raw.parseParamsAndFillStreams(req, streams);
-        }
-        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Must specify a Content-Type header with POST requests");
+        return raw.parseParamsAndFillStreams(req, streams);
       }
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported method: " + method + " for request " + req);
     }

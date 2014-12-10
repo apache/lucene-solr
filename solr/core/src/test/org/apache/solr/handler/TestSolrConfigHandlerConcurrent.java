@@ -201,6 +201,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     } finally {
       EntityUtils.consumeQuietly(entity);
+      get.releaseConnection();
     }
   }
 }

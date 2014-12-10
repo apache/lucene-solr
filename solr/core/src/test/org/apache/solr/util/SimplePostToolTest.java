@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -225,7 +226,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       }
       res.httpStatus = 200;
       res.contentType = "text/html";
-      res.content = htmlMap.get(u.toString()).getBytes(StandardCharsets.UTF_8);
+      res.content = ByteBuffer.wrap( htmlMap.get(u.toString()).getBytes(StandardCharsets.UTF_8));
       return res;
     }
     
