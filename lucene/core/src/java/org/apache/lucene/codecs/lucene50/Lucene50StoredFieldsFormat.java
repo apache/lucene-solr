@@ -48,7 +48,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * compression ratio, it should provide interesting compression ratios
  * for redundant inputs (such as log files, HTML or plain text). For higher
  * compression, you can choose ({@link Mode#BEST_COMPRESSION BEST_COMPRESSION}), which uses 
- * the <a href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 24KB blocks 
+ * the <a href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 60KB blocks 
  * for a better ratio at the expense of slower performance. 
  * These two options can be configured like this: </p>
  * <pre class="prettyprint">
@@ -184,7 +184,7 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
       case BEST_SPEED: 
         return new CompressingStoredFieldsFormat("Lucene50StoredFieldsFast", CompressionMode.FAST, 1 << 14, 128);
       case BEST_COMPRESSION: 
-        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHigh", CompressionMode.HIGH_COMPRESSION, 24576, 512);
+        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHigh", CompressionMode.HIGH_COMPRESSION, 61440, 512);
       default: throw new AssertionError();
     }
   }
