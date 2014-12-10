@@ -51,9 +51,6 @@ public class ExternalPaths {
   public static String TECHPRODUCTS_CONFIGSET =
       new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf").getAbsolutePath();
 
-  /* @see #SOURCE_HOME */
-  public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
-
   public static String SERVER_HOME = new File(SOURCE_HOME, "server/solr").getAbsolutePath();
 
   /**

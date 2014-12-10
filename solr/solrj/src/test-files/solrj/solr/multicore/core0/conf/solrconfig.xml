@@ -21,7 +21,7 @@
  It is *not* a good example to work from. 
 -->
 <config>
-  <luceneMatchVersion>5.0.0</luceneMatchVersion>
+  <luceneMatchVersion>6.0.0</luceneMatchVersion>
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based, not persistent, and doesn't work with replication. -->
