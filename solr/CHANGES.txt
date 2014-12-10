@@ -466,6 +466,9 @@ Other Changes
 * SOLR-6560: Purge termIndexInterval from example/test configs
   (Tom Burton-West, hossman)
 
+* SOLR-6773: Remove the multicore example as the DIH and cloud examples 
+  illustrate multicore behavior (hossman, Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
