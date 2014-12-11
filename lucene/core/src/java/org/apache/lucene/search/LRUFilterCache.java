@@ -18,12 +18,12 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,6 +33,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RoaringDocIdSet;
 
 /**
@@ -51,8 +52,22 @@ import org.apache.lucene.util.RoaringDocIdSet;
  */
 public class LRUFilterCache implements FilterCache, Accountable {
 
+  // memory usage of a simple query-wrapper filter around a term query
+  static final long FILTER_DEFAULT_RAM_BYTES_USED = 216;
+
+  static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
+      2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
+      * 2; // hash tables need to be oversized to avoid collisions, assume 2x capacity
+
+  static final long LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY =
+      HASHTABLE_RAM_BYTES_PER_ENTRY
+      + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF; // previous & next references
+
   private final int maxSize;
   private final long maxRamBytesUsed;
+  // maps filters that are contained in the cache to a singleton so that this
+  // cache does not store several copies of the same filter
+  private final Map<Filter, Filter> uniqueFilters;
   // The contract between this set and the per-leaf caches is that per-leaf caches
   // are only allowed to store sub-sets of the filters that are contained in
   // mostRecentlyUsedFilters. This is why write operations are performed under a lock
@@ -67,14 +82,20 @@ public class LRUFilterCache implements FilterCache, Accountable {
   public LRUFilterCache(int maxSize, long maxRamBytesUsed) {
     this.maxSize = maxSize;
     this.maxRamBytesUsed = maxRamBytesUsed;
-    mostRecentlyUsedFilters = Collections.newSetFromMap(new LinkedHashMap<Filter, Boolean>(16, 0.75f, true));
+    uniqueFilters = new LinkedHashMap<Filter, Filter>(16, 0.75f, true);
+    mostRecentlyUsedFilters = uniqueFilters.keySet();
     cache = new IdentityHashMap<>();
     ramBytesUsed = 0;
   }
 
   /** Whether evictions are required. */
   boolean requiresEviction() {
-    return mostRecentlyUsedFilters.size() > maxSize || ramBytesUsed() > maxRamBytesUsed;
+    final int size = mostRecentlyUsedFilters.size();
+    if (size == 0) {
+      return false;
+    } else {
+      return size > maxSize || ramBytesUsed() > maxRamBytesUsed;
+    }
   }
 
   synchronized DocIdSet get(Filter filter, LeafReaderContext context) {
@@ -82,27 +103,28 @@ public class LRUFilterCache implements FilterCache, Accountable {
     if (leafCache == null) {
       return null;
     }
-    final DocIdSet set = leafCache.get(filter);
-    if (set != null) {
-      // this filter becomes the most-recently used filter
-      final boolean added = mostRecentlyUsedFilters.add(filter);
-      // added is necessarily false since the leaf caches contain a subset of mostRecentlyUsedFilters
-      assert added == false;
+    // this get call moves the filter to the most-recently-used position
+    final Filter singleton = uniqueFilters.get(filter);
+    if (singleton == null) {
+      return null;
     }
-    return set;
+    return leafCache.get(singleton);
   }
 
   synchronized void putIfAbsent(Filter filter, LeafReaderContext context, DocIdSet set) {
     // under a lock to make sure that mostRecentlyUsedFilters and cache remain sync'ed
     assert set.isCacheable();
-    final boolean added = mostRecentlyUsedFilters.add(filter);
-    if (added) {
-      ramBytesUsed += ramBytesUsed(filter);
+    Filter singleton = uniqueFilters.putIfAbsent(filter, filter);
+    if (singleton == null) {
+      ramBytesUsed += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(filter);
+    } else {
+      filter = singleton;
     }
     LeafCache leafCache = cache.get(context.reader().getCoreCacheKey());
     if (leafCache == null) {
       leafCache = new LeafCache();
       final LeafCache previous = cache.put(context.reader().getCoreCacheKey(), leafCache);
+      ramBytesUsed += HASHTABLE_RAM_BYTES_PER_ENTRY;
       assert previous == null;
       // we just created a new leaf cache, need to register a close listener
       context.reader().addCoreClosedListener(new CoreClosedListener() {
@@ -118,13 +140,12 @@ public class LRUFilterCache implements FilterCache, Accountable {
 
   synchronized void evictIfNecessary() {
     // under a lock to make sure that mostRecentlyUsedFilters and cache keep sync'ed
-    if (requiresEviction() && mostRecentlyUsedFilters.isEmpty() == false) {
+    if (requiresEviction()) {
       Iterator<Filter> iterator = mostRecentlyUsedFilters.iterator();
       do {
         final Filter filter = iterator.next();
         iterator.remove();
-        ramBytesUsed -= ramBytesUsed(filter);
-        clearFilter(filter);
+        onEviction(filter);
       } while (iterator.hasNext() && requiresEviction());
     }
   }
@@ -135,7 +156,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
   public synchronized void clearCoreCacheKey(Object coreKey) {
     final LeafCache leafCache = cache.remove(coreKey);
     if (leafCache != null) {
-      ramBytesUsed -= leafCache.ramBytesUsed;
+      ramBytesUsed -= leafCache.ramBytesUsed + HASHTABLE_RAM_BYTES_PER_ENTRY;
     }
   }
 
@@ -143,8 +164,16 @@ public class LRUFilterCache implements FilterCache, Accountable {
    * Remove all cache entries for the given filter.
    */
   public synchronized void clearFilter(Filter filter) {
+    final Filter singleton = uniqueFilters.remove(filter);
+    if (singleton != null) {
+      onEviction(singleton);
+    }
+  }
+
+  private void onEviction(Filter singleton) {
+    ramBytesUsed -= LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(singleton);
     for (LeafCache leafCache : cache.values()) {
-      leafCache.remove(filter);
+      leafCache.remove(singleton);
     }
   }
 
@@ -164,18 +193,24 @@ public class LRUFilterCache implements FilterCache, Accountable {
           + ", maxSize=" + maxSize + ", ramBytesUsed=" + ramBytesUsed() + ", maxRamBytesUsed=" + maxRamBytesUsed);
     }
     for (LeafCache leafCache : cache.values()) {
-      Set<Filter> keys = new HashSet<Filter>(leafCache.cache.keySet());
+      Set<Filter> keys = Collections.newSetFromMap(new IdentityHashMap<>());
+      keys.addAll(leafCache.cache.keySet());
       keys.removeAll(mostRecentlyUsedFilters);
       if (!keys.isEmpty()) {
         throw new AssertionError("One leaf cache contains more keys than the top-level cache: " + keys);
       }
     }
-    long recomputedRamBytesUsed = 0;
+    long recomputedRamBytesUsed =
+          HASHTABLE_RAM_BYTES_PER_ENTRY * cache.size()
+        + LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY * uniqueFilters.size();
     for (Filter filter : mostRecentlyUsedFilters) {
       recomputedRamBytesUsed += ramBytesUsed(filter);
     }
     for (LeafCache leafCache : cache.values()) {
-      recomputedRamBytesUsed += leafCache.ramBytesUsed();
+      recomputedRamBytesUsed += HASHTABLE_RAM_BYTES_PER_ENTRY * leafCache.cache.size();
+      for (DocIdSet set : leafCache.cache.values()) {
+        recomputedRamBytesUsed += set.ramBytesUsed();
+      }
     }
     if (recomputedRamBytesUsed != ramBytesUsed) {
       throw new AssertionError("ramBytesUsed mismatch : " + ramBytesUsed + " != " + recomputedRamBytesUsed);
@@ -183,8 +218,9 @@ public class LRUFilterCache implements FilterCache, Accountable {
   }
 
   // pkg-private for testing
-  synchronized Set<Filter> cachedFilters() {
-    return new HashSet<>(mostRecentlyUsedFilters);
+  // return the list of cached filters in LRU order
+  synchronized List<Filter> cachedFilters() {
+    return new ArrayList<>(mostRecentlyUsedFilters);
   }
 
   @Override
@@ -240,7 +276,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
     if (filter instanceof Accountable) {
       return ((Accountable) filter).ramBytesUsed();
     }
-    return 1024;
+    return FILTER_DEFAULT_RAM_BYTES_USED;
   }
 
   /**
@@ -257,7 +293,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
     private volatile long ramBytesUsed;
 
     LeafCache() {
-      cache = new HashMap<>();
+      cache = new IdentityHashMap<>();
       ramBytesUsed = 0;
     }
 
@@ -273,14 +309,14 @@ public class LRUFilterCache implements FilterCache, Accountable {
     void putIfAbsent(Filter filter, DocIdSet set) {
       if (cache.containsKey(filter) == false) {
         cache.put(filter, set);
-        incrementRamBytesUsed(set.ramBytesUsed());
+        incrementRamBytesUsed(HASHTABLE_RAM_BYTES_PER_ENTRY + set.ramBytesUsed());
       }
     }
 
     void remove(Filter filter) {
       DocIdSet removed = cache.remove(filter);
       if (removed != null) {
-        incrementRamBytesUsed(-removed.ramBytesUsed());
+        incrementRamBytesUsed(-(HASHTABLE_RAM_BYTES_PER_ENTRY + removed.ramBytesUsed()));
       }
     }
 
