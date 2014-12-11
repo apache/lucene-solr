@@ -114,8 +114,9 @@ public class LRUFilterCache implements FilterCache, Accountable {
   synchronized void putIfAbsent(Filter filter, LeafReaderContext context, DocIdSet set) {
     // under a lock to make sure that mostRecentlyUsedFilters and cache remain sync'ed
     assert set.isCacheable();
-    Filter singleton = uniqueFilters.putIfAbsent(filter, filter);
+    Filter singleton = uniqueFilters.get(filter);
     if (singleton == null) {
+      uniqueFilters.put(filter, filter);
       ramBytesUsed += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(filter);
     } else {
       filter = singleton;
