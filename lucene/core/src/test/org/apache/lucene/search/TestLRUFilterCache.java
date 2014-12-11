@@ -32,8 +32,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -306,7 +308,10 @@ public class TestLRUFilterCache extends LuceneTestCase {
     };
 
     Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    // serial merges so that segments do not get closed while we are measuring ram usage
+    // with RamUsageTester
+    IndexWriterConfig iwc = newIndexWriterConfig().setMergeScheduler(new SerialMergeScheduler());
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     final List<String> colors = Arrays.asList("blue", "red", "green", "yellow");
 
