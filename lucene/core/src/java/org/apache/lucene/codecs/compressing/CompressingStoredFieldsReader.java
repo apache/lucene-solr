@@ -20,17 +20,23 @@ package org.apache.lucene.codecs.compressing;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.BYTE_ARR;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_SFX_DAT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_SFX_IDX;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY_ENCODING;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR_ENCODING;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_FLOAT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_INT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_LONG;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.SECOND;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.SECOND_ENCODING;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.STRING;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_INDEX_EXTENSION;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -57,6 +63,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
@@ -201,16 +208,16 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         visitor.stringField(info, new String(data, StandardCharsets.UTF_8));
         break;
       case NUMERIC_INT:
-        visitor.intField(info, in.readInt());
+        visitor.intField(info, in.readZInt());
         break;
       case NUMERIC_FLOAT:
-        visitor.floatField(info, Float.intBitsToFloat(in.readInt()));
+        visitor.floatField(info, readZFloat(in));
         break;
       case NUMERIC_LONG:
-        visitor.longField(info, in.readLong());
+        visitor.longField(info, readTLong(in));
         break;
       case NUMERIC_DOUBLE:
-        visitor.doubleField(info, Double.longBitsToDouble(in.readLong()));
+        visitor.doubleField(info, readZDouble(in));
         break;
       default:
         throw new AssertionError("Unknown type flag: " + Integer.toHexString(bits));
@@ -225,16 +232,96 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         in.skipBytes(length);
         break;
       case NUMERIC_INT:
+        in.readZInt();
+        break;
       case NUMERIC_FLOAT:
-        in.readInt();
+        readZFloat(in);
         break;
       case NUMERIC_LONG:
+        readTLong(in);
+        break;
       case NUMERIC_DOUBLE:
-        in.readLong();
+        readZDouble(in);
         break;
       default:
         throw new AssertionError("Unknown type flag: " + Integer.toHexString(bits));
     }
+  }
+
+  /**
+   * Reads a float in a variable-length format.  Reads between one and
+   * five bytes. Small integral values typically take fewer bytes.
+   */
+  static float readZFloat(DataInput in) throws IOException {
+    int b = in.readByte() & 0xFF;
+    if (b == 0xFF) {
+      // negative value
+      return Float.intBitsToFloat(in.readInt());
+    } else if ((b & 0x80) != 0) {
+      // small integer [-1..125]
+      return (b & 0x7f) - 1;
+    } else {
+      // positive float
+      int bits = b << 24 | ((in.readShort() & 0xFFFF) << 8) | (in.readByte() & 0xFF);
+      return Float.intBitsToFloat(bits);
+    }
+  }
+
+  /**
+   * Reads a double in a variable-length format.  Reads between one and
+   * nine bytes. Small integral values typically take fewer bytes.
+   */
+  static double readZDouble(DataInput in) throws IOException {
+    int b = in.readByte() & 0xFF;
+    if (b == 0xFF) {
+      // negative value
+      return Double.longBitsToDouble(in.readLong());
+    } else if (b == 0xFE) {
+      // float
+      return Float.intBitsToFloat(in.readInt());
+    } else if ((b & 0x80) != 0) {
+      // small integer [-1..124]
+      return (b & 0x7f) - 1;
+    } else {
+      // positive double
+      long bits = ((long) b) << 56 | ((in.readInt() & 0xFFFFFFFFL) << 24) | ((in.readShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+      return Double.longBitsToDouble(bits);
+    }
+  }
+
+  /**
+   * Reads a long in a variable-length format.  Reads between one and
+   * nine bytes. Small values typically take fewer bytes.
+   */
+  static long readTLong(DataInput in) throws IOException {
+    int header = in.readByte() & 0xFF;
+
+    long bits = header & 0x1F;
+    if ((header & 0x20) != 0) {
+      // continuation bit
+      bits |= in.readVLong() << 5;
+    }
+
+    long l = BitUtil.zigZagDecode(bits);
+
+    switch (header & DAY_ENCODING) {
+      case SECOND_ENCODING:
+        l *= SECOND;
+        break;
+      case HOUR_ENCODING:
+        l *= HOUR;
+        break;
+      case DAY_ENCODING:
+        l *= DAY;
+        break;
+      case 0:
+        // uncompressed
+        break;
+      default:
+        throw new AssertionError();
+    }
+
+    return l;
   }
 
   @Override
