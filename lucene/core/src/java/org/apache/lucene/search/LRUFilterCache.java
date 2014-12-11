@@ -193,7 +193,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
           + ", maxSize=" + maxSize + ", ramBytesUsed=" + ramBytesUsed() + ", maxRamBytesUsed=" + maxRamBytesUsed);
     }
     for (LeafCache leafCache : cache.values()) {
-      Set<Filter> keys = Collections.newSetFromMap(new IdentityHashMap<>());
+      Set<Filter> keys = Collections.newSetFromMap(new IdentityHashMap<Filter, Boolean>());
       keys.addAll(leafCache.cache.keySet());
       keys.removeAll(mostRecentlyUsedFilters);
       if (!keys.isEmpty()) {
