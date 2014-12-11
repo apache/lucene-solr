@@ -37,6 +37,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.GrowableByteArrayDataOutput;
@@ -70,9 +71,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
-  private final Directory directory;
   private final String segment;
-  private final String segmentSuffix;
   private CompressingStoredFieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
@@ -91,9 +90,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
       String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) throws IOException {
     assert directory != null;
-    this.directory = directory;
     this.segment = si.name;
-    this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
     this.chunkSize = chunkSize;
@@ -288,16 +285,167 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       bufferedDocs.writeString(field.stringValue());
     } else {
       if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
-        bufferedDocs.writeInt(number.intValue());
+        bufferedDocs.writeZInt(number.intValue());
       } else if (number instanceof Long) {
-        bufferedDocs.writeLong(number.longValue());
+        writeTLong(bufferedDocs, number.longValue());
       } else if (number instanceof Float) {
-        bufferedDocs.writeInt(Float.floatToIntBits(number.floatValue()));
+        writeZFloat(bufferedDocs, number.floatValue());
       } else if (number instanceof Double) {
-        bufferedDocs.writeLong(Double.doubleToLongBits(number.doubleValue()));
+        writeZDouble(bufferedDocs, number.doubleValue());
       } else {
         throw new AssertionError("Cannot get here");
       }
+    }
+  }
+
+  // -0 isn't compressed.
+  static final int NEGATIVE_ZERO_FLOAT = Float.floatToIntBits(-0f);
+  static final long NEGATIVE_ZERO_DOUBLE = Double.doubleToLongBits(-0d);
+
+  // for compression of timestamps
+  static final long SECOND = 1000L;
+  static final long HOUR = 60 * 60 * SECOND;
+  static final long DAY = 24 * HOUR;
+  static final int SECOND_ENCODING = 0x40;
+  static final int HOUR_ENCODING = 0x80;
+  static final int DAY_ENCODING = 0xC0;
+
+  /** 
+   * Writes a float in a variable-length format.  Writes between one and 
+   * five bytes. Small integral values typically take fewer bytes.
+   * <p>
+   * ZFloat --&gt; Header, Bytes*?
+   * <ul>
+   *    <li>Header --&gt; {@link DataOutput#writeByte Uint8}. When it is
+   *       equal to 0xFF then the value is negative and stored in the next
+   *       4 bytes. Otherwise if the first bit is set then the other bits
+   *       in the header encode the value plus one and no other
+   *       bytes are read. Otherwise, the value is a positive float value
+   *       whose first byte is the header, and 3 bytes need to be read to
+   *       complete it.
+   *    <li>Bytes --&gt; Potential additional bytes to read depending on the
+   *       header.
+   * </ul>
+   * <p>
+   */
+  static void writeZFloat(DataOutput out, float f) throws IOException {
+    int intVal = (int) f;
+    final int floatBits = Float.floatToIntBits(f);
+
+    if (f == intVal
+        && intVal >= -1
+        && intVal <= 0x7D
+        && floatBits != NEGATIVE_ZERO_FLOAT) {
+      // small integer value [-1..125]: single byte
+      out.writeByte((byte) (0x80 | (1 + intVal)));
+    } else if ((floatBits >>> 31) == 0) {
+      // other positive floats: 4 bytes
+      out.writeInt(floatBits);
+    } else {
+      // other negative float: 5 bytes
+      out.writeByte((byte) 0xFF);
+      out.writeInt(floatBits);
+    }
+  }
+  
+  /** 
+   * Writes a float in a variable-length format.  Writes between one and 
+   * five bytes. Small integral values typically take fewer bytes.
+   * <p>
+   * ZFloat --&gt; Header, Bytes*?
+   * <ul>
+   *    <li>Header --&gt; {@link DataOutput#writeByte Uint8}. When it is
+   *       equal to 0xFF then the value is negative and stored in the next
+   *       8 bytes. When it is equal to 0xFE then the value is stored as a
+   *       float in the next 4 bytes. Otherwise if the first bit is set
+   *       then the other bits in the header encode the value plus one and
+   *       no other bytes are read. Otherwise, the value is a positive float
+   *       value whose first byte is the header, and 7 bytes need to be read
+   *       to complete it.
+   *    <li>Bytes --&gt; Potential additional bytes to read depending on the
+   *       header.
+   * </ul>
+   * <p>
+   */
+  static void writeZDouble(DataOutput out, double d) throws IOException {
+    int intVal = (int) d;
+    final long doubleBits = Double.doubleToLongBits(d);
+    
+    if (d == intVal &&
+        intVal >= -1 && 
+        intVal <= 0x7C &&
+        doubleBits != NEGATIVE_ZERO_DOUBLE) {
+      // small integer value [-1..124]: single byte
+      out.writeByte((byte) (0x80 | (intVal + 1)));
+      return;
+    } else if (d == (float) d) {
+      // d has an accurate float representation: 5 bytes
+      out.writeByte((byte) 0xFE);
+      out.writeInt(Float.floatToIntBits((float) d));
+    } else if ((doubleBits >>> 63) == 0) {
+      // other positive doubles: 8 bytes
+      out.writeLong(doubleBits);
+    } else {
+      // other negative doubles: 9 bytes
+      out.writeByte((byte) 0xFF);
+      out.writeLong(doubleBits);
+    }
+  }
+
+  /** 
+   * Writes a long in a variable-length format.  Writes between one and 
+   * ten bytes. Small values or values representing timestamps with day,
+   * hour or second precision typically require fewer bytes.
+   * <p>
+   * ZLong --&gt; Header, Bytes*?
+   * <ul>
+   *    <li>Header --&gt; The first two bits indicate the compression scheme:
+   *       <ul>
+   *          <li>00 - uncompressed
+   *          <li>01 - multiple of 1000 (second)
+   *          <li>10 - multiple of 3600000 (hour)
+   *          <li>11 - multiple of 86400000 (day)
+   *       </ul>
+   *       Then the next bit is a continuation bit, indicating whether more
+   *       bytes need to be read, and the last 5 bits are the lower bits of
+   *       the encoded value. In order to reconstruct the value, you need to
+   *       combine the 5 lower bits of the header with a vLong in the next
+   *       bytes (if the continuation bit is set to 1). Then
+   *       {@link BitUtil#zigZagDecode(int) zigzag-decode} it and finally
+   *       multiply by the multiple corresponding to the compression scheme.
+   *    <li>Bytes --&gt; Potential additional bytes to read depending on the
+   *       header.
+   * </ul>
+   * <p>
+   */
+  // T for "timestamp"
+  static void writeTLong(DataOutput out, long l) throws IOException {
+    int header; 
+    if (l % SECOND != 0) {
+      header = 0;
+    } else if (l % DAY == 0) {
+      // timestamp with day precision
+      header = DAY_ENCODING;
+      l /= DAY;
+    } else if (l % HOUR == 0) {
+      // timestamp with hour precision, or day precision with a timezone
+      header = HOUR_ENCODING;
+      l /= HOUR;
+    } else {
+      // timestamp with second precision
+      header = SECOND_ENCODING;
+      l /= SECOND;
+    }
+
+    final long zigZagL = BitUtil.zigZagEncode(l);
+    header |= (zigZagL & 0x1F); // last 5 bits
+    final long upperBits = zigZagL >>> 5;
+    if (upperBits != 0) {
+      header |= 0x20;
+    }
+    out.writeByte((byte) header);
+    if (upperBits != 0) {
+      out.writeVLong(upperBits);
     }
   }
 
