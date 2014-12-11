@@ -18,9 +18,13 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -32,7 +36,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RamUsageTester;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -49,6 +55,10 @@ public class TestLRUFilterCache extends LuceneTestCase {
     }
 
   };
+
+  public void testFilterRamBytesUsed() {
+    assertEquals(LRUFilterCache.FILTER_DEFAULT_RAM_BYTES_USED, RamUsageTester.sizeOf(new QueryWrapperFilter(new TermQuery(new Term("some_field", "some_term")))));
+  }
 
   public void testConcurrency() throws Throwable {
     final LRUFilterCache filterCache = new LRUFilterCache(1 + random().nextInt(20), 1 + random().nextInt(10000));
@@ -151,32 +161,230 @@ public class TestLRUFilterCache extends LuceneTestCase {
     final Filter red = new QueryWrapperFilter(new TermQuery(new Term("color", "red")));
     final Filter green = new QueryWrapperFilter(new TermQuery(new Term("color", "green")));
 
-    assertEquals(Collections.emptySet(), filterCache.cachedFilters());
+    assertEquals(Collections.emptyList(), filterCache.cachedFilters());
 
     // the filter is not cached on any segment: no changes
     searcher.search(new ConstantScoreQuery(filterCache.doCache(green, NEVER_CACHE)), 1);
-    assertEquals(Collections.emptySet(), filterCache.cachedFilters());
+    assertEquals(Collections.emptyList(), filterCache.cachedFilters());
 
     searcher.search(new ConstantScoreQuery(filterCache.doCache(red, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(Collections.singleton(red), filterCache.cachedFilters());
+    assertEquals(Collections.singletonList(red), filterCache.cachedFilters());
 
     searcher.search(new ConstantScoreQuery(filterCache.doCache(green, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(new HashSet<>(Arrays.asList(red, green)), filterCache.cachedFilters());
+    assertEquals(Arrays.asList(red, green), filterCache.cachedFilters());
 
     searcher.search(new ConstantScoreQuery(filterCache.doCache(red, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(new HashSet<>(Arrays.asList(red, green)), filterCache.cachedFilters());
+    assertEquals(Arrays.asList(green, red), filterCache.cachedFilters());
 
     searcher.search(new ConstantScoreQuery(filterCache.doCache(blue, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(new HashSet<>(Arrays.asList(red, blue)), filterCache.cachedFilters());
+    assertEquals(Arrays.asList(red, blue), filterCache.cachedFilters());
 
     searcher.search(new ConstantScoreQuery(filterCache.doCache(blue, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(new HashSet<>(Arrays.asList(red, blue)), filterCache.cachedFilters());
+    assertEquals(Arrays.asList(red, blue), filterCache.cachedFilters());
 
     searcher.search(new ConstantScoreQuery(filterCache.doCache(green, FilterCachingPolicy.ALWAYS_CACHE)), 1);
-    assertEquals(new HashSet<>(Arrays.asList(green, blue)), filterCache.cachedFilters());
+    assertEquals(Arrays.asList(blue, green), filterCache.cachedFilters());
 
     searcher.search(new ConstantScoreQuery(filterCache.doCache(red, NEVER_CACHE)), 1);
-    assertEquals(new HashSet<>(Arrays.asList(green, blue)), filterCache.cachedFilters());
+    assertEquals(Arrays.asList(blue, green), filterCache.cachedFilters());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testCache() throws IOException {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "", Store.NO);
+    doc.add(f);
+    final int numDocs = atLeast(10);
+    for (int i = 0; i < numDocs; ++i) {
+      f.setStringValue(RandomPicks.randomFrom(random(), Arrays.asList("blue", "red", "green")));
+      w.addDocument(doc);
+    }
+    final DirectoryReader reader = w.getReader();
+    final LeafReaderContext leaf1 = reader.leaves().get(0);
+
+    Filter filter1 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+    // different instance yet equal
+    Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+
+    final LRUFilterCache filterCache = new LRUFilterCache(Integer.MAX_VALUE, Long.MAX_VALUE);
+    final Filter cachedFilter1 = filterCache.doCache(filter1, FilterCachingPolicy.ALWAYS_CACHE);
+    DocIdSet cached1 = cachedFilter1.getDocIdSet(leaf1, null);
+
+    final Filter cachedFilter2 = filterCache.doCache(filter2, NEVER_CACHE);
+    DocIdSet cached2 = cachedFilter2.getDocIdSet(leaf1, null);
+    assertSame(cached1, cached2);
+
+    filterCache.assertConsistent();
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testClearFilter() throws IOException {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "", Store.NO);
+    doc.add(f);
+    final int numDocs = atLeast(10);
+    for (int i = 0; i < numDocs; ++i) {
+      f.setStringValue(random().nextBoolean() ? "red" : "blue");
+      w.addDocument(doc);
+    }
+    final DirectoryReader reader = w.getReader();
+    final LeafReaderContext leaf1 = reader.leaves().get(0);
+
+    final Filter filter1 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+    // different instance yet equal
+    final Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+
+    final LRUFilterCache filterCache = new LRUFilterCache(Integer.MAX_VALUE, Long.MAX_VALUE);
+
+    final Filter cachedFilter1 = filterCache.doCache(filter1, FilterCachingPolicy.ALWAYS_CACHE);
+    cachedFilter1.getDocIdSet(leaf1, null);
+
+    filterCache.clearFilter(filter2);
+
+    assertTrue(filterCache.cachedFilters().isEmpty());
+    filterCache.assertConsistent();
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  // This test makes sure that by making the same assumptions as LRUFilterCache, RAMUsageTester
+  // computes the same memory usage.
+  public void testRamBytesUsedAgreesWithRamUsageTester() throws IOException {
+    final LRUFilterCache filterCache = new LRUFilterCache(1 + random().nextInt(5), 1 + random().nextInt(10000));
+    // an accumulator that only sums up memory usage of referenced filters and doc id sets
+    final RamUsageTester.Accumulator acc = new RamUsageTester.Accumulator() {
+      @Override
+      public long accumulateObject(Object o, long shallowSize, Map<Field,Object> fieldValues, Collection<Object> queue) {
+        if (o instanceof DocIdSet) {
+          return ((DocIdSet) o).ramBytesUsed();
+        }
+        if (o instanceof Filter) {
+          return filterCache.ramBytesUsed((Filter) o);
+        }
+        if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
+          // do not take core cache keys into account
+          return 0;
+        }
+        if (o instanceof Map) {
+          Map<?,?> map = (Map<?,?>) o;
+          queue.addAll(map.keySet());
+          queue.addAll(map.values());
+          final long sizePerEntry = o instanceof LinkedHashMap
+              ? LRUFilterCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY
+              : LRUFilterCache.HASHTABLE_RAM_BYTES_PER_ENTRY;
+          return sizePerEntry * map.size();
+        }
+        // follow links to other objects, but ignore their memory usage
+        super.accumulateObject(o, shallowSize, fieldValues, queue);
+        return  0;
+      }
+      @Override
+      public long accumulateArray(Object array, long shallowSize, List<Object> values, Collection<Object> queue) {
+        // follow links to other objects, but ignore their memory usage
+        super.accumulateArray(array, shallowSize, values, queue);
+        return 0;
+      }
+    };
+
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final List<String> colors = Arrays.asList("blue", "red", "green", "yellow");
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "", Store.NO);
+    doc.add(f);
+    final int iters = atLeast(5);
+    for (int iter = 0; iter < iters; ++iter) {
+      final int numDocs = atLeast(10);
+      for (int i = 0; i < numDocs; ++i) {
+        f.setStringValue(RandomPicks.randomFrom(random(), colors));
+        w.addDocument(doc);
+      }
+      try (final DirectoryReader reader = w.getReader()) {
+        final IndexSearcher searcher = new IndexSearcher(reader);
+        for (int i = 0; i < 3; ++i) {
+          final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("color", RandomPicks.randomFrom(random(), colors))));
+          searcher.search(new ConstantScoreQuery(filterCache.doCache(filter, MAYBE_CACHE_POLICY)), 1);
+        }
+      }
+      filterCache.assertConsistent();
+      assertEquals(RamUsageTester.sizeOf(filterCache, acc), filterCache.ramBytesUsed());
+    }
+
+    w.close();
+    dir.close();
+  }
+
+  /** A filter that produces empty sets. */
+  private static class DummyFilter extends Filter {
+
+    @Override
+    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      return null;
+    }
+
+  }
+
+  // Test what happens when the cache contains only filters and doc id sets
+  // that require very little memory. In that case most of the memory is taken
+  // by the cache itself, not cache entries, and we want to make sure that
+  // memory usage is not grossly underestimated.
+  public void testRamBytesUsedConstantEntryOverhead() throws IOException {
+    final LRUFilterCache filterCache = new LRUFilterCache(1000000, 10000000);
+
+    final RamUsageTester.Accumulator acc = new RamUsageTester.Accumulator() {
+      @Override
+      public long accumulateObject(Object o, long shallowSize, Map<Field,Object> fieldValues, Collection<Object> queue) {
+        if (o instanceof DocIdSet) {
+          return ((DocIdSet) o).ramBytesUsed();
+        }
+        if (o instanceof Filter) {
+          return filterCache.ramBytesUsed((Filter) o);
+        }
+        if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
+          // do not follow references to core cache keys
+          return 0;
+        }
+        return super.accumulateObject(o, shallowSize, fieldValues, queue);
+      }
+    };
+
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    final int numDocs = atLeast(100);
+    for (int i = 0; i < numDocs; ++i) {
+      w.addDocument(doc);
+    }
+    final DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    final int numFilters = atLeast(1000);
+    for (int i = 0; i < numFilters; ++i) {
+      final Filter filter = new DummyFilter();
+      final Filter cached = filterCache.doCache(filter, FilterCachingPolicy.ALWAYS_CACHE);
+      searcher.search(new ConstantScoreQuery(cached), 1);
+    }
+
+    final long actualRamBytesUsed = RamUsageTester.sizeOf(filterCache, acc);
+    final long expectedRamBytesUsed = filterCache.ramBytesUsed();
+    // error < 30%
+    assertEquals(actualRamBytesUsed, expectedRamBytesUsed, 30 * actualRamBytesUsed / 100);
 
     reader.close();
     w.close();
