@@ -57,7 +57,12 @@ public class TestLRUFilterCache extends LuceneTestCase {
   };
 
   public void testFilterRamBytesUsed() {
-    assertEquals(LRUFilterCache.FILTER_DEFAULT_RAM_BYTES_USED, RamUsageTester.sizeOf(new QueryWrapperFilter(new TermQuery(new Term("some_field", "some_term")))));
+    final Filter simpleFilter = new QueryWrapperFilter(new TermQuery(new Term("some_field", "some_term")));
+    final long actualRamBytesUsed = RamUsageTester.sizeOf(simpleFilter);
+    final long ramBytesUsed = LRUFilterCache.FILTER_DEFAULT_RAM_BYTES_USED;
+    // we cannot assert exactly that the constant is correct since actual
+    // memory usage depends on JVM implementations and settings (eg. UseCompressedOops)
+    assertEquals(actualRamBytesUsed, ramBytesUsed, actualRamBytesUsed / 2);
   }
 
   public void testConcurrency() throws Throwable {
