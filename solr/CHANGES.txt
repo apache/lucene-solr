@@ -116,6 +116,10 @@ Upgrading from Solr 4.x
   configs.  If you have a strong need to configure this, you must explicitly configure your 
   schema with a custom codec.  See SOLR-6560 and for more details.
 
+* The "checkIntegrityAtMerge" option in solrconfig.xml is now a No-Op and should be removed
+  from any solrconfig.xml files -- these integrity checks are now done automatically at a very
+  low level during the segment merging process.  See SOLR-6834 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -468,6 +472,10 @@ Other Changes
 
 * SOLR-6773: Remove the multicore example as the DIH and cloud examples 
   illustrate multicore behavior (hossman, Timothy Potter)
+
+* SOLR-6834: Warn if checkIntegrityAtMerge is configured.  This option is no longer meaningful
+  since the checks are done automatically at a very low level in the segment merging. 
+  This warning will become an error in Solr 6.0.  (hossman)
 
 ==================  4.10.3 ==================
 

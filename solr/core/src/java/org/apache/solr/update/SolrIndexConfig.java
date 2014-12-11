@@ -81,8 +81,6 @@ public class SolrIndexConfig implements MapSerializable {
   public final static String LOCK_TYPE_SINGLE = "single";
   public final static String LOCK_TYPE_NONE   = "none";
 
-  public final boolean checkIntegrityAtMerge;
-
   /**
    * Internal constructor for setting defaults based on Lucene Version
    */
@@ -101,7 +99,6 @@ public class SolrIndexConfig implements MapSerializable {
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();
     mergedSegmentWarmerInfo = null;
-    checkIntegrityAtMerge = false;
   }
   
   /**
@@ -174,7 +171,9 @@ public class SolrIndexConfig implements MapSerializable {
       throw new IllegalArgumentException("Supplying a mergedSegmentWarmer will do nothing since nrtMode is false");
     }
 
-    checkIntegrityAtMerge = solrConfig.getBool(prefix + "/checkIntegrityAtMerge", def.checkIntegrityAtMerge);
+    assertWarnOrFail("Begining with Solr 5.0, <checkIntegrityAtMerge> option is no longer supported and should be removed from solrconfig.xml (these integrity checks are now automatic)",
+                     (null == solrConfig.getNode(prefix+"/checkIntegrityAtMerge",false)),
+                     false);
   }
   @Override
   public Map<String, Object> toMap() {
