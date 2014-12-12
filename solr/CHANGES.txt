@@ -486,6 +486,9 @@ Other Changes
 
 * SOLR-6843: JMX RMI connector should be disabled by default but can be activated by
   setting ENABLE_REMOTE_JMX_OPTS to true in solr.in.(sh|cmd). (Timothy Potter)
+  
+* SOLR-6844: Rename ConfigSolr.getZkHostPort(), which actually returns the Solr port,
+  to .getSolrHostPort().  (Martijn Koster, Steve Rowe)
 
 ==================  4.10.3 ==================
 

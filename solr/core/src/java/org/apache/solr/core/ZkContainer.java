@@ -62,11 +62,11 @@ public class ZkContainer {
     }
 
     initZooKeeper(cc, solrHome,
-        config.getZkHost(), config.getZkClientTimeout(), config.getZkHostPort(), config.getZkHostContext(),
+        config.getZkHost(), config.getZkClientTimeout(), config.getSolrHostPort(), config.getZkHostContext(),
         config.getHost(), config.getLeaderVoteWait(), config.getLeaderConflictResolveWait(), config.getGenericCoreNodeNames());
   }
     
-  public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort,
+  public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String solrHostPort,
         String hostContext, String host, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames) {
 
     ZkController zkController = null;
@@ -84,7 +84,7 @@ public class ZkContainer {
     if (zkRun == null && zookeeperHost == null)
         return;  // not in zk mode
 
-    if (null == hostPort) {
+    if (null == solrHostPort) {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                    "'hostPort' must be configured to run SolrCloud");
     }
@@ -101,7 +101,7 @@ public class ZkContainer {
     if (zkRun != null) {
       String zkDataHome = System.getProperty("zkServerDataDir", solrHome + "zoo_data");
       String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
-      zkServer = new SolrZkServer(stripChroot(zkRun), stripChroot(zookeeperHost), zkDataHome, zkConfHome, hostPort);
+      zkServer = new SolrZkServer(stripChroot(zkRun), stripChroot(zookeeperHost), zkDataHome, zkConfHome, solrHostPort);
       zkServer.parseConfig();
       zkServer.start();
       
@@ -132,7 +132,7 @@ public class ZkContainer {
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
         zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
-            zkClientConnectTimeout, host, hostPort, hostContext,
+            zkClientConnectTimeout, host, solrHostPort, hostContext,
             leaderVoteWait, leaderConflictResolveWait, genericCoreNodeNames,
             new CurrentCoreDescriptorProvider() {
 

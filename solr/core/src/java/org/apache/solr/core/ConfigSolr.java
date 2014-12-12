@@ -141,7 +141,7 @@ public abstract class ConfigSolr {
 
   protected static final String DEFAULT_CORE_ADMIN_PATH = "/admin/cores";
 
-  public String getZkHostPort() {
+  public String getSolrHostPort() {
     return get(CfgProp.SOLR_HOSTPORT, null);
   }
 
