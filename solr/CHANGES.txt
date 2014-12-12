@@ -477,6 +477,10 @@ Other Changes
   since the checks are done automatically at a very low level in the segment merging. 
   This warning will become an error in Solr 6.0.  (hossman)
 
+* SOLR-6833: Examples started with bin/solr -e should use a solr.solr.home directory under
+  the example directory instead of server/solr. (Alexandre Rafalovitch, Anshum Gupta, hossman,
+  Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
