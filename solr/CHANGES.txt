@@ -316,6 +316,9 @@ Bug Fixes
     implementation instead appends each input piece via the langdetect API.
   (Vitaliy Zhovtyuk, Tomás Fernández Löbbe, Rob Tulloh, Steve Rowe)
 
+* SOLR-6626: NPE in FieldMutatingUpdateProcessor when indexing a doc with
+  null field value (Noble Paul)
+
 Optimizations
 ----------------------
 

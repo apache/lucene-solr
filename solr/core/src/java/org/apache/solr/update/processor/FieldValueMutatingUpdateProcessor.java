@@ -17,6 +17,8 @@
 
 package org.apache.solr.update.processor;
 
+import java.util.Collection;
+
 import org.apache.solr.common.SolrInputField;
 
 import org.slf4j.Logger;
@@ -61,8 +63,10 @@ public abstract class FieldValueMutatingUpdateProcessor
   
   @Override
   protected final SolrInputField mutate(final SolrInputField src) {
+    Collection<Object> values = src.getValues();
+    if(values == null) return src;//don't mutate
     SolrInputField result = new SolrInputField(src.getName());
-    for (final Object srcVal : src.getValues()) {
+    for (final Object srcVal : values) {
       final Object destVal = mutateValue(srcVal);
       if (DELETE_VALUE_SINGLETON == destVal) { 
         /* NOOP */
