@@ -19,11 +19,9 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Random;
 import java.util.Locale;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -76,7 +74,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("max update conn/host", 37, cfg.getMaxUpdateConnectionsPerHost());
     assertEquals("host", "testHost", cfg.getHost());
     assertEquals("zk host context", "testHostContext", cfg.getZkHostContext());
-    assertEquals("zk host port", "44", cfg.getZkHostPort());
+    assertEquals("solr host port", "44", cfg.getSolrHostPort());
     assertEquals("leader vote wait", 55, cfg.getLeaderVoteWait());
     assertEquals("logging class", "testLoggingClass", cfg.getLogWatcherConfig().getLoggingClass());
     assertEquals("log watcher", true, cfg.getLogWatcherConfig().isEnabled());
@@ -106,7 +104,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome.getAbsolutePath());
     assertEquals("core root dir", "myCoreRoot" + File.separator, cfg.getCoreRootDirectory());
-    assertEquals("zk host port", "8888", cfg.getZkHostPort());
+    assertEquals("solr host port", "8888", cfg.getSolrHostPort());
     assertEquals("schema cache", false, cfg.hasSchemaCache());
   }
 

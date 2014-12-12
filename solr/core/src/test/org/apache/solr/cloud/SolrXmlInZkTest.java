@@ -119,7 +119,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     try {
       setUpZkAndDiskXml(true, true);
       assertEquals("Should have gotten a new port the xml file sent to ZK, overrides the copy on disk",
-          cfg.getZkHostPort(), "9045");
+          cfg.getSolrHostPort(), "9045");
     } finally {
       closeZK();
     }
@@ -130,7 +130,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     try {
       setUpZkAndDiskXml(true, false);
       assertEquals("Should have gotten a new port the xml file sent to ZK",
-          cfg.getZkHostPort(), "9045");
+          cfg.getSolrHostPort(), "9045");
     } finally {
       closeZK();
     }
@@ -169,7 +169,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     try {
       System.clearProperty("solr.solrxml.location");
       setUpZkAndDiskXml(false, true);
-      assertEquals("Should have gotten the default port", cfg.getZkHostPort(), "8983");
+      assertEquals("Should have gotten the default port", cfg.getSolrHostPort(), "8983");
     } finally {
       closeZK();
     }
