@@ -23,8 +23,8 @@
 
 <schema name="test" version="1.0">
   <types>
-    <fieldtype name="int" class="solr.TrieIntField" precisionStep="0"/>
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0"/>
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.StandardFilterFactory"/>
@@ -32,7 +32,7 @@
         <filter class="solr.StopFilterFactory"/>
         <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
  </types>
 
 

@@ -23,18 +23,18 @@
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
     <!-- basic text field -->
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
     
-    <fieldtype name="sort_ar_t"       class="solr.ICUCollationField" locale="ar"/>
-    <fieldtype name="sort_de_t"       class="solr.ICUCollationField" locale="de" strength="primary"/>
-    <fieldtype name="sort_tr_canon_t" class="solr.ICUCollationField" locale="tr" strength="primary"   decomposition="canonical"/>
-    <fieldtype name="sort_da_t"       class="solr.ICUCollationField" locale="da" strength="primary"/>
-    <fieldtype name="sort_custom_t"   class="solr.ICUCollationField" custom="customrules.dat" strength="primary"/>
+    <fieldType name="sort_ar_t"       class="solr.ICUCollationField" locale="ar"/>
+    <fieldType name="sort_de_t"       class="solr.ICUCollationField" locale="de" strength="primary"/>
+    <fieldType name="sort_tr_canon_t" class="solr.ICUCollationField" locale="tr" strength="primary"   decomposition="canonical"/>
+    <fieldType name="sort_da_t"       class="solr.ICUCollationField" locale="da" strength="primary"/>
+    <fieldType name="sort_custom_t"   class="solr.ICUCollationField" custom="customrules.dat" strength="primary"/>
   </types>
 
   <fields>

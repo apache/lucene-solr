@@ -26,12 +26,12 @@
   <uniqueKey>id</uniqueKey>
 
   <types>
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
     <!-- note: you cannot change the order/existing values in enum without reindexing.
          but you can always add new values to the end. -->
     <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>

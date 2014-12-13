@@ -488,6 +488,9 @@ Other Changes
   the example directory instead of server/solr. (Alexandre Rafalovitch, Anshum Gupta, hossman,
   Timothy Potter)
 
+* SOLR-6826: fieldType capitalization is not consistent with the rest of case-sensitive field names.
+  (Alexandre Rafalovitch via Erick Erickson)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

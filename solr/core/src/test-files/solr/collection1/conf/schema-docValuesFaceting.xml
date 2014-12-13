@@ -23,7 +23,7 @@
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   </types>
 
   <fields>

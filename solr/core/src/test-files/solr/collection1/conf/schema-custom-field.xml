@@ -20,12 +20,12 @@
   <types>
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
     <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
   </types>
   <fields>

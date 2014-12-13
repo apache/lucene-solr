@@ -26,10 +26,10 @@
   <types>
 
 
-    <fieldtype name="integer" class="solr.TrieIntField" precisionStep="0"/>
+    <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
 
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
-    <fieldtype name="stop-one" class="solr.TextField">
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="stop-one" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
@@ -37,8 +37,8 @@
                 words="stop-1.txt"/>
 
       </analyzer>
-    </fieldtype>
-    <fieldtype name="stop-two" class="solr.TextField">
+    </fieldType>
+    <fieldType name="stop-two" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
@@ -46,7 +46,7 @@
                 words="stop-1.txt,stop-2.txt"/>
 
       </analyzer>
-    </fieldtype>
+    </fieldType>
  </types>
 
 

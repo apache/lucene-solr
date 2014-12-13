@@ -17,23 +17,23 @@
 -->
 <schema name="test-class-name-shortening-on-serialization" version="1.5">
   <types>
-    <fieldtype name="fullClassNames" class="org.apache.solr.schema.TextField">
+    <fieldType name="fullClassNames" class="org.apache.solr.schema.TextField">
       <analyzer>
         <charFilter class="org.apache.solr.analysis.MockCharFilterFactory" remainder="0"/>
         <tokenizer class="org.apache.solr.analysis.MockTokenizerFactory"/>
         <filter class="org.apache.solr.analysis.MockTokenFilterFactory" stopset="empty"/>
       </analyzer>
       <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
-    </fieldtype>
-    <fieldtype name="shortenedClassNames" class="solr.TextField">
+    </fieldType>
+    <fieldType name="shortenedClassNames" class="solr.TextField">
       <analyzer>
         <charFilter class="solr.MockCharFilterFactory" remainder="0"/>
         <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.MockTokenFilterFactory" stopset="empty"/>
       </analyzer>
       <similarity class="solr.SweetSpotSimilarityFactory"/>
-    </fieldtype>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    </fieldType>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   </types>
   <fields>
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>

@@ -23,27 +23,27 @@
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
     <!-- basic text field -->
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
     
     <!-- ignores punctuation and whitespace -->
-    <fieldtype name="sort_ignore_punctuation_t" class="solr.ICUCollationField" 
+    <fieldType name="sort_ignore_punctuation_t" class="solr.ICUCollationField" 
                locale="en" strength="primary" alternate="shifted"/>
     <!-- ignores only whitespace -->
-    <fieldtype name="sort_ignore_space_t" class="solr.ICUCollationField" 
+    <fieldType name="sort_ignore_space_t" class="solr.ICUCollationField" 
                locale="en" strength="primary" alternate="shifted" variableTop=" "/>
     <!-- ignores only accents, but not case -->
-    <fieldtype name="sort_ignore_accents_t" class="solr.ICUCollationField"
+    <fieldType name="sort_ignore_accents_t" class="solr.ICUCollationField"
                locale="en" strength="primary" caseLevel="true"/>
     <!-- sorts numerics in numeric order -->
-    <fieldtype name="sort_numerics_t" class="solr.ICUCollationField" 
+    <fieldType name="sort_numerics_t" class="solr.ICUCollationField" 
                locale="en" numeric="true"/>
     <!-- sorts uppercase before lowercase -->
-    <fieldtype name="sort_uppercase_first_t" class="solr.ICUCollationField" 
+    <fieldType name="sort_uppercase_first_t" class="solr.ICUCollationField" 
                locale="en" strength="tertiary" caseFirst="upper"/>
   </types>
 
