@@ -86,6 +86,7 @@ import com.carrotsearch.hppc.cursors.ObjectCursor;
  */
 public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
   public static final String COMPONENT_NAME = "expand";
+  private static final int finishingStage = ResponseBuilder.STAGE_GET_FIELDS;
   private PluginInfo info = PluginInfo.EMPTY_INFO;
 
   @Override
@@ -115,13 +116,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
-
-    boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
-    String ids = params.get(ShardParams.IDS);
-
-    if (ids == null && isShard) {
-      return;
-    }
 
     String field = params.get(ExpandParams.EXPAND_FIELD);
     if (field == null) {
@@ -247,8 +241,22 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   }
 
   @Override
+  public int distributedProcess(ResponseBuilder rb) throws IOException {
+    if (rb.doExpand && rb.stage < finishingStage) {
+      return finishingStage;
+    }
+    return ResponseBuilder.STAGE_DONE;
+  }
+    
+  @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
-
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false)) return;
+    if (!rb.onePassDistributedQuery && (sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0) {
+      sreq.params.set(COMPONENT_NAME, "false");
+    } else {
+      sreq.params.set(COMPONENT_NAME, "true");
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -286,7 +294,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
 
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage != finishingStage) {
       return;
     }
 

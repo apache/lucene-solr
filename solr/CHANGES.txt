@@ -319,6 +319,10 @@ Bug Fixes
 * SOLR-6626: NPE in FieldMutatingUpdateProcessor when indexing a doc with
   null field value (Noble Paul)
 
+* SOLR-6604: SOLR-6812: Fix NPE with distrib.singlePass=true and expand
+  component. Increased test coverage of expand component with docValues.
+  (Christine Poerschke, Per Steffensen, shalin)
+
 Optimizations
 ----------------------
 
@@ -483,12 +487,6 @@ Other Changes
 * SOLR-6833: Examples started with bin/solr -e should use a solr.solr.home directory under
   the example directory instead of server/solr. (Alexandre Rafalovitch, Anshum Gupta, hossman,
   Timothy Potter)
-
-* SOLR-6843: JMX RMI connector should be disabled by default but can be activated by
-  setting ENABLE_REMOTE_JMX_OPTS to true in solr.in.(sh|cmd). (Timothy Potter)
-  
-* SOLR-6844: Rename ConfigSolr.getZkHostPort(), which actually returns the Solr port,
-  to .getSolrHostPort().  (Martijn Koster, Steve Rowe)
 
 ==================  4.10.3 ==================
 
