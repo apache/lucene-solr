@@ -40,7 +40,7 @@
       <str name="sourceLocation">phrasesuggest.txt</str>
     </lst>
     
-    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <!-- specify a fieldType using keywordtokenizer + lowercase + cleanup -->
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
@@ -61,7 +61,7 @@
       <str name="sourceLocation">jasuggest.txt</str>
     </lst>
     
-    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <!-- specify a fieldType using keywordtokenizer + lowercase + cleanup -->
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
@@ -79,7 +79,7 @@
       <str name="sourceLocation">analyzingInfixSuggest.txt</str>
     </lst>
     
-    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <!-- specify a fieldType using keywordtokenizer + lowercase + cleanup -->
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
 
@@ -182,7 +182,7 @@
       <str name="sourceLocation">fuzzysuggest.txt</str>
     </lst>
     
-    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <!-- specify a fieldType using keywordtokenizer + lowercase + cleanup -->
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
@@ -204,7 +204,7 @@
       <str name="sourceLocation">fuzzysuggest.txt</str>
     </lst>
     
-    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <!-- specify a fieldType using keywordtokenizer + lowercase + cleanup -->
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
@@ -226,7 +226,7 @@
       <str name="sourceLocation">fuzzysuggest.txt</str>
     </lst>
     
-    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <!-- specify a fieldType using keywordtokenizer + lowercase + cleanup -->
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
@@ -248,7 +248,7 @@
       <str name="sourceLocation">fuzzysuggest.txt</str>
     </lst>
  
-    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <!-- specify a fieldType using keywordtokenizer + lowercase + cleanup -->
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   

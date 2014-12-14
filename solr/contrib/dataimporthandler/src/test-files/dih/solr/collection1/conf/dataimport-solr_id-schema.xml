@@ -240,7 +240,7 @@
     <!-- since fields of this type are by default not stored or indexed, any data added to 
          them will be ignored outright 
      --> 
-    <fieldtype name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
+    <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
 
  </types>
 

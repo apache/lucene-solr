@@ -23,14 +23,14 @@
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
     <!-- basic text field -->
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
     
-    <fieldtype name="phrase_suggest" class="solr.TextField">
+    <fieldType name="phrase_suggest" class="solr.TextField">
 	  <analyzer>
 	    <tokenizer class="solr.KeywordTokenizerFactory"/>
 	    <filter class="solr.PatternReplaceFilterFactory"
@@ -39,15 +39,15 @@
 	    <filter class="solr.LowerCaseFilterFactory"/>
 	    <filter class="solr.TrimFilterFactory"/>
 	  </analyzer>
-	</fieldtype>
+	</fieldType>
 	
-	<fieldtype name="ja_suggest" class="solr.TextField">
+	<fieldType name="ja_suggest" class="solr.TextField">
 	  <analyzer>
 	    <tokenizer class="solr.JapaneseTokenizerFactory" mode="normal"/>
 	    <filter class="solr.CJKWidthFilterFactory"/>
 	    <filter class="solr.JapaneseReadingFormFilterFactory" useRomaji="true"/>
 	  </analyzer>
-	</fieldtype>
+	</fieldType>
   </types>
 
   <fields>

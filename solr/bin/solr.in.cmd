@@ -58,10 +58,10 @@ REM set SOLR_HOST=192.168.1.1
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
 
-REM By default the start script enables some RMI related parameters to allow attaching
-REM JMX savvy tools like VisualVM remotely, set to "false" to disable that behavior
-REM (recommended in production environments)
-set ENABLE_REMOTE_JMX_OPTS=true
+REM Set to true to activate the JMX RMI connector to allow remote JMX client applications
+REM to monitor the JVM hosting Solr; set to "false" to disable that behavior
+REM (false is recommended in production environments)
+set ENABLE_REMOTE_JMX_OPTS=false
 
 REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983

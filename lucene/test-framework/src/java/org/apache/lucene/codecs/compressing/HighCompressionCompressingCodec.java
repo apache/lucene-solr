@@ -29,8 +29,8 @@ public class HighCompressionCompressingCodec extends CompressingCodec {
 
   /** Default constructor. */
   public HighCompressionCompressingCodec() {
-    // no need to have a higher block length than 32KB since deflate splits
-    // into blocks of 32KB anyway, and this is a lower bound (try to avoid > 32KB)
-    this(24576, 512, false);
+    // we don't worry about zlib block overhead as its
+    // not bad and try to save space instead:
+    this(61440, 512, false);
   }
 }

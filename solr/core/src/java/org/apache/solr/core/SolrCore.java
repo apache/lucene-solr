@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
@@ -64,6 +65,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -75,6 +77,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.SolrConfigHandler;
@@ -2091,7 +2094,27 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     m.put("csv", new CSVResponseWriter());
     m.put("xsort", new SortingResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
+    m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
+  }
+
+  private static BinaryResponseWriter getFileStreamWriter() {
+    return new BinaryResponseWriter(){
+      @Override
+      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        rawWriter.write(out);
+      }
+
+      @Override
+      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+        return BinaryResponseParser.BINARY_CONTENT_TYPE;
+      }
+    };
+  }
+
+  public interface RawWriter {
+    public void write(OutputStream os) throws IOException ;
   }
   
   /** Configure the query response writers. There will always be a default writer; additional

@@ -32,6 +32,8 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -581,14 +583,14 @@ public class SimplePostTool {
           URL postUrl = new URL(appendParam(solrUrl.toString(), 
               "literal.id="+URLEncoder.encode(u.toString(),"UTF-8") +
               "&literal.url="+URLEncoder.encode(u.toString(),"UTF-8")));
-          boolean success = postData(new ByteArrayInputStream(result.content), null, out, result.contentType, postUrl);
+          boolean success = postData(new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(),result.content.limit() ), null, out, result.contentType, postUrl);
           if (success) {
             info("POSTed web resource "+u+" (depth: "+level+")");
             Thread.sleep(delay * 1000);
             numPages++;
             // Pull links from HTML pages only
             if(recursive > level && result.contentType.equals("text/html")) {
-              Set<URL> children = pageFetcher.getLinksFromWebPage(u, new ByteArrayInputStream(result.content), result.contentType, postUrl);
+              Set<URL> children = pageFetcher.getLinksFromWebPage(u, new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(), result.content.limit()), result.contentType, postUrl);
               subStack.addAll(children);
             }
           } else {
@@ -609,23 +611,35 @@ public class SimplePostTool {
     }
     return numPages;    
   }
+  public static class BAOS extends ByteArrayOutputStream {
+    public ByteBuffer getByteBuffer() {
+      return ByteBuffer.wrap(super.buf,0,super.count);
+    }
+  }
+  public static ByteBuffer inputStreamToByteArray(InputStream is) throws IOException {
+    return inputStreamToByteArray(is,Integer.MAX_VALUE);
+
+  }
 
   /**
    * Reads an input stream into a byte array
+   *
    * @param is the input stream
    * @return the byte array
    * @throws IOException If there is a low-level I/O error.
    */
-  protected byte[] inputStreamToByteArray(InputStream is) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+  public static ByteBuffer inputStreamToByteArray(InputStream is, long maxSize) throws IOException {
+    BAOS bos =  new BAOS();
+    long sz = 0;
     int next = is.read();
     while (next > -1) {
-        bos.write(next);
-        next = is.read();
+      if(++sz > maxSize) throw new BufferOverflowException();
+      bos.write(next);
+      next = is.read();
     }
     bos.flush();
     is.close();
-    return bos.toByteArray();
+    return bos.getByteBuffer();
   }
 
   /**
@@ -1198,6 +1212,6 @@ public class SimplePostTool {
     int httpStatus = 200;
     String contentType = "text/html";
     URL redirectUrl = null;
-    byte[] content;
+    ByteBuffer content;
   }
 }

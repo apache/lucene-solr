@@ -17,9 +17,9 @@
 -->
 <schema name="luceneMatchVersionTest" version="1.1">
  <types>
-  <fieldtype name="long" class="solr.TrieLongField"/>
-  <fieldtype name="string" class="solr.StrField"/>
-  <fieldtype name="text40" class="solr.TextField">
+  <fieldType name="long" class="solr.TrieLongField"/>
+  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="text40" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory" luceneMatchVersion="LUCENE_40"/>
       <filter class="solr.StandardFilterFactory"/>
@@ -27,8 +27,8 @@
       <filter class="solr.StopFilterFactory" luceneMatchVersion="5.0"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
-  </fieldtype>
-  <fieldtype name="textDefault" class="solr.TextField">
+  </fieldType>
+  <fieldType name="textDefault" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StandardFilterFactory"/>
@@ -36,13 +36,13 @@
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
-  </fieldtype>
-  <fieldtype name="textTurkishAnalyzer40" class="solr.TextField">
+  </fieldType>
+  <fieldType name="textTurkishAnalyzer40" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.tr.TurkishAnalyzer" luceneMatchVersion="LUCENE_4_0"/>
-  </fieldtype>
-  <fieldtype name="textTurkishAnalyzerDefault" class="solr.TextField">
+  </fieldType>
+  <fieldType name="textTurkishAnalyzerDefault" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.tr.TurkishAnalyzer"/>
-  </fieldtype>
+  </fieldType>
  </types>
  <fields>
    <field name="id" type="string" indexed="true" stored="true"/>

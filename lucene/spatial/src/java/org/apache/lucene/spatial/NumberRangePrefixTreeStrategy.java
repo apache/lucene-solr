@@ -25,10 +25,11 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
 
-import java.text.ParseException;
-
 /** A PrefixTree based on Number/Date ranges. This isn't very "spatial" on the surface (to the user) but
- * it's implemented using spatial so that's why it's here extending a SpatialStrategy.
+ * it's implemented using spatial so that's why it's here extending a SpatialStrategy. When using this class, you will
+ * use various utility methods on the prefix tree implementation to convert objects/strings to/from shapes.
+ *
+ * To use with dates, pass in {@link org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree}.
  *
  * @lucene.experimental
  */
@@ -53,22 +54,6 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
     TokenStream tokenStream = createTokenStream(shape, grid.getMaxLevels());
     Field field = new Field(getFieldName(), tokenStream, FIELD_TYPE);
     return new Field[]{field};
-  }
-
-  /** For a Date based tree, pass in a Calendar, with unspecified fields marked as cleared.
-   * See {@link NumberRangePrefixTree#toShape(Object)}. */
-  public Shape toShape(Object value) {
-    return getGrid().toShape(value);
-  }
-
-  /** See {@link NumberRangePrefixTree#toRangeShape(Shape, Shape)}. */
-  public Shape toRangeShape(Shape min, Shape max) {
-    return getGrid().toRangeShape(min, max);
-  }
-
-  /** See {@link NumberRangePrefixTree#parseShape(String)}. */
-  public Shape parseShape(String str) throws ParseException {
-    return getGrid().parseShape(str);
   }
 
   /** Unsupported. */

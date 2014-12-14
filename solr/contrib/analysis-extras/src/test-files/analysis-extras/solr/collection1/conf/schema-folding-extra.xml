@@ -17,7 +17,7 @@
 
 <schema name="test" version="1.0">
   <types>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true" multiValued="false"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" multiValued="false"/>
 
 
     <fieldType name="text_icufolding" class="solr.TextField">

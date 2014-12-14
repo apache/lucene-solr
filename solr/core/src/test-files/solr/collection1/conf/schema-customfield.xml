@@ -31,7 +31,7 @@
     <!-- field type definitions... note that the "name" attribute is
          just a label to be used by field definitions.  The "class"
          attribute and any other attributes determine the real type and
-         behavior of the fieldtype.
+         behavior of the fieldType.
       -->
 
     <!--

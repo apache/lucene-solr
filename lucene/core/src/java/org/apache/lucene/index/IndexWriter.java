@@ -1624,11 +1624,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * newly created segments will not be merged unless you
    * call forceMerge again.</p>
    *
-   * <p><b>NOTE</b>: if you call {@link #abortMerges}, which
-   * aborts all running merges, then any thread still
-   * running this method might hit a {@link
-   * MergePolicy.MergeAbortedException}.
-   *
    * @param maxNumSegments maximum number of segments left
    * in the index after merging finishes
    * 
@@ -1741,12 +1736,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  specify whether the call should block until the
    *  operation completes.  This is only meaningful with a
    *  {@link MergeScheduler} that is able to run merges in
-   *  background threads.
-   *
-   * <p><b>NOTE</b>: if you call {@link #abortMerges}, which
-   * aborts all running merges, then any thread still
-   * running this method might hit a {@link
-   * MergePolicy.MergeAbortedException}. */
+   *  background threads. */
   public void forceMergeDeletes(boolean doWait)
     throws IOException {
     ensureOpen();
@@ -2154,7 +2144,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /** Aborts running merges.  Be careful when using this
    *  method: when you abort a long-running merge, you lose
    *  a lot of work that must later be redone. */
-  public synchronized void abortMerges() {
+  private synchronized void abortMerges() {
     stopMerges = true;
 
     // Abort all pending & running merges:
@@ -2202,7 +2192,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * <p>It is guaranteed that any merges started prior to calling this method
    *    will have completed once this method completes.</p>
    */
-  public void waitForMerges() throws IOException {
+  void waitForMerges() throws IOException {
 
     // Give merge scheduler last chance to run, in case
     // any pending merges are waiting. We can't hold IW's lock
@@ -2494,11 +2484,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * In principle, if you use a merge policy with a {@code mergeFactor} or
    * {@code maxMergeAtOnce} parameter, you should pass that many readers in one
    * call.
-   * 
-   * <p>
-   * <b>NOTE</b>: if you call {@link #abortMerges}, which
-   * aborts all running merges, then any thread still running this method might
-   * hit a {@link MergePolicy.MergeAbortedException}.
    * 
    * @throws CorruptIndexException
    *           if the index is corrupt

@@ -30,14 +30,29 @@ Getting Started
 
 To start Solr for the first time after installation, simply do:
 
-  bin/solr start -f
+  bin/solr start
 
-This will launch a Solr server in the foreground of your shell, bound
-to port 8983. Alternatively, you can launch Solr in "cloud" mode,
-which allows you to scale out using sharding and replication. To
-launch Solr in cloud mode, do:
+This will launch a Solr server in the background of your shell, bound
+to port 8983. After starting Solr, you can create a new core for indexing
+your data by doing:
 
-  bin/solr start -f -cloud
+  bin/solr create_core -n <name>
+
+This will create a core that uses a data-driven schema which tries to guess
+the correct field type when you add documents to the index. To see all available
+options for creating a new core, execute:
+
+  bin/solr create_core -help
+
+Alternatively, you can launch Solr in "cloud" mode, which allows you to scale
+out using sharding and replication. To launch Solr in cloud mode, do:
+
+  bin/solr start -cloud
+
+After starting Solr in cloud mode, you can create a new collection for indexing
+your data by doing:
+
+  bin/solr create_collection -n <name>
 
 To see all available options for starting Solr, please do:
 
@@ -46,6 +61,27 @@ To see all available options for starting Solr, please do:
 After starting Solr, direct your Web browser to the Solr Admin Console at:
 
   http://localhost:8983/solr/
+
+
+Solr Examples
+---------------
+
+Solr includes a few examples to help you get started. To run a specific example, do:
+
+  bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
+
+    cloud        : SolrCloud example
+    dih          : Data Import Handler (rdbms, mail, rss, tika)
+    schemaless   : Schema-less example (schema is inferred from data during indexing)
+    techproducts : Kitchen sink example providing comprehensive examples of Solr features
+
+For instance, if you want to run the Solr Data Import Handler example, do:
+
+  bin/solr -e dih
+
+
+Indexing Documents
+---------------
 
 To add documents to the index, use the post.jar (or post.sh script) in
 the example/exampledocs subdirectory (while Solr is running), for example:

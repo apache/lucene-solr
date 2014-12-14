@@ -462,7 +462,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
             new FilterDirectoryReader.SubReaderWrapper() {
               @Override
               public LeafReader wrap(LeafReader reader) {
-                return new MyFilterLeafReader(reader);
+                FilterLeafReader wrapped = new MyFilterLeafReader(reader);
+                assertEquals(reader, wrapped.getDelegate());
+                return wrapped;
               }
             });
     }
@@ -477,7 +479,12 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   public void testCustomDirectoryReader() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    DirectoryReader reader = new MyFilterDirectoryReader(w.getReader());
+    DirectoryReader nrtReader = w.getReader();
+
+    FilterDirectoryReader reader = new MyFilterDirectoryReader(nrtReader);
+    assertEquals(nrtReader, reader.getDelegate());
+    assertEquals(nrtReader, FilterDirectoryReader.unwrap(reader));
+
     SearcherManager mgr = new SearcherManager(reader, null);
     for(int i=0;i<10;i++) {
       w.addDocument(new Document());

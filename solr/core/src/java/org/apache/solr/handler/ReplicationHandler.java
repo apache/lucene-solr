@@ -860,7 +860,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     this.core = core;
-    registerFileStreamResponseWriter();
     registerCloseHook();
     Object nbtk = initArgs.get(NUMBER_BACKUPS_TO_KEEP_INIT_PARAM);
     if(nbtk!=null) {
@@ -1010,34 +1009,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   /**
-   * A ResponseWriter is registered automatically for wt=filestream This response writer is used to transfer index files
-   * in a block-by-block manner within the same HTTP response.
-   */
-  private void registerFileStreamResponseWriter() {
-    core.registerResponseWriter(FILE_STREAM, new BinaryQueryResponseWriter() {
-      @Override
-      public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse resp) throws IOException {
-        DirectoryFileStream stream = (DirectoryFileStream) resp.getValues().get(FILE_STREAM);
-        stream.write(out);
-      }
-
-      @Override
-      public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) {
-        throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
-      }
-
-      @Override
-      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        return BinaryResponseParser.BINARY_CONTENT_TYPE;
-      }
-
-      @Override
-      public void init(NamedList args) { /*no op*/ }
-    });
-
-  }
-
-  /**
    * Register a listener for postcommit/optimize
    *
    * @param snapshoot do a snapshoot
@@ -1099,7 +1070,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   /**This class is used to read and send files in the lucene index
    *
    */
-  private class DirectoryFileStream {
+  private class DirectoryFileStream implements SolrCore.RawWriter {
     protected SolrParams params;
 
     protected FastOutputStream fos;

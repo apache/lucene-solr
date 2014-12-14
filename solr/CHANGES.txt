@@ -116,6 +116,10 @@ Upgrading from Solr 4.x
   configs.  If you have a strong need to configure this, you must explicitly configure your 
   schema with a custom codec.  See SOLR-6560 and for more details.
 
+* The "checkIntegrityAtMerge" option in solrconfig.xml is now a No-Op and should be removed
+  from any solrconfig.xml files -- these integrity checks are now done automatically at a very
+  low level during the segment merging process.  See SOLR-6834 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -132,8 +136,9 @@ New Features
     modifying solr configuration files.  (Erick Erickson)
   - SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
 
-* SOLR-6103: Added DateRangeField for indexing date ranges, especially
-  multi-valued ones. Based on LUCENE-5648. (David Smiley)
+* SOLR-6103: Added DateRangeField for indexing date ranges, especially multi-valued ones.
+  Supports facet.range, DateMath, and is mostly interoperable with TrieDateField.
+  Based on LUCENE-5648. (David Smiley)
 
 * SOLR-6403: TransactionLog replay status logging. (Mark Miller)
 
@@ -228,6 +233,8 @@ New Features
 * SOLR-4799: faster join using join="zipper" aka merge join for nested DIH EntityProcessors
   (Mikhail Khludnev via Noble Paul)
 
+* SOLR-6787: API to manage blobs in Solr (Noble Paul)
+
 Bug Fixes
 ----------------------
 
@@ -309,6 +316,13 @@ Bug Fixes
   - Moved input concatenation to Tika implementation; the langdetect
     implementation instead appends each input piece via the langdetect API.
   (Vitaliy Zhovtyuk, Tomás Fernández Löbbe, Rob Tulloh, Steve Rowe)
+
+* SOLR-6626: NPE in FieldMutatingUpdateProcessor when indexing a doc with
+  null field value (Noble Paul)
+
+* SOLR-6604: SOLR-6812: Fix NPE with distrib.singlePass=true and expand
+  component. Increased test coverage of expand component with docValues.
+  (Christine Poerschke, Per Steffensen, shalin)
 
 Optimizations
 ----------------------
@@ -464,6 +478,20 @@ Other Changes
 * SOLR-6560: Purge termIndexInterval from example/test configs
   (Tom Burton-West, hossman)
 
+* SOLR-6773: Remove the multicore example as the DIH and cloud examples 
+  illustrate multicore behavior (hossman, Timothy Potter)
+
+* SOLR-6834: Warn if checkIntegrityAtMerge is configured.  This option is no longer meaningful
+  since the checks are done automatically at a very low level in the segment merging. 
+  This warning will become an error in Solr 6.0.  (hossman)
+
+* SOLR-6833: Examples started with bin/solr -e should use a solr.solr.home directory under
+  the example directory instead of server/solr. (Alexandre Rafalovitch, Anshum Gupta, hossman,
+  Timothy Potter)
+
+* SOLR-6826: fieldType capitalization is not consistent with the rest of case-sensitive field names.
+  (Alexandre Rafalovitch via Erick Erickson)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
@@ -544,6 +572,8 @@ Other Changes
 
 * SOLR-6653: bin/solr script should return error code >0 when something fails
   (janhoy, Timothy Potter)
+
+* SOLR-6829: Added getter/setter for lastException in DIH's ContextImpl (ehatcher)
 
 ==================  4.10.2 ==================
 

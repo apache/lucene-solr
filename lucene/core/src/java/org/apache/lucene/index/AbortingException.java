@@ -21,7 +21,16 @@ package org.apache.lucene.index;
  *  lose previously indexed documents.  When this happens, the {@link IndexWriter} is forcefully 
  *  closed, using {@link IndexWriter#rollback}). */
 class AbortingException extends Exception {
-  AbortingException(Throwable cause) {
+  private AbortingException(Throwable cause) {
     super(cause);
+    assert cause instanceof AbortingException == false;
+  }
+
+  public static AbortingException wrap(Throwable t) {
+    if (t instanceof AbortingException) {
+      return (AbortingException) t;
+    } else {
+      return new AbortingException(t);
+    }
   }
 }

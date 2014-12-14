@@ -30,19 +30,19 @@
     <fieldType name="double"    class="solr.TrieDoubleField"  precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tdouble"   class="solr.TrieDoubleField"  precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldtype name="date"      class="solr.TrieDateField"    precisionStep="0"/>
-    <fieldtype name="tdate"     class="solr.TrieDateField"    precisionStep="6"/>
+    <fieldType name="date"      class="solr.TrieDateField"    precisionStep="0"/>
+    <fieldType name="tdate"     class="solr.TrieDateField"    precisionStep="6"/>
 
-    <fieldtype name="boolean"   class="solr.BoolField"        sortMissingLast="true"/>
+    <fieldType name="boolean"   class="solr.BoolField"        sortMissingLast="true"/>
 
-    <fieldtype name="int_ml"   class="solr.TrieIntField" precisionStep="0" sortMissingLast="true"/>
-    <fieldtype name="int_mf"   class="solr.TrieIntField" precisionStep="0" sortMissingFirst="true"/>
+    <fieldType name="int_ml"   class="solr.TrieIntField" precisionStep="0" sortMissingLast="true"/>
+    <fieldType name="int_mf"   class="solr.TrieIntField" precisionStep="0" sortMissingFirst="true"/>
 
     <fieldType name="long_ml"   class="solr.TrieLongField"    precisionStep="0" omitNorms="true" positionIncrementGap="0" sortMissingLast="true"/>
     <fieldType name="long_mf"   class="solr.TrieLongField"    precisionStep="0" omitNorms="true" positionIncrementGap="0" sortMissingFirst="true"/>
 
-    <fieldtype name="string_ml" class="solr.StrField"         sortMissingLast="true"/>
-    <fieldtype name="string_mf" class="solr.StrField"         sortMissingFirst="true"/>
+    <fieldType name="string_ml" class="solr.StrField"         sortMissingLast="true"/>
+    <fieldType name="string_mf" class="solr.StrField"         sortMissingFirst="true"/>
   </types>
 
   <fields>

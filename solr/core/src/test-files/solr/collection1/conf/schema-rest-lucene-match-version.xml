@@ -17,21 +17,21 @@
 -->
 <schema name="test-class-name-shortening-on-serialization" version="1.5">
   <types>
-    <fieldtype name="explicitLuceneMatchVersions" class="org.apache.solr.schema.TextField">
+    <fieldType name="explicitLuceneMatchVersions" class="org.apache.solr.schema.TextField">
       <analyzer>
         <charFilter class="org.apache.solr.analysis.MockCharFilterFactory" luceneMatchVersion="LUCENE_40" remainder="0"/>
         <tokenizer class="org.apache.solr.analysis.MockTokenizerFactory" luceneMatchVersion="LUCENE_4_0" />
         <filter class="org.apache.solr.analysis.MockTokenFilterFactory" luceneMatchVersion="4.0" stopset="empty"/>
       </analyzer>
-    </fieldtype>
-    <fieldtype name="noLuceneMatchVersions" class="org.apache.solr.schema.TextField">
+    </fieldType>
+    <fieldType name="noLuceneMatchVersions" class="org.apache.solr.schema.TextField">
       <analyzer>
         <charFilter class="org.apache.solr.analysis.MockCharFilterFactory" remainder="0"/>
         <tokenizer class="org.apache.solr.analysis.MockTokenizerFactory" />
         <filter class="org.apache.solr.analysis.MockTokenFilterFactory" stopset="empty"/>
       </analyzer>
-    </fieldtype>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    </fieldType>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   </types>
   <fields>
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>

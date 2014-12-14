@@ -295,6 +295,13 @@ API Changes
   won't be trappy if codec tries to use them during docvalues updates.
   (Robert Muir)
 
+* LUCENE-6097: Remove dangerous / overly expert
+  IndexWriter.abortMerges and waitForMerges methods.  (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-6099: Add FilterDirectory.unwrap and
+  FilterDirectoryReader.unwrap (Simon Willnauer, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
@@ -361,6 +368,10 @@ Bug Fixes
 
 * LUCENE-6094: Allow IW.rollback to stop ConcurrentMergeScheduler even
   when it's stalling because there are too many merges. (Mike McCandless)
+
+* LUCENE-6105: Don't cache FST root arcs if the number of root arcs is
+  small, or if the cache would be > 20% of the size of the FST.
+  (Robert Muir, Mike McCandless)
   
 Documentation
 

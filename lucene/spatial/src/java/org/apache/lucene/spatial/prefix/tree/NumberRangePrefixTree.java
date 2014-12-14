@@ -17,6 +17,8 @@ package org.apache.lucene.spatial.prefix.tree;
  * limitations under the License.
  */
 
+import java.text.ParseException;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.SpatialContextFactory;
 import com.spatial4j.core.shape.Point;
@@ -27,11 +29,28 @@ import com.spatial4j.core.shape.impl.RectangleImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 
-import java.text.ParseException;
-
 /**
- * A special SpatialPrefixTree for single-dimensional number ranges of integral values. It's based
- * on a stack of integers, and thus it's not limited to a long.
+ * A SpatialPrefixTree for single-dimensional numbers and number ranges of fixed precision values (not floating point).
+ * Despite its name, the indexed values (and queries) need not actually be ranges, they can be unit instance/values.
+ * <p />
+ * Why might you use this instead of Lucene's built-in integer/long support?  Here are some reasons with features based
+ * on code in this class, <em>or are possible based on this class but require a subclass to fully realize it</em>.
+ * <ul>
+ *   <li>Index ranges, not just unit instances. This is especially useful when the requirement calls for a
+ *   multi-valued range.</li>
+ *   <li>Instead of a fixed "precisionStep", this prefixTree can have a customizable number of child values for any
+ *   prefix (up to 32768). This allows exact alignment of the prefix-tree with typical/expected values, which
+ *   results in better performance.  For example in a Date implementation, every month can get its own dedicated prefix,
+ *   every day, etc., even though months vary in duration.</li>
+ *   <li>Arbitrary precision, like {@link java.math.BigDecimal}.</li>
+ *   <li>Standard Lucene integer/long indexing always indexes the full precision of those data types but this one
+ *   is customizable.</li>
+ * </ul>
+ *
+ * Unlike "normal" spatial components in this module, this special-purpose one only works with {@link Shape}s
+ * created by the methods on this class, not from any {@link com.spatial4j.core.context.SpatialContext}.
+ *
+ * @see org.apache.lucene.spatial.NumberRangePrefixTreeStrategy
  * @see <a href="https://issues.apache.org/jira/browse/LUCENE-5648">LUCENE-5648</a>
  * @lucene.experimental
  */
@@ -49,34 +68,93 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
     DUMMY_CTX = factory.newSpatialContext();
   }
 
-  //
-  //    LevelledValue
-  //
+  /** Base interface for {@link Shape}s this prefix tree supports. It extends {@link Shape} (Spatial4j) for compatibility
+   * with the spatial API even though it doesn't intermix with conventional 2D shapes.
+   * @lucene.experimental
+   */
+  public static interface NRShape extends Shape, Cloneable {
+    /** The result should be parseable by {@link #parseShape(String)}. */
+    abstract String toString();
 
-  /** A value implemented as a stack of numbers. Spatially speaking, it's
-   * analogous to a Point but 1D yet has some precision width.
-   * @lucene.internal */
-  protected static interface LevelledValue extends Shape {
-    int getLevel();//0 means the world (universe).
-    int getValAtLevel(int level);//level >= 0 && <= getLevel()
-    LevelledValue getLVAtLevel(int level);
+    /** Returns this shape rounded to the target level. If we are already more course than the level then the shape is
+     * simply returned.  The result may refer to internal state of the argument so you may want to clone it.
+     */
+    public NRShape roundToLevel(int targetLevel);
   }
 
-  /** Compares a to b, returning less than 0, 0, or greater than 0, if a is less than, equal to, or
-   * greater than b, respectively. Only min(a.levels,b.levels) are compared.
-   * @lucene.internal */
-  protected static int comparePrefixLV(LevelledValue a, LevelledValue b) {
-    int minLevel = Math.min(a.getLevel(), b.getLevel());
-    for (int level = 1; level <= minLevel; level++) {
-      int diff = a.getValAtLevel(level) - b.getValAtLevel(level);
-      if (diff != 0)
-        return diff;
+  //
+  //  Factory / Conversions / parsing relating to NRShapes
+  //
+
+  /** Converts the value to a unit shape. Doesn't parse strings; see {@link #parseShape(String)} for
+   * that. This is the reverse of {@link #toObject(org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape)}. */
+  public abstract UnitNRShape toUnitShape(Object value);
+
+  /** Returns a shape that represents the continuous range between {@code start} and {@code end}. It will
+   * be normalized, and so sometimes a {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape}
+   * will be returned, other times a
+   * {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.SpanUnitsNRShape} will be.
+   *
+   * @throws IllegalArgumentException if the arguments are in the wrong order, or if either contains the other (yet they
+   * aren't equal).
+   */
+  public NRShape toRangeShape(UnitNRShape startUnit, UnitNRShape endUnit) {
+    //note: this normalization/optimization process is actually REQUIRED based on assumptions elsewhere.
+    //Normalize start & end
+    startUnit = startUnit.getShapeAtLevel(truncateStartVals(startUnit, 0)); // chops off trailing min-vals (zeroes)
+    endUnit = endUnit.getShapeAtLevel(truncateEndVals(endUnit, 0)); // chops off trailing max-vals
+    //Optimize to just start or end if it's equivalent, e.g. April to April 1st is April 1st.
+    int cmp = comparePrefix(startUnit, endUnit);
+    if (cmp > 0) {
+      throw new IllegalArgumentException("Wrong order: "+ startUnit +" TO "+ endUnit);
     }
-    return 0;
+    if (cmp == 0) {//one is a prefix of the other
+      if (startUnit.getLevel() == endUnit.getLevel()) {
+        //same
+        return startUnit;
+      } else if (endUnit.getLevel() > startUnit.getLevel()) {
+        // e.g. April to April 1st
+        if (truncateStartVals(endUnit, startUnit.getLevel()) == startUnit.getLevel()) {
+          return endUnit;
+        }
+      } else {//minLV level > maxLV level
+        // e.g. April 30 to April
+        if (truncateEndVals(startUnit, endUnit.getLevel()) == endUnit.getLevel()) {
+          return startUnit;
+        }
+      }
+    }
+    return new SpanUnitsNRShape(startUnit, endUnit);
   }
 
-  protected String toStringLV(LevelledValue lv) {
-    StringBuilder buf = new StringBuilder();
+  /** From lv.getLevel on up, it returns the first Level seen with val != 0. It doesn't check past endLevel. */
+  private int truncateStartVals(UnitNRShape lv, int endLevel) {
+    for (int level = lv.getLevel(); level > endLevel; level--) {
+      if (lv.getValAtLevel(level) != 0)
+        return level;
+    }
+    return endLevel;
+  }
+
+  private int truncateEndVals(UnitNRShape lv, int endLevel) {
+    for (int level = lv.getLevel(); level > endLevel; level--) {
+      int max = getNumSubCells(lv.getShapeAtLevel(level - 1)) - 1;
+      if (lv.getValAtLevel(level) != max)
+        return level;
+    }
+    return endLevel;
+  }
+
+  /** Converts a UnitNRShape shape to the corresponding type supported by this class, such as a Calendar/BigDecimal.
+   * This is the reverse of {@link #toUnitShape(Object)}.
+   */
+  public abstract Object toObject(UnitNRShape shape);
+
+  /** A string representation of the UnitNRShape that is parse-able by {@link #parseUnitShape(String)}. */
+  protected abstract String toString(UnitNRShape lv);
+
+  protected static String toStringUnitRaw(UnitNRShape lv) {
+    StringBuilder buf = new StringBuilder(100);
     buf.append('[');
     for (int level = 1; level <= lv.getLevel(); level++) {
       buf.append(lv.getValAtLevel(level)).append(',');
@@ -86,20 +164,96 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
     return buf.toString();
   }
 
+  /** Detects a range pattern and parses it, otherwise it's parsed as one shape via
+   * {@link #parseUnitShape(String)}.  The range pattern looks like this BNF:
+   * <pre>
+   *   '[' + parseShapeLV + ' TO ' + parseShapeLV + ']'
+   * </pre>
+   * It's the same thing as the toString() of the range shape, notwithstanding range optimization.
+   *
+   * @param str not null or empty
+   * @return not null
+   * @throws java.text.ParseException If there is a problem
+   */
+  public NRShape parseShape(String str) throws ParseException {
+    if (str == null || str.isEmpty())
+      throw new IllegalArgumentException("str is null or blank");
+    if (str.charAt(0) == '[') {
+      if (str.charAt(str.length()-1) != ']')
+        throw new ParseException("If starts with [ must end with ]; got "+str, str.length()-1);
+      int middle = str.indexOf(" TO ");
+      if (middle < 0)
+        throw new ParseException("If starts with [ must contain ' TO '; got "+str, -1);
+      String leftStr = str.substring(1, middle);
+      String rightStr = str.substring(middle + " TO ".length(), str.length()-1);
+      return toRangeShape(parseUnitShape(leftStr), parseUnitShape(rightStr));
+    } else if (str.charAt(0) == '{') {
+      throw new ParseException("Exclusive ranges not supported; got "+str, 0);
+    } else {
+      return parseUnitShape(str);
+    }
+  }
+
+  /** Parse a String to a UnitNRShape. "*" should be the full-range (level 0 shape). */
+  protected abstract UnitNRShape parseUnitShape(String str) throws ParseException;
+
+
   //
-  //    NRShape
+  //    UnitNRShape
   //
 
-  /** Number Range Shape; based on a pair of {@link LevelledValue}.
-   * Spatially speaking, it's analogous to a Rectangle but 1D.
+  /**
+   * A unit value Shape implemented as a stack of numbers, one for each level in the prefix tree. It directly
+   * corresponds to a {@link Cell}.  Spatially speaking, it's analogous to a Point but 1D and has some precision width.
+   * @lucene.experimental
+   */
+  public static interface UnitNRShape extends NRShape, Comparable<UnitNRShape> {
+    //note: formerly known as LevelledValue; thus some variables still use 'lv'
+
+    /** Get the prefix tree level, the higher the more precise. 0 means the world (universe). */
+    int getLevel();
+    /** Gets the value at the specified level of this unit. level must be &gt;= 0 and &lt;= getLevel(). */
+    int getValAtLevel(int level);
+    /** Gets an ancestor at the specified level. It shares state, so you may want to clone() it. */
+    UnitNRShape getShapeAtLevel(int level);
+    @Override
+    UnitNRShape roundToLevel(int targetLevel);
+
+    /** Deep clone */
+    UnitNRShape clone();
+  }
+
+  /** Compares a to b, returning less than 0, 0, or greater than 0, if a is less than, equal to, or
+   * greater than b, respectively, up to their common prefix (i.e. only min(a.levels,b.levels) are compared).
    * @lucene.internal */
-  protected class NRShape implements Shape {
+  protected static int comparePrefix(UnitNRShape a, UnitNRShape b) {
+    int minLevel = Math.min(a.getLevel(), b.getLevel());
+    for (int level = 1; level <= minLevel; level++) {
+      int diff = a.getValAtLevel(level) - b.getValAtLevel(level);
+      if (diff != 0)
+        return diff;
+    }
+    return 0;
+  }
 
-    private final LevelledValue minLV, maxLV;
+
+  //
+  //    SpanUnitsNRShape
+  //
+
+  /** A range Shape; based on a pair of {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape}.
+   * Spatially speaking, it's analogous to a Rectangle but 1D. It might have been named with Range in the name but it
+   * may be confusing since even the {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape}
+   * is in some sense a range.
+   * @lucene.experimental */
+  public class SpanUnitsNRShape implements NRShape {
+
+    private final UnitNRShape minLV, maxLV;
     private final int lastLevelInCommon;//computed; not part of identity
 
-    /** Don't call directly; see {@link #toRangeShape(com.spatial4j.core.shape.Shape, com.spatial4j.core.shape.Shape)}. */
-    private NRShape(LevelledValue minLV, LevelledValue maxLV) {
+    /** Don't call directly; see
+     * {@link #toRangeShape(org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape, org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape)}. */
+    private SpanUnitsNRShape(UnitNRShape minLV, UnitNRShape maxLV) {
       this.minLV = minLV;
       this.maxLV = maxLV;
 
@@ -112,37 +266,42 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       lastLevelInCommon = level - 1;
     }
 
-    public LevelledValue getMinLV() { return minLV; }
+    public UnitNRShape getMinUnit() { return minLV; }
 
-    public LevelledValue getMaxLV() { return maxLV; }
+    public UnitNRShape getMaxUnit() { return maxLV; }
 
-    /** How many levels are in common between minLV and maxLV. */
-    private int getLastLevelInCommon() { return lastLevelInCommon; }
+    /** How many levels are in common between minUnit and maxUnit, not including level 0. */
+    private int getLevelsInCommon() { return lastLevelInCommon; }
+
+    @Override
+    public NRShape roundToLevel(int targetLevel) {
+      return toRangeShape(minLV.roundToLevel(targetLevel), maxLV.roundToLevel(targetLevel));
+    }
 
     @Override
     public SpatialRelation relate(Shape shape) {
-//      if (shape instanceof LevelledValue)
-//        return relate((LevelledValue)shape);
-      if (shape instanceof NRShape)
-        return relate((NRShape) shape);
-      return shape.relate(this).transpose();//probably a LevelledValue
+//      if (shape instanceof UnitNRShape)
+//        return relate((UnitNRShape)shape);
+      if (shape instanceof SpanUnitsNRShape)
+        return relate((SpanUnitsNRShape) shape);
+      return shape.relate(this).transpose();//probably a UnitNRShape
     }
 
-    public SpatialRelation relate(NRShape ext) {
+    public SpatialRelation relate(SpanUnitsNRShape ext) {
       //This logic somewhat mirrors RectangleImpl.relate_range()
-      int extMin_intMax = comparePrefixLV(ext.getMinLV(), getMaxLV());
+      int extMin_intMax = comparePrefix(ext.getMinUnit(), getMaxUnit());
       if (extMin_intMax > 0)
         return SpatialRelation.DISJOINT;
-      int extMax_intMin = comparePrefixLV(ext.getMaxLV(), getMinLV());
+      int extMax_intMin = comparePrefix(ext.getMaxUnit(), getMinUnit());
       if (extMax_intMin < 0)
         return SpatialRelation.DISJOINT;
-      int extMin_intMin = comparePrefixLV(ext.getMinLV(), getMinLV());
-      int extMax_intMax = comparePrefixLV(ext.getMaxLV(), getMaxLV());
-      if ((extMin_intMin > 0 || extMin_intMin == 0 && ext.getMinLV().getLevel() >= getMinLV().getLevel())
-          && (extMax_intMax < 0 || extMax_intMax == 0 && ext.getMaxLV().getLevel() >= getMaxLV().getLevel()))
+      int extMin_intMin = comparePrefix(ext.getMinUnit(), getMinUnit());
+      int extMax_intMax = comparePrefix(ext.getMaxUnit(), getMaxUnit());
+      if ((extMin_intMin > 0 || extMin_intMin == 0 && ext.getMinUnit().getLevel() >= getMinUnit().getLevel())
+          && (extMax_intMax < 0 || extMax_intMax == 0 && ext.getMaxUnit().getLevel() >= getMaxUnit().getLevel()))
         return SpatialRelation.CONTAINS;
-      if ((extMin_intMin < 0 || extMin_intMin == 0 && ext.getMinLV().getLevel() <= getMinLV().getLevel())
-          && (extMax_intMax > 0 || extMax_intMax == 0 && ext.getMaxLV().getLevel() <= getMaxLV().getLevel()))
+      if ((extMin_intMin < 0 || extMin_intMin == 0 && ext.getMinUnit().getLevel() <= getMinUnit().getLevel())
+          && (extMax_intMax > 0 || extMax_intMax == 0 && ext.getMaxUnit().getLevel() <= getMaxUnit().getLevel()))
         return SpatialRelation.WITHIN;
       return SpatialRelation.INTERSECTS;
     }
@@ -165,18 +324,27 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
     @Override
     public boolean isEmpty() { return false; }
 
+    /** A deep clone. */
     @Override
-    public String toString() { return "[" + toStringLV(minLV) + " TO " + toStringLV(maxLV) + "]"; }
+    public SpanUnitsNRShape clone() {
+      return new SpanUnitsNRShape(minLV.clone(), maxLV.clone());
+    }
+
+    @Override
+    public String toString() {
+      return "[" + NumberRangePrefixTree.this.toString(minLV) + " TO "
+          + NumberRangePrefixTree.this.toString(maxLV) + "]";
+    }
 
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
 
-      NRShape nrShape = (NRShape) o;
+      SpanUnitsNRShape spanShape = (SpanUnitsNRShape) o;
 
-      if (!maxLV.equals(nrShape.maxLV)) return false;
-      if (!minLV.equals(nrShape.minLV)) return false;
+      if (!maxLV.equals(spanShape.maxLV)) return false;
+      if (!minLV.equals(spanShape.minLV)) return false;
 
       return true;
     }
@@ -187,98 +355,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       result = 31 * result + maxLV.hashCode();
       return result;
     }
-  }// class NRShapeImpl
-
-  /** Converts the value to a shape (usually not a range). If it's a JDK object (e.g. Number, Calendar)
-   * that could be parsed from a String, this class won't do it; you must parse it. */
-  public abstract Shape toShape(Object value);
-
-  /** Detects a range pattern and parses it, otherwise it's parsed as one shape via
-   * {@link #parseShapeLV(String)}.  The range pattern looks like this BNF:
-   * <pre>
-   *   '[' + parseShapeLV + ' TO ' + parseShapeLV + ']'
-   * </pre>
-   * It's the same thing as the toString() of the range shape, notwithstanding range optimization.
-   * @param str not null or empty
-   * @return not null
-   * @throws java.text.ParseException If there is a problem
-   */
-  public Shape parseShape(String str) throws ParseException {
-    if (str == null || str.isEmpty())
-      throw new IllegalArgumentException("str is null or blank");
-    if (str.charAt(0) == '[') {
-      if (str.charAt(str.length()-1) != ']')
-        throw new ParseException("If starts with [ must end with ]; got "+str, str.length()-1);
-      int middle = str.indexOf(" TO ");
-      if (middle < 0)
-        throw new ParseException("If starts with [ must contain ' TO '; got "+str, -1);
-      String leftStr = str.substring(1, middle);
-      String rightStr = str.substring(middle + " TO ".length(), str.length()-1);
-      return toRangeShape(parseShapeLV(leftStr), parseShapeLV(rightStr));
-    } else if (str.charAt(0) == '{') {
-      throw new ParseException("Exclusive ranges not supported; got "+str, 0);
-    } else {
-      return parseShapeLV(str);
-    }
-  }
-
-  /** Parse a String to a LevelledValue. "*" should be the full-range. */
-  protected abstract LevelledValue parseShapeLV(String str) throws ParseException;
-
-  /** Returns a shape that represents the continuous range between {@code start} and {@code end}. It will
-   * be optimized.
-   * @throws IllegalArgumentException if the arguments are in the wrong order, or if either contains the other.
-   */
-  public Shape toRangeShape(Shape start, Shape end) {
-    if (!(start instanceof LevelledValue && end instanceof LevelledValue))
-      throw new IllegalArgumentException("Must pass "+LevelledValue.class+" but got "+start.getClass());
-    LevelledValue startLV = (LevelledValue) start;
-    LevelledValue endLV = (LevelledValue) end;
-    //note: this normalization/optimization process is actually REQUIRED based on assumptions elsewhere.
-    //Normalize start & end
-    startLV = startLV.getLVAtLevel(truncateStartVals(startLV, 0)); // chops off trailing min-vals (zeroes)
-    endLV = endLV.getLVAtLevel(truncateEndVals(endLV, 0)); // chops off trailing max-vals
-    //Optimize to just start or end if it's equivalent, e.g. April to April 1st is April 1st.
-    int cmp = comparePrefixLV(startLV, endLV);
-    if (cmp > 0) {
-      throw new IllegalArgumentException("Wrong order: "+start+" TO "+end);
-    }
-    if (cmp == 0) {//one is a prefix of the other
-      if (startLV.getLevel() == endLV.getLevel()) {
-        //same
-        return startLV;
-      } else if (endLV.getLevel() > startLV.getLevel()) {
-        // e.g. April to April 1st
-        if (truncateStartVals(endLV, startLV.getLevel()) == startLV.getLevel()) {
-          return endLV;
-  }
-      } else {//minLV level > maxLV level
-        // e.g. April 30 to April
-        if (truncateEndVals(startLV, endLV.getLevel()) == endLV.getLevel()) {
-          return startLV;
-        }
-      }
-    }
-    return new NRShape(startLV, endLV);
-  }
-
-  /** From lv.getLevel on up, it returns the first Level seen with val != 0. It doesn't check past endLevel. */
-  private int truncateStartVals(LevelledValue lv, int endLevel) {
-    for (int level = lv.getLevel(); level > endLevel; level--) {
-      if (lv.getValAtLevel(level) != 0)
-        return level;
-    }
-    return endLevel;
-  }
-
-  private int truncateEndVals(LevelledValue lv, int endLevel) {
-    for (int level = lv.getLevel(); level > endLevel; level--) {
-      int max = getNumSubCells(lv.getLVAtLevel(level-1)) - 1;
-      if (lv.getValAtLevel(level) != max)
-        return level;
-    }
-    return endLevel;
-  }
+  }// class SpanUnitsNRShape
 
   //
   //    NumberRangePrefixTree
@@ -332,15 +409,19 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
   @Override
   public int getLevelForDistance(double dist) {
-    return maxLevels;
+    //note: it might be useful to compute which level has a raw width (counted in
+    // bottom units, e.g. milliseconds), that covers the provided dist in those units?
+    return maxLevels; // thus always use full precision. We don't do approximations in this tree/strategy.
+    //throw new UnsupportedOperationException("Not applicable.");
   }
 
   @Override
   public double getDistanceForLevel(int level) {
+    //note: we could compute this... should we?
     throw new UnsupportedOperationException("Not applicable.");
   }
 
-  protected Shape toShape(int[] valStack, int len) {
+  protected UnitNRShape toShape(int[] valStack, int len) {
     final NRCell[] cellStack = newCellStack(len);
     for (int i = 0; i < len; i++) {
       cellStack[i+1].resetCellWithCellNum(valStack[i]);
@@ -367,7 +448,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
     if (scratch == null)
       scratch = getWorldCell();
 
-    //We decode level, leaf, and populate bytes.
+    //We decode level #, leaf boolean, and populate bytes by reference. We don't decode the stack.
 
     //reverse lookup term length to the level and hence the cell
     NRCell[] cellsByLevel = ((NRCell) scratch).cellsByLevel;
@@ -389,7 +470,8 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
     return result;
   }
 
-  protected int getNumSubCells(LevelledValue lv) {
+  /** Returns the number of sub-cells beneath the given UnitNRShape. */
+  public int getNumSubCells(UnitNRShape lv) {
     return maxSubCellsByLevel[lv.getLevel()];
   }
 
@@ -402,7 +484,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
    * of Cells at adjacent levels, that all have a reference back to the cell array to traverse. They also share a common
    * BytesRef for the term.
    * @lucene.internal */
-  protected class NRCell extends CellIterator implements Cell, LevelledValue {
+  protected class NRCell extends CellIterator implements Cell, UnitNRShape {
 
     //Shared: (TODO put this in a new class)
     final NRCell[] cellsByLevel;
@@ -484,11 +566,15 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
           cell.cellNumber = (term.bytes[term.offset + termLen - 1] & 0xFF) - 1;
           assert cell.cellNumber < 255;
         }
-        assert cell.cellNumber >= 0;
+        cell.assertDecoded();
       }
     }
 
-    @Override // for Cell & for LevelledValue
+    private void assertDecoded() {
+      assert cellNumber >= 0 : "Illegal state; ensureDecoded() wasn't called";
+    }
+
+    @Override // for Cell & for UnitNRShape
     public int getLevel() {
       return cellLevel;
     }
@@ -514,8 +600,9 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Shape getShape() {
-      ensureDecoded(); return this;
+    public UnitNRShape getShape() {
+      ensureDecoded();
+      return this;
     }
 
     @Override
@@ -579,7 +666,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
     //----------- CellIterator
 
-    Shape iterFilter;//LevelledValue or NRShape
+    Shape iterFilter;//UnitNRShape or NRShape
     boolean iterFirstIsIntersects;
     boolean iterLastIsIntersects;
     int iterFirstCellNumber;
@@ -587,11 +674,11 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
     private void initIter(Shape filter) {
       cellNumber = -1;
-      if (filter instanceof LevelledValue && ((LevelledValue) filter).getLevel() == 0)
+      if (filter instanceof UnitNRShape && ((UnitNRShape) filter).getLevel() == 0)
         filter = null;//world means everything -- no filter
       iterFilter = filter;
 
-      NRCell parent = getLVAtLevel(getLevel() - 1);
+      NRCell parent = getShapeAtLevel(getLevel() - 1);
 
       // Initialize iter* members.
 
@@ -604,16 +691,16 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
         return;
       }
 
-      final LevelledValue minLV;
-      final LevelledValue maxLV;
+      final UnitNRShape minLV;
+      final UnitNRShape maxLV;
       final int lastLevelInCommon;//between minLV & maxLV
-      if (filter instanceof NRShape) {
-        NRShape nrShape = (NRShape) iterFilter;
-        minLV = nrShape.getMinLV();
-        maxLV = nrShape.getMaxLV();
-        lastLevelInCommon = nrShape.getLastLevelInCommon();
+      if (filter instanceof SpanUnitsNRShape) {
+        SpanUnitsNRShape spanShape = (SpanUnitsNRShape) iterFilter;
+        minLV = spanShape.getMinUnit();
+        maxLV = spanShape.getMaxUnit();
+        lastLevelInCommon = spanShape.getLevelsInCommon();
       } else {
-        minLV = (LevelledValue) iterFilter;
+        minLV = (UnitNRShape) iterFilter;
         maxLV = minLV;
         lastLevelInCommon = minLV.getLevel();
       }
@@ -649,7 +736,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
       //not common to get here, except for level 1 which always happens
 
-      int startCmp = comparePrefixLV(minLV, parent);
+      int startCmp = comparePrefix(minLV, parent);
       if (startCmp > 0) {//start comes after this cell
         iterFirstCellNumber = 0;
         iterFirstIsIntersects = false;
@@ -657,7 +744,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
         iterLastIsIntersects = false;
         return;
       }
-      int endCmp = comparePrefixLV(maxLV, parent);//compare to end cell
+      int endCmp = comparePrefix(maxLV, parent);//compare to end cell
       if (endCmp < 0) {//end comes before this cell
         iterFirstCellNumber = 0;
         iterFirstIsIntersects = false;
@@ -719,56 +806,65 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
     //TODO override nextFrom to be more efficient
 
-    //----------- LevelledValue / Shape
+    //----------- UnitNRShape
 
     @Override
     public int getValAtLevel(int level) {
       final int result = cellsByLevel[level].cellNumber;
-      assert result >= 0;//initialized
+      assert result >= 0;//initialized (decoded)
       return result;
     }
 
     @Override
-    public NRCell getLVAtLevel(int level) {
+    public NRCell getShapeAtLevel(int level) {
       assert level <= cellLevel;
       return cellsByLevel[level];
     }
 
     @Override
+    public UnitNRShape roundToLevel(int targetLevel) {
+      if (getLevel() <= targetLevel) {
+        return this;
+      } else {
+        return getShapeAtLevel(targetLevel);
+      }
+    }
+
+    @Override
     public SpatialRelation relate(Shape shape) {
-      ensureDecoded();
+      assertDecoded();
       if (shape == iterFilter && cellShapeRel != null)
         return cellShapeRel;
-      if (shape instanceof LevelledValue)
-        return relate((LevelledValue)shape);
-      if (shape instanceof NRShape)
-        return relate((NRShape)shape);
+      if (shape instanceof UnitNRShape)
+        return relate((UnitNRShape)shape);
+      if (shape instanceof SpanUnitsNRShape)
+        return relate((SpanUnitsNRShape)shape);
       return shape.relate(this).transpose();
     }
 
-    public SpatialRelation relate(LevelledValue lv) {
-      ensureDecoded();
-      int cmp = comparePrefixLV(this, lv);
+    public SpatialRelation relate(UnitNRShape lv) {
+      assertDecoded();
+      int cmp = comparePrefix(this, lv);
       if (cmp != 0)
         return SpatialRelation.DISJOINT;
       if (getLevel() > lv.getLevel())
-        return SpatialRelation.WITHIN;//or equals
-      return SpatialRelation.CONTAINS;
+        return SpatialRelation.WITHIN;
+      return SpatialRelation.CONTAINS;//or equals
       //no INTERSECTS; that won't happen.
     }
 
-    public SpatialRelation relate(NRShape nrShape) {
-      ensureDecoded();
-      int startCmp = comparePrefixLV(nrShape.getMinLV(), this);
+    public SpatialRelation relate(SpanUnitsNRShape spanShape) {
+      assertDecoded();
+      int startCmp = comparePrefix(spanShape.getMinUnit(), this);
       if (startCmp > 0) {//start comes after this cell
         return SpatialRelation.DISJOINT;
       }
-      int endCmp = comparePrefixLV(nrShape.getMaxLV(), this);
+      int endCmp = comparePrefix(spanShape.getMaxUnit(), this);
       if (endCmp < 0) {//end comes before this cell
         return SpatialRelation.DISJOINT;
       }
-      int nrMinLevel = nrShape.getMinLV().getLevel();
-      int nrMaxLevel = nrShape.getMaxLV().getLevel();
+      int nrMinLevel = spanShape.getMinUnit().getLevel();
+      int nrMaxLevel = spanShape.getMaxUnit().getLevel();
       if ((startCmp < 0 || startCmp == 0 && nrMinLevel <= getLevel())
           && (endCmp > 0 || endCmp == 0 && nrMaxLevel <= getLevel()))
         return SpatialRelation.WITHIN;//or equals
@@ -781,10 +877,30 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
           return SpatialRelation.INTERSECTS;
       }
       for (;nrMaxLevel < getLevel(); nrMaxLevel++) {
-        if (getValAtLevel(nrMaxLevel + 1) != getNumSubCells(getLVAtLevel(nrMaxLevel)) - 1)
+        if (getValAtLevel(nrMaxLevel + 1) != getNumSubCells(getShapeAtLevel(nrMaxLevel)) - 1)
           return SpatialRelation.INTERSECTS;
       }
       return SpatialRelation.CONTAINS;
+    }
+
+    @Override
+    public UnitNRShape clone() {
+      //no leaf distinction; this is purely based on UnitNRShape
+      NRCell cell = (NRCell) readCell(getTokenBytesNoLeaf(null), null);
+      cell.ensureOwnTermBytes();
+      return cell.getShape();
+    }
+
+    @Override
+    public int compareTo(UnitNRShape o) {
+      assertDecoded();
+      //no leaf distinction; this is purely based on UnitNRShape
+      int cmp = comparePrefix(this, o);
+      if (cmp != 0) {
+        return cmp;
+      } else {
+        return getLevel() - o.getLevel();
+      }
     }
 
     @Override
@@ -848,11 +964,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
 
     @Override
     public String toString() {
-      ensureDecoded();
-      String str = NumberRangePrefixTree.this.toStringLV(this);
-      if (isLeaf())
-        str += "•";//bullet (won't be confused with textual representation)
-      return str;
+      return NumberRangePrefixTree.this.toString(getShape());
     }
 
     /** Configure your IDE to use this. */
@@ -860,16 +972,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       String pretty = toString();
       if (getLevel() == 0)
         return pretty;
-      //now prefix it by an array of integers of the cell levels
-      StringBuilder buf = new StringBuilder(100);
-      buf.append('[');
-      for (int level = 1; level <= getLevel(); level++) {
-        if (level != 1)
-          buf.append(',');
-        buf.append(getLVAtLevel(level).cellNumber);
-      }
-      buf.append("] ").append(pretty);
-      return buf.toString();
+      return toStringUnitRaw(this) + (isLeaf() ? "•" : "") + " " + pretty;
     }
 
   } // END OF NRCell

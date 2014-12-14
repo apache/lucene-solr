@@ -26,6 +26,5 @@
     <maxIndexingThreads>123</maxIndexingThreads>
     <infoStream>true</infoStream>
     <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
-    <checkIntegrityAtMerge>true</checkIntegrityAtMerge>
   </indexConfig>
 </config>

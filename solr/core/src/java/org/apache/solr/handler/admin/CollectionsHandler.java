@@ -64,6 +64,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -91,6 +92,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -102,9 +104,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -720,7 +724,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "Collection name is required to create a new collection");
     }
-    
+
     Map<String,Object> props = ZkNodeProps.makeMap(
         Overseer.QUEUE_OPERATION,
         CREATE.toLower(),
@@ -738,11 +742,37 @@ public class CollectionsHandler extends RequestHandlerBase {
          AUTO_ADD_REPLICAS,
         "router.");
 
+    if(SYSTEM_COLL.equals(name)){
+      //We must always create asystem collection with only a single shard
+      props.put(NUM_SLICES,1);
+      props.remove(SHARDS_PROP);
+      createSysConfigSet();
+
+    }
     copyPropertiesIfNotNull(req.getParams(), props);
 
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(CREATE.toLower(), m, rsp);
   }
+
+  private void createSysConfigSet() throws KeeperException, InterruptedException {
+    SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
+    createNodeIfNotExists(zk,ZkStateReader.CONFIGS_ZKNODE+"/"+SYSTEM_COLL, null);
+    createNodeIfNotExists(zk,ZkStateReader.CONFIGS_ZKNODE+"/"+SYSTEM_COLL+"/schema.xml", BlobHandler.SCHEMA.replaceAll("'","\"").getBytes(StandardCharsets.UTF_8));
+    createNodeIfNotExists(zk, ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml", BlobHandler.CONF.replaceAll("'", "\"").getBytes(StandardCharsets.UTF_8));
+  }
+
+  public static void createNodeIfNotExists(SolrZkClient zk, String path, byte[] data) throws KeeperException, InterruptedException {
+    if(!zk.exists(path, true)){
+      //create the config znode
+      try {
+        zk.create(path,data, CreateMode.PERSISTENT,true);
+      } catch (KeeperException.NodeExistsException e) {
+        //no problem . race condition. carry on the good work
+      }
+    }
+  }
+
 
   private void handleRemoveReplica(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Remove replica: " + req.getParamString());
@@ -928,5 +958,6 @@ public class CollectionsHandler extends RequestHandlerBase {
   public String getDescription() {
     return "Manage SolrCloud Collections";
   }
+  public static final String SYSTEM_COLL =".system";
 
 }
