@@ -140,12 +140,12 @@ public abstract class PositionFilteredScorer extends Scorer {
 
   @Override
   public BytesRef getPayload() throws IOException {
-    return null; // nocommit
+    return null; // TODO - payloads on intervals
   }
 
   @Override
   public long cost() {
     return child.cost();
   }
-// nocommit Payloads - need to add these to Interval?
+
 }

@@ -104,8 +104,10 @@ public class PositionFilterQuery extends Query {
         termStats[i] = searcher.termStatistics(term, state);
         i++;
       }
-      final String field = terms.first().field(); // nocommit - should we be checking all filtered terms
-      // are on the same field?
+      // In most cases subqueries will all be on the same field, so use term statistics from
+      // the first term in the collected set.  In the cases where something is funky is happening
+      // with cross-field positional queries, phrase-type scoring isn't going to be useful anyway.
+      final String field = terms.first().field();
       return similarity.computeWeight(query.getBoost(), searcher.collectionStatistics(field), termStats);
     }
 

@@ -327,32 +327,32 @@ class TermAutomatonScorer extends Scorer {
 
   @Override
   public int nextPosition() throws IOException {
-    return -1; // nocommit we should be able to implement this
+    return -1; // TODO can we get positional information out of this Scorer?
   }
 
   @Override
   public int startPosition() throws IOException {
-    return 0; // nocommit
+    return 0;
   }
 
   @Override
   public int endPosition() throws IOException {
-    return 0; // nocommit
+    return 0;
   }
 
   @Override
   public int startOffset() throws IOException {
-    return 0; // nocommit
+    return 0;
   }
 
   @Override
   public int endOffset() throws IOException {
-    return 0; // nocommit
+    return 0;
   }
 
   @Override
   public BytesRef getPayload() throws IOException {
-    return null; // nocommit
+    return null;
   }
 
   @Override

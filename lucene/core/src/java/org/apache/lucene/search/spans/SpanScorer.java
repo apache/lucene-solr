@@ -98,11 +98,9 @@ public class SpanScorer extends Scorer {
     return numMatches;
   }
 
-  // nocommit - make SpanScorer work with positions, or just nuke it entirely?
-
   @Override
   public int nextPosition() throws IOException {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("SpanQueries do not support nextPosition() iteration");
   }
 
   @Override
