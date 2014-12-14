@@ -80,19 +80,14 @@ public abstract class DocsEnum extends DocIdSetIterator {
 
   /**
    * Returns the next position.  If there are no more
-   * positions, this will return DocsEnum.NO_MORE_POSITIONS */
+   * positions, or the iterator does not support positions,
+   * this will return DocsEnum.NO_MORE_POSITIONS */
   public abstract int nextPosition() throws IOException;
 
-  /**
-   * @return the current starting position.
-   * @throws IOException
-   */
+  /** Returns current starting position, or NO_MORE_POSITIONS if not supported */
   public abstract int startPosition() throws IOException;
 
-  /**
-   * @return the current ending position
-   * @throws IOException
-   */
+  /** Returns current ending position, or NO_MORE_POSITIONS if not supported */
   public abstract int endPosition() throws IOException;
 
   /** Returns start offset for the current position, or -1

@@ -18,6 +18,7 @@ package org.apache.lucene.search.posfilter;
  */
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocsEnum;
@@ -225,7 +226,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return String.format("%d:%d[%d]->%d[%d]%s",
+      return String.format(Locale.ROOT, "%d:%d[%d]->%d[%d]%s",
                             docid, start, startOffset, end, endOffset, composite ? "C" : "");
     }
   }

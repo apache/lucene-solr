@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 
 import org.apache.lucene.index.DocsEnum;
 
@@ -78,9 +79,9 @@ public abstract class Scorer extends DocsEnum {
   @Override
   public String toString() {
     try {
-      return String.format("%d:%d(%d)->%d(%d)", docID(), startPosition(), startOffset(), endPosition(), endOffset());
+      return String.format(Locale.ROOT, "%d:%d(%d)->%d(%d)", docID(), startPosition(), startOffset(), endPosition(), endOffset());
     } catch (IOException e) {
-      return String.format("Cannot retrieve position due to IOException");
+      return super.toString();
     }
   }
   
