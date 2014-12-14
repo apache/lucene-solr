@@ -136,8 +136,9 @@ New Features
     modifying solr configuration files.  (Erick Erickson)
   - SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
 
-* SOLR-6103: Added DateRangeField for indexing date ranges, especially
-  multi-valued ones. Based on LUCENE-5648. (David Smiley)
+* SOLR-6103: Added DateRangeField for indexing date ranges, especially multi-valued ones.
+  Supports facet.range, DateMath, and is mostly interoperable with TrieDateField.
+  Based on LUCENE-5648. (David Smiley)
 
 * SOLR-6403: TransactionLog replay status logging. (Mark Miller)
 

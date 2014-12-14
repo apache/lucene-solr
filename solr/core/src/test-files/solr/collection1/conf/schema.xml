@@ -575,6 +575,7 @@
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
    <dynamicField name="*_tdt1" type="tdate"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_tdtdv" type="tdatedv"  indexed="true"  stored="true"/>
+   <dynamicField name="*_drf" type="dateRange"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>

@@ -37,10 +37,10 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -74,6 +74,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.DateRangeField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -1080,6 +1081,8 @@ public class SimpleFacets {
               (SolrException.ErrorCode.BAD_REQUEST,
                   "Unable to range facet on tried field of unexpected type:" + f);
       }
+    } else if (ft instanceof DateRangeField) {
+      calc = new DateRangeFieldEndpointCalculator(sf, null);
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -1420,6 +1423,7 @@ public class SimpleFacets {
   }
   private static class DateRangeEndpointCalculator 
     extends RangeEndpointCalculator<Date> {
+    private static final String TYPE_ERR_MSG = "SchemaField must use field type extending TrieDateField or DateRangeField";
     private final Date now;
     public DateRangeEndpointCalculator(final SchemaField f, 
                                        final Date now) { 
@@ -1427,7 +1431,7 @@ public class SimpleFacets {
       this.now = now;
       if (! (field.getType() instanceof TrieDateField) ) {
         throw new IllegalArgumentException
-          ("SchemaField must use field type extending TrieDateField");
+          (TYPE_ERR_MSG);
       }
     }
     @Override
@@ -1437,6 +1441,36 @@ public class SimpleFacets {
     @Override
     protected Date parseVal(String rawval) {
       return ((TrieDateField)field.getType()).parseMath(now, rawval);
+    }
+    @Override
+    protected Object parseGap(final String rawval) {
+      return rawval;
+    }
+    @Override
+    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
+      final DateMathParser dmp = new DateMathParser();
+      dmp.setNow(value);
+      return dmp.parseMath(gap);
+    }
+  }
+  private static class DateRangeFieldEndpointCalculator
+      extends RangeEndpointCalculator<Date> {
+    private final Date now;
+    public DateRangeFieldEndpointCalculator(final SchemaField f,
+                                       final Date now) {
+      super(f);
+      this.now = now;
+      if (! (field.getType() instanceof DateRangeField) ) {
+        throw new IllegalArgumentException(DateRangeEndpointCalculator.TYPE_ERR_MSG);
+      }
+    }
+    @Override
+    public String formatValue(Date val) {
+      return TrieDateField.formatExternal(val);
+    }
+    @Override
+    protected Date parseVal(String rawval) {
+      return ((DateRangeField)field.getType()).parseMath(now, rawval);
     }
     @Override
     protected Object parseGap(final String rawval) {
