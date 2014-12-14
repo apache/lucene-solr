@@ -27,7 +27,7 @@
 
 <schema name="test" version="1.0">
   <types>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
     <fieldType name="int"          class="solr.TrieIntField"    precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float"        class="solr.TrieFloatField"  precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>

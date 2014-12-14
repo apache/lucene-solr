@@ -31,7 +31,7 @@
     <!-- field type definitions... note that the "name" attribute is
          just a label to be used by field definitions.  The "class"
          attribute and any other attributes determine the real type and
-         behavior of the fieldtype.
+         behavior of the fieldType.
       -->
 
     <!--
@@ -58,14 +58,14 @@
     <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
 
 
-    <fieldtype name="binary" class="solr.BinaryField"/>
-    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="binary" class="solr.BinaryField"/>
+    <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
     <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
          seconds part (.999) is optional.
       -->
-    <fieldtype name="date" class="solr.TrieDateField" sortMissingLast="true"/>
+    <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true"/>
 
 
 

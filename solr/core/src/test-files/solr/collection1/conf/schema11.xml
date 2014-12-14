@@ -249,7 +249,7 @@
     <!-- Poly field -->
     <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
     <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-    <fieldtype name="geohash" class="solr.GeoHashField"/>
+    <fieldType name="geohash" class="solr.GeoHashField"/>
 
     <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
 
@@ -273,14 +273,14 @@ valued. -->
 
     <fieldType name="text_no_analyzer" stored="false" indexed="true" class="solr.TextField" />
 
-    <fieldtype name="text_length" class="solr.TextField">
+    <fieldType name="text_length" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.StandardFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.LengthFilterFactory" min="2" max="32768"/>
       </analyzer>
-    </fieldtype>  
+    </fieldType>  
 
 
    <!-- Valid attributes for fields:

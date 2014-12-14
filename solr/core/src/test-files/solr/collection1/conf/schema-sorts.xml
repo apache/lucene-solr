@@ -194,85 +194,85 @@ NOTE: Tests expect every field in this schema to be sortable.
 
   <types>
 
-    <fieldtype name="str" class="solr.StrField" stored="true" indexed="true" />
-    <fieldtype name="str_last" class="solr.StrField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="str_first" class="solr.StrField" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="str_dv" class="solr.StrField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="str_dv_last" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="str_dv_first" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="str" class="solr.StrField" stored="true" indexed="true" />
+    <fieldType name="str_last" class="solr.StrField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="str_first" class="solr.StrField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="str_dv" class="solr.StrField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="str_dv_last" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="str_dv_first" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <!-- note: all 'binary' fields have docvalues, because this fieldtype doesnt support indexing -->
-    <fieldtype name="bin" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true"/>
-    <fieldtype name="bin_last" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="bin_first" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true" sortMissingFirst="true"/>
-    <fieldtype name="bin_dv" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="bin_dv_last" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="bin_dv_first" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <!-- note: all 'binary' fields have docvalues, because this fieldType doesnt support indexing -->
+    <fieldType name="bin" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true"/>
+    <fieldType name="bin_last" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true" sortMissingLast="true"/>
+    <fieldType name="bin_first" class="solr.SortableBinaryField" stored="true" indexed="true" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="bin_dv" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="bin_dv_last" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="bin_dv_first" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="int" class="solr.TrieIntField" stored="true" indexed="true" />
-    <fieldtype name="int_last" class="solr.TrieIntField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="int_first" class="solr.TrieIntField" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="int_dv" class="solr.TrieIntField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="int_dv_last" class="solr.TrieIntField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="int_dv_first" class="solr.TrieIntField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="int" class="solr.TrieIntField" stored="true" indexed="true" />
+    <fieldType name="int_last" class="solr.TrieIntField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="int_first" class="solr.TrieIntField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="int_dv" class="solr.TrieIntField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="int_dv_last" class="solr.TrieIntField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="int_dv_first" class="solr.TrieIntField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="long" class="solr.TrieLongField" stored="true" indexed="true" />
-    <fieldtype name="long_last" class="solr.TrieLongField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="long_first" class="solr.TrieLongField" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="long_dv" class="solr.TrieLongField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="long_dv_last" class="solr.TrieLongField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="long_dv_first" class="solr.TrieLongField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="long" class="solr.TrieLongField" stored="true" indexed="true" />
+    <fieldType name="long_last" class="solr.TrieLongField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="long_first" class="solr.TrieLongField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="long_dv" class="solr.TrieLongField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="long_dv_last" class="solr.TrieLongField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="long_dv_first" class="solr.TrieLongField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="float" class="solr.TrieFloatField" stored="true" indexed="true" />
-    <fieldtype name="float_last" class="solr.TrieFloatField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="float_first" class="solr.TrieFloatField" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="float_dv" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="float_dv_last" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="float_dv_first" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="float" class="solr.TrieFloatField" stored="true" indexed="true" />
+    <fieldType name="float_last" class="solr.TrieFloatField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="float_first" class="solr.TrieFloatField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="float_dv" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="float_dv_last" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="float_dv_first" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="double" class="solr.TrieDoubleField" stored="true" indexed="true" />
-    <fieldtype name="double_last" class="solr.TrieDoubleField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="double_first" class="solr.TrieDoubleField" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="double_dv" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="double_dv_last" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="double_dv_first" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="double" class="solr.TrieDoubleField" stored="true" indexed="true" />
+    <fieldType name="double_last" class="solr.TrieDoubleField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="double_first" class="solr.TrieDoubleField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="double_dv" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="double_dv_last" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="double_dv_first" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="date" class="solr.TrieDateField" stored="true" indexed="true" />
-    <fieldtype name="date_last" class="solr.TrieDateField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="date_first" class="solr.TrieDateField" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="date_dv" class="solr.TrieDateField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="date_dv_last" class="solr.TrieDateField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="date_dv_first" class="solr.TrieDateField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="date" class="solr.TrieDateField" stored="true" indexed="true" />
+    <fieldType name="date_last" class="solr.TrieDateField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="date_first" class="solr.TrieDateField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="date_dv" class="solr.TrieDateField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="date_dv_last" class="solr.TrieDateField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="date_dv_first" class="solr.TrieDateField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="uuid" class="solr.UUIDField" stored="true" indexed="true" />
-    <fieldtype name="uuid_last" class="solr.UUIDField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="uuid_first" class="solr.UUIDField" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="uuid_dv" class="solr.UUIDField" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="uuid_dv_last" class="solr.UUIDField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="uuid_dv_first" class="solr.UUIDField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="uuid" class="solr.UUIDField" stored="true" indexed="true" />
+    <fieldType name="uuid_last" class="solr.UUIDField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="uuid_first" class="solr.UUIDField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="uuid_dv" class="solr.UUIDField" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="uuid_dv_last" class="solr.UUIDField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="uuid_dv_first" class="solr.UUIDField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="currency" class="solr.CurrencyField" stored="true" indexed="true" foo="bar" providerClass="solr.MockExchangeRateProvider"/>
-    <fieldtype name="currency_last" class="solr.CurrencyField" stored="true" indexed="true" foo="bar" providerClass="solr.MockExchangeRateProvider" sortMissingLast="true"/>
-    <fieldtype name="currency_first" class="solr.CurrencyField" stored="true" indexed="true" foo="bar" providerClass="solr.MockExchangeRateProvider" sortMissingFirst="true"/>
+    <fieldType name="currency" class="solr.CurrencyField" stored="true" indexed="true" foo="bar" providerClass="solr.MockExchangeRateProvider"/>
+    <fieldType name="currency_last" class="solr.CurrencyField" stored="true" indexed="true" foo="bar" providerClass="solr.MockExchangeRateProvider" sortMissingLast="true"/>
+    <fieldType name="currency_first" class="solr.CurrencyField" stored="true" indexed="true" foo="bar" providerClass="solr.MockExchangeRateProvider" sortMissingFirst="true"/>
 
-    <fieldtype name="collation_en_primary" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="true" />
-    <fieldtype name="collation_en_primary_last" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="collation_en_primary_first" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="collation_en_primary_dv" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="collation_en_primary_dv_last" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="collation_en_primary_dv_first" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="collation_en_primary" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="true" />
+    <fieldType name="collation_en_primary_last" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="collation_en_primary_first" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="collation_en_primary_dv" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="collation_en_primary_dv_last" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="collation_en_primary_dv_first" class="solr.CollationField" language="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
-    <fieldtype name="icu_collation_en_primary" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="true" />
-    <fieldtype name="icu_collation_en_primary_last" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="icu_collation_en_primary_first" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="true" sortMissingFirst="true"/>
-    <fieldtype name="icu_collation_en_primary_dv" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="false" docValues="true"/>
-    <fieldtype name="icu_collation_en_primary_dv_last" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
-    <fieldtype name="icu_collation_en_primary_dv_first" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+    <fieldType name="icu_collation_en_primary" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="true" />
+    <fieldType name="icu_collation_en_primary_last" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="icu_collation_en_primary_first" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="icu_collation_en_primary_dv" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="false" docValues="true"/>
+    <fieldType name="icu_collation_en_primary_dv_last" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldType name="icu_collation_en_primary_dv_first" class="solr.ICUCollationField" locale="en" strength="primary" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
 
     <!-- BoolField does not support DocValues - see SOLR-5933 -->
-    <fieldtype name="bool" class="solr.BoolField" stored="true" indexed="true" />
-    <fieldtype name="bool_last" class="solr.BoolField" stored="true" indexed="true" sortMissingLast="true"/>
-    <fieldtype name="bool_first" class="solr.BoolField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldType name="bool" class="solr.BoolField" stored="true" indexed="true" />
+    <fieldType name="bool_last" class="solr.BoolField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldType name="bool_first" class="solr.BoolField" stored="true" indexed="true" sortMissingFirst="true"/>
 
     <fieldType name="enum" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
     <fieldType name="enum_last" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity" sortMissingLast="true"/>

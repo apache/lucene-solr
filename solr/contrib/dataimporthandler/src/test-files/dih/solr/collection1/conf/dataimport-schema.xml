@@ -29,7 +29,7 @@
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
     </fieldType>
-    <fieldtype name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
+    <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
   </types>
   <fields>   
     <field name="id" type="string" indexed="true" stored="true" required="true" />

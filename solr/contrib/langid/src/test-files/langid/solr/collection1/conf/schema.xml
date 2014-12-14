@@ -27,12 +27,12 @@
 
 <schema name="test" version="1.5">
   <types>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
     <!-- solr.TextField allows the specification of custom
          text analyzers specified as a tokenizer and a list
          of token filters.
       -->
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.StandardFilterFactory"/>
@@ -40,11 +40,11 @@
         <filter class="solr.StopFilterFactory"/>
         <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
 
-    <fieldtype name="nametext" class="solr.TextField">
+    <fieldType name="nametext" class="solr.TextField">
       <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
-    </fieldtype>
+    </fieldType>
  </types>
 
 

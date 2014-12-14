@@ -20,9 +20,9 @@
 
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldtype name="nametext" class="solr.TextField">
+    <fieldType name="nametext" class="solr.TextField">
       <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-    </fieldtype>
+    </fieldType>
   </types>
 
   <fields>
