@@ -27,10 +27,11 @@ import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 
-final class SloppyPhraseScorer extends PhraseScorer {
+final class SloppyPhraseScorer extends Scorer {
   private PhrasePositions min, max;
 
   private float sloppyFreq;
@@ -92,10 +93,14 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private int matchLength;
   private int startpos = -1;
   private int startoffset = -1;
-  private int endoffset = -1;
 
   @Override
-  protected int doNextPosition() throws IOException {
+  public int freq() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
     if (cached) {
       cached = false;
       return this.startPosition();
@@ -169,10 +174,9 @@ final class SloppyPhraseScorer extends PhraseScorer {
     if (!initPhrasePositions())
       return NO_MORE_POSITIONS;
 
-    freq = -1;
     sloppyFreq = -1;
     cached = false;
-    int pos = doNextPosition();
+    int pos = nextPosition();
     cached = true;
     return pos;
   }
@@ -604,23 +608,27 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
-  protected int doStartOffset() throws IOException {
+  public int startOffset() throws IOException {
     return startoffset;
   }
 
   @Override
-  protected int doEndOffset() throws IOException {
+  public int endOffset() throws IOException {
     return spanOffsetEnd;
   }
 
-  // TODO : getPayload on spans?
   @Override
-  protected int doStartPosition() throws IOException {
+  public BytesRef getPayload() throws IOException {
+    return null;    // TODO : getPayload on intervals?
+  }
+
+  @Override
+  public int startPosition() throws IOException {
     return startpos;
   }
 
   @Override
-  protected int doEndPosition() throws IOException {
+  public int endPosition() throws IOException {
     return spanEnd;
   }
 

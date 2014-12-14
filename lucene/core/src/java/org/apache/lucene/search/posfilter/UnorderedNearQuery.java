@@ -102,6 +102,10 @@ public class UnorderedNearQuery extends PositionFilterQuery {
       posQueue.advanceTo(doc);
     }
 
+    @Override
+    public float intervalScore() throws IOException {
+      return simScorer.computeSlopFactor(matchDistance);
+    }
 
     private class SpanningPositionQueue extends PositionQueue {
 
@@ -176,18 +180,6 @@ public class UnorderedNearQuery extends PositionFilterQuery {
 
     }
 
-    @Override
-    public float score() throws IOException {
-      return this.simScorer.score(docID(), sloppyFreq());
-    }
-
-    private float sloppyFreq() throws IOException {
-      float f = 0.0f;
-      while (nextPosition() != NO_MORE_POSITIONS) {
-        f += this.simScorer.computeSlopFactor(matchDistance);
-      }
-      return f;
-    }
   }
 
 }

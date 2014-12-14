@@ -46,7 +46,18 @@ public abstract class PositionFilteredScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    return this.simScorer.score(docID(), freq());
+    return this.simScorer.score(docID(), intervalFreq());
+  }
+
+  private float freq = -1;
+
+  protected final float intervalFreq() throws IOException {
+    if (freq != -1)
+      return freq;
+    freq = 0;
+    while (nextPosition() != NO_MORE_POSITIONS)
+      freq += intervalScore();
+    return freq;
   }
 
   @Override
@@ -56,11 +67,7 @@ public abstract class PositionFilteredScorer extends Scorer {
 
   @Override
   public int freq() throws IOException {
-    int freq = 0;
-    while (nextPosition() != NO_MORE_POSITIONS) {
-      freq++;
-    }
-    return freq;
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -104,6 +111,7 @@ public abstract class PositionFilteredScorer extends Scorer {
 
   protected void reset(int doc) throws IOException {
     buffered = false;
+    freq = -1;
   };
 
   public int getMatchDistance() {

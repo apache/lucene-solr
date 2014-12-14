@@ -23,8 +23,9 @@ import java.util.Arrays;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
 
-final class ExactPhraseScorer extends PhraseScorer {
+final class ExactPhraseScorer extends Scorer {
   private final int endMinus1;
   
   private final static int CHUNK = 4096;
@@ -129,7 +130,18 @@ final class ExactPhraseScorer extends PhraseScorer {
   
   @Override
   public float score() throws IOException {
-    return docScorer.score(docID, freq());
+    return docScorer.score(docID, phraseFreq());
+  }
+
+  private int freq = -1;
+
+  protected int phraseFreq() throws IOException {
+    if (freq != -1)
+      return freq;
+    freq = 0;
+    while (nextPosition() != NO_MORE_POSITIONS)
+      freq++;
+    return freq;
   }
 
   private int chunkStart = 0;
@@ -140,11 +152,11 @@ final class ExactPhraseScorer extends PhraseScorer {
   private boolean cached = false;
 
   private void resetPositions() throws IOException {
-    freq = -1;
     chunkStart = 0;
     chunkEnd = CHUNK;
     posRemaining = 0;
     cached = false;
+    freq = -1;
     for (final ChunkState cs : chunkStates) {
       cs.posLimit = cs.posEnum.freq();
       cs.pos = cs.offset + cs.posEnum.nextPosition();
@@ -155,33 +167,43 @@ final class ExactPhraseScorer extends PhraseScorer {
 
   private int firstPosition() throws IOException {
     resetPositions();
-    int pos = doNextPosition();
+    int pos = nextPosition();
     cached = true;
     return pos;
   }
 
   @Override
-  protected int doStartPosition() throws IOException {
+  public int startPosition() throws IOException {
     return posQueue[positionsInChunk - posRemaining - 1];
   }
 
   @Override
-  protected int doStartOffset() throws IOException {
+  public int startOffset() throws IOException {
     return offsetQueue[(positionsInChunk - posRemaining - 1) / 2];
   }
 
   @Override
-  protected int doEndOffset() throws IOException {
+  public int endOffset() throws IOException {
     return offsetQueue[(positionsInChunk - posRemaining - 1) / 2 + 1];
   }
 
   @Override
-  protected int doEndPosition() throws IOException {
+  public BytesRef getPayload() throws IOException {
+    return null;  // TODO payloads over intervals
+  }
+
+  @Override
+  public int endPosition() throws IOException {
     return startPosition() + chunkStates.length - 1;
   }
 
   @Override
-  protected int doNextPosition() throws IOException {
+  public int freq() throws IOException {
+    return phraseFreq();
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
     if (cached) {
       cached = false;
       return startPosition();

@@ -158,6 +158,11 @@ public final class NonOverlappingQuery extends PositionFilterQuery {
     }
 
     @Override
+    public float intervalScore() throws IOException {
+      return child.intervalScore();
+    }
+
+    @Override
     protected int doNextPosition() throws IOException {
       if (subtPosition == NO_MORE_POSITIONS) {
         int pos = child.nextPosition();

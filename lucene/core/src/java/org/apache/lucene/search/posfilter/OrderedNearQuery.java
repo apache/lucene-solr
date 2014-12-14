@@ -85,7 +85,7 @@ public class OrderedNearQuery extends PositionFilterQuery {
 
     @Override
     public int freq() throws IOException {
-      return 1; // nocommit
+      throw new UnsupportedOperationException();
     }
 
     @Override

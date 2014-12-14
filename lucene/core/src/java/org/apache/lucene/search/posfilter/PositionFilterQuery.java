@@ -17,6 +17,10 @@ package org.apache.lucene.search.posfilter;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+import java.util.TreeSet;
+
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -33,10 +37,6 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Set;
-import java.util.TreeSet;
 
 public class PositionFilterQuery extends Query {
 
@@ -115,7 +115,7 @@ public class PositionFilterQuery extends Query {
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
-          float freq = scorer.freq();
+          float freq = ((PositionFilteredScorer)scorer).intervalFreq();
           Similarity.SimScorer docScorer = similarity.simScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");

@@ -146,7 +146,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
 
     IndexSearcher searcher = newSearcher(reader);
-    MaxFreqCollector c = new MaxFreqCollector();
+    MaxScoreCollector c = new MaxScoreCollector();
     searcher.search(query, c);
     assertEquals("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Wrong number of hits", expectedNumResults, c.totalHits);
 
@@ -178,7 +178,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     return query;
   }
 
-  static class MaxFreqCollector extends SimpleCollector {
+  static class MaxScoreCollector extends SimpleCollector {
     float max;
     int totalHits;
     Scorer scorer;
@@ -191,7 +191,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     @Override
     public void collect(int doc) throws IOException {
       totalHits++;
-      max = Math.max(max, scorer.freq());
+      max = Math.max(max, scorer.score());
     }
 
     @Override
@@ -212,7 +212,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       
       @Override
       public void collect(int doc) throws IOException {
-        assertFalse(Float.isInfinite(scorer.freq()));
         assertFalse(Float.isInfinite(scorer.score()));
       }
       

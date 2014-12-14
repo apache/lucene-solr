@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+
+import org.apache.lucene.index.DocsEnum;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -60,6 +60,13 @@ public abstract class Scorer extends DocsEnum {
    * {@link LeafCollector#collect}.
    */
   public abstract float score() throws IOException;
+
+  /** Returns the score of the current interval spanned by this scorer.
+   * Initially invalid, until {@link #nextPosition()} is called
+   */
+  public float intervalScore() throws IOException {
+    return 1;
+  }
   
   /** returns parent Weight
    * @lucene.experimental

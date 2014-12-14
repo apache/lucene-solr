@@ -1,9 +1,9 @@
 package org.apache.lucene.search.posfilter;
 
+import java.io.IOException;
+
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
