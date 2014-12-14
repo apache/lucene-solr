@@ -17,22 +17,24 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.NumberRangePrefixTreeStrategy;
-import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
-import org.apache.lucene.spatial.query.SpatialArgs;
-import org.apache.lucene.spatial.query.SpatialOperation;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.search.QParser;
-
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.NumberRangePrefixTreeStrategy;
+import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
+import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.NRShape;
+import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.search.QParser;
 
 /**
  * @see NumberRangePrefixTreeStrategy
@@ -62,12 +64,12 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   @Override
   public List<StorableField> createFields(SchemaField field, Object val, float boost) {
     if (val instanceof Date || val instanceof Calendar)//From URP
-      val = tree.toShape(val);
+      val = tree.toUnitShape(val);
     return super.createFields(field, val, boost);
   }
 
   @Override
-  protected Shape parseShape(String str) {
+  protected NRShape parseShape(String str) {
     try {
       return tree.parseShape(str);
     } catch (ParseException e) {
@@ -103,7 +105,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
       part1 = "*";
     if (part2 == null)
       part2 = "*";
-    Shape shape = tree.toRangeShape(parseShape(part1), parseShape(part2));
+    Shape shape = tree.toRangeShape((UnitNRShape) parseShape(part1), (UnitNRShape) parseShape(part2));
     SpatialArgs spatialArgs = new SpatialArgs(SpatialOperation.Intersects, shape);
     return getQueryFromSpatialArgs(parser, field, spatialArgs);
   }

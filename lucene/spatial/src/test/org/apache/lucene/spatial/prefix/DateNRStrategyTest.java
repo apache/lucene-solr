@@ -17,18 +17,19 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Calendar;
+
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.NumberRangePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
+import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.Calendar;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
@@ -36,16 +37,17 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
   DateRangePrefixTree tree;
 
-  int era;
-  int year;
+  long randomCalWindowMs;
 
   @Before
   public void setUp() throws Exception {
     super.setUp();
     tree = DateRangePrefixTree.INSTANCE;
     strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
-    era = random().nextBoolean() ? 0 : 1;
-    year = 1 + random().nextInt(2_000_000);
+    Calendar tmpCal = tree.newCal();
+    int randomCalWindowField = randomIntBetween(1, Calendar.ZONE_OFFSET - 1);//we're not allowed to add zone offset
+    tmpCal.add(randomCalWindowField, 2_000);
+    randomCalWindowMs = Math.max(2000L, tmpCal.getTimeInMillis());
   }
 
   @Test
@@ -69,9 +71,6 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
   @Test
   public void testWithinSame() throws IOException {
     final Calendar cal = tree.newCal();
-    cal.set(Calendar.ERA, era);
-    cal.set(Calendar.YEAR, year);
-
     testOperation(
         tree.toShape(cal),
         SpatialOperation.IsWithin,
@@ -98,10 +97,13 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
   @Override
   protected Shape randomIndexedShape() {
     Calendar cal1 = randomCalendar();
-    Shape s1 = tree.toShape(cal1);
+    UnitNRShape s1 = tree.toShape(cal1);
+    if (rarely()) {
+      return s1;
+    }
     try {
       Calendar cal2 = randomCalendar();
-      Shape s2 = tree.toShape(cal2);
+      UnitNRShape s2 = tree.toShape(cal2);
       if (cal1.compareTo(cal2) < 0) {
         return tree.toRangeShape(s1, s2);
       } else {
@@ -115,9 +117,7 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
   private Calendar randomCalendar() {
     Calendar cal = tree.newCal();
-    cal.setTimeInMillis(random().nextLong());
-    cal.set(Calendar.ERA, era);
-    cal.set(Calendar.YEAR, year);
+    cal.setTimeInMillis(random().nextLong() % randomCalWindowMs);
     try {
       tree.clearFieldsAfter(cal, random().nextInt(Calendar.FIELD_COUNT+1)-1);
     } catch (AssertionError e) {
