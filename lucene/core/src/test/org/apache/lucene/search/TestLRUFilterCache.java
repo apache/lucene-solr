@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
   private static final FilterCachingPolicy NEVER_CACHE = new FilterCachingPolicy() {
 
     @Override
-    public void onCache(Filter filter) {}
+    public void onUse(Filter filter) {}
 
     @Override
     public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
@@ -395,6 +396,62 @@ public class TestLRUFilterCache extends LuceneTestCase {
     final long expectedRamBytesUsed = filterCache.ramBytesUsed();
     // error < 30%
     assertEquals(actualRamBytesUsed, expectedRamBytesUsed, 30 * actualRamBytesUsed / 100);
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testOnUse() throws IOException {
+    final LRUFilterCache filterCache = new LRUFilterCache(1 + random().nextInt(5), 1 + random().nextInt(1000));
+
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "", Store.NO);
+    doc.add(f);
+    final int numDocs = atLeast(10);
+    for (int i = 0; i < numDocs; ++i) {
+      f.setStringValue(RandomPicks.randomFrom(random(), Arrays.asList("red", "blue", "green", "yellow")));
+      w.addDocument(doc);
+      if (random().nextBoolean()) {
+        w.getReader().close();
+      }
+    }
+    final DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    final Map<Filter, Integer> actualCounts = new HashMap<>();
+    final Map<Filter, Integer> expectedCounts = new HashMap<>();
+
+    final FilterCachingPolicy countingPolicy = new FilterCachingPolicy() {
+
+      @Override
+      public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
+        return random().nextBoolean();
+      }
+
+      @Override
+      public void onUse(Filter filter) {
+        expectedCounts.put(filter, 1 + (expectedCounts.containsKey(filter) ? expectedCounts.get(filter) : 0));
+      }
+    };
+
+    Filter[] filters = new Filter[10 + random().nextInt(10)];
+    Filter[] cachedFilters = new Filter[filters.length];
+    for (int i = 0; i < filters.length; ++i) {
+      filters[i] = new QueryWrapperFilter(new TermQuery(new Term("color", RandomPicks.randomFrom(random(), Arrays.asList("red", "blue", "green", "yellow")))));
+      cachedFilters[i] = filterCache.doCache(filters[i], countingPolicy);
+    }
+
+    for (int i = 0; i < 20; ++i) {
+      final int idx = random().nextInt(filters.length);
+      searcher.search(new ConstantScoreQuery(cachedFilters[idx]), 1);
+      actualCounts.put(filters[idx], 1 + (actualCounts.containsKey(filters[idx]) ? actualCounts.get(filters[idx]) : 0));
+    }
+
+    assertEquals(actualCounts, expectedCounts);
 
     reader.close();
     w.close();
