@@ -492,6 +492,9 @@ Other Changes
 * SOLR-6826: fieldType capitalization is not consistent with the rest of case-sensitive field names.
   (Alexandre Rafalovitch via Erick Erickson)
 
+* SOLR-6849: HttpSolrServer.RemoteSolrException reports the URL of the remote
+  host where the exception occurred. (Alan Woodward)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
