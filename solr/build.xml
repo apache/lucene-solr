@@ -295,6 +295,9 @@
     <delete dir="package" />
     <delete dir="server/solr/lib" />
     <delete dir="example/solr/lib" />
+    <delete dir="example/cloud" />
+    <delete dir="example/techproducts" />
+    <delete dir="example/schemaless" />
     <delete includeemptydirs="true">
       <fileset dir="example">
         <include name="**/data/**/*" />
