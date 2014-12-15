@@ -380,6 +380,9 @@ Documentation
 
 * LUCENE-6057: Improve Sort(SortField) docs (Martin Braun via Mike McCandless)
 
+* LUCENE-6112: Fix compile error in FST package example code
+  (Tomoko Uchida via Koji Sekiguchi)
+
 Tests
 
 * LUCENE-5957: Add option for tests to not randomize codec
