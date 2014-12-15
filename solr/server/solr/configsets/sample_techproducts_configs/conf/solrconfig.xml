@@ -1359,8 +1359,13 @@
     </arr>
   </requestHandler>
 
-  <!-- This causes long startup times on big indexes, even when never used.  See SOLR-6679
-  <searchComponent name="suggest" class="solr.SuggestComponent">
+  <!-- This is disabled by default because it currently causes long startup times on 
+       big indexes, even when never used.  See SOLR-6679 for background.
+
+       To use this suggester, set the "solr.suggester.enabled=true" system property
+    -->
+  <searchComponent name="suggest" class="solr.SuggestComponent" 
+                   enable="${solr.suggester.enabled:false}"     >
     <lst name="suggester">
       <str name="name">mySuggester</str>
       <str name="lookupImpl">FuzzyLookupFactory</str>      
@@ -1371,7 +1376,8 @@
     </lst>
   </searchComponent>
 
-  <requestHandler name="/suggest" class="solr.SearchHandler" startup="lazy">
+  <requestHandler name="/suggest" class="solr.SearchHandler" 
+                  startup="lazy" enable="${solr.suggester.enabled:false}" >
     <lst name="defaults">
       <str name="suggest">true</str>
       <str name="suggest.count">10</str>
