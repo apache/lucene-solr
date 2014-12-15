@@ -638,7 +638,7 @@ public class MultiDocValues {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("global ord deltas", globalOrdDeltas));
       resources.add(Accountables.namedAccountable("first segments", firstSegments));

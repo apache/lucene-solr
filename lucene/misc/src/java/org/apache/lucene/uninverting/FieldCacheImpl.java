@@ -603,7 +603,7 @@ class FieldCacheImpl implements FieldCache {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", bytes));
       resources.add(Accountables.namedAccountable("ord -> term", termOrdToBytesOffset));
@@ -746,7 +746,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", bytes));
       resources.add(Accountables.namedAccountable("addresses", docToOffset));

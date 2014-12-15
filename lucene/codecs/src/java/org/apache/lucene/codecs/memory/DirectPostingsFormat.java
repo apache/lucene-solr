@@ -162,7 +162,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Accountables.namedAccountables("field", fields);
     }
 

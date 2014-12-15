@@ -315,7 +315,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     if (normalCompletion != null) {
       resources.add(Accountables.namedAccountable("fst", normalCompletion.getFST()));

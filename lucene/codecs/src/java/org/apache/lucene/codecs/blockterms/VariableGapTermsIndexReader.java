@@ -165,7 +165,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       if (fst == null) {
         return Collections.emptyList();
       } else {
@@ -208,7 +208,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", fields);
   }
 

@@ -82,7 +82,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return impl.getChildResources();
     }
 

@@ -128,8 +128,8 @@ public class Accountables {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return children;
+      public Iterable<Accountable> getChildResources() {
+        return (Iterable<Accountable>) children;
       }
 
       @Override

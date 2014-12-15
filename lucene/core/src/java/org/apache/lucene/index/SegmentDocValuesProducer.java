@@ -159,7 +159,7 @@ class SegmentDocValuesProducer extends DocValuesProducer {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     for (Accountable producer : dvProducers) {
       resources.add(Accountables.namedAccountable("delegate", producer));
