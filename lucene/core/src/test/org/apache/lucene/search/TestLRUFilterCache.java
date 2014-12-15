@@ -434,7 +434,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
 
       @Override
       public void onUse(Filter filter) {
-        expectedCounts.put(filter, expectedCounts.getOrDefault(filter, 0));
+        expectedCounts.put(filter, 1 + expectedCounts.getOrDefault(filter, 0));
       }
     };
 
@@ -448,7 +448,7 @@ public class TestLRUFilterCache extends LuceneTestCase {
     for (int i = 0; i < 20; ++i) {
       final int idx = random().nextInt(filters.length);
       searcher.search(new ConstantScoreQuery(cachedFilters[idx]), 1);
-      actualCounts.put(filters[idx], actualCounts.getOrDefault(filters[idx], 0));
+      actualCounts.put(filters[idx], 1 + actualCounts.getOrDefault(filters[idx], 0));
     }
 
     assertEquals(actualCounts, expectedCounts);
