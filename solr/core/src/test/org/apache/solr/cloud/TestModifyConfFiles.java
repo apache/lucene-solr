@@ -28,6 +28,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
+import static org.junit.internal.matchers.StringContains.containsString;
+
 public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
   public TestModifyConfFiles() {
@@ -48,7 +50,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       client.request(request);
       fail("Should have caught exception");
     } catch (Exception e) {
-      assertEquals(e.getMessage(), "Input stream list was null for admin file write operation.");
+      assertThat(e.getMessage(), containsString("Input stream list was null for admin file write operation."));
     }
 
     params.remove("file");
