@@ -95,7 +95,7 @@ public abstract class DocIdSet implements Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 }

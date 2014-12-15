@@ -81,7 +81,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
     

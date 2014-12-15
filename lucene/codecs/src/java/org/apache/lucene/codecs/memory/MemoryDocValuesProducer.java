@@ -296,7 +296,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("numeric field", numericInfo));
     resources.addAll(Accountables.namedAccountables("pagedbytes field", pagedBytesInstances));
@@ -799,7 +799,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (addresses != null) {
         resources.add(Accountables.namedAccountable("addresses", addresses));

@@ -189,7 +189,7 @@ public final class Lucene41StoredFieldsIndexReader implements Cloneable, Account
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     
     long docBaseDeltaBytes = RamUsageEstimator.shallowSizeOf(docBasesDeltas);

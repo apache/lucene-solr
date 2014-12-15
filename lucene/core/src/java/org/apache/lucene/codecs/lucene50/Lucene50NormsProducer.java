@@ -18,7 +18,10 @@ package org.apache.lucene.codecs.lucene50;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,8 +64,7 @@ class Lucene50NormsProducer extends NormsProducer {
   private final IndexInput data;
   
   // ram instances we have already loaded
-  final Map<String,NumericDocValues> instances = new HashMap<>();
-  final Map<String,Accountable> instancesInfo = new HashMap<>();
+  final Map<String,Norms> instances = new HashMap<>();
   
   private final AtomicLong ramBytesUsed;
   private final AtomicInteger activeCount = new AtomicInteger();
@@ -76,7 +78,6 @@ class Lucene50NormsProducer extends NormsProducer {
     norms.putAll(original.norms);
     data = original.data.clone();
     instances.putAll(original.instances);
-    instancesInfo.putAll(original.instancesInfo);
     ramBytesUsed = new AtomicLong(original.ramBytesUsed.get());
     activeCount.set(original.activeCount.get());
     maxDoc = original.maxDoc;
@@ -168,15 +169,13 @@ class Lucene50NormsProducer extends NormsProducer {
 
   @Override
   public synchronized NumericDocValues getNorms(FieldInfo field) throws IOException {
-    NumericDocValues instance = instances.get(field.name);
+    Norms instance = instances.get(field.name);
     if (instance == null) {
-      LoadedNorms loaded = loadNorms(norms.get(field.name));
-      instance = loaded.norms;
+      instance = loadNorms(norms.get(field.name));
       if (!merging) {
         instances.put(field.name, instance);
         activeCount.incrementAndGet();
-        ramBytesUsed.addAndGet(loaded.ramBytesUsed);
-        instancesInfo.put(field.name, loaded.info);
+        ramBytesUsed.addAndGet(instance.ramBytesUsed());
       }
     }
     return instance;
@@ -188,8 +187,8 @@ class Lucene50NormsProducer extends NormsProducer {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
-    return Accountables.namedAccountables("field", instancesInfo);
+  public synchronized Iterable<Accountable> getChildResources() {
+    return Accountables.namedAccountables("field", instances);
   }
   
   @Override
@@ -197,44 +196,84 @@ class Lucene50NormsProducer extends NormsProducer {
     CodecUtil.checksumEntireFile(data);
   }
 
-  private LoadedNorms loadNorms(NormsEntry entry) throws IOException {
-    LoadedNorms instance = new LoadedNorms();
+  private Norms loadNorms(NormsEntry entry) throws IOException {
     switch(entry.format) {
       case CONST_COMPRESSED: {
         final long v = entry.offset;
-        instance.info = Accountables.namedAccountable("constant", 8);
-        instance.ramBytesUsed = 8;
-        instance.norms = new NumericDocValues() {
+        return new Norms() {
           @Override
           public long get(int docID) {
             return v;
           }
+
+          @Override
+          public long ramBytesUsed() {
+            return 8;
+          }
+
+          @Override
+          public String toString() {
+            return "constant";
+          }
+
+          @Override
+          public Iterable<Accountable> getChildResources() {
+            return Collections.emptyList();
+          }
         };
-        break;
       }
       case UNCOMPRESSED: {
         data.seek(entry.offset);
         final byte bytes[] = new byte[entry.count];
         data.readBytes(bytes, 0, bytes.length);
-        instance.info = Accountables.namedAccountable("byte array", bytes.length);
-        instance.ramBytesUsed = RamUsageEstimator.sizeOf(bytes);
-        instance.norms = new NumericDocValues() {
+        return new Norms() {
           @Override
           public long get(int docID) {
             return bytes[docID];
           }
+
+          @Override
+          public long ramBytesUsed() {
+            return RamUsageEstimator.sizeOf(bytes);
+          }
+
+          @Override
+          public String toString() {
+            return "byte array";
+          }
+          
+          @Override
+          public Iterable<Accountable> getChildResources() {
+            return Collections.emptyList();
+          }
         };
-        break;
       }
       case DELTA_COMPRESSED: {
         data.seek(entry.offset);
         int packedIntsVersion = data.readVInt();
         int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, packedIntsVersion, blockSize, entry.count, false);
-        instance.info = Accountables.namedAccountable("delta compressed", reader);
-        instance.ramBytesUsed = reader.ramBytesUsed();
-        instance.norms = reader;
-        break;
+        return new Norms() {
+          @Override
+          public long get(int docID) {
+            return reader.get(docID);
+          }
+
+          @Override
+          public long ramBytesUsed() {
+            return reader.ramBytesUsed();
+          }
+
+          @Override
+          public Iterable<Accountable> getChildResources() {
+            return Collections.singleton(Accountables.namedAccountable("deltas", reader));
+          }
+
+          @Override
+          public String toString() {
+            return "delta compressed";
+          }
+        };
       }
       case TABLE_COMPRESSED: {
         data.seek(entry.offset);
@@ -256,15 +295,27 @@ class Lucene50NormsProducer extends NormsProducer {
         }
 
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), packedIntsVersion, entry.count, bitsPerValue);
-        instance.info = Accountables.namedAccountable("table compressed", ordsReader);
-        instance.ramBytesUsed = RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed();
-        instance.norms = new NumericDocValues() {
+        return new Norms() {
           @Override
           public long get(int docID) {
             return decode[(int)ordsReader.get(docID)];
           }
+          
+          @Override
+          public long ramBytesUsed() {
+            return RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed();
+          }
+
+          @Override
+          public Iterable<Accountable> getChildResources() {
+            return Collections.singleton(Accountables.namedAccountable("ordinals", ordsReader));
+          }
+
+          @Override
+          public String toString() {
+            return "table compressed";
+          }
         };
-        break;
       }
       case INDIRECT: {
         data.seek(entry.offset);
@@ -272,12 +323,9 @@ class Lucene50NormsProducer extends NormsProducer {
         int packedIntsVersion = data.readVInt();
         int blockSize = data.readVInt();
         final MonotonicBlockPackedReader live = MonotonicBlockPackedReader.of(data, packedIntsVersion, blockSize, entry.count, false);
-        LoadedNorms nestedInstance = loadNorms(entry.nested);
-        instance.ramBytesUsed = live.ramBytesUsed() + nestedInstance.ramBytesUsed;
-        instance.info = Accountables.namedAccountable("indirect -> " + nestedInstance.info, instance.ramBytesUsed);
-        final NumericDocValues values = nestedInstance.norms;
+        final Norms nestedInstance = loadNorms(entry.nested);
         final int upperBound = entry.count-1;
-        instance.norms = new NumericDocValues() {
+        return new Norms() {
           @Override
           public long get(int docID) {
             int low = 0;
@@ -291,13 +339,30 @@ class Lucene50NormsProducer extends NormsProducer {
               } else if (doc > docID) {
                 high = mid - 1;
               } else {
-                return values.get(mid);
+                return nestedInstance.get(mid);
               }
             }
             return common;
           }
+
+          @Override
+          public long ramBytesUsed() {
+            return live.ramBytesUsed() + nestedInstance.ramBytesUsed();
+          }
+
+          @Override
+          public Iterable<Accountable> getChildResources() {
+            List<Accountable> children = new ArrayList<>();
+            children.add(Accountables.namedAccountable("keys", live));
+            children.add(Accountables.namedAccountable("values", nestedInstance));
+            return Collections.unmodifiableList(children);
+          }
+
+          @Override
+          public String toString() {
+            return "indirect";
+          }
         };
-        break;
       }
       case PATCHED_BITSET: {
         data.seek(entry.offset);
@@ -310,21 +375,35 @@ class Lucene50NormsProducer extends NormsProducer {
           int doc = (int) live.get(i);
           set.set(doc);
         }
-        LoadedNorms nestedInstance = loadNorms(entry.nested);
-        instance.ramBytesUsed = set.ramBytesUsed() + nestedInstance.ramBytesUsed;
-        instance.info = Accountables.namedAccountable("patched bitset -> " + nestedInstance.info, instance.ramBytesUsed);
-        final NumericDocValues values = nestedInstance.norms;
-        instance.norms = new NumericDocValues() {
+        final Norms nestedInstance = loadNorms(entry.nested);
+        return new Norms() {
           @Override
           public long get(int docID) {
             if (set.get(docID)) {
-              return values.get(docID);
+              return nestedInstance.get(docID);
             } else {
               return common;
             }
           }
+          
+          @Override
+          public long ramBytesUsed() {
+            return set.ramBytesUsed() + nestedInstance.ramBytesUsed();
+          }
+
+          @Override
+          public Iterable<Accountable> getChildResources() {
+            List<Accountable> children = new ArrayList<>();
+            children.add(Accountables.namedAccountable("keys", set));
+            children.add(Accountables.namedAccountable("values", nestedInstance));
+            return Collections.unmodifiableList(children);
+          }
+
+          @Override
+          public String toString() {
+            return "patched bitset";
+          }
         };
-        break;
       }
       case PATCHED_TABLE: {
         data.seek(entry.offset);
@@ -344,11 +423,9 @@ class Lucene50NormsProducer extends NormsProducer {
         }
         
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), packedIntsVersion, entry.count, bitsPerValue);
-        final LoadedNorms nestedInstance = loadNorms(entry.nested);
-        instance.ramBytesUsed = RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed() + nestedInstance.ramBytesUsed;
-        instance.info = Accountables.namedAccountable("patched table -> " + nestedInstance.info, instance.ramBytesUsed);
-        final NumericDocValues values = nestedInstance.norms;
-        instance.norms = new NumericDocValues() {
+        final Norms nestedInstance = loadNorms(entry.nested);
+        
+        return new Norms() {
           @Override
           public long get(int docID) {
             int ord = (int)ordsReader.get(docID);
@@ -356,16 +433,32 @@ class Lucene50NormsProducer extends NormsProducer {
               // doing a try/catch here eliminates a seemingly unavoidable branch in hotspot...
               return decode[ord];
             } catch (IndexOutOfBoundsException e) {
-              return values.get(docID);
+              return nestedInstance.get(docID);
             }
           }
+
+          @Override
+          public long ramBytesUsed() {
+            return RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed() + nestedInstance.ramBytesUsed();
+          }
+
+          @Override
+          public Iterable<Accountable> getChildResources() {
+            List<Accountable> children = new ArrayList<>();
+            children.add(Accountables.namedAccountable("common", ordsReader));
+            children.add(Accountables.namedAccountable("uncommon", nestedInstance));
+            return Collections.unmodifiableList(children);
+          }
+
+          @Override
+          public String toString() {
+            return "patched table";
+          }
         };
-        break;
       }
       default:
         throw new AssertionError();
     }
-    return instance;
   }
 
   @Override
@@ -380,10 +473,7 @@ class Lucene50NormsProducer extends NormsProducer {
     NormsEntry nested;
   }
   
-  static class LoadedNorms {
-    NumericDocValues norms;
-    long ramBytesUsed;
-    Accountable info;
+  static abstract class Norms extends NumericDocValues implements Accountable {
   }
 
   @Override

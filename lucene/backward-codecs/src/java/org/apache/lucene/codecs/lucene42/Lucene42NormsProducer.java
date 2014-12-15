@@ -65,7 +65,7 @@ final class Lucene42NormsProducer extends NormsProducer {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return impl.getChildResources();
   }
 

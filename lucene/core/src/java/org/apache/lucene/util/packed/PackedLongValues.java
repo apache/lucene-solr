@@ -117,7 +117,7 @@ public class PackedLongValues extends LongValues implements Accountable {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 
@@ -215,7 +215,7 @@ public class PackedLongValues extends LongValues implements Accountable {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
 

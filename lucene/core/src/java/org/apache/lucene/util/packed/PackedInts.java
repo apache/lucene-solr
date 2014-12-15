@@ -480,7 +480,7 @@ public class PackedInts {
     public abstract int size();
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
   }

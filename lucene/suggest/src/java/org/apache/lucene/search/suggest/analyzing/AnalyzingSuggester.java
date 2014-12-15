@@ -262,7 +262,7 @@ public class AnalyzingSuggester extends Lookup {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     if (fst == null) {
       return Collections.emptyList();
     } else {

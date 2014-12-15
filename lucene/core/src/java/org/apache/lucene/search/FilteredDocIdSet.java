@@ -70,7 +70,7 @@ public abstract class FilteredDocIdSet extends DocIdSet {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return _innerSet.getChildResources();
   }
 

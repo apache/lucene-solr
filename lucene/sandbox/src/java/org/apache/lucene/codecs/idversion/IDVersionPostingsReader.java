@@ -100,7 +100,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

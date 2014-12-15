@@ -262,7 +262,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     synchronized (this) {
       return Accountables.namedAccountables("segment", cache);
     }
@@ -327,7 +327,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
 

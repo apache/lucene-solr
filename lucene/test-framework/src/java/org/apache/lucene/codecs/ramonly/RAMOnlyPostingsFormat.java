@@ -98,7 +98,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Accountables.namedAccountables("field", fieldToTerms);
     }
 
@@ -129,7 +129,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
 
@@ -197,7 +197,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
   }
@@ -226,7 +226,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
   }

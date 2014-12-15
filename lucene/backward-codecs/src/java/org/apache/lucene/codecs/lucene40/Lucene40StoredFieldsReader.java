@@ -259,7 +259,7 @@ final class Lucene40StoredFieldsReader extends StoredFieldsReader implements Clo
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

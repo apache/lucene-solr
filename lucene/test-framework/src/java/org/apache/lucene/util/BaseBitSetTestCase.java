@@ -241,7 +241,7 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
 

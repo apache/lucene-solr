@@ -712,7 +712,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

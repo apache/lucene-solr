@@ -732,7 +732,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", instanceInfo);
   }
 

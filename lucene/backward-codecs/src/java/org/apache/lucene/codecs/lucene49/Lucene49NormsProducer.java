@@ -176,7 +176,7 @@ final class Lucene49NormsProducer extends NormsProducer {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", instancesInfo);
   }
   

@@ -90,7 +90,7 @@ public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter implement
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return filter.getChildResources();
   }
 

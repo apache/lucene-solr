@@ -1304,7 +1304,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

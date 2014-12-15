@@ -364,7 +364,7 @@ class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("addresses field number", addressInstances));
     resources.addAll(Accountables.namedAccountables("ord index field number", ordIndexInstances));

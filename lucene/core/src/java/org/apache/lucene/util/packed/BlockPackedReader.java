@@ -102,7 +102,7 @@ public final class BlockPackedReader extends LongValues implements Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
   

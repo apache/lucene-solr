@@ -259,7 +259,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("numeric field", numericInstances));
     resources.addAll(Accountables.namedAccountables("binary field", binaryInstances));
@@ -661,7 +661,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (address != null) {
         resources.add(Accountables.namedAccountable("addresses", RamUsageEstimator.sizeOf(address)));
@@ -686,7 +686,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Collections.emptyList();
     }
     
@@ -705,7 +705,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return docToOrd.getChildResources();
     }
     
@@ -729,7 +729,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (docToAddress != null) {
         resources.add(Accountables.namedAccountable("addresses", docToAddress));
@@ -758,7 +758,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (docToOrdAddress != null) {
         resources.add(Accountables.namedAccountable("addresses", docToOrdAddress));

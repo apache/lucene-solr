@@ -178,7 +178,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Iterable<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -232,7 +232,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Iterable<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -265,7 +265,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Iterable<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -298,7 +298,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Iterable<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -337,7 +337,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Iterable<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };

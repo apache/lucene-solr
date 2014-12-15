@@ -275,7 +275,7 @@ public abstract class Lookup implements Accountable {
    * @see Accountables
    */
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return null;
   }
 }

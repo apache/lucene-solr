@@ -128,7 +128,7 @@ public class MonotonicBlockPackedReader extends LongValues implements Accountabl
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
   

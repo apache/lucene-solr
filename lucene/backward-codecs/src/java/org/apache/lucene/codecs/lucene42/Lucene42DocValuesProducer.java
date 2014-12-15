@@ -262,7 +262,7 @@ final class Lucene42DocValuesProducer extends DocValuesProducer {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("numeric field", numericInfo));
     resources.addAll(Accountables.namedAccountables("binary field", binaryInfo));

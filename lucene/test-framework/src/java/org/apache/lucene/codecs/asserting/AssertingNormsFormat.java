@@ -112,8 +112,8 @@ public class AssertingNormsFormat extends NormsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      Iterable<? extends Accountable> res = in.getChildResources();
+    public Iterable<Accountable> getChildResources() {
+      Iterable<Accountable> res = in.getChildResources();
       TestUtil.checkIterator(res.iterator());
       return res;
     }

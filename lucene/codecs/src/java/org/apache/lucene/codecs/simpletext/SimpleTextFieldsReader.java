@@ -595,7 +595,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       if (fst == null) {
         return Collections.emptyList();
       } else {
@@ -700,7 +700,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", termsCache);
   }
 

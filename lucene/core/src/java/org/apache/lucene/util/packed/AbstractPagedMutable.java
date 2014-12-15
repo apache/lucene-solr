@@ -118,7 +118,7 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

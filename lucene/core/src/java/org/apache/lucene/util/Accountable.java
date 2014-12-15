@@ -35,6 +35,6 @@ public interface Accountable {
    * @see Accountables
    */
   // TODO: on java8 make this a default method returning emptyList
-  Iterable<? extends Accountable> getChildResources();
+  Iterable<Accountable> getChildResources();
 
 }

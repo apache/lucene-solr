@@ -439,7 +439,7 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     // TODO: improve this?
     return Collections.emptyList();
   }

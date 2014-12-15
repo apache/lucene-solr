@@ -1055,7 +1055,7 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("term vector index", indexReader));
   }
   
