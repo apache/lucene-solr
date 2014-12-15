@@ -339,6 +339,10 @@ public class LRUFilterCache implements FilterCache, Accountable {
 
     @Override
     public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      if (context.ord == 0) {
+        policy.onUse(in);
+      }
+
       DocIdSet set = get(in, context);
       if (set == null) {
         // do not apply acceptDocs yet, we want the cached filter to not take them into account

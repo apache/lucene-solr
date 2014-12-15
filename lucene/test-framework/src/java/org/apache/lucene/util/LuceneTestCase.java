@@ -474,7 +474,7 @@ public abstract class LuceneTestCase extends Assert {
   public static final FilterCachingPolicy MAYBE_CACHE_POLICY = new FilterCachingPolicy() {
 
     @Override
-    public void onCache(Filter filter) {}
+    public void onUse(Filter filter) {}
 
     @Override
     public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {

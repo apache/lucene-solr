@@ -38,7 +38,7 @@ public interface FilterCachingPolicy {
   public static final FilterCachingPolicy ALWAYS_CACHE = new FilterCachingPolicy() {
 
     @Override
-    public void onCache(Filter filter) {}
+    public void onUse(Filter filter) {}
 
     @Override
     public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
@@ -78,7 +78,7 @@ public interface FilterCachingPolicy {
     }
 
     @Override
-    public void onCache(Filter filter) {}
+    public void onUse(Filter filter) {}
 
     @Override
     public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
@@ -89,10 +89,10 @@ public interface FilterCachingPolicy {
 
   };
 
-  /** Callback that is called on every call to {@link FilterCache#doCache}.
+  /** Callback that is called every time that a cached filter is used.
    *  This is typically useful if the policy wants to track usage statistics
    *  in order to make decisions. */
-  void onCache(Filter filter);
+  void onUse(Filter filter);
 
   /** Whether the given {@link DocIdSet} should be cached on a given segment.
    *  This method will be called on each leaf context to know if the filter

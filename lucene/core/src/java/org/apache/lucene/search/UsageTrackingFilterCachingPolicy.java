@@ -103,7 +103,7 @@ public final class UsageTrackingFilterCachingPolicy implements FilterCachingPoli
   }
 
   @Override
-  public void onCache(Filter filter) {
+  public void onUse(Filter filter) {
     // Using the filter hash codes might help keep memory usage a bit lower
     // since some filters might have non-negligible memory usage?
     recentlyUsedFilters.add(filter.hashCode());
