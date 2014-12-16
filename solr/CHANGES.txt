@@ -119,6 +119,12 @@ Upgrading from Solr 4.x
 * The "checkIntegrityAtMerge" option in solrconfig.xml is now a No-Op and should be removed
   from any solrconfig.xml files -- these integrity checks are now done automatically at a very
   low level during the segment merging process.  See SOLR-6834 for more details.
+  
+* SimplePostTool (post.jar) no longer defaults to collection1, making either of core/collection
+  name or update URL mandatory. An existing call without an explicit update URL needs to now
+  have the core/collection name passed as "-Dc=<collection/core name>" e.g.:
+    java -jar -Dc=<collection_name> post.jar *.xml (new call with collection name)
+  See SOLR-6852 for more details.
 
 Detailed Change List
 ----------------------
