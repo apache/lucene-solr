@@ -458,4 +458,90 @@ public class TestLRUFilterCache extends LuceneTestCase {
     dir.close();
   }
 
+  public void testStats() throws IOException {
+    final LRUFilterCache filterCache = new LRUFilterCache(1, 10000000);
+
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final List<String> colors = Arrays.asList("blue", "red", "green", "yellow");
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "", Store.NO);
+    doc.add(f);
+    for (int i = 0; i < 10; ++i) {
+      f.setStringValue(RandomPicks.randomFrom(random(), colors));
+      w.addDocument(doc);
+      if (random().nextBoolean()) {
+        w.getReader().close();
+      }
+    }
+
+    final DirectoryReader reader = w.getReader();
+    final int segmentCount = reader.leaves().size();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("color", "red")));
+    final Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+
+    // first pass, lookups without caching that all miss
+    Filter cached = filterCache.doCache(filter, NEVER_CACHE);
+    for (int i = 0; i < 10; ++i) {
+      searcher.search(new ConstantScoreQuery(cached), 1);
+    }
+    assertEquals(10 * segmentCount, filterCache.getTotalCount());
+    assertEquals(0, filterCache.getHitCount());
+    assertEquals(10 * segmentCount, filterCache.getMissCount());
+    assertEquals(0, filterCache.getCacheCount());
+    assertEquals(0, filterCache.getEvictionCount());
+    assertEquals(0, filterCache.getCacheSize());
+
+    // second pass, lookups + caching, only the first one is a miss
+    cached = filterCache.doCache(filter, FilterCachingPolicy.ALWAYS_CACHE);
+    for (int i = 0; i < 10; ++i) {
+      searcher.search(new ConstantScoreQuery(cached), 1);
+    }
+    assertEquals(20 * segmentCount, filterCache.getTotalCount());
+    assertEquals(9 * segmentCount, filterCache.getHitCount());
+    assertEquals(11 * segmentCount, filterCache.getMissCount());
+    assertEquals(1 * segmentCount, filterCache.getCacheCount());
+    assertEquals(0, filterCache.getEvictionCount());
+    assertEquals(1 * segmentCount, filterCache.getCacheSize());
+
+    // third pass lookups without caching, we only have hits
+    cached = filterCache.doCache(filter, NEVER_CACHE);
+    for (int i = 0; i < 10; ++i) {
+      searcher.search(new ConstantScoreQuery(cached), 1);
+    }
+    assertEquals(30 * segmentCount, filterCache.getTotalCount());
+    assertEquals(19 * segmentCount, filterCache.getHitCount());
+    assertEquals(11 * segmentCount, filterCache.getMissCount());
+    assertEquals(1 * segmentCount, filterCache.getCacheCount());
+    assertEquals(0, filterCache.getEvictionCount());
+    assertEquals(1 * segmentCount, filterCache.getCacheSize());
+
+    // fourth pass with a different filter which will trigger evictions since the size is 1
+    cached = filterCache.doCache(filter2, FilterCachingPolicy.ALWAYS_CACHE);
+    for (int i = 0; i < 10; ++i) {
+      searcher.search(new ConstantScoreQuery(cached), 1);
+    }
+    assertEquals(40 * segmentCount, filterCache.getTotalCount());
+    assertEquals(28 * segmentCount, filterCache.getHitCount());
+    assertEquals(12 * segmentCount, filterCache.getMissCount());
+    assertEquals(2 * segmentCount, filterCache.getCacheCount());
+    assertEquals(1 * segmentCount, filterCache.getEvictionCount());
+    assertEquals(1 * segmentCount, filterCache.getCacheSize());
+
+    // now close, causing evictions due to the closing of segment cores
+    reader.close();
+    w.close();
+    assertEquals(40 * segmentCount, filterCache.getTotalCount());
+    assertEquals(28 * segmentCount, filterCache.getHitCount());
+    assertEquals(12 * segmentCount, filterCache.getMissCount());
+    assertEquals(2 * segmentCount, filterCache.getCacheCount());
+    assertEquals(2 * segmentCount, filterCache.getEvictionCount());
+    assertEquals(0, filterCache.getCacheSize());
+
+    dir.close();
+  }
+
 }
