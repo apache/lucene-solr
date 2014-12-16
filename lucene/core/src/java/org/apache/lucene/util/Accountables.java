@@ -120,7 +120,7 @@ public class Accountables {
    * This is a point-in-time type safe view: consumers 
    * will not be able to cast or manipulate the resources in any way..
    */
-  private static Accountable namedAccountable(final String description, final Iterable<? extends Accountable> children, final long bytes) {
+  private static Accountable namedAccountable(final String description, final Iterable<Accountable> children, final long bytes) {
     return new Accountable() {
       @Override
       public long ramBytesUsed() {
@@ -129,7 +129,7 @@ public class Accountables {
 
       @Override
       public Iterable<Accountable> getChildResources() {
-        return (Iterable<Accountable>) children;
+        return children;
       }
 
       @Override
