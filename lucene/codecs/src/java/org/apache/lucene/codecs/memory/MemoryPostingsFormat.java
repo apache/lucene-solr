@@ -1003,7 +1003,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       if (fst == null) {
         return Collections.emptyList();
       } else {
@@ -1078,7 +1078,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Iterable<Accountable> getChildResources() {
         return Accountables.namedAccountables("field", fields);
       }
 

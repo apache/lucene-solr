@@ -730,7 +730,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     try {
       if (searcherMgr != null) {

@@ -36,7 +36,7 @@ public interface Accountable {
    * The result should be a point-in-time snapshot (to avoid race conditions).
    * @see Accountables
    */
-  default Iterable<? extends Accountable> getChildResources() {
+  default Iterable<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

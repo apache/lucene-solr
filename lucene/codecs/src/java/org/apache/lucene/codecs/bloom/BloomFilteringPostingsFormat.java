@@ -406,7 +406,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.addAll(Accountables.namedAccountables("field", bloomsByFieldName));
       if (delegateFieldsProducer != null) {

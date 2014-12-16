@@ -190,7 +190,7 @@ public class FSTTermsReader extends FieldsProducer {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       if (dict == null) {
         return Collections.emptyList();
       } else {
@@ -758,7 +758,7 @@ public class FSTTermsReader extends FieldsProducer {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("field", fields));
     resources.add(Accountables.namedAccountable("delegate", postingsReader));

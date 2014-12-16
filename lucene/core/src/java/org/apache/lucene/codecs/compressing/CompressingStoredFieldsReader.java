@@ -611,7 +611,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("stored field index", indexReader));
   }
 

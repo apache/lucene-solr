@@ -500,7 +500,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     ensureOpen();
     List<Accountable> resources = new ArrayList<>();
     resources.add(Accountables.namedAccountable("postings", core.fields));

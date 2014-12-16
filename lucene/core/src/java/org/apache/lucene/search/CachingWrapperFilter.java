@@ -159,7 +159,7 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     // Sync to pull the current set of values:
     synchronized (cache) {
       // no need to clone, Accountable#namedAccountables already copies the data

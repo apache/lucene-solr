@@ -61,6 +61,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static org.junit.internal.matchers.StringContains.containsString;
+
 /**
  * This should include tests against the example solr config
  * 
@@ -408,7 +410,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     }
     catch(SolrException ex) {
       assertEquals(400, ex.code());
-      assertEquals("Invalid Number: ignore_exception", ex.getMessage());  // The reason should get passed through
+      assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
     }
     catch(Throwable t) {
       t.printStackTrace();

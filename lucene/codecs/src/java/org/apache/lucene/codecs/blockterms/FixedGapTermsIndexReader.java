@@ -262,7 +262,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (termOffsets != null) {
         resources.add(Accountables.namedAccountable("term lengths", termOffsets));
@@ -303,7 +303,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", fields);
   }
 

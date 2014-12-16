@@ -163,7 +163,7 @@ final class VersionFieldReader extends Terms implements Accountable {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     if (index == null) {
       return Collections.emptyList();
     } else {

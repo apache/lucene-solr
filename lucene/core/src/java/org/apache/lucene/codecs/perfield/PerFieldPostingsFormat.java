@@ -302,7 +302,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Iterable<Accountable> getChildResources() {
       return Accountables.namedAccountables("format", formats);
     }
 

@@ -445,7 +445,7 @@ public final class FST<T> implements Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     if (packed) {
       resources.add(Accountables.namedAccountable("node ref to address", nodeRefToAddress));

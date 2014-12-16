@@ -854,7 +854,7 @@ public class BlockTermsReader extends FieldsProducer {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     if (indexReader != null) {
       resources.add(Accountables.namedAccountable("term index", indexReader));

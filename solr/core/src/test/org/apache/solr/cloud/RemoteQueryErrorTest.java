@@ -17,13 +17,15 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.internal.matchers.StringContains.containsString;
 
 /**
  * Verify that remote (proxied) queries return proper error messages
@@ -60,7 +62,7 @@ public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
         solrServer.add(emptyDoc);
         fail("Expected unique key exceptoin");
       } catch (SolrException ex) {
-        assertEquals("Document is missing mandatory uniqueKey field: id", ex.getMessage());
+        assertThat(ex.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
       } catch(Exception ex) {
         fail("Expected a SolrException to occur, instead received: " + ex.getClass());
       } finally {

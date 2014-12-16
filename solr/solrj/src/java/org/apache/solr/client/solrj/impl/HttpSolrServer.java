@@ -16,24 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -48,7 +30,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.params.ClientPNames;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -79,6 +60,23 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class HttpSolrServer extends SolrServer {
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
@@ -490,8 +488,7 @@ public class HttpSolrServer extends SolrServer {
           break;
         default:
           if (processor == null) {
-            throw new RemoteSolrException(httpStatus, "Server at "
-                + getBaseURL() + " returned non ok status:" + httpStatus
+            throw new RemoteSolrException(baseUrl, httpStatus, "non ok status: " + httpStatus
                 + ", message:" + response.getStatusLine().getReasonPhrase(),
                 null);
           }
@@ -524,9 +521,9 @@ public class HttpSolrServer extends SolrServer {
           try {
             msg = msg + " " + IOUtils.toString(respBody, encoding);
           } catch (IOException e) {
-            throw new RemoteSolrException(httpStatus, "Could not parse response with encoding " + encoding, e);
+            throw new RemoteSolrException(baseUrl, httpStatus, "Could not parse response with encoding " + encoding, e);
           }
-          RemoteSolrException e = new RemoteSolrException(httpStatus, msg, null);
+          RemoteSolrException e = new RemoteSolrException(baseUrl, httpStatus, msg, null);
           throw e;
         }
       }
@@ -544,7 +541,7 @@ public class HttpSolrServer extends SolrServer {
       try {
         rsp = processor.processResponse(respBody, charset);
       } catch (Exception e) {
-        throw new RemoteSolrException(httpStatus, e.getMessage(), e);
+        throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
       if (httpStatus != HttpStatus.SC_OK) {
         NamedList<String> metadata = null;
@@ -566,7 +563,7 @@ public class HttpSolrServer extends SolrServer {
           msg.append("request: " + method.getURI());
           reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
         }
-        RemoteSolrException rss = new RemoteSolrException(httpStatus, reason, null);
+        RemoteSolrException rss = new RemoteSolrException(baseUrl, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }
@@ -814,12 +811,13 @@ public class HttpSolrServer extends SolrServer {
    */
   public static class RemoteSolrException extends SolrException {
     /**
+     * @param remoteHost the host the error was received from
      * @param code Arbitrary HTTP status code
      * @param msg Exception Message
      * @param th Throwable to wrap with this Exception
      */
-    public RemoteSolrException(int code, String msg, Throwable th) {
-      super(code, msg, th);
+    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
+      super(code, "Error from server at " + remoteHost + ": " + msg, th);
     }
   }
 }

@@ -193,7 +193,7 @@ public class RAMOutputStream extends IndexOutput implements Accountable {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("file", file));
   }
 

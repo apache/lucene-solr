@@ -161,7 +161,7 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Iterable<Accountable> getChildResources() {
     return Accountables.namedAccountables("segment", ordsCache);
   }
 }

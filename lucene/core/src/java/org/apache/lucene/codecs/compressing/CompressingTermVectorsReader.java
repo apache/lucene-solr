@@ -1082,7 +1082,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Iterable<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("term vector index", indexReader));
   }
   
