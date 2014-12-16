@@ -17,6 +17,19 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.bind.DatatypeConverter;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,20 +66,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import javax.xml.bind.DatatypeConverter;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
 /**
  * A simple utility class for posting raw updates to a Solr server, 
  * has a main method so it can be run on the command line.
@@ -77,7 +76,6 @@ import org.xml.sax.SAXException;
 public class SimplePostTool {
   private static final String DEFAULT_POST_HOST = "localhost";
   private static final String DEFAULT_POST_PORT = "8983";
-  private static final String DEFAULT_POST_CORE = "collection1";
   private static final String VERSION_OF_THIS_TOOL = "1.5";
 
   private static final String DEFAULT_COMMIT = "yes";
@@ -217,13 +215,22 @@ public class SimplePostTool {
       if (! DATA_MODES.contains(mode)) {
         fatal("System Property 'data' is not valid for this tool: " + mode);
       }
+      
       String params = System.getProperty("params", "");
 
       String host = System.getProperty("host", DEFAULT_POST_HOST);
       String port = System.getProperty("port", DEFAULT_POST_PORT);
-      String core = System.getProperty("c", DEFAULT_POST_CORE);
-
-      urlStr = System.getProperty("url", String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core));
+      String core = System.getProperty("c");
+      
+      urlStr = System.getProperty("url");
+      
+      if (urlStr == null && core == null) {
+        fatal("Specifying either url or core/collection is mandatory.\n" + USAGE_STRING_SHORT);
+      }
+      
+      if(urlStr == null) {
+        urlStr = String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core);
+      }
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
@@ -372,12 +379,12 @@ public class SimplePostTool {
     System.out.println
     (USAGE_STRING_SHORT+"\n\n" +
      "Supported System Properties and their defaults:\n"+
+     "  -Dc=<core/collection>\n"+
+     "  -Durl=<solr-update-url> \n"+
      "  -Ddata=files|web|args|stdin (default=" + DEFAULT_DATA_MODE + ")\n"+
      "  -Dtype=<content-type> (default=" + DEFAULT_CONTENT_TYPE + ")\n"+
-     "  -Durl=<solr-update-url> (default=" + String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", DEFAULT_POST_HOST, DEFAULT_POST_PORT, DEFAULT_POST_CORE) + ")\n"+
      "  -Dhost=<host> (default: " + DEFAULT_POST_HOST+ ")\n"+
      "  -Dport=<port> (default: " + DEFAULT_POST_PORT+ ")\n"+
-     "  -Dc=<core/collection> (default: " + DEFAULT_POST_CORE+ ")\n"+
      "  -Dauto=yes|no (default=" + DEFAULT_AUTO + ")\n"+
      "  -Drecursive=yes|no|<depth> (default=" + DEFAULT_RECURSIVE + ")\n"+
      "  -Ddelay=<seconds> (default=0 for files, 10 for web)\n"+
@@ -386,26 +393,27 @@ public class SimplePostTool {
      "  -Dcommit=yes|no (default=" + DEFAULT_COMMIT + ")\n"+
      "  -Doptimize=yes|no (default=" + DEFAULT_OPTIMIZE + ")\n"+
      "  -Dout=yes|no (default=" + DEFAULT_OUT + ")\n\n"+
-     "This is a simple command line tool for POSTing raw data to a Solr\n"+
-     "port.  Data can be read from files specified as commandline args,\n"+
+     "This is a simple command line tool for POSTing raw data to a Solr port.\n"+
+     "NOTE: Specifying the url/core/collection name is mandatory.\n" +
+     "Data can be read from files specified as commandline args,\n"+
      "URLs specified as args, as raw commandline arg strings or via STDIN.\n"+
      "Examples:\n"+
      "  java -jar post.jar *.xml\n"+
-     "  java -Ddata=args  -jar post.jar '<delete><id>42</id></delete>'\n"+
-     "  java -Ddata=stdin -jar post.jar < hd.xml\n"+
-     "  java -Ddata=web -jar post.jar http://example.com/\n"+
-     "  java -Dtype=text/csv -jar post.jar *.csv\n"+
-     "  java -Dtype=application/json -jar post.jar *.json\n"+
+     "  java -Ddata=args -Dc=gettingstarted -jar post.jar '<delete><id>42</id></delete>'\n"+
+     "  java -Ddata=stdin -Dc=gettingstarted -jar post.jar < hd.xml\n"+
+     "  java -Ddata=web -Dc=gettingstarted -jar post.jar http://example.com/\n"+
+     "  java -Dtype=text/csv -Dc=gettingstarted -jar post.jar *.csv\n"+
+     "  java -Dtype=application/json -Dc=gettingstarted -jar post.jar *.json\n"+
      "  java -Durl=http://localhost:8983/solr/update/extract -Dparams=literal.id=a -Dtype=application/pdf -jar post.jar a.pdf\n"+
-     "  java -Dauto -jar post.jar *\n"+
-     "  java -Dauto -Drecursive -jar post.jar afolder\n"+
-     "  java -Dauto -Dfiletypes=ppt,html -jar post.jar afolder\n"+
+     "  java -Dauto -Dc=gettingstarted -jar post.jar *\n"+
+     "  java -Dauto -Dc=gettingstarted -Drecursive -jar post.jar afolder\n"+
+     "  java -Dauto -Dc=gettingstarted -Dfiletypes=ppt,html -jar post.jar afolder\n"+
      "The options controlled by System Properties include the Solr\n"+
      "URL to POST to, the Content-Type of the data, whether a commit\n"+
      "or optimize should be executed, and whether the response should\n"+
      "be written to STDOUT. If auto=yes the tool will try to set type\n"+
-     "and url automatically from file name. When posting rich documents\n"+
-     "the file name will be propagated as \"resource.name\" and also used\n"+
+     "automatically from file name. When posting rich documents the\n"+
+     "file name will be propagated as \"resource.name\" and also used\n"+
      "as \"literal.id\". You may override these or any other request parameter\n"+
      "through the -Dparams property. To do a commit only, use \"-\" as argument.\n"+
      "The web mode is a simple crawler following links within domain, default delay=10s.");
