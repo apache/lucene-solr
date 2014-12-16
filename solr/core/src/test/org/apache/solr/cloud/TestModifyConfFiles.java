@@ -62,7 +62,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       client.request(request);
       fail("Should have caught exception");
     } catch (Exception e) {
-      assertEquals(e.getMessage(), "No file name specified for write operation.");
+      assertThat(e.getMessage(), containsString("No file name specified for write operation."));
     }
 
     params.set("op", "write");
@@ -73,7 +73,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       client.request(request);
       fail("Should have caught exception");
     } catch (Exception e) {
-      assertEquals(e.getMessage(), "Can not access: bogus.txt");
+      assertThat(e.getMessage(), containsString("Can not access: bogus.txt"));
     }
 
     try {
