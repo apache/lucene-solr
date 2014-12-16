@@ -208,10 +208,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
             ((payloads!=null) ? RamUsageEstimator.sizeOf(payloads) : 0);
       }
 
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
     }
 
     // TODO: maybe specialize into prx/no-prx/no-frq cases?
@@ -261,10 +257,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
         return sizeInBytes;
       }
 
-      @Override
-      public Iterable<? extends Accountable> getChildResources() {
-        return Collections.emptyList();
-      }
     }
 
     private final byte[] termBytes;
@@ -541,11 +533,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       return sizeInBytes;
-    }
-
-    @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      return Collections.emptyList();
     }
 
     @Override
