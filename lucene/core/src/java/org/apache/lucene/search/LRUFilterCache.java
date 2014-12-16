@@ -73,7 +73,14 @@ public class LRUFilterCache implements FilterCache, Accountable {
   // mostRecentlyUsedFilters. This is why write operations are performed under a lock
   private final Set<Filter> mostRecentlyUsedFilters;
   private final Map<Object, LeafCache> cache;
-  private volatile long ramBytesUsed; // all updates of this number must be performed under a lock
+
+  // these variables are volatile so that we do not need to sync reads
+  // but increments need to be performed under the lock
+  private volatile long ramBytesUsed;
+  private volatile long hitCount;
+  private volatile long missCount;
+  private volatile long cacheCount;
+  private volatile long cacheSize;
 
   /**
    * Create a new instance that will cache at most <code>maxSize</code> filters
@@ -101,14 +108,22 @@ public class LRUFilterCache implements FilterCache, Accountable {
   synchronized DocIdSet get(Filter filter, LeafReaderContext context) {
     final LeafCache leafCache = cache.get(context.reader().getCoreCacheKey());
     if (leafCache == null) {
+      missCount += 1;
       return null;
     }
     // this get call moves the filter to the most-recently-used position
     final Filter singleton = uniqueFilters.get(filter);
     if (singleton == null) {
+      missCount += 1;
       return null;
     }
-    return leafCache.get(singleton);
+    final DocIdSet cached = leafCache.get(singleton);
+    if (cached == null) {
+      missCount += 1;
+    } else {
+      hitCount += 1;
+    }
+    return cached;
   }
 
   synchronized void putIfAbsent(Filter filter, LeafReaderContext context, DocIdSet set) {
@@ -158,6 +173,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
     final LeafCache leafCache = cache.remove(coreKey);
     if (leafCache != null) {
       ramBytesUsed -= leafCache.ramBytesUsed + HASHTABLE_RAM_BYTES_PER_ENTRY;
+      cacheSize -= leafCache.cache.size();
     }
   }
 
@@ -185,6 +201,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
     cache.clear();
     mostRecentlyUsedFilters.clear();
     ramBytesUsed = 0;
+    cacheSize = 0;
   }
 
   // pkg-private for testing
@@ -215,6 +232,14 @@ public class LRUFilterCache implements FilterCache, Accountable {
     }
     if (recomputedRamBytesUsed != ramBytesUsed) {
       throw new AssertionError("ramBytesUsed mismatch : " + ramBytesUsed + " != " + recomputedRamBytesUsed);
+    }
+
+    long recomputedCacheSize = 0;
+    for (LeafCache leafCache : cache.values()) {
+      recomputedCacheSize += leafCache.cache.size();
+    }
+    if (recomputedCacheSize != getCacheSize()) {
+      throw new AssertionError("cacheSize mismatch : " + getCacheSize() + " != " + recomputedCacheSize);
     }
   }
 
@@ -287,6 +312,79 @@ public class LRUFilterCache implements FilterCache, Accountable {
     return new RoaringDocIdSet.Builder(reader.maxDoc()).add(iterator).build();
   }
 
+  /**
+   * Return the total number of times that a {@link Filter} has been looked up
+   * in this {@link FilterCache}. Note that this number is incremented once per
+   * segment so running a cached filter only once will increment this counter
+   * by the number of segments that are wrapped by the searcher.
+   * Note that by definition, {@link #getTotalCount()} is the sum of
+   * {@link #getHitCount()} and {@link #getMissCount()}.
+   * @see #getHitCount()
+   * @see #getMissCount()
+   */
+  public final long getTotalCount() {
+    return getHitCount() + getMissCount();
+  }
+
+  /**
+   * Over the {@link #getTotalCount() total} number of times that a filter has
+   * been looked up, return how many times a cached {@link DocIdSet} has been
+   * found and returned.
+   * @see #getTotalCount()
+   * @see #getMissCount()
+   */
+  public final long getHitCount() {
+    return hitCount;
+  }
+
+  /**
+   * Over the {@link #getTotalCount() total} number of times that a filter has
+   * been looked up, return how many times this filter was not contained in the
+   * cache.
+   * @see #getTotalCount()
+   * @see #getHitCount()
+   */
+  public final long getMissCount() {
+    return missCount;
+  }
+
+  /**
+   * Return the total number of {@link DocIdSet}s which are currently stored
+   * in the cache.
+   * @see #getCacheCount()
+   * @see #getEvictionCount()
+   */
+  public final long getCacheSize() {
+    return cacheSize;
+  }
+
+  /**
+   * Return the total number of cache entries that have been generated and put
+   * in the cache. It is highly desirable to have a {@link #getHitCount() hit
+   * count} that is much higher than the {@link #getCacheCount() cache count}
+   * as the opposite would indicate that the filter cache makes efforts in order
+   * to cache filters but then they do not get reused.
+   * @see #getCacheSize()
+   * @see #getEvictionCount()
+   */
+  public final long getCacheCount() {
+    return cacheCount;
+  }
+
+  /**
+   * Return the number of cache entries that have been removed from the cache
+   * either in order to stay under the maximum configured size/ram usage, or
+   * because a segment has been closed. High numbers of evictions might mean
+   * that filters are not reused or that the {@link FilterCachingPolicy
+   * caching policy} caches too aggressively on NRT segments which get merged
+   * early.
+   * @see #getCacheCount()
+   * @see #getCacheSize()
+   */
+  public final long getEvictionCount() {
+    return getCacheCount() - getCacheSize();
+  }
+
   // this class is not thread-safe, everything but ramBytesUsed needs to be called under a lock
   private class LeafCache implements Accountable {
 
@@ -310,6 +408,8 @@ public class LRUFilterCache implements FilterCache, Accountable {
     void putIfAbsent(Filter filter, DocIdSet set) {
       if (cache.containsKey(filter) == false) {
         cache.put(filter, set);
+        cacheCount += 1;
+        cacheSize += 1;
         incrementRamBytesUsed(HASHTABLE_RAM_BYTES_PER_ENTRY + set.ramBytesUsed());
       }
     }
@@ -317,6 +417,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
     void remove(Filter filter) {
       DocIdSet removed = cache.remove(filter);
       if (removed != null) {
+        cacheSize -= 1;
         incrementRamBytesUsed(-(HASHTABLE_RAM_BYTES_PER_ENTRY + removed.ramBytesUsed()));
       }
     }
