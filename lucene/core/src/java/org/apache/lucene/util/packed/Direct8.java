@@ -40,11 +40,6 @@ final class Direct8 extends PackedInts.MutableImpl {
   Direct8(int packedIntsVersion, DataInput in, int valueCount) throws IOException {
     this(valueCount);
     in.readBytes(values, 0, valueCount);
-    // because packed ints have not always been byte-aligned
-    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, 8) - 1L * valueCount);
-    for (int i = 0; i < remaining; ++i) {
-      in.readByte();
-    }
   }
 
   @Override

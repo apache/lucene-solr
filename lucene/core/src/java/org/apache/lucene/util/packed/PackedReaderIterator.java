@@ -39,21 +39,12 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     this.format = format;
     this.packedIntsVersion = packedIntsVersion;
     bulkOperation = BulkOperation.of(format, bitsPerValue);
-    iterations = iterations(mem);
+    iterations = bulkOperation.computeIterations(valueCount, mem);
     assert valueCount == 0 || iterations > 0;
     nextBlocks = new byte[iterations * bulkOperation.byteBlockCount()];
     nextValues = new LongsRef(new long[iterations * bulkOperation.byteValueCount()], 0, 0);
     nextValues.offset = nextValues.longs.length;
     position = -1;
-  }
-
-  private int iterations(int mem) {
-    int iterations = bulkOperation.computeIterations(valueCount, mem);
-    if (packedIntsVersion < PackedInts.VERSION_BYTE_ALIGNED) {
-      // make sure iterations is a multiple of 8
-      iterations = (iterations + 7) & 0xFFFFFFF8;
-    }
-    return iterations;
   }
 
   @Override
