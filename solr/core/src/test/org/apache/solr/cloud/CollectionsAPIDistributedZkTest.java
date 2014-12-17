@@ -17,11 +17,9 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -36,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -44,13 +43,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -78,6 +72,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -92,6 +87,11 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 /**
  * Tests the Cloud Collections API.
@@ -199,6 +199,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   @Override
   public void doTest() throws Exception {
     testSolrJAPICalls();
+    testPropertyParamsForCreate();
     testNodesUsedByCreate();
     testCollectionsAPI();
     testCollectionsAPIAddRemoveStress();
@@ -210,12 +211,60 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     addReplicaTest();
     // last
     deleteCollectionWithDownNodes();
-    
+
     if (DEBUG) {
       super.printLayout();
     }
   }
-  
+
+  private void testPropertyParamsForCreate() throws Exception {
+    String collectionName = "solrj_test_core_props";
+    SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+
+    File tmpDir = createTempDir("testPropertyParamsForCreate").toFile();
+    File instanceDir = new File(tmpDir, "instanceDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+    File dataDir = new File(tmpDir, "dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+    File ulogDir = new File(tmpDir, "ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+
+    Properties properties = new Properties();
+    properties.put(CoreAdminParams.INSTANCE_DIR, instanceDir.getAbsolutePath());
+    properties.put(CoreAdminParams.DATA_DIR, dataDir.getAbsolutePath());
+    properties.put(CoreAdminParams.ULOG_DIR, ulogDir.getAbsolutePath());
+
+    CollectionAdminRequest.Create createReq = new CollectionAdminRequest.Create();
+    createReq.setCollectionName(collectionName);
+    createReq.setNumShards(1);
+    createReq.setConfigName("conf1");
+    createReq.setProperties(properties);
+
+    CollectionAdminResponse response = createReq.process( server );
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
+    assertEquals(1, coresStatus.size());
+
+    DocCollection testcoll = getCommonCloudSolrServer().getZkStateReader()
+        .getClusterState().getCollection(collectionName);
+
+    Replica replica1 = testcoll.getReplica("core_node1");
+
+    HttpSolrServer replica1Server = new HttpSolrServer(replica1.getStr("base_url"));
+    try {
+      CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), replica1Server);
+      NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
+      String dataDirStr = (String) coreStatus.get("dataDir");
+      String instanceDirStr = (String) coreStatus.get("instanceDir");
+      assertEquals("Instance dir does not match param passed in property.instanceDir syntax",
+          new File(instanceDirStr).getAbsolutePath(), instanceDir.getAbsolutePath());
+      assertEquals("Data dir does not match param given in property.dataDir syntax",
+          new File(dataDirStr).getAbsolutePath(), dataDir.getAbsolutePath());
+
+    } finally {
+      replica1Server.shutdown();
+    }
+
+  }
+
   private void deleteCollectionRemovesStaleZkCollectionsNode() throws Exception {
     
     // we can use this client because we just want base url
@@ -1338,7 +1387,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     System.clearProperty("numShards");
     System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
-    
+
     // insurance
     DirectUpdateHandler2.commitOnClose = true;
   }
