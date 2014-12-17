@@ -388,7 +388,7 @@ final class DocumentsWriter implements Closeable, Accountable {
           writer.globalFieldNumberMap);
       state.dwpt = new DocumentsWriterPerThread(writer.newSegmentName(),
                                                 directory, config, infoStream, deleteQueue, infos,
-                                                writer.pendingNumDocs);
+                                                writer.pendingNumDocs, writer.enableTestPoints);
     }
   }
 

@@ -2428,7 +2428,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     final SetOnce<IndexWriter> iwRef = new SetOnce<>();
-    iwc.setInfoStream(new RandomIndexWriter.TestPointInfoStream(iwc.getInfoStream(), new RandomIndexWriter.TestPoint() {
+    IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if ("startCommitMerge".equals(message)) {
@@ -2437,8 +2437,7 @@ public class TestIndexWriter extends LuceneTestCase {
           iwRef.get().setKeepFullyDeletedSegments(true);
         }
       }
-    }));
-    IndexWriter evilWriter = new IndexWriter(dir, iwc);
+    });
     iwRef.set(evilWriter);
     for (int i = 0; i < 1000; i++) {
       addDoc(evilWriter);
@@ -2646,10 +2645,12 @@ public class TestIndexWriter extends LuceneTestCase {
     final CountDownLatch startCommit = new CountDownLatch(1);
     final CountDownLatch finishCommit = new CountDownLatch(1);
 
-    // infostream that "takes a long time" to commit
-    InfoStream slowCommittingInfoStream = new InfoStream() {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(null);
+    // use an infostream that "takes a long time" to commit
+    final IndexWriter iw = RandomIndexWriter.mockIndexWriter(dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
-      public void message(String component, String message) {
+      public void apply(String message) {
         if (message.equals("finishStartCommit")) {
           startCommit.countDown();
           try {
@@ -2659,20 +2660,7 @@ public class TestIndexWriter extends LuceneTestCase {
           }
         }
       }
-
-      @Override
-      public boolean isEnabled(String component) {
-        return true;
-      }
-      
-      @Override
-      public void close() throws IOException {}
-    };
-    
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(null);
-    iwc.setInfoStream(slowCommittingInfoStream);
-    final IndexWriter iw = new IndexWriter(dir, iwc);
+    });
     new Thread() {
       @Override
       public void run() {
