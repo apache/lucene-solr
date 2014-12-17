@@ -17,6 +17,13 @@
 
 package org.apache.solr.client.solrj.request;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -30,10 +37,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
 /**
  * This class is experimental and subject to change.
  *
@@ -44,6 +47,18 @@ public class CollectionAdminRequest extends SolrRequest
   protected String collection = null;
   protected CollectionAction action = null;
   protected String asyncId = null;
+
+  private static String PROPERTY_PREFIX = "property.";
+
+  protected void addProperties(ModifiableSolrParams params, Properties props) {
+    Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
+    while(iter.hasNext()) {
+      Map.Entry<Object, Object> prop = iter.next();
+      String key = (String) prop.getKey();
+      String value = (String) prop.getValue();
+      params.set(PROPERTY_PREFIX + key, value);
+    }
+  }
 
   protected static class CollectionShardAdminRequest extends CollectionAdminRequest {
     protected String shardName = null;
@@ -76,6 +91,8 @@ public class CollectionAdminRequest extends SolrRequest
     protected Integer numShards;
     protected Integer maxShardsPerNode;
     protected Integer replicationFactor;
+
+    private Properties properties;
     protected Boolean autoAddReplicas;
 
 
@@ -101,6 +118,14 @@ public class CollectionAdminRequest extends SolrRequest
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
     public Integer getReplicationFactor() { return replicationFactor; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
+
+    public Properties getProperties() {
+      return properties;
+    }
+
+    public void setProperties(Properties properties) {
+      this.properties = properties;
+    }
 
     @Override
     public SolrParams getParams() {
@@ -138,6 +163,10 @@ public class CollectionAdminRequest extends SolrRequest
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
       }
 
+      if(properties != null) {
+        addProperties(params, properties);
+      }
+
       return params;
     }
   }
@@ -159,9 +188,23 @@ public class CollectionAdminRequest extends SolrRequest
   //a create shard collection request
   public static class CreateShard extends CollectionShardAdminRequest {
     protected String nodeSet;
+    private Properties properties;
 
-    public void setNodeSet(String nodeSet) { this.nodeSet = nodeSet; }
-    public String getNodeSet() { return nodeSet; }
+    public void setNodeSet(String nodeSet) {
+      this.nodeSet = nodeSet;
+    }
+
+    public String getNodeSet() {
+      return nodeSet;
+    }
+
+    public Properties getProperties() {
+      return properties;
+    }
+
+    public void setProperties(Properties properties) {
+      this.properties = properties;
+    }
 
     public CreateShard() {
       action = CollectionAction.CREATESHARD;
@@ -171,6 +214,9 @@ public class CollectionAdminRequest extends SolrRequest
     public SolrParams getParams() {
       ModifiableSolrParams params = getCommonParams();
       params.set( "createNodeSet", nodeSet);
+      if(properties != null) {
+        addProperties(params, properties);
+      }
       return params;
     }
   }
@@ -179,8 +225,18 @@ public class CollectionAdminRequest extends SolrRequest
   public static class SplitShard extends CollectionShardAdminRequest {
     protected String ranges;
 
+    private Properties properties;
+
     public void setRanges(String ranges) { this.ranges = ranges; }
     public String getRanges() { return ranges; }
+
+    public Properties getProperties() {
+      return properties;
+    }
+
+    public void setProperties(Properties properties) {
+      this.properties = properties;
+    }
 
     public SplitShard() {
       action = CollectionAction.SPLITSHARD;
@@ -190,6 +246,10 @@ public class CollectionAdminRequest extends SolrRequest
     public SolrParams getParams() {
       ModifiableSolrParams params = getCommonParams();
       params.set( "ranges", ranges);
+
+      if(properties != null) {
+        addProperties(params, properties);
+      }
       return params;
     }
   }
@@ -258,9 +318,18 @@ public class CollectionAdminRequest extends SolrRequest
     private String routeKey;
     private String instanceDir;
     private String dataDir;
+    private Properties properties;
 
     public AddReplica() {
       action = CollectionAction.ADDREPLICA;
+    }
+
+    public Properties getProperties() {
+      return properties;
+    }
+
+    public void setProperties(Properties properties) {
+      this.properties = properties;
     }
 
     public String getNode() {
@@ -313,6 +382,9 @@ public class CollectionAdminRequest extends SolrRequest
       }
       if (dataDir != null)  {
         params.add("dataDir", dataDir);
+      }
+      if (properties != null) {
+        addProperties(params, properties);
       }
       return params;
     }
