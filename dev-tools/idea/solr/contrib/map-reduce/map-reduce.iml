@@ -38,6 +38,7 @@
     <orderEntry type="module" module-name="extraction" />
     <orderEntry type="module" module-name="lucene-core" />
     <orderEntry type="module" module-name="morphlines-core" />
+    <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
