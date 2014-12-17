@@ -45,16 +45,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static int maxBufferedDocs=3;
   static int seed=0;
 
-  public final class YieldTestPoint implements RandomIndexWriter.TestPoint {
-
-    @Override
-    public void apply(String name) {
-      //      if (name.equals("startCommit")) {
-      if (random().nextInt(4) == 2)
-        Thread.yield();
-    }
-  }
-//  
   public void testRandomIWReader() throws Throwable {
     Directory dir = newDirectory();
     
@@ -148,7 +138,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             .setOpenMode(OpenMode.CREATE)
             .setRAMBufferSizeMB(0.1)
             .setMaxBufferedDocs(maxBufferedDocs)
-            .setMergePolicy(newLogMergePolicy()), new YieldTestPoint());
+            .setMergePolicy(newLogMergePolicy()), random());
     w.commit();
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
     lmp.setNoCFSRatio(0.0);
@@ -203,7 +193,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
              .setMaxBufferedDocs(maxBufferedDocs)
              .setIndexerThreadPool(new DocumentsWriterPerThreadPool(maxThreadStates))
              .setReaderPooling(doReaderPooling)
-             .setMergePolicy(newLogMergePolicy()), new YieldTestPoint());
+             .setMergePolicy(newLogMergePolicy()), random());
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
     lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(mergeFactor);

@@ -50,7 +50,7 @@ public class RandomIndexWriter implements Closeable {
   private boolean getReaderCalled;
   private final Codec codec; // sugar
 
-  
+  /** Returns an indexwriter that randomly mixes up thread scheduling (by yielding at test points) */
   public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, Random r) throws IOException {
     // Randomly calls Thread.yield so we mixup thread scheduling
     final Random random = new Random(r.nextLong());
@@ -63,9 +63,12 @@ public class RandomIndexWriter implements Closeable {
     });
   }
   
+  /** Returns an indexwriter that enables the specified test point */
   public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, TestPoint testPoint) throws IOException {
     conf.setInfoStream(new TestPointInfoStream(conf.getInfoStream(), testPoint));
-    return new IndexWriter(dir, conf);
+    IndexWriter iw = new IndexWriter(dir, conf);
+    iw.enableTestPoints = true;
+    return iw;
   }
 
   /** create a RandomIndexWriter with a random config: Uses MockAnalyzer */

@@ -155,9 +155,10 @@ class DocumentsWriterPerThread {
   final IntBlockPool.Allocator intBlockAllocator;
   private final AtomicLong pendingNumDocs;
   private final LiveIndexWriterConfig indexWriterConfig;
+  private final boolean enableTestPoints;
   
   public DocumentsWriterPerThread(String segmentName, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
-                                  FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs) throws IOException {
+                                  FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
     this.directoryOrig = directory;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
@@ -184,6 +185,7 @@ class DocumentsWriterPerThread {
     // this should be the last call in the ctor 
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
+    this.enableTestPoints = enableTestPoints;
   }
   
   public FieldInfos.Builder getFieldInfosBuilder() {
@@ -191,7 +193,8 @@ class DocumentsWriterPerThread {
   }
 
   final void testPoint(String message) {
-    if (infoStream.isEnabled("TP")) {
+    if (enableTestPoints) {
+      assert infoStream.isEnabled("TP"); // don't enable unless you need them.
       infoStream.message("TP", message);
     }
   }
