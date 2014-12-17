@@ -504,6 +504,9 @@ Other Changes
 * SOLR-6852: SimplePostTool no longer defaults to collection1 making core/collection/update URL
   mandatory. (Anshum Gupta)
 
+* SOLR-6861: post.sh from exampledocs directory has been removed as there no longer is a default update
+  URL. (Anshum Gupta)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
