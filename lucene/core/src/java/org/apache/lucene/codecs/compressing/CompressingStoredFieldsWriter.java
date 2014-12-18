@@ -23,9 +23,8 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.ChunkIterator;
+import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.SerializedDocument;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -192,10 +191,12 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
   }
 
-  private void writeHeader(int docBase, int numBufferedDocs, int[] numStoredFields, int[] lengths) throws IOException {
+  private void writeHeader(int docBase, int numBufferedDocs, int[] numStoredFields, int[] lengths, boolean sliced) throws IOException {
+    final int slicedBit = sliced ? 1 : 0;
+    
     // save docBase and numBufferedDocs
     fieldsStream.writeVInt(docBase);
-    fieldsStream.writeVInt(numBufferedDocs);
+    fieldsStream.writeVInt((numBufferedDocs) << 1 | slicedBit);
 
     // save numStoredFields
     saveInts(numStoredFields, numBufferedDocs, fieldsStream);
@@ -218,10 +219,11 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       lengths[i] = endOffsets[i] - endOffsets[i - 1];
       assert lengths[i] >= 0;
     }
-    writeHeader(docBase, numBufferedDocs, numStoredFields, lengths);
+    final boolean sliced = bufferedDocs.length >= 2 * chunkSize;
+    writeHeader(docBase, numBufferedDocs, numStoredFields, lengths, sliced);
 
     // compress stored fields to fieldsStream
-    if (bufferedDocs.length >= 2 * chunkSize) {
+    if (sliced) {
       // big chunk, slice it
       for (int compressed = 0; compressed < bufferedDocs.length; compressed += chunkSize) {
         compressor.compress(bufferedDocs.bytes, compressed, Math.min(chunkSize, bufferedDocs.length - compressed), fieldsStream);
@@ -493,62 +495,35 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         if (storedFieldsReader != null) {
           storedFieldsReader.checkIntegrity();
         }
-        for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
+        for (int docID = 0; docID < maxDoc; docID++) {
+          if (liveDocs != null && liveDocs.get(docID) == false) {
+            continue;
+          }
           DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
-          storedFieldsReader.visitDocument(i, visitor);
+          storedFieldsReader.visitDocument(docID, visitor);
           addDocument(visitor.getDocument(), mergeState.mergeFieldInfos);
           ++docCount;
           mergeState.checkAbort.work(300);
         }
       } else {
-        int docID = nextLiveDoc(0, liveDocs, maxDoc);
-        if (docID < maxDoc) {
-          // not all docs were deleted
-          final ChunkIterator it = matchingFieldsReader.chunkIterator(docID);
-          int[] startOffsets = new int[0];
-          do {
-            // go to the next chunk that contains docID
-            it.next(docID);
-            // transform lengths into offsets
-            if (startOffsets.length < it.chunkDocs) {
-              startOffsets = new int[ArrayUtil.oversize(it.chunkDocs, 4)];
-            }
-            for (int i = 1; i < it.chunkDocs; ++i) {
-              startOffsets[i] = startOffsets[i - 1] + it.lengths[i - 1];
-            }
-
-            // decompress
-            it.decompress();
-            if (startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] != it.bytes.length) {
-              throw new CorruptIndexException("Corrupted: expected chunk size=" + startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] + ", got " + it.bytes.length, it.fieldsStream);
-            }
-            // copy non-deleted docs
-            for (; docID < it.docBase + it.chunkDocs; docID = nextLiveDoc(docID + 1, liveDocs, maxDoc)) {
-              final int diff = docID - it.docBase;
-              startDocument();
-              bufferedDocs.writeBytes(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
-              numStoredFieldsInDoc = it.numStoredFields[diff];
-              finishDocument();
-              ++docCount;
-              mergeState.checkAbort.work(300);
-            }
-          } while (docID < maxDoc);
-
-          it.checkIntegrity();
+        // optimized merge, we copy serialized (but decompressed) bytes directly
+        // even on simple docs (1 stored field), it seems to help by about 20%
+        matchingFieldsReader.checkIntegrity();
+        for (int docID = 0; docID < maxDoc; docID++) {
+          if (liveDocs != null && liveDocs.get(docID) == false) {
+            continue;
+          }
+          SerializedDocument doc = matchingFieldsReader.document(docID);
+          startDocument();
+          bufferedDocs.copyBytes(doc.in, doc.length);
+          numStoredFieldsInDoc = doc.numStoredFields;
+          finishDocument();
+          ++docCount;
+          mergeState.checkAbort.work(300);
         }
       }
     }
     finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
-  }
-
-  private static int nextLiveDoc(int doc, Bits liveDocs, int maxDoc) {
-    if (liveDocs == null) {
-      return doc;
-    }
-    while (doc < maxDoc && !liveDocs.get(doc)) {
-      ++doc;
-    }
-    return doc;
   }
 }
