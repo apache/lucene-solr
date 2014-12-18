@@ -160,7 +160,7 @@ public final class RequestHandlers {
         if( startup != null ) {
           if( "lazy".equals(startup) ) {
             log.info("adding lazy requestHandler: " + info.className);
-            requestHandler = new LazyRequestHandlerWrapper( core, info.className, info.initArgs );
+            requestHandler = new LazyRequestHandlerWrapper( core, info.className);
           } else {
             throw new Exception( "Unknown startup value: '"+startup+"' for: "+info.className );
           }
@@ -214,7 +214,7 @@ public final class RequestHandlers {
     for (InitParams args : config.getInitParams().values())
       if(args.matchPath(info.name)) ags.add(args);
     if(!ags.isEmpty()){
-      info = new PluginInfo(info.type, info.attributes, info.initArgs.clone(), info.children);
+      info = info.copy();
       for (InitParams initParam : ags) {
         initParam.apply(info);
       }
@@ -242,29 +242,25 @@ public final class RequestHandlers {
    * 
    * @since solr 1.2
    */
-  public static final class LazyRequestHandlerWrapper implements SolrRequestHandler
+  public static final class LazyRequestHandlerWrapper implements SolrRequestHandler , PluginInfoInitialized
   {
     private final SolrCore core;
     private String _className;
-    private NamedList _args;
     private SolrRequestHandler _handler;
+    private PluginInfo _pluginInfo;
     
-    public LazyRequestHandlerWrapper( SolrCore core, String className, NamedList args )
+    public LazyRequestHandlerWrapper( SolrCore core, String className )
     {
       this.core = core;
       _className = className;
-      _args = args;
       _handler = null; // don't initialize
     }
-    
-    /**
-     * In normal use, this function will not be called
-     */
+
     @Override
-    public void init(NamedList args) {
-      // do nothing
-    }
-    
+    public void init(NamedList args) { }
+
+
+
     /**
      * Wait for the first request before initializing the wrapped handler 
      */
@@ -282,7 +278,13 @@ public final class RequestHandlers {
       if( _handler == null ) {
         try {
           SolrRequestHandler handler = core.createRequestHandler(_className);
-          handler.init( _args );
+
+          if (handler instanceof PluginInfoInitialized) {
+            ((PluginInfoInitialized) handler).init(_pluginInfo);
+          } else {
+            handler.init( _pluginInfo.initArgs );
+          }
+
 
           if( handler instanceof SolrCoreAware ) {
             ((SolrCoreAware)handler).inform( core );
@@ -352,6 +354,12 @@ public final class RequestHandlers {
       NamedList<String> lst = new SimpleOrderedMap<>();
       lst.add("note", "not initialized yet" );
       return lst;
+    }
+
+    @Override
+    public void init(PluginInfo info) {
+      _pluginInfo = info;
+
     }
   }
 }

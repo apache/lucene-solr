@@ -109,6 +109,16 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertNull(h.getCore().getRequestHandler("/greedypath/unknownpath"));
   }
 
+  public void testElevateExample(){
+    SolrRequestHandler handler = h.getCore().getRequestHandler("/elevate");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequest(req("initArgs", "true"), rsp);
+    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+    assertEquals("text" ,def.get("df"));
+
+  }
+
 
 
 

@@ -38,7 +38,7 @@ public class PluginInfo implements MapSerializable{
   public final NamedList initArgs;
   public final Map<String, String> attributes;
   public final List<PluginInfo> children;
-  public final boolean isFromSolrConfig;
+  private boolean isFromSolrConfig;
 
   public PluginInfo(String type, Map<String, String> attrs ,NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
@@ -156,4 +156,14 @@ public class PluginInfo implements MapSerializable{
   public static final String DEFAULTS = "defaults";
   public static final String APPENDS = "appends";
   public static final String INVARIANTS = "invariants";
+
+  public boolean isFromSolrConfig(){
+    return isFromSolrConfig;
+
+  }
+  public PluginInfo copy() {
+    PluginInfo result = new PluginInfo(type, attributes, initArgs.clone(), children);
+    result.isFromSolrConfig = isFromSolrConfig;
+    return result;
+  }
 }
