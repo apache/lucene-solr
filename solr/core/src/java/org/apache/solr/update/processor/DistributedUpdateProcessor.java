@@ -47,6 +47,7 @@ import org.apache.solr.cloud.DistributedQueue;
 import org.apache.solr.cloud.LeaderInitiatedRecoveryThread;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -77,7 +78,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -542,7 +542,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   if (ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
                     log.info("Going to expire routing rule");
                     try {
-                      Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.REMOVEROUTINGRULE.toLower(),
+                      Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, OverseerAction.REMOVEROUTINGRULE.toLower(),
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,
                           "routeKey", routeKey + "!");

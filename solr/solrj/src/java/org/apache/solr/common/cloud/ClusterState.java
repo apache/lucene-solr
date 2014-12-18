@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 public class ClusterState implements JSONWriter.Writable {
   private static Logger log = LoggerFactory.getLogger(ClusterState.class);
   
-  private Integer znodeVersion;
+  private final Integer znodeVersion;
   
   private final Map<String, CollectionRef> collectionStates;
   private Set<String> liveNodes;
@@ -84,15 +84,19 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
 
-  public ClusterState copyWith(Map<String,DocCollection> modified){
+  /**
+   * Returns a new cluster state object modified with the given collection.
+   *
+   * @param collectionName the name of the modified (or deleted) collection
+   * @param collection     the collection object. A null value deletes the collection from the state
+   * @return the updated cluster state which preserves the current live nodes and zk node version
+   */
+  public ClusterState copyWith(String collectionName, DocCollection collection) {
     ClusterState result = new ClusterState(liveNodes, new LinkedHashMap<>(collectionStates), znodeVersion);
-    for (Entry<String, DocCollection> e : modified.entrySet()) {
-      DocCollection c = e.getValue();
-      if(c == null) {
-        result.collectionStates.remove(e.getKey());
-        continue;
-      }
-      result.collectionStates.put(c.getName(), new CollectionRef(c));
+    if (collection == null) {
+      result.collectionStates.remove(collectionName);
+    } else {
+      result.collectionStates.put(collectionName, new CollectionRef(collection));
     }
     return result;
   }

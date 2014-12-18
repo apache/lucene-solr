@@ -36,6 +36,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -43,10 +44,14 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.MockConfigSolr;
+import org.apache.solr.util.stats.Snapshot;
+import org.apache.solr.util.stats.Timer;
+import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -54,6 +59,7 @@ import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
@@ -112,7 +118,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         if (ec != null) {
           ec.cancelElection();
         }
-        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.DELETECORE.toLower(),
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
             ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
@@ -121,7 +127,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             q.offer(ZkStateReader.toJSON(m));
          return null;
       } else {
-        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.STATE.toLower(),
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
         ZkStateReader.STATE_PROP, stateName,
         ZkStateReader.NODE_NAME_PROP, nodeName,
         ZkStateReader.CORE_NAME_PROP, coreName,
@@ -525,7 +531,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       DistributedQueue q = Overseer.getInQueue(zkClient);
       
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.STATE.toLower(),
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
           ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
           ZkStateReader.NODE_NAME_PROP, "node1",
           ZkStateReader.COLLECTION_PROP, "collection1",
@@ -878,6 +884,135 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  @Ignore
+  public void testPerformance() throws Exception {
+    String zkDir = createTempDir("OverseerTest.testPerformance").toFile().getAbsolutePath();
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    SolrZkClient controllerClient = null;
+    SolrZkClient overseerClient = null;
+    ZkStateReader reader = null;
+    MockZKController mockController = null;
+
+    try {
+      server.run();
+      controllerClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+
+      reader = new ZkStateReader(controllerClient);
+      reader.createClusterStateWatchersAndUpdate();
+
+      mockController = new MockZKController(server.getZkAddress(), "node1");
+
+      final int MAX_COLLECTIONS = 10, MAX_CORES = 10, MAX_STATE_CHANGES = 20000, STATE_FORMAT = 2;
+
+      for (int i=0; i<MAX_COLLECTIONS; i++)  {
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+            "name", "perf" + i,
+            ZkStateReader.NUM_SHARDS_PROP, "1",
+            "stateFormat", String.valueOf(STATE_FORMAT),
+            ZkStateReader.REPLICATION_FACTOR, "1",
+            ZkStateReader.MAX_SHARDS_PER_NODE, "1"
+            );
+        DistributedQueue q = Overseer.getInQueue(controllerClient);
+        q.offer(ZkStateReader.toJSON(m));
+        controllerClient.makePath("/collections/perf" + i, true);
+      }
+
+      for (int i = 0, j = 0, k = 0; i < MAX_STATE_CHANGES; i++, j++, k++) {
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
+            ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING,
+            ZkStateReader.NODE_NAME_PROP,  "node1",
+            ZkStateReader.CORE_NAME_PROP, "core" + k,
+            ZkStateReader.CORE_NODE_NAME_PROP, "node1",
+            ZkStateReader.COLLECTION_PROP, "perf" + j,
+            ZkStateReader.NUM_SHARDS_PROP, "1",
+            ZkStateReader.BASE_URL_PROP, "http://" +  "node1"
+            + "/solr/");
+        DistributedQueue q = Overseer.getInQueue(controllerClient);
+        q.offer(ZkStateReader.toJSON(m));
+        if (j >= MAX_COLLECTIONS - 1) j = 0;
+        if (k >= MAX_CORES - 1) k = 0;
+        if (i > 0 && i % 100 == 0) log.info("Published {} items", i);
+      }
+
+      // let's publish a sentinel collection which we'll use to wait for overseer to complete operations
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
+          ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE,
+          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.CORE_NAME_PROP, "core1",
+          ZkStateReader.CORE_NODE_NAME_PROP, "node1",
+          ZkStateReader.COLLECTION_PROP, "perf_sentinel",
+          ZkStateReader.NUM_SHARDS_PROP, "1",
+          ZkStateReader.BASE_URL_PROP, "http://" + "node1"
+          + "/solr/");
+      DistributedQueue q = Overseer.getInQueue(controllerClient);
+      q.offer(ZkStateReader.toJSON(m));
+
+      Timer t = new Timer();
+      TimerContext context = t.time();
+      try {
+        overseerClient = electNewOverseer(server.getZkAddress());
+        assertTrue(overseers.size() > 0);
+
+        while (true)  {
+          reader.updateClusterState(true);
+          ClusterState state = reader.getClusterState();
+          if (state.hasCollection("perf_sentinel")) {
+            break;
+          }
+          Thread.sleep(1000);
+        }
+      } finally {
+        context.stop();
+      }
+
+      log.info("Overseer loop finished processing: ");
+      printTimingStats(t);
+
+      Overseer overseer = overseers.get(0);
+      Overseer.Stats stats = overseer.getStats();
+
+      String[] interestingOps = {"state", "update_state", "am_i_leader", ""};
+      Arrays.sort(interestingOps);
+      for (Map.Entry<String, Overseer.Stat> entry : stats.getStats().entrySet()) {
+        String op = entry.getKey();
+        if (Arrays.binarySearch(interestingOps, op) < 0)
+          continue;
+        Overseer.Stat stat = entry.getValue();
+        log.info("op: {}, success: {}, failure: {}", op, stat.success.get(), stat.errors.get());
+        Timer timer = stat.requestTime;
+        printTimingStats(timer);
+      }
+
+    } finally {
+      close(overseerClient);
+      close(mockController);
+      close(controllerClient);
+      close(reader);
+      server.shutdown();
+    }
+  }
+
+  private void printTimingStats(Timer timer) {
+    Snapshot snapshot = timer.getSnapshot();
+    log.info("\t totalTime: {}", timer.getSum());
+    log.info("\t avgRequestsPerMinute: {}", timer.getMeanRate());
+    log.info("\t 5minRateRequestsPerMinute: {}", timer.getFiveMinuteRate());
+    log.info("\t 15minRateRequestsPerMinute: {}", timer.getFifteenMinuteRate());
+    log.info("\t avgTimePerRequest: {}", timer.getMean());
+    log.info("\t medianRequestTime: {}", snapshot.getMedian());
+    log.info("\t 75thPctlRequestTime: {}", snapshot.get75thPercentile());
+    log.info("\t 95thPctlRequestTime: {}", snapshot.get95thPercentile());
+    log.info("\t 99thPctlRequestTime: {}", snapshot.get99thPercentile());
+    log.info("\t 999thPctlRequestTime: {}", snapshot.get999thPercentile());
+  }
+
   private void close(MockZKController mockController) {
     if (mockController != null) {
       mockController.close();
@@ -928,7 +1063,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       //submit to proper queue
       queue = Overseer.getInQueue(zkClient);
-      m = new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.STATE.toLower(),
+      m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
           ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
           ZkStateReader.NODE_NAME_PROP, "node1",
           ZkStateReader.SHARD_ID_PROP, "s1",

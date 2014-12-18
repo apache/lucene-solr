@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -106,7 +107,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     Map m = (Map) ZkStateReader.fromJSON(data);
     String s = (String) m.get("id");
     String leader = LeaderElector.getNodeName(s);
-    Overseer.getInQueue(zk).offer(ZkStateReader.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.OverseerAction.QUIT.toLower())));
+    Overseer.getInQueue(zk).offer(ZkStateReader.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower())));
     long timeout = System.currentTimeMillis()+10000;
     String newLeader=null;
     for(;System.currentTimeMillis() < timeout;){

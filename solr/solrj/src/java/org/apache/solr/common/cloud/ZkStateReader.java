@@ -873,8 +873,7 @@ public class ZkStateReader implements Closeable {
     log.info("Updating data for {} to ver {} ", newState.getName(),
         newState.getZNodeVersion());
     
-    this.clusterState = clusterState.copyWith(Collections.singletonMap(
-        newState.getName(), newState));
+    this.clusterState = clusterState.copyWith(newState.getName(), newState);
   }
   
   /** This is not a public API. Only used by ZkController */
