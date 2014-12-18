@@ -167,7 +167,7 @@ public class Overseer implements Closeable {
                 else if (LeaderStatus.YES == isLeader) {
                   final ZkNodeProps message = ZkNodeProps.load(head);
                   log.info("processMessage: queueSize: {}, message = {}", workQueue.getStats().getQueueLength(), message);
-                  clusterState = processQueueItem(message, clusterState, zkStateWriter);
+                  clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
                   workQueue.poll(); // poll-ing removes the element we got by peek-ing
                 }
                 else {
@@ -242,7 +242,9 @@ public class Overseer implements Closeable {
                 while (data != null)  {
                   final ZkNodeProps message = ZkNodeProps.load(data);
                   log.info("processMessage: queueSize: {}, message = {}", workQueue.getStats().getQueueLength(), message);
-                  clusterState = processQueueItem(message, clusterState, zkStateWriter);
+                  // force flush to ZK after each message because there is no fallback if workQueue items
+                  // are removed from workQueue but fail to be written to ZK
+                  clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
                   workQueue.poll(); // poll-ing removes the element we got by peek-ing
                   data = workQueue.peek();
                 }
@@ -253,11 +255,25 @@ public class Overseer implements Closeable {
               }
 
               while (head != null) {
+                final byte[] data = head.getBytes();
                 final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
                 log.info("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
-                clusterState = processQueueItem(message, clusterState, zkStateWriter);
-                workQueue.offer(head.getBytes());
+                // we can batch here because workQueue is our fallback in case a ZK write failed
+                clusterState = processQueueItem(message, clusterState, zkStateWriter, true, new ZkStateWriter.ZkWriteCallback() {
+                  @Override
+                  public void onEnqueue() throws Exception {
+                    workQueue.offer(data);
+                  }
 
+                  @Override
+                  public void onWrite() throws Exception {
+                    // remove everything from workQueue
+                    while (workQueue.poll() != null);
+                  }
+                });
+
+                // it is safer to keep this poll here because an invalid message might never be queued
+                // and therefore we can't rely on the ZkWriteCallback to remove the item
                 stateUpdateQueue.poll();
 
                 if (isClosed) break;
@@ -299,7 +315,7 @@ public class Overseer implements Closeable {
       }
     }
 
-    private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter) throws KeeperException, InterruptedException {
+    private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
       final String operation = message.getStr(QUEUE_OPERATION);
       ZkWriteCommand zkWriteCommand = null;
       final TimerContext timerContext = stats.time(operation);
@@ -318,7 +334,10 @@ public class Overseer implements Closeable {
         timerContext.stop();
       }
       if (zkWriteCommand != null) {
-        clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommand);
+        clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommand, callback);
+        if (!enableBatching)  {
+          clusterState = zkStateWriter.writePendingUpdates();
+        }
       }
       return clusterState;
     }
