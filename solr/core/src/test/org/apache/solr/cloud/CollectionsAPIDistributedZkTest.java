@@ -347,19 +347,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     response = createCollectionRequest.process(server);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    CollectionAdminRequest requestStatusRequest = new CollectionAdminRequest.RequestStatus();
-    requestStatusRequest.setCollectionName(collectionName);
-
+    
     waitForRecoveriesToFinish(collectionName, false);
     assertTrue("Collection state does not exist",
         cloudClient.getZkStateReader().getZkClient()
             .exists(ZkStateReader.getCollectionPath(collectionName), true));
-    Stat stat = new Stat();
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    assertEquals("The zkversion of the nodes must be same zkver:" + stat.getVersion() ,
-        stat.getVersion(),clusterState.getCollection(collectionName).getZNodeVersion() );
-    assertTrue("DocCollection#getStateFormat() must be > 1",
-        cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getStateFormat() > 1);
     
     CollectionAdminRequest.CreateShard createShardRequest = new CollectionAdminRequest
         .CreateShard();
