@@ -350,8 +350,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
     props.setProperty("print.props", "false");
     props.setProperty("content.source.verbose", "false");
     props.setProperty("content.source.excludeIteration", "true");
-    props.setProperty("doc.maker.forever", "false");
-    props.setProperty("docs.dir", dataDir.toRealPath().toString().replace('\\','/')); 
+    props.setProperty("docs.dir", dataDir.toRealPath().toString().replace('\\','/'));
     props.setProperty("trec.doc.parser", TrecParserByPath.class.getName());
     props.setProperty("content.source.forever", "false");
     tcs.setConfig(new Config(props));
