@@ -510,6 +510,9 @@ Other Changes
 * SOLR-5922: Add support for adding core properties to SolrJ Collection Admin Request calls.
   (Varun Thacker via Anshum Gupta).
 
+* SOLR-6523: Provide SolrJ support for specifying stateFormat while creating Collections.
+  (Anshum Gupta)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

@@ -17,18 +17,12 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -36,6 +30,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is experimental and subject to change.
@@ -94,6 +95,7 @@ public class CollectionAdminRequest extends SolrRequest
 
     private Properties properties;
     protected Boolean autoAddReplicas;
+    protected Integer stateFormat;
 
 
     public Create() {
@@ -109,6 +111,7 @@ public class CollectionAdminRequest extends SolrRequest
     public void setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; }
     public void setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; }
     public void setReplicationFactor(Integer repl) { this.replicationFactor = repl; }
+    public void setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; }
 
     public String getConfigName()  { return configName; }
     public String getCreateNodeSet() { return createNodeSet; }
@@ -118,6 +121,7 @@ public class CollectionAdminRequest extends SolrRequest
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
     public Integer getReplicationFactor() { return replicationFactor; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
+    public Integer getStateFormat() { return stateFormat; }
 
     public Properties getProperties() {
       return properties;
@@ -153,7 +157,6 @@ public class CollectionAdminRequest extends SolrRequest
         params.set("router.field", routerField);
       }
       if (replicationFactor != null) {
-        // OverseerCollectionProcessor.REPLICATION_FACTOR
         params.set( "replicationFactor", replicationFactor);
       }
       if (asyncId != null) {
@@ -166,7 +169,9 @@ public class CollectionAdminRequest extends SolrRequest
       if(properties != null) {
         addProperties(params, properties);
       }
-
+      if (stateFormat != null) {
+        params.set(DocCollection.STATE_FORMAT, stateFormat);
+      }
       return params;
     }
   }
