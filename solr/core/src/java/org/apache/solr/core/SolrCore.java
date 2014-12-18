@@ -1755,7 +1755,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           });
         }
         
-        if (currSearcher == null && firstSearcherListeners.size() > 0) {
+        if (currSearcher == null) {
           future = searcherExecutor.submit(new Callable() {
             @Override
             public Object call() throws Exception {
@@ -1774,7 +1774,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           });
         }
         
-        if (currSearcher != null && newSearcherListeners.size() > 0) {
+        if (currSearcher != null) {
           future = searcherExecutor.submit(new Callable() {
             @Override
             public Object call() throws Exception {
