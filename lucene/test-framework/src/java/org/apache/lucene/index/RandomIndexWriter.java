@@ -55,7 +55,7 @@ public class RandomIndexWriter implements Closeable {
   public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, Random r) throws IOException {
     // Randomly calls Thread.yield so we mixup thread scheduling
     final Random random = new Random(r.nextLong());
-    return mockIndexWriter(dir, conf, new TestPoint() {
+    return mockIndexWriter(dir, conf,  new TestPoint() {
       @Override
       public void apply(String message) {
         if (random.nextInt(4) == 2)

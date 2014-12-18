@@ -177,12 +177,6 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
       }
     }
 
-    if (LuceneTestCase.assertsAreEnabled) {
-      addVmOpt(b, "tests.asserts", "true");
-    } else {
-      addVmOpt(b, "tests.asserts", "false");
-    }
-
     addVmOpt(b, "tests.file.encoding", System.getProperty("file.encoding"));
 
     System.err.println(b.toString());

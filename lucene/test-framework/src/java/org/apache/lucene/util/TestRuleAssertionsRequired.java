@@ -31,22 +31,11 @@ public class TestRuleAssertionsRequired implements TestRule {
       @Override
       public void evaluate() throws Throwable {
         try {
-          // Make sure -ea matches -Dtests.asserts, to catch accidental mis-use:
-          if (LuceneTestCase.assertsAreEnabled != LuceneTestCase.TEST_ASSERTS_ENABLED) {
-            String msg = "Assertions mismatch: ";
-            if (LuceneTestCase.assertsAreEnabled) {
-              msg += "-ea was specified";
-            } else {
-              msg += "-ea was not specified";
-            }
-            if (LuceneTestCase.TEST_ASSERTS_ENABLED) {
-              msg += " but -Dtests.asserts=true";
-            } else  {
-              msg += " but -Dtests.asserts=false";
-            }
-            System.err.println(msg);
-            throw new Exception(msg);
-          }
+          assert false;
+          String msg = "Test class requires enabled assertions, enable globally (-ea)" +
+              " or for Solr/Lucene subpackages only: " + description.getClassName();
+          System.err.println(msg);
+          throw new Exception(msg);
         } catch (AssertionError e) {
           // Ok, enabled.
         }

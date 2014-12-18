@@ -70,9 +70,9 @@ final class DocumentsWriterStallControl {
         if (stalled) { // react on the first wakeup call!
           // don't loop here, higher level logic will re-stall!
           try {
-            incWaiters();
+            assert incWaiters();
             wait();
-            decrWaiters();
+            assert  decrWaiters();
           } catch (InterruptedException e) {
             throw new ThreadInterruptedException(e);
           }
@@ -86,16 +86,17 @@ final class DocumentsWriterStallControl {
   }
   
   
-  private void incWaiters() {
+  private boolean incWaiters() {
     numWaiting++;
     assert waiting.put(Thread.currentThread(), Boolean.TRUE) == null;
-    assert numWaiting > 0;
+    
+    return numWaiting > 0;
   }
   
-  private void decrWaiters() {
+  private boolean decrWaiters() {
     numWaiting--;
     assert waiting.remove(Thread.currentThread()) != null;
-    assert numWaiting >= 0;
+    return numWaiting >= 0;
   }
   
   synchronized boolean hasBlocked() { // for tests

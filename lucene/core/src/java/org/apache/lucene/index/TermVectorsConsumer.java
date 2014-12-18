@@ -93,6 +93,8 @@ final class TermVectorsConsumer extends TermsHash {
   @Override
   void finishDocument() throws IOException {
 
+    assert docWriter.testPoint("TermVectorsTermsWriter.finishDocument start");
+
     if (!hasVectors) {
       return;
     }
@@ -117,6 +119,7 @@ final class TermVectorsConsumer extends TermsHash {
 
     super.reset();
     resetFields();
+    assert docWriter.testPoint("TermVectorsTermsWriter.finishDocument end");
   }
 
   @Override

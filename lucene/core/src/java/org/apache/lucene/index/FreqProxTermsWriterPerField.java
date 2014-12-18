@@ -107,6 +107,8 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
   void newTerm(final int termID) {
     // First time we're seeing this term since the last
     // flush
+    assert docState.testPoint("FreqProxTermsWriterPerField.newTerm start");
+
     final FreqProxPostingsArray postings = freqProxPostingsArray;
 
     postings.lastDocIDs[termID] = docState.docID;
@@ -131,6 +133,9 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
 
   @Override
   void addTerm(final int termID) {
+
+    assert docState.testPoint("FreqProxTermsWriterPerField.addTerm start");
+
     final FreqProxPostingsArray postings = freqProxPostingsArray;
 
     assert !hasFreq || postings.termFreqs[termID] > 0;
