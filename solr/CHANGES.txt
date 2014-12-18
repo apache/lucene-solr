@@ -330,6 +330,9 @@ Bug Fixes
   component. Increased test coverage of expand component with docValues.
   (Christine Poerschke, Per Steffensen, shalin)
 
+* SOLR-6864: Support registering searcher listeners in SolrCoreAware.inform(SolrCore) 
+  method. Existing components rely on this. (Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 

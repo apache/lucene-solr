@@ -16,21 +16,33 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.BeforeClass;
-
-import java.util.List;
-import java.util.Map;
-import java.io.IOException;
 
 public class TestIndexSearcher extends SolrTestCaseJ4 {
 
@@ -170,5 +182,116 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       }
     }
 
+  }
+  
+  public void testSearcherListeners() throws Exception {
+    MockSearchComponent.registerFirstSearcherListener = false;
+    MockSearchComponent.registerNewSearcherListener = false;
+    createCoreAndValidateListeners(0, 0, 0, 0);
+    
+    MockSearchComponent.registerFirstSearcherListener = true;
+    MockSearchComponent.registerNewSearcherListener = false;
+    createCoreAndValidateListeners(1, 1, 1, 1);
+    
+    MockSearchComponent.registerFirstSearcherListener = true;
+    MockSearchComponent.registerNewSearcherListener = true;
+    createCoreAndValidateListeners(1, 1, 2, 1);
+  }
+  
+  private void createCoreAndValidateListeners(int numTimesCalled, int numTimesCalledFirstSearcher,
+      int numTimesCalledAfterGetSearcher, int numTimesCalledFirstSearcherAfterGetSearcher) throws Exception {
+    CoreContainer cores = h.getCoreContainer();
+    CoreDescriptor cd = h.getCore().getCoreDescriptor();
+    SolrCore newCore = null;
+    // reset counters
+    MockSearcherListener.numberOfTimesCalled = new AtomicInteger();
+    MockSearcherListener.numberOfTimesCalledFirstSearcher = new AtomicInteger();
+    
+    try {
+      CoreDescriptor newCd = new CoreDescriptor(cores, "core1", cd.getInstanceDir(), "config", "solrconfig-searcher-listeners1.xml");
+      // Create a new core, this should call all the firstSearcherListeners
+      newCore = cores.create(newCd);
+      
+      //validate that the new core was created with the correct solrconfig
+      assertNotNull(newCore.getSearchComponent("mock"));
+      assertEquals(MockSearchComponent.class, newCore.getSearchComponent("mock").getClass());
+      
+      assertEquals(numTimesCalled, MockSearcherListener.numberOfTimesCalled.get());
+      assertEquals(numTimesCalledFirstSearcher, MockSearcherListener.numberOfTimesCalledFirstSearcher.get());
+      
+      addDummyDoc(newCore);
+      
+      // Open a new searcher, this should call the newSearcherListeners
+      Future<?>[] future = new Future[1];
+      newCore.getSearcher(true, false, future);
+      future[0].get();
+      
+      assertEquals(numTimesCalledAfterGetSearcher, MockSearcherListener.numberOfTimesCalled.get());
+      assertEquals(numTimesCalledFirstSearcherAfterGetSearcher, MockSearcherListener.numberOfTimesCalledFirstSearcher.get());
+      
+    } finally {
+      if (newCore != null) {
+        cores.unload("core1");
+      }
+    }
+  }
+
+  private void addDummyDoc(SolrCore core) throws Exception {
+    DirectSolrConnection connection = new DirectSolrConnection(core);
+    SolrRequestHandler handler = core.getRequestHandler("/update");
+    connection.request(handler, null, adoc("id", "1"));
+  }
+
+  public static class MockSearchComponent extends SearchComponent implements SolrCoreAware {
+
+    static boolean registerFirstSearcherListener = false;
+    static boolean registerNewSearcherListener = false;
+    
+    @Override
+    public void prepare(ResponseBuilder rb) throws IOException {}
+
+    @Override
+    public void process(ResponseBuilder rb) throws IOException {}
+
+    @Override
+    public String getDescription() {
+      return "MockSearchComponent";
+    }
+
+    @Override
+    public void inform(SolrCore core) {
+      if (registerFirstSearcherListener) {
+        core.registerFirstSearcherListener(new MockSearcherListener());
+      }
+      if (registerNewSearcherListener) {
+        core.registerNewSearcherListener(new MockSearcherListener());
+      }
+    }
+    
+  }
+  
+  static class MockSearcherListener implements SolrEventListener {
+    
+    static AtomicInteger numberOfTimesCalled;
+    static AtomicInteger numberOfTimesCalledFirstSearcher;
+
+    @Override
+    public void init(NamedList args) {}
+
+    @Override
+    public void postCommit() {}
+
+    @Override
+    public void postSoftCommit() {}
+
+    @Override
+    public void newSearcher(SolrIndexSearcher newSearcher,
+        SolrIndexSearcher currentSearcher) {
+      numberOfTimesCalled.incrementAndGet();
+      if (currentSearcher == null) {
+        numberOfTimesCalledFirstSearcher.incrementAndGet();
+      }
+    }
+    
   }
 }
