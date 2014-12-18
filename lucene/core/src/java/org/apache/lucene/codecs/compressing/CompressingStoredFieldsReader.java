@@ -46,6 +46,7 @@ import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -53,7 +54,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
@@ -66,6 +66,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -73,9 +74,6 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 public final class CompressingStoredFieldsReader extends StoredFieldsReader {
-
-  // Do not reuse the decompression buffer when there is more than 32kb to decompress
-  private static final int BUFFER_REUSE_THRESHOLD = 1 << 15;
 
   private final int version;
   private final FieldInfos fieldInfos;
@@ -86,12 +84,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final int packedIntsVersion;
   private final CompressionMode compressionMode;
   private final Decompressor decompressor;
-  private final BytesRef bytes;
   private final int numDocs;
+  private final boolean merging;
+  private final BlockState state;
   private boolean closed;
 
   // used by clone
-  private CompressingStoredFieldsReader(CompressingStoredFieldsReader reader) {
+  private CompressingStoredFieldsReader(CompressingStoredFieldsReader reader, boolean merging) {
     this.version = reader.version;
     this.fieldInfos = reader.fieldInfos;
     this.fieldsStream = reader.fieldsStream.clone();
@@ -102,7 +101,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.compressionMode = reader.compressionMode;
     this.decompressor = reader.decompressor.clone();
     this.numDocs = reader.numDocs;
-    this.bytes = new BytesRef(reader.bytes.bytes.length);
+    this.merging = merging;
+    this.state = new BlockState();
     this.closed = false;
   }
 
@@ -157,7 +157,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       chunkSize = fieldsStream.readVInt();
       packedIntsVersion = fieldsStream.readVInt();
       decompressor = compressionMode.newDecompressor();
-      this.bytes = new BytesRef();
+      this.merging = false;
+      this.state = new BlockState();
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
@@ -324,227 +325,94 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     return l;
   }
 
-  @Override
-  public void visitDocument(int docID, StoredFieldVisitor visitor)
-      throws IOException {
-    fieldsStream.seek(indexReader.getStartPointer(docID));
+  /**
+   * A serialized document, you need to decode its input in order to get an actual
+   * {@link Document}.
+   */
+  static class SerializedDocument {
 
-    final int docBase = fieldsStream.readVInt();
-    final int chunkDocs = fieldsStream.readVInt();
-    if (docID < docBase
-        || docID >= docBase + chunkDocs
-        || docBase + chunkDocs > numDocs) {
-      throw new CorruptIndexException("Corrupted: docID=" + docID
-          + ", docBase=" + docBase + ", chunkDocs=" + chunkDocs
-          + ", numDocs=" + numDocs, fieldsStream);
+    // the serialized data
+    final DataInput in;
+
+    // the number of bytes on which the document is encoded
+    final int length;
+
+    // the number of stored fields
+    final int numStoredFields;
+
+    private SerializedDocument(DataInput in, int length, int numStoredFields) {
+      this.in = in;
+      this.length = length;
+      this.numStoredFields = numStoredFields;
     }
 
-    final int numStoredFields, offset, length, totalLength;
-    if (chunkDocs == 1) {
-      numStoredFields = fieldsStream.readVInt();
-      offset = 0;
-      length = fieldsStream.readVInt();
-      totalLength = length;
-    } else {
-      final int bitsPerStoredFields = fieldsStream.readVInt();
-      if (bitsPerStoredFields == 0) {
-        numStoredFields = fieldsStream.readVInt();
-      } else if (bitsPerStoredFields > 31) {
-        throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields, fieldsStream);
-      } else {
-        final long filePointer = fieldsStream.getFilePointer();
-        final PackedInts.Reader reader = PackedInts.getDirectReaderNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerStoredFields);
-        numStoredFields = (int) (reader.get(docID - docBase));
-        fieldsStream.seek(filePointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, chunkDocs, bitsPerStoredFields));
-      }
-
-      final int bitsPerLength = fieldsStream.readVInt();
-      if (bitsPerLength == 0) {
-        length = fieldsStream.readVInt();
-        offset = (docID - docBase) * length;
-        totalLength = chunkDocs * length;
-      } else if (bitsPerStoredFields > 31) {
-        throw new CorruptIndexException("bitsPerLength=" + bitsPerLength, fieldsStream);
-      } else {
-        final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerLength, 1);
-        int off = 0;
-        for (int i = 0; i < docID - docBase; ++i) {
-          off += it.next();
-        }
-        offset = off;
-        length = (int) it.next();
-        off += length;
-        for (int i = docID - docBase + 1; i < chunkDocs; ++i) {
-          off += it.next();
-        }
-        totalLength = off;
-      }
-    }
-
-    if ((length == 0) != (numStoredFields == 0)) {
-      throw new CorruptIndexException("length=" + length + ", numStoredFields=" + numStoredFields, fieldsStream);
-    }
-    if (numStoredFields == 0) {
-      // nothing to do
-      return;
-    }
-
-    final DataInput documentInput;
-    if (totalLength >= 2 * chunkSize) {
-      assert chunkSize > 0;
-      assert offset < chunkSize;
-
-      decompressor.decompress(fieldsStream, chunkSize, offset, Math.min(length, chunkSize - offset), bytes);
-      documentInput = new DataInput() {
-
-        int decompressed = bytes.length;
-
-        void fillBuffer() throws IOException {
-          assert decompressed <= length;
-          if (decompressed == length) {
-            throw new EOFException();
-          }
-          final int toDecompress = Math.min(length - decompressed, chunkSize);
-          decompressor.decompress(fieldsStream, toDecompress, 0, toDecompress, bytes);
-          decompressed += toDecompress;
-        }
-
-        @Override
-        public byte readByte() throws IOException {
-          if (bytes.length == 0) {
-            fillBuffer();
-          }
-          --bytes.length;
-          return bytes.bytes[bytes.offset++];
-        }
-
-        @Override
-        public void readBytes(byte[] b, int offset, int len) throws IOException {
-          while (len > bytes.length) {
-            System.arraycopy(bytes.bytes, bytes.offset, b, offset, bytes.length);
-            len -= bytes.length;
-            offset += bytes.length;
-            fillBuffer();
-          }
-          System.arraycopy(bytes.bytes, bytes.offset, b, offset, len);
-          bytes.offset += len;
-          bytes.length -= len;
-        }
-
-      };
-    } else {
-      final BytesRef bytes = totalLength <= BUFFER_REUSE_THRESHOLD ? this.bytes : new BytesRef();
-      decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
-      assert bytes.length == length;
-      documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
-    }
-
-    for (int fieldIDX = 0; fieldIDX < numStoredFields; fieldIDX++) {
-      final long infoAndBits = documentInput.readVLong();
-      final int fieldNumber = (int) (infoAndBits >>> TYPE_BITS);
-      final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
-
-      final int bits = (int) (infoAndBits & TYPE_MASK);
-      assert bits <= NUMERIC_DOUBLE: "bits=" + Integer.toHexString(bits);
-
-      switch(visitor.needsField(fieldInfo)) {
-        case YES:
-          readField(documentInput, visitor, fieldInfo, bits);
-          break;
-        case NO:
-          skipField(documentInput, bits);
-          break;
-        case STOP:
-          return;
-      }
-    }
   }
 
-  @Override
-  public StoredFieldsReader clone() {
-    ensureOpen();
-    return new CompressingStoredFieldsReader(this);
-  }
+  /**
+   * Keeps state about the current block of documents.
+   */
+  private class BlockState {
 
-  int getVersion() {
-    return version;
-  }
+    private int docBase, chunkDocs;
 
-  CompressionMode getCompressionMode() {
-    return compressionMode;
-  }
+    // whether the block has been sliced, this happens for large documents
+    private boolean sliced;
 
-  int getChunkSize() {
-    return chunkSize;
-  }
+    private int[] offsets = IntsRef.EMPTY_INTS;
+    private int[] numStoredFields = IntsRef.EMPTY_INTS;
 
-  ChunkIterator chunkIterator(int startDocID) throws IOException {
-    ensureOpen();
-    return new ChunkIterator(startDocID);
-  }
+    // the start pointer at which you can read the compressed documents
+    private long startPointer;
 
-  final class ChunkIterator {
+    private final BytesRef spare = new BytesRef();
+    private final BytesRef bytes = new BytesRef();
 
-    final ChecksumIndexInput fieldsStream;
-    final BytesRef spare;
-    final BytesRef bytes;
-    int docBase;
-    int chunkDocs;
-    int[] numStoredFields;
-    int[] lengths;
-
-    private ChunkIterator(int startDocId) throws IOException {
-      this.docBase = -1;
-      bytes = new BytesRef();
-      spare = new BytesRef();
-      numStoredFields = new int[1];
-      lengths = new int[1];
-
-      IndexInput in = CompressingStoredFieldsReader.this.fieldsStream;
-      in.seek(0);
-      fieldsStream = new BufferedChecksumIndexInput(in);
-      fieldsStream.seek(indexReader.getStartPointer(startDocId));
+    boolean contains(int docID) {
+      return docID >= docBase && docID < docBase + chunkDocs;
     }
 
     /**
-     * Return the decompressed size of the chunk
+     * Reset this block so that it stores state for the block
+     * that contains the given doc id.
      */
-    int chunkSize() {
-      int sum = 0;
-      for (int i = 0; i < chunkDocs; ++i) {
-        sum += lengths[i];
+    void reset(int docID) throws IOException {
+      boolean success = false;
+      try {
+        doReset(docID);
+        success = true;
+      } finally {
+        if (success == false) {
+          // if the read failed, set chunkDocs to 0 so that it does not
+          // contain any docs anymore and is not reused. This should help
+          // get consistent exceptions when trying to get several
+          // documents which are in the same corrupted block since it will
+          // force the header to be decoded again
+          chunkDocs = 0;
+        }
       }
-      return sum;
     }
 
-    /**
-     * Go to the chunk containing the provided doc ID.
-     */
-    void next(int doc) throws IOException {
-      assert doc >= docBase + chunkDocs : doc + " " + docBase + " " + chunkDocs;
-      fieldsStream.seek(indexReader.getStartPointer(doc));
-
-      final int docBase = fieldsStream.readVInt();
-      final int chunkDocs = fieldsStream.readVInt();
-      if (docBase < this.docBase + this.chunkDocs
+    private void doReset(int docID) throws IOException {
+      docBase = fieldsStream.readVInt();
+      final int token = fieldsStream.readVInt();
+      chunkDocs = token >>> 1;
+      if (contains(docID) == false
           || docBase + chunkDocs > numDocs) {
-        throw new CorruptIndexException("Corrupted: current docBase=" + this.docBase
-            + ", current numDocs=" + this.chunkDocs + ", new docBase=" + docBase
-            + ", new numDocs=" + chunkDocs, fieldsStream);
+        throw new CorruptIndexException("Corrupted: docID=" + docID
+            + ", docBase=" + docBase + ", chunkDocs=" + chunkDocs
+            + ", numDocs=" + numDocs, fieldsStream);
       }
-      this.docBase = docBase;
-      this.chunkDocs = chunkDocs;
 
-      if (chunkDocs > numStoredFields.length) {
-        final int newLength = ArrayUtil.oversize(chunkDocs, 4);
-        numStoredFields = new int[newLength];
-        lengths = new int[newLength];
-      }
+      sliced = (token & 1) != 0;
+
+      offsets = ArrayUtil.grow(offsets, chunkDocs + 1);
+      numStoredFields = ArrayUtil.grow(numStoredFields, chunkDocs);
 
       if (chunkDocs == 1) {
         numStoredFields[0] = fieldsStream.readVInt();
-        lengths[0] = fieldsStream.readVInt();
+        offsets[1] = fieldsStream.readVInt();
       } else {
+        // Number of stored fields per document
         final int bitsPerStoredFields = fieldsStream.readVInt();
         if (bitsPerStoredFields == 0) {
           Arrays.fill(numStoredFields, 0, chunkDocs, fieldsStream.readVInt());
@@ -557,52 +425,193 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
           }
         }
 
+        // The stream encodes the length of each document and we decode
+        // it into a list of monotonically increasing offsets
         final int bitsPerLength = fieldsStream.readVInt();
         if (bitsPerLength == 0) {
-          Arrays.fill(lengths, 0, chunkDocs, fieldsStream.readVInt());
-        } else if (bitsPerLength > 31) {
+          final int length = fieldsStream.readVInt();
+          for (int i = 0; i < chunkDocs; ++i) {
+            offsets[1 + i] = (1 + i) * length;
+          }
+        } else if (bitsPerStoredFields > 31) {
           throw new CorruptIndexException("bitsPerLength=" + bitsPerLength, fieldsStream);
         } else {
           final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerLength, 1);
           for (int i = 0; i < chunkDocs; ++i) {
-            lengths[i] = (int) it.next();
+            offsets[i + 1] = (int) it.next();
+          }
+          for (int i = 0; i < chunkDocs; ++i) {
+            offsets[i + 1] += offsets[i];
           }
         }
-      }
-    }
 
-    /**
-     * Decompress the chunk.
-     */
-    void decompress() throws IOException {
-      // decompress data
-      final int chunkSize = chunkSize();
-      if (chunkSize >= 2 * CompressingStoredFieldsReader.this.chunkSize) {
-        bytes.offset = bytes.length = 0;
-        for (int decompressed = 0; decompressed < chunkSize; ) {
-          final int toDecompress = Math.min(chunkSize - decompressed, CompressingStoredFieldsReader.this.chunkSize);
-          decompressor.decompress(fieldsStream, toDecompress, 0, toDecompress, spare);
-          bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length + spare.length);
-          System.arraycopy(spare.bytes, spare.offset, bytes.bytes, bytes.length, spare.length);
-          bytes.length += spare.length;
-          decompressed += toDecompress;
+        // Additional validation: only the empty document has a serialized length of 0
+        for (int i = 0; i < chunkDocs; ++i) {
+          final int len = offsets[i + 1] - offsets[i];
+          final int storedFields = numStoredFields[i];
+          if ((len == 0) != (storedFields == 0)) {
+            throw new CorruptIndexException("length=" + len + ", numStoredFields=" + storedFields, fieldsStream);
+          }
         }
-      } else {
-        decompressor.decompress(fieldsStream, chunkSize, 0, chunkSize, bytes);
+
       }
-      if (bytes.length != chunkSize) {
-        throw new CorruptIndexException("Corrupted: expected chunk size = " + chunkSize() + ", got " + bytes.length, fieldsStream);
+
+      startPointer = fieldsStream.getFilePointer();
+
+      if (merging) {
+        final int totalLength = offsets[chunkDocs];
+        // decompress eagerly
+        if (sliced) {
+          bytes.offset = bytes.length = 0;
+          for (int decompressed = 0; decompressed < totalLength; ) {
+            final int toDecompress = Math.min(totalLength - decompressed, chunkSize);
+            decompressor.decompress(fieldsStream, toDecompress, 0, toDecompress, spare);
+            bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length + spare.length);
+            System.arraycopy(spare.bytes, spare.offset, bytes.bytes, bytes.length, spare.length);
+            bytes.length += spare.length;
+            decompressed += toDecompress;
+          }
+        } else {
+          decompressor.decompress(fieldsStream, totalLength, 0, totalLength, bytes);
+        }
+        if (bytes.length != totalLength) {
+          throw new CorruptIndexException("Corrupted: expected chunk size = " + totalLength + ", got " + bytes.length, fieldsStream);
+        }
       }
     }
 
     /**
-     * Check integrity of the data. The iterator is not usable after this method has been called.
+     * Get the serialized representation of the given docID. This docID has
+     * to be contained in the current block.
      */
-    void checkIntegrity() throws IOException {
-      fieldsStream.seek(fieldsStream.length() - CodecUtil.footerLength());
-      CodecUtil.checkFooter(fieldsStream);
+    SerializedDocument document(int docID) throws IOException {
+      if (contains(docID) == false) {
+        throw new IllegalArgumentException();
+      }
+
+      final int index = docID - docBase;
+      final int offset = offsets[index];
+      final int length = offsets[index+1] - offset;
+      final int totalLength = offsets[chunkDocs];
+      final int numStoredFields = this.numStoredFields[index];
+
+      fieldsStream.seek(startPointer);
+
+      final DataInput documentInput;
+      if (length == 0) {
+        // empty
+        documentInput = new ByteArrayDataInput();
+      } else if (merging) {
+        // already decompressed
+        documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset + offset, length);
+      } else if (sliced) {
+        decompressor.decompress(fieldsStream, chunkSize, offset, Math.min(length, chunkSize - offset), bytes);
+        documentInput = new DataInput() {
+
+          int decompressed = bytes.length;
+
+          void fillBuffer() throws IOException {
+            assert decompressed <= length;
+            if (decompressed == length) {
+              throw new EOFException();
+            }
+            final int toDecompress = Math.min(length - decompressed, chunkSize);
+            decompressor.decompress(fieldsStream, toDecompress, 0, toDecompress, bytes);
+            decompressed += toDecompress;
+          }
+
+          @Override
+          public byte readByte() throws IOException {
+            if (bytes.length == 0) {
+              fillBuffer();
+            }
+            --bytes.length;
+            return bytes.bytes[bytes.offset++];
+          }
+
+          @Override
+          public void readBytes(byte[] b, int offset, int len) throws IOException {
+            while (len > bytes.length) {
+              System.arraycopy(bytes.bytes, bytes.offset, b, offset, bytes.length);
+              len -= bytes.length;
+              offset += bytes.length;
+              fillBuffer();
+            }
+            System.arraycopy(bytes.bytes, bytes.offset, b, offset, len);
+            bytes.offset += len;
+            bytes.length -= len;
+          }
+
+        };
+      } else {
+        decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
+        assert bytes.length == length;
+        documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
+      }
+
+      return new SerializedDocument(documentInput, length, numStoredFields);
     }
 
+  }
+
+  SerializedDocument document(int docID) throws IOException {
+    if (state.contains(docID) == false) {
+      fieldsStream.seek(indexReader.getStartPointer(docID));
+      state.reset(docID);
+    }
+    assert state.contains(docID);
+    return state.document(docID);
+  }
+
+  @Override
+  public void visitDocument(int docID, StoredFieldVisitor visitor)
+      throws IOException {
+
+    final SerializedDocument doc = document(docID);
+
+    for (int fieldIDX = 0; fieldIDX < doc.numStoredFields; fieldIDX++) {
+      final long infoAndBits = doc.in.readVLong();
+      final int fieldNumber = (int) (infoAndBits >>> TYPE_BITS);
+      final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
+
+      final int bits = (int) (infoAndBits & TYPE_MASK);
+      assert bits <= NUMERIC_DOUBLE: "bits=" + Integer.toHexString(bits);
+
+      switch(visitor.needsField(fieldInfo)) {
+        case YES:
+          readField(doc.in, visitor, fieldInfo, bits);
+          break;
+        case NO:
+          skipField(doc.in, bits);
+          break;
+        case STOP:
+          return;
+      }
+    }
+  }
+
+  @Override
+  public StoredFieldsReader clone() {
+    ensureOpen();
+    return new CompressingStoredFieldsReader(this, false);
+  }
+
+  @Override
+  public StoredFieldsReader getMergeInstance() {
+    ensureOpen();
+    return new CompressingStoredFieldsReader(this, true);
+  }
+
+  int getVersion() {
+    return version;
+  }
+
+  CompressionMode getCompressionMode() {
+    return compressionMode;
+  }
+
+  int getChunkSize() {
+    return chunkSize;
   }
 
   @Override

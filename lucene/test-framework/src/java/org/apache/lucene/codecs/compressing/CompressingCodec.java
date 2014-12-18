@@ -56,7 +56,9 @@ public abstract class CompressingCodec extends FilterCodec {
    * suffix
    */
   public static CompressingCodec randomInstance(Random random) {
-    return randomInstance(random, RandomInts.randomIntBetween(random, 1, 1 << 15), RandomInts.randomIntBetween(random, 64, 1024), false);
+    final int chunkSize = random.nextBoolean() ? RandomInts.randomIntBetween(random, 1, 10) : RandomInts.randomIntBetween(random, 1, 1 << 15);
+    final int chunkDocs = random.nextBoolean() ? RandomInts.randomIntBetween(random, 1, 10) : RandomInts.randomIntBetween(random, 64, 1024);
+    return randomInstance(random, chunkSize, chunkDocs, false);
   }
   
   /**
