@@ -85,6 +85,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.zookeeper.data.Stat;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -335,6 +336,23 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(2, coresStatus.size());
 
+    // Test Creating a collection with new stateformat.
+    String collectionName = "solrj_newstateformat";
+    createCollectionRequest = new CollectionAdminRequest.Create();
+    createCollectionRequest.setCollectionName(collectionName);
+    createCollectionRequest.setNumShards(2);
+    createCollectionRequest.setConfigName("conf1");
+    createCollectionRequest.setStateFormat(2);
+    
+    response = createCollectionRequest.process(server);
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    
+    waitForRecoveriesToFinish(collectionName, false);
+    assertTrue("Collection state does not exist",
+        cloudClient.getZkStateReader().getZkClient()
+            .exists(ZkStateReader.getCollectionPath(collectionName), true));
+    
     CollectionAdminRequest.CreateShard createShardRequest = new CollectionAdminRequest
         .CreateShard();
     createShardRequest.setCollectionName("solrj_implicit");
