@@ -1131,12 +1131,17 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
             new File((String) core.getStatistics().get("instanceDir"),
                 "core.properties").exists());
       }
-      
-      assertEquals(
-         new File(SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
-              + core.getName())).getAbsolutePath(),
-          new File(SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
-              "instanceDir"))).getAbsolutePath());
+
+      try {
+        assertEquals(
+           new File(SolrResourceLoader.normalizeDir(jetty.getSolrHome() + File.separator
+                + core.getName())).getCanonicalPath(),
+            new File(SolrResourceLoader.normalizeDir((String) core.getStatistics().get(
+                "instanceDir"))).getCanonicalPath());
+      } catch (IOException e) {
+        log.error("Failed to get canonical path", e);
+        fail("Failed to get canonical path");
+      }
     }
   }
 
