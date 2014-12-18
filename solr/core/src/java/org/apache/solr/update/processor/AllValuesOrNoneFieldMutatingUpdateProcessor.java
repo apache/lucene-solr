@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
                    
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -75,9 +76,11 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor extends FieldM
   protected abstract Object mutateValue(final Object srcVal);
 
   protected final SolrInputField mutate(final SolrInputField srcField) {
+    Collection<Object> vals = srcField.getValues();
+    if(vals== null || vals.isEmpty()) return srcField;
     List<String> messages = null;
     SolrInputField result = new SolrInputField(srcField.getName());
-    for (final Object srcVal : srcField.getValues()) {
+    for (final Object srcVal : vals) {
       final Object destVal = mutateValue(srcVal);
       if (SKIP_FIELD_VALUE_LIST_SINGLETON == destVal) {
         log.debug("field '{}' {} value '{}' is not mutatable, so no values will be mutated",
