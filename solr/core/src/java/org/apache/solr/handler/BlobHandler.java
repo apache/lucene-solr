@@ -101,12 +101,11 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         TopDocs duplicate = req.getSearcher().search(new TermQuery(new Term("id", md5)), 1);
         if(duplicate.totalHits >0){
           rsp.add("error", "duplicate entry");
-          SolrParams solrParams = new MapSolrParams((Map) ZkNodeProps.makeMap(
+          req.forward(null,
+              new MapSolrParams((Map) makeMap(
               "q", "id:" + md5,
-              "fl", "id,size,version,timestamp,blobName"));
-          try(LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), solrParams)) {
-            req.getCore().getRequestHandler(null).handleRequest(r, rsp);
-          }
+              "fl", "id,size,version,timestamp,blobName")),
+              rsp);
           return;
         }
 
@@ -178,13 +177,12 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         if (blobName != null) q = "blobName" + ":" + blobName;
         if (version > -1) q += " AND version:" + version;
 
-        SolrParams args = new MapSolrParams((Map) ZkNodeProps.makeMap(
-            "q", q,
-            "fl", "id,size,version,timestamp,blobName",
-            "sort", "version desc"));
-        try (LocalSolrQueryRequest r  = new LocalSolrQueryRequest(req.getCore(), args)){
-          req.getCore().getRequestHandler(null).handleRequest(r, rsp);
-        }
+        req.forward(null,
+            new MapSolrParams((Map) makeMap(
+                "q", q,
+                "fl", "id,size,version,timestamp,blobName",
+                "sort", "version desc"))
+            ,rsp);
       }
     }
   }

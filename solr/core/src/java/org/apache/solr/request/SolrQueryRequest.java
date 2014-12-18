@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.SolrParams;
@@ -82,6 +83,13 @@ public interface SolrQueryRequest {
    * Suitable for logging.
    */
   public String getParamString();
+
+  /** Forward the request to another handler. DO a return after this call if
+   * no other operations need to be performed
+   * @param handler the name of the handler
+   * @param params The new set of parameter
+   */
+  public void forward(String handler, SolrParams params,  SolrQueryResponse rsp);
 }
 
 

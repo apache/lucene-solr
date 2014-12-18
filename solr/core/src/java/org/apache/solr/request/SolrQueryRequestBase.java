@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
@@ -149,6 +150,14 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   @Override
   public String toString() {
     return this.getClass().getSimpleName() + '{' + params + '}';
+  }
+
+  @Override
+  public void forward(String handler ,SolrParams params, SolrQueryResponse rsp){
+    try(LocalSolrQueryRequest r = new LocalSolrQueryRequest(getCore(), params)) {
+      getCore().getRequestHandler(handler).handleRequest(r, rsp);
+    }
+
   }
 
 }
