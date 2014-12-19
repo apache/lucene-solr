@@ -391,9 +391,6 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
     } catch (IllegalStateException expected) {
       // ok
-    } catch (AssertionError expected) {
-      // ok: MockTokenizer
-      assertTrue(expected.getMessage(), expected.getMessage() != null && expected.getMessage().contains("wrong state"));
     } catch (Exception unexpected) {
       unexpected.printStackTrace(System.err);
       fail("got wrong exception when reset() not called: " + unexpected);
@@ -752,13 +749,13 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           }
           try {
             ts.end();
-          } catch (AssertionError ae) {
+          } catch (IllegalStateException ise) {
             // Catch & ignore MockTokenizer's
             // anger...
-            if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
+            if ("end() called before incrementToken() returned false!".equals(ise.getMessage())) {
               // OK
             } else {
-              throw ae;
+              throw ise;
             }
           }
           ts.close();
@@ -777,13 +774,13 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           }
           try {
             ts.end();
-          } catch (AssertionError ae) {
+          } catch (IllegalStateException ise) {
             // Catch & ignore MockTokenizer's
             // anger...
-            if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
+            if ("end() called before incrementToken() returned false!".equals(ise.getMessage())) {
               // OK
             } else {
-              throw ae;
+              throw ise;
             }
           }
           ts.close();
