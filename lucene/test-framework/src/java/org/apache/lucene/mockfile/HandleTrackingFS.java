@@ -93,9 +93,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
   @Override
   public InputStream newInputStream(final Path path, OpenOption... options) throws IOException {
     InputStream stream = new FilterInputStream2(super.newInputStream(path, options)) {
+      
+      boolean closed;
+      
       @Override
       public void close() throws IOException {
-        onClose(path, this);
+        if (!closed) {
+          closed = true;
+          onClose(path, this);
+        }
         super.close();
       }
 
@@ -121,9 +127,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
   @Override
   public OutputStream newOutputStream(final Path path, OpenOption... options) throws IOException {
     OutputStream stream = new FilterOutputStream2(super.newOutputStream(path, options)) {
+      
+      boolean closed;
+
       @Override
       public void close() throws IOException {
-        onClose(path, this);
+        if (!closed) {
+          closed = true;
+          onClose(path, this);
+        }
         super.close();
       }
       
@@ -149,9 +161,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
   @Override
   public FileChannel newFileChannel(final Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
     FileChannel channel = new FilterFileChannel(super.newFileChannel(path, options, attrs)) {
+      
+      boolean closed;
+      
       @Override
       protected void implCloseChannel() throws IOException {
-        onClose(path, this);
+        if (!closed) {
+          closed = true;
+          onClose(path, this);
+        }
         super.implCloseChannel();
       }
 
@@ -177,9 +195,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
   @Override
   public AsynchronousFileChannel newAsynchronousFileChannel(final Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
     AsynchronousFileChannel channel = new FilterAsynchronousFileChannel(super.newAsynchronousFileChannel(path, options, executor, attrs)) {
+      
+      boolean closed;
+      
       @Override
       public void close() throws IOException {
-        onClose(path, this);
+        if (!closed) {
+          closed = true;
+          onClose(path, this);
+        }
         super.close();
       }
 
@@ -205,9 +229,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
   @Override
   public SeekableByteChannel newByteChannel(final Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
     SeekableByteChannel channel = new FilterSeekableByteChannel(super.newByteChannel(path, options, attrs)) {
+      
+      boolean closed;
+      
       @Override
       public void close() throws IOException {
-        onClose(path, this);
+        if (!closed) {
+          closed = true;
+          onClose(path, this);
+        }
         super.close();
       }
 
@@ -237,9 +267,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
       stream = new TrackingSecureDirectoryStream((SecureDirectoryStream<Path>)stream, dir);
     } else {
       stream = new FilterDirectoryStream<Path>(stream) {
+        
+        boolean closed;
+        
         @Override
         public void close() throws IOException {
-          onClose(dir, this);
+          if (!closed) {
+            closed = true;
+            onClose(dir, this);
+          }
           super.close();
         }
         
@@ -271,10 +307,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
       super(delegate);
       this.dir = dir;
     }
+    
+    boolean closed;
 
     @Override
     public void close() throws IOException {
-      onClose(dir, this);
+      if (!closed) {
+        closed = true;
+        onClose(dir, this);
+      }
       super.close();
     }
     
@@ -303,9 +344,15 @@ public abstract class HandleTrackingFS extends FilterFileSystemProvider {
     @Override
     public SeekableByteChannel newByteChannel(final Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
       SeekableByteChannel channel = new FilterSeekableByteChannel(super.newByteChannel(path, options, attrs)) {
+        
+        boolean closed;
+        
         @Override
         public void close() throws IOException {
-          onClose(path, this);
+          if (!closed) {
+            closed = true;
+            onClose(path, this);
+          }
           super.close();
         }
 
