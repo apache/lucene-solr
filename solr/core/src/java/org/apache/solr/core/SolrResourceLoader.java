@@ -48,7 +48,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
@@ -65,6 +64,7 @@ import java.net.URLClassLoader;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -856,5 +856,9 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
         log.error(msg, e);
       }
     }
+  }
+
+  public String resolve(String pathToResolve) {
+    return Paths.get(instanceDir).resolve(pathToResolve).toString();
   }
 }

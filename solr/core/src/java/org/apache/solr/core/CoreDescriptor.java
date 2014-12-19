@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
@@ -32,6 +31,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Properties;
 
@@ -324,10 +324,7 @@ public class CoreDescriptor {
 
   private static String convertToAbsolute(String instDir, String solrHome) {
     checkNotNull(instDir);
-    File f = new File(instDir);
-    if (f.isAbsolute())
-      return SolrResourceLoader.normalizeDir(instDir);
-    return SolrResourceLoader.normalizeDir(solrHome + SolrResourceLoader.normalizeDir(instDir));
+    return SolrResourceLoader.normalizeDir(Paths.get(solrHome).resolve(instDir).toString());
   }
 
   /**
