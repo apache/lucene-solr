@@ -17,14 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.CollectionUtil;
-
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.CollectionUtil;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /** A {@link MergeScheduler} that runs each merge using a
  *  separate thread.
@@ -41,36 +42,44 @@ import java.util.Comparator;
  *  requested then this class will forcefully throttle the
  *  incoming threads by pausing until one more more merges
  *  complete.</p>
+ *
+ *  <p>This class attempts to detect whether the index is
+ *  on rotational storage (traditional hard drive) or not
+ *  (e.g. solid-state disk) and changes the default max merge
+ *  and thread count accordingly.  This detection is currently
+ *  Linux-only, and relies on the OS to put the right value
+ *  into /sys/block/&lt;dev&gt;/block/rotational.  For all
+ *  other operating systems it currently assumes a rotational
+ *  disk for backwards compatibility.  To enable default
+ *  settings for spinning or solid state disks for such
+ *  operating systems, use {@link #setDefaultMaxMergesAndThreads(boolean)}.
  */ 
 public class ConcurrentMergeScheduler extends MergeScheduler {
+
+  /** Dynamic default for {@code maxThreadCount} and {@code maxMergeCount},
+   *  used to detect whether the index is backed by an SSD or rotational disk and
+   *  set {@code maxThreadCount} accordingly.  If it's an SSD,
+   *  {@code maxThreadCount} is set to {@code max(1, min(3, cpuCoreCount/2))},
+   *  otherwise 1.  Note that detection only currently works on
+   *  Linux; other platforms will assume the index is not on an SSD. */
+  public static final int AUTO_DETECT_MERGES_AND_THREADS = -1;
 
   private int mergeThreadPriority = -1;
 
   /** List of currently active {@link MergeThread}s. */
   protected final List<MergeThread> mergeThreads = new ArrayList<>();
   
-  /** 
-   * Default {@code maxThreadCount}.
-   * We default to 1: tests on spinning-magnet drives showed slower
-   * indexing performance if more than one merge thread runs at
-   * once (though on an SSD it was faster)
-   */
-  public static final int DEFAULT_MAX_THREAD_COUNT = 1;
-  
-  /** Default {@code maxMergeCount}. */
-  public static final int DEFAULT_MAX_MERGE_COUNT = 2;
-
   // Max number of merge threads allowed to be running at
   // once.  When there are more merges then this, we
   // forcefully pause the larger ones, letting the smaller
   // ones run, up until maxMergeCount merges at which point
   // we forcefully pause incoming threads (that presumably
   // are the ones causing so much merging).
-  private int maxThreadCount = DEFAULT_MAX_THREAD_COUNT;
+  private int maxThreadCount = AUTO_DETECT_MERGES_AND_THREADS;
 
   // Max number of merges we accept before forcefully
   // throttling the incoming threads
-  private int maxMergeCount = DEFAULT_MAX_MERGE_COUNT;
+  private int maxMergeCount = AUTO_DETECT_MERGES_AND_THREADS;
 
   /** {@link Directory} that holds the index. */
   protected Directory dir;
@@ -88,7 +97,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   /**
-   * Sets the maximum number of merge threads and simultaneous merges allowed.
+   * Expert: directly set the maximum number of merge threads and
+   * simultaneous merges allowed.
    * 
    * @param maxMergeCount the max # simultaneous merges that are allowed.
    *       If a merge is necessary yet we already have this many
@@ -99,29 +109,55 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    * @param maxThreadCount the max # simultaneous merge threads that should
    *       be running at once.  This must be &lt;= <code>maxMergeCount</code>
    */
-  public void setMaxMergesAndThreads(int maxMergeCount, int maxThreadCount) {
-    if (maxThreadCount < 1) {
-      throw new IllegalArgumentException("maxThreadCount should be at least 1");
+  public synchronized void setMaxMergesAndThreads(int maxMergeCount, int maxThreadCount) {
+    if (maxMergeCount == AUTO_DETECT_MERGES_AND_THREADS && maxThreadCount == AUTO_DETECT_MERGES_AND_THREADS) {
+      // OK
+      this.maxMergeCount = AUTO_DETECT_MERGES_AND_THREADS;
+      this.maxThreadCount = AUTO_DETECT_MERGES_AND_THREADS;
+    } else if (maxMergeCount == AUTO_DETECT_MERGES_AND_THREADS) {
+      throw new IllegalArgumentException("both maxMergeCount and maxThreadCount must be AUTO_DETECT_MERGES_AND_THREADS");
+    } else if (maxThreadCount == AUTO_DETECT_MERGES_AND_THREADS) {
+      throw new IllegalArgumentException("both maxMergeCount and maxThreadCount must be AUTO_DETECT_MERGES_AND_THREADS");
+    } else {
+      if (maxThreadCount < 1) {
+        throw new IllegalArgumentException("maxThreadCount should be at least 1");
+      }
+      if (maxMergeCount < 1) {
+        throw new IllegalArgumentException("maxMergeCount should be at least 1");
+      }
+      if (maxThreadCount > maxMergeCount) {
+        throw new IllegalArgumentException("maxThreadCount should be <= maxMergeCount (= " + maxMergeCount + ")");
+      }
+      this.maxThreadCount = maxThreadCount;
+      this.maxMergeCount = maxMergeCount;
     }
-    if (maxMergeCount < 1) {
-      throw new IllegalArgumentException("maxMergeCount should be at least 1");
+  }
+
+  /** Sets max merges and threads to proper defaults for rotational
+   *  or non-rotational storage.
+   *
+   * @param spins true to set defaults best for traditional rotatational storage (spinning disks), 
+   *        else false (e.g. for solid-state disks)
+   */
+  public synchronized void setDefaultMaxMergesAndThreads(boolean spins) {
+    if (spins) {
+      maxThreadCount = 1;
+      maxMergeCount = 2;
+    } else {
+      maxThreadCount = Math.max(1, Math.min(3, Runtime.getRuntime().availableProcessors()/2));
+      maxMergeCount = maxThreadCount+2;
     }
-    if (maxThreadCount > maxMergeCount) {
-      throw new IllegalArgumentException("maxThreadCount should be <= maxMergeCount (= " + maxMergeCount + ")");
-    }
-    this.maxThreadCount = maxThreadCount;
-    this.maxMergeCount = maxMergeCount;
   }
 
   /** Returns {@code maxThreadCount}.
    *
    * @see #setMaxMergesAndThreads(int, int) */
-  public int getMaxThreadCount() {
+  public synchronized int getMaxThreadCount() {
     return maxThreadCount;
   }
 
   /** See {@link #setMaxMergesAndThreads}. */
-  public int getMaxMergeCount() {
+  public synchronized int getMaxMergeCount() {
     return maxMergeCount;
   }
 
@@ -257,6 +293,17 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
+  private synchronized void initMaxMergesAndThreads() throws IOException {
+    if (maxThreadCount == AUTO_DETECT_MERGES_AND_THREADS) {
+      assert writer != null;
+      boolean spins = IOUtils.spins(writer.getDirectory());
+      setDefaultMaxMergesAndThreads(spins);
+      if (verbose()) {
+        message("initMaxMergesAndThreads spins=" + spins + " maxThreadCount=" + maxThreadCount + " maxMergeCount=" + maxMergeCount);
+      }
+    }
+  }
+
   @Override
   public void close() {
     sync();
@@ -318,6 +365,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     this.writer = writer;
 
     initMergeThreadPriority();
+    initMaxMergesAndThreads();
 
     dir = writer.getDirectory();
 

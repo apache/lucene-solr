@@ -82,7 +82,7 @@ public class FilterPath implements Path {
     if (root == null) {
       return null;
     }
-    return new FilterPath(root, fileSystem);
+    return wrap(root);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class FilterPath implements Path {
     if (fileName == null) {
       return null;
     }
-    return new FilterPath(fileName, fileSystem);
+    return wrap(fileName);
   }
 
   @Override
@@ -100,7 +100,7 @@ public class FilterPath implements Path {
     if (parent == null) {
       return null;
     }
-    return new FilterPath(parent, fileSystem);
+    return wrap(parent);
   }
 
   @Override
@@ -110,12 +110,12 @@ public class FilterPath implements Path {
 
   @Override
   public Path getName(int index) {
-    return new FilterPath(delegate.getName(index), fileSystem);
+    return wrap(delegate.getName(index));
   }
 
   @Override
   public Path subpath(int beginIndex, int endIndex) {
-    return new FilterPath(delegate.subpath(beginIndex, endIndex), fileSystem);
+    return wrap(delegate.subpath(beginIndex, endIndex));
   }
 
   @Override
@@ -148,7 +148,7 @@ public class FilterPath implements Path {
 
   @Override
   public Path normalize() {
-    return new FilterPath(delegate.normalize(), fileSystem);
+    return wrap(delegate.normalize());
   }
 
   @Override
@@ -156,12 +156,12 @@ public class FilterPath implements Path {
     if (other instanceof FilterPath) {
       other = ((FilterPath)other).delegate;
     }
-    return new FilterPath(delegate.resolve(other), fileSystem);
+    return wrap(delegate.resolve(other));
   }
 
   @Override
   public Path resolve(String other) {
-    return new FilterPath(delegate.resolve(other), fileSystem);
+    return wrap(delegate.resolve(other));
   }
 
   @Override
@@ -169,12 +169,12 @@ public class FilterPath implements Path {
     if (other instanceof FilterPath) {
       other = ((FilterPath)other).delegate;
     }
-    return new FilterPath(delegate.resolveSibling(other), fileSystem);
+    return wrap(delegate.resolveSibling(other));
   }
 
   @Override
   public Path resolveSibling(String other) {
-    return new FilterPath(delegate.resolveSibling(other), fileSystem);
+    return wrap(delegate.resolveSibling(other));
   }
 
   @Override
@@ -182,7 +182,7 @@ public class FilterPath implements Path {
     if (other instanceof FilterPath) {
       other = ((FilterPath)other).delegate;
     }
-    return new FilterPath(delegate.relativize(other), fileSystem);
+    return wrap(delegate.relativize(other));
   }
 
   // TODO: should these methods not expose delegate result directly?
@@ -200,12 +200,12 @@ public class FilterPath implements Path {
 
   @Override
   public Path toAbsolutePath() {
-    return new FilterPath(delegate.toAbsolutePath(), fileSystem);
+    return wrap(delegate.toAbsolutePath());
   }
 
   @Override
   public Path toRealPath(LinkOption... options) throws IOException {
-    return new FilterPath(delegate.toRealPath(options), fileSystem);
+    return wrap(delegate.toRealPath(options));
   }
 
   @Override
@@ -235,7 +235,7 @@ public class FilterPath implements Path {
 
       @Override
       public Path next() {
-        return new FilterPath(iterator.next(), fileSystem);
+        return wrap(iterator.next());
       }
 
       @Override
@@ -266,5 +266,11 @@ public class FilterPath implements Path {
       path = ((FilterPath)path).delegate;
     }
     return path;
+  }
+  
+  /** Override this to customize the return wrapped
+   *  path from various operations */
+  protected Path wrap(Path other) {
+    return new FilterPath(other, fileSystem);
   }
 }

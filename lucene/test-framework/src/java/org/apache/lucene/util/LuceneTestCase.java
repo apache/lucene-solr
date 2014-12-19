@@ -906,8 +906,6 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
-      int maxThreadCount = TestUtil.nextInt(r, 1, 4);
-      int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
       ConcurrentMergeScheduler cms;
       if (r.nextBoolean()) {
         cms = new ConcurrentMergeScheduler();
@@ -918,6 +916,8 @@ public abstract class LuceneTestCase extends Assert {
             }
           };
       }
+      int maxThreadCount = TestUtil.nextInt(r, 1, 4);
+      int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
     }
