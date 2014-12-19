@@ -160,7 +160,8 @@ a {
 }
 
 #logo {
-  margin: 10px;
+  width: 115px;
+  margin: 0px 0px 20px 12px;
   border-style: none;
 }
 
