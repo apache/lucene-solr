@@ -194,13 +194,18 @@ final class Lucene42DocValuesConsumer extends DocValuesConsumer {
     }
   }
   
+  private boolean closed;
+  
   @Override
   public void close() throws IOException {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    
     boolean success = false;
     try {
-      if (meta != null) {
-        meta.writeVInt(-1); // write EOF marker
-      }
+      meta.writeVInt(-1); // write EOF marker
       success = true;
     } finally {
       if (success) {

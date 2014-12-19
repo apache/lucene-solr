@@ -64,6 +64,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override
@@ -152,6 +153,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
 }

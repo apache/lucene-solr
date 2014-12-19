@@ -200,11 +200,21 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     // it for defensive reasons... or in case the app is
     // doing something custom (creating outputs directly w/o
     // using IndexWriter):
-    for(String fileName : cache.listAll()) {
-      unCache(fileName);
+    boolean success = false;
+    try {
+      if (cache.isOpen) {
+        for(String fileName : cache.listAll()) {
+          unCache(fileName);
+        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(cache, in);
+      } else {
+        IOUtils.closeWhileHandlingException(cache, in);
+      }
     }
-    cache.close();
-    in.close();
   }
 
   /** Subclass can override this to customize logic; return

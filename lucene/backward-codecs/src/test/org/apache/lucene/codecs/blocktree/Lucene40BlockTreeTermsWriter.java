@@ -974,8 +974,14 @@ public final class Lucene40BlockTreeTermsWriter extends FieldsConsumer {
     private final RAMOutputStream bytesWriter = new RAMOutputStream();
   }
 
+  private boolean closed = false;
+
   @Override
   public void close() throws IOException {
+    if (closed) {
+      return;
+    }
+    closed = true;
 
     boolean success = false;
     try {

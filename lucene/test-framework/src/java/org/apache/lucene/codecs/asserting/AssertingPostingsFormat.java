@@ -72,6 +72,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override
@@ -240,6 +241,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
 }

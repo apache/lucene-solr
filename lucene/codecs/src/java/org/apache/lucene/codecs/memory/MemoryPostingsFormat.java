@@ -404,14 +404,19 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       }
     }
 
+    private boolean closed;
+    
     @Override
     public void close() throws IOException {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      
       // EOF marker:
-      try {
+      try (IndexOutput out = this.out) {
         out.writeVInt(0);
         CodecUtil.writeFooter(out);
-      } finally {
-        out.close();
       }
     }
   }
