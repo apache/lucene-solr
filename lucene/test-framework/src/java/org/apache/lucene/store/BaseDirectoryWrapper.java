@@ -40,9 +40,11 @@ public class BaseDirectoryWrapper extends FilterDirectory {
 
   @Override
   public void close() throws IOException {
-    isOpen = false;
-    if (checkIndexOnClose && DirectoryReader.indexExists(this)) {
-      TestUtil.checkIndex(this, crossCheckTermVectorsOnClose);
+    if (isOpen) {
+      isOpen = false;
+      if (checkIndexOnClose && DirectoryReader.indexExists(this)) {
+        TestUtil.checkIndex(this, crossCheckTermVectorsOnClose);
+      }
     }
     super.close();
   }
