@@ -920,7 +920,18 @@ public abstract class LuceneTestCase extends Assert {
       int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
+    } else {
+      // Always use consistent settings, else CMS's dynamic (SSD or not)
+      // defaults can change, hurting reproducibility:
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+
+      // Only 1 thread can run at once (should maybe help reproducibility),
+      // with up to 3 pending merges before segment-producing threads are
+      // stalled:
+      cms.setMaxMergesAndThreads(3, 1);
+      c.setMergeScheduler(cms);
     }
+
     if (r.nextBoolean()) {
       if (rarely(r)) {
         // crazy value
