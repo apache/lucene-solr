@@ -120,6 +120,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testDoubleResetFails() throws IOException {
+    assumeTrue("We want MockAnalyzer to detect double-reset", TEST_ASSERTS_ENABLED);
     Analyzer analyzer = new MockAnalyzer(random());
     final TokenStream input = analyzer.tokenStream("field", "abc");
     CachingTokenFilter buffer = new CachingTokenFilter(input);
