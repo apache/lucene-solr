@@ -120,19 +120,16 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testDoubleResetFails() throws IOException {
-    assumeTrue("We want MockAnalyzer to detect double-reset", TEST_ASSERTS_ENABLED);
     Analyzer analyzer = new MockAnalyzer(random());
     final TokenStream input = analyzer.tokenStream("field", "abc");
     CachingTokenFilter buffer = new CachingTokenFilter(input);
     buffer.reset();//ok
-    boolean madeIt = false;
     try {
       buffer.reset();//bad (this used to work which we don't want)
-      madeIt = true;
-    } catch (Throwable e) {
-      //ignore
+      fail("didn't get expected exception");
+    } catch (IllegalStateException e) {
+      assertEquals("double reset()", e.getMessage());
     }
-    assertFalse(madeIt);
   }
   
   private void checkTokens(TokenStream stream) throws IOException {

@@ -90,7 +90,7 @@ public abstract class Tokenizer extends TokenStream {
       throw new IllegalStateException("TokenStream contract violation: close() call missing");
     }
     this.inputPending = input;
-    assert setReaderTestPoint();
+    setReaderTestPoint();
   }
   
   @Override
@@ -100,10 +100,8 @@ public abstract class Tokenizer extends TokenStream {
     inputPending = ILLEGAL_STATE_READER;
   }
 
-  // only used by assert, for testing
-  boolean setReaderTestPoint() {
-    return true;
-  }
+  // only used for testing
+  void setReaderTestPoint() {}
   
   private static final Reader ILLEGAL_STATE_READER = new Reader() {
     @Override
