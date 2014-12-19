@@ -334,4 +334,8 @@ public class RoaringDocIdSet extends DocIdSet {
     return cardinality;
   }
 
+  @Override
+  public String toString() {
+    return "RoaringDocIdSet(cardinality=" + cardinality + ")";
+  }
 }

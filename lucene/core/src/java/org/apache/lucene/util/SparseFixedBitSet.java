@@ -515,4 +515,8 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     return ramBytesUsed;
   }
 
+  @Override
+  public String toString() {
+    return "SparseFixedBitSet(size=" + length + ",cardinality=~" + approximateCardinality();
+  }
 }
