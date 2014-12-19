@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMockDirectoryWrapper extends LuceneTestCase {
@@ -33,9 +34,9 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
       fail();
     } catch (Exception expected) {
       assertTrue(expected.getMessage().contains("there are still open locks"));
+    } finally {
+      IOUtils.closeWhileHandlingException(iw);
     }
-    iw.close();
-    dir.close();
   }
   
   public void testFailIfIndexWriterNotClosedChangeLockFactory() throws IOException {
@@ -46,9 +47,9 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
       fail();
     } catch (Exception expected) {
       assertTrue(expected.getMessage().contains("there are still open locks"));
+    } finally {
+      IOUtils.closeWhileHandlingException(iw);
     }
-    iw.close();
-    dir.close();
   }
   
   public void testDiskFull() throws IOException {

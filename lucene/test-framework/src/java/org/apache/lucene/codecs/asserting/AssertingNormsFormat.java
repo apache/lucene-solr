@@ -75,6 +75,7 @@ public class AssertingNormsFormat extends NormsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
   
@@ -102,6 +103,7 @@ public class AssertingNormsFormat extends NormsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override

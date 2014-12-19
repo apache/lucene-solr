@@ -381,6 +381,9 @@ Bug Fixes
 * LUCENE-6105: Don't cache FST root arcs if the number of root arcs is
   small, or if the cache would be > 20% of the size of the FST.
   (Robert Muir, Mike McCandless)
+
+* LUCENE-6124: Fix double-close() problems in codec and store APIs.
+  (Robert Muir)
   
 Documentation
 

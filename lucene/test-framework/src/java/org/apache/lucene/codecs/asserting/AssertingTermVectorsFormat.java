@@ -63,6 +63,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override
@@ -206,6 +207,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
   }

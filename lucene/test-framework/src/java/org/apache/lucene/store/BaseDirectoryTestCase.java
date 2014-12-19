@@ -1040,5 +1040,35 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     out.close();
     dir.close();
   }
+  
+  public void testDoubleCloseDirectory() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
+    out.writeString("testing");
+    out.close();
+    dir.close();
+    dir.close(); // close again
+  }
+  
+  public void testDoubleCloseOutput() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
+    out.writeString("testing");
+    out.close();
+    out.close(); // close again
+    dir.close();
+  }
+  
+  public void testDoubleCloseInput() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
+    out.writeString("testing");
+    out.close();
+    IndexInput in = dir.openInput("foobar", newIOContext(random()));
+    assertEquals("testing", in.readString());
+    in.close();
+    in.close(); // close again
+    dir.close();
+  }
 }
 

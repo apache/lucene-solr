@@ -208,6 +208,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
   
@@ -280,6 +281,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override

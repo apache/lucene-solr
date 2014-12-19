@@ -730,158 +730,173 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   @Override
   public synchronized void close() throws IOException {
-    // files that we tried to delete, but couldn't because readers were open.
-    // all that matters is that we tried! (they will eventually go away)
-    //   still open when we tried to delete
-    Set<String> pendingDeletions = new HashSet<>(openFilesDeleted);
-    //   virus scanner when we tried to delete
-    pendingDeletions.addAll(triedToDelete);
-    maybeYield();
-    if (openFiles == null) {
-      openFiles = new HashMap<>();
-      openFilesDeleted = new HashSet<>();
-    }
-    if (openFiles.size() > 0) {
-      // print the first one as its very verbose otherwise
-      Exception cause = null;
-      Iterator<Exception> stacktraces = openFileHandles.values().iterator();
-      if (stacktraces.hasNext()) {
-        cause = stacktraces.next();
-      }
-      // RuntimeException instead of IOException because
-      // super() does not throw IOException currently:
-      throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
-    }
-    if (openLocks.size() > 0) {
-      Exception cause = null;
-      Iterator<Exception> stacktraces = openLocks.values().iterator();
-      if (stacktraces.hasNext()) {
-        cause = stacktraces.next();
-      }
-      throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
+    if (isOpen) {
+      isOpen = false;
+    } else {
+      in.close(); // but call it again on our wrapped dir
+      return;
     }
 
-    isOpen = false;
-    if (getCheckIndexOnClose()) {
-      randomIOExceptionRate = 0.0;
-      randomIOExceptionRateOnOpen = 0.0;
-      if (DirectoryReader.indexExists(this)) {
-        if (LuceneTestCase.VERBOSE) {
-          System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
+    boolean success = false;
+    try {
+      // files that we tried to delete, but couldn't because readers were open.
+      // all that matters is that we tried! (they will eventually go away)
+      //   still open when we tried to delete
+      Set<String> pendingDeletions = new HashSet<>(openFilesDeleted);
+      //   virus scanner when we tried to delete
+      pendingDeletions.addAll(triedToDelete);
+      maybeYield();
+      if (openFiles == null) {
+        openFiles = new HashMap<>();
+        openFilesDeleted = new HashSet<>();
+      }
+      if (openFiles.size() > 0) {
+        // print the first one as its very verbose otherwise
+        Exception cause = null;
+        Iterator<Exception> stacktraces = openFileHandles.values().iterator();
+        if (stacktraces.hasNext()) {
+          cause = stacktraces.next();
         }
-        crash(); // corrupt any unsynced-files
-        if (LuceneTestCase.VERBOSE) {
-          System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
-        } 
-        TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true);
-
-        // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
-        if (assertNoUnreferencedFilesOnClose) {
-          // now look for unreferenced files: discount ones that we tried to delete but could not
-          Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
-          allFiles.removeAll(pendingDeletions);
-          String[] startFiles = allFiles.toArray(new String[0]);
-          IndexWriterConfig iwc = new IndexWriterConfig(null);
-          iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
-          new IndexWriter(in, iwc).rollback();
-          String[] endFiles = in.listAll();
-
-          Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
-          Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
-          
-          if (pendingDeletions.contains("segments.gen") && endSet.contains("segments.gen")) {
-            // this is possible if we hit an exception while writing segments.gen, we try to delete it
-            // and it ends out in pendingDeletions (but IFD wont remove this).
-            startSet.add("segments.gen");
-            if (LuceneTestCase.VERBOSE) {
-              System.out.println("MDW: Unreferenced check: Ignoring segments.gen that we could not delete.");
-            }
+        // RuntimeException instead of IOException because
+        // super() does not throw IOException currently:
+        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
+      }
+      if (openLocks.size() > 0) {
+        Exception cause = null;
+        Iterator<Exception> stacktraces = openLocks.values().iterator();
+        if (stacktraces.hasNext()) {
+          cause = stacktraces.next();
+        }
+        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
+      }
+      
+      if (getCheckIndexOnClose()) {
+        randomIOExceptionRate = 0.0;
+        randomIOExceptionRateOnOpen = 0.0;
+        if (DirectoryReader.indexExists(this)) {
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
           }
+          crash(); // corrupt any unsynced-files
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
+          } 
+          TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true);
           
-          // its possible we cannot delete the segments_N on windows if someone has it open and
-          // maybe other files too, depending on timing. normally someone on windows wouldnt have
-          // an issue (IFD would nuke this stuff eventually), but we pass NoDeletionPolicy...
-          for (String file : pendingDeletions) {
-            if (file.startsWith("segments") && !file.equals("segments.gen") && endSet.contains(file)) {
-              startSet.add(file);
+          // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
+          if (assertNoUnreferencedFilesOnClose) {
+            // now look for unreferenced files: discount ones that we tried to delete but could not
+            Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
+            allFiles.removeAll(pendingDeletions);
+            String[] startFiles = allFiles.toArray(new String[0]);
+            IndexWriterConfig iwc = new IndexWriterConfig(null);
+            iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+            new IndexWriter(in, iwc).rollback();
+            String[] endFiles = in.listAll();
+            
+            Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
+            Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
+            
+            if (pendingDeletions.contains("segments.gen") && endSet.contains("segments.gen")) {
+              // this is possible if we hit an exception while writing segments.gen, we try to delete it
+              // and it ends out in pendingDeletions (but IFD wont remove this).
+              startSet.add("segments.gen");
               if (LuceneTestCase.VERBOSE) {
-                System.out.println("MDW: Unreferenced check: Ignoring segments file: " + file + " that we could not delete.");
+                System.out.println("MDW: Unreferenced check: Ignoring segments.gen that we could not delete.");
               }
-              SegmentInfos sis;
-              try {
-                sis = SegmentInfos.readCommit(in, file);
-              } catch (IOException ioe) {
-                // OK: likely some of the .si files were deleted
-                sis = new SegmentInfos();
-              }
-
-              try {
-                Set<String> ghosts = new HashSet<>(sis.files(in, false));
-                for (String s : ghosts) {
-                  if (endSet.contains(s) && !startSet.contains(s)) {
-                    assert pendingDeletions.contains(s);
-                    if (LuceneTestCase.VERBOSE) {
-                      System.out.println("MDW: Unreferenced check: Ignoring referenced file: " + s + " " +
-                                         "from " + file + " that we could not delete.");
-                    }
-                    startSet.add(s);
-                  }
+            }
+            
+            // its possible we cannot delete the segments_N on windows if someone has it open and
+            // maybe other files too, depending on timing. normally someone on windows wouldnt have
+            // an issue (IFD would nuke this stuff eventually), but we pass NoDeletionPolicy...
+            for (String file : pendingDeletions) {
+              if (file.startsWith("segments") && !file.equals("segments.gen") && endSet.contains(file)) {
+                startSet.add(file);
+                if (LuceneTestCase.VERBOSE) {
+                  System.out.println("MDW: Unreferenced check: Ignoring segments file: " + file + " that we could not delete.");
                 }
-              } catch (Throwable t) {
-                System.err.println("ERROR processing leftover segments file " + file + ":");
-                t.printStackTrace();
+                SegmentInfos sis;
+                try {
+                  sis = SegmentInfos.readCommit(in, file);
+                } catch (IOException ioe) {
+                  // OK: likely some of the .si files were deleted
+                  sis = new SegmentInfos();
+                }
+                
+                try {
+                  Set<String> ghosts = new HashSet<>(sis.files(in, false));
+                  for (String s : ghosts) {
+                    if (endSet.contains(s) && !startSet.contains(s)) {
+                      assert pendingDeletions.contains(s);
+                      if (LuceneTestCase.VERBOSE) {
+                        System.out.println("MDW: Unreferenced check: Ignoring referenced file: " + s + " " +
+                            "from " + file + " that we could not delete.");
+                      }
+                      startSet.add(s);
+                    }
+                  }
+                } catch (Throwable t) {
+                  System.err.println("ERROR processing leftover segments file " + file + ":");
+                  t.printStackTrace();
+                }
               }
             }
+            
+            startFiles = startSet.toArray(new String[0]);
+            endFiles = endSet.toArray(new String[0]);
+            
+            if (!Arrays.equals(startFiles, endFiles)) {
+              List<String> removed = new ArrayList<>();
+              for(String fileName : startFiles) {
+                if (!endSet.contains(fileName)) {
+                  removed.add(fileName);
+                }
+              }
+              
+              List<String> added = new ArrayList<>();
+              for(String fileName : endFiles) {
+                if (!startSet.contains(fileName)) {
+                  added.add(fileName);
+                }
+              }
+              
+              String extras;
+              if (removed.size() != 0) {
+                extras = "\n\nThese files were removed: " + removed;
+              } else {
+                extras = "";
+              }
+              
+              if (added.size() != 0) {
+                extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
+              }
+              
+              if (pendingDeletions.size() != 0) {
+                extras += "\n\nThese files we had previously tried to delete, but couldn't: " + pendingDeletions;
+              }
+              
+              throw new RuntimeException("unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras);
+            }
+            
+            DirectoryReader ir1 = DirectoryReader.open(this);
+            int numDocs1 = ir1.numDocs();
+            ir1.close();
+            new IndexWriter(this, new IndexWriterConfig(null)).close();
+            DirectoryReader ir2 = DirectoryReader.open(this);
+            int numDocs2 = ir2.numDocs();
+            ir2.close();
+            assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
           }
-
-          startFiles = startSet.toArray(new String[0]);
-          endFiles = endSet.toArray(new String[0]);
-
-          if (!Arrays.equals(startFiles, endFiles)) {
-            List<String> removed = new ArrayList<>();
-            for(String fileName : startFiles) {
-              if (!endSet.contains(fileName)) {
-                removed.add(fileName);
-              }
-            }
-
-            List<String> added = new ArrayList<>();
-            for(String fileName : endFiles) {
-              if (!startSet.contains(fileName)) {
-                added.add(fileName);
-              }
-            }
-
-            String extras;
-            if (removed.size() != 0) {
-              extras = "\n\nThese files were removed: " + removed;
-            } else {
-              extras = "";
-            }
-
-            if (added.size() != 0) {
-              extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
-            }
-
-            if (pendingDeletions.size() != 0) {
-              extras += "\n\nThese files we had previously tried to delete, but couldn't: " + pendingDeletions;
-            }
-             
-            throw new RuntimeException("unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras);
-          }
-
-          DirectoryReader ir1 = DirectoryReader.open(this);
-          int numDocs1 = ir1.numDocs();
-          ir1.close();
-          new IndexWriter(this, new IndexWriterConfig(null)).close();
-          DirectoryReader ir2 = DirectoryReader.open(this);
-          int numDocs2 = ir2.numDocs();
-          ir2.close();
-          assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
         }
       }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(in);
+      } else {
+        IOUtils.closeWhileHandlingException(in);
+      }
     }
-    in.close();
   }
 
   synchronized void removeOpenFile(Closeable c, String name) {
