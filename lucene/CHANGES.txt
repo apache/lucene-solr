@@ -172,6 +172,11 @@ Optimizations
   TokenStream with MemoryIndex when it comes from TokenSources (term vectors) with offsets and
   positions. (David Smiley)
 
+* LUCENE-5951: ConcurrentMergeScheduler detects whether the index is on SSD or not
+  and does a better job defaulting its settings.  This only works on Linux for now;
+  other OS's will continue to use the previous defaults (tuned for spinning disks).
+  (Robert Muir, Uwe Schindler, hossman, Mike McCandless)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

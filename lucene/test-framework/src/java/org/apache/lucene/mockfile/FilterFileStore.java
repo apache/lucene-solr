@@ -59,12 +59,12 @@ public class FilterFileStore extends FileStore {
 
   @Override
   public String type() {
-    return scheme + "(" + delegate.type() + ")";
+    return delegate.type();
   }
 
   @Override
   public String toString() {
-    return scheme + "(" + delegate.toString() + ")";
+    return delegate.toString();
   }
 
   @Override
