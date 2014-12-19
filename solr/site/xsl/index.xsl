@@ -34,13 +34,15 @@
     <html>
       <head>
         <title><xsl:text>Apache Solr </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></title>
+        <link rel="icon" type="image/x-icon" href="/solr/assets/images/favicon.ico"/>
+        <link rel="shortcut icon" type="image/x-icon" href="/solr/assets/images/favicon.ico"/>
       </head>
       <body>
         <div>
           <a href="http://lucene.apache.org/solr/">
-            <img src="solr.png" title="Apache Solr Logo" alt="Solr" border="0"/>
+            <img src="solr.svg" style="width:210px; margin:22px 0px 7px 20px; border:none;" title="Apache Solr Logo" alt="Solr" />
           </a>
-          <div style="z-index:100;position:absolute;top:25px;left:252px">
+          <div style="z-index:100;position:absolute;top:25px;left:226px">
             <span style="font-size: x-small">TM</span>
           </div>
         </div>
