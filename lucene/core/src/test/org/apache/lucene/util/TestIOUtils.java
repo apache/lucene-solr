@@ -306,6 +306,7 @@ public class TestIOUtils extends LuceneTestCase {
   }
   
   public void testSSD() throws Exception {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path dir = createTempDir();
     dir = FilterPath.unwrap(dir).toRealPath();
     
@@ -329,6 +330,7 @@ public class TestIOUtils extends LuceneTestCase {
   }
   
   public void testRotatingPlatters() throws Exception {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path dir = createTempDir();
     dir = FilterPath.unwrap(dir).toRealPath();
     
@@ -352,6 +354,7 @@ public class TestIOUtils extends LuceneTestCase {
   }
   
   public void testManyPartitions() throws Exception {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
     Path dir = createTempDir();
     dir = FilterPath.unwrap(dir).toRealPath();
     
