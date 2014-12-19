@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -354,5 +355,33 @@ public class TestQueryBuilder extends LuceneTestCase {
     assertEquals(expected, builder.createPhraseQuery("field", "中国"));
     expected.setSlop(3);
     assertEquals(expected, builder.createPhraseQuery("field", "中国", 3));
+  }
+
+  public void testNoTermAttribute() {
+    //Can't use MockTokenizer because it adds TermAttribute and we don't want that
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(
+            new Tokenizer() {
+              boolean wasReset = false;
+              @Override
+              public void reset() throws IOException {
+                super.reset();
+                assertFalse(wasReset);
+                wasReset = true;
+              }
+
+              @Override
+              public boolean incrementToken() throws IOException {
+                assertTrue(wasReset);
+                return false;
+              }
+            }
+        );
+      }
+    };
+    QueryBuilder builder = new QueryBuilder(analyzer);
+    assertNull(builder.createBooleanQuery("field", "whatever"));
   }
 }
