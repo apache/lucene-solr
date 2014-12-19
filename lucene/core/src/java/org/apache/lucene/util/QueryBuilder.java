@@ -203,7 +203,6 @@ public class QueryBuilder {
     boolean hasMoreTokens = false;    
     
     try (TokenStream source = analyzer.tokenStream(field, queryText)) {
-      source.reset();
       buffer = new CachingTokenFilter(source);
       buffer.reset();
 
@@ -226,13 +225,13 @@ public class QueryBuilder {
         } catch (IOException e) {
           // ignore
         }
+
+        // rewind the buffer stream
+        buffer.reset();//will never through on subsequent reset calls
       }
     } catch (IOException e) {
       throw new RuntimeException("Error analyzing query text", e);
     }
-    
-    // rewind the buffer stream
-    buffer.reset();
 
     BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
 

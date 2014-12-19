@@ -302,6 +302,10 @@ API Changes
 * LUCENE-6099: Add FilterDirectory.unwrap and
   FilterDirectoryReader.unwrap (Simon Willnauer, Mike McCandless)
 
+* LUCENE-6121: CachingTokenFilter.reset() now propagates to its input if called before
+  incrementToken().  You must call reset() now on this filter instead of doing it a-priori on the
+  input(), which previously didn't work.  (David Smiley, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
