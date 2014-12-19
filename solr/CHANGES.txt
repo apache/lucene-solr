@@ -126,6 +126,10 @@ Upgrading from Solr 4.x
     java -jar -Dc=<collection_name> post.jar *.xml (new call with collection name)
   See SOLR-6852 for more details.
 
+* Relative paths specified in the solr.xml coreRootDirectory parameter for core
+  discovery are now resolved relative to SOLR_HOME, rather than cwd.  See
+  SOLR-6718.
+
 Detailed Change List
 ----------------------
 
@@ -329,6 +333,9 @@ Bug Fixes
 * SOLR-6604: SOLR-6812: Fix NPE with distrib.singlePass=true and expand
   component. Increased test coverage of expand component with docValues.
   (Christine Poerschke, Per Steffensen, shalin)
+
+* SOLR-6718: Core discovery was walking paths relative to the Jetty working
+  directory, rather than SOLR_HOME. (Andreas Hubold, Alan Woodward)
 
 * SOLR-6864: Support registering searcher listeners in SolrCoreAware.inform(SolrCore) 
   method. Existing components rely on this. (Tomás Fernández Löbbe)
