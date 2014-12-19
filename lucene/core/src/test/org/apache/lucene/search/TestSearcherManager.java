@@ -146,7 +146,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   @Override
   protected IndexSearcher getCurrentSearcher() throws Exception {
     if (random().nextInt(10) == 7) {
-      // NOTE: not best practice to call maybeReopen
+      // NOTE: not best practice to call maybeRefresh
       // synchronous to your search threads, but still we
       // test as apps will presumably do this for
       // simplicity:
@@ -251,7 +251,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         try {
           triedReopen.set(true);
           if (VERBOSE) {
-            System.out.println("NOW call maybeReopen");
+            System.out.println("NOW call maybeRefresh");
           }
           searcherManager.maybeRefresh();
           success.set(true);
