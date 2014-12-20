@@ -19,7 +19,9 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.IndexReader;
@@ -206,6 +208,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     // reset counters
     MockSearcherListener.numberOfTimesCalled = new AtomicInteger();
     MockSearcherListener.numberOfTimesCalledFirstSearcher = new AtomicInteger();
+    MockSearcherListener.latch = new CountDownLatch(numTimesCalled);
     
     try {
       CoreDescriptor newCd = new CoreDescriptor(cores, "core1", cd.getInstanceDir(), "config", "solrconfig-searcher-listeners1.xml");
@@ -215,6 +218,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       //validate that the new core was created with the correct solrconfig
       assertNotNull(newCore.getSearchComponent("mock"));
       assertEquals(MockSearchComponent.class, newCore.getSearchComponent("mock").getClass());
+      
+      if (numTimesCalled > 0) {
+        MockSearcherListener.latch.await(10, TimeUnit.SECONDS);
+      }
       
       assertEquals(numTimesCalled, MockSearcherListener.numberOfTimesCalled.get());
       assertEquals(numTimesCalledFirstSearcher, MockSearcherListener.numberOfTimesCalledFirstSearcher.get());
@@ -274,6 +281,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     
     static AtomicInteger numberOfTimesCalled;
     static AtomicInteger numberOfTimesCalledFirstSearcher;
+    static CountDownLatch latch;
 
     @Override
     public void init(NamedList args) {}
@@ -291,7 +299,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       if (currentSearcher == null) {
         numberOfTimesCalledFirstSearcher.incrementAndGet();
       }
+      latch.countDown();
     }
-    
   }
 }

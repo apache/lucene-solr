@@ -42,6 +42,8 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
   
   <searchComponent name="mock" class="org.apache.solr.search.TestIndexSearcher$MockSearchComponent"/>
+  
+  <query><useColdSearcher>false</useColdSearcher></query>
 
 </config>
 
