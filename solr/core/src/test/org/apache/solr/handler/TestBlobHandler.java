@@ -17,13 +17,7 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -31,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.io.Closeables;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -41,6 +34,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -57,7 +51,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
-  static final Logger log =  LoggerFactory.getLogger(TestSolrConfigHandlerConcurrent.class);
+  static final Logger log =  LoggerFactory.getLogger(TestBlobHandler.class);
 
   private void doBlobHandlerTest() throws Exception {
     SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
@@ -87,8 +81,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     for (int i = 0; i < bytarr.length; i++) bytarr[i]= (byte) (i % 127);
     byte[] bytarr2  = new byte[2048];
     for (int i = 0; i < bytarr2.length; i++) bytarr2[i]= (byte) (i % 127);
-    postAndCheck(baseUrl, bytarr, 1);
-    postAndCheck(baseUrl, bytarr2, 2);
+    postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr), 1);
+    postAndCheck(cloudClient, baseUrl, ByteBuffer.wrap( bytarr2), 2);
 
     url = baseUrl + "/.system/blob/test/1";
     map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
@@ -102,6 +96,17 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   }
 
+  public static  void createSysColl(SolrServer server) throws SolrServerException, IOException {
+    CollectionAdminResponse response1;
+    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create();
+    createCollectionRequest.setCollectionName(".system");
+    createCollectionRequest.setNumShards(1);
+    createCollectionRequest.setReplicationFactor(2);
+    response1 = createCollectionRequest.process(server);
+    assertEquals(0, response1.getStatus());
+    assertTrue(response1.isSuccess());
+  }
+
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
@@ -112,8 +117,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     DirectUpdateHandler2.commitOnClose = true;
   }
 
-  private void postAndCheck(String baseUrl, byte[] bytes, int count) throws Exception {
-    postData(baseUrl, bytes);
+  public static void postAndCheck(CloudSolrServer cloudClient, String baseUrl, ByteBuffer bytes, int count) throws Exception {
+    postData(cloudClient, baseUrl, bytes);
     String url;
     Map map;
     List l;
@@ -132,7 +137,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
       assertNotNull(l);
       map = (Map) l.get(0);
-      assertEquals("" + bytes.length, String.valueOf(map.get("size")));
+      assertEquals("" + bytes.limit(), String.valueOf(map.get("size")));
       break;
     }
   }
@@ -155,14 +160,14 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   }
 
-  private String postData(String baseUrl, byte[] bytarr) throws IOException {
+  public static String postData(CloudSolrServer cloudClient, String baseUrl, ByteBuffer bytarr) throws IOException {
     HttpPost httpPost = null;
     HttpEntity entity;
     String response;
     try {
       httpPost = new HttpPost(baseUrl+"/.system/blob/test");
       httpPost.setHeader("Content-Type","application/octet-stream");
-      httpPost.setEntity(new ByteArrayEntity(bytarr));
+      httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
       entity = cloudClient.getLbServer().getHttpClient().execute(httpPost).getEntity();
       return EntityUtils.toString(entity, StandardCharsets.UTF_8);
     } finally {

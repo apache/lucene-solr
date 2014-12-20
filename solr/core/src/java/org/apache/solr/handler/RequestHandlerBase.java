@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -54,6 +55,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private final AtomicLong numTimeouts = new AtomicLong();
   private final Timer requestTimes = new Timer();
   private final long handlerStart = System.currentTimeMillis();
+  private PluginInfo pluginInfo;
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
@@ -231,6 +233,18 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       }
     }
     return handler;
+  }
+
+  /**
+   *
+   * @param pluginInfo
+   */
+  public void setPluginInfo(PluginInfo pluginInfo){
+    if(pluginInfo==null) this.pluginInfo = pluginInfo;
+  }
+
+  public PluginInfo getPluginInfo(){
+    return  pluginInfo;
   }
 
 

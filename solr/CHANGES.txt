@@ -242,6 +242,8 @@ New Features
 
 * SOLR-6787: API to manage blobs in Solr (Noble Paul)
 
+* SOLR-6801:  Load RequestHandler from blob store (Noble Paul)
+
 Bug Fixes
 ----------------------
 
