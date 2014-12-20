@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 
 // Collect useful operations for testing assigning properties to individual replicas
@@ -39,7 +40,7 @@ import org.apache.zookeeper.KeeperException;
 // and shards, but for now this will do.
 public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBase {
 
-  void doPropertyAction(CloudSolrServer client, String... paramsIn) throws IOException, SolrServerException {
+  NamedList<Object> doPropertyAction(CloudSolrServer client, String... paramsIn) throws IOException, SolrServerException {
     assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int idx = 0; idx < paramsIn.length; idx += 2) {
@@ -47,8 +48,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     }
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    client.request(request);
-
+    return client.request(request);
   }
 
   void verifyPropertyNotPresent(CloudSolrServer client, String collectionName, String replicaName,
