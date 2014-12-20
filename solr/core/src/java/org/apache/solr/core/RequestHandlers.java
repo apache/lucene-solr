@@ -532,6 +532,7 @@ public final class RequestHandlers {
         try {
           if(jarContent == null) checkJarAvailable();
           buf = jarContent.jar.getFileContent(path);
+          if(buf==null) throw new ClassNotFoundException("class not found in loaded jar"+ name ) ;
         } catch (IOException e1) {
           throw new ClassNotFoundException("class not found "+ name ,e1) ;
 

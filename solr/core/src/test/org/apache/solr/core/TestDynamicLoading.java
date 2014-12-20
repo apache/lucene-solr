@@ -20,6 +20,7 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
@@ -96,8 +98,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 //    Thread.sleep(100);
     map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
-
-    assertEquals(RequestHandlers.MemClassLoader.class.getName(), map.get("classloader"));
+    assertEquals(new String( ZkStateReader.toJSON(map) , StandardCharsets.UTF_8), BlobStoreTestRequestHandler.class.getName(), map.get("class"));
 
 
   }

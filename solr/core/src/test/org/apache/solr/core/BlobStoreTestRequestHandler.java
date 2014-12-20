@@ -28,6 +28,6 @@ public class BlobStoreTestRequestHandler extends DumpRequestHandler{
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     super.handleRequestBody(req, rsp);
-    rsp.add("classloader", this.getClass().getClassLoader().getClass().getName());
+    rsp.add("class", BlobStoreTestRequestHandler.class.getName());
   }
 }
