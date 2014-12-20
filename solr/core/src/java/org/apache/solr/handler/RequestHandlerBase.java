@@ -235,10 +235,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     return handler;
   }
 
-  /**
-   *
-   * @param pluginInfo
-   */
   public void setPluginInfo(PluginInfo pluginInfo){
     if(pluginInfo==null) this.pluginInfo = pluginInfo;
   }
