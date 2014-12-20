@@ -119,8 +119,8 @@ public final class RequestHandlers {
    */
   public SolrRequestHandler register( String handlerName, SolrRequestHandler handler ) {
     String norm = normalize( handlerName );
-    if( handler == null ) {
-      return handlers.remove( norm );
+    if (handler == null) {
+      return handlers.remove(norm);
     }
     SolrRequestHandler old = handlers.put(norm, handler);
     if (0 != norm.length() && handler instanceof SolrInfoMBean) {
@@ -165,7 +165,7 @@ public final class RequestHandlers {
     //deduping implicit and explicit requesthandlers
     for (PluginInfo info : implicits) infoMap.put(info.name,info);
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName()))
-      if(infoMap.containsKey(info.name)) infoMap.remove(info.name);
+      if (infoMap.containsKey(info.name)) infoMap.remove(info.name);
     for (Map.Entry e : core.getSolrConfig().getOverlay().getReqHandlers().entrySet())
       infoMap.put((String)e.getKey(), new PluginInfo(SolrRequestHandler.TYPE, (Map)e.getValue()));
 
@@ -174,33 +174,32 @@ public final class RequestHandlers {
     for (PluginInfo info : infos) {
       try {
         SolrRequestHandler requestHandler;
-        String startup = info.attributes.get("startup") ;
+        String startup = info.attributes.get("startup");
         String lib = info.attributes.get("lib");
-        if(lib != null){
+        if (lib != null) {
           requestHandler = new DynamicLazyRequestHandlerWrapper(core);
-        } else if( startup != null ) {
-          if( "lazy".equals(startup) ) {
+        } else if (startup != null) {
+          if ("lazy".equals(startup)) {
             log.info("adding lazy requestHandler: " + info.className);
-            requestHandler = new LazyRequestHandlerWrapper( core);
+            requestHandler = new LazyRequestHandlerWrapper(core);
           } else {
-            throw new Exception( "Unknown startup value: '"+startup+"' for: "+info.className );
+            throw new Exception("Unknown startup value: '" + startup + "' for: " + info.className);
           }
         } else {
           requestHandler = core.createRequestHandler(info.className);
         }
         if (requestHandler instanceof RequestHandlerBase) ((RequestHandlerBase) requestHandler).setPluginInfo(info);
-
-        handlers.put(info,requestHandler);
+        
+        handlers.put(info, requestHandler);
         SolrRequestHandler old = register(info.name, requestHandler);
-        if(old != null) {
+        if (old != null) {
           log.warn("Multiple requestHandler registered to the same name: " + info.name + " ignoring: " + old.getClass().getName());
         }
-        if(info.isDefault()){
-          old = register("",requestHandler);
-          if(old != null)
-            log.warn("Multiple default requestHandler registered" + " ignoring: " + old.getClass().getName()); 
+        if (info.isDefault()) {
+          old = register("", requestHandler);
+          if (old != null) log.warn("Multiple default requestHandler registered" + " ignoring: " + old.getClass().getName());
         }
-        log.info("created "+info.name+": " + info.className);
+        log.info("created " + info.name + ": " + info.className);
       } catch (Exception ex) {
           throw new SolrException
             (ErrorCode.SERVER_ERROR, "RequestHandler init failure", ex);
@@ -387,8 +386,8 @@ public final class RequestHandlers {
 
     @Override
     public void close() throws Exception {
-      if(_handler == null) return;
-      if (_handler instanceof AutoCloseable && !(_handler instanceof DynamicLazyRequestHandlerWrapper) ) {
+      if (_handler == null) return;
+      if (_handler instanceof AutoCloseable && !(_handler instanceof DynamicLazyRequestHandlerWrapper)) {
         ((AutoCloseable) _handler).close();
       }
     }
@@ -493,7 +492,7 @@ public final class RequestHandlers {
     @Override
     public void close() throws Exception {
       super.close();
-      if(_closed) return;
+      if (_closed) return;
       classLoader.releaseJar();
       _closed = true;
     }
