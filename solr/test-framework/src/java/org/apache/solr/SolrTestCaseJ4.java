@@ -244,8 +244,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       return new SSLTestConfig();
     }
     
-    final boolean trySsl = random().nextBoolean();
-    boolean trySslClientAuth = random().nextBoolean();
+    // we don't choose ssl that often because of SOLR-5776
+    final boolean trySsl = random().nextInt(10) < 2;
+    boolean trySslClientAuth = random().nextInt(10) < 2;
     if (Constants.MAC_OS_X) {
       trySslClientAuth = false;
     }
