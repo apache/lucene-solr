@@ -88,8 +88,16 @@ public class MockIndexOutputWrapper extends IndexOutput {
     }
   }
   
+  private boolean closed;
+  
   @Override
   public void close() throws IOException {
+    if (closed) {
+      delegate.close(); // don't mask double-close bugs
+      return;
+    }
+    closed = true;
+    
     try {
       dir.maybeThrowDeterministicException();
     } finally {
@@ -105,6 +113,12 @@ public class MockIndexOutputWrapper extends IndexOutput {
       dir.removeIndexOutput(this, name);
     }
   }
+  
+  private void ensureOpen() {
+    if (closed) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
 
   @Override
   public void writeByte(byte b) throws IOException {
@@ -114,6 +128,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
   
   @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
+    ensureOpen();
     checkCrashed();
     checkDiskFull(b, offset, null, len);
     
@@ -143,6 +158,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
 
   @Override
   public void copyBytes(DataInput input, long numBytes) throws IOException {
+    ensureOpen();
     checkCrashed();
     checkDiskFull(null, 0, input, numBytes);
     
