@@ -244,6 +244,9 @@ New Features
 
 * SOLR-6801:  Load RequestHandler from blob store (Noble Paul)
 
+* SOLR-1632: Support Distributed IDF (Andrzej Bialecki, Mark Miller, Yonik Seeley,
+  Robert Muir, Markus Jelsma, Vitaliy Zhovtyuk, Anshum Gupta)
+  
 Bug Fixes
 ----------------------
 

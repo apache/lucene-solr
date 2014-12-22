@@ -17,22 +17,8 @@
 
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
@@ -52,7 +38,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MoreLikeThisParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -71,11 +63,11 @@ import org.apache.solr.search.Grouping;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
@@ -96,8 +88,25 @@ import org.apache.solr.search.grouping.endresulttransformer.EndResultTransformer
 import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
+import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * TODO!
@@ -108,6 +117,7 @@ import java.util.Collections;
 public class QueryComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "query";
+  private static final Logger LOG = LoggerFactory.getLogger(QueryComponent.class);
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
@@ -271,6 +281,8 @@ public class QueryComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
+    LOG.debug("process: {}", rb.req.getParams());
+  
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
@@ -278,6 +290,19 @@ public class QueryComponent extends SearchComponent
       return;
     }
     SolrIndexSearcher searcher = req.getSearcher();
+
+    StatsCache statsCache = req.getCore().getStatsCache();
+    
+    int purpose = params.getInt(ShardParams.SHARDS_PURPOSE, ShardRequest.PURPOSE_GET_TOP_IDS);
+    if ((purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
+      statsCache.returnLocalStats(rb, searcher);
+      return;
+    }
+    // check if we need to update the local copy of global dfs
+    if ((purpose & ShardRequest.PURPOSE_SET_TERM_STATS) != 0) {
+      // retrieve from request and update local cache
+      statsCache.receiveGlobalStats(req);
+    }
 
     if (rb.getQueryCommand().getOffset() < 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
@@ -329,6 +354,9 @@ public class QueryComponent extends SearchComponent
 
     SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
+
+    req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
+    
     SolrIndexSearcher.QueryResult result = new SolrIndexSearcher.QueryResult();
 
     //
@@ -479,8 +507,8 @@ public class QueryComponent extends SearchComponent
     }
 
     // normal search result
-    searcher.search(result,cmd);
-    rb.setResult( result );
+    searcher.search(result, cmd);
+    rb.setResult(result);
 
     ResultContext ctx = new ResultContext();
     ctx.docs = rb.getResults().docList;
@@ -637,7 +665,7 @@ public class QueryComponent extends SearchComponent
     if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
       nextStage = ResponseBuilder.STAGE_PARSE_QUERY;
     } else if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
-      createDistributedIdf(rb);
+      createDistributedStats(rb);
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
     } else if (rb.stage < ResponseBuilder.STAGE_TOP_GROUPS) {
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
@@ -668,7 +696,7 @@ public class QueryComponent extends SearchComponent
     if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY)
       return ResponseBuilder.STAGE_PARSE_QUERY;
     if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
-      createDistributedIdf(rb);
+      createDistributedStats(rb);
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
     if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) return ResponseBuilder.STAGE_EXECUTE_QUERY;
@@ -711,6 +739,10 @@ public class QueryComponent extends SearchComponent
   private void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       mergeIds(rb, sreq);
+    }
+
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
+      updateStats(rb, sreq);
     }
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
@@ -786,8 +818,19 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private void createDistributedIdf(ResponseBuilder rb) {
-    // TODO
+  private void createDistributedStats(ResponseBuilder rb) {
+    StatsCache cache = rb.req.getCore().getStatsCache();
+    if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
+      ShardRequest sreq = cache.retrieveStatsRequest(rb);
+      if (sreq != null) {
+        rb.addRequest(this, sreq);
+      }
+    }
+  }
+
+  private void updateStats(ResponseBuilder rb, ShardRequest sreq) {
+    StatsCache cache = rb.req.getCore().getStatsCache();
+    cache.mergeToGlobalStats(rb.req, sreq.responses);
   }
 
   private void createMainQuery(ResponseBuilder rb) {
@@ -836,6 +879,12 @@ public class QueryComponent extends SearchComponent
 
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES,"true");
 
+    // TODO: should this really sendGlobalDfs if just includeScore?
+    if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
+      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
+      StatsCache statsCache = rb.req.getCore().getStatsCache();
+      statsCache.sendGlobalStats(rb, sreq);
+    }
     boolean shardQueryIncludeScore = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0 || rb.getSortSpec().includesScore();
     if (distribSinglePass) {
       String[] fls = rb.req.getParams().getParams(CommonParams.FL);
