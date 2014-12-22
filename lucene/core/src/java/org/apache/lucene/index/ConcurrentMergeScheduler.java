@@ -445,10 +445,10 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       // updateMergeThreads).  We stall this producer
       // thread to prevent creation of new segments,
       // until merging has caught up:
-      startStallTime = System.currentTimeMillis();
-      if (verbose()) {
+      if (verbose() && startStallTime == 0) {
         message("    too many merges; stalling...");
       }
+      startStallTime = System.currentTimeMillis();
       try {
         // Only wait 0.25 seconds, so if all merges are aborted (by IW.rollback) we notice:
         wait(250);
