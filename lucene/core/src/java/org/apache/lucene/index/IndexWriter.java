@@ -3931,6 +3931,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       merge.checkAborted(directory);
 
+      long mergeStartTime = 0;
+      if (infoStream.isEnabled("IW")) {
+        mergeStartTime = System.nanoTime();
+      }
+
       // This is where all the work happens:
       boolean success3 = false;
       try {
@@ -3953,12 +3958,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       if (infoStream.isEnabled("IW")) {
         if (merger.shouldMerge()) {
+          long t1 = System.nanoTime();
+          double sec = (t1-mergeStartTime)/1000000000.;
+          double segmentMB = (merge.info.sizeInBytes()/1024./1024.);
           infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
-                           (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
-                           (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
-                           (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
-                           (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
-                           (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs"));
+                             (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
+                             (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
+                             (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
+                             (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
+                             (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs") + "; " +
+                             String.format(Locale.ROOT,
+                                           "%d msec to merge segment [%.2f MB, %.2f MB/sec]",
+                                           ((t1-mergeStartTime)/1000000),
+                                           segmentMB,
+                                           segmentMB / sec));
         } else {
           infoStream.message("IW", "skip merging fully deleted segments");
         }
