@@ -107,6 +107,11 @@ public class BitDocIdSet extends DocIdSet {
       this(maxDoc, false);
     }
 
+    // pkg-private for testing
+    boolean dense() {
+      return denseSet != null;
+    }
+
     /**
      * Add the content of the provided {@link DocIdSetIterator} to this builder.
      */
@@ -157,8 +162,8 @@ public class BitDocIdSet extends DocIdSet {
     public void andNot(DocIdSetIterator it) throws IOException {
       if (denseSet != null) {
         denseSet.andNot(it);
-      } else if (denseSet != null) {
-        denseSet.andNot(it);
+      } else if (sparseSet != null) {
+        sparseSet.andNot(it);
       }
     }
 
