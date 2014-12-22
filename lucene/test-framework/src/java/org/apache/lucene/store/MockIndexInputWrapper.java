@@ -2,6 +2,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -42,12 +43,17 @@ public class MockIndexInputWrapper extends IndexInput {
 
   @Override
   public void close() throws IOException {
+    if (closed) {
+      delegate.close(); // don't mask double-close bugs
+      return;
+    }
+    closed = true;
+    
     try {
       // turn on the following to look for leaks closing inputs,
       // after fixing TestTransactions
       // dir.maybeThrowDeterministicException();
     } finally {
-      closed = true;
       delegate.close();
       // Pending resolution on LUCENE-686 we may want to
       // remove the conditional check so we also track that
@@ -181,6 +187,30 @@ public class MockIndexInputWrapper extends IndexInput {
   public long readVLong() throws IOException {
     ensureOpen();
     return delegate.readVLong();
+  }
+
+  @Override
+  public int readZInt() throws IOException {
+    ensureOpen();
+    return delegate.readZInt();
+  }
+
+  @Override
+  public long readZLong() throws IOException {
+    ensureOpen();
+    return delegate.readZLong();
+  }
+
+  @Override
+  public Set<String> readStringSet() throws IOException {
+    ensureOpen();
+    return delegate.readStringSet();
+  }
+
+  @Override
+  public void skipBytes(long numBytes) throws IOException {
+    ensureOpen();
+    super.skipBytes(numBytes);
   }
 
   @Override
