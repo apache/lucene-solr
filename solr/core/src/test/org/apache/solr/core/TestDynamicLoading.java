@@ -96,10 +96,16 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     ByteBuffer jar = generateZip( TestDynamicLoading.class,BlobStoreTestRequestHandler.class);
     TestBlobHandler.postAndCheck(cloudClient, baseURL, jar,1);
 
-//    Thread.sleep(100);
-    map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
-    assertEquals(new String( ZkStateReader.toJSON(map) , StandardCharsets.UTF_8), BlobStoreTestRequestHandler.class.getName(), map.get("class"));
-
+    boolean success= false;
+    for(int i=0;i<50;i++) {
+      map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
+      if(BlobStoreTestRequestHandler.class.getName().equals(map.get("class"))){
+        success = true;
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertTrue(new String( ZkStateReader.toJSON(map) , StandardCharsets.UTF_8), success );
 
   }
 
