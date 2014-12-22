@@ -171,43 +171,101 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     }
   }
 
-  /** Test the {@link BitSet#and}, {@link BitSet#or} and {@link BitSet#andNot} methods. */
-  public void testBulkOperations() throws IOException {
+  private void testOr(float load) throws IOException {
     final int numBits = 1 + random().nextInt(100000);
-    BitSet set1 = new JavaUtilBitSet(randomSet(numBits, 0), numBits);
+    BitSet set1 = new JavaUtilBitSet(randomSet(numBits, 0), numBits); // empty
     T set2 = copyOf(set1, numBits);
-    final int iters = TEST_NIGHTLY ? 50 + random().nextInt(50) : 10 + random().nextInt(10);
-    for (int i = 0; i < iters; ++i) {
-      // make extreme percents more likely
-      float percentSet2 = rarely() ? 0 : (float) Math.pow(random().nextDouble(), 2);
-      if (random().nextBoolean()) {
-        percentSet2 = 1 - percentSet2;
+    
+    final int iterations = atLeast(10);
+    for (int iter = 0; iter < iterations; ++iter) {
+      DocIdSet otherSet = randomCopy(new JavaUtilBitSet(randomSet(numBits, load), numBits), numBits);
+      DocIdSetIterator otherIterator = otherSet.iterator();
+      if (otherIterator != null) {
+        set1.or(otherIterator);
+        set2.or(otherSet.iterator());
+        assertEquals(set1, set2, numBits);
       }
-      BitSet bulkSet = new JavaUtilBitSet(randomSet(numBits, percentSet2), numBits);
-      // operations are sometimes specialized based on the impl, so randomize the impl
-      final DocIdSet bulkSetCopy = randomCopy(bulkSet, numBits);
-      // now randomize the operation
-      if (bulkSetCopy.iterator() == null) {
-        continue;
-      }
-      DocIdSetIterator it1 = bulkSetCopy.iterator();
-      DocIdSetIterator it2 = bulkSetCopy.iterator();
-      switch (random().nextInt(3)) {
-        case 0:
-          set1.or(it1);
-          set2.or(it2);
-          break;
-        case 1:
-          set1.and(it1);
-          set2.and(it2);
-          break;
-        default:
-          set1.andNot(it1);
-          set2.andNot(it2);
-          break;
-      }
-      assertEquals(set1, set2, numBits);
     }
+  }
+
+  /** Test {@link BitSet#or(DocIdSetIterator)} on sparse sets. */
+  public void testOrSparse() throws IOException {
+    testOr(0.001f);
+  }
+
+  /** Test {@link BitSet#or(DocIdSetIterator)} on dense sets. */
+  public void testOrDense() throws IOException {
+    testOr(0.5f);
+  }
+
+  /** Test {@link BitSet#or(DocIdSetIterator)} on a random density. */
+  public void testOrRandom() throws IOException {
+    testOr(random().nextFloat());
+  }
+
+  private void testAnd(float load) throws IOException {
+    final int numBits = 1 + random().nextInt(100000);
+    BitSet set1 = new JavaUtilBitSet(randomSet(numBits, numBits), numBits); // full
+    T set2 = copyOf(set1, numBits);
+    
+    final int iterations = atLeast(10);
+    for (int iter = 0; iter < iterations; ++iter) {
+      // BitSets have specializations to merge with certain impls, so we randomize the impl...
+      DocIdSet otherSet = randomCopy(new JavaUtilBitSet(randomSet(numBits, load), numBits), numBits);
+      DocIdSetIterator otherIterator = otherSet.iterator();
+      if (otherIterator != null) {
+        set1.and(otherIterator);
+        set2.and(otherSet.iterator());
+        assertEquals(set1, set2, numBits);
+      }
+    }
+  }
+
+  /** Test {@link BitSet#and(DocIdSetIterator)} on sparse sets. */
+  public void testAndSparse() throws IOException {
+    testAnd(0.1f);
+  }
+
+  /** Test {@link BitSet#and(DocIdSetIterator)} on dense sets. */
+  public void testAndDense() throws IOException {
+    testAnd(0.99f);
+  }
+
+  /** Test {@link BitSet#and(DocIdSetIterator)} on a random density. */
+  public void testAndRandom() throws IOException {
+    testAnd(random().nextFloat());
+  }
+
+  private void testAndNot(float load) throws IOException {
+    final int numBits = 1 + random().nextInt(100000);
+    BitSet set1 = new JavaUtilBitSet(randomSet(numBits, numBits), numBits); // full
+    T set2 = copyOf(set1, numBits);
+    
+    final int iterations = atLeast(10);
+    for (int iter = 0; iter < iterations; ++iter) {
+      DocIdSet otherSet = randomCopy(new JavaUtilBitSet(randomSet(numBits, load), numBits), numBits);
+      DocIdSetIterator otherIterator = otherSet.iterator();
+      if (otherIterator != null) {
+        set1.andNot(otherIterator);
+        set2.andNot(otherSet.iterator());
+        assertEquals(set1, set2, numBits);
+      }
+    }
+  }
+
+  /** Test {@link BitSet#andNot(DocIdSetIterator)} on sparse sets. */
+  public void testAndNotSparse() throws IOException {
+    testAndNot(0.01f);
+  }
+  
+  /** Test {@link BitSet#andNot(DocIdSetIterator)} on dense sets. */
+  public void testAndNotDense() throws IOException {
+    testAndNot(0.9f);
+  }
+
+  /** Test {@link BitSet#andNot(DocIdSetIterator)} on a random density. */
+  public void testAndNotRandom() throws IOException {
+    testAndNot(random().nextFloat());
   }
 
   private static class JavaUtilBitSet extends BitSet {
