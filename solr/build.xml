@@ -299,6 +299,9 @@
     <delete dir="example/techproducts" />
     <delete dir="example/schemaless" />
     <delete includeemptydirs="true">
+      <fileset dir="bin">
+        <include name="*.pid" />
+      </fileset>
       <fileset dir="example">
         <include name="**/data/**/*" />
         <exclude name="**/.gitignore" />
@@ -482,7 +485,7 @@
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"
-                  includes="bin/* server/**/*.sh example/**/*.sh example/**/bin/" />
+                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="dist/*.jar

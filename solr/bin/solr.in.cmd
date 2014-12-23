@@ -73,3 +73,9 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
 
+REM Path to a directory where Solr creates index files, the specified directory
+REM must contain a solr.xml; by default, Solr will use server/solr
+REM set SOLR_HOME=
+
+REM Sets the port Solr binds to, default is 8983
+REM set SOLR_PORT=8983

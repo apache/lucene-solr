@@ -20,12 +20,13 @@
 # Use solr -help to see available command-line options. In addition
 # to passing command-line options, this script looks for an include
 # file named solr.in.sh to set environment variables. Specifically, 
-# the following locations are searched:
+# the following locations are searched in this order:
 #
 # ./
 # $HOME/.solr.in.sh
 # /usr/share/solr
 # /usr/local/share/solr
+# /var/solr/
 # /opt/solr
 #
 # Another option is to specify the full path to the include file in the
@@ -74,23 +75,28 @@ SOLR_TIP=`cd "$SOLR_TIP"; pwd`
 DEFAULT_SERVER_DIR=$SOLR_TIP/server
 
 # If an include wasn't specified in the environment, then search for one...
-if [ "x$SOLR_INCLUDE" == "x" ]; then
-    # Locations (in order) to use when searching for an include file.
-    for include in "`dirname "$0"`/solr.in.sh" \
-                   "$HOME/.solr.in.sh" \
-                   /usr/share/solr/solr.in.sh \
-                   /usr/local/share/solr/solr.in.sh \
-                   /opt/solr/solr.in.sh; do
-        if [ -r "$include" ]; then
-            . "$include"
-            break
-        fi
-    done
+if [ -z "$SOLR_INCLUDE" ]; then
+  # Locations (in order) to use when searching for an include file.
+  for include in "`dirname "$0"`/solr.in.sh" \
+               "$HOME/.solr.in.sh" \
+               /usr/share/solr/solr.in.sh \
+               /usr/local/share/solr/solr.in.sh \
+               /var/solr/solr.in.sh \
+               /opt/solr/solr.in.sh; do
+    if [ -r "$include" ]; then
+        . "$include"
+        break
+    fi
+  done
 elif [ -r "$SOLR_INCLUDE" ]; then
-    . "$SOLR_INCLUDE"
+  . "$SOLR_INCLUDE"
 fi
 
-if [ "$SOLR_JAVA_HOME" != "" ]; then
+if [ -z "$SOLR_PID_DIR" ]; then
+  SOLR_PID_DIR=$SOLR_TIP/bin
+fi
+
+if [ -n "$SOLR_JAVA_HOME" ]; then
   JAVA=$SOLR_JAVA_HOME/bin/java
 elif [ -n "$JAVA_HOME" ]; then
   for java in "$JAVA_HOME"/bin/amd64/java "$JAVA_HOME"/bin/java; do
@@ -114,10 +120,10 @@ function print_usage() {
     echo -e "\nERROR: $ERROR_MSG\n"
   fi
   
-  if [ "$CMD" == "" ]; then
+  if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, healthcheck, create_core, create_collection"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create_core, create_collection"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -158,7 +164,7 @@ function print_usage() {
     echo "  -s <dir>      Sets the solr.solr.home system property; Solr will create core directories under"
     echo "                  this directory. This allows you to run multiple Solr instances on the same host"
     echo "                  while reusing the same server directory set using the -d parameter. If set, the"
-    echo "                  specified directory should contain a solr.xml file. The default value is example/solr."
+    echo "                  specified directory should contain a solr.xml file. The default value is server/solr."
     echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
     echo "                  on which example is run."
     echo ""
@@ -187,7 +193,7 @@ function print_usage() {
     echo ""
     echo "  -all          Find and stop all running Solr servers on this host"
     echo ""
-    echo "  NOTE: To see if any Solr servers are running, do: solr -i"
+    echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
   elif [ "$CMD" == "healthcheck" ]; then
     echo ""
@@ -196,6 +202,12 @@ function print_usage() {
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
     echo "  -z <zkHost>      ZooKeeper connection string; default is localhost:9983"
+    echo ""
+  elif [ "$CMD" == "status" ]; then
+    echo ""
+    echo "Usage: solr status"
+    echo ""
+    echo "  NOTE: This command will show the status of all running Solr servers"
     echo ""
   elif [ "$CMD" == "create_core" ]; then
     echo ""
@@ -232,12 +244,11 @@ function print_usage() {
 } # end print_usage
 
 # used to show the script is still alive when waiting on work to complete
-spinner()
-{
+function spinner() {
   local pid=$1
   local delay=0.5
   local spinstr='|/-\'
-  while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+  while [ "$(ps aux | awk '{print $2}' | grep $pid)" ]; do
       local temp=${spinstr#?}
       printf " [%c]  " "$spinstr"
       local spinstr=$temp${spinstr%"$temp"}
@@ -250,8 +261,8 @@ spinner()
 # given a port, find the pid for a Solr process
 function solr_pid_by_port() {
   THE_PORT="$1"
-  if [ -e "$SOLR_TIP/bin/solr-$THE_PORT.pid" ]; then
-    PID=`cat $SOLR_TIP/bin/solr-$THE_PORT.pid`
+  if [ -e "$SOLR_PID_DIR/solr-$THE_PORT.pid" ]; then
+    PID=`cat $SOLR_PID_DIR/solr-$THE_PORT.pid`
     CHECK_PID=`ps auxww | awk '{print $2}' | grep $PID | sort -r | tr -d ' '`
     if [ "$CHECK_PID" != "" ]; then
       local solrPID=$PID
@@ -294,26 +305,27 @@ function run_tool() {
 # get information about any Solr nodes running on this host
 function get_info() {
   # first, see if Solr is running
-  numSolrs=`find $SOLR_TIP/bin -name "solr-*.pid" -type f | wc -l | tr -d ' '`
+  numSolrs=`find $SOLR_PID_DIR -name "solr-*.pid" -type f | wc -l | tr -d ' '`
   if [ "$numSolrs" != "0" ]; then
     echo -e "\nFound $numSolrs Solr nodes: "
-    for PIDF in `find $SOLR_TIP/bin -name "solr-*.pid" -type f`
+    for PIDF in `find $SOLR_PID_DIR -name "solr-*.pid" -type f`
       do
         ID=`cat $PIDF`
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
-          echo ""
-          echo "Solr process $ID running on port $port"
+          echo -e "\nSolr process $ID running on port $port"
           run_tool status -solr http://localhost:$port/solr
           echo ""
-       fi
+        else
+          echo -e "\nSolr process $ID from $PIDF not found."
+        fi
     done
   else
     # no pid files but check using ps just to be sure
-    numSolrs=`ps auxww | grep java | grep start.jar | wc -l | sed -e 's/^[ \t]*//'`
+    numSolrs=`ps auxww | grep start.jar | grep solr.solr.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
     if [ "$numSolrs" != "0" ]; then
       echo -e "\nFound $numSolrs Solr nodes: "
-      for ID in `ps auxww | grep java | grep start.jar | awk '{print $2}' | sort -r`
+      for ID in `ps auxww | grep start.jar | grep solr.solr.home | grep -v grep | awk '{print $2}' | sort -r`
         do
           port=`jetty_port "$ID"`
           if [ "$port" != "" ]; then
@@ -345,7 +357,7 @@ function stop_solr() {
     $JAVA -jar $DIR/start.jar STOP.PORT=$STOP_PORT STOP.KEY=$STOP_KEY --stop || true
     (sleep 5) &
     spinner $!
-    rm -f $SOLR_TIP/bin/solr-$SOLR_PORT.pid
+    rm -f $SOLR_PID_DIR/solr-$SOLR_PORT.pid
   else
     echo -e "No Solr nodes found to stop."
     exit 0
@@ -356,7 +368,7 @@ function stop_solr() {
     echo -e "Solr process $SOLR_PID is still running; forcefully killing it now."
     kill -9 $SOLR_PID
     echo "Killed process $SOLR_PID"
-    rm -f $SOLR_TIP/bin/solr-$SOLR_PORT.pid
+    rm -f $SOLR_PID_DIR/solr-$SOLR_PORT.pid
     sleep 1
   fi
 
@@ -373,7 +385,7 @@ if [ $# -eq 1 ]; then
         print_usage ""
         exit
     ;;
-    -info|-i)        
+    -info|-i|status)
         get_info
         exit
     ;;
@@ -395,6 +407,13 @@ else
   exit  
 fi
 
+if [ "$SCRIPT_CMD" == "status" ]; then
+  # hacky - the script hits this if the user passes additional args with the status command,
+  # which is not supported but also not worth complaining about either
+  get_info
+  exit
+fi
+
 # run a healthcheck and exit if requested
 if [ "$SCRIPT_CMD" == "healthcheck" ]; then
 
@@ -402,7 +421,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
     while true; do  
       case $1 in
           -c|-collection)
-              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Collection name is required when using the $1 option!"
                 exit 1
               fi
@@ -410,7 +429,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               shift 2
           ;;
           -z|-zkhost)          
-              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "ZooKeepeer connection string is required when using the $1 option!"
                 exit 1
               fi
@@ -437,11 +456,11 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
     done
   fi
   
-  if [ "$ZK_HOST" == "" ]; then
+  if [ -z "$ZK_HOST" ]; then
     ZK_HOST=localhost:9983
   fi
   
-  if [ "$HEALTHCHECK_COLLECTION" == "" ]; then
+  if [ -z "$HEALTHCHECK_COLLECTION" ]; then
     echo "collection parameter is required!"
     print_usage "healthcheck"
     exit 1  
@@ -466,7 +485,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
     while true; do
       case $1 in
           -n|-name)
-              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "$CREATE_TYPE name is required when using the $1 option!"
                 exit 1
               fi
@@ -474,7 +493,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
               shift 2
           ;;
           -c|-configset)
-              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Configset name is required when using the $1 option!"
                 exit 1
               fi
@@ -482,7 +501,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
               shift 2
           ;;
           -s|-shards)
-              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Shard count is required when using the $1 option!"
                 exit 1
               fi
@@ -490,7 +509,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
               shift 2
           ;;
           -rf|-replicationFactor)
-              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Replication factor is required when using the $1 option!"
                 exit 1
               fi
@@ -498,7 +517,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
               shift 2
           ;;
           -p|-port)
-              if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
                 exit 1
               fi
@@ -525,17 +544,17 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
     done
   fi
 
-  if [ "$CREATE_CONFIGSET" == "" ]; then
+  if [ -z "$CREATE_CONFIGSET" ]; then
     CREATE_CONFIGSET=data_driven_schema_configs
   fi
 
-  if [ "$CREATE_NAME" == "" ]; then
+  if [ -z "$CREATE_NAME" ]; then
     echo "$CREATE_TYPE name is required!"
     print_usage "$SCRIPT_CMD"
     exit 1
   fi
 
-  if [ "$CREATE_PORT" == "" ]; then
+  if [ -z "$CREATE_PORT" ]; then
     for ID in `ps auxww | grep java | grep start.jar | awk '{print $2}' | sort -r`
       do
         port=`jetty_port "$ID"`
@@ -546,7 +565,7 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
     done
   fi
 
-  if [ "$CREATE_PORT" == "" ]; then
+  if [ -z "$CREATE_PORT" ]; then
     echo "Failed to determine the port of a local Solr instance, cannot create $CREATE_TYPE $CREATE_NAME"
     exit 1
   fi
@@ -564,7 +583,7 @@ fi
 
 
 # verify the command given is supported
-if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ]; then
+if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
   print_usage "" "$SCRIPT_CMD is not a valid command!"
   exit 1
 fi
@@ -581,7 +600,7 @@ if [ $# -gt 0 ]; then
             shift
         ;;
         -d|-dir)
-            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
               exit 1
             fi
@@ -601,7 +620,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -s|-solr.home)
-            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
               exit 1
             fi
@@ -610,7 +629,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -e|-example)
-            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Example name is required when using the $1 option!"
               exit 1
             fi
@@ -622,7 +641,7 @@ if [ $# -gt 0 ]; then
             shift
         ;;
         -h|-host)
-            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Hostname is required when using the $1 option!"
               exit 1
             fi
@@ -630,7 +649,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -m|-memory)
-            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Memory setting is required when using the $1 option!"
               exit 1
             fi
@@ -638,7 +657,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -p|-port)
-            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Port number is required when using the $1 option!"
               exit 1
             fi
@@ -646,11 +665,12 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -z|-zkhost)
-            if [[ "$2" == "" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
               exit 1
             fi
             ZK_HOST="$2"
+            SOLR_MODE="solrcloud"
             shift 2
         ;;
         -a|-addlopts)
@@ -711,7 +731,7 @@ else
   SOLR_HOST_ARG=""
 fi
 
-if [ "$SOLR_SERVER_DIR" == "" ]; then
+if [ -z "$SOLR_SERVER_DIR" ]; then
   SOLR_SERVER_DIR=$DEFAULT_SERVER_DIR
 fi
 
@@ -740,7 +760,7 @@ if [ "$EXAMPLE" != "" ]; then
               while true
               do
                 CLOUD_NUM_NODES=`echo $USER_INPUT | tr -d ' '`
-                if [ "$CLOUD_NUM_NODES" == "" ]; then
+                if [ -z "$CLOUD_NUM_NODES" ]; then
                   CLOUD_NUM_NODES=2
                 fi
                 if [[ $CLOUD_NUM_NODES > 4 || $CLOUD_NUM_NODES < 1 ]]; then
@@ -760,7 +780,7 @@ if [ "$EXAMPLE" != "" ]; then
                   CLOUD_PORT=`echo $USER_INPUT | tr -d ' '`
                   
                   # handle the default selection or empty input
-                  if [ "$CLOUD_PORT" == "" ]; then
+                  if [ -z "$CLOUD_PORT" ]; then
                     CLOUD_PORT=${CLOUD_PORTS[$s]}
                   fi
                                   
@@ -840,15 +860,15 @@ if [[ "$FG" == "true" && "$EXAMPLE" != "" ]]; then
   echo -e "\nWARNING: Foreground mode (-f) not supported when running examples.\n"
 fi
 
-if [ "$STOP_KEY" == "" ]; then
+if [ -z "$STOP_KEY" ]; then
   STOP_KEY="solrrocks"
 fi
 
 # stop all if no port specified
-if [[ "$SCRIPT_CMD" == "stop" && "$SOLR_PORT" == "" ]]; then
+if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
   if $stop_all; then
     none_stopped=true
-    for PIDF in `find $SOLR_TIP/bin -name "solr-*.pid" -type f`
+    for PIDF in `find $SOLR_PID_DIR -name "solr-*.pid" -type f`
       do
         NEXT_PID=`cat $PIDF`
         port=`jetty_port "$NEXT_PID"`
@@ -862,17 +882,33 @@ if [[ "$SCRIPT_CMD" == "stop" && "$SOLR_PORT" == "" ]]; then
       echo -e "\nNo Solr nodes found to stop.\n"
     fi
   else
-    echo -e "\nERROR: Must either specify a port using -p or -all to stop all Solr nodes on this host.\n"
-    exit 1
+    # not stopping all and don't have a port, but if we can find the pid file for the default port 8983, then use that
+    none_stopped=true
+    if [ -e "$SOLR_PID_DIR/solr-8983.pid" ]; then
+      PID=`cat $SOLR_PID_DIR/solr-8983.pid`
+      CHECK_PID=`ps auxww | awk '{print $2}' | grep $PID | sort -r | tr -d ' '`
+      if [ "$CHECK_PID" != "" ]; then
+        port=`jetty_port "$CHECK_PID"`
+        if [ "$port" != "" ]; then
+          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$CHECK_PID"
+          none_stopped=false
+        fi
+        rm -f $SOLR_PID_DIR/solr-8983.pid
+      fi
+    fi
+    if $none_stopped; then
+      echo -e "\nMust either specify a port using -p or -all to stop all Solr nodes on this host.\nUse the status command to see if any Solr nodes are running."
+      exit 1
+    fi
   fi
   exit
 fi
 
-if [ "$SOLR_PORT" == "" ]; then
+if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT="8983"
 fi
 
-if [ "$STOP_PORT" == "" ]; then
+if [ -z "$STOP_PORT" ]; then
   STOP_PORT=`expr $SOLR_PORT - 1000`
 fi
 
@@ -880,20 +916,20 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
 
-  if [ "$SOLR_PID" == "" ]; then
+  if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
     SOLR_PID=`ps auxww | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
   fi
 
   if [ "$SOLR_PID" != "" ]; then
-    echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\n"
+    echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
     exit 1
   fi
 else
   # either stop or restart
   # see if Solr is already running
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
-  if [ "$SOLR_PID" == "" ]; then
+  if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
     SOLR_PID=`ps auxww | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
   fi
@@ -907,11 +943,12 @@ else
   fi
 fi
 
-if [ "$SOLR_HOME" == "" ]; then
+if [ -z "$SOLR_HOME" ]; then
   SOLR_HOME="$SOLR_SERVER_DIR/solr"
 else
   if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
     SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
+    SOLR_PID_DIR=$SOLR_HOME
   elif [[ $SOLR_HOME != /* ]] && [[ -d "`pwd`/$SOLR_HOME" ]]; then
     SOLR_HOME="`pwd`/$SOLR_HOME"
   fi
@@ -919,11 +956,16 @@ fi
 
 # This is quite hacky, but examples rely on a different log4j.properties
 # so that we can write logs for examples to $SOLR_HOME/../logs
-SOLR_LOGS_DIR=$SOLR_SERVER_DIR/logs
+if [ -z "$SOLR_LOGS_DIR" ]; then
+  SOLR_LOGS_DIR=$SOLR_SERVER_DIR/logs
+fi
 EXAMPLE_DIR=$SOLR_TIP/example
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = $EXAMPLE_DIR ]; then
   LOG4J_PROPS=$EXAMPLE_DIR/resources/log4j.properties
   SOLR_LOGS_DIR=$SOLR_HOME/../logs
+fi
+
+if [ -n "$LOG4J_PROPS" ]; then
   LOG4J_CONFIG="-Dlog4j.configuration=file:$LOG4J_PROPS"
 fi
 
@@ -964,7 +1006,7 @@ if [ "$GC_LOG_OPTS" != "" ]; then
 fi
 
 if [ "$SOLR_MODE" == "solrcloud" ]; then
-  if [ "$ZK_CLIENT_TIMEOUT" == "" ]; then
+  if [ -z "$ZK_CLIENT_TIMEOUT" ]; then
     ZK_CLIENT_TIMEOUT="15000"
   fi
   
@@ -990,7 +1032,7 @@ fi
 # These are useful for attaching remove profilers like VisualVM/JConsole
 if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
 
-  if [ "$RMI_PORT" == "" ]; then
+  if [ -z "$RMI_PORT" ]; then
     RMI_PORT=1$SOLR_PORT
   fi
 
@@ -1013,11 +1055,11 @@ if [ "$SOLR_HEAP" != "" ]; then
   SOLR_JAVA_MEM="-Xms$SOLR_HEAP -Xmx$SOLR_HEAP"
 fi
 
-if [ "$SOLR_JAVA_MEM" == "" ]; then
+if [ -z "$SOLR_JAVA_MEM" ]; then
   SOLR_JAVA_MEM="-Xms512m -Xmx512m"
 fi
 
-if [ "$SOLR_TIMEZONE" == "" ]; then
+if [ -z "$SOLR_TIMEZONE" ]; then
   SOLR_TIMEZONE="UTC"
 fi
 
@@ -1099,10 +1141,10 @@ $SOLR_OPTS"
 
   if [ "$run_in_foreground" == "true" ]; then
     echo -e "\nStarting Solr$IN_CLOUD_MODE on port $SOLR_PORT from $SOLR_SERVER_DIR\n"
-    $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar
+    $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -jar start.jar
   else
     # run Solr in the background
-    nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT" -jar start.jar 1>$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log 2>&1 & echo $! > $SOLR_TIP/bin/solr-$SOLR_PORT.pid
+    nohup $JAVA $SOLR_START_OPTS $SOLR_ADDL_ARGS -XX:OnOutOfMemoryError="$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" -jar start.jar 1>$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log 2>&1 & echo $! > $SOLR_PID_DIR/solr-$SOLR_PORT.pid
   
     # no lsof on cygwin though
     if [ "$hasLsof" != "" ]; then
@@ -1112,7 +1154,7 @@ $SOLR_OPTS"
       while true
       do
         running=`lsof -Pni:$SOLR_PORT`
-        if [ "$running" == "" ]; then
+        if [ -z "$running" ]; then
           if [ $loops -lt 6 ]; then
             sleep 5
             loops=$[$loops+1]
@@ -1184,7 +1226,7 @@ else
 
   # if user did not define a specific -z parameter, assume embedded in first cloud node we launched above
   zk_host=$ZK_HOST
-  if [ "$zk_host" == "" ]; then
+  if [ -z "$zk_host" ]; then
     zk_port=$[$SOLR_PORT+1000]
     zk_host=localhost:$zk_port
   fi
@@ -1213,7 +1255,7 @@ else
     CLOUD_COLLECTION=`echo $USER_INPUT | tr -d ' '`
 
     # handle the default selection or empty input
-    if [ "$CLOUD_COLLECTION" == "" ]; then
+    if [ -z "$CLOUD_COLLECTION" ]; then
       CLOUD_COLLECTION=gettingstarted
     fi                    
     echo $CLOUD_COLLECTION
@@ -1224,7 +1266,7 @@ else
     CLOUD_NUM_SHARDS=`echo $USER_INPUT | tr -d ' '`
     
     # handle the default selection or empty input
-    if [ "$CLOUD_NUM_SHARDS" == "" ]; then
+    if [ -z "$CLOUD_NUM_SHARDS" ]; then
       CLOUD_NUM_SHARDS=2
     fi                    
     echo $CLOUD_NUM_SHARDS
@@ -1235,7 +1277,7 @@ else
     CLOUD_REPFACT=`echo $USER_INPUT | tr -d ' '`
     
     # handle the default selection or empty input
-    if [ "$CLOUD_REPFACT" == "" ]; then
+    if [ -z "$CLOUD_REPFACT" ]; then
       CLOUD_REPFACT=2
     fi                    
     echo $CLOUD_REPFACT
@@ -1247,7 +1289,7 @@ else
     CLOUD_CONFIG=`echo $USER_INPUT | tr -d ' '`
 
     # handle the default selection or empty input
-    if [ "$CLOUD_CONFIG" == "" ]; then
+    if [ -z "$CLOUD_CONFIG" ]; then
       CLOUD_CONFIG=data_driven_schema_configs
     fi                    
   fi
