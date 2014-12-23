@@ -18,17 +18,26 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Properties;
 
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
@@ -39,7 +48,8 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
     testCreateAndDeleteShard();
     testReloadCollection();
     testCreateAndDeleteAlias();
-    testSplitShard();    
+    testSplitShard();
+    testCreateCollectionWithPropertyParam();
   }
 
   public void tearDown() throws Exception {
@@ -214,5 +224,54 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
     assertEquals("ClusterState: "+ clusterState.getActiveSlices(collectionName), 5, slices.size());  
     
   }
-  
+
+  private void testCreateCollectionWithPropertyParam() throws Exception {
+    String collectionName = "solrj_test_core_props";
+    
+    File tmpDir = createTempDir("testPropertyParamsForCreate").toFile();
+    File instanceDir = new File(tmpDir, "instanceDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+    File dataDir = new File(tmpDir, "dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+    File ulogDir = new File(tmpDir, "ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+
+    Properties properties = new Properties();
+    properties.put(CoreAdminParams.INSTANCE_DIR, instanceDir.getAbsolutePath());
+    properties.put(CoreAdminParams.DATA_DIR, dataDir.getAbsolutePath());
+    properties.put(CoreAdminParams.ULOG_DIR, ulogDir.getAbsolutePath());
+
+    CollectionAdminRequest.Create createReq = new CollectionAdminRequest.Create();
+    createReq.setCollectionName(collectionName);
+    createReq.setNumShards(1);
+    createReq.setConfigName("conf1");
+    createReq.setProperties(properties);
+
+    CollectionAdminResponse response = createReq.process(cloudClient);
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
+    assertEquals(1, coresStatus.size());
+
+    DocCollection testCollection = cloudClient.getZkStateReader()
+        .getClusterState().getCollection(collectionName);
+
+    Replica replica1 = testCollection.getReplica("core_node1");
+
+    HttpSolrServer solrServer = new HttpSolrServer(replica1.getStr("base_url"));
+    try {
+      CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), solrServer);
+      NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
+      String dataDirStr = (String) coreStatus.get("dataDir");
+      String instanceDirStr = (String) coreStatus.get("instanceDir");
+      assertEquals("Instance dir does not match param passed in property.instanceDir syntax",
+          new File(instanceDirStr).getAbsolutePath(), instanceDir.getAbsolutePath());
+      assertEquals("Data dir does not match param given in property.dataDir syntax",
+          new File(dataDirStr).getAbsolutePath(), dataDir.getAbsolutePath());
+
+    } finally {
+      solrServer.shutdown();
+    }
+
+    CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete();
+    deleteCollectionRequest.setCollectionName(collectionName);
+    deleteCollectionRequest.process(cloudClient);
+  }
 }
