@@ -531,6 +531,8 @@ Other Changes
 
 * SOLR-6881: Add split.key support for SPLITSHARD via SolrJ (Anshum Gupta)
 
+* SOLR-6883: CLUSTERPROP API switch case does not call break. (Varun Thacker via shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

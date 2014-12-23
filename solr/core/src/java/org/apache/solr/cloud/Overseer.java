@@ -398,6 +398,7 @@ public class Overseer implements Closeable {
             return new SliceMutator(getZkStateReader()).addReplica(clusterState, message);
           case CLUSTERPROP:
             handleProp(message);
+            break;
           case ADDREPLICAPROP:
             return new ReplicaMutator(getZkStateReader()).addReplicaProperty(clusterState, message);
           case DELETEREPLICAPROP:
@@ -470,8 +471,8 @@ public class Overseer implements Closeable {
       else m.put(name,val);
 
       try {
-        if(reader.getZkClient().exists(ZkStateReader.CLUSTER_PROPS,true))
-          reader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS,ZkStateReader.toJSON(m),true);
+        if (reader.getZkClient().exists(ZkStateReader.CLUSTER_PROPS, true))
+          reader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS, ZkStateReader.toJSON(m), true);
         else
           reader.getZkClient().create(ZkStateReader.CLUSTER_PROPS, ZkStateReader.toJSON(m),CreateMode.PERSISTENT, true);
         clusterProps = reader.getClusterProps();
