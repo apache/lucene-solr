@@ -356,8 +356,9 @@ Optimizations
   compare-and-set writes. This change also adds batching for consecutive messages
   belonging to the same collection with stateFormat=2. (shalin)
 
-* SOLR-6680: DefaultSolrHighlighter can sometimes avoid CachingTokenFilter to save memory and
-  enable other optimizations. (David Smiley)
+* SOLR-6680: DefaultSolrHighlighter can sometimes avoid CachingTokenFilter with
+  hl.usePhraseHighlighter, and can be more efficient handling data from term vectors.
+  (David Smiley)
 
 Other Changes
 ----------------------

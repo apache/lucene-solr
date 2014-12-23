@@ -16,16 +16,42 @@
  */
 package org.apache.solr.highlight;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.highlight.*;
+import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.Formatter;
-import org.apache.lucene.search.vectorhighlight.*;
+import org.apache.lucene.search.highlight.Fragmenter;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.lucene.search.highlight.OffsetLimitTokenFilter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.QueryTermScorer;
+import org.apache.lucene.search.highlight.Scorer;
+import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
+import org.apache.lucene.search.vectorhighlight.FastVectorHighlighter;
+import org.apache.lucene.search.vectorhighlight.FieldQuery;
+import org.apache.lucene.search.vectorhighlight.FragListBuilder;
+import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
@@ -44,9 +70,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * 
@@ -460,11 +483,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     String[] summaries = null;
     List<TextFragment> frags = new ArrayList<>();
 
-    TermOffsetsTokenStream tots = null; // to be non-null iff we're using TermOffsets optimization (multi-valued)
+    //Try term vectors, which is faster
     TokenStream tvStream = TokenSources.getTokenStreamWithOffsets(searcher.getIndexReader(), docId, fieldName);
+    final OffsetWindowTokenFilter tvWindowStream;
     if (tvStream != null && schemaField.multiValued() && isActuallyMultiValued(allFields, fieldName)) {
-      tots = new TermOffsetsTokenStream(tvStream);
+      tvWindowStream = new OffsetWindowTokenFilter(tvStream);
+    } else {
+      tvWindowStream = null;
     }
+
     int mvToExamine = Integer.parseInt(req.getParams().get(HighlightParams.MAX_MULTIVALUED_TO_EXAMINE,
         Integer.toString(Integer.MAX_VALUE)));
     int mvToMatch = Integer.parseInt(req.getParams().get(HighlightParams.MAX_MULTIVALUED_TO_MATCH,
@@ -478,10 +505,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       --mvToExamine;
       String thisText = thisField.stringValue();
       TokenStream tstream;
-      if (tots != null) {
-        // if we're using TermOffsets optimization (multi-valued field with term vectors), then get the next
-        // field value's TokenStream (i.e. get field j's TokenStream) from tots:
-        tstream = tots.getMultiValuedTokenStream(thisText.length());
+      if (tvWindowStream != null) {
+        // if we have a multi-valued field with term vectors, then get the next offset window
+        tstream = tvWindowStream.advanceToNextWindowOfLength(thisText.length());
       } else if (tvStream != null) {
         tstream = tvStream; // single-valued with term vectors
       } else {
@@ -685,6 +711,13 @@ final class TokenOrderingFilter extends TokenFilter {
   }
 
   @Override
+  public void reset() throws IOException {
+    super.reset();
+    queue.clear();
+    done = false;
+  }
+
+  @Override
   public boolean incrementToken() throws IOException {
     while (!done && queue.size() < windowSize) {
       if (!input.incrementToken()) {
@@ -726,76 +759,69 @@ class OrderedToken {
   int startOffset;
 }
 
-class TermOffsetsTokenStream {
+/** For use with term vectors of multi-valued fields. We want an offset based window into it's TokenStream. */
+final class OffsetWindowTokenFilter extends TokenFilter {
 
-  final TokenStream bufferedTokenStream;
-  final OffsetAttribute bufferedOffsetAtt;
-  State bufferedToken;
-  int bufferedStartOffset;
-  int bufferedEndOffset;
-  int startOffset = 0;
-  int endOffset;
-  boolean bufferedTokenStreamWasReset = false;
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private int windowStartOffset;
+  private int windowEndOffset = -1;//exclusive
+  private boolean windowTokenIncremented = false;
+  private boolean inputWasReset = false;
+  private State capturedState;//only used for first token of each subsequent window
 
-  public TermOffsetsTokenStream( TokenStream tstream ){
-    bufferedTokenStream = tstream;
-    bufferedOffsetAtt = bufferedTokenStream.addAttribute(OffsetAttribute.class);
+  OffsetWindowTokenFilter(TokenStream input) {//input should not have been reset already
+    super(input);
   }
 
-  public TokenStream getMultiValuedTokenStream( final int length ){
-    endOffset = startOffset + length;
-    return new MultiValuedStream(length);
+  //Called at the start of each value/window
+  OffsetWindowTokenFilter advanceToNextWindowOfLength(int length) {
+    windowStartOffset = windowEndOffset + 1;//unclear why there's a single offset gap between values, but tests show it
+    windowEndOffset = windowStartOffset + length;
+    windowTokenIncremented = false;//thereby permit reset()
+    return this;
   }
-  
-  final class MultiValuedStream extends TokenStream {
-    private final int length;
-    private boolean incrementTokenWasCalled = false;
-    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-    MultiValuedStream(int length) {
-      super(bufferedTokenStream.cloneAttributes());//clone so we don't manipulate the buffered offsets
-      this.length = length;
+  @Override
+  public void reset() throws IOException {
+    //we do some state checking to ensure this is being used correctly
+    if (windowTokenIncremented) {
+      throw new IllegalStateException("This TokenStream does not support being subsequently reset()");
     }
-
-    @Override
-    public void reset() throws IOException {
-      //this flag allows reset() to be called multiple times up-front without a problem
-      if (incrementTokenWasCalled) {
-        throw new IllegalStateException("This TokenStream does not support being subsequently reset()");
-      }
-      if (!bufferedTokenStreamWasReset) {
-        bufferedTokenStream.reset();
-        bufferedTokenStreamWasReset = true;
-      }
+    if (!inputWasReset) {
       super.reset();
+      inputWasReset = true;
     }
+  }
 
-    @Override
-    public boolean incrementToken() throws IOException {
-      incrementTokenWasCalled = true;
-      while( true ){
-        if( bufferedToken == null ) {
-          if (!bufferedTokenStream.incrementToken())
-            return false;
-          bufferedToken = bufferedTokenStream.captureState();
-          bufferedStartOffset = bufferedOffsetAtt.startOffset();
-          bufferedEndOffset = bufferedOffsetAtt.endOffset();
-        }
-
-        if( startOffset <= bufferedStartOffset &&
-            bufferedEndOffset <= endOffset ){
-          restoreState(bufferedToken);
-          bufferedToken = null;
-          offsetAtt.setOffset( offsetAtt.startOffset() - startOffset, offsetAtt.endOffset() - startOffset );
-          return true;
-        }
-        else if( bufferedEndOffset > endOffset ){
-          startOffset += length + 1;
+  @Override
+  public boolean incrementToken() throws IOException {
+    assert inputWasReset;
+    windowTokenIncremented = true;
+    while (true) {
+      //increment Token
+      if (capturedState == null) {
+        if (!input.incrementToken()) {
           return false;
         }
-        bufferedToken = null;
+      } else {
+        restoreState(capturedState);
+        capturedState = null;
+        //Set posInc to 1 on first token of subsequent windows. To be thorough, we could subtract posIncGap?
+        posIncAtt.setPositionIncrement(1);
       }
-    }
 
+      final int startOffset = offsetAtt.startOffset();
+      final int endOffset = offsetAtt.endOffset();
+      if (startOffset >= windowEndOffset) {//end of window
+        capturedState = captureState();
+        return false;
+      }
+      if (startOffset >= windowStartOffset) {//in this window
+        offsetAtt.setOffset(startOffset - windowStartOffset, endOffset - windowStartOffset);
+        return true;
+      }
+      //otherwise this token is before the window; continue to advance
+    }
   }
 }
