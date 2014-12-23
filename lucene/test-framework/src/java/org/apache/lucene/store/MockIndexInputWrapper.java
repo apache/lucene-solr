@@ -1,5 +1,6 @@
 package org.apache.lucene.store;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -43,21 +44,20 @@ public class MockIndexInputWrapper extends IndexInput {
 
   @Override
   public void close() throws IOException {
+    // TODO turn on the following to look for leaks closing inputs,
+    // after fixing TestTransactions
+    // dir.maybeThrowDeterministicException();
     if (closed) {
       delegate.close(); // don't mask double-close bugs
       return;
     }
     closed = true;
     
-    try {
-      // turn on the following to look for leaks closing inputs,
-      // after fixing TestTransactions
-      // dir.maybeThrowDeterministicException();
-    } finally {
-      delegate.close();
+    try (Closeable delegate = this.delegate) {
       // Pending resolution on LUCENE-686 we may want to
       // remove the conditional check so we also track that
       // all clones get closed:
+      assert delegate != null;
       if (!isClone) {
         dir.removeIndexInput(this, name);
       }
