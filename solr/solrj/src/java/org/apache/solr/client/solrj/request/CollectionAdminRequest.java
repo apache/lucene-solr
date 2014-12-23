@@ -229,12 +229,21 @@ public class CollectionAdminRequest extends SolrRequest
   //a split shard collection request
   public static class SplitShard extends CollectionShardAdminRequest {
     protected String ranges;
+    protected String splitKey;
 
     private Properties properties;
 
     public void setRanges(String ranges) { this.ranges = ranges; }
     public String getRanges() { return ranges; }
 
+    public void setSplitKey(String splitKey) {
+      this.splitKey = splitKey;
+    }
+    
+    public String getSplitKey() {
+      return this.splitKey;
+    }
+    
     public Properties getProperties() {
       return properties;
     }
@@ -252,6 +261,9 @@ public class CollectionAdminRequest extends SolrRequest
       ModifiableSolrParams params = getCommonParams();
       params.set( "ranges", ranges);
 
+      if(splitKey != null)
+        params.set("split.key", this.splitKey);
+      
       if(properties != null) {
         addProperties(params, properties);
       }
