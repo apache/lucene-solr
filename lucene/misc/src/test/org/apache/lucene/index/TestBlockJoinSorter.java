@@ -1,4 +1,4 @@
-package org.apache.lucene.index.sorter;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BlockJoinComparatorSource;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;

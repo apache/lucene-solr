@@ -1,4 +1,4 @@
-package org.apache.lucene.index.sorter;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,13 +18,13 @@ package org.apache.lucene.index.sorter;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeState;
@@ -76,12 +76,20 @@ public final class SortingMergePolicy extends MergePolicy {
     public List<LeafReader> getMergeReaders() throws IOException {
       if (unsortedReaders == null) {
         unsortedReaders = super.getMergeReaders();
+        // wrap readers, to be optimal for merge;
+        List<LeafReader> wrapped = new ArrayList<>(unsortedReaders.size());
+        for (LeafReader leaf : unsortedReaders) {
+          if (leaf instanceof SegmentReader) {
+            leaf = new MergeReaderWrapper((SegmentReader)leaf);
+          }
+          wrapped.add(leaf);
+        }
         final LeafReader atomicView;
-        if (unsortedReaders.size() == 1) {
-          atomicView = unsortedReaders.get(0);
+        if (wrapped.size() == 1) {
+          atomicView = wrapped.get(0);
         } else {
-          final IndexReader multiReader = new MultiReader(unsortedReaders.toArray(new LeafReader[unsortedReaders.size()]));
-          atomicView = SlowCompositeReaderWrapper.wrap(multiReader);
+          final CompositeReader multiReader = new MultiReader(wrapped.toArray(new LeafReader[wrapped.size()]));
+          atomicView = new SlowCompositeReaderWrapper(multiReader, true);
         }
         docMap = sorter.sort(atomicView);
         sortedView = SortingLeafReader.wrap(atomicView, docMap);

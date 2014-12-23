@@ -47,6 +47,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   private final CompositeReader in;
   private final Fields fields;
   private final Bits liveDocs;
+  private final boolean merging;
   
   /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
@@ -54,19 +55,20 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
    */
   public static LeafReader wrap(IndexReader reader) throws IOException {
     if (reader instanceof CompositeReader) {
-      return new SlowCompositeReaderWrapper((CompositeReader) reader);
+      return new SlowCompositeReaderWrapper((CompositeReader) reader, false);
     } else {
       assert reader instanceof LeafReader;
       return (LeafReader) reader;
     }
   }
 
-  private SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
+  SlowCompositeReaderWrapper(CompositeReader reader, boolean merging) throws IOException {
     super();
     in = reader;
     fields = MultiFields.getFields(in);
     liveDocs = MultiFields.getLiveDocs(in);
     in.registerParentReader(this);
+    this.merging = merging;
   }
 
   @Override
@@ -125,7 +127,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
         SortedDocValues dv = MultiDocValues.getSortedValues(in, field);
         if (dv instanceof MultiSortedDocValues) {
           map = ((MultiSortedDocValues)dv).mapping;
-          if (map.owner == getCoreCacheKey()) {
+          if (map.owner == getCoreCacheKey() && merging == false) {
             cachedOrdMaps.put(field, map);
           }
         }
@@ -163,7 +165,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
         SortedSetDocValues dv = MultiDocValues.getSortedSetValues(in, field);
         if (dv instanceof MultiSortedSetDocValues) {
           map = ((MultiSortedSetDocValues)dv).mapping;
-          if (map.owner == getCoreCacheKey()) {
+          if (map.owner == getCoreCacheKey() && merging == false) {
             cachedOrdMaps.put(field, map);
           }
         }

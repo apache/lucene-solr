@@ -1,4 +1,4 @@
-package org.apache.lucene.index.sorter;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -70,7 +70,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     return doc;
   }
 
-  static MergePolicy newSortingMergePolicy(Sort sort) {
+  public static MergePolicy newSortingMergePolicy(Sort sort) {
     // usually create a MP with a low merge factor so that many merges happen
     MergePolicy mp;
     int thingToDo = random().nextInt(3);

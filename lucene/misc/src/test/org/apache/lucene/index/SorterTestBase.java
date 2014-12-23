@@ -1,4 +1,4 @@
-package org.apache.lucene.index.sorter;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -59,8 +59,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.sorter.SortingLeafReader.SortingDocsAndPositionsEnum;
-import org.apache.lucene.index.sorter.SortingLeafReader.SortingDocsEnum;
+import org.apache.lucene.index.SortingLeafReader.SortingDocsAndPositionsEnum;
+import org.apache.lucene.index.SortingLeafReader.SortingDocsEnum;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermStatistics;
