@@ -210,6 +210,9 @@ New Features
 
 * SOLR-6801:  Load RequestHandler from blob store (Noble Paul)
 
+* SOLR-6729: createNodeSet.shuffle=(true|false) support for /admin/collections?action=CREATE.
+  (Christine Poerschke, Ramkumar Aiyengar via Mark Miller)
+  
 Bug Fixes
 ----------------------
 
