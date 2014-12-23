@@ -1578,7 +1578,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  /** If non-null, information about merges will be printed to this.
+  /** If enabled, information about merges will be printed to this.
    */
   final InfoStream infoStream;
 
