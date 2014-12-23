@@ -342,6 +342,9 @@ Bug Fixes
 * SOLR-6864: Support registering searcher listeners in SolrCoreAware.inform(SolrCore) 
   method. Existing components rely on this. (Tomás Fernández Löbbe)
 
+* SOLR-6850: AutoAddReplicas makes a call to wait to see live replicas that times
+  out after 30 milliseconds instead of 30 seconds. (Varun Thacker via Mark Miller)
+
 Optimizations
 ----------------------
 
