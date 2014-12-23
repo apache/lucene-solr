@@ -48,6 +48,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -387,29 +388,24 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void issueCreateJob(Integer numberOfSlices,
-      Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList) {
-    ZkNodeProps props;
+      Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
+    Map<String,Object> propMap = ZkNodeProps.makeMap(
+        Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+        ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
+        "name", COLLECTION_NAME,
+        "collection.configName", CONFIG_NAME,
+        OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode.toString()
+    );
     if (sendCreateNodeList) {
-      props = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-          CollectionParams.CollectionAction.CREATE.toLower(),
-          ZkStateReader.REPLICATION_FACTOR,
-          replicationFactor.toString(), "name", COLLECTION_NAME,
-          "collection.configName", CONFIG_NAME,
-          OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
-          ZkStateReader.MAX_SHARDS_PER_NODE,
-          maxShardsPerNode.toString(),
-          OverseerCollectionProcessor.CREATE_NODE_SET,
+      propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET,
           (createNodeList != null)?StrUtils.join(createNodeList, ','):null);
-    } else {
-      props = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-          CollectionParams.CollectionAction.CREATE.toLower(),
-          ZkStateReader.REPLICATION_FACTOR,
-          replicationFactor.toString(), "name", COLLECTION_NAME,
-          "collection.configName", CONFIG_NAME,
-          OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
-          ZkStateReader.MAX_SHARDS_PER_NODE,
-          maxShardsPerNode.toString());
+      if (OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE_DEFAULT != createNodeSetShuffle || random().nextBoolean()) {
+        propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE, createNodeSetShuffle);
+      }
     }
+
+    ZkNodeProps props = new ZkNodeProps(propMap);
     QueueEvent qe = new QueueEvent("id", ZkStateReader.toJSON(props), null){
       @Override
       public void setBytes(byte[] bytes) {
@@ -420,7 +416,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void verifySubmitCaptures(List<SubmitCapture> submitCaptures,
-      Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes) {
+      Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes, boolean dontShuffleCreateNodeSet) {
     List<String> coreNames = new ArrayList<>();
     Map<String,Map<String,Integer>> sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
     List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<>(
@@ -431,6 +427,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
           .substring(7);
       nodeUrlWithoutProtocolPartForLiveNodes.add(nodeUrlWithoutProtocolPart);
     }
+    final Map<String,String> coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map = new HashMap<>();
     
     for (SubmitCapture submitCapture : submitCaptures) {
       ShardRequest shardRequest = submitCapture.shardRequestCapture.getValue();
@@ -456,6 +453,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
           + shardRequest.shards[0],
           nodeUrlWithoutProtocolPartForLiveNodes
               .contains(shardRequest.shards[0]));
+      coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map.put(coreName, shardRequest.shards[0]);
       assertEquals(shardRequest.shards, shardRequest.actualShards);
       
       String sliceName = shardRequest.params.get(CoreAdminParams.SHARD);
@@ -481,6 +479,16 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         String coreName = COLLECTION_NAME + "_shard" + i + "_replica" + j;
         assertTrue("Shard " + coreName + " was not created",
             coreNames.contains(coreName));
+        
+        if (dontShuffleCreateNodeSet) {
+          final String expectedNodeName = nodeUrlWithoutProtocolPartForLiveNodes.get((numberOfReplica * (i - 1) + (j - 1)) % nodeUrlWithoutProtocolPartForLiveNodes.size());
+          assertFalse("expectedNodeName is null for coreName="+coreName, null == expectedNodeName);
+          
+          final String actualNodeName = coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map.get(coreName);
+          assertFalse("actualNodeName is null for coreName="+coreName, null == actualNodeName);
+
+          assertTrue("node name mismatch for coreName="+coreName+" ( actual="+actualNodeName+" versus expected="+expectedNodeName+" )", actualNodeName.equals(expectedNodeName));
+        }
       }
     }
     
@@ -569,6 +577,8 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }
     
+    if (random().nextBoolean()) Collections.shuffle(createNodeList, OverseerCollectionProcessor.RANDOM);
+    
     List<SubmitCapture> submitCaptures = null;
     if (collectionExceptedToBeCreated) {
       submitCaptures = mockShardHandlerForCreateJob(numberOfSlices,
@@ -587,7 +597,10 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
 
     startComponentUnderTest();
     
-    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode, (createNodeListOption != CreateNodeListOptions.SEND_NULL) ? createNodeList : null, (createNodeListOption != CreateNodeListOptions.DONT_SEND));
+    final List<String> createNodeListToSend = ((createNodeListOption != CreateNodeListOptions.SEND_NULL) ? createNodeList : null);
+    final boolean sendCreateNodeList = (createNodeListOption != CreateNodeListOptions.DONT_SEND);
+    final boolean dontShuffleCreateNodeSet = (createNodeListToSend != null) && sendCreateNodeList && random().nextBoolean();
+    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode, createNodeListToSend, sendCreateNodeList, !dontShuffleCreateNodeSet);
     waitForEmptyQueue(10000);
     
     if (collectionExceptedToBeCreated) {
@@ -598,11 +611,10 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
 
     if (collectionExceptedToBeCreated) {
       verifySubmitCaptures(submitCaptures, numberOfSlices, replicationFactor,
-          createNodeList);
+          createNodeList, dontShuffleCreateNodeSet);
     }
   }
-  
-  @Test
+    @Test
   public void testNoReplicationEqualNumberOfSlicesPerNode() throws Exception {
     Integer numberOfNodes = 4;
     Integer numberOfNodesToCreateOn = 4;

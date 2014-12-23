@@ -246,6 +246,9 @@ New Features
 
 * SOLR-1632: Support Distributed IDF (Andrzej Bialecki, Mark Miller, Yonik Seeley,
   Robert Muir, Markus Jelsma, Vitaliy Zhovtyuk, Anshum Gupta)
+
+* SOLR-6729: createNodeSet.shuffle=(true|false) support for /admin/collections?action=CREATE.
+  (Christine Poerschke, Ramkumar Aiyengar via Mark Miller)
   
 Bug Fixes
 ----------------------
