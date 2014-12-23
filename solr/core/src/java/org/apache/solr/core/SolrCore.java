@@ -1069,6 +1069,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
 
+    if(reqHandlers != null) reqHandlers.close();
 
 
     try {

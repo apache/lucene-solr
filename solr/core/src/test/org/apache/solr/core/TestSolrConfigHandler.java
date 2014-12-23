@@ -21,22 +21,19 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
@@ -142,7 +139,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     reqhandlertests(restTestHarness, null,null);
   }
 
-  private static void runConfigCommand(RestTestHarness harness, String uri,  String payload) throws IOException {
+  public static void runConfigCommand(RestTestHarness harness, String uri,  String payload) throws IOException {
     String response = harness.post(uri, SolrTestCaseJ4.json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response,  map.get("errors"));
@@ -155,53 +152,34 @@ public class TestSolrConfigHandler extends RestTestBase {
         "}";
     runConfigCommand(writeHarness,"/config?wt=json", payload);
 
-    boolean success = false;
-    long startTime = System.nanoTime();
-    long maxTimeoutSeconds = 10;
-    while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
-      String uri = "/config/overlay?wt=json";
-      Map m = testServerBaseUrl ==null?  getRespMap(uri,writeHarness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl+uri ,cloudSolrServer) ;
-      if("lazy".equals( ConfigOverlay.getObjectByPath(m,  true, Arrays.asList("overlay", "requestHandler", "/x","startup")))) {
-        Map map = getRespMap("/x?wt=json",writeHarness);
-        if(map.containsKey("params")) {
-          success = true;
-          break;
-        }
-      }
-      Thread.sleep(100);
-
-    }
-
-    assertTrue( "Could not register requestHandler  ", success);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config/overlay?wt=json",
+        cloudSolrServer,
+        Arrays.asList("overlay", "requestHandler", "/x", "startup"),
+        "lazy",
+        10);
 
     payload = "{\n" +
         "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy' , 'a':'b'}\n" +
         "}";
     runConfigCommand(writeHarness,"/config?wt=json", payload);
 
-    success = false;
-    startTime = System.nanoTime();
-    maxTimeoutSeconds = 10;
-    while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
-      String uri = "/config/overlay?wt=json";
-      Map m = testServerBaseUrl ==null?  getRespMap(uri,writeHarness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl+uri ,cloudSolrServer) ;
-      if("b".equals( ConfigOverlay.getObjectByPath(m,  true, Arrays.asList("overlay", "requestHandler", "/x","a")))) {
-          success = true;
-          break;
-      }
-      Thread.sleep(100);
-
-    }
-
-    assertTrue( "Could not update requestHandler  ", success);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config/overlay?wt=json",
+        cloudSolrServer,
+        Arrays.asList("overlay", "requestHandler", "/x", "a"),
+        "b",
+        10);
 
     payload = "{\n" +
         "'delete-requesthandler' : '/x'" +
         "}";
     runConfigCommand(writeHarness,"/config?wt=json", payload);
-    success = false;
-    startTime = System.nanoTime();
-    maxTimeoutSeconds = 10;
+    boolean success = false;
+    long startTime = System.nanoTime();
+    int maxTimeoutSeconds = 10;
     while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
       String uri = "/config/overlay?wt=json";
       Map m = testServerBaseUrl ==null?  getRespMap(uri,writeHarness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl+uri ,cloudSolrServer) ;
@@ -214,6 +192,33 @@ public class TestSolrConfigHandler extends RestTestBase {
     }
     assertTrue( "Could not delete requestHandler  ", success);
 
+  }
+
+  public static void testForResponseElement(RestTestHarness harness,
+                                            String testServerBaseUrl,
+                                            String uri,
+                                            CloudSolrServer cloudSolrServer,List<String> jsonPath,
+                                            String expected,
+                                            long maxTimeoutSeconds ) throws Exception {
+
+    boolean success = false;
+    long startTime = System.nanoTime();
+    while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
+      Map m = testServerBaseUrl ==null?  getRespMap(uri,harness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl + uri, cloudSolrServer) ;
+      if(Objects.equals(expected,ConfigOverlay.getObjectByPath(m, true, jsonPath))) {
+        success = true;
+        break;
+        /*Map map = getRespMap("/x?wt=json",harness);
+        if(map.containsKey("params")) {
+          success = true;
+          break;
+        }*/
+      }
+      Thread.sleep(100);
+
+    }
+
+    assertTrue( "Could not add/change requestHandler  ", success);
   }
 
 

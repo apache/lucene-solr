@@ -121,7 +121,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException
   {
-    log.info("SolrDispatchFilter.init()");
+    log.info("SolrDispatchFilter.init()" + this.getClass().getClassLoader());
 
     try {
       // web.xml configuration
