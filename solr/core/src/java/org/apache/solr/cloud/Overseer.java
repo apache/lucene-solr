@@ -402,7 +402,7 @@ public class Overseer implements Closeable {
           case ADDREPLICAPROP:
             return new ReplicaMutator(getZkStateReader()).addReplicaProperty(clusterState, message);
           case DELETEREPLICAPROP:
-            return new ReplicaMutator(getZkStateReader()).removeReplicaProperty(clusterState, message);
+            return new ReplicaMutator(getZkStateReader()).deleteReplicaProperty(clusterState, message);
           case BALANCESHARDUNIQUE:
             ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(clusterState, message);
             if (dProp.balanceProperty()) {

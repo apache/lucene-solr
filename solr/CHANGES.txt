@@ -533,6 +533,9 @@ Other Changes
 
 * SOLR-6883: CLUSTERPROP API switch case does not call break. (Varun Thacker via shalin)
 
+* SOLR-6882: Misspelled collection API actions in ReplicaMutator exception messages.
+  (Steve Rowe via shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

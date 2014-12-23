@@ -94,7 +94,7 @@ public class ReplicaMutator {
         checkKeyExistence(message, ZkStateReader.PROPERTY_PROP) == false ||
         checkKeyExistence(message, ZkStateReader.PROPERTY_VALUE_PROP) == false) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Overseer SETREPLICAPROPERTY requires " +
+          "Overseer ADDREPLICAPROP requires " +
               ZkStateReader.COLLECTION_PROP + " and " + ZkStateReader.SHARD_ID_PROP + " and " +
               ZkStateReader.REPLICA_PROP + " and " + ZkStateReader.PROPERTY_PROP + " and " +
               ZkStateReader.PROPERTY_VALUE_PROP + " no action taken.");
@@ -115,7 +115,7 @@ public class ReplicaMutator {
 
     if (SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(property)) {
       if (StringUtils.isNotBlank(shardUnique) && Boolean.parseBoolean(shardUnique) == false) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Overseer SETREPLICAPROPERTY for " +
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Overseer ADDREPLICAPROP for " +
             property + " cannot have " + OverseerCollectionProcessor.SHARD_UNIQUE + " set to anything other than" +
             "'true'. No action taken");
       }
@@ -153,13 +153,13 @@ public class ReplicaMutator {
     return new ZkWriteCommand(collectionName, newCollection);
   }
 
-  public ZkWriteCommand removeReplicaProperty(ClusterState clusterState, ZkNodeProps message) {
+  public ZkWriteCommand deleteReplicaProperty(ClusterState clusterState, ZkNodeProps message) {
     if (checkKeyExistence(message, ZkStateReader.COLLECTION_PROP) == false ||
         checkKeyExistence(message, ZkStateReader.SHARD_ID_PROP) == false ||
         checkKeyExistence(message, ZkStateReader.REPLICA_PROP) == false ||
         checkKeyExistence(message, ZkStateReader.PROPERTY_PROP) == false) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Overseer DELETEREPLICAPROPERTY requires " +
+          "Overseer DELETEREPLICAPROP requires " +
               ZkStateReader.COLLECTION_PROP + " and " + ZkStateReader.SHARD_ID_PROP + " and " +
               ZkStateReader.REPLICA_PROP + " and " + ZkStateReader.PROPERTY_PROP + " no action taken.");
     }
