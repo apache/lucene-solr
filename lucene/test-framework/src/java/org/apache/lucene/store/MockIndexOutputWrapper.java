@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -98,10 +99,11 @@ public class MockIndexOutputWrapper extends IndexOutput {
     }
     closed = true;
     
-    try {
+    try (Closeable delegate = this.delegate) {
+      assert delegate != null;
       dir.maybeThrowDeterministicException();
     } finally {
-      delegate.close();
+      dir.removeIndexOutput(this, name);
       if (dir.trackDiskUsage) {
         // Now compute actual disk usage & track the maxUsedSize
         // in the MockDirectoryWrapper:
@@ -110,7 +112,6 @@ public class MockIndexOutputWrapper extends IndexOutput {
           dir.maxUsedSize = size;
         }
       }
-      dir.removeIndexOutput(this, name);
     }
   }
   

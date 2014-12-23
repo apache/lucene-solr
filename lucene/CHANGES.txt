@@ -419,6 +419,9 @@ Tests
 * LUCENE-5968: Improve error message when 'ant beast' is run on top-level
   modules.  (Ramkumar Aiyengar, Uwe Schindler)
 
+* LUCENE-6120: Fix MockDirectoryWrapper's close() handling.
+  (Mike McCandless, Robert Muir)
+
 Build
 
 * LUCENE-5909: Smoke tester now has better command line parsing and
