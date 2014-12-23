@@ -21,18 +21,24 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * TokenStream created from a term vector field. The term vector requires positions and/or offsets (either). If you
  * want payloads add PayloadAttributeImpl (as you would normally) but don't assume the attribute is already added just
- * because you know the term vector has payloads.  This TokenStream supports an efficient {@link #reset()}, so there's
+ * because you know the term vector has payloads, since the first call to incrementToken() will observe if you asked
+ * for them and if not then won't get them.  This TokenStream supports an efficient {@link #reset()}, so there's
  * no need to wrap with a caching impl.
  * <p />
  * The implementation will create an array of tokens indexed by token position.  As long as there aren't massive jumps
@@ -47,6 +53,11 @@ public final class TokenStreamFromTermVector extends TokenStream {
 
   //TODO add a maxStartOffset filter, which highlighters will find handy
 
+  //This attribute factory uses less memory when captureState() is called.
+  public static final AttributeFactory ATTRIBUTE_FACTORY =
+      AttributeFactory.getStaticImplementation(
+          AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, PackedTokenAttributeImpl.class);
+
   private final Terms vector;
 
   private final CharTermAttribute termAttribute;
@@ -56,10 +67,14 @@ public final class TokenStreamFromTermVector extends TokenStream {
   private OffsetAttribute offsetAttribute;//maybe null
 
   private PayloadAttribute payloadAttribute;//maybe null
+  private BytesRefArray payloadsBytesRefArray;//only used when payloadAttribute is non-null
+  private BytesRefBuilder spareBytesRefBuilder;//only used when payloadAttribute is non-null
 
   private TokenLL firstToken = null; // the head of a linked-list
 
   private TokenLL incrementToken = null;
+
+  private boolean initialized = false;//lazy
 
   /**
    * Constructor.
@@ -68,6 +83,8 @@ public final class TokenStreamFromTermVector extends TokenStream {
    *        creating the TokenStream. Must have positions and/or offsets.
    */
   public TokenStreamFromTermVector(Terms vector) throws IOException {
+    super(ATTRIBUTE_FACTORY);
+    assert !hasAttribute(PayloadAttribute.class) : "AttributeFactory shouldn't have payloads *yet*";
     if (!vector.hasPositions() && !vector.hasOffsets()) {
       throw new IllegalArgumentException("The term vector needs positions and/or offsets.");
     }
@@ -81,20 +98,20 @@ public final class TokenStreamFromTermVector extends TokenStream {
 
   @Override
   public void reset() throws IOException {
-    if (firstToken == null) {//just the first time
-      init();
-    }
     incrementToken = null;
     super.reset();
   }
 
-  //We initialize in reset() because we can see which attributes the consumer wants, particularly payloads
+  //We delay initialization because we can see which attributes the consumer wants, particularly payloads
   private void init() throws IOException {
+    assert !initialized;
     if (vector.hasOffsets()) {
       offsetAttribute = addAttribute(OffsetAttribute.class);
     }
     if (vector.hasPayloads() && hasAttribute(PayloadAttribute.class)) {
       payloadAttribute = getAttribute(PayloadAttribute.class);
+      payloadsBytesRefArray = new BytesRefArray(Counter.newCounter());
+      spareBytesRefBuilder = new BytesRefBuilder();
     }
 
     // Step 1: iterate termsEnum and create a token, placing into an array of tokens by position
@@ -132,13 +149,8 @@ public final class TokenStreamFromTermVector extends TokenStream {
         }
 
         if (payloadAttribute != null) {
-          // Must make a deep copy of the returned payload,
-          // since D&PEnum API is allowed to re-use on every
-          // call:
           final BytesRef payload = dpEnum.getPayload();
-          if (payload != null) {
-            token.payload = BytesRef.deepCopyOf(payload);//TODO share a ByteBlockPool & re-use BytesRef
-          }
+          token.payloadIndex = payload == null ? -1 : payloadsBytesRefArray.append(payload);
         }
 
         //Add token to an array indexed by position
@@ -198,6 +210,8 @@ public final class TokenStreamFromTermVector extends TokenStream {
       prevTokenPos = pos;
       prevToken = token;
     }
+
+    initialized = true;
   }
 
   private TokenLL[] initTokensArray() throws IOException {
@@ -216,8 +230,12 @@ public final class TokenStreamFromTermVector extends TokenStream {
   }
 
   @Override
-  public boolean incrementToken() {
+  public boolean incrementToken() throws IOException {
     if (incrementToken == null) {
+      if (!initialized) {
+        init();
+        assert initialized;
+      }
       incrementToken = firstToken;
       if (incrementToken == null) {
         return false;
@@ -234,7 +252,11 @@ public final class TokenStreamFromTermVector extends TokenStream {
       offsetAttribute.setOffset(incrementToken.startOffset, incrementToken.endOffset);
     }
     if (payloadAttribute != null) {
-      payloadAttribute.setPayload(incrementToken.payload);
+      if (incrementToken.payloadIndex == -1) {
+        payloadAttribute.setPayload(null);
+      } else {
+        payloadAttribute.setPayload(payloadsBytesRefArray.get(spareBytesRefBuilder, incrementToken.payloadIndex));
+      }
     }
     return true;
   }
@@ -245,7 +267,7 @@ public final class TokenStreamFromTermVector extends TokenStream {
     int positionIncrement;
     int startOffset;
     int endOffset;
-    BytesRef payload;
+    int payloadIndex;
 
     TokenLL next;
 
