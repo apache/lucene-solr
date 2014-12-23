@@ -855,5 +855,9 @@ public class SortingLeafReader extends FilterLeafReader {
   public Fields getTermVectors(final int docID) throws IOException {
     return in.getTermVectors(docMap.newToOld(docID));
   }
-  
+
+  @Override
+  public String toString() {
+    return "SortingLeafReader(" + in + ")";
+  }
 }

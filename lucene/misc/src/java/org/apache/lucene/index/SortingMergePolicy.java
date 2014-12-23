@@ -38,6 +38,7 @@ import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -67,15 +68,27 @@ public final class SortingMergePolicy extends MergePolicy {
     List<LeafReader> unsortedReaders;
     Sorter.DocMap docMap;
     LeafReader sortedView;
+    final InfoStream infoStream;
 
-    SortingOneMerge(List<SegmentCommitInfo> segments) {
+    SortingOneMerge(List<SegmentCommitInfo> segments, InfoStream infoStream) {
       super(segments);
+      this.infoStream = infoStream;
     }
 
     @Override
     public List<LeafReader> getMergeReaders() throws IOException {
       if (unsortedReaders == null) {
         unsortedReaders = super.getMergeReaders();
+        if (infoStream.isEnabled("SMP")) {
+          infoStream.message("SMP", "sorting " + unsortedReaders);
+          for (LeafReader leaf : unsortedReaders) {
+            String sortDescription = getSortDescription(leaf);
+            if (sortDescription == null) {
+              sortDescription = "not sorted";
+            }
+            infoStream.message("SMP", "seg=" + leaf + " " + sortDescription);
+          }
+        }
         // wrap readers, to be optimal for merge;
         List<LeafReader> wrapped = new ArrayList<>(unsortedReaders.size());
         for (LeafReader leaf : unsortedReaders) {
@@ -95,7 +108,17 @@ public final class SortingMergePolicy extends MergePolicy {
         sortedView = SortingLeafReader.wrap(atomicView, docMap);
       }
       // a null doc map means that the readers are already sorted
-      return docMap == null ? unsortedReaders : Collections.singletonList(sortedView);
+      if (docMap == null) {
+        if (infoStream.isEnabled("SMP")) {
+          infoStream.message("SMP", "readers already sorted, omitting sort");
+        }
+        return unsortedReaders;
+      } else {
+        if (infoStream.isEnabled("SMP")) {
+          infoStream.message("SMP", "sorting readers by " + sort);
+        }
+        return Collections.singletonList(sortedView);
+      }
     }
     
     @Override
@@ -145,10 +168,15 @@ public final class SortingMergePolicy extends MergePolicy {
   }
 
   class SortingMergeSpecification extends MergeSpecification {
+    final InfoStream infoStream;
+    
+    SortingMergeSpecification(InfoStream infoStream) {
+      this.infoStream = infoStream;
+    }
 
     @Override
     public void add(OneMerge merge) {
-      super.add(new SortingOneMerge(merge.segments));
+      super.add(new SortingOneMerge(merge.segments, infoStream));
     }
 
     @Override
@@ -160,21 +188,29 @@ public final class SortingMergePolicy extends MergePolicy {
 
   /** Returns {@code true} if the given {@code reader} is sorted by the specified {@code sort}. */
   public static boolean isSorted(LeafReader reader, Sort sort) {
-    if (reader instanceof SegmentReader) {
-      final SegmentReader segReader = (SegmentReader) reader;
-      final Map<String, String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();
-      if (diagnostics != null && sort.toString().equals(diagnostics.get(SORTER_ID_PROP))) {
-        return true;
-      }
+    String description = getSortDescription(reader);
+    if (description != null && description.equals(sort.toString())) {
+      return true;
     }
     return false;
   }
+  
+  private static String getSortDescription(LeafReader reader)  {
+    if (reader instanceof SegmentReader) {
+      final SegmentReader segReader = (SegmentReader) reader;
+      final Map<String, String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();
+      if (diagnostics != null) {
+        return diagnostics.get(SORTER_ID_PROP);
+      }
+    }
+    return null;
+  }
 
-  private MergeSpecification sortedMergeSpecification(MergeSpecification specification) {
+  private MergeSpecification sortedMergeSpecification(MergeSpecification specification, InfoStream infoStream) {
     if (specification == null) {
       return null;
     }
-    MergeSpecification sortingSpec = new SortingMergeSpecification();
+    MergeSpecification sortingSpec = new SortingMergeSpecification(infoStream);
     for (OneMerge merge : specification.merges) {
       sortingSpec.add(merge);
     }
@@ -195,20 +231,20 @@ public final class SortingMergePolicy extends MergePolicy {
   @Override
   public MergeSpecification findMerges(MergeTrigger mergeTrigger,
       SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-    return sortedMergeSpecification(in.findMerges(mergeTrigger, segmentInfos, writer));
+    return sortedMergeSpecification(in.findMerges(mergeTrigger, segmentInfos, writer), writer.infoStream);
   }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
       int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
       throws IOException {
-    return sortedMergeSpecification(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer));
+    return sortedMergeSpecification(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer), writer.infoStream);
   }
 
   @Override
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
       throws IOException {
-    return sortedMergeSpecification(in.findForcedDeletesMerges(segmentInfos, writer));
+    return sortedMergeSpecification(in.findForcedDeletesMerges(segmentInfos, writer), writer.infoStream);
   }
 
   @Override
@@ -221,5 +257,4 @@ public final class SortingMergePolicy extends MergePolicy {
   public String toString() {
     return "SortingMergePolicy(" + in + ", sorter=" + sorter + ")";
   }
-
 }
