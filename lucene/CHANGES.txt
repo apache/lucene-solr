@@ -177,6 +177,8 @@ Optimizations
   other OS's will continue to use the previous defaults (tuned for spinning disks).
   (Robert Muir, Uwe Schindler, hossman, Mike McCandless)
 
+* LUCENE-6131: Optimize SortingMergePolicy. (Robert Muir)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
