@@ -542,6 +542,10 @@ Other Changes
 * SOLR-6882: Misspelled collection API actions in ReplicaMutator exception messages.
   (Steve Rowe via shalin)
 
+* SOLR-6867: SolrCLI should check for existence before creating a new core/collection, 
+  more user-friendly error reporting (no stack trace), and the ability to pass a 
+  directory when using bin/solr to create a core or collection (Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

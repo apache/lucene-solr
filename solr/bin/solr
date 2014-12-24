@@ -215,12 +215,15 @@ function print_usage() {
     echo ""
     echo "  -n <name>       Name of core to create"
     echo ""
-    echo "  -c <configset>  Name of configuration directory to use, valid options are:"
+    echo "  -c <configset>  Name of configuration directory to use, built-in options are:"
     echo "      basic_configs: Minimal Solr configuration"
     echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
     echo "      If not specified, default is: data_driven_schema_configs"
+    echo ""
+    echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
+    echo "      one of the built-in configurations, such as: bin/solr create_core -n mycore -c /tmp/myconfig"
     echo ""
   elif [ "$CMD" == "create_collection" ]; then
     echo ""
@@ -228,16 +231,19 @@ function print_usage() {
     echo ""
     echo "  -n <name>               Name of collection to create"
     echo ""
-    echo "  -c <configset>          Name of configuration directory to use, valid options are:"
+    echo "  -c <configset>          Name of configuration directory to use, built-in options are:"
     echo "      basic_configs: Minimal Solr configuration"
     echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
     echo "      If not specified, default is: data_driven_schema_configs"
     echo ""
-    echo "  -shards <#>             Number of shards to split the collection into"
+    echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
+    echo "      one of the built-in configurations, such as: bin/solr create_collection -n mycoll -c /tmp/myconfig"
     echo ""
-    echo "  -replicationFactor <#>  Number of copies of each document in the collection"
+    echo "  -shards <#>             Number of shards to split the collection into; default is 1"
+    echo ""
+    echo "  -replicationFactor <#>  Number of copies of each document in the collection, default is 1 (no replication)"
     echo ""
     echo ""
   fi
@@ -300,6 +306,7 @@ function run_tool() {
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
     org.apache.solr.util.SolrCLI $*
 
+  return $?
 } # end run_tool function
 
 # get information about any Solr nodes running on this host
@@ -548,6 +555,12 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
     CREATE_CONFIGSET=data_driven_schema_configs
   fi
 
+  # validate the configset arg
+  if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFIGSET" && ! -d "$CREATE_CONFIGSET" ]]; then
+    echo -e "\nSpecified configset $CREATE_CONFIGSET not found!\n"
+    exit 1
+  fi
+
   if [ -z "$CREATE_NAME" ]; then
     echo "$CREATE_TYPE name is required!"
     print_usage "$SCRIPT_CMD"
@@ -573,12 +586,12 @@ if [[ "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]];
   if [ "$SCRIPT_CMD" == "create_collection" ]; then
     run_tool create_collection -name $CREATE_NAME -shards $CREATE_NUM_SHARDS -replicationFactor $CREATE_REPFACT \
       -config $CREATE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$CREATE_PORT/solr
+    exit $?
   else
     run_tool create_core -name $CREATE_NAME -solrUrl http://localhost:$CREATE_PORT/solr \
       -config $CREATE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets
+    exit $?
   fi
-
-  exit $?
 fi
 
 
@@ -1186,9 +1199,15 @@ if [ "$EXAMPLE" != "cloud" ]; then
     if [ "$SOLR_MODE" == "solrcloud" ]; then
       run_tool create_collection -name $EXAMPLE -shards 1 -replicationFactor 1 \
         -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
+      if [ $? -ne 0 ]; then
+        exit 1
+      fi
     else
       run_tool create_core -name $EXAMPLE -solrUrl http://localhost:$SOLR_PORT/solr \
         -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets
+      if [ $? -ne 0 ]; then
+        exit 1
+      fi
     fi
 
     if [ "$EXAMPLE" == "techproducts" ]; then
@@ -1285,13 +1304,26 @@ else
     USER_INPUT=
     echo "Please choose a configuration for the $CLOUD_COLLECTION collection, available options are:"
     read -e -p "basic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
-    # trim whitespace out of the user input
-    CLOUD_CONFIG=`echo $USER_INPUT | tr -d ' '`
+    while true
+    do
+      # trim whitespace out of the user input
+      CLOUD_CONFIG=`echo $USER_INPUT | tr -d ' '`
 
-    # handle the default selection or empty input
-    if [ -z "$CLOUD_CONFIG" ]; then
-      CLOUD_CONFIG=data_driven_schema_configs
-    fi                    
+      # handle the default selection or empty input
+      if [ -z "$CLOUD_CONFIG" ]; then
+        CLOUD_CONFIG=data_driven_schema_configs
+      fi
+
+      # validate the configset arg
+      if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CLOUD_CONFIG" && ! -d "$CLOUD_CONFIG" ]]; then
+        echo -e "\nOops! Specified configuration $CLOUD_CONFIG not found!"
+        read -e -p "Choose one of: basic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
+        CLOUD_CONFIG=
+      else
+        break;
+      fi
+    done
+
   fi
    
   run_tool create_collection -name $CLOUD_COLLECTION -shards $CLOUD_NUM_SHARDS -replicationFactor $CLOUD_REPFACT \
