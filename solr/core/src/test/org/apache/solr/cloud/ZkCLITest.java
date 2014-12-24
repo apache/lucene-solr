@@ -144,6 +144,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkClient.getData("/data.txt", null, null, true);
 
     assertArrayEquals(zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
+
+    // test re-put to existing
+    data = "my data deux";
+    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "put", "/data.txt", data};
+    ZkCLI.main(args);
+    assertArrayEquals(zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test

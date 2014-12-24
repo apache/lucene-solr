@@ -254,16 +254,27 @@ public class ZkCLI {
             System.out.println("-" + PUT + " requires two args - the path to create and the data string");
             System.exit(1);
           }
-          zkClient.create(arglist.get(0).toString(), arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+          String path = arglist.get(0).toString();
+          if (zkClient.exists(path, true)) {
+            zkClient.setData(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), true);
+          } else {
+            zkClient.create(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+          }
         } else if (line.getOptionValue(CMD).equals(PUT_FILE)) {
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
             System.out.println("-" + PUT_FILE + " requires two args - the path to create in ZK and the path to the local file");
             System.exit(1);
           }
+
+          String path = arglist.get(0).toString();
           InputStream is = new FileInputStream(arglist.get(1).toString());
           try {
-            zkClient.create(arglist.get(0).toString(), IOUtils.toByteArray(is), CreateMode.PERSISTENT, true);
+            if (zkClient.exists(path, true)) {
+              zkClient.setData(path, IOUtils.toByteArray(is), true);
+            } else {
+              zkClient.create(path, IOUtils.toByteArray(is), CreateMode.PERSISTENT, true);
+            }
           } finally {
             IOUtils.closeQuietly(is);
           }

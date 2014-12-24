@@ -321,6 +321,9 @@ Bug Fixes
 * SOLR-6873: Lib relative path is incorrect for techproduct configset
   (Alexandre Rafalovitch via Erick Erickson)
 
+* SOLR-6397: zkcli script put/putfile should allow overwriting an existing znode's data
+  (Timothy Potter)
+
 Optimizations
 ----------------------
 
