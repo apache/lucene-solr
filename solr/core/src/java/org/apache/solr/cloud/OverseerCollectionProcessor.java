@@ -658,9 +658,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           case BALANCESHARDUNIQUE:
             balanceProperty(message);
             break;
-//          case REBALANCELEADERS:
-//            processAssignLeaders(message);
-//            break;
+          case REBALANCELEADERS:
+            processAssignLeaders(message);
+            break;
           default:
             throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
                 + operation);

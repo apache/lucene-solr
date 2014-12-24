@@ -268,10 +268,10 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleBalanceShardUnique(req, rsp);
         break;
       }
-//      case REBALANCELEADERS: {
-//        this.handleBalanceLeaders(req, rsp);
-//        break;
-//      }
+      case REBALANCELEADERS: {
+        this.handleBalanceLeaders(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
