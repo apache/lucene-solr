@@ -43,7 +43,7 @@
   
   <searchComponent name="mock" class="org.apache.solr.search.TestIndexSearcher$MockSearchComponent"/>
   
-  <query><useColdSearcher>false</useColdSearcher></query>
+  <query><useColdSearcher>${tests.solr.useColdSearcher:false}</useColdSearcher></query>
 
 </config>
 
