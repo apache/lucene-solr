@@ -82,7 +82,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     setupCore(coreSysProps, true);
 
     // create a new core (using CoreAdminHandler) w/ properties
-    // Just to be sure its NOT written to the core.properties file
+    // Just to be sure it's NOT written to the core.properties file
     File workDir = new File(solrHomeDirectory, coreSysProps);
     System.setProperty("INSTDIR_TEST", workDir.getAbsolutePath());
     System.setProperty("CONFIG_TEST", "solrconfig_ren.xml");
@@ -227,7 +227,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     setupCore(coreNormal, true);
 
     // create a new core (using CoreAdminHandler) w/ properties
-    // Just to be sure its NOT written to the core.properties file
+    // Just to be sure it's NOT written to the core.properties file
     File workDir = new File(solrHomeDirectory, coreNormal);
     File data = new File(workDir, "data");
 

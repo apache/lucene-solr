@@ -617,7 +617,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           if(ord > -1) {
             dummy.score = scores[ord];
           } else if (boostDocs != null && boostDocs.containsKey(docId)) {
-            //Its an elevated doc so no score is needed
+            //It's an elevated doc so no score is needed
             dummy.score = 0F;
           } else if (nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
             dummy.score = nullScore;

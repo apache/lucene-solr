@@ -939,7 +939,7 @@ public void testFilesOpenClose() throws IOException {
   
     reader.close();
   
-    // Close the top reader, its the only one that should be closed
+    // Close the top reader, it's the only one that should be closed
     assertEquals(1, closeCount[0]);
     writer.close();
   

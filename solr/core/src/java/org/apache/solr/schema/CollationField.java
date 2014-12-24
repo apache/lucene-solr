@@ -223,7 +223,7 @@ public class CollationField extends FieldType {
   /**
    * analyze the range with the analyzer, instead of the collator.
    * because jdk collators might not be thread safe (when they are
-   * its just that all methods are synced), this keeps things 
+   * it's just that all methods are synced), this keeps things 
    * simple (we already have a threadlocal clone in the reused TS)
    */
   private BytesRef getCollationKey(String field, String text) {     

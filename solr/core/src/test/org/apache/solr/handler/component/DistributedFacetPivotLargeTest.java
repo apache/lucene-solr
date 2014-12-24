@@ -178,7 +178,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     //
     // This is tricky, here's what i think is happening.... 
     // - "company:honda" only exists on twoShard, and only w/ "place:cardiff"
-    // - twoShard has no other places in it's docs
+    // - twoShard has no other places in its docs
     // - twoShard can't return any other places to w/ honda as a count=0 sub-value
     // - if we refined all other companies places, would twoShard return honda==0 ?
     //   ... but there's no refinement since mincount==0

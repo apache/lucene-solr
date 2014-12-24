@@ -34,7 +34,7 @@ public class GreekStemmer {
   
  /**
    * Stems a word contained in a leading portion of a char[] array.
-   * The word is passed through a number of rules that modify it's length.
+   * The word is passed through a number of rules that modify its length.
    * 
    * @param s A char[] array that contains the word to be stemmed.
    * @param len The length of the char[] array.
@@ -327,7 +327,7 @@ public class GreekStemmer {
     }
     
     if (removed && exc8a.contains(s, 0, len)) {
-      // add -αγαν (we removed > 4 chars so its safe)
+      // add -αγαν (we removed > 4 chars so it's safe)
       len += 4;
       s[len - 4] = 'α';
       s[len - 3] = 'γ';

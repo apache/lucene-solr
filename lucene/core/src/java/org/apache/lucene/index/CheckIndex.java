@@ -778,7 +778,7 @@ public class CheckIndex implements Closeable {
       } else {
         Bits liveDocs = reader.getLiveDocs();
         if (liveDocs != null) {
-          // its ok for it to be non-null here, as long as none are set right?
+          // it's ok for it to be non-null here, as long as none are set right?
           for (int j = 0; j < liveDocs.length(); j++) {
             if (!liveDocs.get(j)) {
               throw new RuntimeException("liveDocs mismatch: info says no deletions but doc " + j + " is deleted.");

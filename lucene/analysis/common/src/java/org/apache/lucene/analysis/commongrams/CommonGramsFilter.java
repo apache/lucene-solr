@@ -112,7 +112,7 @@ public final class CommonGramsFilter extends TokenFilter {
     
     /* We build n-grams before and after stopwords. 
      * When valid, the buffer always contains at least the separator.
-     * If its empty, there is nothing before this stopword.
+     * If it's empty, there is nothing before this stopword.
      */
     if (lastWasCommon || (isCommon() && buffer.length() > 0)) {
       savedState = captureState();

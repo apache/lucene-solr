@@ -210,7 +210,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
   
   /**
-   * Its ok to boost a field if it has norms
+   * It's ok to boost a field if it has norms
    */
   public void testBoost() throws Exception {
     XmlDoc xml = new XmlDoc();
@@ -385,7 +385,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
   
   /**
-   * Its ok to supply a document boost even if a field omits norms
+   * It's ok to supply a document boost even if a field omits norms
    */
   public void testDocumentBoostOmitNorms() throws Exception {
     XmlDoc xml = new XmlDoc();

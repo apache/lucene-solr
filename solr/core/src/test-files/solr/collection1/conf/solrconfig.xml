@@ -587,7 +587,7 @@
   <restManager>
     <!-- 
     IMPORTANT: Due to the Lucene SecurityManager, tests can only write to their runtime directory or below.
-    But its easier to just keep everything in memory for testing so no remnants are left behind.
+    But it's easier to just keep everything in memory for testing so no remnants are left behind.
     -->
     <str name="storageIO">org.apache.solr.rest.ManagedResourceStorage$InMemoryStorageIO</str>
   </restManager>

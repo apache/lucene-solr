@@ -84,7 +84,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
             + printClusterStateInfo(),
         notLeaders.size() == 1);
 
-    // let's put the leader in it's own partition, no replicas can contact it now
+    // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     SocketProxy leaderProxy = getProxyForReplica(leader);
     leaderProxy.close();
@@ -127,7 +127,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
             + printClusterStateInfo(),
         notLeaders.size() == 2);
 
-    // let's put the leader in it's own partition, no replicas can contact it now
+    // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     SocketProxy leaderProxy = getProxyForReplica(leader);
     leaderProxy.close();

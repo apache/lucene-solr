@@ -1604,7 +1604,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
-      // :TODO: make fillFields it's own QueryCommand flag? ...
+      // :TODO: make fillFields its own QueryCommand flag? ...
       // ... see comments in populateNextCursorMarkFromTopDocs for cache issues (SOLR-5595)
       final boolean fillFields = (null != cursor);
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);

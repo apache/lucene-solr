@@ -221,13 +221,13 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
-    // omit the 'the' since its a stopword, its suggested anyway
+    // omit the 'the' since it's a stopword, it's suggested anyway
     results = suggester.lookup(TestUtil.stringToCharSequence("ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
-    // omit the 'the' and 'of' since they are stopwords, its suggested anyway
+    // omit the 'the' and 'of' since they are stopwords, it's suggested anyway
     results = suggester.lookup(TestUtil.stringToCharSequence("ghost chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
@@ -817,7 +817,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         System.out.println("  analyzed: " + analyzedKey);
       }
 
-      // TODO: could be faster... but its slowCompletor for a reason
+      // TODO: could be faster... but it's slowCompletor for a reason
       for (TermFreq2 e : slowCompletor) {
         if (e.analyzedForm.startsWith(analyzedKey)) {
           matches.add(e);

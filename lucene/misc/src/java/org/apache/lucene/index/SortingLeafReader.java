@@ -510,7 +510,7 @@ public class SortingLeafReader extends FilterLeafReader {
     
     /**
      * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
-     * offsets in one go. Everytime a doc ID is 'swapped', its correponding offset
+     * offsets in one go. Everytime a doc ID is 'swapped', its corresponding offset
      * is swapped too.
      */
     private static final class DocOffsetSorter extends TimSorter {

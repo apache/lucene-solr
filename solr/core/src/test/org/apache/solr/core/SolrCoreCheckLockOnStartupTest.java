@@ -41,7 +41,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.SimpleFSDirectoryFactory");
     // test tests native and simple in the same jvm in the same exact directory:
     // the file will remain after the native test (it cannot safely be deleted without the risk of deleting another guys lock)
-    // its ok, these aren't "compatible" anyway: really this test should not re-use the same directory at all.
+    // it's ok, these aren't "compatible" anyway: really this test should not re-use the same directory at all.
     Files.deleteIfExists(new File(new File(initCoreDataDir, "index"), IndexWriter.WRITE_LOCK_NAME).toPath());
   }
 

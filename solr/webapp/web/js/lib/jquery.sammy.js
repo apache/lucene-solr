@@ -48,7 +48,7 @@ THE SOFTWARE.
 
 
   // `Sammy` (also aliased as $.sammy) is not only the namespace for a
-  // number of prototypes, its also a top level method that allows for easy
+  // number of prototypes, it's also a top level method that allows for easy
   // creation/management of `Sammy.Application` instances. There are a
   // number of different forms for `Sammy()` but each returns an instance
   // of `Sammy.Application`. When a new instance is created using
@@ -1446,7 +1446,7 @@ THE SOFTWARE.
         }
         if (callback) { this.then(callback); }
         if (typeof location === 'string') {
-          // its a path
+          // it's a path
           is_json      = (location.match(/\.json$/) || options.json);
           should_cache = ((is_json && options.cache === true) || options.cache !== false);
           context.next_engine = context.event_context.engineFor(location);
@@ -1474,12 +1474,12 @@ THE SOFTWARE.
           }, options));
           return false;
         } else {
-          // its a dom/jQuery
+          // it's a dom/jQuery
           if (location.nodeType) {
             return location.innerHTML;
           }
           if (location.selector) {
-            // its a jQuery
+            // it's a jQuery
             context.next_engine = location.attr('data-engine');
             if (options.clone === false) {
               return location.remove()[0].innerHTML.toString();

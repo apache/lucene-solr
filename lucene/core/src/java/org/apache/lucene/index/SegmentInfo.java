@@ -35,7 +35,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
- * Information about a segment such as it's name, directory, and files related
+ * Information about a segment such as its name, directory, and files related
  * to the segment.
  *
  * @lucene.experimental

@@ -137,7 +137,7 @@ public class GermanStemmer
         strip( buffer );
       }
       // Additional step for irregular plural nouns like "Matrizen -> Matrix".
-      // NOTE: this length constraint is probably not a great value, its just to prevent AIOOBE on empty terms
+      // NOTE: this length constraint is probably not a great value, it's just to prevent AIOOBE on empty terms
       if ( buffer.length() > 0 && buffer.charAt( buffer.length() - 1 ) == ( 'z' ) ) {
         buffer.setCharAt( buffer.length() - 1, 'x' );
       }

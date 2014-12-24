@@ -89,7 +89,7 @@ public class WindowsFS extends HandleTrackingFS {
   }
   
   /** 
-   * Checks that its ok to delete {@code Path}. If the file
+   * Checks that it's ok to delete {@code Path}. If the file
    * is still open, it throws IOException("access denied").
    */
   private void checkDeleteAccess(Path path) throws IOException {

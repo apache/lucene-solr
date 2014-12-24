@@ -117,7 +117,7 @@ public class TestRegexpQuery extends LuceneTestCase {
   
   /**
    * Test a corner case for backtracking: In this case the term dictionary has
-   * 493432 followed by 49344. When backtracking from 49343... to 4934, its
+   * 493432 followed by 49344. When backtracking from 49343... to 4934, it's
    * necessary to test that 4934 itself is ok before trying to append more
    * characters.
    */

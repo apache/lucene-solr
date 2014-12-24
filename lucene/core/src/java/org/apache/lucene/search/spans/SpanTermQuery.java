@@ -92,7 +92,7 @@ public class SpanTermQuery extends SpanQuery {
     final TermState state;
     if (termContext == null) {
       // this happens with span-not query, as it doesn't include the NOT side in extractTerms()
-      // so we seek to the term now in this segment..., this sucks because its ugly mostly!
+      // so we seek to the term now in this segment..., this sucks because it's ugly mostly!
       final Terms terms = context.reader().terms(term.field());
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);

@@ -349,7 +349,7 @@ class Lucene50NormsConsumer extends NormsConsumer {
 
   // specialized deduplication of long->ord for norms: 99.99999% of the time this will be a single-byte range.
   static class NormMap {
-    // we use short: at most we will add 257 values to this map before its rejected as too big above.
+    // we use short: at most we will add 257 values to this map before it's rejected as too big above.
     private final short[] ords = new short[256];
     final int[] freqs = new int[257];
     final byte[] values = new byte[257];

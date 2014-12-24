@@ -287,7 +287,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   private void deleteCollectionWithDownNodes() throws Exception {
     String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
-    // now try to remove a collection when a couple of it's nodes are down
+    // now try to remove a collection when a couple of its nodes are down
     if (secondConfigSet) {
       createCollection(null, "halfdeletedcollection2", 3, 3, 6,
           createNewSolrServer("", baseUrl), null, "conf2");

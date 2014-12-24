@@ -139,7 +139,7 @@ abstract class DocSetBase implements DocSet {
     if (!(other instanceof BitDocSet)) {
       return other.intersectionSize(this);
     }
-    // less efficient way: do the intersection then get it's size
+    // less efficient way: do the intersection then get its size
     return intersection(other).size();
   }
 

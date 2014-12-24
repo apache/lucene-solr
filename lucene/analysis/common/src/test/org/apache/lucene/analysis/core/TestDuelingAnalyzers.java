@@ -80,7 +80,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     }
   }
   
-  // not so useful since its all one token?!
+  // not so useful since it's all one token?!
   public void testLetterAsciiHuge() throws Exception {
     Random random = random();
     int maxLength = 8192; // CharTokenizer.IO_BUFFER_SIZE*2

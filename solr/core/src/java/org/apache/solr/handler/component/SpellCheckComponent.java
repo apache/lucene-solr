@@ -651,7 +651,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           NamedList spellchecker = (NamedList) initParams.getVal(i);
           String className = (String) spellchecker.get("classname");
           // TODO: this is a little bit sneaky: warn if class isnt supplied
-          // so that its mandatory in a future release?
+          // so that it's mandatory in a future release?
           if (className == null)
             className = IndexBasedSpellChecker.class.getName();
           SolrResourceLoader loader = core.getResourceLoader();

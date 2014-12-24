@@ -33,7 +33,7 @@
 
   <path id="test.classpath"/>
 
-  <!-- redefine the test compilation, so its just a no-op -->
+  <!-- redefine the test compilation, so it's just a no-op -->
   <target name="compile-test"/>
   
   <!-- redefine the forbidden apis to be no-ops -->

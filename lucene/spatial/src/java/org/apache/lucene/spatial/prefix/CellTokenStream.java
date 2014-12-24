@@ -147,7 +147,7 @@ class CellTokenStream extends TokenStream {
     cellAtt.setOmitLeafByte(false);
   }
 
-  /** Outputs the token of a cell, and if its a leaf, outputs it again with the leaf byte. */
+  /** Outputs the token of a cell, and if it's a leaf, outputs it again with the leaf byte. */
   @Override
   public final boolean incrementToken() {
     if (iter == null)

@@ -30,11 +30,11 @@ The main classes of interest are:
        as it contains many assertions and checks to catch bugs. </li>
    <li>{@link org.apache.lucene.analysis.MockTokenizer}: Tokenizer for testing.
        Tokenizer that serves as a replacement for WHITESPACE, SIMPLE, and KEYWORD
-       tokenizers. If you are writing a component such as a TokenFilter, its a great idea to test
+       tokenizers. If you are writing a component such as a TokenFilter, it's a great idea to test
        it wrapping this tokenizer instead for extra checks. </li>
    <li>{@link org.apache.lucene.analysis.MockAnalyzer}: Analyzer for testing.
        Analyzer that uses MockTokenizer for additional verification. If you are testing a custom 
-       component such as a queryparser or analyzer-wrapper that consumes analysis streams, its a great 
+       component such as a queryparser or analyzer-wrapper that consumes analysis streams, it's a great 
        idea to test it with this analyzer instead. </li>
 </ul>
 </p>

@@ -305,7 +305,7 @@
   </requestHandler>
 
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
-       for simple user-entered phrases.  It's implementation is now
+       for simple user-entered phrases.  Its implementation is now
        just the standard SearchHandler with a default query parser
        of "dismax". 
        see http://wiki.apache.org/solr/DisMaxRequestHandler

@@ -93,7 +93,7 @@ public interface DocSet /* extends Collection<Integer> */ {
 
   /**
    * Returns the number of documents of the intersection of this set with another set.
-   * May be more efficient than actually creating the intersection and then getting it's size.
+   * May be more efficient than actually creating the intersection and then getting its size.
    */
   public int intersectionSize(DocSet other);
 
@@ -109,7 +109,7 @@ public interface DocSet /* extends Collection<Integer> */ {
 
   /**
    * Returns the number of documents of the union of this set with another set.
-   * May be more efficient than actually creating the union and then getting it's size.
+   * May be more efficient than actually creating the union and then getting its size.
    */
   public int unionSize(DocSet other);
 

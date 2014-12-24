@@ -94,8 +94,8 @@ public class LatvianStemmer {
    * </ul>
    */
   private int unpalatalize(char s[], int len) {
-    // we check the character removed: if its -u then 
-    // its 2,5, or 6 gen pl., and these two can only apply then.
+    // we check the character removed: if it's -u then 
+    // it's 2,5, or 6 gen pl., and these two can only apply then.
     if (s[len] == 'u') {
       // kš -> kst
       if (endsWith(s, len, "kš")) {

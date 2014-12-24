@@ -65,7 +65,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     long v = 0;
     add(client0, seenLeader, sdoc("id","1","_version_",++v));
 
-    // this fails because client0 has no context (i.e. no updates of it's own to judge if applying the updates
+    // this fails because client0 has no context (i.e. no updates of its own to judge if applying the updates
     // from client1 will bring it into sync with client1)
     assertSync(client1, numVersions, false, shardsArr[0]);
 

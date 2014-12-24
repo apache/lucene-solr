@@ -1417,10 +1417,10 @@ public class TestFSTs extends LuceneTestCase {
       Util.TopResults<Long> r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minLongComparator, topN, true);
       assertTrue(r.isComplete);
 
-      // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
+      // 2. go thru whole treemap (slowCompletor) and check it's actually the best suggestion
       final List<Result<Long>> matches = new ArrayList<>();
 
-      // TODO: could be faster... but its slowCompletor for a reason
+      // TODO: could be faster... but it's slowCompletor for a reason
       for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
@@ -1538,10 +1538,10 @@ public class TestFSTs extends LuceneTestCase {
 
       Util.TopResults<Pair<Long,Long>> r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minPairWeightComparator, topN, true);
       assertTrue(r.isComplete);
-      // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
+      // 2. go thru whole treemap (slowCompletor) and check it's actually the best suggestion
       final List<Result<Pair<Long,Long>>> matches = new ArrayList<>();
 
-      // TODO: could be faster... but its slowCompletor for a reason
+      // TODO: could be faster... but it's slowCompletor for a reason
       for (Map.Entry<String,TwoLongs> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());

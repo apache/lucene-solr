@@ -840,7 +840,7 @@ public class ExtendedDismaxQParser extends QParser {
         // special syntax in a string isn't special
         clause.hasSpecialSyntax = false;        
       } else {
-        // an empty clause... must be just a + or - on it's own
+        // an empty clause... must be just a + or - on its own
         if (clause.val.length() == 0) {
           clause.syntaxError = true;
           if (clause.must != 0) {
@@ -997,7 +997,7 @@ public class ExtendedDismaxQParser extends QParser {
     
     public ExtendedSolrQueryParser(QParser parser, String defaultField) {
       super(parser, defaultField);
-      // don't trust that our parent class won't ever change it's default
+      // don't trust that our parent class won't ever change its default
       setDefaultOperator(QueryParser.Operator.OR);
     }
     
@@ -1227,7 +1227,7 @@ public class ExtendedDismaxQParser extends QParser {
             Query query = super.getFieldQuery(field, val, type == QType.PHRASE);
             // A BooleanQuery is only possible from getFieldQuery if it came from
             // a single whitespace separated term. In this case, check the coordination
-            // factor on the query: if its enabled, that means we aren't a set of synonyms
+            // factor on the query: if it's enabled, that means we aren't a set of synonyms
             // but instead multiple terms from one whitespace-separated term, we must
             // apply minShouldMatch here so that it works correctly with other things
             // like aliasing.

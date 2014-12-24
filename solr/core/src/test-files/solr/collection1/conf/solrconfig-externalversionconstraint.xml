@@ -44,7 +44,7 @@
   <updateRequestProcessorChain name="external-version-constraint" default="true">
     <!-- this chain uses the processor using the "deleteVersionParam" option
          so that deleteById requests are translated into updates to preserve the 
-         (logically) deleted document in the index with a record of it's deleted 
+         (logically) deleted document in the index with a record of its deleted 
          version.
          
          It also demonstrates how to mix in TimestampUpdateProcessorFactory and 

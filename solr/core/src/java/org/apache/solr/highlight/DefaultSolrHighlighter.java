@@ -759,7 +759,7 @@ class OrderedToken {
   int startOffset;
 }
 
-/** For use with term vectors of multi-valued fields. We want an offset based window into it's TokenStream. */
+/** For use with term vectors of multi-valued fields. We want an offset based window into its TokenStream. */
 final class OffsetWindowTokenFilter extends TokenFilter {
 
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);

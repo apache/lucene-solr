@@ -924,7 +924,7 @@ public class SolrCLI {
           String coreUrl = replicaCoreProps.getCoreUrl();
           boolean isLeader = coreUrl.equals(leaderUrl);
 
-          // if replica's node is not live, it's status is DOWN
+          // if replica's node is not live, its status is DOWN
           String nodeName = replicaCoreProps.getNodeName();
           if (nodeName == null || !liveNodes.contains(nodeName)) {
             replicaStatus = ZkStateReader.DOWN;

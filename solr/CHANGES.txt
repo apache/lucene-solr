@@ -916,9 +916,9 @@ Bug Fixes
 * SOLR-6393: TransactionLog replay performance on HDFS is very poor. (Mark Miller)  
 
 * SOLR-6268: HdfsUpdateLog has a race condition that can expose a closed HDFS FileSystem instance and should 
-  close it's FileSystem instance if either inherited close method is called. (Mark Miller)
+  close its FileSystem instance if either inherited close method is called. (Mark Miller)
 
-* SOLR-6089: When using the HDFS block cache, when a file is deleted, it's underlying data entries in the 
+* SOLR-6089: When using the HDFS block cache, when a file is deleted, its underlying data entries in the 
   block cache are not removed, which is a problem with the global block cache option. 
   (Mark Miller, Patrick Hunt)
 
@@ -994,7 +994,7 @@ Other Changes
 
 * SOLR-6270: Increased timeouts for MultiThreadedOCPTest. (shalin)
 
-* SOLR-6274: UpdateShardHandler should log the params used to configure it's
+* SOLR-6274: UpdateShardHandler should log the params used to configure its
   HttpClient. (Ramkumar Aiyengar via Mark Miller)
 
 * SOLR-6194: Opened up "public" access to DataSource, DocBuilder, and EntityProcessorWrapper
@@ -1100,7 +1100,7 @@ Bug Fixes
   (Timothy Potter) 
 
 * SOLR-6002: Fix a couple of ugly issues around SolrIndexWriter close and 
-  rollback as well as how SolrIndexWriter manages it's ref counted directory
+  rollback as well as how SolrIndexWriter manages its ref counted directory
   instance. (Mark Miller, Gregory Chanan)
 
 * SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
@@ -1529,7 +1529,7 @@ Bug Fixes
 * SOLR-5647: The lib paths in example-schemaless will now load correctly.
   (Paul Westin via Shawn Heisey)
 
-* SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json
+* SOLR-5770: All attempts to match a SolrCore with its state in clusterstate.json
   should be done with the CoreNodeName. (Steve Davids via Mark Miller)
 
 * SOLR-5875: QueryComponent.mergeIds() unmarshals all docs' sort field values once
@@ -1590,7 +1590,7 @@ Bug Fixes
   problem if you hit a bad work item. (Mark Miller)
 
 * SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
-  advertised leader in it's local state. (Timothy Potter, Mark Miller)  
+  advertised leader in its local state. (Timothy Potter, Mark Miller)  
 
 * SOLR-5834: Overseer threads are only being interrupted and not closed.
   (hossman, Mark Miller)
@@ -1618,7 +1618,7 @@ Other Changes
 ---------------------
 
 * SOLR-5796: Make how long we are willing to wait for a core to see the ZK
-  advertised leader in it's local state configurable. 
+  advertised leader in its local state configurable. 
   (Timothy Potter via Mark Miller)
 
 ==================  4.7.0 ==================
@@ -1758,8 +1758,8 @@ Bug Fixes
 
 * SOLR-4612: Admin UI - Analysis Screen contains empty table-columns (steffkes)
 
-* SOLR-5451: SyncStrategy closes it's http connection manager before the
-  executor that uses it in it's close method. (Mark Miller)
+* SOLR-5451: SyncStrategy closes its http connection manager before the
+  executor that uses it in its close method. (Mark Miller)
 
 * SOLR-5460: SolrDispatchFilter#sendError can get a SolrCore that it does not 
   close. (Mark Miller)
@@ -1767,7 +1767,7 @@ Bug Fixes
 * SOLR-5461: Request proxying should only set con.setDoOutput(true) if the
   request is a post. (Mark Miller)
 
-* SOLR-5481: SolrCmdDistributor should not let the http client do it's own 
+* SOLR-5481: SolrCmdDistributor should not let the http client do its own 
   retries. (Mark Miller)
 
 * LUCENE-5347: Fixed Solr's Zookeeper Client to copy files to Zookeeper using
@@ -1848,7 +1848,7 @@ Bug Fixes
   of multiValued string fields. (Andreas Hubold, Vitaliy Zhovtyuk via shalin)
 
 * SOLR-5593: Replicas should accept the last updates from a leader that has just 
-  lost it's connection to ZooKeeper. (Christine Poerschke via Mark Miller)
+  lost its connection to ZooKeeper. (Christine Poerschke via Mark Miller)
 
 * SOLR-5678: SolrZkClient should throw a SolrException when connect times out
   rather than a RuntimeException. (Karl Wright, Anshum Gupta, Mark Miller)
@@ -2460,7 +2460,7 @@ New Features
   where items are preserved across commits.  (Robert Muir)
 
 * SOLR-4249: UniqFieldsUpdateProcessorFactory now extends 
-  FieldMutatingUpdateProcessorFactory and supports all of it's selector options. Use
+  FieldMutatingUpdateProcessorFactory and supports all of its selector options. Use
   of the "fields" init param is now deprecated in favor of "fieldName" (hossman)
   
 * SOLR-2548: Allow multiple threads to be specified for faceting. When threading, one
@@ -3277,7 +3277,7 @@ Bug Fixes
   fullpath not path. (Mark Miller)
 
 * SOLR-4555: When forceNew is used with CachingDirectoryFactory#get, the old
-  CachValue should give up it's path as it will be used by a new Directory
+  CachValue should give up its path as it will be used by a new Directory
   instance. (Mark Miller)
 
 * SOLR-4578: CoreAdminHandler#handleCreateAction gets a SolrCore and does not
@@ -3298,7 +3298,7 @@ Bug Fixes
   working correctly. (Mark Miller)
 
 * SOLR-4570: Even if an explicit shard id is used, ZkController#preRegister 
-  should still wait to see the shard id in it's current ClusterState.
+  should still wait to see the shard id in its current ClusterState.
   (Mark Miller)
 
 * SOLR-4585: The Collections API validates numShards with < 0 but should use 
@@ -3326,7 +3326,7 @@ Bug Fixes
   Directory has a refCnt of 0, but it should call closeDirectory(CacheValue).
   (Mark Miller)
 
-* SOLR-4602: ZkController#unregister should cancel it's election participation 
+* SOLR-4602: ZkController#unregister should cancel its election participation 
   before asking the Overseer to delete the SolrCore information. (Mark Miller)
 
 * SOLR-4601: A Collection that is only partially created and then deleted will 
@@ -3355,7 +3355,7 @@ Bug Fixes
   when used in field:value queries in the lucene QParser.  (hossman, yonik)
 
 * SOLR-4617: SolrCore#reload needs to pass the deletion policy to the next 
-  SolrCore through it's constructor rather than setting a field after.
+  SolrCore through its constructor rather than setting a field after.
   (Mark Miller)
     
 * SOLR-4589: Fixed CPU spikes and poor performance in lazy field loading 
@@ -3810,7 +3810,7 @@ New Features
 * SOLR-4271: Add support for PostingsHighlighter.  (Robert Muir)
 
 * SOLR-4255: The new Solr 4 spatial fields now have a 'filter' boolean local-param
-  that can be set to false to not filter. Its useful when there is already a spatial
+  that can be set to false to not filter. It's useful when there is already a spatial
   filter query but you also need to sort or boost by distance. (David Smiley)
 
 * SOLR-4265, SOLR-4283: Solr now parses request parameters (in URL or sent with POST
@@ -4020,7 +4020,7 @@ Bug Fixes
 * SOLR-3959: Ensure the internal comma separator of poly fields is escaped
   for CSVResponseWriter.  (Areek Zillur via Robert Muir)
   
-* SOLR-4075: A logical shard that has had all of it's SolrCores unloaded should 
+* SOLR-4075: A logical shard that has had all of its SolrCores unloaded should 
   be removed from the cluster state. (Mark Miller, Gilles Comeau)
   
 * SOLR-4034: Check if a collection already exists before trying to create a
@@ -4030,7 +4030,7 @@ Bug Fixes
   (Mark Miller)
   
 * SOLR-4099: Allow the collection api work queue to make forward progress even
-  when it's watcher is not fired for some reason. (Raintung Li via Mark Miller)
+  when its watcher is not fired for some reason. (Raintung Li via Mark Miller)
 
 * SOLR-3960: Fixed a bug where Distributed Grouping ignored PostFilters
   (Nathan Visagan, hossman)
@@ -4046,7 +4046,7 @@ Bug Fixes
   options from being respected in some <fieldType/> declarations (hossman)
 
 * SOLR-4159: When we are starting a shard from rest, a potential leader should 
-  not consider it's last published state when deciding if it can be the new 
+  not consider its last published state when deciding if it can be the new 
   leader. (Mark Miller)
 
 * SOLR-4158: When a core is registering in ZooKeeper it may not wait long 
@@ -4078,7 +4078,7 @@ Bug Fixes
   (steffkes via hossman)
 
 * SOLR-4178: ReplicationHandler should abort any current pulls and wait for 
-  it's executor to stop during core close. (Mark Miller)
+  its executor to stop during core close. (Mark Miller)
 
 * SOLR-3918: Fixed the 'dist-war-excl-slf4j' ant target to exclude all
   slf4j jars, so that the resulting war is usable as is provided the servlet 
@@ -4278,7 +4278,7 @@ Upgrading from Solr 4.0.0-BETA
 In order to better support distributed search mode, the TermVectorComponent's
 response format has been changed so that if the schema defines a 
 uniqueKeyField, then that field value is used as the "key" for each document in
-it's response section, instead of the internal lucene doc id.  Users w/o a 
+its response section, instead of the internal lucene doc id.  Users w/o a 
 uniqueKeyField will continue to see the same response format.  See SOLR-3229
 for more details.
 
@@ -4572,7 +4572,7 @@ Bug Fixes
 
 * SOLR-3783: Fixed Pivot Faceting to work with facet.missing=true (hossman)
 
-* SOLR-3869: A PeerSync attempt to it's replicas by a candidate leader should
+* SOLR-3869: A PeerSync attempt to its replicas by a candidate leader should
   not fail on o.a.http.conn.ConnectTimeoutException. (Mark Miller)
 
 * SOLR-3875: Fixed index boosts on multi-valued fields when docBoost is used 
@@ -6505,7 +6505,7 @@ New Features
   the terms component. Example: fq={!term f=weight}1.5   (hossman, yonik) 
 
 * SOLR-1915: DebugComponent now supports using a NamedList to model
-  Explanation objects in it's responses instead of
+  Explanation objects in its responses instead of
   Explanation.toString  (hossman)
 
 * SOLR-2448: Search results clustering updates: bisecting k-means
@@ -6539,7 +6539,7 @@ Bug Fixes
   commit point on server startup is never removed. (yonik)
 
 * SOLR-2466: SolrJ's CommonsHttpSolrServer would retry requests on failure, regardless
-  of the configured maxRetries, due to HttpClient having it's own retry mechanism
+  of the configured maxRetries, due to HttpClient having its own retry mechanism
   by default.  The retryCount of HttpClient is now set to 0, and SolrJ does
   the retry.  (yonik)
 
@@ -7449,7 +7449,7 @@ If you use custom Tokenizer or TokenFilter components in a chain specified in
 schema.xml, they must support reusability.  If your Tokenizer or TokenFilter
 maintains state, it should implement reset().  If your TokenFilteFactory does
 not return a subclass of TokenFilter, then it should implement reset() and call
-reset() on it's input TokenStream.  TokenizerFactory implementations must
+reset() on its input TokenStream.  TokenizerFactory implementations must
 now return a Tokenizer rather than a TokenStream.
 
 New users of Solr 1.4 will have omitTermFreqAndPositions enabled for non-text
@@ -7687,8 +7687,8 @@ New Features
 47. SOLR-1106: Made CoreAdminHandler Actions pluggable so that additional actions may be plugged in or the existing
     ones can be overridden if needed. (Kay Kay, Noble Paul, shalin)
 
-48. SOLR-1124: Add a top() function query that causes it's argument to
-    have it's values derived from the top level IndexReader, even when
+48. SOLR-1124: Add a top() function query that causes its argument to
+    have its values derived from the top level IndexReader, even when
     invoked from a sub-reader.  top() is implicitly used for the
     ord() and rord() functions.  (yonik)
 
@@ -9440,7 +9440,7 @@ Changes in runtime behavior
  3. A new method "getSolrQueryParser" has been added to the IndexSchema
     class for retrieving a new SolrQueryParser instance with all options
     specified in the schema.xml's <solrQueryParser> block set.  The
-    documentation for the SolrQueryParser constructor and it's use of
+    documentation for the SolrQueryParser constructor and its use of
     IndexSchema have also been clarified.
     (Erik Hatcher and hossman)
 

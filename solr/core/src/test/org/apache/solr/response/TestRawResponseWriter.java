@@ -50,8 +50,8 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupCoreAndWriters() throws Exception {
-    // we don't directly use this core or it's config, we use
-    // QueryResponseWriters' constructed programaticly,
+    // we don't directly use this core or its config, we use
+    // QueryResponseWriters' constructed programmatically,
     // but we do use this core for managing the life cycle of the requests
     // we spin up.
     initCore("solrconfig.xml","schema.xml");

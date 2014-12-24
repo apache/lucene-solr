@@ -374,7 +374,7 @@ public class MultiDocValues {
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: we could also have a utility method to merge Terms[] and use size() as a weight when we need it
   // TODO: use more efficient packed ints structures?
-  // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
+  // TODO: pull this out? it's pretty generic (maps between N ord()-enabled TermsEnums) 
   public static class OrdinalMap implements Accountable {
 
     private static class SegmentMap implements Accountable {

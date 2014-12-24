@@ -114,7 +114,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
         Files.createFile(path);
       } catch (IOException ignore) {
         // we must create the file to have a truly canonical path.
-        // if its already created, we don't care. if it cant be created, it will fail below.
+        // if it's already created, we don't care. if it cant be created, it will fail below.
       }
       final Path canonicalPath = path.toRealPath();
       // Make sure nobody else in-process has this lock held

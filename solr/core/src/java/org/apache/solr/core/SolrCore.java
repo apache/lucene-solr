@@ -1473,7 +1473,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
 
-  /** Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with it's reference incremented.
+  /** Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with its reference incremented.
    *
    * "realtime" means that we need to open quickly for a realtime view of the index, hence don't do any
    * autowarming and add to the _realtimeSearchers queue rather than the _searchers queue (so it won't

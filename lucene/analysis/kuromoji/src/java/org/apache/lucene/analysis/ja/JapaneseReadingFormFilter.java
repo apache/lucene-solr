@@ -54,7 +54,7 @@ public final class JapaneseReadingFormFilter extends TokenFilter {
       
       if (useRomaji) {
         if (reading == null) {
-          // if its an OOV term, just try the term text
+          // if it's an OOV term, just try the term text
           buffer.setLength(0);
           ToStringUtil.getRomanization(buffer, termAttr);
           termAttr.setEmpty().append(buffer);

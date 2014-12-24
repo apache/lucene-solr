@@ -44,7 +44,7 @@ import com.ibm.icu.text.UTF16;
  * differences:
  * <ul>
  *  <li>Doesn't attempt to match paired punctuation. For tokenization purposes, this
- * is not necessary. Its also quite expensive. 
+ * is not necessary. It's also quite expensive. 
  *  <li>Non-spacing marks inherit the script of their base character, following 
  *  recommendations from UTR #24.
  * </ul>

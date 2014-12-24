@@ -199,7 +199,7 @@ public abstract class CompressionMode {
       }
       final int compressedLength = in.readVInt();
       // pad with extra "dummy byte": see javadocs for using Inflater(true)
-      // we do it for compliance, but its unnecessary for years in zlib.
+      // we do it for compliance, but it's unnecessary for years in zlib.
       final int paddedLength = compressedLength + 1;
       if (paddedLength > compressed.length) {
         compressed = new byte[ArrayUtil.oversize(paddedLength, 1)];

@@ -266,7 +266,7 @@ public class SolrPluginUtils {
    * <li>parsedquery - the main query executed formated by the Solr
    *     QueryParsing utils class (which knows about field types)
    * </li>
-   * <li>parsedquery_toString - the main query executed formated by it's
+   * <li>parsedquery_toString - the main query executed formatted by its
    *     own toString method (in case it has internal state Solr
    *     doesn't know about)
    * </li>
@@ -701,7 +701,7 @@ public class SolrPluginUtils {
   }
 
   /**
-   * Returns it's input if there is an even (ie: balanced) number of
+   * Returns its input if there is an even (ie: balanced) number of
    * '"' characters -- otherwise returns a String in which all '"'
    * characters are striped out.
    */
@@ -758,7 +758,7 @@ public class SolrPluginUtils {
     protected Map<String,Alias> aliases = new HashMap<>(3);
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp,defaultField);
-      // don't trust that our parent class won't ever change it's default
+      // don't trust that our parent class won't ever change its default
       setDefaultOperator(QueryParser.Operator.OR);
     }
 

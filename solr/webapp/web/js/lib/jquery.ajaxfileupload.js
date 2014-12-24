@@ -128,7 +128,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
           wrapElement($element);
 
           // Call user-supplied (or default) onStart(), setting
-          //  it's this context to the file DOM element
+          //  its this context to the file DOM element
           var ret = settings.onStart.apply($element, [settings.params]);
 
           // let onStart have the option to cancel the upload

@@ -235,8 +235,8 @@ public class DocumentDictionary implements Dictionary {
     
     /** 
      * Returns the value of the <code>weightField</code> for the current document.
-     * Retrieves the value for the <code>weightField</code> if its stored (using <code>doc</code>)
-     * or if its indexed as {@link NumericDocValues} (using <code>docId</code>) for the document.
+     * Retrieves the value for the <code>weightField</code> if it's stored (using <code>doc</code>)
+     * or if it's indexed as {@link NumericDocValues} (using <code>docId</code>) for the document.
      * If no value is found, then the weight is 0.
      */
     protected long getWeight(StoredDocument doc, int docId) {

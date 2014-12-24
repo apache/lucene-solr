@@ -21,7 +21,7 @@ import org.apache.lucene.codecs.Codec;
  * limitations under the License.
  */
 
-// TODO: maybe we should test this with mocks, but its easy
+// TODO: maybe we should test this with mocks, but it's easy
 // enough to test the basics via Codec
 public class TestNamedSPILoader extends LuceneTestCase {
   
@@ -31,7 +31,7 @@ public class TestNamedSPILoader extends LuceneTestCase {
     assertEquals(currentName, codec.getName());
   }
   
-  // we want an exception if its not found.
+  // we want an exception if it's not found.
   public void testBogusLookup() {
     try {
       Codec.forName("dskfdskfsdfksdfdsf");

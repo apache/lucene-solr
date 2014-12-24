@@ -321,7 +321,7 @@ public class BitDocSet extends DocSetBase {
               @Override
               public long cost() {
                 // we don't want to actually compute cardinality, but
-                // if its already been computed, we use it (pro-rated for the segment)
+                // if it's already been computed, we use it (pro-rated for the segment)
                 if (size != -1) {
                   return (long)(size * ((FixedBitSet.bits2words(maxDoc)<<6) / (float)bs.length()));
                 } else {

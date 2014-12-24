@@ -236,7 +236,7 @@ public class DirectSpellChecker {
    * True if the spellchecker should lowercase terms (default: true)
    * <p>
    * This is a convenience method, if your index field has more complicated
-   * analysis (such as StandardTokenizer removing punctuation), its probably
+   * analysis (such as StandardTokenizer removing punctuation), it's probably
    * better to turn this off, and instead run your query terms through your
    * Analyzer first.
    * <p>

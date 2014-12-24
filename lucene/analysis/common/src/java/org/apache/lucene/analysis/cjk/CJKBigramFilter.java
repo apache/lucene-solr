@@ -56,9 +56,9 @@ public final class CJKBigramFilter extends TokenFilter {
   /** bigram flag for Hangul */
   public static final int HANGUL = 8;
 
-  /** when we emit a bigram, its then marked as this type */
+  /** when we emit a bigram, it's then marked as this type */
   public static final String DOUBLE_TYPE = "<DOUBLE>";
-  /** when we emit a unigram, its then marked as this type */
+  /** when we emit a unigram, it's then marked as this type */
   public static final String SINGLE_TYPE = "<SINGLE>";
 
   // the types from standardtokenizer
@@ -199,7 +199,7 @@ public final class CJKBigramFilter extends TokenFilter {
           if (hasBufferedUnigram()) {
             
             // we have a buffered unigram, and we peeked ahead to see if we could form
-            // a bigram, but we can't, because its not a CJK type. capture the state 
+            // a bigram, but we can't, because it's not a CJK type. capture the state 
             // of this peeked data to be revisited next time thru the loop, and dump our unigram.
             
             loneState = captureState();
@@ -213,7 +213,7 @@ public final class CJKBigramFilter extends TokenFilter {
         // case 3: we have only zero or 1 codepoints buffered, 
         // so not enough to form a bigram. But, we also have no
         // more input. So if we have a buffered codepoint, emit
-        // a unigram, otherwise, its end of stream.
+        // a unigram, otherwise, it's end of stream.
         
         if (hasBufferedUnigram()) {
           flushUnigram(); // flush our remaining unigram
@@ -345,7 +345,7 @@ public final class CJKBigramFilter extends TokenFilter {
       // when outputting unigrams always
       return bufferLen - index == 1;
     } else {
-      // otherwise its only when we have a lone CJK character
+      // otherwise it's only when we have a lone CJK character
       return bufferLen == 1 && index == 0;
     }
   }

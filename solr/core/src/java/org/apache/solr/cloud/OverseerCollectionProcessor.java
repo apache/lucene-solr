@@ -2378,7 +2378,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
             + collectionName
             + " is higher than or equal to the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
             + nodeList.size()
-            + "). Its unusual to run two replica of the same slice on the same Solr-instance.");
+            + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
       }
       
       int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();

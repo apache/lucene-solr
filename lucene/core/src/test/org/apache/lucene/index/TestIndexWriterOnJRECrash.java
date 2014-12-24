@@ -40,7 +40,7 @@ import org.apache.lucene.util.TestUtil;
 import com.carrotsearch.randomizedtesting.SeedUtils;
 /**
  * Runs TestNRTThreads in a separate process, crashes the JRE in the middle
- * of execution, then runs checkindex to make sure its not corrupt.
+ * of execution, then runs checkindex to make sure it's not corrupt.
  */
 public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   private Path tempDir;

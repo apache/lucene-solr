@@ -455,7 +455,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Iterates over the Map and sequentially adds it's key/value pairs
+   * Iterates over the Map and sequentially adds its key/value pairs
    */
   public boolean addAll(Map<String,T> args) {
     for (Map.Entry<String, T> entry : args.entrySet() ) {

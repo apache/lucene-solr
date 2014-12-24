@@ -28,7 +28,7 @@ import java.util.Locale;
 public class TestCollationKeyAnalyzer extends CollationTestBase {
   // the sort order of Ø versus U depends on the version of the rules being used
   // for the inherited root locale: Ø's order isnt specified in Locale.US since 
-  // its not used in english.
+  // it's not used in english.
   private boolean oStrokeFirst = Collator.getInstance(new Locale("")).compare("Ø", "U") < 0;
   
   // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in

@@ -128,7 +128,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
         doWork();
       } catch (Exception e) {
         SolrException.log(log, this.getClass().getSimpleName()
-            + " had an error it's thread work loop.", e);
+            + " had an error in its thread work loop.", e);
       }
       
       if (!this.isClosed) {

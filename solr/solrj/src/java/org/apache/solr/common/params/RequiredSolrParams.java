@@ -106,7 +106,7 @@ public class RequiredSolrParams extends SolrParams {
 
   //----------------------------------------------------------
   // Functions with a default value - pass directly to the
-  // wrapped SolrParams (they won't return null - unless its the default)
+  // wrapped SolrParams (they won't return null - unless it's the default)
   //----------------------------------------------------------
 
   @Override

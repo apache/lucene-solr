@@ -83,7 +83,7 @@ class PythonWriter extends NaNFloatWriter {
     }
 
     // use python unicode strings...
-    // python doesn't tolerate newlines in strings in it's eval(), so we must escape them.
+    // python doesn't tolerate newlines in strings in its eval(), so we must escape them.
 
     StringBuilder sb = new StringBuilder(val.length());
     boolean needUnicode=false;
@@ -120,7 +120,7 @@ class PythonWriter extends NaNFloatWriter {
   old version that always used unicode
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // use python unicode strings...
-    // python doesn't tolerate newlines in strings in it's eval(), so we must escape them.
+    // python doesn't tolerate newlines in strings in its eval(), so we must escape them.
     writer.write("u'");
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.

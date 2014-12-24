@@ -186,13 +186,13 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
-    // omit the 'the' since its a stopword, its suggested anyway
+    // omit the 'the' since it's a stopword, it's suggested anyway
     results = suggester.lookup(TestUtil.stringToCharSequence("ghost of chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
-    // omit the 'the' and 'of' since they are stopwords, its suggested anyway
+    // omit the 'the' and 'of' since they are stopwords, it's suggested anyway
     results = suggester.lookup(TestUtil.stringToCharSequence("ghost chris", random()), false, 1);
     assertEquals(1, results.size());
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
@@ -755,7 +755,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       Automaton automaton = suggester.convertAutomaton(suggester.toLevenshteinAutomata(suggester.toLookupAutomaton(analyzedKey)));
       assertTrue(automaton.isDeterministic());
 
-      // TODO: could be faster... but its slowCompletor for a reason
+      // TODO: could be faster... but it's slowCompletor for a reason
       BytesRefBuilder spare = new BytesRefBuilder();
       for (TermFreqPayload2 e : slowCompletor) {
         spare.copyChars(e.analyzedForm);
@@ -1114,8 +1114,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     // NOTE: if we cared, we could 3*m space instead of m*n space, similar to 
     // what LevenshteinDistance does, except cycling thru a ring of three 
     // horizontal cost arrays... but this comparator is never actually used by 
-    // DirectSpellChecker, its only used for merging results from multiple shards 
-    // in "distributed spellcheck", and its inefficient in other ways too...
+    // DirectSpellChecker, it's only used for merging results from multiple shards 
+    // in "distributed spellcheck", and it's inefficient in other ways too...
 
     // cheaper to do this up front once
     targetPoints = toIntsRef(target);

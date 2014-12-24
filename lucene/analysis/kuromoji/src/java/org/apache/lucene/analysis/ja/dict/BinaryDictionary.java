@@ -289,7 +289,7 @@ public abstract class BinaryDictionary implements Dictionary {
     return new String(text);
   }
   
-  /** flag that the entry has baseform data. otherwise its not inflected (same as surface form) */
+  /** flag that the entry has baseform data. otherwise it's not inflected (same as surface form) */
   public static final int HAS_BASEFORM = 1;
   /** flag that the entry has reading data. otherwise reading is surface form converted to katakana */
   public static final int HAS_READING = 2;

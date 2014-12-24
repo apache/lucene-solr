@@ -55,8 +55,8 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     // NOTE: if we cared, we could 3*m space instead of m*n space, similar to 
     // what LevenshteinDistance does, except cycling thru a ring of three 
     // horizontal cost arrays... but this comparator is never actually used by 
-    // DirectSpellChecker, its only used for merging results from multiple shards 
-    // in "distributed spellcheck", and its inefficient in other ways too...
+    // DirectSpellChecker, it's only used for merging results from multiple shards 
+    // in "distributed spellcheck", and it's inefficient in other ways too...
 
     // cheaper to do this up front once
     targetPoints = toIntsRef(target);

@@ -48,7 +48,7 @@ import org.apache.lucene.util.fst.Outputs;
  *  approach is that seekExact is often able to
  *  determine a term cannot exist without doing any IO, and
  *  intersection with Automata is very fast.  Note that this
- *  terms dictionary has it's own fixed terms index (ie, it
+ *  terms dictionary has its own fixed terms index (ie, it
  *  does not support a pluggable terms index
  *  implementation).
  *

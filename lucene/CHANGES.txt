@@ -553,7 +553,7 @@ New Features
 * LUCENE-5825: Benchmark module can use custom postings format, e.g.:
  codec.postingsFormat=Memory (Varun Shenoy, David Smiley)
 
-* LUCENE-5842: When opening large files (where its to expensive to compare
+* LUCENE-5842: When opening large files (where it's too expensive to compare
   checksum against all the bytes), retrieve checksum to validate structure
   of footer, this can detect some forms of corruption such as truncation.
   (Robert Muir)
@@ -1232,7 +1232,7 @@ Bug fixes
 
 * LUCENE-5483: Fix inaccuracies in HunspellStemFilter. Multi-stage affix-stripping,
   prefix-suffix dependencies, and COMPLEXPREFIXES now work correctly according
-  to the hunspell algorithm. Removed recursionCap parameter, as its no longer needed, rules for
+  to the hunspell algorithm. Removed recursionCap parameter, as it's no longer needed, rules for
   recursive affix application are driven correctly by continuation classes in the affix file.
   (Robert Muir)
 
@@ -1262,7 +1262,7 @@ Bug fixes
 
 * LUCENE-5612: NativeFSLockFactory no longer deletes its lock file. This cannot be done
   safely without the risk of deleting someone else's lock file. If you use NativeFSLockFactory,
-  you may see write.lock hanging around from time to time: its harmless.  
+  you may see write.lock hanging around from time to time: it's harmless.  
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
 * LUCENE-5624: Ensure NativeFSLockFactory does not leak file handles if it is unable
@@ -2273,7 +2273,7 @@ Changes in backwards compatibility policy
 * LUCENE-4933: Replace ExactSimScorer/SloppySimScorer with just SimScorer. Previously
   there were 2 implementations as a performance hack to support tableization of
   sqrt(), but this caching is removed, as sqrt is implemented in hardware with modern 
-  jvms and its faster not to cache.  (Robert Muir)
+  jvms and it's faster not to cache.  (Robert Muir)
 
 * LUCENE-5038: MergePolicy now has a default implementation for useCompoundFile based
   on segment size and noCFSRatio. The default implemantion was pulled up from
@@ -2369,7 +2369,7 @@ Bug Fixes
   SortedSetDocValuesReaderState and SortedSetDocValuesAccumulator.
   (Robert Muir, Mike McCandless)
 
-* LUCENE-5120: AnalyzingSuggester modifed it's FST's cached root arc if payloads
+* LUCENE-5120: AnalyzingSuggester modified its FST's cached root arc if payloads
   are used and the entire output resided on the root arc on the first access. This
   caused subsequent suggest calls to fail. (Simon Willnauer)
 
@@ -2943,9 +2943,9 @@ Changes in backwards compatibility policy
     use a different DocValuesFormat per field (like postings).
   - Unified with FieldCache api: DocValues can be accessed via FieldCache API,
     so it works automatically with grouping/join/sort/function queries, etc.
-  - Simplified types: There are only 3 types (NUMERIC, BINARY, SORTED), so its
+  - Simplified types: There are only 3 types (NUMERIC, BINARY, SORTED), so it's
     not necessary to specify for example that all of your binary values have
-    the same length. Instead its easy for the Codec API to optimize encoding
+    the same length. Instead it's easy for the Codec API to optimize encoding
     based on any properties of the content.
    (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
 
@@ -3565,7 +3565,7 @@ Optimizations
   ForUtil.skipBlock.  (Robert Muir)
 
 * LUCENE-4497: Don't write PosVIntCount to the positions file in 
-  Lucene41PostingsFormat, as its always totalTermFreq % BLOCK_SIZE. (Robert Muir)
+  Lucene41PostingsFormat, as it's always totalTermFreq % BLOCK_SIZE. (Robert Muir)
 
 * LUCENE-4498: In Lucene41PostingsFormat, when a term appears in only one document, 
   Instead of writing a file pointer to a VIntBlock containing the doc id, just 
@@ -3679,7 +3679,7 @@ API Changes
   (Uwe Schindler, Robert Muir)
 
 * LUCENE-4304: removed PayloadProcessorProvider. If you want to change
-  payloads (or other things) when merging indexes, its recommended
+  payloads (or other things) when merging indexes, it's recommended
   to just use a FilterAtomicReader + IndexWriter.addIndexes. See the
   OrdinalMappingAtomicReader and TaxonomyMergeUtils in the facets
   module if you want an example of this.
@@ -3703,7 +3703,7 @@ API Changes
   overdelegates (read(), read(char[], int, int), skip, etc). This made it
   hard to implement CharFilters that were correct. Instead only close() is
   delegated by default: read(char[], int, int) and correct(int) are abstract
-  so that its obvious which methods you should implement.  The protected 
+  so that it's obvious which methods you should implement.  The protected 
   inner Reader is 'input' like CharFilter in the 3.x series, instead of 'in'.  
   (Dawid Weiss, Uwe Schindler, Robert Muir)
 
@@ -3759,7 +3759,7 @@ Bug Fixes
 
 * SOLR-3737: StempelPolishStemFilterFactory loaded its stemmer table incorrectly.
   Also, ensure immutability and use only one instance of this table in RAM (lazy
-  loaded) since its quite large. (sausarkar, Steven Rowe, Robert Muir)
+  loaded) since it's quite large. (sausarkar, Steven Rowe, Robert Muir)
 
 * LUCENE-4310: MappingCharFilter was failing to match input strings
   containing non-BMP Unicode characters.  (Dawid Weiss, Robert Muir,
@@ -3901,7 +3901,7 @@ API Changes
   of embedded morfologik dictionaries to version 1.9. (Dawid Weiss)
 
 * LUCENE-4178: set 'tokenized' to true on FieldType by default, so that if you
-  make a custom FieldType and set indexed = true, its analyzed by the analyzer.
+  make a custom FieldType and set indexed = true, it's analyzed by the analyzer.
   (Robert Muir)
 
 * LUCENE-4220: Removed the buggy JavaCC-based HTML parser in the benchmark
@@ -4222,7 +4222,7 @@ Changes in backwards compatibility policy
   migration notes in MIGRATE.txt for more details.  (Robert Muir, Doron Cohen)
 
 * LUCENE-2315: AttributeSource's methods for accessing attributes are now final,
-  else its easy to corrupt the internal states.  (Uwe Schindler)
+  else it's easy to corrupt the internal states.  (Uwe Schindler)
 
 * LUCENE-2814: The IndexWriter.flush method no longer takes "boolean
   flushDocStores" argument, as we now always flush doc stores (index
@@ -4786,7 +4786,7 @@ New features
     DefaultSimilarity, so you can easily try these out/switch back and 
     forth/run experiments and comparisons without reindexing. Note: most of 
     the models do rely upon index statistics that are new in Lucene 4.0, so 
-    for existing 3.x indexes its a good idea to upgrade your index to the 
+    for existing 3.x indexes it's a good idea to upgrade your index to the 
     new format with IndexUpgrader first.
 
   - Added a new subclass SimilarityBase which provides a simplified API 
@@ -6702,7 +6702,7 @@ New features
 
 * LUCENE-2754, LUCENE-2757: Added a wrapper around MultiTermQueries
   to add span support: SpanMultiTermQueryWrapper<Q extends MultiTermQuery>.
-  Using this wrapper its easy to add fuzzy/wildcard to e.g. a SpanNearQuery.
+  Using this wrapper it's easy to add fuzzy/wildcard to e.g. a SpanNearQuery.
   (Robert Muir, Uwe Schindler)
 
 * LUCENE-2838: ConstantScoreQuery now directly supports wrapping a Query
@@ -8367,7 +8367,7 @@ New features
     diagnostic information about the possibility of inconsistent
     FieldCache usage.  Namely: FieldCache entries for the same field
     with different datatypes or parsers; and FieldCache entries for
-    the same field in both a reader, and one of it's (descendant) sub
+    the same field in both a reader, and one of its (descendant) sub
     readers. 
     (Chris Hostetter, Mark Miller)
 
@@ -8588,7 +8588,7 @@ Changes in backwards compatibility policy
 1. LUCENE-1340: In a minor change to Lucene's backward compatibility
    policy, we are now allowing the Fieldable interface to have
    changes, within reason, and made on a case-by-case basis.  If an
-   application implements it's own Fieldable, please be aware of
+   application implements its own Fieldable, please be aware of
    this.  Otherwise, no need to be concerned.  This is in effect for
    all 2.X releases, starting with 2.4.  Also note, that in all
    likelihood, Fieldable will be changed in 3.0.
