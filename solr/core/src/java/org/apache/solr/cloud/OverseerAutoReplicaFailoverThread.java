@@ -145,6 +145,11 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     
     // TODO: extract to configurable strategy class ??
     ClusterState clusterState = zkStateReader.getClusterState();
+    //check if we have disabled autoAddReplicas cluster wide
+    String autoAddReplicas = (String) zkStateReader.getClusterProps().get(ZkStateReader.AUTO_ADD_REPLICAS);
+    if (autoAddReplicas !=null && autoAddReplicas.equals("false")) {
+      return;
+    }
     if (clusterState != null) {
       if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0) {
         // nothing has changed, no work to do

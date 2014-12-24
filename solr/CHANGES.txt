@@ -254,6 +254,10 @@ New Features
   (Timothy Potter, Hossman, Steve Rowe)
 
 * SOLR-6770: Add/edit param sets and use them in Requests (Noble Paul)
+
+* SOLR-6879: Have an option to disable autoAddReplicas temporarily for all collections.
+  (Varun Thacker via Steve Rowe)
+
   
 Bug Fixes
 ----------------------
