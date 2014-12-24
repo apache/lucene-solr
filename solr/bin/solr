@@ -1196,14 +1196,21 @@ if [ "$EXAMPLE" != "cloud" ]; then
 
   # create the core/collection for the requested example after launching Solr
   if [[ "$EXAMPLE" == "schemaless" || "$EXAMPLE" == "techproducts" ]]; then
+
+    if [ "$EXAMPLE" == "schemaless" ]; then
+      EXAMPLE_NAME=gettingstarted
+    else
+      EXAMPLE_NAME=$EXAMPLE
+    fi
+
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      run_tool create_collection -name $EXAMPLE -shards 1 -replicationFactor 1 \
+      run_tool create_collection -name $EXAMPLE_NAME -shards 1 -replicationFactor 1 \
         -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets -solrUrl http://localhost:$SOLR_PORT/solr
       if [ $? -ne 0 ]; then
         exit 1
       fi
     else
-      run_tool create_core -name $EXAMPLE -solrUrl http://localhost:$SOLR_PORT/solr \
+      run_tool create_core -name $EXAMPLE_NAME -solrUrl http://localhost:$SOLR_PORT/solr \
         -config $EXAMPLE_CONFIGSET -configsetsDir $SOLR_TIP/server/solr/configsets
       if [ $? -ne 0 ]; then
         exit 1

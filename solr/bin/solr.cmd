@@ -715,8 +715,10 @@ IF "%FG%"=="1" (
 )
 
 
+set EXAMPLE_NAME=%EXAMPLE%
 set CREATE_EXAMPLE_CONFIG=
 IF "%EXAMPLE%"=="schemaless" (
+  set EXAMPLE_NAME=gettingstarted
   set CREATE_EXAMPLE_CONFIG=data_driven_schema_configs
 )
 IF "%EXAMPLE%"=="techproducts" (
@@ -728,12 +730,12 @@ IF NOT "!CREATE_EXAMPLE_CONFIG!"=="" (
   IF "%SOLR_MODE%"=="solrcloud" (
     "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI create_collection -name !EXAMPLE! -shards 1 -replicationFactor 1 ^
+      org.apache.solr.util.SolrCLI create_collection -name !EXAMPLE_NAME! -shards 1 -replicationFactor 1 ^
       -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl http://localhost:%SOLR_PORT%/solr
   ) ELSE (
     "%JAVA%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
       -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE! -solrUrl http://localhost:%SOLR_PORT%/solr ^
+      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE_NAME! -solrUrl http://localhost:%SOLR_PORT%/solr ^
       -config !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
   )
 )
