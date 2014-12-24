@@ -97,7 +97,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     this.cc = cc;
     this.coreName = cd.getName();
     this.recoveryListener = recoveryListener;
-    setName("RecoveryThread");
+    setName("RecoveryThread-"+this.coreName);
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();

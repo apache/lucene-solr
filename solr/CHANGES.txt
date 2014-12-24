@@ -499,6 +499,8 @@ Other Changes
 * SOLR-6882: Misspelled collection API actions in ReplicaMutator exception messages.
   (Steve Rowe via shalin)
 
+* SOLR-6885: Add core name to RecoveryThread name. (Christine Poerschke via shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
