@@ -548,6 +548,8 @@ Other Changes
   more user-friendly error reporting (no stack trace), and the ability to pass a 
   directory when using bin/solr to create a core or collection (Timothy Potter)
 
+* SOLR-6885: Add core name to RecoveryThread name. (Christine Poerschke via shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
