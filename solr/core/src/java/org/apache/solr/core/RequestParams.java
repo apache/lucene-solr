@@ -129,15 +129,17 @@ public class RequestParams implements MapSerializable{
           log.info("request params refreshed to version {}",requestParams.getZnodeVersion());
         }
       } catch (KeeperException e) {
-        //todo handle properly
-        log.error("",e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (InterruptedException e) {
-        //todo handle properly
-
-        log.error("",e);
+        Thread.currentThread().interrupt();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
+    } else if(requestParams == null) {
+      Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
+      requestParams = new RequestParams((Map) o[0],(Integer)o[1]);
     }
+
     return requestParams;
 
   }
@@ -152,16 +154,17 @@ public class RequestParams implements MapSerializable{
       return new Object[]{Collections.EMPTY_MAP, -1};
     }
 
-    try {
       int version = 0; //will be always 0 for file based resourceloader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info( "conf resource {} loaded . version : {} ", name,version);
       }
+
+    try {
       Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
       return new Object[]{m,version};
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error reading conf resource "+name,e);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error parsing conf resource "+name,e);
     }
 
   }

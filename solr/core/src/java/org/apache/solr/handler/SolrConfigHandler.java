@@ -113,15 +113,19 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             log.info("config update listener called for core {}", coreName);
             SolrZkClient zkClient = cc.getZkController().getZkClient();
             int solrConfigversion,overlayVersion, managedSchemaVersion=0;
+            SolrConfig cfg = null;
             try (SolrCore core = cc.getCore(coreName))  {
               if (core.isClosed()) return;
-              core.getSolrConfig().refreshRequestParams();
+              cfg = core.getSolrConfig();
               solrConfigversion = core.getSolrConfig().getOverlay().getZnodeVersion();
                overlayVersion = core.getSolrConfig().getZnodeVersion();
               if(managedSchmaResourcePath != null){
                 managedSchemaVersion = ((ManagedIndexSchema)core.getLatestSchema()).getSchemaZkVersion();
               }
 
+            }
+            if(cfg != null){
+              cfg.refreshRequestParams();
             }
 
             if (checkStale(zkClient, overlayPath, solrConfigversion) ||
