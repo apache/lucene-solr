@@ -31,7 +31,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
   }
   
   public void testConsumeWordInstance() {
-    // we use the default locale, as its randomized by LuceneTestCase
+    // we use the default locale, as it's randomized by LuceneTestCase
     BreakIterator bi = BreakIterator.getWordInstance(Locale.getDefault());
     CharArrayIterator ci = CharArrayIterator.newWordInstance();
     for (int i = 0; i < 10000; i++) {
@@ -43,7 +43,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
   
   /* run this to test if your JRE is buggy
   public void testWordInstanceJREBUG() {
-    // we use the default locale, as its randomized by LuceneTestCase
+    // we use the default locale, as it's randomized by LuceneTestCase
     BreakIterator bi = BreakIterator.getWordInstance(Locale.getDefault());
     Segment ci = new Segment();
     for (int i = 0; i < 10000; i++) {
@@ -61,7 +61,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
   }
   
   public void testConsumeSentenceInstance() {
-    // we use the default locale, as its randomized by LuceneTestCase
+    // we use the default locale, as it's randomized by LuceneTestCase
     BreakIterator bi = BreakIterator.getSentenceInstance(Locale.getDefault());
     CharArrayIterator ci = CharArrayIterator.newSentenceInstance();
     for (int i = 0; i < 10000; i++) {
@@ -73,7 +73,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
   
   /* run this to test if your JRE is buggy
   public void testSentenceInstanceJREBUG() {
-    // we use the default locale, as its randomized by LuceneTestCase
+    // we use the default locale, as it's randomized by LuceneTestCase
     BreakIterator bi = BreakIterator.getSentenceInstance(Locale.getDefault());
     Segment ci = new Segment();
     for (int i = 0; i < 10000; i++) {

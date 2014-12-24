@@ -46,7 +46,7 @@
   <!-- redefine the clover setup, because we dont want to run clover for the test-framework -->
   <target name="-clover.setup" if="run.clover"/>
 
-  <!-- redefine the test compilation, so its just a no-op -->
+  <!-- redefine the test compilation, so it's just a no-op -->
   <target name="compile-test"/>
   
   <!-- redefine the forbidden apis for tests, as we check ourselves - no sysout testing -->

@@ -23,7 +23,7 @@ package org.apache.lucene.index;
  * @lucene.experimental
  */
 public class OrdTermState extends TermState {
-  /** Term ordinal, i.e. it's position in the full list of
+  /** Term ordinal, i.e. its position in the full list of
    *  sorted terms. */
   public long ord;
 

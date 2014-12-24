@@ -29,7 +29,7 @@ public class ZkCmdExecutor {
   
   /**
    * TODO: At this point, this should probably take a SolrZkClient in
-   * it's constructor.
+   * its constructor.
    * 
    * @param timeoutms
    *          the client timeout for the ZooKeeper clients that will be used
@@ -93,7 +93,7 @@ public class ZkCmdExecutor {
     try {
       zkClient.makePath(path, data, true);
     } catch (NodeExistsException e) {
-      // its okay if another beats us creating the node
+      // it's okay if another beats us creating the node
     }
     
   }

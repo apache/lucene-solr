@@ -136,7 +136,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     UpdateLog existingLog = updateHandler.getUpdateLog();
     if (this.ulog != null && this.ulog == existingLog) {
-      // If we are reusing the existing update log, inform the log that it's update handler has changed.
+      // If we are reusing the existing update log, inform the log that its update handler has changed.
       // We do this as late as possible.
       this.ulog.init(this, core);
     }

@@ -39,7 +39,7 @@ public final class BeiderMorseFilter extends TokenFilter {
   private final LanguageSet languages;
   
   // output is a string such as ab|ac|...
-  // in complex cases like d'angelo its (anZelo|andZelo|...)-(danZelo|...)
+  // in complex cases like d'angelo it's (anZelo|andZelo|...)-(danZelo|...)
   // if there are multiple 's, it starts to nest...
   private static final Pattern pattern = Pattern.compile("([^()|-]+)");
   

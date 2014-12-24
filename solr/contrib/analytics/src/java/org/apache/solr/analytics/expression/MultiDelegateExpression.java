@@ -33,7 +33,7 @@ public abstract class MultiDelegateExpression extends Expression {
   }
 }
 /**
- * <code>AddExpression</code> returns the sum of it's components' values.
+ * <code>AddExpression</code> returns the sum of its components' values.
  */
 class AddExpression extends MultiDelegateExpression {
   public AddExpression(Expression[] delegates) {
@@ -56,7 +56,7 @@ class AddExpression extends MultiDelegateExpression {
   }
 }
 /**
- * <code>MultiplyExpression</code> returns the product of it's delegates' values.
+ * <code>MultiplyExpression</code> returns the product of its delegates' values.
  */
 class MultiplyExpression extends MultiDelegateExpression {
   public MultiplyExpression(Expression[] delegates) {
@@ -110,7 +110,7 @@ class DateMathExpression extends MultiDelegateExpression {
   }
 }
 /**
- * <code>ConcatenateExpression</code> returns the concatenation of it's delegates' values in the order given.
+ * <code>ConcatenateExpression</code> returns the concatenation of its delegates' values in the order given.
  */
 class ConcatenateExpression extends MultiDelegateExpression {
   public ConcatenateExpression(Expression[] delegates) {

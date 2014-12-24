@@ -77,7 +77,7 @@ public final class UserDictionary implements Dictionary {
     }
     
     // TODO: should we allow multiple segmentations per input 'phrase'?
-    // the old treemap didn't support this either, and i'm not sure if its needed/useful?
+    // the old treemap didn't support this either, and i'm not sure if it's needed/useful?
 
     Collections.sort(featureEntries, new Comparator<String[]>() {
       @Override

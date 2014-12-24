@@ -49,7 +49,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
   /**
    * Ensure the factory works with no dictionary: using hyphenation grammar only.
    * Also change the min/max subword sizes from the default. When using no dictionary,
-   * its generally necessary to tweak these, or you get lots of expansions.
+   * it's generally necessary to tweak these, or you get lots of expansions.
    */
   public void testHyphenationOnly() throws Exception {
     Reader reader = new StringReader("basketballkurv");

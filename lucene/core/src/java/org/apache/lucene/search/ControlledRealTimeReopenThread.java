@@ -165,7 +165,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
       // not sleep for much or any longer before reopening:
       reopenLock.lock();
 
-      // Need to find waitingGen inside lock as its used to determine
+      // Need to find waitingGen inside lock as it's used to determine
       // stale time
       waitingGen = Math.max(waitingGen, targetGen);
 

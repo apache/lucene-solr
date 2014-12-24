@@ -325,7 +325,7 @@ def main():
   minErrors = []
   for i in xrange(len(stateMap2)-1):
     w('//   %s -> %s' % (i, stateMap2[i]))
-    # we replace t-notation as its not relevant here
+    # we replace t-notation as it's not relevant here
     st = stateMap2[i].replace('t', '')
     
     v = eval(st)

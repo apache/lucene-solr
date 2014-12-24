@@ -29,7 +29,7 @@ public class HighCompressionCompressingCodec extends CompressingCodec {
 
   /** Default constructor. */
   public HighCompressionCompressingCodec() {
-    // we don't worry about zlib block overhead as its
+    // we don't worry about zlib block overhead as it's
     // not bad and try to save space instead:
     this(61440, 512, false);
   }

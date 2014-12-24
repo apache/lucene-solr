@@ -233,7 +233,7 @@ public abstract class Similarity {
     /** The value for normalization of contained query clauses (e.g. sum of squared weights).
      * <p>
      * NOTE: a Similarity implementation might not use any query normalization at all,
-     * its not required. However, if it wants to participate in query normalization,
+     * it's not required. However, if it wants to participate in query normalization,
      * it can return a value here.
      */
     public abstract float getValueForNormalization();
@@ -241,7 +241,7 @@ public abstract class Similarity {
     /** Assigns the query normalization factor and boost from parent queries to this.
      * <p>
      * NOTE: a Similarity implementation might not use this normalized value at all,
-     * its not required. However, its usually a good idea to at least incorporate 
+     * it's not required. However, it's usually a good idea to at least incorporate 
      * the topLevelBoost (e.g. from an outer BooleanQuery) into its score.
      */
     public abstract void normalize(float queryNorm, float topLevelBoost);

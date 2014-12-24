@@ -450,7 +450,7 @@ public abstract class FieldType extends FieldProperties {
   }
   
   /**
-   * DocValues is not enabled for a field, but its indexed, docvalues can be constructed 
+   * DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
    * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
    * This specifies the structure to use.
    * 
@@ -755,7 +755,7 @@ public abstract class FieldType extends FieldProperties {
    *
    * <p>
    * This method is called by the <code>SchemaField</code> constructor to 
-   * check that it's initialization does not violate any fundemental 
+   * check that its initialization does not violate any fundemental 
    * requirements of the <code>FieldType</code>.  The default implementation 
    * does nothing, but subclasses may chose to throw a {@link SolrException}  
    * if invariants are violated by the <code>SchemaField.</code>

@@ -90,7 +90,7 @@ public class LineFileDocs implements Closeable {
     boolean needSkip = true;
     long size = 0L, seekTo = 0L;
     if (is == null) {
-      // if its not in classpath, we load it as absolute filesystem path (e.g. Hudson's home dir)
+      // if it's not in classpath, we load it as absolute filesystem path (e.g. Hudson's home dir)
       Path file = Paths.get(path);
       size = Files.size(file);
       if (path.endsWith(".gz")) {

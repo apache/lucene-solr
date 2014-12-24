@@ -33,7 +33,7 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
  * Tokenizer for testing.
  * <p>
  * This tokenizer is a replacement for {@link #WHITESPACE}, {@link #SIMPLE}, and {@link #KEYWORD}
- * tokenizers. If you are writing a component such as a TokenFilter, its a great idea to test
+ * tokenizers. If you are writing a component such as a TokenFilter, it's a great idea to test
  * it wrapping this tokenizer instead for extra checks. This tokenizer has the following behavior:
  * <ul>
  *   <li>An internal state-machine is used for checking consumer consistency. These checks can
@@ -66,7 +66,7 @@ public class MockTokenizer extends Tokenizer {
   int off = 0;
   
   // buffered state (previous codepoint and offset). we replay this once we
-  // hit a reject state in case its permissible as the start of a new term.
+  // hit a reject state in case it's permissible as the start of a new term.
   int bufferedCodePoint = -1; // -1 indicates empty buffer
   int bufferedOff = -1;
 
@@ -169,7 +169,7 @@ public class MockTokenizer extends Tokenizer {
           bufferedCodePoint = cp;
           bufferedOff = endOffset;
         } else {
-          // otherwise, its because we hit term limit.
+          // otherwise, it's because we hit term limit.
           bufferedCodePoint = -1;
         }
         int correctedStartOffset = correctOffset(startOffset);

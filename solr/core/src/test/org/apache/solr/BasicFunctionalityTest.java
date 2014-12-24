@@ -625,7 +625,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             ,"*[count(//doc)=2]"
             ,"//arr[@name='multiDefault']"
             );
-    assertQ("1 doc should have it's explicit multiDefault",
+    assertQ("1 doc should have its explicit multiDefault",
             req("multiDefault:a")
             ,"*[count(//doc)=1]"
             );
@@ -634,7 +634,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             req("intDefault:42")
             ,"*[count(//doc)=2]"
             );
-    assertQ("1 doc should have it's explicit intDefault",
+    assertQ("1 doc should have its explicit intDefault",
             req("intDefault:[3 TO 5]")
             ,"*[count(//doc)=1]"
             );

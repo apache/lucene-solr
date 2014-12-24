@@ -79,7 +79,7 @@ public class OrdFieldSource extends ValueSource {
       SolrIndexSearcher is = (SolrIndexSearcher) o;
       SchemaField sf = is.getSchema().getFieldOrNull(field);
       if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumericType() != null) {
-        // its a single-valued numeric field: we must currently create insanity :(
+        // it's a single-valued numeric field: we must currently create insanity :(
         List<LeafReaderContext> leaves = is.getIndexReader().leaves();
         LeafReader insaneLeaves[] = new LeafReader[leaves.size()];
         int upto = 0;
@@ -95,7 +95,7 @@ public class OrdFieldSource extends ValueSource {
       IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
       r = SlowCompositeReaderWrapper.wrap(topReader);
     }
-    // if its e.g. tokenized/multivalued, emulate old behavior of single-valued fc
+    // if it's e.g. tokenized/multivalued, emulate old behavior of single-valued fc
     final SortedDocValues sindex = SortedSetSelector.wrap(DocValues.getSortedSet(r, field), SortedSetSelector.Type.MIN);
     return new IntDocValues(this) {
       protected String toTerm(String readableValue) {

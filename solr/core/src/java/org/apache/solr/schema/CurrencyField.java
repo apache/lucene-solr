@@ -252,7 +252,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    * <p>
    * Returns a ValueSource over this field in which the numeric value for 
    * each document represents the indexed value as converted to the default 
-   * currency for the field, normalized to it's most granular form based 
+   * currency for the field, normalized to its most granular form based 
    * on the default fractional digits.
    * </p>
    * <p>

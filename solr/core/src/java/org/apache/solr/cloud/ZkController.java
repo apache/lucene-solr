@@ -775,7 +775,7 @@ public final class ZkController {
       }
       zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
     } catch (KeeperException e) {
-      // its okay if the node already exists
+      // it's okay if the node already exists
       if (e.code() != KeeperException.Code.NODEEXISTS) {
         throw e;
       }
@@ -1315,7 +1315,7 @@ public final class ZkController {
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
 
         } catch (KeeperException e) {
-          // its okay if the node already exists
+          // it's okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
             throw e;
           }
@@ -1325,7 +1325,7 @@ public final class ZkController {
       }
       
     } catch (KeeperException e) {
-      // its okay if another beats us creating the node
+      // it's okay if another beats us creating the node
       if (e.code() == KeeperException.Code.NODEEXISTS) {
         return;
       }
@@ -1708,7 +1708,7 @@ public final class ZkController {
         zkClient.makePath(path, ZkStateReader.toJSON(props),
             CreateMode.PERSISTENT, null, true);
       } catch (KeeperException e2) {
-        // its okay if the node already exists
+        // it's okay if the node already exists
         if (e2.code() != KeeperException.Code.NODEEXISTS) {
           throw e;
         }
@@ -1812,7 +1812,7 @@ public final class ZkController {
   
   /**
    * Utility method for trimming and leading and/or trailing slashes from 
-   * it's input.  May return the empty string.  May return null if and only 
+   * its input.  May return the empty string.  May return null if and only 
    * if the input is null.
    */
   public static String trimLeadingAndTrailingSlashes(final String in) {
@@ -2058,7 +2058,7 @@ public final class ZkController {
       stateObj = ZkNodeProps.makeMap();
 
     stateObj.put("state", state);
-    // only update the createdBy value if its not set
+    // only update the createdBy value if it's not set
     if (stateObj.get("createdByNodeName") == null)
       stateObj.put("createdByNodeName", String.valueOf(this.nodeName));
 

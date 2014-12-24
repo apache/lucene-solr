@@ -180,7 +180,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           } catch (ParseException pe) {
             throw new CorruptIndexException("failed to parse BigDecimal value", in, pe);
           }
-          SimpleTextUtil.readLine(in, scratch); // read the line telling us if its real or not
+          SimpleTextUtil.readLine(in, scratch); // read the line telling us if it's real or not
           return BigInteger.valueOf(field.minValue).add(bd.toBigIntegerExact()).longValue();
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);

@@ -262,7 +262,7 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
     }
   }
 
-  // note: this might not be the most efficient... but its fairly simple
+  // note: this might not be the most efficient... but it's fairly simple
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);

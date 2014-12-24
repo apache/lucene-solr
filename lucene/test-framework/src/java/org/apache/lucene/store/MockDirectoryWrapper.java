@@ -269,7 +269,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       success = true;
     } finally {
       if (success) {
-        // we don't do this stuff with lucene's commit, but its just for completeness
+        // we don't do this stuff with lucene's commit, but it's just for completeness
         if (unSyncedFiles.contains(source)) {
           unSyncedFiles.remove(source);
           unSyncedFiles.add(dest);
@@ -751,7 +751,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         openFilesDeleted = new HashSet<>();
       }
       if (openFiles.size() > 0) {
-        // print the first one as its very verbose otherwise
+        // print the first one as it's very verbose otherwise
         Exception cause = null;
         Iterator<Exception> stacktraces = openFileHandles.values().iterator();
         if (stacktraces.hasNext()) {
@@ -806,7 +806,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
               }
             }
             
-            // its possible we cannot delete the segments_N on windows if someone has it open and
+            // it's possible we cannot delete the segments_N on windows if someone has it open and
             // maybe other files too, depending on timing. normally someone on windows wouldnt have
             // an issue (IFD would nuke this stuff eventually), but we pass NoDeletionPolicy...
             for (String file : pendingDeletions) {

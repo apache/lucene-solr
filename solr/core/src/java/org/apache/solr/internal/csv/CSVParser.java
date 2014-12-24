@@ -55,7 +55,7 @@ public class CSVParser {
   private static final int INITIAL_TOKEN_LENGTH = 50;
   
   // the token types
-  /** Token has no valid content, i.e. is in its initilized state. */
+  /** Token has no valid content, i.e. is in its initialized state. */
   protected static final int TT_INVALID = -1;
   /** Token with content, at beginning or in the middle of a line. */
   protected static final int TT_TOKEN = 0;

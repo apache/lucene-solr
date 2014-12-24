@@ -67,14 +67,14 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
         String inflectionForm = tid.getInflectionForm(wordId);
         assertTrue(inflectionForm == null || UnicodeUtil.validUTF16String(inflectionForm));
         if (inflectionForm != null) {
-          // check that its actually an ipadic inflection form
+          // check that it's actually an ipadic inflection form
           assertNotNull(ToStringUtil.getInflectedFormTranslation(inflectionForm));          
         }
         
         String inflectionType = tid.getInflectionType(wordId);
         assertTrue(inflectionType == null || UnicodeUtil.validUTF16String(inflectionType));
         if (inflectionType != null) {
-          // check that its actually an ipadic inflection type
+          // check that it's actually an ipadic inflection type
           assertNotNull(ToStringUtil.getInflectionTypeTranslation(inflectionType));
         }
         
@@ -88,7 +88,7 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
         String pos = tid.getPartOfSpeech(wordId);
         assertNotNull(pos);
         assertTrue(UnicodeUtil.validUTF16String(pos));
-        // check that its actually an ipadic pos tag
+        // check that it's actually an ipadic pos tag
         assertNotNull(ToStringUtil.getPOSTranslation(pos));
         
         String pronunciation = tid.getPronunciation(wordId, chars, 0, chars.length);

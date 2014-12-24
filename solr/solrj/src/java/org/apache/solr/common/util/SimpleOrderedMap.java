@@ -32,7 +32,7 @@ import java.util.*;
  * the same way.
  * </p>
  * <p>
- * This class does not provide efficient lookup by key, it's main purpose is
+ * This class does not provide efficient lookup by key, its main purpose is
  * to hold data to be serialized.  It aims to minimize overhead and to be
  * efficient at adding new elements.
  * </p>

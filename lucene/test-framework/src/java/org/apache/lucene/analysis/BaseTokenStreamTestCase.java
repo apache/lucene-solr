@@ -49,7 +49,7 @@ import org.apache.lucene.util.TestUtil;
 /** 
  * Base class for all Lucene unit tests that use TokenStreams. 
  * <p>
- * When writing unit tests for analysis components, its highly recommended
+ * When writing unit tests for analysis components, it's highly recommended
  * to use the helper methods here (especially in conjunction with {@link MockAnalyzer} or
  * {@link MockTokenizer}), as they contain many assertions and checks to 
  * catch bugs.
@@ -508,7 +508,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     try {
       checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
       // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
-      // so this should only really fail from another thread if its an actual thread problem
+      // so this should only really fail from another thread if it's an actual thread problem
       int numThreads = TestUtil.nextInt(random, 2, 4);
       final CountDownLatch startingGun = new CountDownLatch(1);
       AnalysisThread threads[] = new AnalysisThread[numThreads];

@@ -118,7 +118,7 @@ public class SolrCmdDistributor {
             doRetry = true;
           }
           
-          // if its a connect exception, lets try again
+          // if it's a connect exception, lets try again
           if (err.e instanceof SolrServerException) {
             if (((SolrServerException) err.e).getRootCause() instanceof ConnectException) {
               doRetry = true;

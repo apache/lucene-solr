@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  * in the {@link org.apache.lucene.search.payloads} and
  * {@link org.apache.lucene.search.spans} packages.
  * <p>
- * NOTE: because the payload will be stored at each position, its usually
+ * NOTE: because the payload will be stored at each position, it's usually
  * best to use the minimum number of bytes necessary. Some codec implementations
  * may optimize payload storage when all payloads have the same length.
  * 

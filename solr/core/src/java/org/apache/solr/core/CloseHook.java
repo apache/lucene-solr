@@ -45,7 +45,7 @@ public abstract class CloseHook {
    * <br/>
    * Use this method for post-close clean up operations e.g. deleting the index from disk.
    * <br/>
-   * <b>The core's passed to the method is already closed and therefore, it's update handler or searcher should *NOT* be used</b>
+   * <b>The core's passed to the method is already closed and therefore, its update handler or searcher should *NOT* be used</b>
    *
    * <b>Important:</b> Keep the method implementation as short as possible. If it were to use any heavy i/o , network connections -
    * it might be a better idea to launch in a separate Thread so as to not to block the process of

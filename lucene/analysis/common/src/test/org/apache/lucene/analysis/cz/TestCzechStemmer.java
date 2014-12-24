@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 /**
  * Test the Czech Stemmer.
  * 
- * Note: its algorithmic, so some stems are nonsense
+ * Note: it's algorithmic, so some stems are nonsense
  *
  */
 public class TestCzechStemmer extends BaseTokenStreamTestCase {

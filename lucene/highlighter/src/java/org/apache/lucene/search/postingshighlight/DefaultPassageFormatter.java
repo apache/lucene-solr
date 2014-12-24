@@ -62,7 +62,7 @@ public class DefaultPassageFormatter extends PassageFormatter {
     StringBuilder sb = new StringBuilder();
     int pos = 0;
     for (Passage passage : passages) {
-      // don't add ellipsis if its the first one, or if its connected.
+      // don't add ellipsis if it's the first one, or if it's connected.
       if (passage.startOffset > pos && pos > 0) {
         sb.append(ellipsis);
       }
@@ -70,7 +70,7 @@ public class DefaultPassageFormatter extends PassageFormatter {
       for (int i = 0; i < passage.numMatches; i++) {
         int start = passage.matchStarts[i];
         int end = passage.matchEnds[i];
-        // its possible to have overlapping terms
+        // it's possible to have overlapping terms
         if (start > pos) {
           append(sb, content, pos, start);
         }
@@ -81,7 +81,7 @@ public class DefaultPassageFormatter extends PassageFormatter {
           pos = end;
         }
       }
-      // its possible a "term" from the analyzer could span a sentence boundary.
+      // it's possible a "term" from the analyzer could span a sentence boundary.
       append(sb, content, pos, Math.max(pos, passage.endOffset));
       pos = passage.endOffset;
     }

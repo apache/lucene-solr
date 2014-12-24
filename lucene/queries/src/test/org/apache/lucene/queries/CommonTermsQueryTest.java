@@ -531,7 +531,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   public static void createRandomIndex(int numdocs, RandomIndexWriter writer,
       long seed) throws IOException {
     Random random = new Random(seed);
-    // primary source for our data is from linefiledocs, its realistic.
+    // primary source for our data is from linefiledocs, it's realistic.
     LineFileDocs lineFileDocs = new LineFileDocs(random);
     
     // TODO: we should add other fields that use things like docs&freqs but omit

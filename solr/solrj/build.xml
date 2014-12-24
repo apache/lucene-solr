@@ -66,7 +66,7 @@
 
   <!-- Specialized to use lucene's classpath too, because it refs e.g. qp syntax 
        (even though it doesnt compile with it) 
-       TODO: would be nice to fix this up better, but its hard because of
+       TODO: would be nice to fix this up better, but it's hard because of
        the different ways solr links to lucene javadocs -->
   <target name="-ecj-javadoc-lint-src" depends="-ecj-resolve">
     <ecj-macro srcdir="${src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">

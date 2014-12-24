@@ -111,11 +111,11 @@ import org.apache.lucene.index.SegmentWriteState;
  *  </pre>
  *  so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues.
  *  a document's ord list can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid
- *  this is a comma-separated list, and its padded with spaces to be fixed width. so trim() and split() it.
+ *  this is a comma-separated list, and it's padded with spaces to be fixed width. so trim() and split() it.
  *  and beware the empty string!
  *  an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
  *  
- *  for sorted numerics, its encoded (not very creatively) as a comma-separated list of strings the same as binary.
+ *  for sorted numerics, it's encoded (not very creatively) as a comma-separated list of strings the same as binary.
  *  beware the empty string!
  *   
  *  the reader can just scan this file when it opens, skipping over the data blocks

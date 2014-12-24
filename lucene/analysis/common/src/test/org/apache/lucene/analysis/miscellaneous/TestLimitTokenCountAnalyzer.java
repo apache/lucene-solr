@@ -43,7 +43,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
       mock.setEnableChecks(consumeAll);
       Analyzer a = new LimitTokenCountAnalyzer(mock, 2, consumeAll);
     
-      // dont use assertAnalyzesTo here, as the end offset is not the end of the string (unless consumeAll is true, in which case its correct)!
+      // dont use assertAnalyzesTo here, as the end offset is not the end of the string (unless consumeAll is true, in which case it's correct)!
       assertTokenStreamContents(a.tokenStream("dummy", "1  2     3  4  5"), new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 16 : null);
       assertTokenStreamContents(a.tokenStream("dummy", "1 2 3 4 5"), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, consumeAll ? 9 : null);
       

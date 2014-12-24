@@ -244,7 +244,7 @@ public class MMapDirectory extends FSDirectory {
     final String originalMessage;
     final Throwable originalCause;
     if (ioe.getCause() instanceof OutOfMemoryError) {
-      // nested OOM confuses users, because its "incorrect", just print a plain message:
+      // nested OOM confuses users, because it's "incorrect", just print a plain message:
       originalMessage = "Map failed";
       originalCause = null;
     } else {

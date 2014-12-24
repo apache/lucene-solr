@@ -372,7 +372,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("inverse range", 0, result.length);
   }
   
-  // float and double tests are a bit minimalistic, but its complicated, because missing precision
+  // float and double tests are a bit minimalistic, but it's complicated, because missing precision
   
   @Test
   public void testFieldCacheRangeFilterFloats() throws IOException {

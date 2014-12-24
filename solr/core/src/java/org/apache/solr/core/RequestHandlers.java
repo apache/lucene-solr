@@ -70,7 +70,7 @@ public final class RequestHandlers {
   public static final boolean disableExternalLib = Boolean.parseBoolean(System.getProperty("disable.external.lib", "false"));
 
   /**
-   * Trim the trailing '/' if its there, and convert null to empty string.
+   * Trim the trailing '/' if it's there, and convert null to empty string.
    * 
    * we want:
    *  /update/csv   and

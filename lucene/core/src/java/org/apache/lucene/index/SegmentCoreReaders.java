@@ -97,7 +97,7 @@ final class SegmentCoreReaders implements Accountable {
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
     final Codec codec = si.info.getCodec();
-    final Directory cfsDir; // confusing name: if (cfs) its the cfsdir, otherwise its the segment's directory.
+    final Directory cfsDir; // confusing name: if (cfs) it's the cfsdir, otherwise it's the segment's directory.
 
     boolean success = false;
     

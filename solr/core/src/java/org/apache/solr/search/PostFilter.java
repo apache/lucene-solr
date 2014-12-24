@@ -42,6 +42,6 @@ import org.apache.lucene.search.IndexSearcher;
  */
 public interface PostFilter extends ExtendedQuery {
 
-  /** Returns a DelegatingCollector to be run after the main query and all of it's filters, but before any sorting or grouping collectors */
+  /** Returns a DelegatingCollector to be run after the main query and all of its filters, but before any sorting or grouping collectors */
   public DelegatingCollector getFilterCollector(IndexSearcher searcher);
 }

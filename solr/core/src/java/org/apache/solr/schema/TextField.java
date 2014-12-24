@@ -96,7 +96,7 @@ public class TextField extends FieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
-    /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in it's chain? */
+    /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in its chain? */
     field.checkSortability();
     return Sorting.getTextSortField(field.getName(), reverse, field.sortMissingLast(), field.sortMissingFirst());
   }

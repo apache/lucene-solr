@@ -55,7 +55,7 @@ public class LeakFS extends HandleTrackingFS {
   @Override
   public synchronized void onClose() {
     if (!openHandles.isEmpty()) {
-      // print the first one as its very verbose otherwise
+      // print the first one as it's very verbose otherwise
       Exception cause = null;
       Iterator<Exception> stacktraces = openHandles.values().iterator();
       if (stacktraces.hasNext()) {

@@ -164,7 +164,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
 
-    // TODO: we have the logic in MDW to do this check, and its better, because it knows about files it tried
+    // TODO: we have the logic in MDW to do this check, and it's better, because it knows about files it tried
     // to delete but couldn't: we should replace this!!!!
     public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
       if (dir instanceof MockDirectoryWrapper) {

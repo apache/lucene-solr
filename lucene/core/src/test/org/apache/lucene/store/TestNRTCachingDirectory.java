@@ -39,7 +39,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
 
-  // TODO: RAMDir used here, because its still too slow to use e.g. SimpleFS
+  // TODO: RAMDir used here, because it's still too slow to use e.g. SimpleFS
   // for the threads tests... maybe because of the synchronization in listAll?
   // would be good to investigate further...
   @Override

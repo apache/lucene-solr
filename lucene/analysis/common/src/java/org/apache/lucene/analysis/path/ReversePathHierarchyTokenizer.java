@@ -154,7 +154,7 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
       resultToken.setLength(0);
       int idx = delimitersCount-1 - skip;
       if (idx >= 0) {
-        // otherwise its ok, because we will skip and return false
+        // otherwise it's ok, because we will skip and return false
         endPosition = delimiterPositions.get(idx);
       }
       finalOffset = correctOffset(length);

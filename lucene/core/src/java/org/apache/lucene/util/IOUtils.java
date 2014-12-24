@@ -148,7 +148,7 @@ public final class IOUtils {
    * the read charset doesn't match the expected {@link Charset}. 
    * <p>
    * Decoding readers are useful to load configuration files, stopword lists or synonym files
-   * to detect character set problems. However, its not recommended to use as a common purpose 
+   * to detect character set problems. However, it's not recommended to use as a common purpose 
    * reader.
    * 
    * @param stream the stream to wrap in a reader
@@ -168,7 +168,7 @@ public final class IOUtils {
    * the read charset doesn't match the expected {@link Charset}. 
    * <p>
    * Decoding readers are useful to load configuration files, stopword lists or synonym files
-   * to detect character set problems. However, its not recommended to use as a common purpose 
+   * to detect character set problems. However, it's not recommended to use as a common purpose 
    * reader.
    * @param clazz the class used to locate the resource
    * @param resource the resource name to load
@@ -513,7 +513,7 @@ public final class IOUtils {
       devinfo = sysinfo.resolve(devName);
     }
     
-    // read first byte from rotational, its a 1 if it spins.
+    // read first byte from rotational, it's a 1 if it spins.
     Path info = devinfo.resolve("queue/rotational");
     try (InputStream stream = Files.newInputStream(info)) {
       return stream.read() == '1'; 
@@ -526,7 +526,7 @@ public final class IOUtils {
     FileStore store = Files.getFileStore(path);
     String mount = getMountPoint(store);
 
-    // find the "matching" FileStore from system list, its the one we want.
+    // find the "matching" FileStore from system list, it's the one we want.
     for (FileStore fs : path.getFileSystem().getFileStores()) {
       if (mount.equals(getMountPoint(fs))) {
         return fs;

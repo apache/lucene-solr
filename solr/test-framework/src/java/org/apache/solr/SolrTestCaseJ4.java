@@ -440,7 +440,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
        log.error(msg);
-       // if its TestReplicationHandler, ignore it. the test is broken and gets no love
+       // if it's TestReplicationHandler, ignore it. the test is broken and gets no love
        if ("TestReplicationHandler".equals(RandomizedContext.current().getTargetClass().getSimpleName())) {
          log.warn("TestReplicationHandler wants to fail!: " + msg);
        } else {

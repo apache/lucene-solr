@@ -146,7 +146,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
             // see SOLR-6424
             assertFalse(blockDirectory.isBlockCacheWriteEnabled());
             Cache cache = blockDirectory.getCache();
-            // we know its a BlockDirectoryCache, but future proof
+            // we know it's a BlockDirectoryCache, but future proof
             assertTrue(cache instanceof BlockDirectoryCache);
             BlockCache blockCache = ((BlockDirectoryCache) cache)
                 .getBlockCache();

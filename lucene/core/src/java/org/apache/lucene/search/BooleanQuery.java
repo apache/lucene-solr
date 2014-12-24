@@ -213,7 +213,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     public float coord(int overlap, int maxOverlap) {
       // LUCENE-4300: in most cases of maxOverlap=1, BQ rewrites itself away,
       // so coord() is not applied. But when BQ cannot optimize itself away
-      // for a single clause (minNrShouldMatch, prohibited clauses, etc), its
+      // for a single clause (minNrShouldMatch, prohibited clauses, etc), it's
       // important not to apply coord(1,1) for consistency, it might not be 1.0F
       return maxOverlap == 1 ? 1F : similarity.coord(overlap, maxOverlap);
     }
@@ -400,14 +400,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       
       // conjunction-disjunction mix:
       // we create the required and optional pieces with coord disabled, and then
-      // combine the two: if minNrShouldMatch > 0, then its a conjunction: because the
-      // optional side must match. otherwise its required + optional, factoring the
+      // combine the two: if minNrShouldMatch > 0, then it's a conjunction: because the
+      // optional side must match. otherwise it's required + optional, factoring the
       // number of optional terms into the coord calculation
       
       Scorer req = excl(req(required, true), prohibited);
       Scorer opt = opt(optional, minShouldMatch, true);
 
-      // TODO: clean this up: its horrible
+      // TODO: clean this up: it's horrible
       if (disableCoord) {
         if (minShouldMatch > 0) {
           return new ConjunctionScorer(this, new Scorer[] { req, opt }, 1F);

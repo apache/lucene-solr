@@ -4417,8 +4417,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         try {
           rollback();
         } catch (Throwable ignored) {
-          // it would be confusing to addSuppressed here, its unrelated to the disaster,
-          // and its possible our internal state is amiss anyway.
+          // it would be confusing to addSuppressed here, it's unrelated to the disaster,
+          // and it's possible our internal state is amiss anyway.
         }
       }
     }
@@ -4603,7 +4603,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   
   /**
    * Interface for internal atomic events. See {@link DocumentsWriter} for details. Events are executed concurrently and no order is guaranteed.
-   * Each event should only rely on the serializeability within it's process method. All actions that must happen before or after a certain action must be
+   * Each event should only rely on the serializeability within its process method. All actions that must happen before or after a certain action must be
    * encoded inside the {@link #process(IndexWriter, boolean, boolean)} method.
    *
    */

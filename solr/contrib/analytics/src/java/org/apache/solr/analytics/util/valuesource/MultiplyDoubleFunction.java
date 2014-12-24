@@ -22,7 +22,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.analytics.util.AnalyticsParams;
 
 /**
- * <code>MultiplyDoubleFunction</code> returns the product of it's components.
+ * <code>MultiplyDoubleFunction</code> returns the product of its components.
  */
 public class MultiplyDoubleFunction extends MultiDoubleFunction {
   public final static String NAME = AnalyticsParams.MULTIPLY;

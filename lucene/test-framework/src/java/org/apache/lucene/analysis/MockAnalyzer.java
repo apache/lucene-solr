@@ -30,7 +30,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * <p>
  * This analyzer is a replacement for Whitespace/Simple/KeywordAnalyzers
  * for unit tests. If you are testing a custom component such as a queryparser
- * or analyzer-wrapper that consumes analysis streams, its a great idea to test
+ * or analyzer-wrapper that consumes analysis streams, it's a great idea to test
  * it with this analyzer instead. MockAnalyzer has the following behavior:
  * <ul>
  *   <li>By default, the assertions in {@link MockTokenizer} are turned on for extra

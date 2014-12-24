@@ -492,7 +492,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       assertEquals(freq, rightDocs.freq());
       for (int i = 0; i < freq; i++) {
         assertEquals(leftDocs.nextPosition(), rightDocs.nextPosition());
-        // we don't compare the payloads, its allowed that one is empty etc
+        // we don't compare the payloads, it's allowed that one is empty etc
       }
     }
   }

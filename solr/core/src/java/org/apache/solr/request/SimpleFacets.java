@@ -99,7 +99,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
  * A class that generates simple Facet information for a request.
  *
  * More advanced facet implementations may compose or subclass this class 
- * to leverage any of it's functionality.
+ * to leverage any of its functionality.
  */
 public class SimpleFacets {
 
@@ -492,8 +492,8 @@ public class SimpleFacets {
     SchemaField sf = searcher.getSchema().getFieldOrNull(groupField);
     
     if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumericType() != null) {
-      // its a single-valued numeric field: we must currently create insanity :(
-      // there isnt a GroupedFacetCollector that works on numerics right now...
+      // it's a single-valued numeric field: we must currently create insanity :(
+      // there isn't a GroupedFacetCollector that works on numerics right now...
       searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), new FilterCollector(collector) {
         @Override
         public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {

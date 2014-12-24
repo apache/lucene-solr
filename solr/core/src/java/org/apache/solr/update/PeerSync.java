@@ -168,7 +168,7 @@ public class PeerSync  {
   }
 
   /** Returns true if peer sync was successful, meaning that this core may not be considered to have the latest updates
-   *  when considering the last N updates between it and it's peers.
+   *  when considering the last N updates between it and its peers.
    *  A commit is not performed.
    */
   public boolean sync() {

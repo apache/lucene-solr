@@ -60,7 +60,7 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
         new int[]    { 3 }
     );
     
-    // pass a bogus stream and ensure its still ok
+    // pass a bogus stream and ensure it's still ok
     stringField = new StringField("foo", "beer", Field.Store.NO);
     TokenStream bogus = new NumericTokenStream();
     ts = stringField.tokenStream(null, bogus);
@@ -87,7 +87,7 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
     assertSame(ts, ts2);
     assertNumericContents(20, ts);
     
-    // pass a bogus stream and ensure its still ok
+    // pass a bogus stream and ensure it's still ok
     intField = new IntField("foo", 2343, Field.Store.NO);
     TokenStream bogus = new CannedTokenStream(new Token("bogus", 0, 5));
     ts = intField.tokenStream(null, bogus);
