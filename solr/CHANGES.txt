@@ -2545,7 +2545,7 @@ Bug Fixes
 * SOLR-4909: Use DirectoryReader.openIfChanged in non-NRT mode.
   (Michael Garski via Robert Muir)
 
-* SOLR-5227: Correctly fail schema initalization if a dynamicField is configured to
+* SOLR-5227: Correctly fail schema initialization if a dynamicField is configured to
   be required, or have a default value.  (hossman)
 
 * SOLR-5231: Fixed a bug with the behavior of BoolField that caused documents w/o
@@ -5900,7 +5900,7 @@ Bug Fixes
   (James Dyer, others)
   
 * SOLR-3260: DataImportHandler: ScriptTransformer gives better error messages when 
-  problems arise on initalization (no Script Engine, invalid script, etc). (James Dyer)
+  problems arise on initialization (no Script Engine, invalid script, etc). (James Dyer)
 
 * SOLR-2959: edismax now respects the magic fields '_val_' and '_query_'
   (Michael Watts, hossman)
@@ -9461,7 +9461,7 @@ Changes in runtime behavior
     to facilitate checking for parameters that must be present.
     (Ryan McKinley, J.J. Larrea via yonik)
 
- 8. SOLR-179: By default, solr will abort after any severe initalization
+ 8. SOLR-179: By default, solr will abort after any severe initialization
     errors.  This behavior can be disabled by setting:
     <abortOnConfigurationError>false</abortOnConfigurationError>
     in solrconfig.xml (ryan)

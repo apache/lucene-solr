@@ -78,7 +78,7 @@ public final class SchemaField extends FieldProperties {
     this.properties = properties;
     this.defaultValue = defaultValue;
     
-    // initalize with the required property flag
+    // initialize with the required property flag
     required = (properties & REQUIRED) !=0;
 
     type.checkSchemaField(this);

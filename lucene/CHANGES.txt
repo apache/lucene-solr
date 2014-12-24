@@ -662,7 +662,7 @@ Bug Fixes
 
 * LUCENE-5818, LUCENE-5823: Fix hunspell overgeneration for short strings that also 
   match affixes, words are only stripped to a zero-length string if FULLSTRIP option
-  is specifed in the dictionary.  (Robert Muir)
+  is specified in the dictionary.  (Robert Muir)
 
 * LUCENE-5824: Fix hunspell 'long' flag handling. (Robert Muir)
 

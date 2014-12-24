@@ -38,7 +38,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
 
   private final int[] parents;
 
-  // the following two arrays are lazily intialized. note that we only keep a
+  // the following two arrays are lazily initialized. note that we only keep a
   // single boolean member as volatile, instead of declaring the arrays
   // volatile. the code guarantees that only after the boolean is set to true,
   // the arrays are returned.

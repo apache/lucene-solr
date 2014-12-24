@@ -67,7 +67,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Don't do anything if the framework is unknown
     if(watcher==null) {
-      rsp.add("error", "Logging Not Initalized");
+      rsp.add("error", "Logging Not Initialized");
       return;
     }
     rsp.add("watcher", watcher.getName());

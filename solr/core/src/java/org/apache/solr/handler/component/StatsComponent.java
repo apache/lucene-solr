@@ -138,7 +138,7 @@ public class StatsComponent extends SearchComponent {
 
   /**
    * Given a map of {@link StatsValues} using the appropriate response key,
-   * builds up the neccessary "stats" data structure for including in the response -- 
+   * builds up the necessary "stats" data structure for including in the response -- 
    * including the esoteric "stats_fields" wrapper.
    */
   public static NamedList<NamedList<NamedList<?>>> convertToResponse

@@ -142,7 +142,7 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
 
       if (params.getBool("facet", false)) {
         // if this was a facet request, then the top pivot constraint and pivot 
-        // stats should match what we expect - regardless of wether refine
+        // stats should match what we expect - regardless of whether refine
         // was used, or if the query was initially satisfied by the default overrequest
         
         List<PivotField> placePivots = rsp.getFacetPivot().get("place_t,company_t");
