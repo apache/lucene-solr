@@ -16,12 +16,11 @@
 Solr DataImportHandler example configuration
 --------------------------------------------
 
-Change to the parent (example) directory. Start solr by executing the following command 
+To run this example, use the "-e" option of the bin/solr script:
 
-> cd ..
-> java -Dsolr.solr.home="./example-DIH/solr/" -jar start.jar
+> bin/solr -e dih
 
-in this directory, and when Solr is started connect to:
+When Solr is started connect to:
 
   http://localhost:8983/solr/
 

@@ -185,10 +185,22 @@ public abstract class ManagedResource {
           "Failed to load stored data for "+resourceId+" due to: "+ioExc, ioExc);
     }
 
-    Object managedData = null;    
+    Object managedData = processStoredData(data);
+
+    if (managedInitArgs == null)
+      managedInitArgs = new NamedList<>();
+
+    onManagedDataLoadedFromStorage(managedInitArgs, managedData);
+  }
+
+  /**
+   * Processes the stored data.
+   */
+  protected Object processStoredData(Object data) throws SolrException {
+    Object managedData = null;
     if (data != null) {
       if (!(data instanceof Map)) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, 
+        throw new SolrException(ErrorCode.SERVER_ERROR,
             "Stored data for "+resourceId+" is not a valid JSON object!");
       }
 
@@ -196,37 +208,32 @@ public abstract class ManagedResource {
       Map<String,Object> initArgsMap = (Map<String,Object>)jsonMap.get(INIT_ARGS_JSON_FIELD);
       managedInitArgs = new NamedList<>(initArgsMap);
       log.info("Loaded initArgs {} for {}", managedInitArgs, resourceId);
-      
+
       if (jsonMap.containsKey(MANAGED_JSON_LIST_FIELD)) {
         Object jsonList = jsonMap.get(MANAGED_JSON_LIST_FIELD);
         if (!(jsonList instanceof List)) {
-          String errMsg = 
+          String errMsg =
               String.format(Locale.ROOT,
                   "Expected JSON array as value for %s but client sent a %s instead!",
                   MANAGED_JSON_LIST_FIELD, jsonList.getClass().getName());
           throw new SolrException(ErrorCode.SERVER_ERROR, errMsg);
         }
-        
+
         managedData = jsonList;
       } else if (jsonMap.containsKey(MANAGED_JSON_MAP_FIELD)) {
         Object jsonObj = jsonMap.get(MANAGED_JSON_MAP_FIELD);
         if (!(jsonObj instanceof Map)) {
-          String errMsg = 
+          String errMsg =
               String.format(Locale.ROOT,
                   "Expected JSON map as value for %s but client sent a %s instead!",
                   MANAGED_JSON_MAP_FIELD, jsonObj.getClass().getName());
           throw new SolrException(ErrorCode.SERVER_ERROR, errMsg);
         }
-        
+
         managedData = jsonObj;
-      }      
+      }
     }
-    
-    if (managedInitArgs == null) {
-      managedInitArgs = new NamedList<>();
-    }
-        
-    onManagedDataLoadedFromStorage(managedInitArgs, managedData);
+    return managedData;
   }
   
   /**

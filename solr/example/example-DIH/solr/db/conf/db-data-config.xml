@@ -1,5 +1,5 @@
 <dataConfig>
-    <dataSource driver="org.hsqldb.jdbcDriver" url="jdbc:hsqldb:./example-DIH/hsqldb/ex" user="sa" />
+    <dataSource driver="org.hsqldb.jdbcDriver" url="jdbc:hsqldb:${solr.install.dir}/example/example-DIH/hsqldb/ex" user="sa" />
     <document>
         <entity name="item" query="select * from item"
                 deltaQuery="select id from item where last_modified > '${dataimporter.last_index_time}'">

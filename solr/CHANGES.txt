@@ -554,6 +554,9 @@ Other Changes
 
 * SOLR-6885: Add core name to RecoveryThread name. (Christine Poerschke via shalin)
 
+* SOLR-6855: bin/solr -e dih launches, but has some path cruft issues preventing some of the
+  imports don't work (Hossman, Timothy Potter)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
