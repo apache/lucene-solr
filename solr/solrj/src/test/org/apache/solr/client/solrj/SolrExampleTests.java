@@ -949,7 +949,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     server.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
-    // results of this test should be the same regardless of wether any docs in index
+    // results of this test should be the same regardless of whether any docs in index
     if (random().nextBoolean()) {
       server.add(makeTestDoc("id", 1, "features", "aaa", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
       server.commit();

@@ -207,7 +207,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // basic check w/ limit & index sort
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether local params are used
+           // results should be the same regardless of whether local params are used
            new SolrParams[] {
              // Broken: SOLR-6193
              // params("facet.pivot","{!facet.limit=4 facet.sort=index}place_s,company_t"),
@@ -476,7 +476,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // Negative facet limit
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether facet.limit is global, 
+           // results should be the same regardless of whether facet.limit is global,
            // a local param, or specified as a per-field override for both fields
            new SolrParams[] {
              params(FacetParams.FACET_LIMIT, "-1",
@@ -508,7 +508,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // Negative per-field facet limit (outer)
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether per-field facet.limit is 
+           // results should be the same regardless of whether per-field facet.limit is
            // a global or a local param
            new SolrParams[] {
              // Broken: SOLR-6193
@@ -535,7 +535,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // Negative per-field facet limit (inner)
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether per-field facet.limit is 
+           // results should be the same regardless of whether per-field facet.limit is
            // a global or a local param
            new SolrParams[] {
              // Broken: SOLR-6193

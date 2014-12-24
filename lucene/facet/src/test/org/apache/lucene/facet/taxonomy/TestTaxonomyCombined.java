@@ -743,7 +743,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
   private void assertConsistentYoungestChild(final FacetLabel abPath,
       final int abOrd, final int abYoungChildBase1, final int abYoungChildBase2, final int retry, int numCategories)
       throws Exception {
-    SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for intialization
+    SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for initialization
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
     tw.addCategory(new FacetLabel("a", "0"));
     tw.addCategory(abPath);

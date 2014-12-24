@@ -45,7 +45,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
   private DataSource datasource;
   private List<EntityProcessorWrapper> children = new ArrayList<>();
   private DocBuilder docBuilder;
-  private boolean initalized;
+  private boolean initialized;
   private String onError;
   private Context context;
   private VariableResolver resolver;
@@ -317,11 +317,23 @@ public class EntityProcessorWrapper extends EntityProcessor {
     this.datasource = datasource;
   }
 
+  /** @deprecated will be removed in Solr 6; use {@link #isInitialized()} */
+  @Deprecated
   public boolean isInitalized() {
-    return initalized;
+    return initialized;
   }
 
-  public void setInitalized(boolean initalized) {
-    this.initalized = initalized;
+  public boolean isInitialized() {
+    return initialized;
+  }
+
+  /** @deprecated will be removed in Solr 6; use {@link #setInitialized(boolean)} */
+  @Deprecated
+  public void setInitalized(boolean initialized) {
+    this.initialized = initialized;
+  }
+  
+  public void setInitialized(boolean initialized) {
+    this.initialized = initialized;
   }
 }

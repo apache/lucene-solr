@@ -359,7 +359,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     assert null != max : "max is null but min isn't ? ==> " + min;
 
     // we always use the double value, because that way the response Object class is 
-    // consistent regardless of wether we only have 1 value or many that we min/max
+    // consistent regardless of whether we only have 1 value or many that we min/max
     //
     // TODO: would be nice to have subclasses for each type of Number ... breaks backcompat
     double minD = min.doubleValue();

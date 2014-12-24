@@ -294,7 +294,7 @@
        
        To enable solr1.1 behavior, remove the /update handler or change its path
        
-       "update.processor.class" is the class name for the UpdateRequestProcessor.  It is initalized
+       "update.processor.class" is the class name for the UpdateRequestProcessor.  It is initialized
        only once.  This can not be changed for each request.
     -->
   <requestHandler name="/update" class="solr.UpdateRequestHandler">

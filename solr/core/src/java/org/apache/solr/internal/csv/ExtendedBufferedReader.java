@@ -77,7 +77,7 @@ class ExtendedBufferedReader extends BufferedReader  {
    */
   @Override
   public int read() throws IOException {
-    // initalize the lookahead
+    // initialize the lookahead
     if (lookaheadChar == UNDEFINED) {
       lookaheadChar = super.read();
     }

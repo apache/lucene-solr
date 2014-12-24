@@ -79,7 +79,7 @@ public class SOLR749Test extends SolrTestCaseJ4 {
               "//result[@numFound=19]");
 
       // don't assume specific clause evaluation ordering.
-      // ideally this is 19, but could be as high as 20 depending on wether frange's 
+      // ideally this is 19, but could be as high as 20 depending on whether frange's
       // scorer has next() called on it before other clauses skipTo
       int count = CountUsageValueSourceParser.getAndClearCount("frange_in_bq");
       assertTrue("frange_in_bq: " + count, (19 <= count && count <= 20));

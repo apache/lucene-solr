@@ -17,9 +17,9 @@
 
 ####
 
-# Convinience script to generates the SVN command line for you to run in order to 
-# remove old (arvhived) versions of the solr ref guide from the dist repo, and 
-# (if neccessary) clean up any old RC files.
+# Convenience script to generates the SVN command line for you to run in order to 
+# remove old (archived) versions of the solr ref guide from the dist repo, and 
+# (if necessary) clean up any old RC files.
 #
 # See: https://cwiki.apache.org/confluence/display/solr/Internal+-+How+To+Publish+This+Documentation
 
