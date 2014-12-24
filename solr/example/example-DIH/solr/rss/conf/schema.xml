@@ -382,15 +382,6 @@
       </analyzer>
     </fieldType>
 
-    <!-- A text type for English text where stopwords and synonyms are managed using the REST API -->
-    <fieldType name="managed_en" class="solr.TextField" positionIncrementGap="100">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.ManagedStopFilterFactory" managed="english" />
-        <filter class="solr.ManagedSynonymFilterFactory" managed="english" />
-      </analyzer>
-    </fieldType>
-
     <!-- A general text field that has reasonable, generic
          cross-language defaults: it tokenizes with StandardTokenizer,
 	 removes stop words from case-insensitive "stopwords.txt"

@@ -16,6 +16,7 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -450,6 +451,31 @@ public class RestManager {
     }
 
     /**
+     * Overrides the parent impl to handle FileNotFoundException better
+     */
+    @Override
+    protected synchronized void reloadFromStorage() throws SolrException {
+      String resourceId = getResourceId();
+      Object data = null;
+      try {
+        data = storage.load(resourceId);
+      } catch (FileNotFoundException fnf) {
+        // this is ok - simply means there are no managed components added yet
+      } catch (IOException ioExc) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Failed to load stored data for "+resourceId+" due to: "+ioExc, ioExc);
+      }
+
+      Object managedData = processStoredData(data);
+
+      if (managedInitArgs == null)
+        managedInitArgs = new NamedList<>();
+
+      if (managedData != null)
+        onManagedDataLoadedFromStorage(managedInitArgs, managedData);
+    }
+
+    /**
      * Loads and initializes any ManagedResources that have been created but
      * are not associated with any Solr components.
      */
@@ -457,12 +483,9 @@ public class RestManager {
     @Override
     protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)
         throws SolrException {
-      
+
       if (managedData == null) {
-        // this is OK, just means there are no stored registrations
-        // storing an empty list is safe and avoid future warnings about
-        // the data not existing
-        storeManagedData(new ArrayList<Map<String,String>>(0));
+        // this is ok - just means no managed components have been added yet
         return;
       }
       
