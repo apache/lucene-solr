@@ -318,6 +318,9 @@ Bug Fixes
 * SOLR-6850: AutoAddReplicas makes a call to wait to see live replicas that times
   out after 30 milliseconds instead of 30 seconds. (Varun Thacker via Mark Miller)
 
+* SOLR-6873: Lib relative path is incorrect for techproduct configset
+  (Alexandre Rafalovitch via Erick Erickson)
+
 Optimizations
 ----------------------
 
