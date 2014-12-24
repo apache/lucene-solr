@@ -70,3 +70,24 @@ ENABLE_REMOTE_JMX_OPTS="false"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=3000"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoCommit.maxTime=60000"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.clustering.enabled=true"
+
+# Location where the bin/solr script will save PID files for running instances
+# If not set, the script will create PID files in $SOLR_TIP/bin
+#SOLR_PID_DIR=
+
+# Path to a directory where Solr creates index files, the specified directory
+# must contain a solr.xml; by default, Solr will use server/solr
+#SOLR_HOME=
+
+# Solr provides a default Log4J configuration properties file in server/resources
+# however, you may want to customize the log settings and file appender location
+# so you can point the script to use a different log4j.properties file
+#LOG4J_PROPS=/var/solr/log4j.properties
+
+# Location where Solr should write logs to; should agree with the file appender
+# settings in server/resources/log4j.properties
+#SOLR_LOGS_DIR=
+
+# Sets the port Solr binds to, default is 8983
+#SOLR_PORT=8983
+

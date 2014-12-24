@@ -64,6 +64,7 @@ IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="-i" goto get_info
 IF "%1"=="-info" goto get_info
+IF "%1"=="status" goto get_info
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd

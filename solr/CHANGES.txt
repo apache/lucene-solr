@@ -208,13 +208,16 @@ New Features
 
 * SOLR-6787: API to manage blobs in Solr (Noble Paul)
 
-* SOLR-6801:  Load RequestHandler from blob store (Noble Paul)
+* SOLR-6801: Load RequestHandler from blob store (Noble Paul)
 
 * SOLR-6729: createNodeSet.shuffle=(true|false) support for /admin/collections?action=CREATE.
   (Christine Poerschke, Ramkumar Aiyengar via Mark Miller)
 
 * SOLR-6879: Have an option to disable autoAddReplicas temporarily for all collections.
   (Varun Thacker via Steve Rowe)
+
+* SOLR-6851: Scripts to support installing and running Solr as a service on Linux
+  (Timothy Potter, Hossman, Steve Rowe)
 
   
 Bug Fixes
