@@ -212,6 +212,10 @@ New Features
 
 * SOLR-6729: createNodeSet.shuffle=(true|false) support for /admin/collections?action=CREATE.
   (Christine Poerschke, Ramkumar Aiyengar via Mark Miller)
+
+* SOLR-6879: Have an option to disable autoAddReplicas temporarily for all collections.
+  (Varun Thacker via Steve Rowe)
+
   
 Bug Fixes
 ----------------------
