@@ -80,6 +80,15 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
+
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -1022,7 +1031,7 @@ public final class ZkController {
  
     ZkNodeProps ourProps = new ZkNodeProps(props);
 
-    
+
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
         collection, coreNodeName, ourProps, this, cc);
 
@@ -1860,6 +1869,31 @@ public final class ZkController {
 
   }
 
+  public void rejoinShardLeaderElection(SolrParams params) {
+    try {
+      String collectionName = params.get(COLLECTION_PROP);
+      String shardId = params.get(SHARD_ID_PROP);
+      String nodeName = params.get(NODE_NAME_PROP);
+      String coreName = params.get(CORE_NAME_PROP);
+      String electionNode = params.get(ELECTION_NODE_PROP);
+      String baseUrl = params.get(BASE_URL_PROP);
+
+      ZkNodeProps zkProps = new ZkNodeProps(CORE_NAME_PROP, coreName, NODE_NAME_PROP, nodeName, COLLECTION_PROP, collectionName,
+          SHARD_ID_PROP, shardId, ELECTION_NODE_PROP, electionNode, BASE_URL_PROP, baseUrl);
+
+      ShardLeaderElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId, collectionName,
+          nodeName, zkProps, this, getCoreContainer());
+      LeaderElector elect = new LeaderElector(this.zkClient);
+      context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
+      elect.setup(context);
+
+      elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP));
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
+    }
+
+  }
+
   public void checkOverseerDesignate() {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
@@ -2280,7 +2314,7 @@ public final class ZkController {
 
   private void setConfWatcher(String zkDir, Watcher watcher) {
     try {
-      zkClient.exists(zkDir,watcher,true);
+      zkClient.exists(zkDir, watcher, true);
     } catch (KeeperException e) {
       log.error("failed to set watcher for conf dir {} ", zkDir);
     } catch (InterruptedException e) {
