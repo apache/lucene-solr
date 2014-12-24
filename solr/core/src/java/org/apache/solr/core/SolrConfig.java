@@ -45,6 +45,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RegexFileFilter;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -91,6 +93,7 @@ public class SolrConfig extends Config implements MapSerializable{
   public static final Logger log = LoggerFactory.getLogger(SolrConfig.class);
   
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
+  private RequestParams requestParams;
 
   static enum PluginOpts {
     MULTI_OK, 
@@ -791,5 +794,18 @@ public class SolrConfig extends Config implements MapSerializable{
     return overlay;
   }
 
+  public RequestParams getRequestParams() {
+    if(requestParams == null){
+      return refreshRequestParams();
+    }
+    return requestParams;
+  }
+
+
+  public RequestParams refreshRequestParams(){
+    requestParams = RequestParams.getFreshRequestParams(getResourceLoader(),requestParams);
+    log.info("current version of requestparams : {}", requestParams.getZnodeVersion());
+    return requestParams;
+  }
 
 }

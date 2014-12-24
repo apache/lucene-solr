@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -198,7 +199,12 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     try {
       entity = cloudClient.getLbServer().getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+      try {
+        return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+      } catch (JSONParser.ParseException e) {
+        log.error(response,e);
+        throw e;
+      }
     } finally {
       EntityUtils.consumeQuietly(entity);
       get.releaseConnection();

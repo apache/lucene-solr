@@ -44,11 +44,13 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.InitParams;
+import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -126,14 +128,16 @@ public class SolrPluginUtils {
    */
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults,
                                  SolrParams appends, SolrParams invariants) {
-      String useParams = req.getParams().get("useParam");
-      if(useParams !=null){
-        for (String name : StrUtils.splitSmart(useParams,',')) {
-          InitParams initParams = req.getCore().getSolrConfig().getInitParams().get(name);
-          if(initParams !=null){
-            if(initParams.defaults != null) defaults = SolrParams.wrapDefaults(SolrParams.toSolrParams(initParams.defaults) , defaults);
-            if(initParams.invariants != null) invariants = SolrParams.wrapDefaults(invariants, SolrParams.toSolrParams(initParams.invariants));
-            if(initParams.appends != null)  appends = SolrParams.wrapAppended(appends, SolrParams.toSolrParams(initParams.appends));
+
+    List<String> paramNames =null;
+    String useParams = req.getParams().get(RequestParams.USEPARAM);
+    if(useParams == null) useParams = (String) req.getContext().get(RequestParams.USEPARAM);
+    if(useParams !=null) paramNames = StrUtils.splitSmart(useParams, ',');
+    if(paramNames != null){
+        for (String name : paramNames) {
+          SolrParams requestParams = req.getCore().getSolrConfig().getRequestParams().getParams(name);
+          if(requestParams !=null){
+            defaults = SolrParams.wrapDefaults(requestParams , defaults);
           }
         }
       }

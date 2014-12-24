@@ -252,6 +252,8 @@ New Features
 
 * SOLR-6851: Scripts to support installing and running Solr as a service on Linux
   (Timothy Potter, Hossman, Steve Rowe)
+
+* SOLR-6770: Add/edit param sets and use them in Requests (Noble Paul)
   
 Bug Fixes
 ----------------------

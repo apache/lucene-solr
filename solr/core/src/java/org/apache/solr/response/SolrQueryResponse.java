@@ -66,6 +66,7 @@ import org.apache.solr.search.SolrReturnFields;
  * @since solr 0.9
  */
 public class SolrQueryResponse {
+  public static final String NAME = "response";
 
   /**
    * Container for user defined values
