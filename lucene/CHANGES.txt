@@ -12,6 +12,10 @@ System Requirements
 
 New Features
 
+* LUCENE-5735: NumberRangePrefixTreeStrategy now includes interval/range faceting
+  for counting ranges that align with the underlying terms as defined by the
+  NumberRangePrefixTree (e.g. familiar date units like days).  (David Smiley)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to
