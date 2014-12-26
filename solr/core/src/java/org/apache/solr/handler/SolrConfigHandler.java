@@ -257,15 +257,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       for (CommandOperation op : ops) {
         switch (op.name) {
           case CREATE:
-          case MODIFY:
           case UPDATE: {
             Map<String, Object> map = op.getDataMap();
             if (op.hasError()) break;
 
             for (Map.Entry<String, Object> entry : map.entrySet()) {
 
-
-              Map val = map;
+              Map val =null;
               String key = entry.getKey();
               if (key == null || key.trim().isEmpty()) {
                 op.addError("null key ");
@@ -290,18 +288,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               }
 
               MapSolrParams old = params.getParams(key);
-              if (CREATE.equals(op.name) && (old != null)) {
-                op.addError(MessageFormat.format("params exist ''{0}'' , use {1}", key, UPDATE));
-                break;
-              }
-              if (MODIFY.equals(op.name) || UPDATE.equals(op.name)) {
-                if (old == null) {
-                  op.addError(MessageFormat.format("params  ''{0}'' does not exist , use {1}", key, CREATE));
-                  break;
-                }
-              }
-
-              if (op.name.equals(MODIFY)) {
+              if (op.name.equals(UPDATE)) {
                 LinkedHashMap m = new LinkedHashMap(old.getMap());
                 m.putAll(val);
                 val = m;
@@ -554,8 +541,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final String CREATE_REQHANDLER = "create-requesthandler";
   public static final String DELETE_REQHANDLER = "delete-requesthandler";
   public static final String UPDATE_REQHANDLER = "update-requesthandler";
-  public static final String CREATE = "create";
+  public static final String CREATE = "set";
   public static final String UPDATE = "update";
-  public static final String MODIFY = "modify";
 
 }

@@ -85,7 +85,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     RestTestHarness writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
     String payload = " {\n" +
-        "  'create' : {'x': {" +
+        "  'set' : {'x': {" +
         "                    'a':'A val',\n" +
         "                    'b': 'B val'}\n" +
         "             }\n" +
@@ -167,7 +167,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
     payload = " {\n" +
-        "  'create' : {'y':{\n" +
+        "  'set' : {'y':{\n" +
         "                'c':'CY val',\n" +
         "                'b': 'BY val'}\n" +
         "             }\n" +
@@ -211,7 +211,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         5);
 
     payload = " {\n" +
-        "  'modify' : {'y': {\n" +
+        "  'update' : {'y': {\n" +
         "                'c':'CY val modified',\n" +
         "                'e':'EY val',\n" +
         "                'b': 'BY val'" +
@@ -241,7 +241,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         10);
 
     payload = " {\n" +
-        "  'update' : {'y': {\n" +
+        "  'set' : {'y': {\n" +
         "                'p':'P val',\n" +
         "                'q': 'Q val'" +
         "}\n" +
