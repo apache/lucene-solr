@@ -44,16 +44,11 @@ curl http://localhost:8983/solr/films/schema/fields -X POST -H 'Content-type:app
     }
 ]'
 
-   * Now let's index the data. You could run either of the following commands from the example/exampledocs directory
+   * Now let's index the data, using one of these three commands:
 
-For JSON -
-curl 'http://localhost:8983/solr/films/update?commit=true' --data-binary @films.json -H 'Content-type:application/json'
-
-For XML -
-curl 'http://localhost:8983/solr/films/update?commit=true' --data-binary @films.xml -H 'Content-type:text/xml'
-
-For CSV -
-curl 'http://localhost:8983/solr/films/update?f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|&commit=true' --data-binary @films.csv -H 'Content-type:text/csv; charset=utf-8'
+     - JSON: bin/post films example/exampledocs/films.json
+     - XML: bin/post films example/exampledocs/films.xml
+     - CSV: bin/post films example/exampledocs/films.csv params=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|
 
    * Let's get searching.
      - Search for 'Batman':
