@@ -35,6 +35,7 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.tools.generic.ComparisonDateTool;
+import org.apache.velocity.tools.generic.DisplayTool;
 import org.apache.velocity.tools.generic.EscapeTool;
 import org.apache.velocity.tools.generic.ListTool;
 import org.apache.velocity.tools.generic.MathTool;
@@ -87,6 +88,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     context.put("math", new MathTool());
     context.put("number", new NumberTool());
     context.put("sort", new SortTool());
+    context.put("display", new DisplayTool());
 
     context.put("engine", engine);  // for $engine.resourceExists(...)
 

@@ -567,6 +567,8 @@ Other Changes
 * SOLR-6855: bin/solr -e dih launches, but has some path cruft issues preventing some of the
   imports don't work (Hossman, Timothy Potter)
 
+* SOLR-3711: Truncate long strings in /browse field facets (ehatcher)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
