@@ -12,7 +12,10 @@
       <span class="facet-field">$field.name</span>
       <ul>
         #foreach($facet in $field.values)
-          <li><a href="#url_for_facet_filter($field.name, $facet.name)">#if($facet.name!=$null)$facet.name#else<em>missing</em>#end</a> ($facet.count)</li>
+          <li>
+            <a href="#url_for_facet_filter($field.name, $facet.name)" title="$esc.html($facet.name)">
+              #if($facet.name!=$null)$esc.html($display.truncate($facet.name,20))#else<em>missing</em>#end</a> ($facet.count)
+          </li>
         #end
       </ul>
     #end  ## end if > 0
