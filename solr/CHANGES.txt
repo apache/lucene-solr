@@ -569,6 +569,8 @@ Other Changes
 
 * SOLR-3711: Truncate long strings in /browse field facets (ehatcher)
 
+* SOLR-6876: Remove unused legacy scripts.conf (Alexandre Rafalovitch via Erick Erickson)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
