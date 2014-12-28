@@ -486,10 +486,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       final int maxDoc = mergeState.maxDocs[readerIndex];
       final Bits liveDocs = mergeState.liveDocs[readerIndex];
 
-      if (matchingFieldsReader == null
-          || matchingFieldsReader.getVersion() != VERSION_CURRENT // means reader version is not the same as the writer version
-          || matchingFieldsReader.getCompressionMode() != compressionMode
-          || matchingFieldsReader.getChunkSize() != chunkSize) { // the way data is decompressed depends on the chunk size
+      // if its some other format, or an older version of this format:
+      if (matchingFieldsReader == null || matchingFieldsReader.getVersion() != VERSION_CURRENT) {
         // naive merge...
         StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[readerIndex];
         if (storedFieldsReader != null) {
