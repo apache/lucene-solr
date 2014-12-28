@@ -56,6 +56,7 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -763,4 +764,51 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     dir.close();
   }
 
+  /** mix up field numbers, merge, and check that data is correct */
+  public void testMismatchedFields() throws Exception {
+    Directory dirs[] = new Directory[10];
+    for (int i = 0; i < dirs.length; i++) {
+      Directory dir = newDirectory();
+      IndexWriterConfig iwc = new IndexWriterConfig(null);
+      IndexWriter iw = new IndexWriter(dir, iwc);
+      Document doc = new Document();
+      for (int j = 0; j < 10; j++) {
+        // add fields where name=value (e.g. 3=3) so we can detect if stuff gets screwed up.
+        doc.add(new StringField(Integer.toString(j), Integer.toString(j), Field.Store.YES));
+      }
+      for (int j = 0; j < 10; j++) {
+        iw.addDocument(doc);
+      }
+      
+      DirectoryReader reader = DirectoryReader.open(iw, true);
+      // mix up fields explicitly
+      if (random().nextBoolean()) {
+        reader = new MismatchedDirectoryReader(reader, random());
+      }
+      dirs[i] = newDirectory();
+      IndexWriter adder = new IndexWriter(dirs[i], new IndexWriterConfig(null));
+      adder.addIndexes(reader);
+      adder.commit();
+      adder.close();
+      
+      IOUtils.close(reader, iw, dir);
+    }
+    
+    Directory everything = newDirectory();
+    IndexWriter iw = new IndexWriter(everything, new IndexWriterConfig(null));
+    iw.addIndexes(dirs);
+    iw.forceMerge(1);
+    
+    LeafReader ir = getOnlySegmentReader(DirectoryReader.open(iw, true));
+    for (int i = 0; i < ir.maxDoc(); i++) {
+      StoredDocument doc = ir.document(i);
+      assertEquals(10, doc.getFields().size());
+      for (int j = 0; j < 10; j++) {
+        assertEquals(Integer.toString(j), doc.get(Integer.toString(j)));
+      }
+    }
+
+    IOUtils.close(iw, ir, everything);
+    IOUtils.close(dirs);
+  }
 }
