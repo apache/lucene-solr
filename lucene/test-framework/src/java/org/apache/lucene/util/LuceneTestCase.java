@@ -91,6 +91,8 @@ import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MismatchedDirectoryReader;
+import org.apache.lucene.index.MismatchedLeafReader;
 import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
@@ -1587,7 +1589,7 @@ public abstract class LuceneTestCase extends Assert {
       // TODO: remove this, and fix those tests to wrap before putting slow around:
       final boolean wasOriginallyAtomic = r instanceof LeafReader;
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-        switch(random.nextInt(5)) {
+        switch(random.nextInt(6)) {
           case 0:
             r = SlowCompositeReaderWrapper.wrap(r);
             break;
@@ -1626,6 +1628,13 @@ public abstract class LuceneTestCase extends Assert {
               r = new AssertingLeafReader((LeafReader)r);
             } else if (r instanceof DirectoryReader) {
               r = new AssertingDirectoryReader((DirectoryReader)r);
+            }
+            break;
+          case 5:
+            if (r instanceof LeafReader) {
+              r = new MismatchedLeafReader((LeafReader)r, random);
+            } else if (r instanceof DirectoryReader) {
+              r = new MismatchedDirectoryReader((DirectoryReader)r, random);
             }
             break;
           default:
