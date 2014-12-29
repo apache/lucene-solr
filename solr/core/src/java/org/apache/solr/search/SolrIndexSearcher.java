@@ -58,11 +58,13 @@ import org.apache.lucene.index.MultiDocsEnum;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
@@ -80,6 +82,7 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
@@ -110,6 +113,7 @@ import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +128,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrInfoMBean {
 
+  public static final String STATS_SOURCE = "org.apache.solr.stats_source";
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
@@ -154,7 +159,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   private final LuceneQueryOptimizer optimizer;
-  
+
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final HashMap<String, SolrCache> cacheMap;
   private static final HashMap<String, SolrCache> noGenericCaches=new HashMap<>(0);
@@ -168,7 +173,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
-  
+
   private final LeafReader leafReader;
   // only for addIndexes etc (no fieldcache)
   private final DirectoryReader rawReader;
@@ -321,7 +326,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     // TODO: This option has been dead/noop since 3.1, should we re-enable it?
 //    optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
     optimizer = null;
-    
+
     fieldNames = new HashSet<>();
     fieldInfos = leafReader.getFieldInfos();
     for(FieldInfo fieldInfo : fieldInfos) {
@@ -330,6 +335,44 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     // do this at the end since an exception in the constructor means we won't close    
     numOpens.incrementAndGet();
+  }
+  
+  /*
+   * Override these two methods to provide a way to use global collection stats.
+   */
+  @Override 
+  public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+    SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
+    if (reqInfo != null) {
+      StatsSource statsSrc = (StatsSource) reqInfo.getReq().getContext()
+          .get(STATS_SOURCE);
+      if (statsSrc != null) {
+        return statsSrc.termStatistics(this, term, context);
+      }
+    }
+    return localTermStatistics(term, context);
+  }
+  
+  @Override
+  public CollectionStatistics collectionStatistics(String field)
+      throws IOException {
+    SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
+    if (reqInfo != null) {
+      StatsSource statsSrc = (StatsSource) reqInfo.getReq().getContext()
+          .get(STATS_SOURCE);
+      if (statsSrc != null) {
+        return statsSrc.collectionStatistics(this, field);
+      }
+    }
+    return localCollectionStatistics(field);
+  }
+  
+  public TermStatistics localTermStatistics(Term term, TermContext context) throws IOException {
+    return super.termStatistics(term, context);
+  }
+  
+  public CollectionStatistics localCollectionStatistics(String field) throws IOException {
+    return super.collectionStatistics(field);
   }
 
   public boolean isCachingEnabled() { return cachingEnabled; }

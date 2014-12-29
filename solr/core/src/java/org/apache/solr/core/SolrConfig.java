@@ -37,6 +37,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.update.SolrIndexConfig;
@@ -263,7 +264,7 @@ public class SolrConfig extends Config implements MapSerializable{
       jmxConfig = new JmxConfiguration(false, null, null, null);
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
-     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
+    slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
      updateHandlerInfo = loadUpdatehandlerInfo();
      
@@ -324,6 +325,7 @@ public class SolrConfig extends Config implements MapSerializable{
       .add(new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(RestManager.class, "restManager"))
       .add(new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK))
+      .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
       .build();
 
   public static class SolrPluginInfo{

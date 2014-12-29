@@ -17,6 +17,94 @@
 
 package org.apache.solr.core;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CommonParams.EchoParamStyle;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.SnapPuller;
+import org.apache.solr.handler.admin.ShowFileRequestHandler;
+import org.apache.solr.handler.component.DebugComponent;
+import org.apache.solr.handler.component.ExpandComponent;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.handler.component.MoreLikeThisComponent;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.StatsComponent;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.PHPResponseWriter;
+import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.PythonResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.RubyResponseWriter;
+import org.apache.solr.response.SchemaXmlResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.SortingResponseWriter;
+import org.apache.solr.response.XMLResponseWriter;
+import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.rest.ManagedResourceStorage;
+import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
+import org.apache.solr.rest.RestManager;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.SolrFieldCacheMBean;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.stats.LocalStatsCache;
+import org.apache.solr.search.stats.StatsCache;
+import org.apache.solr.update.DefaultSolrCoreState;
+import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.SolrCoreState;
+import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
+import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.VersionInfo;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
+import org.apache.solr.update.processor.LogUpdateProcessorFactory;
+import org.apache.solr.update.processor.RunUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.IOUtils;
+import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -55,95 +143,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CommonParams.EchoParamStyle;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.SnapPuller;
-import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.handler.admin.ShowFileRequestHandler;
-import org.apache.solr.handler.component.DebugComponent;
-import org.apache.solr.handler.component.ExpandComponent;
-import org.apache.solr.handler.component.FacetComponent;
-import org.apache.solr.handler.component.HighlightComponent;
-import org.apache.solr.handler.component.MoreLikeThisComponent;
-import org.apache.solr.handler.component.QueryComponent;
-import org.apache.solr.handler.component.RealTimeGetComponent;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.component.StatsComponent;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.CSVResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
-import org.apache.solr.response.SchemaXmlResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.SortingResponseWriter;
-import org.apache.solr.response.XMLResponseWriter;
-import org.apache.solr.response.transform.TransformerFactory;
-import org.apache.solr.rest.ManagedResourceStorage;
-import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.apache.solr.rest.RestManager;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.SolrFieldCacheMBean;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.ValueSourceParser;
-import org.apache.solr.update.DefaultSolrCoreState;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.SolrCoreState;
-import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
-import org.apache.solr.update.SolrIndexWriter;
-import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.VersionInfo;
-import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
-import org.apache.solr.update.processor.LogUpdateProcessorFactory;
-import org.apache.solr.update.processor.RunUpdateProcessorFactory;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.IOUtils;
-import org.apache.solr.util.PropertiesInputStream;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-
 /**
  *
  */
@@ -163,6 +162,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private CoreDescriptor coreDescriptor;
 
   private boolean isReloaded = false;
+
+  private StatsCache statsCache;
 
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
@@ -818,6 +819,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // Handle things that should eventually go away
       initDeprecatedSupport();
       
+      statsCache = initStatsCache();
+      
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
@@ -969,6 +972,27 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
     return factory.getCodec();
+  }
+  
+  private StatsCache initStatsCache() {
+    final StatsCache cache;
+    PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
+    if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
+      cache = createInitInstance(pluginInfo, StatsCache.class, null,
+          LocalStatsCache.class.getName());
+      log.info("Using statsCache impl: " + cache.getClass().getName());
+    } else {
+      log.info("Using default statsCache cache: " + LocalStatsCache.class.getName());
+      cache = new LocalStatsCache();
+    }
+    return cache;
+  }
+
+  /**
+   * Get the StatsCache.
+   */
+  public StatsCache getStatsCache() {
+    return statsCache;
   }
 
   /**

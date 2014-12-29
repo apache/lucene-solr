@@ -49,6 +49,9 @@ public interface ShardParams {
   /** Should things fail if there is an error? (true/false) */
   @Deprecated
   public static final String SHARD_KEYS = "shard.keys";
+  
+  /** query purpose for shard requests */
+  public static final String SHARDS_PURPOSE = "shards.purpose";
 
   public static final String _ROUTE_ = "_route_";
 

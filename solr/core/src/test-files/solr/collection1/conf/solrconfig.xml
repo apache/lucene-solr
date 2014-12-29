@@ -52,6 +52,8 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
+  <statsCache class="${solr.statsCache:}"/>
+
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
