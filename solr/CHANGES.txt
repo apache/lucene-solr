@@ -571,6 +571,9 @@ Other Changes
 
 * SOLR-6876: Remove unused legacy scripts.conf (Alexandre Rafalovitch via Erick Erickson)
 
+* SOLR-6896: Speed up tests by dropping SolrJettyRunner thread max idle time
+  (Alan Woodward)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
