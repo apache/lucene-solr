@@ -574,6 +574,8 @@ Other Changes
 * SOLR-6896: Speed up tests by dropping SolrJettyRunner thread max idle time
   (Alan Woodward)
 
+* SOLR-6448: Add SolrJ support for all current Collection API calls. (Anshum Gupta)
+
 ==================  4.10.3 ==================
 
 Bug Fixes

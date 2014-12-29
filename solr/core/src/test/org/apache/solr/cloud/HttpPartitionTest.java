@@ -172,7 +172,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // try to clean up
     try {
-      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
       req.setCollectionName(testCollectionName);
       req.process(cloudClient);
     } catch (Exception e) {
@@ -253,7 +253,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // try to clean up
     try {
-      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
       req.setCollectionName(testCollectionName);
       req.process(cloudClient);
     } catch (Exception e) {
@@ -309,7 +309,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // try to clean up
     try {
-      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
       req.setCollectionName(testCollectionName);
       req.process(cloudClient);
     } catch (Exception e) {
@@ -405,7 +405,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // try to clean up
     try {
-      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
       req.setCollectionName(testCollectionName);
       req.process(cloudClient);
     } catch (Exception e) {

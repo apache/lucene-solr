@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -119,14 +120,13 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
   }
 
   protected void invokeMigrateApi(String sourceCollection, String splitKey, String targetCollection) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", CollectionParams.CollectionAction.MIGRATE.toString());
-    params.set("collection", sourceCollection);
-    params.set("target.collection", targetCollection);
-    params.set("split.key", splitKey);
-    params.set("forward.timeout", 45);
-
-    invoke(params);
+    cloudClient.setDefaultCollection(sourceCollection);
+    CollectionAdminRequest.Migrate migrateRequest = new CollectionAdminRequest.Migrate();
+    migrateRequest.setCollectionName(sourceCollection);
+    migrateRequest.setTargetCollection(targetCollection);
+    migrateRequest.setSplitKey(splitKey);
+    migrateRequest.setForwardTimeout(45);
+    migrateRequest.process(cloudClient);
   }
 
   protected void invoke(ModifiableSolrParams params) throws SolrServerException, IOException {

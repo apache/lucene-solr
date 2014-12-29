@@ -40,7 +40,7 @@ import org.apache.zookeeper.KeeperException;
 // and shards, but for now this will do.
 public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBase {
 
-  NamedList<Object> doPropertyAction(CloudSolrServer client, String... paramsIn) throws IOException, SolrServerException {
+  public static NamedList<Object> doPropertyAction(CloudSolrServer client, String... paramsIn) throws IOException, SolrServerException {
     assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int idx = 0; idx < paramsIn.length; idx += 2) {
@@ -51,7 +51,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     return client.request(request);
   }
 
-  void verifyPropertyNotPresent(CloudSolrServer client, String collectionName, String replicaName,
+  public static void verifyPropertyNotPresent(CloudSolrServer client, String collectionName, String replicaName,
                                 String property)
       throws KeeperException, InterruptedException {
     ClusterState clusterState = null;
@@ -76,7 +76,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
   // collection
   // shard
   // replica
-  void verifyPropertyVal(CloudSolrServer client, String collectionName,
+  public static void verifyPropertyVal(CloudSolrServer client, String collectionName,
                          String replicaName, String property, String val)
       throws InterruptedException, KeeperException {
     Replica replica = null;
@@ -102,16 +102,16 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
   // Verify that
   // 1> the property is only set once in all the replicas in a slice.
   // 2> the property is balanced evenly across all the nodes hosting collection
-  void verifyUniqueAcrossCollection(CloudSolrServer client, String collectionName,
+  public static void verifyUniqueAcrossCollection(CloudSolrServer client, String collectionName,
                                     String property) throws KeeperException, InterruptedException {
     verifyUnique(client, collectionName, property, true);
   }
 
-  void verifyUniquePropertyWithinCollection(CloudSolrServer client, String collectionName,
+  public static void verifyUniquePropertyWithinCollection(CloudSolrServer client, String collectionName,
                             String property) throws KeeperException, InterruptedException {
     verifyUnique(client, collectionName, property, false);
   }
-  void verifyUnique(CloudSolrServer client, String collectionName, String property, boolean balanced)
+  public static void verifyUnique(CloudSolrServer client, String collectionName, String property, boolean balanced)
       throws KeeperException, InterruptedException {
 
     DocCollection col = null;
