@@ -268,7 +268,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
       server.request(request);
     } else {
       CreateAlias request = new CreateAlias();
-      request.setCollectionName(alias);
+      request.setAliasName(alias);
       request.setAliasedCollections(collections);
       request.process(server);
     }
@@ -288,7 +288,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
       server.request(request);
     } else {
       DeleteAlias request = new DeleteAlias();
-      request.setCollectionName(alias);
+      request.setAliasName(alias);
       request.process(server);
     }
     server.shutdown();
