@@ -183,6 +183,9 @@ Optimizations
 
 * LUCENE-6131: Optimize SortingMergePolicy. (Robert Muir)
 
+* LUCENE-6133: Improve default StoredFieldsWriter.merge() to be more efficient. 
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
