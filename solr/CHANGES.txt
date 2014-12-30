@@ -222,6 +222,8 @@ New Features
 * SOLR-6851: Scripts to support installing and running Solr as a service on Linux
   (Timothy Potter, Hossman, Steve Rowe)
   
+* SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
+
 Bug Fixes
 ----------------------
 

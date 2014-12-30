@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Usage:
+#  bin/post <collection> <file(s)|url> [<params to SimplePostTool>]
+#  bin/post gettingstarted http://lucidworks.com [recursive=1] [delay=1]
+#  bin/post tehfiles ~/Documents
+#  bin/post signals LATEST-signals.csv
+#  bin/post records article*.xml
+#  bin/post wizbang events.json
+
+# ====== Common code copied from bin/solr (TODO: centralize/share this kind of thing)
+if [ -n "$SOLR_JAVA_HOME" ]; then
+  JAVA=$SOLR_JAVA_HOME/bin/java
+elif [ -n "$JAVA_HOME" ]; then
+  for java in "$JAVA_HOME"/bin/amd64/java "$JAVA_HOME"/bin/java; do
+    if [ -x "$java" ]; then
+      JAVA="$java"
+      break
+    fi
+  done
+else
+  JAVA=java
+fi
+
+# test that Java exists and is executable on this server
+$JAVA -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool! Please install Java 8 or greater before running this script."; exit 1; }
+
+
+# ===== post specific code
+SPT_JAR=dist/solr-core-*.jar
+
+COLLECTION=$1; shift
+
+echo "Collection:" $COLLECTION
+
+PROPS="-Dc=$COLLECTION"
+PARAMS=""
+
+# TODO: Check that $COLLECTION actually exists?   How to determine if user omitted collection name as first param?
+
+echo -n "Data mode: "
+if [[ $1 == http* ]]; then
+  echo "WEB"
+  PROPS="$PROPS -Ddata=web"
+  PARAMS=$1; shift
+else
+  if [[ -d $1 ]]; then
+    # Directory
+    echo "DIRECTORY"
+    PROPS="$PROPS -Ddata=files -Dauto -Drecursive"
+    PARAMS=$1; shift
+  else
+    # Not a URL or existing directory, assume file(s)
+    echo "FILE"
+    FILE=$1; shift
+    EXTENSION="${FILE##*.}"
+
+    PARAMS=$FILE
+
+    if [[ $EXTENSION == xml || $EXTENSION == csv || $EXTENSION == json ]]; then
+      # Solr /update supported type (default being application/xml).
+      if [[ $EXTENSION == csv ]]; then
+        PROPS="$PROPS -Dtype=text/csv"
+      fi
+      if [[ $EXTENSION == json ]]; then
+        PROPS="$PROPS -Dtype=application/json"
+      fi
+    else
+      PROPS="$PROPS -Dauto=yes"
+    fi
+
+  fi
+fi
+
+# Add all additonal trailing script parameters as system properties to SPT (eg. bin/post core_name ~/Documents depth=1)
+while [ $# -gt 0 ]; do
+  PROPS="$PROPS -D$1"
+  shift
+done
+
+echo $JAVA -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
+$JAVA -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
