@@ -350,6 +350,106 @@ var generate_rgraph = function( graph_element, graph_data, leaf_count )
     );
 };
 
+var prepare_graph_data = function( response, graph_element, live_nodes, callback )
+{  
+    var state = null;
+    eval( 'state = ' + response.znode.data + ';' );
+    
+    var leaf_count = 0;
+    var graph_data = {
+      name: null,
+      children : []
+    };
+
+    for( var c in state )
+    {
+      var shards = [];
+      for( var s in state[c].shards )
+      {
+        var nodes = [];
+        for( var n in state[c].shards[s].replicas )
+        {
+          leaf_count++;
+          var replica = state[c].shards[s].replicas[n]
+
+          var uri = replica.base_url;
+          var parts = uri.match( /^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/ );
+          var uri_parts = {
+            protocol: parts[1],
+            host: parts[2],
+            hostname: parts[3],
+            port: parseInt( parts[5] || 80, 10 ),
+            pathname: parts[6]
+          };
+          
+          helper_data.protocol.push( uri_parts.protocol );
+          helper_data.host.push( uri_parts.host );
+          helper_data.hostname.push( uri_parts.hostname );
+          helper_data.port.push( uri_parts.port );
+          helper_data.pathname.push( uri_parts.pathname );
+
+          var status = replica.state;
+
+          if( !live_nodes[replica.node_name] )
+          {
+            status = 'gone';
+          }
+
+          var node = {
+            name: uri,
+            data: {
+              type : 'node',
+              state : status,
+              leader : 'true' === replica.leader,
+              uri : uri_parts
+            }
+          };
+          nodes.push( node );
+        }
+
+        var shard = {
+          name: s,
+          data: {
+            type : 'shard'
+          },
+          children: nodes
+        };
+        shards.push( shard );
+      }
+
+      var collection = {
+        name: c,
+        data: {
+          type : 'collection'
+        },
+        children: shards
+      };
+      graph_data.children.push( collection );
+    }
+    
+    helper_data.protocol = $.unique( helper_data.protocol );
+    helper_data.host = $.unique( helper_data.host );
+    helper_data.hostname = $.unique( helper_data.hostname );
+    helper_data.port = $.unique( helper_data.port );
+    helper_data.pathname = $.unique( helper_data.pathname );
+
+    callback( graph_element, graph_data, leaf_count );  
+}
+
+var update_status_filter = function(filterType, filterVal) {
+  if (filterType == 'status') {
+    $( '#cloudGraphPagingStatusFilter' ).val(filterVal);
+    $( '#cloudGraphPagingStatusFilter' ).show();
+    $( '#cloudGraphPagingFilter' ).hide();
+    $( '#cloudGraphPagingFilter' ).val('');
+  } else {
+    $( '#cloudGraphPagingStatusFilter' ).hide();
+    $( '#cloudGraphPagingStatusFilter' ).val('');
+    $( '#cloudGraphPagingFilter' ).val(filterVal);
+    $( '#cloudGraphPagingFilter' ).show();                  
+  }  
+};
+
 var prepare_graph = function( graph_element, callback )
 {
   $.ajax
@@ -365,101 +465,82 @@ var prepare_graph = function( graph_element, callback )
           live_nodes[response.tree[0].children[c].data.title] = true;
         }
 
+        var start = $( '#cloudGraphPagingStart' ).val();
+        var rows = $( '#cloudGraphPagingRows' ).val();
+        var clusterStateUrl = app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&view=graph';
+        if (start && rows)
+          clusterStateUrl += ('&start='+start+'&rows='+rows);
+        
+        var filterType = $( '#cloudGraphPagingFilterType' ).val();
+        if (filterType) {
+          var filter = (filterType == 'status')
+                         ? $( '#cloudGraphPagingStatusFilter' ).val() 
+                         : $( '#cloudGraphPagingFilter' ).val();  
+          if (filter)
+            clusterStateUrl += ('&filterType='+filterType+'&filter='+filter);
+        }
+                
         $.ajax
         (
           {
-            url : app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json',
+            url : clusterStateUrl,
             dataType : 'json',
             context : graph_element,
             beforeSend : function( xhr, settings )
             {
-              this
-                .show();
+              this.show();
             },
             success : function( response, text_status, xhr )
-            {
-              var state = null;
-              eval( 'state = ' + response.znode.data + ';' );
-              
-              var leaf_count = 0;
-              var graph_data = {
-                name: null,
-                children : []
-              };
+            {              
+              prepare_graph_data(response, graph_element, live_nodes, callback)
 
-              for( var c in state )
-              {
-                var shards = [];
-                for( var s in state[c].shards )
-                {
-                  var nodes = [];
-                  for( var n in state[c].shards[s].replicas )
-                  {
-                    leaf_count++;
-                    var replica = state[c].shards[s].replicas[n]
-
-                    var uri = replica.base_url;
-                    var parts = uri.match( /^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/ );
-                    var uri_parts = {
-                      protocol: parts[1],
-                      host: parts[2],
-                      hostname: parts[3],
-                      port: parseInt( parts[5] || 80, 10 ),
-                      pathname: parts[6]
-                    };
-                    
-                    helper_data.protocol.push( uri_parts.protocol );
-                    helper_data.host.push( uri_parts.host );
-                    helper_data.hostname.push( uri_parts.hostname );
-                    helper_data.port.push( uri_parts.port );
-                    helper_data.pathname.push( uri_parts.pathname );
-
-                    var status = replica.state;
-
-                    if( !live_nodes[replica.node_name] )
-                    {
-                      status = 'gone';
-                    }
-
-                    var node = {
-                      name: uri,
-                      data: {
-                        type : 'node',
-                        state : status,
-                        leader : 'true' === replica.leader,
-                        uri : uri_parts
-                      }
-                    };
-                    nodes.push( node );
-                  }
-
-                  var shard = {
-                    name: s,
-                    data: {
-                      type : 'shard'
-                    },
-                    children: nodes
-                  };
-                  shards.push( shard );
+              if (response.znode && response.znode.paging) {
+                var parr = response.znode.paging.split('|');
+                if (parr.length < 3) {
+                  $( '#cloudGraphPaging' ).hide();
+                  return;
                 }
+                
+                var start = Math.max(parseInt(parr[0]),0);                  
+                var prevEnabled = (start > 0);
+                $('#cloudGraphPagingPrev').prop('disabled', !prevEnabled);
+                if (prevEnabled)
+                  $('#cloudGraphPagingPrev').show();                    
+                else
+                  $('#cloudGraphPagingPrev').hide();
+                
+                var rows = parseInt(parr[1])
+                var total = parseInt(parr[2])
+                $( '#cloudGraphPagingStart' ).val(start);
+                $( '#cloudGraphPagingRows' ).val(rows);
+                if (rows == -1)
+                  $( '#cloudGraphPaging' ).hide();
+                                  
+                var filterType = parr.length > 3 ? parr[3] : '';
+                if (filterType == '' || filterType == 'none') filterType = 'status';
+                
+                $( '#cloudGraphPagingFilterType' ).val(filterType);                  
+                var filter = parr.length > 4 ? parr[4] : '';
 
-                var collection = {
-                  name: c,
-                  data: {
-                    type : 'collection'
-                  },
-                  children: shards
-                };
-                graph_data.children.push( collection );
-              }
-              
-              helper_data.protocol = $.unique( helper_data.protocol );
-              helper_data.host = $.unique( helper_data.host );
-              helper_data.hostname = $.unique( helper_data.hostname );
-              helper_data.port = $.unique( helper_data.port );
-              helper_data.pathname = $.unique( helper_data.pathname );
-
-              callback( graph_element, graph_data, leaf_count );
+                update_status_filter(filterType, filter);
+                
+                var page = Math.floor(start/rows)+1;
+                var pages = Math.ceil(total/rows);
+                var last = Math.min(start+rows,total);
+                var nextEnabled = (last < total);                  
+                $('#cloudGraphPagingNext').prop('disabled', !nextEnabled);
+                if (nextEnabled)
+                  $('#cloudGraphPagingNext').show();
+                else
+                  $('#cloudGraphPagingNext').hide();                    
+                
+                var status = (total > 0) 
+                               ? 'Collections '+(start+1)+' - '+last+' of '+total+'. ' 
+                               : 'No collections found.';
+                $( '#cloudGraphPagingStatus' ).html(status);
+              } else {
+                $( '#cloudGraphPaging' ).hide();
+              }            
             },
             error : function( xhr, text_status, error_thrown)
             {
@@ -662,6 +743,21 @@ var init_tree = function( tree_element )
   );
 };
 
+// updates the starting position for paged navigation
+// and then rebuilds the graph based on the selected page
+var update_start = function(direction, cloud_element) {
+  var start = $( '#cloudGraphPagingStart' ).val();
+  var rows = $( '#cloudGraphPagingRows' ).val();
+  var startAt = start ? parseInt(start) : 0;
+  var numRows = rows ? parseInt(rows) : 20;
+  var newStart = Math.max(startAt + (rows * direction),0); 
+  $( '#cloudGraphPagingStart' ).val(newStart);
+  
+  var graph_element = $( '#graph-content', cloud_element );
+  $( '#canvas', graph_element).empty();
+  init_graph( graph_element );  
+};
+
 // #/~cloud
 sammy.get
 (
@@ -704,6 +800,45 @@ sammy.get
             {
               $( this ).addClass( 'active' );
               init_graph( $( '#graph-content', cloud_element ) );
+              
+              $('#cloudGraphPagingNext').click(function() {
+                update_start(1, cloud_element);                  
+              });
+              
+              $('#cloudGraphPagingPrev').click(function() {
+                update_start(-1, cloud_element);                                    
+              });              
+
+              $('#cloudGraphPagingRows').change(function() {
+                var rows = $( this ).val();
+                if (!rows || rows == '')
+                  $( this ).val("20");
+                
+                // ? restart the start position when rows changes?
+                $( '#cloudGraphPagingStart' ).val(0);                  
+                update_start(-1, cloud_element);                
+              });              
+              
+              $('#cloudGraphPagingFilter').change(function() {
+                var filter = $( this ).val();
+                // reset the start position when the filter changes
+                $( '#cloudGraphPagingStart' ).val(0);
+                update_start(-1, cloud_element);
+              });
+
+              $( '#cloudGraphPagingStatusFilter' ).show();
+              $( '#cloudGraphPagingFilter' ).hide();
+              
+              $('#cloudGraphPagingFilterType').change(function() {
+                update_status_filter($( this ).val(), '');
+              });
+              
+              $('#cloudGraphPagingStatusFilter').change(function() {
+                // just reset the paged navigation controls based on this update
+                $( '#cloudGraphPagingStart' ).val(0);                  
+                update_start(-1, cloud_element);                                    
+              });
+              
             }
           );
 
@@ -714,6 +849,8 @@ sammy.get
             'activate',
             function( event )
             {
+              $( "#cloudGraphPaging" ).hide(); // TODO: paging for rgraph too
+              
               $( this ).addClass( 'active' );
               init_rgraph( $( '#graph-content', cloud_element ) );
             }
