@@ -65,7 +65,7 @@ import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;
  *   c)</code> notation. </p>
  
  *  <p>The W and N operators express a positional relationship among their
- *  operands.  N is ordered, and W is unordered.  The distance is 1 by
+ *  operands.  W is ordered, and N is unordered.  The distance is 1 by
  *  default, meaning the operands are adjacent, or may be provided as a
  *  prefix from 2-99.  So, for example, 3W(a, b) means that terms a and b
  *  must appear within three positions of each other, or in other words, up
