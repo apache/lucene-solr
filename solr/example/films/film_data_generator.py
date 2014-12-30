@@ -18,7 +18,7 @@ This will generate a movie data set of 1100 records.
 These are the first 1100 movies which appear when querying the Freebase of type '/film/film'.
 Here is the link to the freebase page - https://www.freebase.com/film/film?schema=
 
-Usage - python3 exampledocs_generator.py
+Usage - python3 film_data_generator.py
 """
 
 import csv
