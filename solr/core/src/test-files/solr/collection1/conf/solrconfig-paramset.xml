@@ -67,7 +67,7 @@
     </lst>
   </requestHandler>
 
-  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

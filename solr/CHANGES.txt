@@ -49,6 +49,8 @@ Other Changes
 
 * SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
 
+* SOLR-6779: fix /browse for schemaless example (ehatcher)
+
 
 ==================  5.0.0 ==================
 

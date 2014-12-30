@@ -454,25 +454,8 @@
     </arr>
   </requestHandler>
 
-  <!-- Update Request Handler.
 
-       http://wiki.apache.org/solr/UpdateXmlMessages
-
-       The canonical Request Handler for Modifying the Index through
-       commands specified using XML, JSON, CSV, or JAVABIN
-
-       Note: Since solr1.1 requestHandlers requires a valid content
-       type header if posted in the body. For example, curl now
-       requires: -H 'Content-type:text/xml; charset=utf-8'
-
-       To override the request content type and force a specific
-       Content-type, use the request parameter:
-         ?update.contentType=text/csv
-
-       This handler will pick a response format to match the input
-       if the 'wt' parameter is not explicit
-    -->
-  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

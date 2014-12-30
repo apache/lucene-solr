@@ -243,6 +243,7 @@
        single-valued and either required or have a default value.
       -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+    <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true"/>
 
     <!-- boolean type: "true" or "false" -->
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
