@@ -326,6 +326,9 @@ Bug Fixes
 * SOLR-6397: zkcli script put/putfile should allow overwriting an existing znode's data
   (Timothy Potter)
 
+* SOLR-6899: Change public setter for CollectionAdminRequest.action to protected.
+  (Anshum Gupta)
+
 Optimizations
 ----------------------
 

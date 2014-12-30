@@ -48,8 +48,7 @@ public class CollectionAdminRequest extends SolrRequest {
 
   private static String PROPERTY_PREFIX = "property.";
 
-  public void setAction( CollectionAction action )
-  {
+  protected void setAction( CollectionAction action ) {
     this.action = action;
   }
 
