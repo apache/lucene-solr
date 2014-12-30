@@ -35,7 +35,7 @@
     <field name="features">tag with escaped chars: &lt;nicetag/&gt;</field>
     <field name="features">escaped ampersand: Bonnie &amp; Clyde</field>
     <field name="features">Outside the BMP:𐌈 codepoint=10308, a circle with an x inside. UTF8=f0908c88 UTF16=d800 df08</field>
-    <field name="price">0</field>
+    <field name="price">0.0</field>
     <field name="inStock">true</field>
   </doc>
 </add>

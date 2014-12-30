@@ -25,7 +25,7 @@
   <field name="features">30" TFT active matrix LCD, 2560 x 1600, .25mm dot pitch, 700:1 contrast</field>
   <field name="includes">USB cable</field>
   <field name="weight">401.6</field>
-  <field name="price">2199</field>
+  <field name="price">2199.0</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>
   <!-- Buffalo store -->

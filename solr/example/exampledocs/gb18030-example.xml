@@ -25,7 +25,7 @@
     <field name="features">This is a feature (translated)</field>
     <field name="features">这份文件是很有光泽</field>
     <field name="features">This document is very shiny (translated)</field>
-    <field name="price">0</field>
+    <field name="price">0.0</field>
     <field name="inStock">true</field>
   </doc>
 </add>
