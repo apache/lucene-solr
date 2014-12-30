@@ -30,7 +30,7 @@
   <field name="features">PCI Express x16</field>
   <field name="features">Dual DVI connectors, HDTV out, video input</field>
   <field name="features">OpenGL 2.0, DirectX 9.0</field>
-  <field name="weight">16</field>
+  <field name="weight">16.0</field>
   <field name="price">479.95</field>
   <field name="popularity">7</field>
   <field name="store">40.7143,-74.006</field>
@@ -51,7 +51,7 @@
   <field name="features">PCI Express x16</field>
   <field name="features">dual DVI, HDTV, svideo, composite out</field>
   <field name="features">OpenGL 2.0, DirectX 9.0</field>
-  <field name="weight">48</field>
+  <field name="weight">48.0</field>
   <field name="price">649.99</field>
   <field name="popularity">7</field>
   <field name="inStock">false</field>

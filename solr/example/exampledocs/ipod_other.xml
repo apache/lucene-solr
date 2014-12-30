@@ -26,7 +26,7 @@
   <field name="cat">electronics</field>
   <field name="cat">connector</field>
   <field name="features">car power adapter, white</field>
-  <field name="weight">4</field>
+  <field name="weight">4.0</field>
   <field name="price">19.95</field>
   <field name="popularity">1</field>
   <field name="inStock">false</field>

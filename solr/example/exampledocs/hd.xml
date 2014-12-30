@@ -26,7 +26,7 @@
   <field name="cat">hard drive</field>
   <field name="features">7200RPM, 8MB cache, IDE Ultra ATA-133</field>
   <field name="features">NoiseGuard, SilentSeek technology, Fluid Dynamic Bearing (FDB) motor</field>
-  <field name="price">92</field>
+  <field name="price">92.0</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
@@ -45,7 +45,7 @@
   <field name="features">SATA 3.0Gb/s, NCQ</field>
   <field name="features">8.5ms seek</field>
   <field name="features">16MB cache</field>
-  <field name="price">350</field>
+  <field name="price">350.0</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>
   <!-- Buffalo store -->
