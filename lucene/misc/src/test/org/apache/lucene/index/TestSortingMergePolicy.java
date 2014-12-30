@@ -70,7 +70,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     return doc;
   }
 
-  public static MergePolicy newSortingMergePolicy(Sort sort) {
+  public static SortingMergePolicy newSortingMergePolicy(Sort sort) {
     // usually create a MP with a low merge factor so that many merges happen
     MergePolicy mp;
     int thingToDo = random().nextInt(3);

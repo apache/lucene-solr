@@ -186,6 +186,9 @@ Optimizations
 * LUCENE-6133: Improve default StoredFieldsWriter.merge() to be more efficient. 
   (Robert Muir)
 
+* LUCENE-6145: Make EarlyTerminatingSortingCollector able to early-terminate
+  when the sort order is a prefix of the index-time order. (Adrien Grand)
+
 API Changes
 
 * LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and

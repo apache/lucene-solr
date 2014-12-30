@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TestSortingMergePolicy;
 import org.apache.lucene.search.LeafCollector;
@@ -59,6 +60,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   private Sort sort;
   private RandomIndexWriter iw;
   private IndexReader reader;
+  private SortingMergePolicy mergePolicy;
 
   @Override
   public void setUp() throws Exception {
@@ -86,7 +88,8 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     final long seed = random().nextLong();
     final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
     iwc.setMergeScheduler(new SerialMergeScheduler()); // for reproducible tests
-    iwc.setMergePolicy(TestSortingMergePolicy.newSortingMergePolicy(sort));
+    mergePolicy = TestSortingMergePolicy.newSortingMergePolicy(sort);
+    iwc.setMergePolicy(mergePolicy);
     iw = new RandomIndexWriter(new Random(seed), dir, iwc);
     iw.setDoRandomForceMerge(false); // don't do this, it may happen anyway with MockRandomMP
     for (int i = 0; i < numDocs; ++i) {
@@ -134,7 +137,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
           query = new MatchAllDocsQuery();
         }
         searcher.search(query, collector1);
-        searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits));
+        searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits, mergePolicy));
         assertTrue(collector1.getTotalHits() >= collector2.getTotalHits());
         assertTopDocsEquals(collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
       }
@@ -142,6 +145,40 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     }
   }
   
+  public void testCanEarlyTerminate() {
+    assertTrue(canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG)),
+        new Sort(new SortField("a", SortField.Type.LONG))));
+
+    assertTrue(canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
+
+    assertTrue(canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG)),
+        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
+
+    assertFalse(canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG, true)),
+        new Sort(new SortField("a", SortField.Type.LONG, false))));
+
+    assertFalse(canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+        new Sort(new SortField("a", SortField.Type.LONG))));
+
+    assertFalse(canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+        new Sort(new SortField("a", SortField.Type.LONG), new SortField("c", SortField.Type.STRING))));
+
+    assertFalse(canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+        new Sort(new SortField("c", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
+  }
+
+  private boolean canEarlyTerminate(Sort querySort, Sort mergeSort) {
+    return EarlyTerminatingSortingCollector.canEarlyTerminate(querySort, new SortingMergePolicy(newMergePolicy(), mergeSort));
+  }
+
   public void testEarlyTerminationDifferentSorter() throws IOException {
     createRandomIndex();
     final int iters = atLeast(3);
@@ -166,7 +203,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       }
       searcher.search(query, collector1);
       Sort different = new Sort(new SortField("ndv2", SortField.Type.LONG));
-      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits) {
+      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits, new SortingMergePolicy(newMergePolicy(), different)) {
         @Override
         public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
           final LeafCollector ret = super.getLeafCollector(context);
