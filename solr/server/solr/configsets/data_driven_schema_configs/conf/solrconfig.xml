@@ -878,12 +878,8 @@
       <str name="facet">on</str>
 
     </lst>
-
-    <!-- append spellchecking to our list of components -->
-    <arr name="last-components">
-      <str>spellcheck</str>
-    </arr>
   </requestHandler>
+
 
   <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
     <lst name="defaults">
@@ -907,12 +903,8 @@
                   class="solr.extraction.ExtractingRequestHandler" >
     <lst name="defaults">
       <str name="lowernames">true</str>
-      <str name="uprefix">ignored_</str>
-
-      <!-- capture link hrefs but ignore div attributes -->
-      <str name="captureAttr">true</str>
-      <str name="fmap.a">links</str>
-      <str name="fmap.div">ignored_</str>
+      <str name="fmap.meta">ignored_</str>
+      <str name="fmap.content">_text</str>
     </lst>
   </requestHandler>
 
@@ -1379,7 +1371,7 @@
       </arr>
     </processor>
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
-      <str name="defaultFieldType">text_general</str>
+      <str name="defaultFieldType">strings</str>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>
         <str name="fieldType">booleans</str>

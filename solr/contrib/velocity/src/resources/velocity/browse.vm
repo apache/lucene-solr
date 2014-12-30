@@ -1,0 +1,71 @@
+#set($params = $request.params)
+
+## Show Error Message, if any
+<div class="error">
+  #parse("error.vm")
+</div>
+
+<div class="query-box">
+  <form id="query-form" action="#{url_for_home}" method="GET">
+    Find:
+    <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/>
+    <input type="submit"/>
+
+    #if($request.params.get('debugQuery'))
+      <input type="hidden" name="debug" value="true"/>
+    #end
+    #foreach($fq in $request.params.getParams('fq'))
+      <input type="hidden" name="fq" id="allFQs" value="$esc.html($fq)"/>
+    #end
+
+    <div class="constraints">
+      #foreach($fq in $params.getParams('fq'))
+        #set($previous_fq_count=$velocityCount - 1)
+        #if($fq != '')
+          &gt;
+          <a href="#url_for_filters($request.params.getParams('fq').subList(0,$previous_fq_count))">$fq</a>
+        #end
+      #end
+    </div>
+
+    <div class="parsed_query_header">
+      #if($request.params.get('debugQuery'))
+        <a href="#" onclick='jQuery(this).siblings("div").toggle(); return false;'>toggle parsed query</a>
+        <div class="parsed_query" style="display:none">$response.response.debug.parsedquery</div>
+      #end
+    </div>
+
+  </form>
+</div>
+
+<div class="facets">
+  #parse("facets.vm")
+</div>
+
+<div class="pagination">
+  <span>
+    <span class="results-found">$page.results_found</span>
+    results found in
+    ${response.responseHeader.QTime} ms
+  </span>
+
+  Page <span class="page-num">$page.current_page_number</span>
+    of <span class="page-count">$page.page_count</span>
+</div>
+
+## Render Results, actual matching docs
+<div class="results">
+  #parse("results_list.vm")
+</div>
+
+<div class="pagination">
+  #link_to_previous_page("previous")
+
+  <span class="results-found">$page.results_found</span>
+  results found.
+
+  Page <span class="page-num">$page.current_page_number</span>
+    of <span class="page-count">$page.page_count</span>
+
+  #link_to_next_page("next")
+</div>
