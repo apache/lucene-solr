@@ -52,6 +52,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
@@ -538,7 +539,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:
-    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
+    final MergePolicy mergePolicy = writer.getConfig().getMergePolicy();
+    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num, (SortingMergePolicy) mergePolicy);
     IndexSearcher searcher = searcherMgr.acquire();
     List<LookupResult> results = null;
     try {

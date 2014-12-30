@@ -186,8 +186,9 @@ public final class SortingMergePolicy extends MergePolicy {
 
   }
 
-  /** Returns {@code true} if the given {@code reader} is sorted by the specified {@code sort}. */
-  public static boolean isSorted(LeafReader reader, Sort sort) {
+  /** Returns {@code true} if the given {@code reader} is sorted by the
+   *  {@code sort} order of this {@link SortingMergePolicy}. */
+  public boolean isSorted(LeafReader reader) {
     String description = getSortDescription(reader);
     if (description != null && description.equals(sort.toString())) {
       return true;
@@ -226,6 +227,11 @@ public final class SortingMergePolicy extends MergePolicy {
     this.in = in;
     this.sorter = new Sorter(sort);
     this.sort = sort;
+  }
+
+  /** Return the {@link Sort} order that is used to sort segments when merging. */
+  public Sort getSort() {
+    return sort;
   }
 
   @Override

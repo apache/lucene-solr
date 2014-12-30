@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -66,10 +67,24 @@ import org.apache.lucene.search.TotalHitCountCollector;
  */
 public class EarlyTerminatingSortingCollector extends FilterCollector {
 
+  /** Returns whether collection can be early-terminated if it sorts with the
+   *  provided {@link Sort} and if segments are merged with the provided
+   *  {@link SortingMergePolicy}. */
+  public static boolean canEarlyTerminate(Sort sort, SortingMergePolicy mergePolicy) {
+    final SortField[] fields1 = sort.getSort();
+    final SortField[] fields2 = mergePolicy.getSort().getSort();
+    // early termination is possible if fields1 is a prefix of fields2
+    if (fields1.length > fields2.length) {
+      return false;
+    }
+    return Arrays.asList(fields1).equals(Arrays.asList(fields2).subList(0, fields1.length));
+  }
+
   /** Sort used to sort the search results */
   protected final Sort sort;
   /** Number of documents to collect in each segment */
   protected final int numDocsToCollect;
+  private final SortingMergePolicy mergePolicy;
 
   /**
    * Create a new {@link EarlyTerminatingSortingCollector} instance.
@@ -82,19 +97,25 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
    *          the number of documents to collect on each segment. When wrapping
    *          a {@link TopDocsCollector}, this number should be the number of
    *          hits.
+   * @throws IllegalArgumentException if the sort order doesn't allow for early
+   *          termination with the given merge policy.
    */
-  public EarlyTerminatingSortingCollector(Collector in, Sort sort, int numDocsToCollect) {
+  public EarlyTerminatingSortingCollector(Collector in, Sort sort, int numDocsToCollect, SortingMergePolicy mergePolicy) {
     super(in);
     if (numDocsToCollect <= 0) {
-      throw new IllegalStateException("numDocsToCollect must always be > 0, got " + numDocsToCollect);
+      throw new IllegalArgumentException("numDocsToCollect must always be > 0, got " + numDocsToCollect);
+    }
+    if (canEarlyTerminate(sort, mergePolicy) == false) {
+      throw new IllegalStateException("Cannot early terminate with sort order " + sort + " if segments are sorted with " + mergePolicy.getSort());
     }
     this.sort = sort;
     this.numDocsToCollect = numDocsToCollect;
+    this.mergePolicy = mergePolicy;
   }
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    if (SortingMergePolicy.isSorted(context.reader(), sort)) {
+    if (mergePolicy.isSorted(context.reader())) {
       // segment is sorted, can early-terminate
       return new FilterLeafCollector(super.getLeafCollector(context)) {
         private int numCollected;
