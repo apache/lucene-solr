@@ -17,41 +17,6 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
-==================  6.0.0 ==================
-
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
-
-Versions of Major Components
----------------------
-Apache Tika 1.6
-Carrot2 3.9.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.6
-
-System Requirements
-----------------------
-* LUCENE-5950: Move to Java 8 as minimum Java version.
-  (Ryan Ernst, Uwe Schindler)
-
-Upgrading from Solr 5.x
-----------------------
-
-* N/A
-
-Detailed Change List
-----------------------
-
-Other Changes
-----------------------
-
-* SOLR-6127: Improve example docs, using films data (Varun Thacker via ehatcher)
-
-* SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
-
-* SOLR-6779: fix /browse for schemaless example (ehatcher)
-
-
 ==================  5.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -363,6 +328,8 @@ Bug Fixes
 
 * SOLR-6899: Change public setter for CollectionAdminRequest.action to protected.
   (Anshum Gupta)
+
+* SOLR-6779: fix /browse for schemaless example (ehatcher)
 
 Optimizations
 ----------------------
