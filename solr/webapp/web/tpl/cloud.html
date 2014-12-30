@@ -50,6 +50,28 @@ limitations under the License.
         </ul>
       </div>
 
+      <div style="width: 100%; text-align: center;">
+        <div id="cloudGraphPaging">
+         <button id="cloudGraphPagingPrev">&lt; Previous</button>
+         <input id="cloudGraphPagingStart" type="hidden" name="start" /> 
+         <span id="cloudGraphPagingStatus"></span>&nbsp;
+         Filter by:&nbsp;<select id="cloudGraphPagingFilterType">
+           <option value="status">Status</option>
+           <option value="name">Name</option>
+         </select>&nbsp;
+         <select id="cloudGraphPagingStatusFilter">
+           <option value=""> - Any - </option>
+           <option value="healthy">Healthy</option>
+           <option value="degraded">Degraded</option>
+           <option value="downed_shard">Downed Shard</option>
+           <option value="recovering">Replica in Recovery</option>
+         </select>         
+         <input id="cloudGraphPagingFilter" type="text" size="10" name="filter" />&nbsp;
+         Show <input id="cloudGraphPagingRows" type="text" size="2" name="rows" /> per page.
+         <button id="cloudGraphPagingNext">Next &gt;</button>
+        </div>
+      </div>
+
     </div>
 
   </div>

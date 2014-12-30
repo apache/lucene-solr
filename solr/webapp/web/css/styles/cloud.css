@@ -401,3 +401,10 @@ limitations under the License.
 {
   stroke: #fff;
 }
+
+#cloudGraphPaging
+{
+  display: inline-block,
+  padding-top: 15px,
+  padding-bottom: 15px
+}
