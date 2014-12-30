@@ -47,7 +47,6 @@ Other Changes
 
 * SOLR-6127: Improve example docs, using films data (Varun Thacker via ehatcher)
 
-* SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
 
 ==================  5.0.0 ==================
 
@@ -260,6 +259,8 @@ New Features
 
 * SOLR-6879: Have an option to disable autoAddReplicas temporarily for all collections.
   (Varun Thacker via Steve Rowe)
+
+* SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
 
   
 Bug Fixes

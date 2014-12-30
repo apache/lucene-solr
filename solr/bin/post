@@ -22,29 +22,50 @@
 #  bin/post records article*.xml
 #  bin/post wizbang events.json
 
+# ====== Common code copied from bin/solr (TODO: centralize/share this kind of thing)
+if [ -n "$SOLR_JAVA_HOME" ]; then
+  JAVA=$SOLR_JAVA_HOME/bin/java
+elif [ -n "$JAVA_HOME" ]; then
+  for java in "$JAVA_HOME"/bin/amd64/java "$JAVA_HOME"/bin/java; do
+    if [ -x "$java" ]; then
+      JAVA="$java"
+      break
+    fi
+  done
+else
+  JAVA=java
+fi
+
+# test that Java exists and is executable on this server
+$JAVA -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool! Please install Java 8 or greater before running this script."; exit 1; }
+
+
+# ===== post specific code
 SPT_JAR=dist/solr-core-*.jar
 
 COLLECTION=$1; shift
 
-echo "Collection: " $COLLECTION
+echo "Collection:" $COLLECTION
 
 PROPS="-Dc=$COLLECTION"
 PARAMS=""
 
 # TODO: Check that $COLLECTION actually exists?   How to determine if user omitted collection name as first param?
 
+echo -n "Data mode: "
 if [[ $1 == http* ]]; then
   echo "WEB"
   PROPS="$PROPS -Ddata=web"
   PARAMS=$1; shift
 else
-  echo "PATH"
   if [[ -d $1 ]]; then
     # Directory
+    echo "DIRECTORY"
     PROPS="$PROPS -Ddata=files -Dauto -Drecursive"
     PARAMS=$1; shift
   else
     # Not a URL or existing directory, assume file(s)
+    echo "FILE"
     FILE=$1; shift
     EXTENSION="${FILE##*.}"
 
@@ -65,10 +86,11 @@ else
   fi
 fi
 
+# Add all additonal trailing script parameters as system properties to SPT (eg. bin/post core_name ~/Documents depth=1)
 while [ $# -gt 0 ]; do
   PROPS="$PROPS -D$1"
   shift
 done
 
-echo java -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
-java -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
+echo $JAVA -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
+$JAVA -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
