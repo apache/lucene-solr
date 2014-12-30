@@ -12,7 +12,7 @@ See http://lucene.apache.org/solr for more information.
 
 Getting Started
 ---------------
-You need a Java 1.7 VM or later installed.
+You need a Java 1.8 VM or later installed.
 In this release, there is an example Solr server including a bundled 
 servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
@@ -48,9 +48,6 @@ Other Changes
 * SOLR-6127: Improve example docs, using films data (Varun Thacker via ehatcher)
 
 * SOLR-6435: Add bin/post script to simplify posting content to Solr (ehatcher)
-
-* SOLR-6779: fix /browse for schemaless example (ehatcher)
-
 
 ==================  5.0.0 ==================
 
@@ -371,6 +368,9 @@ Bug Fixes
 
 * SOLR-6899: Change public setter for CollectionAdminRequest.action to protected.
   (Anshum Gupta)
+
+* SOLR-6779: fix /browse for schemaless example (ehatcher)
+
 
 Optimizations
 ----------------------
