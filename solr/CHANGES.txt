@@ -582,6 +582,8 @@ Other Changes
 
 * SOLR-6448: Add SolrJ support for all current Collection API calls. (Anshum Gupta)
 
+* Fixed a typo in various solrconfig.xml files.  (sdumitriu - pull request #120)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
