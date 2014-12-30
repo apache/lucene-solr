@@ -367,6 +367,9 @@ Bug Fixes
 * SOLR-6873: Lib relative path is incorrect for techproduct configset
   (Alexandre Rafalovitch via Erick Erickson)
 
+* SOLR-6899: Change public setter for CollectionAdminRequest.action to protected.
+  (Anshum Gupta)
+
 Optimizations
 ----------------------
 
