@@ -323,6 +323,9 @@ API Changes
   incrementToken().  You must call reset() now on this filter instead of doing it a-priori on the
   input(), which previously didn't work.  (David Smiley, Robert Muir)
 
+* LUCENE-6147: Make the core Accountables.namedAccountable function public
+  (Ryan Ernst)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
