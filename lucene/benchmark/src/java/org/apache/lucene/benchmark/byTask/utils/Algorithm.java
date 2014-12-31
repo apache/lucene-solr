@@ -32,6 +32,7 @@ import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 /**
  * Test algorithm, as read from file
  */
+@SuppressWarnings("try")
 public class Algorithm implements AutoCloseable {
   
   private TaskSequence sequence;
