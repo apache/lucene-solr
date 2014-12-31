@@ -229,7 +229,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
         "humpty dumpy4 sat on a walls");
     httpclient.add(doc8);
     httpclient.commit();
-    res = client.query(query);
+    res = httpclient.query(query);
     assertEquals(3, res.getResults().getNumFound());
     httpclient.shutdown();
     httpclient = null;
