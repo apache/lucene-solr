@@ -127,7 +127,7 @@
               </signaturesFiles>
               <excludes>
                 <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
-                <exclude>org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class</exclude>
+                <exclude>org/apache/solr/client/solrj/impl/BasicHttpSolrClientTest$DebugServlet.class</exclude>
               </excludes>
             </configuration>
             <goals>
