@@ -17,8 +17,8 @@ package org.apache.solr.schema;
  */
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -90,11 +90,11 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   private void setupHarnesses() {
-    for (final SolrServer client : clients) {
+    for (final SolrClient client : clients) {
       RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return ((HttpSolrServer)client).getBaseURL();
+          return ((HttpSolrClient)client).getBaseURL();
         }
       });
       restTestHarnesses.add(harness);
@@ -120,12 +120,12 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     // First, add a bunch of documents in a single update with the same new field.
     // This tests that the replicas properly handle schema additions.
 
-    int slices =  getCommonCloudSolrServer().getZkStateReader().getClusterState()
+    int slices =  getCommonCloudSolrClient().getZkStateReader().getClusterState()
       .getActiveSlices("collection1").size();
     int trials = 50;
     // generate enough docs so that we can expect at least a doc per slice
     int numDocsPerTrial = (int)(slices * (Math.log(slices) + 1));
-    SolrServer ss = clients.get(random().nextInt(clients.size()));
+    SolrClient randomClient = clients.get(random().nextInt(clients.size()));
     int docNumber = 0;
     for (int i = 0; i < trials; ++i) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -137,9 +137,9 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
         docs.add(doc);
       }
 
-      ss.add(docs);
+      randomClient.add(docs);
     }
-    ss.commit();
+    randomClient.commit();
 
     String [] expectedFields = getExpectedFieldResponses(docNumber);
     // Check that all the fields were added
@@ -175,8 +175,8 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
       }
 
       try {
-        ss.add(docs);
-        ss.commit();
+        randomClient.add(docs);
+        randomClient.commit();
         fail("Expected Bad Request Exception");
       } catch (SolrException se) {
         assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));

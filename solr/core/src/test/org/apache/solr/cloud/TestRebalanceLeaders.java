@@ -16,19 +16,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -37,6 +28,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
@@ -65,7 +62,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
 
   @Override
   public void doTest() throws Exception {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     reps = random().nextInt(9) + 1; // make sure and do at least one.
     try {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.
@@ -247,11 +244,11 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
     return true;
   }
 
-  byte[] getZkData(CloudSolrServer server, String path) {
+  byte[] getZkData(CloudSolrClient client, String path) {
     org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
     long start = System.currentTimeMillis();
     try {
-      byte[] data = server.getZkStateReader().getZkClient().getData(path, null, stat, true);
+      byte[] data = client.getZkStateReader().getZkClient().getData(path, null, stat, true);
       if (data != null) {
         return data;
       }

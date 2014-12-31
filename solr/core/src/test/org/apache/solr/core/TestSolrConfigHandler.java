@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.util.RestTestBase;
@@ -85,7 +85,7 @@ public class TestSolrConfigHandler extends RestTestBase {
       jetty.stop();
       jetty = null;
     }
-    server = null;
+    client = null;
     restTestHarness = null;
   }
 
@@ -153,7 +153,7 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
 
-  public static void reqhandlertests(RestTestHarness writeHarness,String testServerBaseUrl, CloudSolrServer cloudSolrServer) throws Exception {
+  public static void reqhandlertests(RestTestHarness writeHarness,String testServerBaseUrl, CloudSolrClient cloudSolrServer) throws Exception {
     String payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n" +
         "}";
@@ -204,7 +204,7 @@ public class TestSolrConfigHandler extends RestTestBase {
   public static void testForResponseElement(RestTestHarness harness,
                                             String testServerBaseUrl,
                                             String uri,
-                                            CloudSolrServer cloudSolrServer,List<String> jsonPath,
+                                            CloudSolrClient cloudSolrServer,List<String> jsonPath,
                                             String expected,
                                             long maxTimeoutSeconds ) throws Exception {
 

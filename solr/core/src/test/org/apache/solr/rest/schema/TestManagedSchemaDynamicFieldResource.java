@@ -62,7 +62,7 @@ public class TestManagedSchemaDynamicFieldResource extends RestTestBase {
       jetty.stop();
       jetty = null;
     }
-    server = null;
+    client = null;
     restTestHarness = null;
   }
 

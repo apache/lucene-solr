@@ -19,9 +19,9 @@ package org.apache.solr.handler.component;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -152,14 +152,14 @@ public class HttpShardHandler extends ShardHandler {
           if (urls.size() <= 1) {
             String url = urls.get(0);
             srsp.setShardAddress(url);
-            SolrServer server = new HttpSolrServer(url, httpClient);
+            SolrClient client = new HttpSolrClient(url, httpClient);
             try {
-              ssr.nl = server.request(req);
+              ssr.nl = client.request(req);
             } finally {
-              server.shutdown();
+              client.shutdown();
             }
           } else {
-            LBHttpSolrServer.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+            LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
             ssr.nl = rsp.getResponse();
             srsp.setShardAddress(rsp.getServer());
           }

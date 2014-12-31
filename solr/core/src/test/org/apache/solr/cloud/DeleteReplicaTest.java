@@ -17,22 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_IF_DOWN;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -48,8 +36,20 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_IF_DOWN;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+
 public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
-  private CloudSolrServer client;
+  private CloudSolrClient client;
   
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
@@ -91,13 +91,13 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
   private void deleteLiveReplicaTest() throws Exception {
     String collectionName = "delLiveColl";
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       createCollection(collectionName, client);
       
       waitForRecoveriesToFinish(collectionName, false);
       
-      DocCollection testcoll = getCommonCloudSolrServer().getZkStateReader()
+      DocCollection testcoll = getCommonCloudSolrClient().getZkStateReader()
           .getClusterState().getCollection(collectionName);
       
       Slice shard1 = null;
@@ -120,14 +120,14 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
       if (replica1 == null) fail("no active replicas found");
 
-      HttpSolrServer replica1Server = new HttpSolrServer(replica1.getStr("base_url"));
+      HttpSolrClient replica1Client = new HttpSolrClient(replica1.getStr("base_url"));
       String dataDir = null;
       try {
-        CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), replica1Server);
+        CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), replica1Client);
         NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
         dataDir = (String) coreStatus.get("dataDir");
       } finally {
-        replica1Server.shutdown();
+        replica1Client.shutdown();
       }
       try {
         // Should not be able to delete a replica that is up if onlyIfDown=true.
@@ -149,7 +149,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrServer client, Replica replica, String shard) throws IOException, SolrServerException {
+  protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrClient client, Replica replica, String shard) throws IOException, SolrServerException {
     Map m = makeMap("collection", collectionName,
         "action", DELETEREPLICA.toLower(),
         "shard", shard,
@@ -162,7 +162,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void removeAndWaitForReplicaGone(String COLL_NAME,
-      CloudSolrServer client, Replica replica, String shard)
+      CloudSolrClient client, Replica replica, String shard)
       throws SolrServerException, IOException, InterruptedException {
     Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA.toLower(), "shard",
         shard, "replica", replica.getName());
@@ -174,7 +174,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     boolean success = false;
     DocCollection testcoll = null;
     while (System.currentTimeMillis() < endAt) {
-      testcoll = getCommonCloudSolrServer().getZkStateReader()
+      testcoll = getCommonCloudSolrClient().getZkStateReader()
           .getClusterState().getCollection(COLL_NAME);
       success = testcoll.getSlice(shard).getReplica(replica.getName()) == null;
       if (success) {
@@ -188,10 +188,10 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     assertTrue("Replica not cleaned up", success);
   }
 
-  protected void createCollection(String COLL_NAME, CloudSolrServer client) throws Exception {
+  protected void createCollection(String COLL_NAME, CloudSolrClient client) throws Exception {
     int replicationFactor = 2;
     int numShards = 2;
-    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrServer()
+    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
     Map<String, Object> props = makeMap(

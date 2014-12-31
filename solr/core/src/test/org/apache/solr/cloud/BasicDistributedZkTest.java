@@ -17,33 +17,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -70,6 +53,23 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
@@ -88,7 +88,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
 
-  private Map<String,List<SolrServer>> otherCollectionClients = new HashMap<>();
+  private Map<String,List<SolrClient>> otherCollectionClients = new HashMap<>();
 
   private String oneInstanceCollection = "oneInstanceCollection";
   private String oneInstanceCollection2 = "oneInstanceCollection2";
@@ -163,9 +163,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // ask every individual replica of every shard to update+commit the same doc id
     // with an incrementing counter on each update+commit
     int foo_i_counter = 0;
-    for (SolrServer server : clients) {
+    for (SolrClient client : clients) {
       foo_i_counter++;
-      indexDoc(server, params("commit", "true"), // SOLR-4923
+      indexDoc(client, params("commit", "true"), // SOLR-4923
                sdoc(id,1, i1,100, tlong,100, "foo_i", foo_i_counter));
       // after every update+commit, check all the shards consistency
       queryAndCompareShards(params("q", "id:1", "distrib", "false", 
@@ -341,8 +341,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       Thread.sleep(100);
     }
     
-    for (SolrServer client : clients) {
-      assertEquals("commitWithin did not work on node: " + ((HttpSolrServer)client).getBaseURL(), before + 1, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+    for (SolrClient client : clients) {
+      assertEquals("commitWithin did not work on node: " + ((HttpSolrClient)client).getBaseURL(), before + 1, client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
     // TODO: This test currently fails because debug info is obtained only
@@ -381,14 +381,14 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     createCmd.setSchemaName("nonexistent_schema.xml");
     
     String url = getBaseUrl(clients.get(0));
-    final HttpSolrServer server = new HttpSolrServer(url);
+    final HttpSolrClient client = new HttpSolrClient(url);
     try {
-      server.request(createCmd);
+      client.request(createCmd);
       fail("Expected SolrCore create to fail");
     } catch (Exception e) {
       
     } finally {
-      server.shutdown();
+      client.shutdown();
     }
     
     long timeout = System.currentTimeMillis() + 15000;
@@ -410,9 +410,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (String shard : shardToJetty.keySet()) {
       // every client should give the same numDocs for this shard
       // shffle the clients in a diff order for each shard
-      List<SolrServer> solrclients = new ArrayList<>(this.clients);
+      List<SolrClient> solrclients = new ArrayList<>(this.clients);
       Collections.shuffle(solrclients, random());
-      for (SolrServer client : solrclients) {
+      for (SolrClient client : solrclients) {
         query.set("shards", shard);
         long numDocs = client.query(query).getResults().getNumFound();
         assertTrue("numDocs < 0 for shard "+shard+" via "+client,
@@ -484,7 +484,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     String randShards = StringUtils.join(randomShards, ",");
     query.set("shards", randShards);
-    for (SolrServer client : this.clients) {
+    for (SolrClient client : this.clients) {
       assertEquals("numDocs for "+randShards+" via "+client,
                    randomShardCountsExpected, 
                    client.query(query).getResults().getNumFound());
@@ -496,7 +496,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (Long c : shardCounts.values()) {
       totalShardNumDocs += c;
     }
-    for (SolrServer client : clients) {
+    for (SolrClient client : clients) {
       assertEquals("sum of shard numDocs on client: " + client, 
                    totalShardNumDocs,
                    client.query(query).getResults().getNumFound());
@@ -507,22 +507,22 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
-    SolrServer client = clients.get(0);
+    SolrClient client = clients.get(0);
     String url3 = getBaseUrl(client);
-    final HttpSolrServer server = new HttpSolrServer(url3);
-    server.setConnectionTimeout(15000);
-    server.setSoTimeout(60000);
+    final HttpSolrClient httpSolrClient = new HttpSolrClient(url3);
+    httpSolrClient.setConnectionTimeout(15000);
+    httpSolrClient.setSoTimeout(60000);
     ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
         5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
         new DefaultSolrThreadFactory("testExecutor"));
     int cnt = 3;
     
     // create the cores
-    createCores(server, executor, "multiunload2", 1, cnt);
+    createCores(httpSolrClient, executor, "multiunload2", 1, cnt);
     
     executor.shutdown();
     executor.awaitTermination(120, TimeUnit.SECONDS);
-    server.shutdown();
+    httpSolrClient.shutdown();
     
     ChaosMonkey.stop(cloudJettys.get(0).jetty);
     printLayout();
@@ -541,7 +541,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   }
 
-  protected void createCores(final HttpSolrServer server,
+  protected void createCores(final HttpSolrClient client,
       ThreadPoolExecutor executor, final String collection, final int numShards, int cnt) {
     for (int i = 0; i < cnt; i++) {
       final int freezeI = i;
@@ -558,7 +558,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             String core3dataDir = createTempDir(collection).toFile().getAbsolutePath();
             createCmd.setDataDir(getDataDir(core3dataDir));
 
-            server.request(createCmd);
+            client.request(createCmd);
           } catch (SolrServerException e) {
             throw new RuntimeException(e);
           } catch (IOException e) {
@@ -570,17 +570,17 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  protected String getBaseUrl(SolrServer client) {
-    String url2 = ((HttpSolrServer) client).getBaseURL()
+  protected String getBaseUrl(SolrClient client) {
+    String url2 = ((HttpSolrClient) client).getBaseURL()
         .substring(
             0,
-            ((HttpSolrServer) client).getBaseURL().length()
+            ((HttpSolrClient) client).getBaseURL().length()
                 - DEFAULT_COLLECTION.length() -1);
     return url2;
   }
 
   protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
-                                                     String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
+                                                     String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
     // TODO: Use CollectionAdminRequest for this test
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
@@ -603,12 +603,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
-      final String baseUrl = ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().substring(
+      final String baseUrl = ((HttpSolrClient) clients.get(clientIndex)).getBaseURL().substring(
           0,
-          ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().length()
+          ((HttpSolrClient) clients.get(clientIndex)).getBaseURL().length()
               - DEFAULT_COLLECTION.length() - 1);
       
-      SolrServer aClient = createNewSolrServer("", baseUrl);
+      SolrClient aClient = createNewSolrClient("", baseUrl);
       res.setResponse(aClient.request(request));
       aClient.shutdown();
     } else {
@@ -618,7 +618,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
   
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
-    ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
+    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
     ZkNodeProps leader = clusterState.getLeader(collection, slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
@@ -647,7 +647,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     for (int i = 1; i < numLoops; i++) {
       // add doc to random client
-      SolrServer updateClient = clients.get(random().nextInt(clients.size()));
+      SolrClient updateClient = clients.get(random().nextInt(clients.size()));
       SolrInputDocument doc = new SolrInputDocument();
       addFields(doc, id, i, fieldA, val, fieldB, val);
       UpdateResponse ures = add(updateClient, updateParams, doc);
@@ -683,7 +683,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     indexDoc(sd);
 
     ignoreException("version conflict");
-    for (SolrServer client : clients) {
+    for (SolrClient client : clients) {
       try {
         client.add(sd);
         fail();
@@ -700,14 +700,14 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     List<Integer> expected = new ArrayList<>();
     int val = 0;
-    for (SolrServer client : clients) {
+    for (SolrClient client : clients) {
       val += 10;
       client.add(sdoc("id", 1000, "val_i", map("add",val), "foo_i",val));
       expected.add(val);
     }
 
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id","1000"));
-    for (SolrServer client : clients) {
+    for (SolrClient client : clients) {
       val += 10;
       NamedList rsp = client.request(qr);
       String match = JSONTestUtil.matchObj("/val_i", rsp.get("doc"), expected);
@@ -718,7 +718,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testNumberOfCommitsWithCommitAfterAdd()
       throws SolrServerException, IOException {
     log.info("### STARTING testNumberOfCommitsWithCommitAfterAdd");
-    long startCommits = getNumCommits((HttpSolrServer) clients.get(0));
+    long startCommits = getNumCommits((HttpSolrClient) clients.get(0));
     
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.addFile(getFile("books_numeric_ids.csv"), "application/csv");
@@ -726,38 +726,38 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = clients.get(0).request(up);
     
-    long endCommits = getNumCommits((HttpSolrServer) clients.get(0));
+    long endCommits = getNumCommits((HttpSolrClient) clients.get(0));
 
     assertEquals(startCommits + 1L, endCommits);
   }
 
-  private Long getNumCommits(HttpSolrServer solrServer) throws
+  private Long getNumCommits(HttpSolrClient sourceClient) throws
       SolrServerException, IOException {
-    HttpSolrServer server = new HttpSolrServer(solrServer.getBaseURL());
-    server.setConnectionTimeout(15000);
-    server.setSoTimeout(60000);
+    HttpSolrClient client = new HttpSolrClient(sourceClient.getBaseURL());
+    client.setConnectionTimeout(15000);
+    client.setSoTimeout(60000);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
     // use generic request to avoid extra processing of queries
     QueryRequest req = new QueryRequest(params);
-    NamedList<Object> resp = server.request(req);
+    NamedList<Object> resp = client.request(req);
     NamedList mbeans = (NamedList) resp.get("solr-mbeans");
     NamedList uhandlerCat = (NamedList) mbeans.get("UPDATEHANDLER");
     NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
     NamedList stats = (NamedList) uhandler.get("stats");
     Long commits = (Long) stats.get("commits");
-    server.shutdown();
+    client.shutdown();
     return commits;
   }
 
   private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {
     log.info("### STARTING testANewCollectionInOneInstanceWithManualShardAssignement");
     System.clearProperty("numShards");
-    List<SolrServer> collectionClients = new ArrayList<>();
-    SolrServer client = clients.get(0);
-    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+    List<SolrClient> collectionClients = new ArrayList<>();
+    SolrClient client = clients.get(0);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL().substring(
         0,
-        ((HttpSolrServer) client).getBaseURL().length()
+        ((HttpSolrClient) client).getBaseURL().length()
             - DEFAULT_COLLECTION.length() - 1);
     createSolrCore(oneInstanceCollection2, collectionClients, baseUrl, 1, "slice1");
     createSolrCore(oneInstanceCollection2, collectionClients, baseUrl, 2, "slice2");
@@ -770,16 +770,16 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       pending.remove(future);
     }
     
-    SolrServer client1 = collectionClients.get(0);
-    SolrServer client2 = collectionClients.get(1);
-    SolrServer client3 = collectionClients.get(2);
-    SolrServer client4 = collectionClients.get(3);
+    SolrClient client1 = collectionClients.get(0);
+    SolrClient client2 = collectionClients.get(1);
+    SolrClient client3 = collectionClients.get(2);
+    SolrClient client4 = collectionClients.get(3);
     
 
     // no one should be recovering
-    waitForRecoveriesToFinish(oneInstanceCollection2, getCommonCloudSolrServer().getZkStateReader(), false, true);
+    waitForRecoveriesToFinish(oneInstanceCollection2, getCommonCloudSolrClient().getZkStateReader(), false, true);
     
-    assertAllActive(oneInstanceCollection2, getCommonCloudSolrServer().getZkStateReader());
+    assertAllActive(oneInstanceCollection2, getCommonCloudSolrClient().getZkStateReader());
     
     //printLayout();
     
@@ -800,7 +800,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     query.set("collection", oneInstanceCollection2);
     query.set("distrib", true);
-    long allDocs = getCommonCloudSolrServer().query(query).getResults().getNumFound();
+    long allDocs = getCommonCloudSolrClient().query(query).getResults().getNumFound();
     
 //    System.out.println("1:" + oneDocs);
 //    System.out.println("2:" + twoDocs);
@@ -814,7 +814,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(3, allDocs);
     
     // we added a role of none on these creates - check for it
-    ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
+    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
     zkStateReader.updateClusterState(true);
     Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(oneInstanceCollection2);
     assertNotNull(slices);
@@ -822,19 +822,19 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals("none", roles);
     
     
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrServer().getZkStateReader().getClusterState().getLeader(oneInstanceCollection2, "slice1"));
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrClient().getZkStateReader().getClusterState().getLeader(oneInstanceCollection2, "slice1"));
     
     // now test that unloading a core gets us a new leader
-    HttpSolrServer server = new HttpSolrServer(baseUrl);
-    server.setConnectionTimeout(15000);
-    server.setSoTimeout(60000);
+    HttpSolrClient unloadClient = new HttpSolrClient(baseUrl);
+    unloadClient.setConnectionTimeout(15000);
+    unloadClient.setSoTimeout(60000);
     Unload unloadCmd = new Unload(true);
     unloadCmd.setCoreName(props.getCoreName());
     
     String leader = props.getCoreUrl();
     
-    server.request(unloadCmd);
-    server.shutdown();
+    unloadClient.request(unloadCmd);
+    unloadClient.shutdown();
     
     int tries = 50;
     while (leader.equals(zkStateReader.getLeaderUrl(oneInstanceCollection2, "slice1", 10000))) {
@@ -844,7 +844,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       }
     }
 
-    for (SolrServer aClient : collectionClients) {
+    for (SolrClient aClient : collectionClients) {
       aClient.shutdown();
     }
 
@@ -852,15 +852,15 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testSearchByCollectionName() throws SolrServerException {
     log.info("### STARTING testSearchByCollectionName");
-    SolrServer client = clients.get(0);
-    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+    SolrClient client = clients.get(0);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL().substring(
         0,
-        ((HttpSolrServer) client).getBaseURL().length()
+        ((HttpSolrClient) client).getBaseURL().length()
             - DEFAULT_COLLECTION.length() - 1);
     
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
-    SolrServer client1 = createNewSolrServer(oneInstanceCollection, baseUrl);
+    SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl);
     SolrQuery query = new SolrQuery("*:*");
     long oneDocs = client1.query(query).getResults().getNumFound();
     assertEquals(3, oneDocs);
@@ -869,27 +869,27 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   private void testUpdateByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testUpdateByCollectionName");
-    SolrServer client = clients.get(0);
-    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+    SolrClient client = clients.get(0);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL().substring(
         0,
-        ((HttpSolrServer) client).getBaseURL().length()
+        ((HttpSolrClient) client).getBaseURL().length()
             - DEFAULT_COLLECTION.length() - 1);
     
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
     // test hitting an update url
-    SolrServer client1 = createNewSolrServer(oneInstanceCollection, baseUrl);
+    SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl);
     client1.commit();
     client1.shutdown();
   }
 
   private void testANewCollectionInOneInstance() throws Exception {
     log.info("### STARTING testANewCollectionInOneInstance");
-    List<SolrServer> collectionClients = new ArrayList<>();
-    SolrServer client = clients.get(0);
-    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+    List<SolrClient> collectionClients = new ArrayList<>();
+    SolrClient client = clients.get(0);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL().substring(
         0,
-        ((HttpSolrServer) client).getBaseURL().length()
+        ((HttpSolrClient) client).getBaseURL().length()
             - DEFAULT_COLLECTION.length() - 1);
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 1);
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 2);
@@ -903,13 +903,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       pending.remove(future);
     }
    
-    SolrServer client1 = collectionClients.get(0);
-    SolrServer client2 = collectionClients.get(1);
-    SolrServer client3 = collectionClients.get(2);
-    SolrServer client4 = collectionClients.get(3);
+    SolrClient client1 = collectionClients.get(0);
+    SolrClient client2 = collectionClients.get(1);
+    SolrClient client3 = collectionClients.get(2);
+    SolrClient client4 = collectionClients.get(3);
  
-    waitForRecoveriesToFinish(oneInstanceCollection, getCommonCloudSolrServer().getZkStateReader(), false);
-    assertAllActive(oneInstanceCollection, getCommonCloudSolrServer().getZkStateReader());
+    waitForRecoveriesToFinish(oneInstanceCollection, getCommonCloudSolrClient().getZkStateReader(), false);
+    assertAllActive(oneInstanceCollection, getCommonCloudSolrClient().getZkStateReader());
     
     client2.add(getDoc(id, "1")); 
     client3.add(getDoc(id, "2")); 
@@ -925,7 +925,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     query.set("collection", oneInstanceCollection);
     query.set("distrib", true);
-    long allDocs = getCommonCloudSolrServer().query(query).getResults().getNumFound();
+    long allDocs = getCommonCloudSolrClient().query(query).getResults().getNumFound();
     
 //    System.out.println("1:" + oneDocs);
 //    System.out.println("2:" + twoDocs);
@@ -934,26 +934,26 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 //    System.out.println("All Docs:" + allDocs);
     
     assertEquals(3, allDocs);
-    for(SolrServer newCollectionClient:collectionClients) {
+    for(SolrClient newCollectionClient:collectionClients) {
       newCollectionClient.shutdown();
     }
   }
 
   private void createCollection(String collection,
-      List<SolrServer> collectionClients, String baseUrl, int num) {
+      List<SolrClient> collectionClients, String baseUrl, int num) {
     createSolrCore(collection, collectionClients, baseUrl, num, null);
   }
   
   private void createSolrCore(final String collection,
-      List<SolrServer> collectionClients, final String baseUrl, final int num,
+      List<SolrClient> collectionClients, final String baseUrl, final int num,
       final String shardId) {
     Callable call = new Callable() {
       @Override
       public Object call() {
-        HttpSolrServer server = null;
+        HttpSolrClient client = null;
         try {
-          server = new HttpSolrServer(baseUrl);
-          server.setConnectionTimeout(15000);
+          client = new HttpSolrClient(baseUrl);
+          client.setConnectionTimeout(15000);
           Create createCmd = new Create();
           createCmd.setRoles("none");
           createCmd.setCoreName(collection + num);
@@ -971,13 +971,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           if (shardId != null) {
             createCmd.setShardId(shardId);
           }
-          server.request(createCmd);
+          client.request(createCmd);
         } catch (Exception e) {
           e.printStackTrace();
           //fail
         } finally {
-          if (server != null) {
-            server.shutdown();
+          if (client != null) {
+            client.shutdown();
           }
         }
         return null;
@@ -987,7 +987,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     pending.add(completionService.submit(call));
  
     
-    collectionClients.add(createNewSolrServer(collection + num, baseUrl));
+    collectionClients.add(createNewSolrClient(collection + num, baseUrl));
   }
 
   private void testMultipleCollections() throws Exception {
@@ -1006,21 +1006,21 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     indexDoc("collection2", getDoc(id, "10000000")); 
     indexDoc("collection2", getDoc(id, "10000001")); 
     indexDoc("collection2", getDoc(id, "10000003"));
-    getCommonCloudSolrServer().setDefaultCollection("collection2");
-    getCommonCloudSolrServer().add(getDoc(id, "10000004"));
-    getCommonCloudSolrServer().setDefaultCollection(null);
+    getCommonCloudSolrClient().setDefaultCollection("collection2");
+    getCommonCloudSolrClient().add(getDoc(id, "10000004"));
+    getCommonCloudSolrClient().setDefaultCollection(null);
     
     indexDoc("collection3", getDoc(id, "20000000"));
     indexDoc("collection3", getDoc(id, "20000001")); 
-    getCommonCloudSolrServer().setDefaultCollection("collection3");
-    getCommonCloudSolrServer().add(getDoc(id, "10000005"));
-    getCommonCloudSolrServer().setDefaultCollection(null);
+    getCommonCloudSolrClient().setDefaultCollection("collection3");
+    getCommonCloudSolrClient().add(getDoc(id, "10000005"));
+    getCommonCloudSolrClient().setDefaultCollection(null);
     
     otherCollectionClients.get("collection2").get(0).commit();
     otherCollectionClients.get("collection3").get(0).commit();
     
-    getCommonCloudSolrServer().setDefaultCollection("collection1");
-    long collection1Docs = getCommonCloudSolrServer().query(new SolrQuery("*:*")).getResults()
+    getCommonCloudSolrClient().setDefaultCollection("collection1");
+    long collection1Docs = getCommonCloudSolrClient().query(new SolrQuery("*:*")).getResults()
         .getNumFound();
 
     long collection2Docs = otherCollectionClients.get("collection2").get(0)
@@ -1041,19 +1041,19 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(collection1Docs + collection2Docs + collection3Docs, found);
     
     // try to search multiple with cloud client
-    found = getCommonCloudSolrServer().query(query).getResults().getNumFound();
+    found = getCommonCloudSolrClient().query(query).getResults().getNumFound();
     assertEquals(collection1Docs + collection2Docs + collection3Docs, found);
     
     query.set("collection", "collection2,collection3");
-    found = getCommonCloudSolrServer().query(query).getResults().getNumFound();
+    found = getCommonCloudSolrClient().query(query).getResults().getNumFound();
     assertEquals(collection2Docs + collection3Docs, found);
     
     query.set("collection", "collection3");
-    found = getCommonCloudSolrServer().query(query).getResults().getNumFound();
+    found = getCommonCloudSolrClient().query(query).getResults().getNumFound();
     assertEquals(collection3Docs, found);
     
     query.remove("collection");
-    found = getCommonCloudSolrServer().query(query).getResults().getNumFound();
+    found = getCommonCloudSolrClient().query(query).getResults().getNumFound();
     assertEquals(collection1Docs, found);
     
     assertEquals(collection3Docs, collection2Docs - 1);
@@ -1066,49 +1066,49 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
   
   protected void indexDoc(String collection, SolrInputDocument doc) throws IOException, SolrServerException {
-    List<SolrServer> clients = otherCollectionClients.get(collection);
+    List<SolrClient> clients = otherCollectionClients.get(collection);
     int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % clients.size();
-    SolrServer client = clients.get(which);
+    SolrClient client = clients.get(which);
     client.add(doc);
   }
   
   private void createNewCollection(final String collection) throws InterruptedException {
-    final List<SolrServer> collectionClients = new ArrayList<>();
+    final List<SolrClient> collectionClients = new ArrayList<>();
     otherCollectionClients.put(collection, collectionClients);
     int unique = 0;
-    for (final SolrServer client : clients) {
+    for (final SolrClient client : clients) {
       unique++;
-      final String baseUrl = ((HttpSolrServer) client).getBaseURL()
+      final String baseUrl = ((HttpSolrClient) client).getBaseURL()
           .substring(
               0,
-              ((HttpSolrServer) client).getBaseURL().length()
+              ((HttpSolrClient) client).getBaseURL().length()
                   - DEFAULT_COLLECTION.length() -1);
       final int frozeUnique = unique;
       Callable call = new Callable() {
         @Override
         public Object call() {
-          HttpSolrServer server = null;
+          HttpSolrClient client = null;
           try {
-            server = new HttpSolrServer(baseUrl);
-            server.setConnectionTimeout(15000);
-            server.setSoTimeout(60000);
+            client = new HttpSolrClient(baseUrl);
+            client.setConnectionTimeout(15000);
+            client.setSoTimeout(60000);
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
             createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
-            server.request(createCmd);
+            client.request(createCmd);
           } catch (Exception e) {
             e.printStackTrace();
             //fails
           } finally {
-            if (server != null) {
-              server.shutdown();
+            if (client != null) {
+              client.shutdown();
             }
           }
           return null;
         }
       };
      
-      collectionClients.add(createNewSolrServer(collection, baseUrl));
+      collectionClients.add(createNewSolrClient(collection, baseUrl));
       pending.add(completionService.submit(call));
       while (pending != null && pending.size() > 0) {
         
@@ -1119,33 +1119,33 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
   }
   
-  protected SolrServer createNewSolrServer(String collection, String baseUrl) {
+  protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrServer s = new HttpSolrServer(baseUrl + "/" + collection);
-      s.setSoTimeout(120000);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
+      HttpSolrClient client = new HttpSolrClient(baseUrl + "/" + collection);
+      client.setSoTimeout(120000);
+      client.setDefaultMaxConnectionsPerHost(100);
+      client.setMaxTotalConnections(100);
+      return client;
     }
     catch (Exception ex) {
       throw new RuntimeException(ex);
     }
   }
 
-  volatile CloudSolrServer commondCloudSolrServer;
-  protected CloudSolrServer getCommonCloudSolrServer() {
-    if (commondCloudSolrServer == null) {
+  volatile CloudSolrClient commondCloudSolrClient;
+  protected CloudSolrClient getCommonCloudSolrClient() {
+    if (commondCloudSolrClient == null) {
       synchronized(this) {
-        commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
-        commondCloudSolrServer.setParallelUpdates(random().nextBoolean());
-        commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
-        commondCloudSolrServer.getLbServer().setConnectionTimeout(15000);
-        commondCloudSolrServer.getLbServer().setSoTimeout(30000);
-        commondCloudSolrServer.connect();
+        commondCloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
+        commondCloudSolrClient.setParallelUpdates(random().nextBoolean());
+        commondCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
+        commondCloudSolrClient.getLbClient().setConnectionTimeout(15000);
+        commondCloudSolrClient.getLbClient().setSoTimeout(30000);
+        commondCloudSolrClient.connect();
       }
     }
-    return commondCloudSolrServer;
+    return commondCloudSolrClient;
   }
 
   @Override
@@ -1157,19 +1157,19 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     if (r.nextBoolean())
       params.set("collection",DEFAULT_COLLECTION);
 
-    QueryResponse rsp = getCommonCloudSolrServer().query(params);
+    QueryResponse rsp = getCommonCloudSolrClient().query(params);
     return rsp;
   }
   
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    if (commondCloudSolrServer != null) {
-      commondCloudSolrServer.shutdown();
+    if (commondCloudSolrClient != null) {
+      commondCloudSolrClient.shutdown();
     }
     if (otherCollectionClients != null) {
-      for (List<SolrServer> clientList : otherCollectionClients.values()) {
-        for (SolrServer client : clientList) {
+      for (List<SolrClient> clientList : otherCollectionClients.values()) {
+        for (SolrClient client : clientList) {
           client.shutdown();
         }
       }

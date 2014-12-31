@@ -19,13 +19,12 @@ package org.apache.solr.request;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -69,11 +68,11 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   @Before
   public void doBefore() throws IOException, SolrServerException {
     //add document and commit, and ensure it's there
-    SolrServer server1 = getSolrServer();
+    SolrClient client = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "id", "1234" );
-    server1.add(doc);
-    server1.commit();
+    client.add(doc);
+    client.commit();
     assertTrue(searchFindsIt());
   }
 
@@ -85,10 +84,10 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    HttpSolrServer solrServer = (HttpSolrServer) getSolrServer();
-    String streamUrl = solrServer.getBaseURL()+"/select?q=*:*&fl=id&wt=csv";
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    String streamUrl = client.getBaseURL()+"/select?q=*:*&fl=id&wt=csv";
 
-    String getUrl = solrServer.getBaseURL()+"/debug/dump?wt=xml&stream.url="+URLEncoder.encode(streamUrl,"UTF-8");
+    String getUrl = client.getBaseURL()+"/debug/dump?wt=xml&stream.url="+URLEncoder.encode(streamUrl,"UTF-8");
     String content = getUrlForString(getUrl);
     assertTrue(content.contains("1234"));
     //System.out.println(content);
@@ -116,7 +115,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     query.setQuery( "*:*" );//for anything
     query.add("stream.url",makeDeleteAllUrl());
     try {
-      getSolrServer().query(query);
+      getSolrClient().query(query);
       fail();
     } catch (SolrException se) {
       assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
@@ -140,7 +139,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
         return "/select";
       }
     };
-    QueryResponse rsp = queryRequest.process(getSolrServer());
+    QueryResponse rsp = queryRequest.process(getSolrClient());
     //!! should *fail* above for security purposes
     String handler = (String) rsp.getHeader().get("handler");
     System.out.println(handler);
@@ -148,15 +147,15 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   /** Compose a url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
-    HttpSolrServer solrServer = (HttpSolrServer) getSolrServer();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return solrServer.getBaseURL()+"/update?commit=true&stream.body="+ URLEncoder.encode(deleteQuery, "UTF-8");
+    return client.getBaseURL()+"/update?commit=true&stream.body="+ URLEncoder.encode(deleteQuery, "UTF-8");
   }
 
   private boolean searchFindsIt() throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setQuery( "id:1234" );
-    QueryResponse rsp = getSolrServer().query(query);
+    QueryResponse rsp = getSolrClient().query(query);
     return rsp.getResults().getNumFound() != 0;
   }
 }

@@ -102,7 +102,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     }
 
-    controlClient = createNewSolrServer(controlJetty.getLocalPort());
+    controlClient = createNewSolrClient(controlJetty.getLocalPort());
 
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numShards; i++) {
@@ -112,7 +112,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       setupJettySolrHome(jettyHome);
       JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
       jettys.add(j);
-      clients.add(createNewSolrServer(j.getLocalPort()));
+      clients.add(createNewSolrClient(j.getLocalPort()));
       sb.append(buildUrl(j.getLocalPort()));
     }
 

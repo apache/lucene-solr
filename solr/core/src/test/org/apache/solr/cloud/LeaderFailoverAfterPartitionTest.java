@@ -110,8 +110,8 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // doc should be on leader and 1 replica
     sendDoc(5);
 
-    assertDocExists(getHttpSolrServer(leader, testCollectionName), testCollectionName, "5");
-    assertDocExists(getHttpSolrServer(notLeaders.get(1), testCollectionName), testCollectionName, "5");
+    assertDocExists(getHttpSolrClient(leader, testCollectionName), testCollectionName, "5");
+    assertDocExists(getHttpSolrClient(notLeaders.get(1), testCollectionName), testCollectionName, "5");
 
     Thread.sleep(sleepMsBeforeHealPartition);
     

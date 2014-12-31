@@ -21,7 +21,7 @@ import org.apache.commons.codec.binary.StringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -269,7 +269,7 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
 
     Replica replica1 = testCollection.getReplica("core_node1");
 
-    HttpSolrServer solrServer = new HttpSolrServer(replica1.getStr("base_url"));
+    HttpSolrClient solrServer = new HttpSolrClient(replica1.getStr("base_url"));
     try {
       CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), solrServer);
       NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));

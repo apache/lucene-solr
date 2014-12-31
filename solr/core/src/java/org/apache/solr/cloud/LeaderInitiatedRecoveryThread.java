@@ -1,12 +1,8 @@
 package org.apache.solr.cloud;
 
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.util.List;
-
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -17,6 +13,10 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.util.List;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -114,12 +114,12 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         log.info("Asking core={} coreNodeName={} on " + recoveryUrl + " to recover", coreNeedingRecovery, replicaCoreNodeName);
       }
       
-      HttpSolrServer server = new HttpSolrServer(recoveryUrl);
+      HttpSolrClient client = new HttpSolrClient(recoveryUrl);
       try {
-        server.setSoTimeout(60000);
-        server.setConnectionTimeout(15000);
+        client.setSoTimeout(60000);
+        client.setConnectionTimeout(15000);
         try {
-          server.request(recoverRequestCmd);
+          client.request(recoverRequestCmd);
           
           log.info("Successfully sent " + CoreAdminAction.REQUESTRECOVERY +
               " command to core={} coreNodeName={} on " + recoveryUrl, coreNeedingRecovery, replicaCoreNodeName);
@@ -140,7 +140,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
           }                                                
         }
       } finally {
-        server.shutdown();
+        client.shutdown();
       }
       
       // wait a few seconds

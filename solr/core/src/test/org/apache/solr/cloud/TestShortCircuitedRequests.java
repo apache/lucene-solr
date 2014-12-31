@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
@@ -48,7 +48,7 @@ public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
     // query shard3 directly with _route_=a! so that we trigger the short circuited request path
     Replica shard3 = cloudClient.getZkStateReader().getClusterState().getLeader(DEFAULT_COLLECTION, "shard3");
     String nodeName = shard3.getNodeName();
-    SolrServer shard3Client = getClient(nodeName);
+    SolrClient shard3Client = getClient(nodeName);
     QueryResponse response = shard3Client.query(new SolrQuery("*:*").add(ShardParams._ROUTE_, "a!").add(ShardParams.SHARDS_INFO, "true"));
 
     assertEquals("Could not find doc", 1, response.getResults().getNumFound());

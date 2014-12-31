@@ -26,7 +26,7 @@ import junit.framework.Assert;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -79,7 +79,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     // query a random server
     params.set("shards", shards);
     int which = r.nextInt(clients.size());
-    SolrServer client = clients.get(which);
+    SolrClient client = clients.get(which);
     client.query(params);
   }
   

@@ -17,7 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -30,7 +30,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
-  private CloudSolrServer client;
+  private CloudSolrClient client;
 
   @BeforeClass
   public static void beforeThisClass2() throws Exception {

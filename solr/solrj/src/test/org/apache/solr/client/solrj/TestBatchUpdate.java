@@ -20,11 +20,10 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -50,28 +49,28 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrServer httpSolrServer = (HttpSolrServer) getSolrServer();
-    httpSolrServer.setRequestWriter(new RequestWriter());
-    httpSolrServer.deleteByQuery( "*:*" ); // delete everything!
-    doIt(httpSolrServer);
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.setRequestWriter(new RequestWriter());
+    client.deleteByQuery("*:*"); // delete everything!
+    doIt(client);
   }
 
   @Test
   public void testWithBinary()throws Exception{
-    HttpSolrServer httpSolrServer = (HttpSolrServer) getSolrServer();
-    httpSolrServer.setRequestWriter(new BinaryRequestWriter());
-    httpSolrServer.deleteByQuery( "*:*" ); // delete everything!
-    doIt(httpSolrServer);
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.setRequestWriter(new BinaryRequestWriter());
+    client.deleteByQuery("*:*"); // delete everything!
+    doIt(client);
   }
 
   @Test
   public void testWithBinaryBean()throws Exception{
-    HttpSolrServer httpSolrServer = (HttpSolrServer) getSolrServer();
-    httpSolrServer.setRequestWriter(new BinaryRequestWriter());
-    httpSolrServer.deleteByQuery( "*:*" ); // delete everything!
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.setRequestWriter(new BinaryRequestWriter());
+    client.deleteByQuery("*:*"); // delete everything!
     final int[] counter = new int[1];
     counter[0] = 0;
-    httpSolrServer.addBeans(new Iterator<Bean>() {
+    client.addBeans(new Iterator<Bean>() {
 
       @Override
       public boolean hasNext() {
@@ -91,9 +90,9 @@ public class TestBatchUpdate extends SolrJettyTestBase {
         //do nothing
       }
     });
-    httpSolrServer.commit();
+    client.commit();
     SolrQuery query = new SolrQuery("*:*");
-    QueryResponse response = httpSolrServer.query(query);
+    QueryResponse response = client.query(query);
     assertEquals(0, response.getStatus());
     assertEquals(numdocs, response.getResults().getNumFound());
   }
@@ -105,10 +104,10 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     String cat;
   }
        
-  private void doIt(HttpSolrServer httpSolrServer) throws SolrServerException, IOException {
+  private void doIt(HttpSolrClient client) throws SolrServerException, IOException {
     final int[] counter = new int[1];
     counter[0] = 0;
-    httpSolrServer.add(new Iterator<SolrInputDocument>() {
+    client.add(new Iterator<SolrInputDocument>() {
 
       @Override
       public boolean hasNext() {
@@ -129,9 +128,9 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
       }
     });
-    httpSolrServer.commit();
+    client.commit();
     SolrQuery query = new SolrQuery("*:*");
-    QueryResponse response = httpSolrServer.query(query);
+    QueryResponse response = client.query(query);
     assertEquals(0, response.getStatus());
     assertEquals(numdocs, response.getResults().getNumFound());
   }

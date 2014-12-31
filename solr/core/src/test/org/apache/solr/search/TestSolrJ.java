@@ -19,10 +19,10 @@ package org.apache.solr.search;
 
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     // doCommitPerf();
   }
 
-  public static SolrServer server;
+  public static SolrClient client;
   public static String idField = "id";
   public static Exception ex;
 
@@ -56,13 +56,13 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     final int nConnections = Integer.parseInt(args[i++]);
     final int maxSleep = Integer.parseInt(args[i++]);
 
-    ConcurrentUpdateSolrServer sserver = null;
+    ConcurrentUpdateSolrClient concurrentClient = null;
 
-    // server = sserver = new ConcurrentUpdateSolrServer(addr,32,8);
-    server = sserver = new ConcurrentUpdateSolrServer(addr,64,nConnections);
+    // server = concurrentClient = new ConcurrentUpdateSolrServer(addr,32,8);
+    client = concurrentClient = new ConcurrentUpdateSolrClient(addr,64,nConnections);
 
-    server.deleteByQuery("*:*");
-    server.commit();
+    client.deleteByQuery("*:*");
+    client.commit();
 
     long start = System.currentTimeMillis();
 
@@ -94,8 +94,8 @@ public class TestSolrJ extends SolrTestCaseJ4 {
       threads[threadNum].join();
     }
 
-    if (sserver != null) {
-      sserver.blockUntilFinished();
+    if (concurrentClient != null) {
+      concurrentClient.blockUntilFinished();
     }
 
     long end = System.currentTimeMillis();
@@ -145,7 +145,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
       }
 
       SolrInputDocument doc = getDocument(i);
-      server.add(doc);
+      client.add(doc);
 
       if (maxSleep > 0) {
         int sleep = r.nextInt(maxSleep);
@@ -163,7 +163,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
 
   public void doCommitPerf() throws Exception {
-    HttpSolrServer client = new HttpSolrServer("http://127.0.0.1:8983/solr");
+    HttpSolrClient client = new HttpSolrClient("http://127.0.0.1:8983/solr");
 
     long start = System.currentTimeMillis();
 

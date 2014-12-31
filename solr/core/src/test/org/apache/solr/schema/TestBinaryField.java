@@ -16,20 +16,21 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
-
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.*;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.List;
 
 public class TestBinaryField extends SolrJettyTestBase {
 
@@ -61,7 +62,7 @@ public class TestBinaryField extends SolrJettyTestBase {
 
 
   public void testSimple() throws Exception {
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     byte[] buf = new byte[10];
     for (int i = 0; i < 10; i++) {
       buf[i] = (byte) i;
@@ -70,21 +71,21 @@ public class TestBinaryField extends SolrJettyTestBase {
     doc = new SolrInputDocument();
     doc.addField("id", 1);
     doc.addField("data", ByteBuffer.wrap(buf, 2, 5));
-    server.add(doc);
+    client.add(doc);
 
     doc = new SolrInputDocument();
     doc.addField("id", 2);
     doc.addField("data", ByteBuffer.wrap(buf, 4, 3));
-    server.add(doc);
+    client.add(doc);
 
     doc = new SolrInputDocument();
     doc.addField("id", 3);
     doc.addField("data", buf);
-    server.add(doc);
+    client.add(doc);
 
-    server.commit();
+    client.commit();
 
-    QueryResponse resp = server.query(new SolrQuery("*:*"));
+    QueryResponse resp = client.query(new SolrQuery("*:*"));
     SolrDocumentList res = resp.getResults();
     List<Bean> beans = resp.getBeans(Bean.class);
     assertEquals(3, res.size());

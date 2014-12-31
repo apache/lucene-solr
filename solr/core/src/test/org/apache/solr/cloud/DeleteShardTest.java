@@ -19,7 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -94,7 +94,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     try {
       deleteShard(SHARD1);
       fail("Deleting an active shard should not have succeeded");
-    } catch (HttpSolrServer.RemoteSolrException e) {
+    } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
     }
 
@@ -143,15 +143,15 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = ((HttpSolrServer) shardToJetty.get(SHARD1).get(0).client.solrClient)
+    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient)
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
-    baseServer.setConnectionTimeout(15000);
-    baseServer.setSoTimeout(60000);
-    baseServer.request(request);
-    baseServer.shutdown();
+    HttpSolrClient baseClient = new HttpSolrClient(baseUrl);
+    baseClient.setConnectionTimeout(15000);
+    baseClient.setSoTimeout(60000);
+    baseClient.request(request);
+    baseClient.shutdown();
   }
 
   protected void setSliceState(String slice, String state) throws SolrServerException, IOException,

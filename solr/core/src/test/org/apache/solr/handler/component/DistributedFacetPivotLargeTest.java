@@ -22,7 +22,7 @@ import java.util.List;
 import java.io.IOException;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -763,10 +763,10 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     commit();
 
     final int maxDocs = 50;
-    final SolrServer zeroShard = clients.get(0);
-    final SolrServer oneShard = clients.get(1);
-    final SolrServer twoShard = clients.get(2);
-    final SolrServer threeShard = clients.get(3); // edge case: never gets any matching docs
+    final SolrClient zeroShard = clients.get(0);
+    final SolrClient oneShard = clients.get(1);
+    final SolrClient twoShard = clients.get(2);
+    final SolrClient threeShard = clients.get(3); // edge case: never gets any matching docs
 
     for(Integer i=0;i<maxDocs;i++){//50 entries
       addPivotDoc(zeroShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft polecat bbc","pay_i",2400,"hiredate_dt", "2012-07-01T12:30:00Z","real_b","true");
@@ -817,10 +817,10 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   /**
    * Builds up a SolrInputDocument using the specified fields, then adds it to the 
    * specified client as well as the control client 
-   * @see #indexDoc(SolrServer,SolrParams,SolrInputDocument...)
+   * @see #indexDoc(org.apache.solr.client.solrj.SolrClient,SolrParams,SolrInputDocument...)
    * @see #sdoc
    */
-  private void addPivotDoc(SolrServer client, Object... fields) 
+  private void addPivotDoc(SolrClient client, Object... fields)
     throws IOException, SolrServerException {
 
     indexDoc(client, params(), sdoc(fields));

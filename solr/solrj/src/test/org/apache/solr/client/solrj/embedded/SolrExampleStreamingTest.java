@@ -18,22 +18,19 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.ExternalPaths;
-
-import java.util.EnumSet;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ArrayList;
-
 import org.junit.BeforeClass;
-import org.junit.After;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
 
 /**
  * 
@@ -51,13 +48,13 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   }
 
   @Override
-  public SolrServer createNewSolrServer()
+  public SolrClient createNewSolrClient()
   {
     try {
       // setup the server...
       String url = jetty.getBaseUrl().toString() + "/collection1";
       // smaller queue size hits locks more often
-      ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer( url, 2, 5 ) {
+      ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient( url, 2, 5 ) {
         
         public Throwable lastError = null;
         @Override
@@ -66,9 +63,9 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
         }
       };
 
-      s.setParser(new XMLResponseParser());
-      s.setRequestWriter(new RequestWriter());
-      return s;
+      concurrentClient.setParser(new XMLResponseParser());
+      concurrentClient.setRequestWriter(new RequestWriter());
+      return concurrentClient;
     }
     
     catch( Exception ex ) {
@@ -79,7 +76,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   public void testWaitOptions() throws Exception {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<>();
-    ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer
+    ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient
       (jetty.getBaseUrl().toString() + "/collection1", 2, 2) {
         @Override
         public void handleError(Throwable ex) {
@@ -96,13 +93,13 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
           document.addField("id", docId++ );
           updateRequest.add(document);
           updateRequest.setAction(action, waitSearch, waitFlush);
-          s.request(updateRequest);
+          concurrentClient.request(updateRequest);
         }
       }
     }
-    s.commit();
-    s.blockUntilFinished();
-    s.shutdown();
+    concurrentClient.commit();
+    concurrentClient.blockUntilFinished();
+    concurrentClient.shutdown();
 
     if (0 != failures.size()) {
       assertEquals(failures.size() + " Unexpected Exception, starting with...", 

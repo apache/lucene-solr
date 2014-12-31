@@ -17,34 +17,34 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.SocketException;
-
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MockStreamingSolrServers extends StreamingSolrServers {
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketException;
+
+public class MockStreamingSolrClients extends StreamingSolrClients {
   public static Logger log = LoggerFactory
-      .getLogger(MockStreamingSolrServers.class);
+      .getLogger(MockStreamingSolrClients.class);
   
   public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION};
   
   private volatile Exp exp = null;
   
-  public MockStreamingSolrServers(UpdateShardHandler updateShardHandler) {
+  public MockStreamingSolrClients(UpdateShardHandler updateShardHandler) {
     super(updateShardHandler);
   }
   
   @Override
-  public synchronized SolrServer getSolrServer(final SolrCmdDistributor.Req req) {
-    SolrServer server = super.getSolrServer(req);
-    return new MockSolrServer(server);
+  public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
+    SolrClient client = super.getSolrClient(req);
+    return new MockSolrClient(client);
   }
   
   public void setExp(Exp exp) {
@@ -63,12 +63,12 @@ public class MockStreamingSolrServers extends StreamingSolrServers {
     return null;
   }
 
-  class MockSolrServer extends SolrServer {
+  class MockSolrClient extends SolrClient {
 
-    private SolrServer solrServer;
+    private SolrClient solrClient;
 
-    public MockSolrServer(SolrServer solrServer) {
-      this.solrServer = solrServer;
+    public MockSolrClient(SolrClient solrClient) {
+      this.solrClient = solrClient;
     }
     
     @Override
@@ -82,7 +82,7 @@ public class MockStreamingSolrServers extends StreamingSolrServers {
         }
       }
       
-      return solrServer.request(request);
+      return solrClient.request(request);
     }
 
 

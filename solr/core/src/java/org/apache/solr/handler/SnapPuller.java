@@ -16,6 +16,43 @@
  */
 package org.apache.solr.handler;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler.FileInfo;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.PropertiesOutputStream;
+import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -53,43 +90,6 @@ import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.FileInfo;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.PropertiesInputStream;
-import org.apache.solr.util.PropertiesOutputStream;
-import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.handler.ReplicationHandler.ALIAS;
 import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
@@ -246,17 +246,17 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX modify to use shardhandler
+    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient); //XXX modify to use shardhandler
     NamedList rsp;
     try {
-      server.setSoTimeout(60000);
-      server.setConnectionTimeout(15000);
+      client.setSoTimeout(60000);
+      client.setConnectionTimeout(15000);
       
-      rsp = server.request(req);
+      rsp = client.request(req);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     } finally {
-      server.shutdown();
+      client.shutdown();
     }
     return rsp;
   }
@@ -271,11 +271,11 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient);  //XXX modify to use shardhandler
+    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient);  //XXX modify to use shardhandler
     try {
-      server.setSoTimeout(60000);
-      server.setConnectionTimeout(15000);
-      NamedList response = server.request(req);
+      client.setSoTimeout(60000);
+      client.setConnectionTimeout(15000);
+      NamedList response = client.request(req);
 
       List<Map<String, Object>> files = (List<Map<String,Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null)
@@ -292,7 +292,7 @@ public class SnapPuller {
     } catch (SolrServerException e) {
       throw new IOException(e);
     } finally {
-      server.shutdown();
+      client.shutdown();
     }
   }
 
@@ -1364,12 +1364,12 @@ public class SnapPuller {
       NamedList response;
       InputStream is = null;
       
-      HttpSolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null);  //XXX use shardhandler
       try {
-        s.setSoTimeout(60000);
-        s.setConnectionTimeout(15000);
+        client.setSoTimeout(60000);
+        client.setConnectionTimeout(15000);
         QueryRequest req = new QueryRequest(params);
-        response = s.request(req);
+        response = client.request(req);
         is = (InputStream) response.get("stream");
         if(useInternal) {
           is = new InflaterInputStream(is);
@@ -1380,7 +1380,7 @@ public class SnapPuller {
         IOUtils.closeQuietly(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
       } finally {
-        s.shutdown();
+        client.shutdown();
       }
     }
   }
@@ -1631,12 +1631,12 @@ public class SnapPuller {
 
       NamedList response;
       InputStream is = null;
-      HttpSolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null);  //XXX use shardhandler
       try {
-        s.setSoTimeout(60000);
-        s.setConnectionTimeout(15000);
+        client.setSoTimeout(60000);
+        client.setConnectionTimeout(15000);
         QueryRequest req = new QueryRequest(params);
-        response = s.request(req);
+        response = client.request(req);
         is = (InputStream) response.get("stream");
         if(useInternal) {
           is = new InflaterInputStream(is);
@@ -1647,7 +1647,7 @@ public class SnapPuller {
         IOUtils.closeQuietly(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
       } finally {
-        s.shutdown();
+        client.shutdown();
       }
     }
   }
@@ -1657,15 +1657,15 @@ public class SnapPuller {
     params.set(COMMAND, CMD_DETAILS);
     params.set("slave", false);
     params.set(CommonParams.QT, "/replication");
-    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX use shardhandler
+    HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient); //XXX use shardhandler
     NamedList rsp;
     try {
-      server.setSoTimeout(60000);
-      server.setConnectionTimeout(15000);
+      client.setSoTimeout(60000);
+      client.setConnectionTimeout(15000);
       QueryRequest request = new QueryRequest(params);
-      rsp = server.request(request);
+      rsp = client.request(request);
     } finally {
-      server.shutdown();
+      client.shutdown();
     }
     return rsp;
   }

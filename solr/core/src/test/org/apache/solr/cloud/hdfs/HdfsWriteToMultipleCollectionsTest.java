@@ -17,11 +17,8 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -29,7 +26,7 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.StopableIndexingThread;
 import org.apache.solr.core.CoreContainer;
@@ -44,8 +41,10 @@ import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @Slow
 @Nightly
@@ -95,13 +94,13 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
     for (int i = 0; i < cnt; i++) {
       waitForRecoveriesToFinish(ACOLLECTION + i, false);
     }
-    List<CloudSolrServer> cloudServers = new ArrayList<>();
+    List<CloudSolrClient> cloudClients = new ArrayList<>();
     List<StopableIndexingThread> threads = new ArrayList<>();
     for (int i = 0; i < cnt; i++) {
-      CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
-      server.setDefaultCollection(ACOLLECTION + i);
-      cloudServers.add(server);
-      StopableIndexingThread indexThread = new StopableIndexingThread(null, server, "1", true, docCount);
+      CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress());
+      client.setDefaultCollection(ACOLLECTION + i);
+      cloudClients.add(client);
+      StopableIndexingThread indexThread = new StopableIndexingThread(null, client, "1", true, docCount);
       threads.add(indexThread);
       indexThread.start();
     }
@@ -113,13 +112,13 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
     }
    
     long collectionsCount = 0;
-    for (CloudSolrServer server : cloudServers) {
-      server.commit();
-      collectionsCount += server.query(new SolrQuery("*:*")).getResults().getNumFound();
+    for (CloudSolrClient client : cloudClients) {
+      client.commit();
+      collectionsCount += client.query(new SolrQuery("*:*")).getResults().getNumFound();
     }
     
-    for (CloudSolrServer server : cloudServers) {
-      server.shutdown();
+    for (CloudSolrClient client : cloudClients) {
+      client.shutdown();
     }
 
     assertEquals(addCnt, collectionsCount);

@@ -21,7 +21,7 @@ package org.apache.solr.cloud;
 import com.google.common.collect.Lists;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -64,7 +64,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   @Override
   public void doTest() throws Exception {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       createCollection(null, COLLECTION_NAME, 2, 2, 2, client, null, "conf1");
       createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
@@ -89,7 +89,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
@@ -119,7 +119,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
 
   private void listCollection() throws IOException, SolrServerException {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
@@ -141,7 +141,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusNoCollection() throws Exception {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
@@ -167,7 +167,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithCollection() throws IOException, SolrServerException {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
@@ -189,7 +189,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithRouteKey() throws IOException, SolrServerException {
-    CloudSolrServer client = createCloudClient(DEFAULT_COLLECTION);
+    CloudSolrClient client = createCloudClient(DEFAULT_COLLECTION);
     try {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "a!123"); // goes to shard2. see ShardRoutingTest for details
@@ -222,7 +222,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusAliasTest() throws Exception  {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
@@ -259,7 +259,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusRolesTest() throws Exception  {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       client.connect();
       Replica replica = client.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
@@ -293,7 +293,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void replicaPropTest() throws Exception {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
     try {
       client.connect();
       Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
@@ -577,7 +577,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
 
   // Expects the map will have keys, but blank values.
-  private Map<String, String> getProps(CloudSolrServer client, String collectionName, String replicaName, String... props)
+  private Map<String, String> getProps(CloudSolrClient client, String collectionName, String replicaName, String... props)
       throws KeeperException, InterruptedException {
 
     client.getZkStateReader().updateClusterState(true);
@@ -592,7 +592,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
     return propMap;
   }
-  private void missingParamsError(CloudSolrServer client, ModifiableSolrParams origParams)
+  private void missingParamsError(CloudSolrClient client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
     SolrRequest request;

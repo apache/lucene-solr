@@ -17,31 +17,15 @@ package org.apache.solr;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import junit.framework.Assert;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -58,6 +42,21 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Helper base class for distributed search test cases
@@ -185,7 +184,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected boolean fixShardCount = false;
 
   protected JettySolrRunner controlJetty;
-  protected List<SolrServer> clients = new ArrayList<>();
+  protected List<SolrClient> clients = new ArrayList<>();
   protected List<JettySolrRunner> jettys = new ArrayList<>();
   
   protected String context;
@@ -193,7 +192,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected String shards;
   protected String[] shardsArr;
   protected File testDir;
-  protected SolrServer controlClient;
+  protected SolrClient controlClient;
 
   // to stress with higher thread counts and requests, make sure the junit
   // xml formatter is not being used (all output will be buffered before
@@ -293,7 +292,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected void createServers(int numShards) throws Exception {
     controlJetty = createControlJetty();
 
-    controlClient = createNewSolrServer(controlJetty.getLocalPort());
+    controlClient = createNewSolrClient(controlJetty.getLocalPort());
 
     shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
@@ -303,7 +302,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
           getSchemaFile());
       jettys.add(j);
-      clients.add(createNewSolrServer(j.getLocalPort()));
+      clients.add(createNewSolrClient(j.getLocalPort()));
       String shardStr = buildUrl(j.getLocalPort());
       shardsArr[i] = shardStr;
       sb.append(shardStr);
@@ -342,9 +341,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void destroyServers() throws Exception {
     controlJetty.stop();
-    ((HttpSolrServer) controlClient).shutdown();
+    ((HttpSolrClient) controlClient).shutdown();
     for (JettySolrRunner jetty : jettys) jetty.stop();
-    for (SolrServer client : clients) ((HttpSolrServer) client).shutdown();
+    for (SolrClient client : clients) ((HttpSolrClient) client).shutdown();
     clients.clear();
     jettys.clear();
   }
@@ -387,15 +386,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  protected SolrServer createNewSolrServer(int port) {
+  protected SolrClient createNewSolrClient(int port) {
     try {
-      // setup the server...
-      HttpSolrServer s = new HttpSolrServer(buildUrl(port));
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(90000);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
+      // setup the client...
+      HttpSolrClient client = new HttpSolrClient(buildUrl(port));
+      client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      client.setSoTimeout(90000);
+      client.setDefaultMaxConnectionsPerHost(100);
+      client.setMaxTotalConnections(100);
+      return client;
     }
     catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -438,7 +437,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     controlClient.add(doc);
 
     int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % clients.size();
-    SolrServer client = clients.get(which);
+    SolrClient client = clients.get(which);
     client.add(doc);
   }
   
@@ -446,38 +445,38 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * Indexes the document in both the control client and the specified client asserting
    * that the respones are equivilent
    */
-  protected UpdateResponse indexDoc(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
+  protected UpdateResponse indexDoc(SolrClient client, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
     UpdateResponse controlRsp = add(controlClient, params, sdocs);
-    UpdateResponse specificRsp = add(server, params, sdocs);
+    UpdateResponse specificRsp = add(client, params, sdocs);
     compareSolrResponses(specificRsp, controlRsp);
     return specificRsp;
   }
 
-  protected UpdateResponse add(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
+  protected UpdateResponse add(SolrClient client, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams(params));
     for (SolrInputDocument sdoc : sdocs) {
       ureq.add(sdoc);
     }
-    return ureq.process(server);
+    return ureq.process(client);
   }
 
-  protected UpdateResponse del(SolrServer server, SolrParams params, Object... ids) throws IOException, SolrServerException {
+  protected UpdateResponse del(SolrClient client, SolrParams params, Object... ids) throws IOException, SolrServerException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams(params));
     for (Object id: ids) {
       ureq.deleteById(id.toString());
     }
-    return ureq.process(server);
+    return ureq.process(client);
   }
 
-  protected UpdateResponse delQ(SolrServer server, SolrParams params, String... queries) throws IOException, SolrServerException {
+  protected UpdateResponse delQ(SolrClient client, SolrParams params, String... queries) throws IOException, SolrServerException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams(params));
     for (String q: queries) {
       ureq.deleteByQuery(q);
     }
-    return ureq.process(server);
+    return ureq.process(client);
   }
 
   protected void index_specific(int serverNumber, Object... fields) throws Exception {
@@ -487,20 +486,20 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
     controlClient.add(doc);
 
-    SolrServer client = clients.get(serverNumber);
+    SolrClient client = clients.get(serverNumber);
     client.add(doc);
   }
 
   protected void del(String q) throws Exception {
     controlClient.deleteByQuery(q);
-    for (SolrServer client : clients) {
+    for (SolrClient client : clients) {
       client.deleteByQuery(q);
     }
   }// serial commit...
 
   protected void commit() throws Exception {
     controlClient.commit();
-    for (SolrServer client : clients) {
+    for (SolrClient client : clients) {
       client.commit();
     }
   }
@@ -508,7 +507,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
     // query a random server
     int which = r.nextInt(clients.size());
-    SolrServer client = clients.get(which);
+    SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
     return rsp;
   }
@@ -570,7 +569,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           public void run() {
             for (int j = 0; j < stress; j++) {
               int which = r.nextInt(clients.size());
-              SolrServer client = clients.get(which);
+              SolrClient client = clients.get(which);
               try {
                 QueryResponse rsp = client.query(new ModifiableSolrParams(params));
                 if (verifyStress) {
@@ -592,13 +591,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return rsp;
   }
   
-  public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {
-    return queryAndCompare(params, Arrays.<SolrServer>asList(servers));
+  public QueryResponse queryAndCompare(SolrParams params, SolrClient... clients) throws SolrServerException {
+    return queryAndCompare(params, Arrays.<SolrClient>asList(clients));
   }
-  public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrServer> servers) throws SolrServerException {
+  public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrClient> clients) throws SolrServerException {
     QueryResponse first = null;
-    for (SolrServer server : servers) {
-      QueryResponse rsp = server.query(new ModifiableSolrParams(params));
+    for (SolrClient client : clients) {
+      QueryResponse rsp = client.query(new ModifiableSolrParams(params));
       if (first == null) {
         first = rsp;
       } else {

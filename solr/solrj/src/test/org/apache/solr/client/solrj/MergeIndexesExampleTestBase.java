@@ -17,10 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -32,6 +28,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -91,22 +91,22 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
   }
 
   @Override
-  protected final SolrServer getSolrServer() {
+  protected final SolrClient getSolrClient() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  protected final SolrServer createNewSolrServer() {
+  protected final SolrClient createNewSolrClient() {
     throw new UnsupportedOperationException();
   }
 
-  protected abstract SolrServer getSolrCore0();
+  protected abstract SolrClient getSolrCore0();
 
-  protected abstract SolrServer getSolrCore1();
+  protected abstract SolrClient getSolrCore1();
 
-  protected abstract SolrServer getSolrAdmin();
+  protected abstract SolrClient getSolrAdmin();
 
-  protected abstract SolrServer getSolrCore(String name);
+  protected abstract SolrClient getSolrCore(String name);
 
   protected abstract String getIndexDirCore1();
 

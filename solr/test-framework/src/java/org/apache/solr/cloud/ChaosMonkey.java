@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.Slice;
@@ -73,7 +73,7 @@ public class ChaosMonkey {
   private AtomicInteger expires = new AtomicInteger();
   private AtomicInteger connloss = new AtomicInteger();
   
-  private Map<String,List<SolrServer>> shardToClient;
+  private Map<String,List<SolrClient>> shardToClient;
   private boolean expireSessions;
   private boolean causeConnectionLoss;
   private boolean aggressivelyKillLeaders;
@@ -423,14 +423,14 @@ public class ChaosMonkey {
     return numActive;
   }
   
-  public SolrServer getRandomClient(String slice) throws KeeperException, InterruptedException {
+  public SolrClient getRandomClient(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
     zkStateReader.updateClusterState(true);
 
     // get random shard
-    List<SolrServer> clients = shardToClient.get(slice);
+    List<SolrClient> clients = shardToClient.get(slice);
     int index = LuceneTestCase.random().nextInt(clients.size() - 1);
-    SolrServer client = clients.get(index);
+    SolrClient client = clients.get(index);
 
     return client;
   }

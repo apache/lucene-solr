@@ -18,10 +18,9 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 /**
@@ -36,17 +35,17 @@ public class SolrExampleXMLTest extends SolrExampleTests {
   }
   
   @Override
-  public SolrServer createNewSolrServer() {
+  public SolrClient createNewSolrClient() {
     try {
       String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrServer s = new HttpSolrServer(url);
-      s.setUseMultiPartPost(random().nextBoolean());
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      s.setParser(new XMLResponseParser());
-      s.setRequestWriter(new RequestWriter());
-      return s;
+      HttpSolrClient client = new HttpSolrClient(url);
+      client.setUseMultiPartPost(random().nextBoolean());
+      client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      client.setDefaultMaxConnectionsPerHost(100);
+      client.setMaxTotalConnections(100);
+      client.setParser(new XMLResponseParser());
+      client.setRequestWriter(new RequestWriter());
+      return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }

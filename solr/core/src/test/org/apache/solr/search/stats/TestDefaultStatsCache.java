@@ -18,7 +18,7 @@ package org.apache.solr.search.stats;
  */
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -97,7 +97,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     // query a random server
     params.set("shards", shards);
     int which = r.nextInt(clients.size());
-    SolrServer client = clients.get(which);
+    SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
     checkResponse(controlRsp, rsp);
   }

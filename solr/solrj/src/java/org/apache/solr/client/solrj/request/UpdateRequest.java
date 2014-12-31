@@ -30,7 +30,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.LinkedHashMap;
 
-import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -171,7 +171,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
    * @param idField the id field
    * @return a Map of urls to requests
    */
-  public Map<String,LBHttpSolrServer.Req> getRoutes(DocRouter router,
+  public Map<String,LBHttpSolrClient.Req> getRoutes(DocRouter router,
       DocCollection col, Map<String,List<String>> urlMap,
       ModifiableSolrParams params, String idField) {
     
@@ -180,7 +180,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
       return null;
     }
     
-    Map<String,LBHttpSolrServer.Req> routes = new HashMap<>();
+    Map<String,LBHttpSolrClient.Req> routes = new HashMap<>();
     if (documents != null) {
       Set<Entry<SolrInputDocument,Map<String,Object>>> entries = documents.entrySet();
       for (Entry<SolrInputDocument,Map<String,Object>> entry : entries) {
@@ -196,7 +196,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
         }
         List<String> urls = urlMap.get(slice.getName());
         String leaderUrl = urls.get(0);
-        LBHttpSolrServer.Req request = (LBHttpSolrServer.Req) routes
+        LBHttpSolrClient.Req request = (LBHttpSolrClient.Req) routes
             .get(leaderUrl);
         if (request == null) {
           UpdateRequest updateRequest = new UpdateRequest();
@@ -204,7 +204,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setCommitWithin(getCommitWithin());
           updateRequest.setParams(params);
           updateRequest.setPath(getPath());
-          request = new LBHttpSolrServer.Req(updateRequest, urls);
+          request = new LBHttpSolrClient.Req(updateRequest, urls);
           routes.put(leaderUrl, request);
         }
         UpdateRequest urequest = (UpdateRequest) request.getRequest();
@@ -234,7 +234,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
         }
         List<String> urls = urlMap.get(slice.getName());
         String leaderUrl = urls.get(0);
-        LBHttpSolrServer.Req request = routes.get(leaderUrl);
+        LBHttpSolrClient.Req request = routes.get(leaderUrl);
         if (request != null) {
           UpdateRequest urequest = (UpdateRequest) request.getRequest();
           urequest.deleteById(deleteId, version);
@@ -242,7 +242,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           UpdateRequest urequest = new UpdateRequest();
           urequest.setParams(params);
           urequest.deleteById(deleteId, version);
-          request = new LBHttpSolrServer.Req(urequest, urls);
+          request = new LBHttpSolrClient.Req(urequest, urls);
           routes.put(leaderUrl, request);
         }
       }

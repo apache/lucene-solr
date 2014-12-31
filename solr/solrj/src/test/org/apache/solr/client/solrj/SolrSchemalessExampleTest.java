@@ -24,7 +24,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,8 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.OutputStreamWriter;
 import java.util.Properties;
 
@@ -68,41 +66,41 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   }
   @Test
   public void testArbitraryJsonIndexing() throws Exception  {
-    HttpSolrServer server = (HttpSolrServer) getSolrServer();
-    server.deleteByQuery("*:*");
-    server.commit();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = server.getHttpClient();
-    HttpPost post = new HttpPost(server.getBaseURL() + "/update/json/docs");
+    HttpClient httpClient = client.getHttpClient();
+    HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
     HttpResponse response = httpClient.execute(post);
     assertEquals(200, response.getStatusLine().getStatusCode());
-    server.commit();
+    client.commit();
     assertNumFound("*:*", 2);
   }
 
 
   @Override
-  public SolrServer createNewSolrServer() {
+  public SolrClient createNewSolrClient() {
     try {
       // setup the server...
       String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrServer s = new HttpSolrServer(url);
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      s.setUseMultiPartPost(random().nextBoolean());
+      HttpSolrClient client = new HttpSolrClient(url);
+      client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      client.setDefaultMaxConnectionsPerHost(100);
+      client.setMaxTotalConnections(100);
+      client.setUseMultiPartPost(random().nextBoolean());
       
       if (random().nextBoolean()) {
-        s.setParser(new BinaryResponseParser());
-        s.setRequestWriter(new BinaryRequestWriter());
+        client.setParser(new BinaryResponseParser());
+        client.setRequestWriter(new BinaryRequestWriter());
       }
       
-      return s;
+      return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }

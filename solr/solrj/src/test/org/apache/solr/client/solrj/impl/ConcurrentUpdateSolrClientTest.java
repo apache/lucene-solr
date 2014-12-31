@@ -17,6 +17,19 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import org.apache.http.HttpResponse;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,22 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.http.HttpResponse;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.util.ExternalPaths;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-public class ConcurrentUpdateSolrServerTest extends SolrJettyTestBase {
+public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
   /**
    * Mock endpoint where the CUSS being tested in this class sends requests.
@@ -145,7 +143,7 @@ public class ConcurrentUpdateSolrServerTest extends SolrJettyTestBase {
     final StringBuilder errors = new StringBuilder();     
     
     @SuppressWarnings("serial")
-    ConcurrentUpdateSolrServer cuss = new ConcurrentUpdateSolrServer(serverUrl, cussQueueSize, cussThreadCount) {
+    ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(serverUrl, cussQueueSize, cussThreadCount) {
       @Override
       public void handleError(Throwable ex) {
         errorCounter.incrementAndGet();
@@ -157,12 +155,12 @@ public class ConcurrentUpdateSolrServerTest extends SolrJettyTestBase {
       }
     };
     
-    cuss.setParser(new BinaryResponseParser());
-    cuss.setRequestWriter(new BinaryRequestWriter());
-    cuss.setPollQueueTime(0);
+    concurrentClient.setParser(new BinaryResponseParser());
+    concurrentClient.setRequestWriter(new BinaryRequestWriter());
+    concurrentClient.setPollQueueTime(0);
     
     // ensure it doesn't block where there's nothing to do yet
-    cuss.blockUntilFinished();
+    concurrentClient.blockUntilFinished();
     
     int poolSize = 5;
     ExecutorService threadPool = Executors.newFixedThreadPool(poolSize, new SolrjNamedThreadFactory("testCUSS"));
@@ -170,15 +168,15 @@ public class ConcurrentUpdateSolrServerTest extends SolrJettyTestBase {
     int numDocs = 100;
     int numRunnables = 5;
     for (int r=0; r < numRunnables; r++)
-      threadPool.execute(new SendDocsRunnable(String.valueOf(r), numDocs, cuss));
+      threadPool.execute(new SendDocsRunnable(String.valueOf(r), numDocs, concurrentClient));
     
     // ensure all docs are sent
     threadPool.awaitTermination(5, TimeUnit.SECONDS);
     threadPool.shutdown();
     
     // wait until all requests are processed by CUSS 
-    cuss.blockUntilFinished();
-    cuss.shutdownNow();    
+    concurrentClient.blockUntilFinished();
+    concurrentClient.shutdownNow();
     
     assertEquals("post", TestServlet.lastMethod);
         
@@ -200,9 +198,9 @@ public class ConcurrentUpdateSolrServerTest extends SolrJettyTestBase {
     
     private String id;
     private int numDocs;
-    private ConcurrentUpdateSolrServer cuss;
+    private ConcurrentUpdateSolrClient cuss;
     
-    SendDocsRunnable(String id, int numDocs, ConcurrentUpdateSolrServer cuss) {
+    SendDocsRunnable(String id, int numDocs, ConcurrentUpdateSolrClient cuss) {
       this.id = id;
       this.numDocs = numDocs;
       this.cuss = cuss;

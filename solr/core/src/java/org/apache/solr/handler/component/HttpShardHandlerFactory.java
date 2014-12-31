@@ -20,7 +20,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -64,7 +64,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   );
 
   protected HttpClient defaultClient;
-  private LBHttpSolrServer loadbalancer;
+  private LBHttpSolrClient loadbalancer;
   //default values:
   int soTimeout = 0; 
   int connectionTimeout = 0; 
@@ -162,8 +162,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return this.commExecutor;
   }
 
-  protected LBHttpSolrServer createLoadbalancer(HttpClient httpClient){
-    return new LBHttpSolrServer(httpClient);
+  protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
+    return new LBHttpSolrClient(httpClient);
   }
 
   protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue) {
@@ -202,9 +202,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * @param urls The list of solr server urls to load balance across
    * @return The response from the request
    */
-  public LBHttpSolrServer.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
+  public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
     throws SolrServerException, IOException {
-    return loadbalancer.request(new LBHttpSolrServer.Req(req, urls));
+    return loadbalancer.request(new LBHttpSolrClient.Req(req, urls));
   }
 
   /**

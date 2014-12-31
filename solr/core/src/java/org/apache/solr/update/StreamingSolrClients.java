@@ -17,6 +17,19 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.update.SolrCmdDistributor.Error;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,30 +39,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.update.SolrCmdDistributor.Error;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class StreamingSolrServers {
-  public static Logger log = LoggerFactory.getLogger(StreamingSolrServers.class);
+public class StreamingSolrClients {
+  public static Logger log = LoggerFactory.getLogger(StreamingSolrClients.class);
   
   private HttpClient httpClient;
   
-  private Map<String,ConcurrentUpdateSolrServer> solrServers = new HashMap<>();
+  private Map<String, ConcurrentUpdateSolrClient> solrClients = new HashMap<>();
   private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
 
   private ExecutorService updateExecutor;
 
-  public StreamingSolrServers(UpdateShardHandler updateShardHandler) {
+  public StreamingSolrClients(UpdateShardHandler updateShardHandler) {
     this.updateExecutor = updateShardHandler.getUpdateExecutor();
     
     httpClient = updateShardHandler.getHttpClient();
@@ -63,11 +63,11 @@ public class StreamingSolrServers {
     errors.clear();
   }
 
-  public synchronized SolrServer getSolrServer(final SolrCmdDistributor.Req req) {
+  public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
     String url = getFullUrl(req.node.getUrl());
-    ConcurrentUpdateSolrServer server = solrServers.get(url);
-    if (server == null) {
-      server = new ConcurrentUpdateSolrServer(url, httpClient, 100, 1, updateExecutor, true) {
+    ConcurrentUpdateSolrClient client = solrClients.get(url);
+    if (client == null) {
+      client = new ConcurrentUpdateSolrClient(url, httpClient, 100, 1, updateExecutor, true) {
         @Override
         public void handleError(Throwable ex) {
           req.trackRequestResult(null, false);
@@ -85,28 +85,28 @@ public class StreamingSolrServers {
           req.trackRequestResult(resp, true);
         }
       };
-      server.setParser(new BinaryResponseParser());
-      server.setRequestWriter(new BinaryRequestWriter());
-      server.setPollQueueTime(0);
+      client.setParser(new BinaryResponseParser());
+      client.setRequestWriter(new BinaryRequestWriter());
+      client.setPollQueueTime(0);
       Set<String> queryParams = new HashSet<>(2);
       queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
       queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
-      server.setQueryParams(queryParams);
-      solrServers.put(url, server);
+      client.setQueryParams(queryParams);
+      solrClients.put(url, client);
     }
 
-    return server;
+    return client;
   }
 
   public synchronized void blockUntilFinished() {
-    for (ConcurrentUpdateSolrServer server : solrServers.values()) {
-      server.blockUntilFinished();
+    for (ConcurrentUpdateSolrClient client : solrClients.values()) {
+      client.blockUntilFinished();
     }
   }
   
   public synchronized void shutdown() {
-    for (ConcurrentUpdateSolrServer server : solrServers.values()) {
-      server.shutdown();
+    for (ConcurrentUpdateSolrClient client : solrClients.values()) {
+      client.shutdown();
     }
   }
   

@@ -1,18 +1,18 @@
 package org.apache.solr.cloud;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -160,9 +160,9 @@ public class CloudInspectUtil {
    * 
    * @return true if the compared results are illegal.
    */
-  public static boolean compareResults(SolrServer controlServer, SolrServer cloudServer)
+  public static boolean compareResults(SolrClient controlClient, SolrClient cloudClient)
       throws SolrServerException {
-    return compareResults(controlServer, cloudServer, null, null);
+    return compareResults(controlClient, cloudClient, null, null);
   }
   
   /**
@@ -170,25 +170,25 @@ public class CloudInspectUtil {
    * 
    * @return true if the compared results are illegal.
    */
-  public static boolean compareResults(SolrServer controlServer, SolrServer cloudServer, Set<String> addFails, Set<String> deleteFails)
+  public static boolean compareResults(SolrClient controlClient, SolrClient cloudClient, Set<String> addFails, Set<String> deleteFails)
       throws SolrServerException {
     
     SolrParams q = SolrTestCaseJ4.params("q","*:*","rows","0", "tests","checkShardConsistency(vsControl)");    // add a tag to aid in debugging via logs
 
-    SolrDocumentList controlDocList = controlServer.query(q).getResults();
+    SolrDocumentList controlDocList = controlClient.query(q).getResults();
     long controlDocs = controlDocList.getNumFound();
 
-    SolrDocumentList cloudDocList = cloudServer.query(q).getResults();
+    SolrDocumentList cloudDocList = cloudClient.query(q).getResults();
     long cloudClientDocs = cloudDocList.getNumFound();
     
     // re-execute the query getting ids
-    q = SolrTestCaseJ4.params("q","*:*","rows","100000", "fl","id", "tests","checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
-    controlDocList = controlServer.query(q).getResults();
+    q = SolrTestCaseJ4.params("q", "*:*", "rows", "100000", "fl", "id", "tests", "checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
+    controlDocList = controlClient.query(q).getResults();
     if (controlDocs != controlDocList.getNumFound()) {
       log.error("Something changed! control now " + controlDocList.getNumFound());
     };
 
-    cloudDocList = cloudServer.query(q).getResults();
+    cloudDocList = cloudClient.query(q).getResults();
     if (cloudClientDocs != cloudDocList.getNumFound()) {
       log.error("Something changed! cloudClient now " + cloudDocList.getNumFound());
     };
@@ -220,8 +220,8 @@ public class CloudInspectUtil {
           "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
                                                        // debugging via logs
       
-      SolrDocumentList a = controlServer.query(q).getResults();
-      SolrDocumentList b = cloudServer.query(q).getResults();
+      SolrDocumentList a = controlClient.query(q).getResults();
+      SolrDocumentList b = cloudClient.query(q).getResults();
       
       log.error("controlClient :" + a + "\n\tcloudClient :" + b);
     }

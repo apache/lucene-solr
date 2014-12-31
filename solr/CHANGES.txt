@@ -132,6 +132,9 @@ Upgrading from Solr 4.x
   discovery are now resolved relative to SOLR_HOME, rather than cwd.  See
   SOLR-6718.
 
+* SolrServer and associated classes have been deprecated.  Applications using
+  SolrJ should use the equivalent SolrClient classes instead.
+
 Detailed Change List
 ----------------------
 
@@ -182,7 +185,7 @@ New Features
 * SOLR-6485: ReplicationHandler should have an option to throttle the speed of
   replication (Varun Thacker, NOble Paul)
 
-* SOLR-6543: Give HttpSolrServer the ability to send PUT requests (Gregory Chanan)
+* SOLR-6543: Give HttpSolrClient the ability to send PUT requests (Gregory Chanan)
 
 * SOLR-5986: Don't allow runaway queries from harming Solr cluster health or search 
   performance (Anshum Gupta, Steve Rowe, Robert Muir)
@@ -208,7 +211,7 @@ New Features
 * SOLR-6617: /update/json/docs path will use fully qualified node names by default
              (Noble Paul)
 
-* SOLR-4715: Add CloudSolrServer constructors which accept a HttpClient instance.
+* SOLR-4715: Add CloudSolrClient constructors which accept a HttpClient instance.
   (Hardik Upadhyay, Shawn Heisey, shalin)
 
 * SOLR-5992: add "removeregex" as an atomic update operation
@@ -290,7 +293,7 @@ Bug Fixes
   NOTE: This does NOT fixed for the (deprecated) facet.date idiom, use facet.range
   instead. (Erick Erickson, Zaccheo Bagnati, Ronald Matamoros, Vamsee Yalargadda)
 
-* SOLR-6457: LBHttpSolrServer: ArrayIndexOutOfBoundsException risk if counter overflows
+* SOLR-6457: LBHttpSolrClient: ArrayIndexOutOfBoundsException risk if counter overflows
   (longkey via Noble Paul)
 
 * SOLR-6499: Log warning about multiple update request handlers
@@ -376,7 +379,7 @@ Bug Fixes
 Optimizations
 ----------------------
 
-* SOLR-6603: LBHttpSolrServer - lazily allocate skipped-zombie-servers list.
+* SOLR-6603: LBHttpSolrClient - lazily allocate skipped-zombie-servers list.
   (Christine Poerschke via shalin)
 
 * SOLR-6554: Speed up overseer operations avoiding cluster state reads from
@@ -420,8 +423,8 @@ Other Changes
 * LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
   to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
 
-* SOLR-6390: Remove unnecessary checked exception for CloudSolrServer
-  constructors, improve javadocs for CloudSolrServer constructors.
+* SOLR-6390: Remove unnecessary checked exception for CloudSolrClient
+  constructors, improve javadocs for CloudSolrClient constructors.
   (Steve Davids via Shawn Heisey)
 
 * LUCENE-5901: Replaced all occurences of LUCENE_CURRENT with LATEST for luceneMatchVersion.
@@ -457,7 +460,7 @@ Other Changes
 * SOLR-6597: SolrIndexConfig parameter in one of the SolrIndexSearcher constructor has been removed.
   It was just passed and never used via that constructor. (Anshum Gupta)
 
-* SOLR-5852: Add CloudSolrServer helper method to connect to a ZK ensemble. (Varun Thacker, Furkan KAMACI,
+* SOLR-5852: Add CloudSolrClient helper method to connect to a ZK ensemble. (Varun Thacker, Furkan KAMACI,
   Shawn Heisey, Mark Miller, Erick Erickson via shalin)
 
 * SOLR-6592: Avoid waiting for the leader to see the down state if that leader is not live.
@@ -542,7 +545,7 @@ Other Changes
 * SOLR-6826: fieldType capitalization is not consistent with the rest of case-sensitive field names.
   (Alexandre Rafalovitch via Erick Erickson)
 
-* SOLR-6849: HttpSolrServer.RemoteSolrException reports the URL of the remote
+* SOLR-6849: HttpSolrClient.RemoteSolrException reports the URL of the remote
   host where the exception occurred. (Alan Woodward)
 
 * SOLR-6852: SimplePostTool no longer defaults to collection1 making core/collection/update URL
@@ -583,6 +586,9 @@ Other Changes
 * SOLR-6448: Add SolrJ support for all current Collection API calls. (Anshum Gupta)
 
 * Fixed a typo in various solrconfig.xml files.  (sdumitriu - pull request #120)
+
+* SOLR-6895: SolrServer classes are renamed to *SolrClient.  The existing
+  classes still exist, but are deprecated. (Alan Woodward, Erik Hatcher)
 
 ==================  4.10.3 ==================
 
