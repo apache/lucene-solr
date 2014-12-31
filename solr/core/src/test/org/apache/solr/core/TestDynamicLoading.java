@@ -18,6 +18,17 @@ package org.apache.solr.core;
  */
 
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.handler.TestBlobHandler;
+import org.apache.solr.util.RESTfulServerProvider;
+import org.apache.solr.util.RestTestHarness;
+import org.apache.solr.util.SimplePostTool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -28,27 +39,16 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.handler.TestBlobHandler;
-import org.apache.solr.util.RESTfulServerProvider;
-import org.apache.solr.util.RestTestHarness;
-import org.apache.solr.util.SimplePostTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
   static final Logger log =  LoggerFactory.getLogger(TestDynamicLoading.class);
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   private void setupHarnesses() {
-    for (final SolrServer client : clients) {
+    for (final SolrClient client : clients) {
       RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return ((HttpSolrServer)client).getBaseURL();
+          return ((HttpSolrClient)client).getBaseURL();
         }
       });
       restTestHarnesses.add(harness);
@@ -85,10 +85,10 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     assertNotNull(map = (Map) map.get("error"));
     assertEquals(".system collection not available", map.get("msg"));
 
-    HttpSolrServer server = (HttpSolrServer) clients.get(random().nextInt(clients.size()));
-    String baseURL = server.getBaseURL();
+    HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
+    String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
-    TestBlobHandler.createSysColl(new HttpSolrServer(baseURL,server.getHttpClient()));
+    TestBlobHandler.createSysColl(new HttpSolrClient(baseURL,randomClient.getHttpClient()));
     map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
 
     assertNotNull(map = (Map) map.get("error"));

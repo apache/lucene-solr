@@ -31,7 +31,7 @@ import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -205,11 +205,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   @SuppressWarnings("rawtypes")
   protected void sendNonDirectUpdateRequestReplica(Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    HttpSolrServer solrServer = null;
+    HttpSolrClient solrServer = null;
     try {
       ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
       String url = zkProps.getBaseUrl() + "/" + collection;
-      solrServer = new HttpSolrServer(url);    
+      solrServer = new HttpSolrClient(url);
             
       NamedList resp = solrServer.request(up);
       NamedList hdr = (NamedList) resp.get("responseHeader");

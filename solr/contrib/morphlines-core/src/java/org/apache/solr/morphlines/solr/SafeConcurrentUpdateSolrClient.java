@@ -17,7 +17,7 @@
 package org.apache.solr.morphlines.solr;
 
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,18 +25,18 @@ import org.slf4j.LoggerFactory;
  * ConcurrentUpdateSolrServer that propagates exceptions up to the submitter of
  * requests on blockUntilFinished()
  */
-final class SafeConcurrentUpdateSolrServer extends ConcurrentUpdateSolrServer {
+final class SafeConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
 
   private Throwable currentException = null;
   private final Object myLock = new Object();
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SafeConcurrentUpdateSolrServer.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SafeConcurrentUpdateSolrClient.class);
 
-  public SafeConcurrentUpdateSolrServer(String solrServerUrl, int queueSize, int threadCount) {
+  public SafeConcurrentUpdateSolrClient(String solrServerUrl, int queueSize, int threadCount) {
     this(solrServerUrl, null, queueSize, threadCount);
   }
 
-  public SafeConcurrentUpdateSolrServer(String solrServerUrl, HttpClient client, int queueSize, int threadCount) {
+  public SafeConcurrentUpdateSolrClient(String solrServerUrl, HttpClient client, int queueSize, int threadCount) {
     super(solrServerUrl, client, queueSize, threadCount);
   }
 

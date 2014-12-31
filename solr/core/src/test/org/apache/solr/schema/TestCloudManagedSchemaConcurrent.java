@@ -16,9 +16,9 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -85,11 +85,11 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
   
   private void setupHarnesses() {
-    for (final SolrServer client : clients) {
+    for (final SolrClient client : clients) {
       RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return ((HttpSolrServer)client).getBaseURL();
+          return ((HttpSolrClient)client).getBaseURL();
         }
       });
       restTestHarnesses.add(harness);

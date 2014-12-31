@@ -43,8 +43,8 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -149,11 +149,11 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     for (int i = 0; i < cnt; i++) {
       int numShards = 3;
-      int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrServer()
+      int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
           .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
 
-      CloudSolrServer client = null;
+      CloudSolrClient client = null;
       try {
         if (i == 0) {
           // Test if we can create a collection through CloudSolrServer where
@@ -193,15 +193,15 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
       List<Integer> list = entry.getValue();
       checkForCollection(collection, list, null);
 
-      String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collection);
+      String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collection);
 
-      HttpSolrServer collectionClient = new HttpSolrServer(url);
+      HttpSolrClient collectionClient = new HttpSolrClient(url);
 
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
       collectionClient.shutdown();
     }
-    ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
+    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
     for (int j = 0; j < cnt; j++) {
       waitForRecoveriesToFinish(COLL_PREFIX + j, zkStateReader, false);
     }
@@ -221,9 +221,9 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     String collectionName = collectionNameList.get(random().nextInt(collectionNameList.size()));
 
-    String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
-    HttpSolrServer collectionClient = new HttpSolrServer(url);
+    HttpSolrClient collectionClient = new HttpSolrClient(url);
 
 
     // lets try and use the solrj client to index a couple documents
@@ -271,7 +271,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     params.set("shard", "x");
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+    createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0))).request(request);
     waitForCollection(zkStateReader,collectionName,4);
     //wait for all the replicas to become active
     int attempts = 0;
@@ -295,11 +295,11 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     int numShards = 4;
     replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
-    int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
+    int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrClient()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
 
-    CloudSolrServer client = null;
+    CloudSolrClient client = null;
     String shard_fld = "shard_s";
     try {
       client = createCloudClient(null);
@@ -320,10 +320,10 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     checkForCollection(collectionName, list, null);
 
 
-    url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
+    url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
     
     collectionClient.shutdown();
-    collectionClient = new HttpSolrServer(url);
+    collectionClient = new HttpSolrClient(url);
 
     // poll for a second - it can take a moment before we are ready to serve
     waitForNon403or404or503(collectionClient);
@@ -331,7 +331,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
 
     collectionClient.shutdown();
-    collectionClient = new HttpSolrServer(url);
+    collectionClient = new HttpSolrClient(url);
 
 
     // lets try and use the solrj client to index a couple documents
@@ -358,11 +358,11 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     String collectionName = "routeFieldColl";
     int numShards = 4;
     int replicationFactor = 2;
-    int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
+    int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrClient()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
-    CloudSolrServer client = null;
+    CloudSolrClient client = null;
     String shard_fld = "shard_s";
     try {
       client = createCloudClient(null);
@@ -381,16 +381,16 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     checkForCollection(collectionName, list, null);
 
 
-    String url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
+    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
-    HttpSolrServer collectionClient = new HttpSolrServer(url);
+    HttpSolrClient collectionClient = new HttpSolrClient(url);
 
     // poll for a second - it can take a moment before we are ready to serve
     waitForNon403or404or503(collectionClient);
     collectionClient.shutdown();
 
 
-    collectionClient = new HttpSolrServer(url);
+    collectionClient = new HttpSolrClient(url);
 
 
     // lets try and use the solrj client to index a couple documents
@@ -422,7 +422,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   private void testCreateShardRepFactor() throws Exception  {
     String collectionName = "testCreateShardRepFactor";
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
-    CloudSolrServer client = null;
+    CloudSolrClient client = null;
     try {
       client = createCloudClient(null);
       Map<String, Object> props = ZkNodeProps.makeMap(
@@ -436,7 +436,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     } finally {
       if (client != null) client.shutdown();
     }
-    ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
+    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
     waitForRecoveriesToFinish(collectionName, zkStateReader, false);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -445,7 +445,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     params.set("shard", "x");
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0))).request(request);
+    createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0))).request(request);
 
     waitForRecoveriesToFinish(collectionName, zkStateReader, false);
 
@@ -473,7 +473,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     if (r.nextBoolean())
       params.set("collection",DEFAULT_COLLECTION);
 
-    QueryResponse rsp = getCommonCloudSolrServer().query(params);
+    QueryResponse rsp = getCommonCloudSolrClient().query(params);
     return rsp;
   }
 

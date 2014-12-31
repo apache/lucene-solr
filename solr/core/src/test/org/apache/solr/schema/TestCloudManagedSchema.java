@@ -17,10 +17,9 @@ package org.apache.solr.schema;
  */
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -56,7 +55,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
-    HttpSolrServer client = (HttpSolrServer)clients.get(which);
+    HttpSolrClient client = (HttpSolrClient)clients.get(which);
     String previousBaseURL = client.getBaseURL();
     // Strip /collection1 step from baseURL - requests fail otherwise
     client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));

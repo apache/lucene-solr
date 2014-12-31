@@ -18,13 +18,12 @@ package org.apache.solr.client.solrj.response;
  */
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -32,7 +31,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -63,11 +61,11 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   @Before
   public void doBefore() throws IOException, SolrServerException {
     //add document and commit, and ensure it's there
-    SolrServer server1 = getSolrServer();
+    SolrClient client = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
-    server1.add(doc);
-    server1.commit();
+    client.add(doc);
+    client.commit();
   }
 
   /**
@@ -75,15 +73,15 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
    */
   @Test
   public void testQueryParse() throws Exception {
-    HttpSolrServer server = (HttpSolrServer) createNewSolrServer();
+    HttpSolrClient client = (HttpSolrClient) createNewSolrClient();
     SolrQuery query = new SolrQuery("id:1234");
     QueryRequest req = new QueryRequest(query);
-    server.setParser(new NoOpResponseParser());
-    NamedList<Object> resp = server.request(req);
+    client.setParser(new NoOpResponseParser());
+    NamedList<Object> resp = client.request(req);
     String responseString = (String) resp.get("response");
 
     assertResponse(responseString);
-    server.shutdown();
+    client.shutdown();
   }
 
   private void assertResponse(String responseString) throws IOException {

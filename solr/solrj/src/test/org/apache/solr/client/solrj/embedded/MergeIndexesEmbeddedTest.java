@@ -18,7 +18,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.MergeIndexesExampleTestBase;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.SolrCore;
 
 /**
@@ -37,22 +37,22 @@ public class MergeIndexesEmbeddedTest extends MergeIndexesExampleTestBase {
   }
 
   @Override
-  protected SolrServer getSolrCore0() {
+  protected SolrClient getSolrCore0() {
     return new EmbeddedSolrServer(cores, "core0");
   }
 
   @Override
-  protected SolrServer getSolrCore1() {
+  protected SolrClient getSolrCore1() {
     return new EmbeddedSolrServer(cores, "core1");
   }
 
   @Override
-  protected SolrServer getSolrCore(String name) {
+  protected SolrClient getSolrCore(String name) {
     return new EmbeddedSolrServer(cores, name);
   }
 
   @Override
-  protected SolrServer getSolrAdmin() {
+  protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");
   }
 

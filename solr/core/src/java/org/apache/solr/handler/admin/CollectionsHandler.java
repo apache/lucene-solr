@@ -77,7 +77,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.DistributedQueue;
@@ -662,7 +662,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps leaderProps = clusterState.getLeader(collection, shard);
     ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
     
-    HttpSolrServer server = new HttpSolrServer(nodeProps.getBaseUrl());
+    HttpSolrClient server = new HttpSolrClient(nodeProps.getBaseUrl());
     try {
       server.setConnectionTimeout(15000);
       server.setSoTimeout(60000);

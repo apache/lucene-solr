@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -77,7 +77,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     Thread indexThread = null;
     OverseerRestarter killer = null;
     Thread killerThread = null;
-    final SolrServer solrServer = clients.get(0);
+    final SolrClient solrClient = clients.get(0);
 
     try {
       del("*:*");
@@ -146,8 +146,8 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     } finally {
       if (indexThread != null)
         indexThread.join();
-      if (solrServer != null)
-        solrServer.commit();
+      if (solrClient != null)
+        solrClient.commit();
       if (killer != null) {
         killer.run = false;
         if (killerThread != null) {

@@ -22,7 +22,7 @@
 
   <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
   <property name="forbidden-tests-excludes" value="
-    org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class
+    org/apache/solr/client/solrj/impl/BasicHttpSolrClientTest$DebugServlet.class
   "/>
 
   <import file="../common-build.xml"/>

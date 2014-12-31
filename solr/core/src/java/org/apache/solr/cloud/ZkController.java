@@ -17,35 +17,9 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -90,6 +64,31 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Handle ZooKeeper interactions.
@@ -1630,11 +1629,11 @@ public final class ZkController {
         log.info("Replica "+myCoreNodeName+
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
             
-        HttpSolrServer server = null;
-        server = new HttpSolrServer(leaderBaseUrl);
+        HttpSolrClient client = null;
+        client = new HttpSolrClient(leaderBaseUrl);
         try {
-          server.setConnectionTimeout(15000);
-          server.setSoTimeout(120000);
+          client.setConnectionTimeout(15000);
+          client.setSoTimeout(120000);
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
           prepCmd.setNodeName(getNodeName());
@@ -1650,7 +1649,7 @@ public final class ZkController {
                   "We have been closed");
             }
             try {
-              server.request(prepCmd);
+              client.request(prepCmd);
               break;
             } catch (Exception e) {
 
@@ -1684,7 +1683,7 @@ public final class ZkController {
             }
           }
         } finally {
-          server.shutdown();
+          client.shutdown();
         }
       }
     }

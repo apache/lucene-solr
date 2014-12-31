@@ -36,7 +36,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -53,7 +53,7 @@ import org.junit.BeforeClass;
 @LuceneTestCase.Slow
 @SuppressSSL     // See SOLR-5776
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
-  private CloudSolrServer client;
+  private CloudSolrClient client;
 
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
@@ -228,10 +228,10 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   }
 
 
-  protected void createCollection(String COLL_NAME, CloudSolrServer client) throws Exception {
+  protected void createCollection(String COLL_NAME, CloudSolrClient client) throws Exception {
     int replicationFactor = 2;
     int numShards = 4;
-    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrServer()
+    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
     Map<String, Object> props = makeMap(

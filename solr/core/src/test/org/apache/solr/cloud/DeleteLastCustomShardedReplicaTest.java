@@ -19,13 +19,12 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
@@ -45,7 +44,7 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
 public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTestBase {
-  private CloudSolrServer client;
+  private CloudSolrClient client;
 
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
@@ -100,7 +99,7 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
 
     waitForRecoveriesToFinish(collectionName, false);
 
-    DocCollection testcoll = getCommonCloudSolrServer().getZkStateReader()
+    DocCollection testcoll = getCommonCloudSolrClient().getZkStateReader()
         .getClusterState().getCollection(collectionName);
     Replica replica = testcoll.getSlice("a").getReplicas().iterator().next();
 
@@ -119,7 +118,7 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
     boolean success = false;
     DocCollection testcoll = null;
     while (System.currentTimeMillis() < endAt) {
-      testcoll = getCommonCloudSolrServer().getZkStateReader()
+      testcoll = getCommonCloudSolrClient().getZkStateReader()
           .getClusterState().getCollection(COLL_NAME);
       // In case of a custom sharded collection, the last replica deletion would also lead to
       // the deletion of the slice.

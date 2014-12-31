@@ -17,20 +17,20 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import java.io.IOException;
+import java.util.Arrays;
+
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
@@ -58,9 +58,9 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     handle.put("score", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
 
-    SolrServer client0 = clients.get(0);
-    SolrServer client1 = clients.get(1);
-    SolrServer client2 = clients.get(2);
+    SolrClient client0 = clients.get(0);
+    SolrClient client1 = clients.get(1);
+    SolrClient client2 = clients.get(2);
 
     long v = 0;
     add(client0, seenLeader, sdoc("id","1","_version_",++v));
@@ -128,7 +128,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     // test that delete by query is returned even if not requested, and that it doesn't delete newer stuff than it should
     v=2000;
-    SolrServer client = client0;
+    SolrClient client = client0;
     add(client, seenLeader, sdoc("id","2000","_version_",++v));
     add(client, seenLeader, sdoc("id","2001","_version_",++v));
     delQ(client, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "id:2001 OR id:2002");
@@ -173,9 +173,9 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   }
 
 
-  void assertSync(SolrServer server, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
+  void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "sync", StrUtils.join(Arrays.asList(syncWith), ',')));
-    NamedList rsp = server.request(qr);
+    NamedList rsp = client.request(qr);
     assertEquals(expectedResult, (Boolean) rsp.get("sync"));
   }
 

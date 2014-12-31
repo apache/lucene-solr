@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.DocCollection;
@@ -59,11 +59,11 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   private void setupHarnesses() {
-    for (final SolrServer client : clients) {
+    for (final SolrClient client : clients) {
       RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return ((HttpSolrServer)client).getBaseURL();
+          return ((HttpSolrClient)client).getBaseURL();
         }
       });
       restTestHarnesses.add(harness);
@@ -128,7 +128,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     HttpGet get = new HttpGet(uri) ;
     HttpEntity entity = null;
     try {
-      entity = cloudClient.getLbServer().getHttpClient().execute(get).getEntity();
+      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
       return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     } finally {

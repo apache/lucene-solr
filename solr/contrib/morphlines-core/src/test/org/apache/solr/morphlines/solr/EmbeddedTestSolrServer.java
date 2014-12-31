@@ -16,12 +16,12 @@
  */
 package org.apache.solr.morphlines.solr;
 
-import java.io.IOException;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.core.CoreContainer;
+
+import java.io.IOException;
 
 /**
  * An EmbeddedSolrServer that supresses close and rollback requests as

@@ -6,9 +6,9 @@ import java.io.OutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -40,8 +40,8 @@ import org.junit.BeforeClass;
 
 public class TestTolerantSearch extends SolrJettyTestBase {
   
-  private static SolrServer collection1;
-  private static SolrServer collection2;
+  private static SolrClient collection1;
+  private static SolrClient collection2;
   private static String shard1;
   private static String shard2;
   private static File solrHome;
@@ -60,8 +60,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     solrHome = createSolrHome();
     createJetty(solrHome.getAbsolutePath(), null, null);
     String url = jetty.getBaseUrl().toString();
-    collection1 = new HttpSolrServer(url);
-    collection2 = new HttpSolrServer(url + "/collection2");
+    collection1 = new HttpSolrClient(url);
+    collection2 = new HttpSolrClient(url + "/collection2");
     
     String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
     String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";

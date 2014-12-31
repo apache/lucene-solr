@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,15 +35,15 @@ public class ExternalHttpClientTest extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     createJetty(legacyExampleCollection1SolrHome(), null, null);
     jetty.getDispatchFilter().getServletHandler()
-        .addServletWithMapping(BasicHttpSolrServerTest.SlowServlet.class, "/slow/*");
+        .addServletWithMapping(BasicHttpSolrClientTest.SlowServlet.class, "/slow/*");
   }
 
   /**
-   * The internal client created by HttpSolrServer is a SystemDefaultHttpClient
+   * The internal client created by HttpSolrClient is a SystemDefaultHttpClient
    * which takes care of merging request level params (such as timeout) with the
    * configured defaults.
    *
-   * However, if an external HttpClient is passed to HttpSolrServer,
+   * However, if an external HttpClient is passed to HttpSolrClient,
    * the logic in InternalHttpClient.executeMethod replaces the configured defaults
    * by request level params if they exist. That is why we must test a setting such
    * as timeout with an external client to assert that the defaults are indeed being
@@ -57,21 +56,21 @@ public class ExternalHttpClientTest extends SolrJettyTestBase {
     HttpClientBuilder builder = HttpClientBuilder.create();
     RequestConfig config = RequestConfig.custom().setSocketTimeout(2000).build();
     builder.setDefaultRequestConfig(config);
-    HttpSolrServer server = null;
+    HttpSolrClient solrClient = null;
     try (CloseableHttpClient httpClient = builder.build()) {
-      server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+      solrClient = new HttpSolrClient(jetty.getBaseUrl().toString() +
           "/slow/foo", httpClient);
 
       SolrQuery q = new SolrQuery("*:*");
       try {
-        QueryResponse response = server.query(q, SolrRequest.METHOD.GET);
+        QueryResponse response = solrClient.query(q, SolrRequest.METHOD.GET);
         fail("No exception thrown.");
       } catch (SolrServerException e) {
         assertTrue(e.getMessage().contains("Timeout"));
       }
     } finally {
-      if (server != null) {
-        server.shutdown();
+      if (solrClient != null) {
+        solrClient.shutdown();
       }
     }
   }

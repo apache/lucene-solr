@@ -17,16 +17,12 @@
 
 package org.apache.solr.client.solrj.request;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
-
-import java.io.File;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -43,8 +39,10 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
@@ -68,14 +66,14 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     return solrXml;
   }
   
-  protected SolrServer getSolrAdmin() {
+  protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");
   }
 
   @Test
   public void testConfigSet() throws Exception {
 
-    SolrServer server = getSolrAdmin();
+    SolrClient client = getSolrAdmin();
     File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
 
     File newCoreInstanceDir = new File(testDir, "newcore");
@@ -85,7 +83,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     req.setInstanceDir(newCoreInstanceDir.getAbsolutePath());
     req.setConfigSet("configset-2");
 
-    CoreAdminResponse response = req.process(server);
+    CoreAdminResponse response = req.process(client);
     assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
 
     try (SolrCore core = cores.getCore("corewithconfigset")) {
@@ -97,7 +95,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   @Test
   public void testCustomUlogDir() throws Exception {
     
-    SolrServer server = getSolrAdmin();
+    SolrClient client = getSolrAdmin();
     
     File dataDir = createTempDir("data").toFile();
     
@@ -116,7 +114,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     // These should be the inverse of defaults.
     req.setIsLoadOnStartup(false);
     req.setIsTransient(true);
-    req.process(server);
+    req.process(client);
 
     // Show that the newly-created core has values for load on startup and transient different than defaults due to the
     // above.
@@ -134,7 +132,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     }
 
     assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
-    server.shutdown();
+    client.shutdown();
     
   }
   

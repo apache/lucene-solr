@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -39,7 +39,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     int which = r.nextInt(clients.size());
-    HttpSolrServer client = (HttpSolrServer) clients.get(which);
+    HttpSolrClient client = (HttpSolrClient) clients.get(which);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("op", "write");

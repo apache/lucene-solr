@@ -18,9 +18,9 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatus;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
@@ -76,7 +76,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
-    SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
 
     for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
       Create createCollectionRequest = new Create();
@@ -84,7 +84,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       createCollectionRequest.setNumShards(4);
       createCollectionRequest.setConfigName("conf1");
       createCollectionRequest.setAsyncId(String.valueOf(i));
-      createCollectionRequest.process(server);
+      createCollectionRequest.process(client);
     }
 
     boolean pass = false;
@@ -92,7 +92,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     while(true) {
       int numRunningTasks = 0;
       for (int i = 1; i <= NUM_COLLECTIONS; i++)
-        if (getRequestState(i + "", server).equals("running"))
+        if (getRequestState(i + "", client).equals("running"))
           numRunningTasks++;
       if(numRunningTasks > 1) {
         pass = true;
@@ -107,38 +107,38 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     }
     assertTrue("More than one tasks were supposed to be running in parallel but they weren't.", pass);
     for(int i=1;i<=NUM_COLLECTIONS;i++) {
-      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, server);
+      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
       assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
     }
   }
 
   private void testTaskExclusivity() throws IOException, SolrServerException {
-    SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
     Create createCollectionRequest = new Create();
     createCollectionRequest.setCollectionName("ocptest_shardsplit");
     createCollectionRequest.setNumShards(4);
     createCollectionRequest.setConfigName("conf1");
     createCollectionRequest.setAsyncId("1000");
-    createCollectionRequest.process(server);
+    createCollectionRequest.process(client);
 
     SplitShard splitShardRequest = new SplitShard();
     splitShardRequest.setCollectionName("ocptest_shardsplit");
     splitShardRequest.setShardName(SHARD1);
     splitShardRequest.setAsyncId("1001");
-    splitShardRequest.process(server);
+    splitShardRequest.process(client);
 
     splitShardRequest = new SplitShard();
     splitShardRequest.setCollectionName("ocptest_shardsplit");
     splitShardRequest.setShardName(SHARD2);
     splitShardRequest.setAsyncId("1002");
-    splitShardRequest.process(server);
+    splitShardRequest.process(client);
 
     int iterations = 0;
     while(true) {
       int runningTasks = 0;
       int completedTasks = 0;
       for (int i=1001;i<=1002;i++) {
-        String state = getRequestState(i, server);
+        String state = getRequestState(i, client);
         if (state.equals("running"))
           runningTasks++;
         if (state.equals("completed"))
@@ -161,45 +161,45 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       }
     }
     for (int i=1001;i<=1002;i++) {
-      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, server);
+      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
       assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
     }
   }
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
-    SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+    SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
     Create createCollectionRequest = new Create();
     createCollectionRequest.setCollectionName("ocptest_shardsplit2");
     createCollectionRequest.setNumShards(4);
     createCollectionRequest.setConfigName("conf1");
     createCollectionRequest.setAsyncId("3000");
-    createCollectionRequest.process(server);
+    createCollectionRequest.process(client);
 
     SplitShard splitShardRequest = new SplitShard();
     splitShardRequest.setCollectionName("ocptest_shardsplit2");
     splitShardRequest.setShardName(SHARD1);
     splitShardRequest.setAsyncId("3001");
-    splitShardRequest.process(server);
+    splitShardRequest.process(client);
 
     splitShardRequest = new SplitShard();
     splitShardRequest.setCollectionName("ocptest_shardsplit2");
     splitShardRequest.setShardName(SHARD2);
     splitShardRequest.setAsyncId("3002");
-    splitShardRequest.process(server);
+    splitShardRequest.process(client);
 
     // Now submit another task with the same id. At this time, hopefully the previous 3002 should still be in the queue.
     splitShardRequest = new SplitShard();
     splitShardRequest.setCollectionName("ocptest_shardsplit2");
     splitShardRequest.setShardName(SHARD1);
     splitShardRequest.setAsyncId("3002");
-    CollectionAdminResponse response = splitShardRequest.process(server);
+    CollectionAdminResponse response = splitShardRequest.process(client);
 
     NamedList r = response.getResponse();
     assertEquals("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.",
         "Task with the same requestid already exists.", r.get("error"));
 
     for (int i=3001;i<=3002;i++) {
-      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, server);
+      String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
       assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
     }
   }
@@ -224,16 +224,16 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
     try {
 
-      SolrServer server = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+      SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
       SplitShard splitShardRequest = new SplitShard();
       splitShardRequest.setCollectionName("collection1");
       splitShardRequest.setShardName(SHARD1);
       splitShardRequest.setAsyncId("2000");
-      splitShardRequest.process(server);
+      splitShardRequest.process(client);
 
-      String state = getRequestState("2000", server);
+      String state = getRequestState("2000", client);
       while (state.equals("submitted")) {
-        state = getRequestState("2000", server);
+        state = getRequestState("2000", client);
         Thread.sleep(10);
       }
       assertTrue("SplitShard task [2000] was supposed to be in [running] but isn't. It is [" + state + "]", state.equals("running"));
@@ -246,9 +246,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
-      server.request(request);
+      client.request(request);
 
-      state = getRequestState("2000", server);
+      state = getRequestState("2000", client);
 
       assertTrue("After invoking OVERSEERSTATUS, SplitShard task [2000] was still supposed to be in [running] but isn't." +
           "It is [" + state + "]", state.equals("running"));
@@ -267,13 +267,13 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     // todo - target diff servers and use cloud clients as well as non-cloud clients
   }
 
-  private String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrServer server)
+  private String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
       throws IOException, SolrServerException {
     String state = null;
     long maxWait = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
 
     while (System.nanoTime() < maxWait)  {
-      state = getRequestState(requestId, server);
+      state = getRequestState(requestId, client);
       if(state.equals("completed") || state.equals("failed"))
         return state;
       try {
@@ -285,14 +285,14 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     return state;
   }
 
-  private String getRequestState(int requestId, SolrServer server) throws IOException, SolrServerException {
-    return getRequestState(String.valueOf(requestId), server);
+  private String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
+    return getRequestState(String.valueOf(requestId), client);
   }
 
-  private String getRequestState(String requestId, SolrServer server) throws IOException, SolrServerException {
+  private String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
     RequestStatus requestStatusRequest = new RequestStatus();
     requestStatusRequest.setRequestId(requestId);
-    CollectionAdminResponse response = requestStatusRequest.process(server);
+    CollectionAdminResponse response = requestStatusRequest.process(client);
 
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return (String) innerResponse.get("state");

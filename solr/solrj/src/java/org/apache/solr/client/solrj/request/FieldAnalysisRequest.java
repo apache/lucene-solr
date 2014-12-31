@@ -18,7 +18,7 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
 import org.apache.solr.common.params.AnalysisParams;
@@ -96,7 +96,7 @@ public class FieldAnalysisRequest extends SolrRequest {
    * {@inheritDoc}
    */
   @Override
-  public FieldAnalysisResponse process(SolrServer server) throws SolrServerException, IOException {
+  public FieldAnalysisResponse process(SolrClient server) throws SolrServerException, IOException {
     if (fieldTypes == null && fieldNames == null) {
       throw new IllegalStateException("At least one field type or field name need to be specified");
     }

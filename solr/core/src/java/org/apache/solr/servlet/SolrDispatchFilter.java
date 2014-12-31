@@ -34,7 +34,7 @@ import org.apache.http.HeaderIterator;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -311,7 +311,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
             // don't proxy for internal update requests
             SolrParams queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
-            checkStateIsValid(cores, queryParams.get(CloudSolrServer.STATE_VERSION));
+            checkStateIsValid(cores, queryParams.get(CloudSolrClient.STATE_VERSION));
             if (coreUrl != null
                 && queryParams
                     .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
@@ -372,7 +372,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
               if( "/select".equals( path ) || "/select/".equals( path ) ) {
                 solrReq = parser.parse( core, path, req );
 
-                checkStateIsValid(cores,solrReq.getParams().get(CloudSolrServer.STATE_VERSION));
+                checkStateIsValid(cores,solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
                 String qt = solrReq.getParams().get( CommonParams.QT );
                 handler = core.getRequestHandler( qt );
                 if( handler == null ) {

@@ -18,8 +18,7 @@ package org.apache.solr.handler.component;
  */
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -27,9 +26,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -50,8 +46,8 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
   public void doTest() throws Exception {
 
     del("*:*");
-    final SolrServer shard0 = clients.get(0);
-    final SolrServer shard1 = clients.get(1);
+    final SolrClient shard0 = clients.get(0);
+    final SolrClient shard1 = clients.get(1);
 
     // NOTE: we use the literal (4 character) string "null" as a company name
     // to help ensure there isn't any bugs where the literal string is treated as if it 

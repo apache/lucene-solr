@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,8 +52,8 @@ public class TermsResponseTest extends SolrJettyTestBase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
-    getSolrServer().add(doc);
-    getSolrServer().commit(true, true);
+    getSolrClient().add(doc);
+    getSolrClient().commit(true, true);
 
     SolrQuery query = new SolrQuery();
     query.setRequestHandler("/terms");
@@ -66,7 +65,7 @@ public class TermsResponseTest extends SolrJettyTestBase {
     query.setTermsMinCount(1);
     
     QueryRequest request = new QueryRequest(query);
-    List<Term> terms = request.process(getSolrServer()).getTermsResponse().getTerms("terms_s");
+    List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
 
     Assert.assertNotNull(terms);
     Assert.assertEquals(terms.size(), 1);

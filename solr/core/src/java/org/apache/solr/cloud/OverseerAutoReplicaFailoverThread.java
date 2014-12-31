@@ -30,7 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -418,10 +418,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private boolean createSolrCore(final String collection,
       final String createUrl, final String dataDir, final String ulogDir,
       final String coreNodeName, final String coreName) {
-    HttpSolrServer server = null;
+    HttpSolrClient server = null;
     try {
       log.debug("create url={}", createUrl);
-      server = new HttpSolrServer(createUrl);
+      server = new HttpSolrClient(createUrl);
       server.setConnectionTimeout(30000);
       server.setSoTimeout(60000);
       Create createCmd = new Create();

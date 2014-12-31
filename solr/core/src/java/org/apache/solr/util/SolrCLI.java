@@ -17,25 +17,6 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -61,9 +42,9 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -77,6 +58,25 @@ import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Command-line utility for working with Solr.
@@ -93,7 +93,7 @@ public class SolrCLI {
   }
   
   /**
-   * Helps build SolrCloud aware tools by initializing a CloudSolrServer
+   * Helps build SolrCloud aware tools by initializing a CloudSolrClient
    * instance before running the tool.
    */
   public static abstract class SolrCloudTool implements Tool {
@@ -112,16 +112,16 @@ public class SolrCLI {
       
       log.debug("Connecting to Solr cluster: " + zkHost);
       int exitStatus = 0;
-      CloudSolrServer cloudSolrServer = null;
+      CloudSolrClient cloudSolrClient = null;
       try {
-        cloudSolrServer = new CloudSolrServer(zkHost);
+        cloudSolrClient = new CloudSolrClient(zkHost);
         
         String collection = cli.getOptionValue("collection");
         if (collection != null)
-          cloudSolrServer.setDefaultCollection(collection);
+          cloudSolrClient.setDefaultCollection(collection);
         
-        cloudSolrServer.connect();
-        exitStatus = runCloudTool(cloudSolrServer, cli);
+        cloudSolrClient.connect();
+        exitStatus = runCloudTool(cloudSolrClient, cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
@@ -132,9 +132,9 @@ public class SolrCLI {
           throw exc;
         }
       } finally {
-        if (cloudSolrServer != null) {
+        if (cloudSolrClient != null) {
           try {
-            cloudSolrServer.shutdown();
+            cloudSolrClient.shutdown();
           } catch (Exception ignore) {}
         }
       }
@@ -145,7 +145,7 @@ public class SolrCLI {
     /**
      * Runs a SolrCloud tool with CloudSolrServer initialized
      */
-    protected abstract int runCloudTool(CloudSolrServer cloudSolrServer, CommandLine cli)
+    protected abstract int runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception;
   }
   
@@ -872,7 +872,7 @@ public class SolrCLI {
     }
         
     @Override
-    protected int runCloudTool(CloudSolrServer cloudSolrServer, CommandLine cli) throws Exception {
+    protected int runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
       
       String collection = cli.getOptionValue("collection");
       if (collection == null)
@@ -880,7 +880,7 @@ public class SolrCLI {
       
       log.info("Running healthcheck for "+collection);
       
-      ZkStateReader zkStateReader = cloudSolrServer.getZkStateReader();
+      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -890,7 +890,7 @@ public class SolrCLI {
       
       SolrQuery q = new SolrQuery("*:*");
       q.setRows(0);      
-      QueryResponse qr = cloudSolrServer.query(q);
+      QueryResponse qr = cloudSolrClient.query(q);
       String collErr = null;
       long docCount = -1;
       try {
@@ -930,7 +930,7 @@ public class SolrCLI {
             replicaStatus = ZkStateReader.DOWN;
           } else {
             // query this replica directly to get doc count and assess health
-            HttpSolrServer solr = new HttpSolrServer(coreUrl);
+            HttpSolrClient solr = new HttpSolrClient(coreUrl);
             String solrUrl = solr.getBaseURL();
             q = new SolrQuery("*:*");
             q.setRows(0);
@@ -1103,9 +1103,9 @@ public class SolrCLI {
       }
 
       int toolExitStatus = 0;
-      CloudSolrServer cloudSolrServer = null;
+      CloudSolrClient cloudSolrServer = null;
       try {
-        cloudSolrServer = new CloudSolrServer(zkHost);
+        cloudSolrServer = new CloudSolrClient(zkHost);
         System.out.println("Connecting to ZooKeeper at " + zkHost);
         cloudSolrServer.connect();
         toolExitStatus = runCloudTool(cloudSolrServer, cli);
@@ -1129,8 +1129,8 @@ public class SolrCLI {
       return toolExitStatus;
     }
 
-    protected int runCloudTool(CloudSolrServer cloudSolrServer, CommandLine cli) throws Exception {
-      Set<String> liveNodes = cloudSolrServer.getZkStateReader().getClusterState().getLiveNodes();
+    protected int runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
+      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
       if (liveNodes.isEmpty())
         throw new IllegalStateException("No live nodes found! Cannot create a collection until " +
             "there is at least 1 live node in the cluster.");
@@ -1183,13 +1183,13 @@ public class SolrCLI {
       }
 
       // test to see if that config exists in ZK
-      if (!cloudSolrServer.getZkStateReader().getZkClient().exists("/configs/"+configSetNameInZk, true)) {
+      if (!cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/"+configSetNameInZk, true)) {
         System.out.println("Uploading "+confDir.getAbsolutePath()+
-            " for config "+configSetNameInZk+" to ZooKeeper at "+cloudSolrServer.getZkHost());
-        ZkController.uploadConfigDir(cloudSolrServer.getZkStateReader().getZkClient(), confDir, configSetNameInZk);
+            " for config "+configSetNameInZk+" to ZooKeeper at "+cloudSolrClient.getZkHost());
+        ZkController.uploadConfigDir(cloudSolrClient.getZkStateReader().getZkClient(), confDir, configSetNameInZk);
       }
 
-      String baseUrl = cloudSolrServer.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
+      String baseUrl = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
       String collectionName = cli.getOptionValue("name");
 
       // since creating a collection is a heavy-weight operation, check for existence first

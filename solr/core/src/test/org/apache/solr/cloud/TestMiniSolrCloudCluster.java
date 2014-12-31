@@ -17,18 +17,13 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -52,7 +47,11 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Test of the MiniSolrCloudCluster functionality. Keep in mind, 
@@ -118,11 +117,11 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     assertTrue(startedServer.isRunning());
     assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
 
-    CloudSolrServer cloudSolrServer = null;
+    CloudSolrClient cloudSolrClient = null;
     SolrZkClient zkClient = null;
     try {
-      cloudSolrServer = new CloudSolrServer(miniCluster.getZkServer().getZkAddress(), true);
-      cloudSolrServer.connect();
+      cloudSolrClient = new CloudSolrClient(miniCluster.getZkServer().getZkAddress(), true);
+      cloudSolrClient.connect();
       zkClient = new SolrZkClient(miniCluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, 45000, null);
 
@@ -131,20 +130,20 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       String configName = "solrCloudCollectionConfig";
       System.setProperty("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
       uploadConfigToZk(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf", configName);
-      createCollection(cloudSolrServer, collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName);
+      createCollection(cloudSolrClient, collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName);
 
       // modify/query collection
-      cloudSolrServer.setDefaultCollection(collectionName);
+      cloudSolrClient.setDefaultCollection(collectionName);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", "1");
 
       ZkStateReader zkStateReader = new ZkStateReader(zkClient);
       waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
-      cloudSolrServer.add(doc);
-      cloudSolrServer.commit();
+      cloudSolrClient.add(doc);
+      cloudSolrClient.commit();
       SolrQuery query = new SolrQuery();
       query.setQuery("*:*");
-      QueryResponse rsp = cloudSolrServer.query(query);
+      QueryResponse rsp = cloudSolrClient.query(query);
       assertEquals(1, rsp.getResults().getNumFound());
 
       // remove a server not hosting any replicas
@@ -173,8 +172,8 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         }
       }
     } finally {
-      if (cloudSolrServer != null) {
-        cloudSolrServer.shutdown();
+      if (cloudSolrClient != null) {
+        cloudSolrClient.shutdown();
       }
       if (zkClient != null) {
         zkClient.close();
@@ -217,7 +216,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + configName + "/" + nameInZk, file, false, true);
   }
 
-  protected NamedList<Object> createCollection(CloudSolrServer server, String name, int numShards,
+  protected NamedList<Object> createCollection(CloudSolrClient client, String name, int numShards,
       int replicationFactor, String configName) throws Exception {
     ModifiableSolrParams modParams = new ModifiableSolrParams();
     modParams.set(CoreAdminParams.ACTION, CollectionAction.CREATE.name());
@@ -227,7 +226,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     modParams.set("collection.configName", configName);
     QueryRequest request = new QueryRequest(modParams);
     request.setPath("/admin/collections");
-    return server.request(request);
+    return client.request(request);
   }
 
   protected void waitForRecoveriesToFinish(String collection,

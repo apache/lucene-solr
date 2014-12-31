@@ -21,8 +21,8 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer.HttpUriRequestResponse;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -200,7 +200,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
   private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    HttpSolrServer server = new HttpSolrServer(leaderUrl);
+    HttpSolrClient server = new HttpSolrClient(leaderUrl);
     try {
       server.setConnectionTimeout(30000);
       UpdateRequest ureq = new UpdateRequest();
@@ -594,7 +594,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   
   private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException, InterruptedException, ExecutionException {
-    HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
+    HttpSolrClient server = new HttpSolrClient(leaderBaseUrl);
     try {
       server.setConnectionTimeout(30000);
       WaitForState prepCmd = new WaitForState();

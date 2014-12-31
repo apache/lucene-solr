@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -38,16 +38,16 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
   protected Set<String> deleteFails = new HashSet<>();
   protected boolean doDeletes;
   private int numCycles;
-  private SolrServer controlClient;
-  private SolrServer cloudClient;
+  private SolrClient controlClient;
+  private SolrClient cloudClient;
   private int numDeletes;
   private int numAdds;
 
-  public StopableIndexingThread(SolrServer controlClient, SolrServer cloudClient, String id, boolean doDeletes) {
+  public StopableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes) {
     this(controlClient, cloudClient, id, doDeletes, -1);
   }
   
-  public StopableIndexingThread(SolrServer controlClient, SolrServer cloudClient, String id, boolean doDeletes, int numCycles) {
+  public StopableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes, int numCycles) {
     super("StopableIndexingThread");
     this.controlClient = controlClient;
     this.cloudClient = cloudClient;

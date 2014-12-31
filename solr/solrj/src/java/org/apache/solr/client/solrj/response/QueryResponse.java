@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CursorMarkParams;
@@ -85,18 +85,18 @@ public class QueryResponse extends SolrResponseBase
   private Map<String,String> _explainMap = null;
 
   // utility variable used for automatic binding -- it should not be serialized
-  private transient final SolrServer solrServer;
+  private transient final SolrClient solrClient;
   
   public QueryResponse(){
-    solrServer = null;
+    solrClient = null;
   }
   
   /**
    * Utility constructor to set the solrServer and namedList
    */
-  public QueryResponse( NamedList<Object> res , SolrServer solrServer){
+  public QueryResponse( NamedList<Object> res , SolrClient solrClient){
     this.setResponse( res );
-    this.solrServer = solrServer;
+    this.solrClient = solrClient;
   }
 
   @Override
@@ -564,9 +564,9 @@ public class QueryResponse extends SolrResponseBase
   }
   
   public <T> List<T> getBeans(Class<T> type){
-    return solrServer == null ? 
+    return solrClient == null ?
       new DocumentObjectBinder().getBeans(type,_results):
-      solrServer.getBinder().getBeans(type, _results);
+      solrClient.getBinder().getBeans(type, _results);
   }
 
   public Map<String, FieldStatsInfo> getFieldStatsInfo() {

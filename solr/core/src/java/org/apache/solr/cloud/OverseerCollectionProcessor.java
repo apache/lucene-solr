@@ -57,10 +57,11 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -109,9 +110,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableSet;
-
 
 public class OverseerCollectionProcessor implements Runnable, Closeable {
   
@@ -1812,18 +1810,18 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
 
   static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
-    HttpSolrServer server = null;
+    HttpSolrClient client = null;
     try {
-      server = new HttpSolrServer(url);
-      server.setConnectionTimeout(30000);
-      server.setSoTimeout(120000);
+      client = new HttpSolrClient(url);
+      client.setConnectionTimeout(30000);
+      client.setSoTimeout(120000);
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
-      return ureq.process(server);
+      return ureq.process(client);
     } finally {
-      if (server != null) {
-        server.shutdown();
+      if (client != null) {
+        client.shutdown();
       }
     }
   }

@@ -18,7 +18,7 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
@@ -78,7 +78,7 @@ public class CollectionAdminRequest extends SolrRequest {
   }
 
   @Override
-  public CollectionAdminResponse process(SolrServer server) throws SolrServerException, IOException
+  public CollectionAdminResponse process(SolrClient server) throws SolrServerException, IOException
   {
     long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     CollectionAdminResponse res = new CollectionAdminResponse();
@@ -814,8 +814,7 @@ public class CollectionAdminRequest extends SolrRequest {
     private String propertyName;
     private Boolean onlyActiveNodes;
     private Boolean shardUnique;
-
-
+    
     public String getPropertyName() {
       return propertyName;
     }
@@ -859,5 +858,6 @@ public class CollectionAdminRequest extends SolrRequest {
         params.set("shardUnique", shardUnique);
       return params;
     }
+
   }
 }

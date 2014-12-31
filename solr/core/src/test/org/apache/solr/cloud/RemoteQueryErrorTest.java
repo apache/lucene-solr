@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 
@@ -56,17 +56,17 @@ public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
     checkForCollection("collection2", numShardsNumReplicaList, null);
     waitForRecoveriesToFinish("collection2", true);
 
-    for (SolrServer solrServer : clients) {
+    for (SolrClient solrClient : clients) {
       try {
         SolrInputDocument emptyDoc = new SolrInputDocument();
-        solrServer.add(emptyDoc);
+        solrClient.add(emptyDoc);
         fail("Expected unique key exceptoin");
       } catch (SolrException ex) {
         assertThat(ex.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
       } catch(Exception ex) {
         fail("Expected a SolrException to occur, instead received: " + ex.getClass());
       } finally {
-        solrServer.shutdown();
+        solrClient.shutdown();
       }
     }
   }

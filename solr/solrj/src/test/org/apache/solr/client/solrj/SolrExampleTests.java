@@ -24,8 +24,8 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -85,10 +85,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testExampleConfig() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
+    client.deleteByQuery( "*:*" );// delete everything!
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
@@ -99,21 +99,21 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals( null, doc.getField("foo") );
     Assert.assertTrue(doc.getField("name").getValue() != null );
         
-    UpdateResponse upres = server.add( doc ); 
+    UpdateResponse upres = client.add( doc );
     // System.out.println( "ADD:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
-    upres = server.commit( true, true );
+    upres = client.commit( true, true );
     // System.out.println( "COMMIT:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
-    upres = server.optimize( true, true );
+    upres = client.optimize( true, true );
     // System.out.println( "OPTIMIZE:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
     SolrQuery query = new SolrQuery();
     query.setQuery( "id:"+docID );
-    QueryResponse response = server.query( query );
+    QueryResponse response = client.query( query );
     
     Assert.assertEquals(docID, response.getResults().get(0).getFieldValue("id") );
     
@@ -144,15 +144,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc5.addField( "timestamp_dt", new java.util.Date(), 1.0f );
     docs.add(doc5);
     
-    upres = server.add( docs ); 
+    upres = client.add( docs );
     // System.out.println( "ADD:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
-    upres = server.commit( true, true );
+    upres = client.commit( true, true );
     // System.out.println( "COMMIT:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
-    upres = server.optimize( true, true );
+    upres = client.optimize( true, true );
     // System.out.println( "OPTIMIZE:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
@@ -165,7 +165,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.addFacetField("timestamp_dt");
     query.removeFilterQuery("inStock:true");
     
-    response = server.query( query );
+    response = client.query( query );
     Assert.assertEquals(0, response.getStatus());
     Assert.assertEquals(5, response.getResults().getNumFound() );
     Assert.assertEquals(3, response.getFacetQuery().size());    
@@ -175,7 +175,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // test a second query, test making a copy of the main query
     SolrQuery query2 = query.getCopy();
     query2.addFilterQuery("inStock:true");
-    response = server.query( query2 );
+    response = client.query( query2 );
     Assert.assertEquals(1, query2.getFilterQueries().length);
     Assert.assertEquals(0, response.getStatus());
     Assert.assertEquals(2, response.getResults().getNumFound() );
@@ -188,7 +188,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.addFacetQuery("price:[* TO 2]");
     query.addFacetQuery("price:[2 TO 4]");
 
-    response = server.query( query );
+    response = client.query( query );
     assertTrue("echoed params are not a NamedList: " +
                response.getResponseHeader().get("params").getClass(),
                response.getResponseHeader().get("params") instanceof NamedList);
@@ -213,13 +213,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     if (jetty != null) {
       // check system wide system handler + "/admin/info/system"
       String url = jetty.getBaseUrl().toString();
-      HttpSolrServer client = new HttpSolrServer(url);
+      HttpSolrClient adminClient = new HttpSolrClient(url);
       SolrQuery q = new SolrQuery();
       q.set("qt", "/admin/info/system");
-      QueryResponse rsp = client.query(q);
+      QueryResponse rsp = adminClient.query(q);
       assertNotNull(rsp.getResponse().get("mode"));
       assertNotNull(rsp.getResponse().get("lucene"));
-      client.shutdown();
+      adminClient.shutdown();
     }
   }
 
@@ -230,10 +230,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
  @Test
  public void testAddRetrieve() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
+    client.deleteByQuery("*:*");// delete everything!
     
     // Now add something...
     SolrInputDocument doc1 = new SolrInputDocument();
@@ -251,28 +251,28 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     docs.add( doc2 );
     
     // Add the documents
-    server.add( docs );
-    server.commit();
+    client.add(docs);
+    client.commit();
     
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
     query.addSortField( "price", SolrQuery.ORDER.asc );
-    QueryResponse rsp = server.query( query );
+    QueryResponse rsp = client.query( query );
     
-    assertEquals( 2, rsp.getResults().getNumFound() );
+    assertEquals(2, rsp.getResults().getNumFound());
     // System.out.println( rsp.getResults() );
     
     // Now do it again
-    server.add( docs );
-    server.commit();
+    client.add( docs );
+    client.commit();
     
-    rsp = server.query( query );
+    rsp = client.query( query );
     assertEquals( 2, rsp.getResults().getNumFound() );
     // System.out.println( rsp.getResults() );
 
     // query outside ascii range
     query.setQuery("name:h\uD866\uDF05llo");
-    rsp = server.query( query );
+    rsp = client.query( query );
     assertEquals( 1, rsp.getResults().getNumFound() );
 
   }
@@ -284,26 +284,26 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testGetEmptyResults() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
      
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
      
     // Add two docs
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "id", "id1", 1.0f );
     doc.addField( "name", "doc1", 1.0f );
     doc.addField( "price", 10 );
-    server.add( doc );
+    client.add(doc);
     
     doc = new SolrInputDocument();
     doc.addField( "id", "id2", 1.0f );
-    server.add( doc );
-    server.commit();
+    client.add(doc);
+    client.commit();
     
     // Make sure we get empty docs for unknown field
-    SolrDocumentList out = server.query( new SolrQuery( "*:*" ).set("fl", "foofoofoo" ) ).getResults();
+    SolrDocumentList out = client.query( new SolrQuery( "*:*" ).set("fl", "foofoofoo" ) ).getResults();
     assertEquals( 2, out.getNumFound() );
     assertEquals( 0, out.get(0).size() );
     assertEquals( 0, out.get(1).size() );
@@ -338,30 +338,30 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Random random = random();
     int numIterations = atLeast(3);
     
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // save the old parser, so we can set it back.
     ResponseParser oldParser = null;
-    if (server instanceof HttpSolrServer) {
-      HttpSolrServer cserver = (HttpSolrServer) server;
-      oldParser = cserver.getParser();
+    if (client instanceof HttpSolrClient) {
+      HttpSolrClient httpSolrClient = (HttpSolrClient) client;
+      oldParser = httpSolrClient.getParser();
     }
     
     try {
       for (int iteration = 0; iteration < numIterations; iteration++) {
         // choose format
-        if (server instanceof HttpSolrServer) {
+        if (client instanceof HttpSolrClient) {
           if (random.nextBoolean()) {
-            ((HttpSolrServer) server).setParser(new BinaryResponseParser());
+            ((HttpSolrClient) client).setParser(new BinaryResponseParser());
           } else {
-            ((HttpSolrServer) server).setParser(new XMLResponseParser());
+            ((HttpSolrClient) client).setParser(new XMLResponseParser());
           }
         }
 
         int numDocs = TestUtil.nextInt(random(), 1, 10 * RANDOM_MULTIPLIER);
         
         // Empty the database...
-        server.deleteByQuery("*:*");// delete everything!
+        client.deleteByQuery("*:*");// delete everything!
         
         List<SolrInputDocument> docs = new ArrayList<>();
         for (int i = 0; i < numDocs; i++) {
@@ -372,14 +372,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
           docs.add(doc);
         }
         
-        server.add(docs);
-        server.commit();
+        client.add(docs);
+        client.commit();
         
         SolrQuery query = new SolrQuery();
         query.setQuery("*:*");
         query.setRows(numDocs);
         
-        QueryResponse rsp = server.query( query );
+        QueryResponse rsp = client.query( query );
         
         for (int i = 0; i < numDocs; i++) {
           String expected = (String) docs.get(i).getFieldValue("unicode_s");
@@ -390,7 +390,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     } finally {
       if (oldParser != null) {
         // set the old parser back
-        ((HttpSolrServer)server).setParser(oldParser);
+        ((HttpSolrClient)client).setParser(oldParser);
       }
     }
   }
@@ -398,14 +398,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testErrorHandling() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
 
     SolrQuery query = new SolrQuery();
     query.set(CommonParams.QT, "/analysis/field");
     query.set(AnalysisParams.FIELD_TYPE, "int");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     try {
-      server.query( query );
+      client.query( query );
       Assert.fail("should have a number format exception");
     }
     catch(SolrException ex) {
@@ -420,7 +420,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     try {
       //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
       // alternatively, the resulting assertion could be modified to assert that no default field is specified.
-      server.deleteByQuery( "{!df=text} ??::?? ignore_exception" ); // query syntax error
+      client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ); // query syntax error
       Assert.fail("should have a number format exception");
     }
     catch(SolrException ex) {
@@ -437,9 +437,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc.addField("id", "DOCID2", 1.0f);
     doc.addField("name", "hello", 1.0f);
 
-    if (server instanceof HttpSolrServer) {
+    if (client instanceof HttpSolrClient) {
       try {
-        server.add(doc);
+        client.add(doc);
         fail("Should throw exception!");
       } catch (SolrException ex) {
         assertEquals(400, ex.code());
@@ -448,21 +448,21 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       } catch (Throwable t) {
         Assert.fail("should have thrown a SolrException! not: " + t);
       }
-    } else if (server instanceof ConcurrentUpdateSolrServer) {
+    } else if (client instanceof ConcurrentUpdateSolrClient) {
       //XXX concurrentupdatesolrserver reports errors differently
-      ConcurrentUpdateSolrServer cs = (ConcurrentUpdateSolrServer) server;
-      Field field = getCUSSExceptionField(cs);
-      field.set(cs,  null);
-      cs.add(doc);
-      cs.blockUntilFinished();
-      Throwable lastError = (Throwable)field.get(cs);
+      ConcurrentUpdateSolrClient concurrentClient = (ConcurrentUpdateSolrClient) client;
+      Field field = getConcurrentClientExceptionField(concurrentClient);
+      field.set(concurrentClient, null);
+      concurrentClient.add(doc);
+      concurrentClient.blockUntilFinished();
+      Throwable lastError = (Throwable)field.get(concurrentClient);
       assertNotNull("Should throw exception!", lastError); //XXX 
     } else {
-      log.info("Ignorig update test for client:" + server.getClass().getName());
+      log.info("Ignoring update test for client:" + client.getClass().getName());
     }
   }
   
-  private static Field getCUSSExceptionField(Object cs)
+  private static Field getConcurrentClientExceptionField(Object cs)
       throws SecurityException, NoSuchFieldException, IllegalArgumentException {
     Field field = cs.getClass().getDeclaredField("lastError");
     field.setAccessible(true);
@@ -472,31 +472,31 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testAugmentFields() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
+    client.deleteByQuery("*:*");// delete everything!
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "id", "111", 1.0f );
     doc.addField( "name", "doc1", 1.0f );
     doc.addField( "price", 11 );
-    server.add( doc );
-    server.commit(); // make sure this gets in first
+    client.add(doc);
+    client.commit(); // make sure this gets in first
     
     doc = new SolrInputDocument();
     doc.addField( "id", "222", 1.0f );
     doc.addField( "name", "doc2", 1.0f );
     doc.addField( "price", 22 );
-    server.add( doc );
-    server.commit();
+    client.add(doc);
+    client.commit();
     
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
     query.set( CommonParams.FL, "id,price,[docid],[explain style=nl],score,aaa:[value v=aaa],ten:[value v=10 t=int]" );
     query.addSortField( "price", SolrQuery.ORDER.asc );
-    QueryResponse rsp = server.query( query );
+    QueryResponse rsp = client.query( query );
     
     SolrDocumentList out = rsp.getResults();
     assertEquals( 2, out.getNumFound() );
@@ -523,10 +523,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @Test
   public void testUpdateRequestWithParameters() throws Exception {
-    SolrServer server1 = createNewSolrServer();
+    SolrClient client = createNewSolrClient();
     
-    server1.deleteByQuery( "*:*" );
-    server1.commit();
+    client.deleteByQuery("*:*");
+    client.commit();
     
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "id1");
@@ -534,47 +534,47 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     UpdateRequest req = new UpdateRequest();
     req.setParam("overwrite", "false");
     req.add(doc);
-    server1.request(req);
-    server1.request(req);
-    server1.commit();
+    client.request(req);
+    client.request(req);
+    client.commit();
     
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    QueryResponse rsp = server1.query(query);
+    QueryResponse rsp = client.query(query);
     
     SolrDocumentList out = rsp.getResults();
     assertEquals(2, out.getNumFound());
-    if (!(server1 instanceof EmbeddedSolrServer)) {
+    if (!(client instanceof EmbeddedSolrServer)) {
       /* Do not close in case of using EmbeddedSolrServer,
        * as that would close the CoreContainer */
-      server1.shutdown();
+      client.shutdown();
     }
   }
   
  @Test
  public void testContentStreamRequest() throws Exception {
-    SolrServer server = getSolrServer();
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
-    QueryResponse rsp = server.query( new SolrQuery( "*:*") );
-    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.addFile(getFile("solrj/books.csv"), "application/csv");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-    NamedList<Object> result = server.request(up);
+    NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
-    rsp = server.query( new SolrQuery( "*:*") );
+    rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
  }
 
  @Test
  public void testMultiContentStreamRequest() throws Exception {
-    SolrServer server = getSolrServer();
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
-    QueryResponse rsp = server.query( new SolrQuery( "*:*") );
-    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query( new SolrQuery( "*:*") );
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.addFile(getFile("solrj/docs1.xml"),"application/xml"); // 2
@@ -582,49 +582,49 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     up.setParam("a", "\u1234");
     up.setParam(CommonParams.HEADER_ECHO_PARAMS, CommonParams.EchoParamStyle.ALL.toString());
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-    NamedList<Object> result = server.request(up);
+    NamedList<Object> result = client.request(up);
     Assert.assertEquals("\u1234",
         ((NamedList)((NamedList) result.get("responseHeader")).get("params")).get("a"));
     assertNotNull("Couldn't upload xml files", result);
-    rsp = server.query( new SolrQuery( "*:*") );
+    rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 5 , rsp.getResults().getNumFound() );
   }
   
  @Test
  public void testLukeHandler() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
+    client.deleteByQuery("*:*");// delete everything!
     
     SolrInputDocument[] doc = new SolrInputDocument[5];
     for( int i=0; i<doc.length; i++ ) {
       doc[i] = new SolrInputDocument();
       doc[i].setField( "id", "ID"+i, 1.0f );
-      server.add( doc[i] );
+      client.add(doc[i]);
     }
-    server.commit();
+    client.commit();
     assertNumFound( "*:*", doc.length ); // make sure it got in
     
     LukeRequest luke = new LukeRequest();
     luke.setShowSchema( false );
-    LukeResponse rsp = luke.process( server );
+    LukeResponse rsp = luke.process( client );
     assertNull( rsp.getFieldTypeInfo() ); // if you don't ask for it, the schema is null
     
     luke.setShowSchema( true );
-    rsp = luke.process( server );
+    rsp = luke.process( client );
     assertNotNull( rsp.getFieldTypeInfo() ); 
   }
 
  @Test
  public void testStatistics() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
 
     String f = "val_i";
@@ -636,54 +636,54 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       doc.setField( "id", "doc"+i++ );
       doc.setField( "name", "doc: "+num );
       doc.setField( f, num );
-      server.add( doc );
+      client.add(doc);
     }
-    server.commit();
+    client.commit();
     assertNumFound( "*:*", nums.length ); // make sure they all got in
     
     SolrQuery query = new SolrQuery( "*:*" );
     query.setRows( 0 );
     query.setGetFieldStatistics( f );
     
-    QueryResponse rsp = server.query( query );
+    QueryResponse rsp = client.query( query );
     FieldStatsInfo stats = rsp.getFieldStatsInfo().get( f );
-    assertNotNull( stats );
+    assertNotNull(stats);
     
     assertEquals( 23.0, ((Double)stats.getMin()).doubleValue(), 0 );
-    assertEquals( 94.0, ((Double)stats.getMax()).doubleValue(), 0 );
+    assertEquals(94.0, ((Double) stats.getMax()).doubleValue(), 0);
     assertEquals( new Long(nums.length), stats.getCount() );
     assertEquals( new Long(0), stats.getMissing() );
-    assertEquals( "26.4", stats.getStddev().toString().substring(0,4) );
+    assertEquals( "26.4", stats.getStddev().toString().substring(0, 4) );
     
     // now lets try again with a new set...  (odd median)
     //----------------------------------------------------
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
-    assertNumFound( "*:*", 0 ); // make sure it got in
+    client.deleteByQuery( "*:*" );// delete everything!
+    client.commit();
+    assertNumFound("*:*", 0); // make sure it got in
     nums = new int[] { 5, 7, 10, 19, 20 };
     for( int num : nums ) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField( "id", "doc"+i++ );
       doc.setField( "name", "doc: "+num );
       doc.setField( f, num );
-      server.add( doc );
+      client.add( doc );
     }
-    server.commit();
+    client.commit();
     assertNumFound( "*:*", nums.length ); // make sure they all got in
     
-    rsp = server.query( query );
+    rsp = client.query( query );
     stats = rsp.getFieldStatsInfo().get( f );
     assertNotNull( stats );
     
-    assertEquals( 5.0, ((Double)stats.getMin()).doubleValue(), 0 );
+    assertEquals(5.0, ((Double) stats.getMin()).doubleValue(), 0);
     assertEquals( 20.0, ((Double)stats.getMax()).doubleValue(), 0 );
-    assertEquals( new Long(nums.length), stats.getCount() );
+    assertEquals(new Long(nums.length), stats.getCount());
     assertEquals( new Long(0), stats.getMissing() );
     
     // Now try again with faceting
     //---------------------------------
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
     nums = new int[] { 1, 2, 3, 4, 5, 10, 11, 12, 13, 14 };
     for( i=0; i<nums.length; i++ ) {
@@ -693,15 +693,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       doc.setField( "name", "doc: "+num );
       doc.setField( f, num );
       doc.setField( "inStock", i < 5 );
-      server.add( doc );
+      client.add( doc );
     }
-    server.commit();
+    client.commit();
     assertNumFound( "inStock:true",  5 ); // make sure they all got in
     assertNumFound( "inStock:false", 5 ); // make sure they all got in
 
     // facet on 'inStock'
-    query.addStatsFieldFacets( f, "inStock" );
-    rsp = server.query( query );
+    query.addStatsFieldFacets(f, "inStock");
+    rsp = client.query( query );
     stats = rsp.getFieldStatsInfo().get( f );
     assertNotNull( stats );
     
@@ -727,26 +727,26 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testPingHandler() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
     
     // should be ok
-    server.ping();
+    client.ping();
     
   }
   
   @Test
   public void testFaceting() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
     
     ArrayList<SolrInputDocument> docs = new ArrayList<>(10);
@@ -767,8 +767,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       }
       docs.add( doc );
     }
-    server.add( docs );
-    server.commit();
+    client.add(docs);
+    client.commit();
     
     SolrQuery query = new SolrQuery( "*:*" );
     query.remove( FacetParams.FACET_FIELD );
@@ -777,8 +777,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.setFacet( true );
     query.setRows( 0 );
     
-    QueryResponse rsp = server.query( query );
-    assertEquals( docs.size(), rsp.getResults().getNumFound() );
+    QueryResponse rsp = client.query( query );
+    assertEquals(docs.size(), rsp.getResults().getNumFound());
     
     List<FacetField> facets = rsp.getFacetFields();
     assertEquals( 1, facets.size() );
@@ -790,19 +790,19 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // should be the same facets with minCount=0
     query.setFilterQueries( "features:two" );
-    rsp = server.query( query );
+    rsp = client.query( query );
     ff = rsp.getFacetField( "features" );
-    assertEquals( "[two (5), four (2), five (1), three (1)]", ff.getValues().toString() );
+    assertEquals("[two (5), four (2), five (1), three (1)]", ff.getValues().toString());
     
     // with minCount > 3
-    query.setFacetMinCount( 4 );
-    rsp = server.query( query );
+    query.setFacetMinCount(4);
+    rsp = client.query( query );
     ff = rsp.getFacetField( "features" );
     assertEquals( "[two (5)]", ff.getValues().toString() );
 
     // with minCount > 3
-    query.setFacetMinCount( -1 );
-    rsp = server.query( query );
+    query.setFacetMinCount(-1);
+    rsp = client.query( query );
     ff = rsp.getFacetField( "features" );
     
     // System.out.println( rsp.getResults().getNumFound() + " :::: 444: "+ff.getValues() );
@@ -815,11 +815,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
   @Test
   public void testPivotFacetsStats() throws Exception {
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
-    server.deleteByQuery("*:*");// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     int id = 1;
@@ -836,8 +836,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", false, "popularity", 38, "price", 47.98));
     docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", true, "popularity", -38));
     docs.add(makeTestDoc("id", id++, "cat", "b")); // something not matching all fields
-    server.add(docs);
-    server.commit();
+    client.add(docs);
+    client.commit();
 
     for (String pivot : new String[] { "{!key=pivot_key stats=s1}features,manu",
                                        "{!key=pivot_key stats=s1}features,manu,cat",
@@ -854,7 +854,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       query.setFacetMinCount(0);
       query.setRows(0);
 
-      QueryResponse rsp = server.query(query);
+      QueryResponse rsp = client.query(query);
 
       // check top (ie: non-pivot) stats
       Map<String, FieldStatsInfo> map = rsp.getFieldStatsInfo();
@@ -942,17 +942,17 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @Test
   public void testPivotFacetsStatsNotSupported() throws Exception {
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
-    server.deleteByQuery("*:*");// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // results of this test should be the same regardless of whether any docs in index
     if (random().nextBoolean()) {
-      server.add(makeTestDoc("id", 1, "features", "aaa", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
-      server.commit();
+      client.add(makeTestDoc("id", 1, "features", "aaa", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
+      client.commit();
     }
 
     ignoreException("is not currently supported");
@@ -962,7 +962,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.addFacetPivotField("{!stats=s1}features,manu");
     query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
     try {
-      server.query(query);
+      client.query(query);
       fail("SolrException should be thrown on query");
     } catch (SolrException e) {
       assertEquals("Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
@@ -977,7 +977,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.setFacetMinCount(0);
     query.setRows(0);
     try {
-      server.query(query);
+      client.query(query);
       fail("SolrException should be thrown on query");
     } catch (SolrException e) {
       assertEquals(400, e.code());
@@ -993,7 +993,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.setFacetMinCount(0);
     query.setRows(0);
     try {
-      server.query(query);
+      client.query(query);
       fail("SolrException should be thrown on query");
     } catch (SolrException e) {
       assertEquals("Pivot facet on string is not currently supported, bad request returned", 400, e.code());
@@ -1009,11 +1009,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
     
   private void doPivotFacetTest(boolean missing) throws Exception {
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
     
     int id = 1;
@@ -1030,8 +1030,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", false ) );
     docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", true ) );
     docs.add( makeTestDoc( "id", id++,  "cat", "b" ) ); // something not matching all fields
-    server.add( docs );
-    server.commit();
+    client.add(docs);
+    client.commit();
     
     SolrQuery query = new SolrQuery( "*:*" );
     query.addFacetPivotField("features,cat", "cat,features", "features,cat,inStock" );
@@ -1039,8 +1039,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.setFacetMissing( missing );
     query.setRows( 0 );
     
-    QueryResponse rsp = server.query( query );
-    assertEquals( docs.size(), rsp.getResults().getNumFound() );
+    QueryResponse rsp = client.query( query );
+    assertEquals(docs.size(), rsp.getResults().getNumFound());
     
     NamedList<List<PivotField>> pivots = rsp.getFacetPivot();
     assertEquals( 3, pivots.size() );
@@ -1200,10 +1200,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query = new SolrQuery( "*:*" );
     query.addFacetPivotField( "{!ex=mytag key=mykey}features,cat" );
     query.addFilterQuery("{!tag=mytag}-(features:bbb AND cat:a AND inStock:true)");//filters out one
-    query.setFacetMinCount( 0 );
-    query.setRows( 0 );
+    query.setFacetMinCount(0);
+    query.setRows(0);
 
-    rsp = server.query( query );
+    rsp = client.query( query );
     assertEquals( docs.size() - 1, rsp.getResults().getNumFound() );//one less due to filter
 
     //The rest of this test should be just like the original since we've
@@ -1240,10 +1240,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @Test
   public void testChineseDefaults() throws Exception {
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
 
     // Beijing medical University
@@ -1254,28 +1254,28 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     req.add(doc);
 
     req.setAction(ACTION.COMMIT, true, true );
-    req.process( server );
+    req.process( client );
 
     // Beijing university should match:
     SolrQuery query = new SolrQuery("北京大学");
-    QueryResponse rsp = server.query( query );
+    QueryResponse rsp = client.query( query );
     assertEquals(1, rsp.getResults().getNumFound());
   }
 
   @Test
   public void testRealtimeGet() throws Exception
   {    
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     
     // Empty the database...
-    server.deleteByQuery( "*:*" );// delete everything!
+    client.deleteByQuery("*:*");// delete everything!
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "id", "DOCID", 1.0f );
     doc.addField( "name", "hello", 1.0f );
-    server.add( doc );
-    server.commit();  // Since the transaction log is disabled in the example, we need to commit
+    client.add(doc);
+    client.commit();  // Since the transaction log is disabled in the example, we need to commit
     
     SolrQuery q = new SolrQuery();
     q.setRequestHandler("/get");
@@ -1285,7 +1285,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // First Try with the BinaryResponseParser
     QueryRequest req = new QueryRequest( q );
     req.setResponseParser(new BinaryResponseParser());
-    QueryResponse rsp = req.process(server);
+    QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument)rsp.getResponse().get("doc");
     assertEquals("DOCID", out.get("id"));
     assertEquals("hello", out.get("name"));
@@ -1293,7 +1293,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     // Then with the XMLResponseParser
     req.setResponseParser(new XMLResponseParser());
-    rsp = req.process(server);
+    rsp = req.process(client);
     out = (SolrDocument)rsp.getResponse().get("doc");
     assertEquals("DOCID", out.get("id"));
     assertEquals("hello", out.get("name"));
@@ -1303,18 +1303,18 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testUpdateField() throws Exception {
     //no versions
-    SolrServer server = getSolrServer();
-    server.deleteByQuery("*:*");
-    server.commit();
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("name", "gadget");
     doc.addField("price_f", 1);
-    server.add(doc);
-    server.commit();
+    client.add(doc);
+    client.commit();
     SolrQuery q = new SolrQuery("*:*");
     q.setFields("id","price_f","name", "_version_");
-    QueryResponse resp = server.query(q);
+    QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     Long version = (Long)resp.getResults().get(0).getFirstValue("_version_");
     assertNotNull("no version returned", version);
@@ -1329,12 +1329,12 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc.addField("_version_", version+1);
     doc.addField("price_f", oper);
     try {
-      server.add(doc);
-      if(server instanceof HttpSolrServer) { //XXX concurrent server reports exceptions differently
+      client.add(doc);
+      if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
       } else {
-        server.commit(); //just to be sure the client has sent the doc
-        assertTrue("CUSS did not report an error", ((Throwable)getCUSSExceptionField(server).get(server)).getMessage().contains("Conflict"));
+        client.commit(); //just to be sure the client has sent the doc
+        assertTrue("ConcurrentUpdateSolrClient did not report an error", ((Throwable) getConcurrentClientExceptionField(client).get(client)).getMessage().contains("Conflict"));
       }
     } catch (SolrException se) {
       assertTrue("No identifiable error message", se.getMessage().contains("version conflict for unique"));
@@ -1345,9 +1345,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc.addField("id", "unique");
     doc.addField("_version_", version);
     doc.addField("price_f", oper);
-    server.add(doc);
-    server.commit();
-    resp = server.query(q);
+    client.add(doc);
+    client.commit();
+    resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price_f"));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
@@ -1357,9 +1357,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("price_f", oper);
-    server.add(doc);
-    server.commit();
-    resp = server.query(q);
+    client.add(doc);
+    client.commit();
+    resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price_f"));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
@@ -1367,20 +1367,20 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @Test
   public void testUpdateMultiValuedField() throws Exception {
-    SolrServer solrServer = getSolrServer();
+    SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "123");
-    solrServer.add(doc);
-    solrServer.commit(true, true);
-    QueryResponse response = solrServer.query(new SolrQuery("id:123"));
+    solrClient.add(doc);
+    solrClient.commit(true, true);
+    QueryResponse response = solrClient.query(new SolrQuery("id:123"));
     assertEquals("Failed to add doc to cloud server", 1, response.getResults().getNumFound());
 
     Map<String, List<String>> operation = new HashMap<>();
     operation.put("set", Arrays.asList("first", "second", "third"));
     doc.addField("multi_ss", operation);
-    solrServer.add(doc);
-    solrServer.commit(true, true);
-    response = solrServer.query(new SolrQuery("id:123"));
+    solrClient.add(doc);
+    solrClient.commit(true, true);
+    response = solrClient.query(new SolrQuery("id:123"));
     assertTrue("Multi-valued field did not return a collection", response.getResults().get(0).get("multi_ss") instanceof List);
     List<String> values = (List<String>) response.getResults().get(0).get("multi_ss");
     assertEquals("Field values was not updated with all values via atomic update", 3, values.size());
@@ -1389,42 +1389,42 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     operation.put("add", Arrays.asList("fourth", "fifth"));
     doc.removeField("multi_ss");
     doc.addField("multi_ss", operation);
-    solrServer.add(doc);
-    solrServer.commit(true, true);
-    response = solrServer.query(new SolrQuery("id:123"));
+    solrClient.add(doc);
+    solrClient.commit(true, true);
+    response = solrClient.query(new SolrQuery("id:123"));
     values = (List<String>) response.getResults().get(0).get("multi_ss");
     assertEquals("Field values was not updated with all values via atomic update", 5, values.size());
   }
 
   @Test
   public void testSetNullUpdates() throws Exception {
-    SolrServer solrServer = getSolrServer();
+    SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "testSetNullUpdates");
     doc.addField("single_s", "test-value");
     doc.addField("multi_ss", Arrays.asList("first", "second"));
-    solrServer.add(doc);
-    solrServer.commit(true, true);
+    solrClient.add(doc);
+    solrClient.commit(true, true);
     doc.removeField("single_s");
     doc.removeField("multi_ss");
     Map<String, Object> map = Maps.newHashMap();
     map.put("set", null);
     doc.addField("multi_ss", map);
-    solrServer.add(doc);
-    solrServer.commit(true, true);
-    QueryResponse response = solrServer.query(new SolrQuery("id:testSetNullUpdates"));
+    solrClient.add(doc);
+    solrClient.commit(true, true);
+    QueryResponse response = solrClient.query(new SolrQuery("id:testSetNullUpdates"));
     assertNotNull("Entire doc was replaced because null update was not written", response.getResults().get(0).getFieldValue("single_s"));
     assertNull("Null update failed. Value still exists in document", response.getResults().get(0).getFieldValue("multi_ss"));
   }
 
   public void testSetNullUpdateOrder() throws Exception {
-    SolrServer solrServer = getSolrServer();
+    SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "testSetNullUpdateOrder");
     doc.addField("single_s", "test-value");
     doc.addField("multi_ss", Arrays.asList("first", "second"));
-    solrServer.add(doc);
-    solrServer.commit(true, true);
+    solrClient.add(doc);
+    solrClient.commit(true, true);
 
     Map<String, Object> map = Maps.newHashMap();
     map.put("set", null);
@@ -1432,20 +1432,20 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc.addField("multi_ss", map);
     doc.addField("id", "testSetNullUpdateOrder");
     doc.addField("single_s", "test-value2");
-    solrServer.add(doc);
-    solrServer.commit();
+    solrClient.add(doc);
+    solrClient.commit();
 
-    QueryResponse response = solrServer.query(new SolrQuery("id:testSetNullUpdateOrder"));
+    QueryResponse response = solrClient.query(new SolrQuery("id:testSetNullUpdateOrder"));
     assertEquals("Field included after set null=true not updated via atomic update", "test-value2",
         response.getResults().get(0).getFieldValue("single_s"));
   }
   
   @Test
   public void testQueryWithParams() throws SolrServerException {
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
     SolrQuery q = new SolrQuery("query");
     q.setParam("debug", true);
-    QueryResponse resp = server.query(q);
+    QueryResponse resp = client.query(q);
     assertEquals(
         "server didn't respond with debug=true, didn't we pass in the parameter?",
         "true",
@@ -1455,9 +1455,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @Test
   public void testChildDoctransformer() throws IOException, SolrServerException {
-    SolrServer server = getSolrServer();
-    server.deleteByQuery("*:*");
-    server.commit();
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
 
     int numRootDocs = TestUtil.nextInt(random(), 10, 100);
     int maxDepth = TestUtil.nextInt(random(), 2, 5);
@@ -1465,22 +1465,22 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Map<String,SolrInputDocument> allDocs = new HashMap<>();
 
     for (int i =0; i < numRootDocs; i++) {
-      server.add(genNestedDocuments(allDocs, 0, maxDepth));
+      client.add(genNestedDocuments(allDocs, 0, maxDepth));
     }
 
-    server.commit();
+    client.commit();
 
     // sanity check
     SolrQuery q = new SolrQuery("*:*");
-    QueryResponse resp = server.query(q);
-    assertEquals("Doc count does not match", 
-                 allDocs.size(), resp.getResults().getNumFound());
+    QueryResponse resp = client.query(q);
+    assertEquals("Doc count does not match",
+        allDocs.size(), resp.getResults().getNumFound());
 
 
     // base check - we know there is an exact number of these root docs
     q = new SolrQuery("level_i:0");
     q.setFields("*", "[child parentFilter=\"level_i:0\"]");
-    resp = server.query(q);
+    resp = client.query(q);
     assertEquals("topLevel count does not match", numRootDocs,
                  resp.getResults().getNumFound());
     for (SolrDocument outDoc : resp.getResults()) {
@@ -1512,7 +1512,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       q.setFields("id,[child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"]");
-      resp = server.query(q);
+      resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
         SolrInputDocument origDoc = allDocs.get(docId);
@@ -1560,7 +1560,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       q.setFields("id,[child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"]");
-      resp = server.query(q);
+      resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
         SolrInputDocument origDoc = allDocs.get(docId);
@@ -1588,58 +1588,58 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @Test
   public void testFieldGlobbing() throws Exception  {
-    SolrServer server = getSolrServer();
+    SolrClient client = getSolrClient();
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "testFieldGlobbing");
     doc.addField("x_s", "x");
     doc.addField("y_s", "y");
     doc.addField("z_s", "z");
-    server.add(doc);
-    server.commit();
+    client.add(doc);
+    client.commit();
 
     // id and glob
-    QueryResponse response = server.query(new SolrQuery("id:testFieldGlobbing").addField("id").addField("*_s"));
+    QueryResponse response = client.query(new SolrQuery("id:testFieldGlobbing").addField("id").addField("*_s"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 4, response.getResults().get(0).getFieldNames().size());
 
     // just globs
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("*_s"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("*_s"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 3, response.getResults().get(0).getFieldNames().size());
 
     // just id
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("id"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("id"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 1, response.getResults().get(0).getFieldNames().size());
 
     // id and pseudo field and glob
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("id").addField("[docid]").addField("*_s"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("id").addField("[docid]").addField("*_s"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 5, response.getResults().get(0).getFieldNames().size());
 
     // pseudo field and glob
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("[docid]").addField("*_s"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("[docid]").addField("*_s"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 4, response.getResults().get(0).getFieldNames().size());
 
     // just a pseudo field
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("[docid]"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("[docid]"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 1, response.getResults().get(0).getFieldNames().size());
 
     // only score
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("score"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("score"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 1, response.getResults().get(0).getFieldNames().size());
 
     // pseudo field and score
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("score").addField("[docid]"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("score").addField("[docid]"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 2, response.getResults().get(0).getFieldNames().size());
 
     // score and globs
-    response = server.query(new SolrQuery("id:testFieldGlobbing").addField("score").addField("*_s"));
+    response = client.query(new SolrQuery("id:testFieldGlobbing").addField("score").addField("*_s"));
     assertEquals("Document not found", 1, response.getResults().getNumFound());
     assertEquals("All requested fields were not returned", 4, response.getResults().get(0).getFieldNames().size());
   }

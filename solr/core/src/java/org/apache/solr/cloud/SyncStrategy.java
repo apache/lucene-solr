@@ -17,20 +17,13 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -48,6 +41,11 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 public class SyncStrategy {
   protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -269,18 +267,18 @@ public class SyncStrategy {
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
         recoverRequestCmd.setCoreName(coreName);
         
-        HttpSolrServer server = new HttpSolrServer(baseUrl, client);
+        HttpSolrClient client = new HttpSolrClient(baseUrl, SyncStrategy.this.client);
         try {
-          server.setConnectionTimeout(30000);
-          server.setSoTimeout(120000);
-          server.request(recoverRequestCmd);
+          client.setConnectionTimeout(30000);
+          client.setSoTimeout(120000);
+          client.request(recoverRequestCmd);
         } catch (Throwable t) {
           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
           if (t instanceof Error) {
             throw (Error) t;
           }
         } finally {
-          server.shutdown();
+          client.shutdown();
         }
       }
     };

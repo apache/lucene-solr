@@ -17,13 +17,8 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
@@ -45,8 +40,13 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
- * SolrServer that connects directly to SolrCore.
+ * SolrClient that connects directly to SolrCore.
  * <p>
  * TODO -- this implementation sends the response to XML and then parses it.  
  * It *should* be able to convert the response directly into a named list.
@@ -54,7 +54,7 @@ import org.apache.solr.servlet.SolrRequestParsers;
  *
  * @since solr 1.3
  */
-public class EmbeddedSolrServer extends SolrServer
+public class EmbeddedSolrServer extends SolrClient
 {
   protected final CoreContainer coreContainer;
   protected final String coreName;
@@ -65,7 +65,7 @@ public class EmbeddedSolrServer extends SolrServer
    * @deprecated use {@link #EmbeddedSolrServer(CoreContainer, String)} instead.
    */
   @Deprecated
-  public EmbeddedSolrServer( SolrCore core )
+  public EmbeddedSolrServer(SolrCore core)
   {
     if ( core == null ) {
       throw new NullPointerException("SolrCore instance required");
@@ -88,7 +88,7 @@ public class EmbeddedSolrServer extends SolrServer
    * @param coreContainer the core container
    * @param coreName the core name
    */
-  public EmbeddedSolrServer(  CoreContainer coreContainer, String coreName )
+  public EmbeddedSolrServer(CoreContainer coreContainer, String coreName)
   {
     if ( coreContainer == null ) {
       throw new NullPointerException("CoreContainer instance required");

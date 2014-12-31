@@ -1,12 +1,12 @@
 package org.apache.solr.client.solrj.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,7 +25,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class CloudSolrServerMultiConstructorTest extends LuceneTestCase {
+public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   
   /*
    * NOTE: If you only include one String argument, it will NOT use the
@@ -43,7 +43,7 @@ public class CloudSolrServerMultiConstructorTest extends LuceneTestCase {
     final String chroot = "/mychroot";
 
     StringBuilder sb = new StringBuilder();
-    CloudSolrServer client;
+    CloudSolrClient client;
 
     if(setOrList) {
       /*
@@ -64,9 +64,9 @@ public class CloudSolrServerMultiConstructorTest extends LuceneTestCase {
 
     if(withChroot) {
       sb.append(chroot);
-      client = new CloudSolrServer(hosts, "/mychroot");
+      client = new CloudSolrClient(hosts, "/mychroot");
     } else {
-      client = new CloudSolrServer(hosts, null);
+      client = new CloudSolrClient(hosts, null);
     }
 
     assertEquals(sb.toString(), client.getZkHost());
@@ -77,6 +77,6 @@ public class CloudSolrServerMultiConstructorTest extends LuceneTestCase {
   public void testBadChroot() {
     hosts = new ArrayList<>();
     hosts.add("host1:2181");
-    new CloudSolrServer(hosts, "foo");
+    new CloudSolrClient(hosts, "foo");
   }
 }

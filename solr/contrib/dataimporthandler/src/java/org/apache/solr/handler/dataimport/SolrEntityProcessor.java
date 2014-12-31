@@ -19,10 +19,10 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -64,7 +64,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   public static final int TIMEOUT_SECS = 5 * 60; // 5 minutes
   public static final int ROWS_DEFAULT = 50;
   
-  private SolrServer solrServer = null;
+  private SolrClient solrClient = null;
   private String queryString;
   private int rows = ROWS_DEFAULT;
   private String[] filterQueries;
@@ -100,11 +100,11 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
-        solrServer = new HttpSolrServer(url.toExternalForm(), client, new XMLResponseParser());
+        solrClient = new HttpSolrClient(url.toExternalForm(), client, new XMLResponseParser());
         LOG.info("using XMLResponseParser");
       } else {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
-        solrServer = new HttpSolrServer(url.toExternalForm(), client);
+        solrClient = new HttpSolrClient(url.toExternalForm(), client);
         LOG.info("using BinaryResponseParser");
       }
     } catch (MalformedURLException e) {
@@ -184,7 +184,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     
     QueryResponse response = null;
     try {
-      response = solrServer.query(solrQuery);
+      response = solrClient.query(solrQuery);
     } catch (SolrServerException e) {
       if (ABORT.equals(onError)) {
         wrapAndThrow(SEVERE, e);

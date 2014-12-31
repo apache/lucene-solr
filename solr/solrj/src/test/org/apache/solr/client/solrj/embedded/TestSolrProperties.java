@@ -20,7 +20,7 @@ package org.apache.solr.client.solrj.embedded;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -56,11 +56,11 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     return new File(SOLR_HOME, SOLR_XML);
   }
 
-  protected SolrServer getSolrAdmin() {
+  protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");
   }
   
-  protected SolrServer getRenamedSolrAdmin() {
+  protected SolrClient getRenamedSolrAdmin() {
     return new EmbeddedSolrServer(cores, "renamed_core");
   }
 
@@ -130,7 +130,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
 
     // Now test reloading it should have a newer open time
     String name = "core0";
-    SolrServer coreadmin = getSolrAdmin();
+    SolrClient coreadmin = getSolrAdmin();
     CoreAdminResponse mcr = CoreAdminRequest.getStatus(name, coreadmin);
     long before = mcr.getStartTime(name).getTime();
     CoreAdminRequest.reloadCore(name, coreadmin);

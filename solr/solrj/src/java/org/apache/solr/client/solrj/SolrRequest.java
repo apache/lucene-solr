@@ -109,5 +109,5 @@ public abstract class SolrRequest implements Serializable
 
   public abstract SolrParams getParams();
   public abstract Collection<ContentStream> getContentStreams() throws IOException;
-  public abstract SolrResponse process( SolrServer server ) throws SolrServerException, IOException;
+  public abstract SolrResponse process( SolrClient server ) throws SolrServerException, IOException;
 }

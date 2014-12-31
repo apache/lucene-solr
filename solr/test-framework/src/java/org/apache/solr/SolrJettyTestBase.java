@@ -17,25 +17,23 @@ package org.apache.solr;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.OutputStreamWriter;
-import java.util.Properties;
-import java.util.SortedMap;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.util.Properties;
+import java.util.SortedMap;
 
 
 abstract public class SolrJettyTestBase extends SolrTestCaseJ4 
@@ -50,7 +48,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
   public static JettySolrRunner jetty;
   public static int port;
-  public static SolrServer server = null;
+  public static SolrClient client = null;
   public static String context;
 
   public static JettySolrRunner createJetty(String solrHome, String configFile, String schemaFile, String context,
@@ -87,36 +85,36 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       jetty.stop();
       jetty = null;
     }
-    if (server != null) server.shutdown();
-    server = null;
+    if (client != null) client.shutdown();
+    client = null;
   }
 
 
-  public SolrServer getSolrServer() {
+  public SolrClient getSolrClient() {
     {
-      if (server == null) {
-        server = createNewSolrServer();
+      if (client == null) {
+        client = createNewSolrClient();
       }
-      return server;
+      return client;
     }
   }
 
   /**
-   * Create a new solr server.
+   * Create a new solr client.
    * If createJetty was called, an http implementation will be created,
    * otherwise an embedded implementation will be created.
    * Subclasses should override for other options.
    */
-  public SolrServer createNewSolrServer() {
+  public SolrClient createNewSolrClient() {
     if (jetty != null) {
       try {
-        // setup the server...
+        // setup the client...
         String url = jetty.getBaseUrl().toString() + "/" + "collection1";
-        HttpSolrServer s = new HttpSolrServer( url );
-        s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-        s.setDefaultMaxConnectionsPerHost(100);
-        s.setMaxTotalConnections(100);
-        return s;
+        HttpSolrClient client = new HttpSolrClient( url );
+        client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+        client.setDefaultMaxConnectionsPerHost(100);
+        client.setMaxTotalConnections(100);
+        return client;
       }
       catch( Exception ex ) {
         throw new RuntimeException( ex );

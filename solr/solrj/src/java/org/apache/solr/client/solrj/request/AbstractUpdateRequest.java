@@ -17,7 +17,7 @@ package org.apache.solr.client.solrj.request;
  */
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -117,11 +117,11 @@ public abstract class AbstractUpdateRequest extends SolrRequest implements IsUpd
   }
 
   @Override
-  public UpdateResponse process( SolrServer server ) throws SolrServerException, IOException
+  public UpdateResponse process(SolrClient client) throws SolrServerException, IOException
   {
     long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     UpdateResponse res = new UpdateResponse();
-    res.setResponse( server.request( this ) );
+    res.setResponse(client.request(this));
     long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     res.setElapsedTime(endTime - startTime);
     return res;

@@ -142,7 +142,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     createCollectionRequest.setConfigName("conf1");
     createCollectionRequest.setRouterField("myOwnField");
     createCollectionRequest.setAutoAddReplicas(false);
-    CollectionAdminResponse response2 = createCollectionRequest.process(getCommonCloudSolrServer());
+    CollectionAdminResponse response2 = createCollectionRequest.process(getCommonCloudSolrClient());
 
     assertEquals(0, response2.getStatus());
     assertTrue(response2.isSuccess());
