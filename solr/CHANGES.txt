@@ -37,7 +37,8 @@ System Requirements
 Upgrading from Solr 5.x
 ----------------------
 
-* N/A
+* The deprecated SolrServer and subclasses have been removed, use SolrClient
+  instead.
 
 Detailed Change List
 ----------------------
@@ -47,6 +48,8 @@ Other Changes
 
 * SOLR-6127: Improve example docs, using films data (Varun Thacker via ehatcher)
 
+* SOLR-6895: Deprecated SolrServer classes have been removed (Alan Woodward,
+  Erik Hatcher)
 
 ==================  5.0.0 ==================
 
