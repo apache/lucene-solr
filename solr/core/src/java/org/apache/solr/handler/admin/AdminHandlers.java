@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
  * A special Handler that registers all standard admin handlers
  * 
  * @since solr 1.3
+ * @deprecated No need to register this requesthandler . All
+ * the plugins registered by this class are iplicitly registered by the system
  */
 @Deprecated
 public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
