@@ -179,6 +179,7 @@ public class SolrConfig extends Config implements MapSerializable{
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     getOverlay();//just in case it is not initialized
+    getRequestParams();
     initLibs();
     luceneMatchVersion = getLuceneVersion("luceneMatchVersion");
     String indexConfigPrefix;

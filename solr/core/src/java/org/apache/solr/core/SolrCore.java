@@ -29,9 +29,11 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -74,6 +76,7 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
@@ -100,6 +103,8 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -135,6 +140,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -182,6 +188,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
+
+  private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
   
   private final ReentrantLock ruleExpiryLock;
   
@@ -937,6 +945,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 //    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
 
     ruleExpiryLock = new ReentrantLock();
+    registerConfListener();
   }
     
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
@@ -2128,7 +2137,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       @Override
       public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
         RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
-        rawWriter.write(out);
+        if(rawWriter!=null) rawWriter.write(out);
       }
 
       @Override
@@ -2618,6 +2627,117 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       return getWrappedWriter().getContentType(request, response);
     }
   }
+
+  /**Register to notify for any file change in the conf directory.
+   * If the file change results in a core reload , then the listener
+   * is not fired
+   */
+  public void addConfListener(Runnable runnable) {
+    confListeners.add(runnable);
+  }
+
+  /**Remove a listener
+   * */
+  public boolean removeConfListener(Runnable runnable) {
+    return confListeners.remove(runnable);
+  }
+
+  /**This registers one listener for the entire conf directory. In zookeeper
+   * there is no event fired when children are modified. So , we expect everyone
+   * to 'touch' the /conf directory by setting some data  so that events are triggered.
+   */
+  private void registerConfListener() {
+    if( ! (resourceLoader instanceof ZkSolrResourceLoader)) return;
+    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
+    if(zkSolrResourceLoader != null)
+      zkSolrResourceLoader.getZkController().registerConfListenerForCore(
+          zkSolrResourceLoader.getConfigSetZkPath(),
+          this,
+          getListener(this, zkSolrResourceLoader));
+
+  }
+
+
+  private static Runnable getListener(SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader) {
+    final String coreName = core.getName();
+    final CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
+    final String overlayPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;
+    final String solrConfigPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
+    String schemaRes = null;
+    if (core.getLatestSchema().isMutable() && core.getLatestSchema() instanceof ManagedIndexSchema) {
+      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+      schemaRes = mis.getResourceName();
+    }
+    final String managedSchmaResourcePath = schemaRes == null ? null : zkSolrResourceLoader.getConfigSetZkPath() + "/" + schemaRes;
+    return new Runnable() {
+      @Override
+      public void run() {
+        log.info("config update listener called for core {}", coreName);
+        SolrZkClient zkClient = cc.getZkController().getZkClient();
+        int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
+        SolrConfig cfg = null;
+        try (SolrCore core = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+          if (core == null || core.isClosed()) return;
+          cfg = core.getSolrConfig();
+          solrConfigversion = core.getSolrConfig().getOverlay().getZnodeVersion();
+          overlayVersion = core.getSolrConfig().getZnodeVersion();
+          if (managedSchmaResourcePath != null) {
+            managedSchemaVersion = ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion();
+          }
+
+        }
+        if (cfg != null) {
+          cfg.refreshRequestParams() ;
+        }
+        if (checkStale(zkClient, overlayPath, solrConfigversion) ||
+            checkStale(zkClient, solrConfigPath, overlayVersion) ||
+            checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
+          log.info("core reload {}", coreName);
+          cc.reload(coreName);
+          return;
+        }
+        //some files in conf directoy has changed other than schema.xml,
+        // solrconfig.xml. so fire event listeners
+
+        try (SolrCore core = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+          if (core == null || core.isClosed()) return;
+          for (Runnable listener : core.confListeners) {
+            try {
+              listener.run();
+            } catch (Exception e) {
+              log.error("Error in listener ", e);
+            }
+          }
+        }
+
+      }
+    };
+  }
+
+  private static boolean checkStale(SolrZkClient zkClient,  String zkPath, int currentVersion)  {
+    if(zkPath == null) return false;
+    try {
+      Stat stat = zkClient.exists(zkPath, null, true);
+      if(stat == null){
+        if(currentVersion > -1) return true;
+        return false;
+      }
+      if (stat.getVersion() >  currentVersion) {
+        log.info(zkPath+" is stale will need an update from {} to {}", currentVersion,stat.getVersion());
+        return true;
+      }
+      return false;
+    } catch (KeeperException.NoNodeException nne){
+      //no problem
+    } catch (KeeperException e) {
+      log.error("error refreshing solrconfig ", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().isInterrupted();
+    }
+    return false;
+  }
+
+
 }
 
 

@@ -64,7 +64,7 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
-public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAware{
+public class SolrConfigHandler extends RequestHandlerBase {
   public static final Logger log = LoggerFactory.getLogger(SolrConfigHandler.class);
   public static final boolean configEditing_disabled = Boolean.getBoolean("disable.configEdit");
 
@@ -80,85 +80,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }  else {
       command.handleGET();
     }
-  }
-
-
-
-  @Override
-  public void inform(final SolrCore core) {
-    if( ! (core.getResourceLoader() instanceof  ZkSolrResourceLoader)) return;
-    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) core.getResourceLoader();
-    if(zkSolrResourceLoader != null)
-      zkSolrResourceLoader.getZkController().registerConfListenerForCore(
-          zkSolrResourceLoader.getConfigSetZkPath(),
-          core,
-          getListener(core, zkSolrResourceLoader));
-
-  }
-
-  private static Runnable getListener(SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader) {
-    final String coreName = core.getName();
-    final CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
-    final String overlayPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;
-    final String solrConfigPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
-    String schemaRes = null;
-    if(core.getLatestSchema().isMutable()  && core.getLatestSchema() instanceof ManagedIndexSchema){
-      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
-      schemaRes = mis.getResourceName();
-    }
-    final String managedSchmaResourcePath = schemaRes ==null ? null: zkSolrResourceLoader.getConfigSetZkPath() + "/" + schemaRes;
-    return new Runnable() {
-          @Override
-          public void run() {
-            log.info("config update listener called for core {}", coreName);
-            SolrZkClient zkClient = cc.getZkController().getZkClient();
-            int solrConfigversion,overlayVersion, managedSchemaVersion=0;
-            SolrConfig cfg = null;
-            try (SolrCore core = cc.getCore(coreName))  {
-              if (core.isClosed()) return;
-              cfg = core.getSolrConfig();
-              solrConfigversion = core.getSolrConfig().getOverlay().getZnodeVersion();
-               overlayVersion = core.getSolrConfig().getZnodeVersion();
-              if(managedSchmaResourcePath != null){
-                managedSchemaVersion = ((ManagedIndexSchema)core.getLatestSchema()).getSchemaZkVersion();
-              }
-
-            }
-            if(cfg != null){
-              cfg.refreshRequestParams();
-            }
-
-            if (checkStale(zkClient, overlayPath, solrConfigversion) ||
-                checkStale(zkClient, solrConfigPath, overlayVersion) ||
-                checkStale(zkClient, managedSchmaResourcePath,managedSchemaVersion)) {
-              log.info("core reload {}",coreName);
-              cc.reload(coreName);
-            }
-          }
-        };
-  }
-
-  private static boolean checkStale(SolrZkClient zkClient,  String zkPath, int currentVersion)  {
-    if(zkPath == null) return false;
-    try {
-      Stat stat = zkClient.exists(zkPath, null, true);
-      if(stat == null){
-        if(currentVersion > -1) return true;
-        return false;
-      }
-      if (stat.getVersion() >  currentVersion) {
-        log.info(zkPath+" is stale will need an update from {} to {}", currentVersion,stat.getVersion());
-        return true;
-      }
-      return false;
-    } catch (KeeperException.NoNodeException nne){
-      //no problem
-    } catch (KeeperException e) {
-      log.error("error refreshing solrconfig ", e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().isInterrupted();
-    }
-    return false;
   }
 
 

@@ -63,7 +63,7 @@ public class CoreContainer {
 
   protected static final Logger log = LoggerFactory.getLogger(CoreContainer.class);
 
-  private final SolrCores solrCores = new SolrCores(this);
+  final SolrCores solrCores = new SolrCores(this);
 
   public static class CoreLoadFailure {
 

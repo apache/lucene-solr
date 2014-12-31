@@ -95,13 +95,13 @@ public class RequestParams implements MapSerializable{
       p.remove(name);
     } else {
       Map old = (Map) p.get(name);
-      int version = 0;
+      long version = 0;
       Map meta = null;
       if(old != null){
         meta = (Map) old.get("");
         if(meta!=null) {
-          Integer oldVersion = (Integer) old.get("v");
-          if(oldVersion != null) version = oldVersion.intValue()+1;
+          Long oldVersion = (Long) old.get("v");
+          if(oldVersion != null) version = oldVersion.longValue()+1;
         }
         meta = new LinkedHashMap<>(meta);
       } else {
@@ -197,9 +197,13 @@ public class RequestParams implements MapSerializable{
       super(map);
       this.meta = meta;
     }
+    public Map getRawMap(){
+      return meta;
+    }
 
-    public Integer getVersion() {
-      return meta == null? 0 : (Integer)meta.get("v");
+
+    public Long getVersion() {
+      return meta == null? 0l : (Long)meta.get("v");
     }
   }
 }
