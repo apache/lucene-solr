@@ -226,7 +226,7 @@ public class SnapShooter {
   private static void copyFiles(Directory sourceDir, Collection<String> files, File destDir) throws IOException {
     try (FSDirectory dir = new SimpleFSDirectory(destDir.toPath(), NoLockFactory.INSTANCE)) {
       for (String indexFile : files) {
-        sourceDir.copy(dir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
+        dir.copyFrom(sourceDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
       }
     }
   }

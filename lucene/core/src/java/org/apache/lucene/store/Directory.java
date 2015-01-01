@@ -126,7 +126,7 @@ public abstract class Directory implements Closeable {
   }
 
   /**
-   * Copies the file <i>src</i> to {@link Directory} <i>to</i> under the new
+   * Copies the file <i>src</i> in <i>from</i> to this directory under the new
    * file name <i>dest</i>.
    * <p>
    * If you want to copy the entire source directory to the destination one, you
@@ -135,31 +135,22 @@ public abstract class Directory implements Closeable {
    * <pre class="prettyprint">
    * Directory to; // the directory to copy to
    * for (String file : dir.listAll()) {
-   *   dir.copy(to, file, newFile, IOContext.DEFAULT); // newFile can be either file, or a new name
+   *   to.copyFrom(dir, file, newFile, IOContext.DEFAULT); // newFile can be either file, or a new name
    * }
    * </pre>
    * <p>
    * <b>NOTE:</b> this method does not check whether <i>dest</i> exist and will
    * overwrite it if it does.
    */
-  public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
-    IndexOutput os = null;
-    IndexInput is = null;
+  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
     boolean success = false;
-    try {
-      os = to.createOutput(dest, context);
-      is = openInput(src, context);
+    try (IndexInput is = from.openInput(src, context);
+         IndexOutput os = createOutput(dest, context)) {
       os.copyBytes(is, is.length());
       success = true;
     } finally {
-      if (success) {
-        IOUtils.close(os, is);
-      } else {
-        IOUtils.closeWhileHandlingException(os, is);
-        try {
-          to.deleteFile(dest);
-        } catch (Throwable t) {
-        }
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(this, dest);
       }
     }
   }

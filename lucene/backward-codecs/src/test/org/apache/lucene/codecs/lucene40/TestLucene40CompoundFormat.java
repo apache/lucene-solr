@@ -69,8 +69,8 @@ public class TestLucene40CompoundFormat extends BaseCompoundFormatTestCase {
     out.close();
     out1.close();
     nested.close();
-    newDir.copy(csw, "b.cfs", "b.cfs", newIOContext(random()));
-    newDir.copy(csw, "b.cfe", "b.cfe", newIOContext(random()));
+    csw.copyFrom(newDir, "b.cfs", "b.cfs", newIOContext(random()));
+    csw.copyFrom(newDir, "b.cfe", "b.cfe", newIOContext(random()));
     newDir.deleteFile("b.cfs");
     newDir.deleteFile("b.cfe");
     csw.close();
@@ -109,7 +109,7 @@ public class TestLucene40CompoundFormat extends BaseCompoundFormatTestCase {
       assertEquals("d.cfs", listAll[0]);
     }
     createSequenceFile(dir, "d1", (byte) 0, 15);
-    dir.copy(csw, "d1", "d1", newIOContext(random()));
+    csw.copyFrom(dir, "d1", "d1", newIOContext(random()));
     String[] listAll = newDir.listAll();
     assertEquals(1, listAll.length);
     assertEquals("d.cfs", listAll[0]);

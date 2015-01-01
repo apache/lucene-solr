@@ -2639,7 +2639,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         assert !slowFileExists(directory, newFileName): "file \"" + newFileName + "\" already exists; newInfo.files=" + newInfo.files();
 
-        info.info.dir.copy(directory, file, newFileName, context);
+        directory.copyFrom(info.info.dir, file, newFileName, context);
       }
       success = true;
     } finally {

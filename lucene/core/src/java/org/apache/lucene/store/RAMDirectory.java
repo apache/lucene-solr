@@ -94,7 +94,7 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   private RAMDirectory(Directory dir, boolean closeDir, IOContext context) throws IOException {
     this();
     for (String file : dir.listAll()) {
-      dir.copy(this, file, file, context);
+      copyFrom(dir, file, file, context);
     }
     if (closeDir) {
       dir.close();

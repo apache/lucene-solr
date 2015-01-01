@@ -49,7 +49,7 @@ public final class Lucene40CompoundFormat extends CompoundFormat {
     String fileName = IndexFileNames.segmentFileName(si.name, "", COMPOUND_FILE_EXTENSION);
     try (Directory cfs = new Lucene40CompoundReader(dir, fileName, context, true)) {
       for (String file : files) {
-        dir.copy(cfs, file, file, context);
+        cfs.copyFrom(dir, file, file, context);
         checkAbort.work(dir.fileLength(file));
       }
     }

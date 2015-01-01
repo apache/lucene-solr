@@ -51,9 +51,9 @@ public final class RateLimitedDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
+  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
     ensureOpen();
-    in.copy(to, src, dest, context);
+    in.copyFrom(from, src, dest, context);
   }
   
   private RateLimiter getRateLimiter(IOContext.Context context) {
