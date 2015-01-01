@@ -32,10 +32,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -88,14 +85,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       miniCluster.shutdown();
     }
     miniCluster = null;
-    System.clearProperty("solr.tests.mergePolicy");
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.tests.maxIndexingThreads");
-    System.clearProperty("solr.tests.ramBufferSizeMB");
-    System.clearProperty("solr.tests.mergeScheduler");
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.solrxml.location");
-    System.clearProperty("zkHost");
   }
 
   @Test
@@ -117,28 +106,33 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     assertTrue(startedServer.isRunning());
     assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
 
-    CloudSolrClient cloudSolrClient = null;
-    SolrZkClient zkClient = null;
-    try {
-      cloudSolrClient = new CloudSolrClient(miniCluster.getZkServer().getZkAddress(), true);
-      cloudSolrClient.connect();
-      zkClient = new SolrZkClient(miniCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null);
-
-      // create collection
-      String collectionName = "testSolrCloudCollection";
-      String configName = "solrCloudCollectionConfig";
-      System.setProperty("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
-      uploadConfigToZk(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf", configName);
-      createCollection(cloudSolrClient, collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName);
-
+    // create collection
+    String collectionName = "testSolrCloudCollection";
+    String configName = "solrCloudCollectionConfig";
+    File configDir = new File(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+    miniCluster.uploadConfigDir(configDir, configName);
+    
+    Map<String, String> collectionProperties = new HashMap<>();
+    collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
+    collectionProperties.put("solr.tests.maxBufferedDocs", "100000");
+    collectionProperties.put("solr.tests.maxIndexingThreads", "-1");
+    collectionProperties.put("solr.tests.ramBufferSizeMB", "100");
+    // use non-test classes so RandomizedRunner isn't necessary
+    collectionProperties.put("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
+    collectionProperties.put("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
+    collectionProperties.put("solr.directoryFactory", "solr.RAMDirectoryFactory");
+    miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, collectionProperties);
+    
+    try(SolrZkClient zkClient = new SolrZkClient
+        (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
+      ZkStateReader zkStateReader = new ZkStateReader(zkClient);
+      waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
+      
       // modify/query collection
+      CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
       cloudSolrClient.setDefaultCollection(collectionName);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", "1");
-
-      ZkStateReader zkStateReader = new ZkStateReader(zkClient);
-      waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
       cloudSolrClient.add(doc);
       cloudSolrClient.commit();
       SolrQuery query = new SolrQuery();
@@ -171,62 +165,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
           assertEquals(NUM_SERVERS - 1, miniCluster.getJettySolrRunners().size());
         }
       }
-    } finally {
-      if (cloudSolrClient != null) {
-        cloudSolrClient.shutdown();
-      }
-      if (zkClient != null) {
-        zkClient.close();
-      }
     }
-  }
-
-  protected void uploadConfigToZk(String configDir, String configName) throws Exception {
-    // override settings in the solrconfig include
-    System.setProperty("solr.tests.maxBufferedDocs", "100000");
-    System.setProperty("solr.tests.maxIndexingThreads", "-1");
-    System.setProperty("solr.tests.ramBufferSizeMB", "100");
-    // use non-test classes so RandomizedRunner isn't necessary
-    System.setProperty("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
-    System.setProperty("solr.directoryFactory", "solr.RAMDirectoryFactory");
-
-    SolrZkClient zkClient = null;
-    try {
-      zkClient =  new SolrZkClient(miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null);
-      uploadConfigFileToZk(zkClient, configName, "solrconfig.xml", new File(configDir, "solrconfig-tlog.xml"));
-      uploadConfigFileToZk(zkClient, configName, "schema.xml", new File(configDir, "schema.xml"));
-      uploadConfigFileToZk(zkClient, configName, "solrconfig.snippet.randomindexconfig.xml",
-        new File(configDir, "solrconfig.snippet.randomindexconfig.xml"));
-      uploadConfigFileToZk(zkClient, configName, "currency.xml", new File(configDir, "currency.xml"));
-      uploadConfigFileToZk(zkClient, configName, "mapping-ISOLatin1Accent.txt",
-        new File(configDir, "mapping-ISOLatin1Accent.txt"));
-      uploadConfigFileToZk(zkClient, configName, "old_synonyms.txt", new File(configDir, "old_synonyms.txt"));
-      uploadConfigFileToZk(zkClient, configName, "open-exchange-rates.json",
-        new File(configDir, "open-exchange-rates.json"));
-      uploadConfigFileToZk(zkClient, configName, "protwords.txt", new File(configDir, "protwords.txt"));
-      uploadConfigFileToZk(zkClient, configName, "stopwords.txt", new File(configDir, "stopwords.txt"));
-      uploadConfigFileToZk(zkClient, configName, "synonyms.txt", new File(configDir, "synonyms.txt"));
-    } finally {
-      if (zkClient != null) zkClient.close();
-    }
-  }
-
-  protected void uploadConfigFileToZk(SolrZkClient zkClient, String configName, String nameInZk, File file)
-      throws Exception {
-    zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + configName + "/" + nameInZk, file, false, true);
-  }
-
-  protected NamedList<Object> createCollection(CloudSolrClient client, String name, int numShards,
-      int replicationFactor, String configName) throws Exception {
-    ModifiableSolrParams modParams = new ModifiableSolrParams();
-    modParams.set(CoreAdminParams.ACTION, CollectionAction.CREATE.name());
-    modParams.set("name", name);
-    modParams.set("numShards", numShards);
-    modParams.set("replicationFactor", replicationFactor);
-    modParams.set("collection.configName", configName);
-    QueryRequest request = new QueryRequest(modParams);
-    request.setPath("/admin/collections");
-    return client.request(request);
   }
 
   protected void waitForRecoveriesToFinish(String collection,

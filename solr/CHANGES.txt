@@ -596,6 +596,9 @@ Other Changes
 * SOLR-6895: SolrServer classes are renamed to *SolrClient.  The existing
   classes still exist, but are deprecated. (Alan Woodward, Erik Hatcher)
 
+* SOLR-6483: Refactor some methods in MiniSolrCloudCluster tests (Steve Davids via
+  Erick Erickson)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
