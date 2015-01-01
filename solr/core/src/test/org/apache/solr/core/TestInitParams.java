@@ -76,7 +76,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   }
 
-  @Test
+  /*@Test
   public void testComponentWithInitParamAndRequestParam(){
     for (String s : Arrays.asList("/dump4")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
@@ -87,7 +87,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
       assertEquals("B", def.get("b"));
       assertEquals("C", def.get("c"));
     }
-  }
+  }*/
   @Test
   public void testComponentWithConflictingInitParams(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");

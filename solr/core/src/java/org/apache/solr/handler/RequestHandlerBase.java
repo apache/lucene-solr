@@ -23,6 +23,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestHandlers;
+import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,6 +38,8 @@ import org.apache.solr.util.stats.TimerContext;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
  *
@@ -134,7 +137,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numRequests.incrementAndGet();
     TimerContext timer = requestTimes.time();
     try {
+      if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
       SolrPluginUtils.setDefaults(req,defaults,appends,invariants);
+      req.getContext().remove(USEPARAM);
       rsp.setHttpCaching(httpCaching);
       handleRequestBody( req, rsp );
       // count timeouts
@@ -240,7 +245,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * @param pluginInfo information about the plugin
    */
   public void setPluginInfo(PluginInfo pluginInfo){
-    if(pluginInfo==null) this.pluginInfo = pluginInfo;
+    if(this.pluginInfo==null) this.pluginInfo = pluginInfo;
   }
 
   public PluginInfo getPluginInfo(){

@@ -245,7 +245,7 @@ class SolrCores {
   }
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
-  protected SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
+  SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
     synchronized (modifyLock) {
       SolrCore core = cores.get(name);
 

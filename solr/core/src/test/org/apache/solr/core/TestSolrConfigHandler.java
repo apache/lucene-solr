@@ -21,6 +21,8 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +36,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
@@ -43,10 +46,14 @@ import org.junit.Before;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.restlet.ext.servlet.ServerServlet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 
 public class TestSolrConfigHandler extends RestTestBase {
+  public static final Logger log = LoggerFactory.getLogger(TestSolrConfigHandler.class);
+
   private static File tmpSolrHome;
   private static File tmpConfDir;
 
@@ -203,22 +210,25 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     boolean success = false;
     long startTime = System.nanoTime();
+    Map m = null;
+
     while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
-      Map m = testServerBaseUrl ==null?  getRespMap(uri,harness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl + uri, cloudSolrServer) ;
-      if(Objects.equals(expected,ConfigOverlay.getObjectByPath(m, true, jsonPath))) {
+      try {
+        m = testServerBaseUrl ==null?  getRespMap(uri,harness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl + uri, cloudSolrServer) ;
+      } catch (Exception e) {
+        Thread.sleep(100);
+        continue;
+
+      }
+      if(Objects.equals(expected,ConfigOverlay.getObjectByPath(m, false, jsonPath))) {
         success = true;
         break;
-        /*Map map = getRespMap("/x?wt=json",harness);
-        if(map.containsKey("params")) {
-          success = true;
-          break;
-        }*/
       }
       Thread.sleep(100);
 
     }
 
-    assertTrue( "Could not add/change requestHandler  ", success);
+    assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, new String(ZkStateReader.toJSON(m), StandardCharsets.UTF_8)), success);
   }
 
 
@@ -227,6 +237,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     try {
       return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     } catch (JSONParser.ParseException e) {
+      log.error(response);
       return Collections.emptyMap();
     }
   }

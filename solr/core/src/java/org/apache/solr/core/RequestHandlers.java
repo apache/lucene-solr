@@ -313,6 +313,7 @@ public final class RequestHandlers {
           if( handler instanceof SolrCoreAware ) {
             ((SolrCoreAware)handler).inform( core );
           }
+          if (handler instanceof RequestHandlerBase) ((RequestHandlerBase) handler).setPluginInfo(_pluginInfo);
           _handler = handler;
         }
         catch( Exception ex ) {

@@ -107,6 +107,80 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     }
     assertTrue(new String( ZkStateReader.toJSON(map) , StandardCharsets.UTF_8), success );
 
+    jar = generateZip( TestDynamicLoading.class,BlobStoreTestRequestHandlerV2.class);
+    TestBlobHandler.postAndCheck(cloudClient, baseURL, jar,2);
+
+    payload = " {\n" +
+        "  'set' : {'watched': {" +
+        "                    'x':'X val',\n" +
+        "                    'y': 'Y val'}\n" +
+        "             }\n" +
+        "  }";
+
+    TestSolrConfigHandler.runConfigCommand(client,"/config/params?wt=json",payload);
+    TestSolrConfigHandler.testForResponseElement(
+        client,
+        null,
+        "/config/params?wt=json",
+        cloudClient,
+        Arrays.asList("response", "params", "watched", "x"),
+        "X val",
+        10);
+
+
+    payload = "{\n" +
+        "'update-requesthandler' : { 'name' : '/test1', 'class': 'org.apache.solr.core.BlobStoreTestRequestHandlerV2' , 'lib':'test','version':'2'}\n" +
+        "}";
+
+    client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
+    TestSolrConfigHandler.runConfigCommand(client,"/config?wt=json",payload);
+    TestSolrConfigHandler.testForResponseElement(client,
+        null,
+        "/config/overlay?wt=json",
+        null,
+        Arrays.asList("overlay", "requestHandler", "/test1", "version"),
+        "2",10);
+
+    success= false;
+    for(int i=0;i<50;i++) {
+      map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
+      if(BlobStoreTestRequestHandlerV2.class.getName().equals(map.get("class"))) {
+        success = true;
+        break;
+      }
+      Thread.sleep(100);
+    }
+
+    assertTrue("New version of class is not loaded " + new String(ZkStateReader.toJSON(map), StandardCharsets.UTF_8), success);
+
+    for(int i=0;i<50;i++) {
+      map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
+      if("X val".equals(map.get("x"))){
+         success = true;
+         break;
+      }
+      Thread.sleep(100);
+    }
+
+    payload = " {\n" +
+        "  'set' : {'watched': {" +
+        "                    'x':'X val changed',\n" +
+        "                    'y': 'Y val'}\n" +
+        "             }\n" +
+        "  }";
+
+    TestSolrConfigHandler.runConfigCommand(client,"/config/params?wt=json",payload);
+    for(int i=0;i<50;i++) {
+      map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
+      if("X val changed".equals(map.get("x"))){
+        success = true;
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertTrue("listener did not get triggered" + new String(ZkStateReader.toJSON(map), StandardCharsets.UTF_8), success);
+
+
   }
 
 
