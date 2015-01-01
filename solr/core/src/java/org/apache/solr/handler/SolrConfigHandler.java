@@ -32,7 +32,6 @@ import java.util.Set;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -40,21 +39,15 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.util.CommandOperation;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -191,8 +184,9 @@ public class SolrConfigHandler extends RequestHandlerBase {
                 continue;
               }
               key = key.trim();
-              if (!validName(key)) {
-                op.addError(MessageFormat.format("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", key));
+              String err = validateName(key);
+              if (err !=null) {
+                op.addError(err);
                 continue;
               }
 
@@ -395,7 +389,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
   }
 
-  public static boolean validName(String s) {
+  public static String validateName(String s) {
     for(int i=0;i<s.length();i++) {
       char c = s.charAt(i);
       if((c >= 'A' && c<='Z') ||
@@ -405,9 +399,11 @@ public class SolrConfigHandler extends RequestHandlerBase {
            c == '-'||
            c == '.'
           ) continue;
-      else return false;
+      else {
+        return MessageFormat.format("''{0}'' name should only have chars [a-zA-Z_-.0-9] ",s);
+      }
     }
-    return true;
+    return null;
   }
 
   static void setWt(SolrQueryRequest req, String wt){

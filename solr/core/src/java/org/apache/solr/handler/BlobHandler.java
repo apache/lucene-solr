@@ -37,17 +37,14 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -86,6 +83,11 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         rsp.add("error","Name not found");
         return;
       }
+      String err = SolrConfigHandler.validateName(blobName);
+      if(err!=null){
+        rsp.add("error", err);
+        return;
+      }
       if(req.getContentStreams() == null )  {
         rsp.add("error","No stream");
         return;
@@ -98,12 +100,12 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         m.update(payload.array(),payload.position(),payload.limit());
         String md5 = new BigInteger(1,m.digest()).toString(16);
 
-        TopDocs duplicate = req.getSearcher().search(new TermQuery(new Term("id", md5)), 1);
+        TopDocs duplicate = req.getSearcher().search(new TermQuery(new Term("md5", md5)), 1);
         if(duplicate.totalHits >0){
           rsp.add("error", "duplicate entry");
           req.forward(null,
               new MapSolrParams((Map) makeMap(
-              "q", "id:" + md5,
+              "q", "md5:" + md5,
               "fl", "id,size,version,timestamp,blobName")),
               rsp);
           return;
@@ -118,11 +120,13 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
           Number n = doc.getField("version").numericValue();
           version = n.longValue();
         }
-
+        version++;
+        String id = blobName+"/"+version;
         indexMap(req, makeMap(
-            "id", md5,
+            "id", id,
+            "md5", md5,
             "blobName", blobName,
-            "version", ++version,
+            "version", version,
             "timestamp", new Date(),
             "size", payload.limit(),
             "blob", payload));
@@ -145,7 +149,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Please send the request in the format /blob/<blobName>/<version>");
         } else {
           String q = "blobName:{0}";
-          if(version!=-1) q+= " AND version:{1}";
+          if(version != -1) q = "id:{0}/{1}";
           QParser qparser =  QParser.getParser(MessageFormat.format(q,blobName,version) , "lucene", req);
           final TopDocs docs = req.getSearcher().search(qparser.parse(), 1, new Sort( new SortField("version", SortField.Type.LONG, true)));
           if(docs.totalHits>0){
@@ -174,12 +178,16 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         }
       } else {
         String q = "*:*";
-        if (blobName != null) q = "blobName" + ":" + blobName;
-        if (version > -1) q += " AND version:" + version;
+        if(blobName != null){
+          q = "blobName:{0}";
+          if(version != -1){
+            q = "id:{0}/{1}";
+          }
+        }
 
         req.forward(null,
             new MapSolrParams((Map) makeMap(
-                "q", q,
+                "q", MessageFormat.format(q,blobName,version),
                 "fl", "id,size,version,timestamp,blobName",
                 "sort", "version desc"))
             ,rsp);
@@ -220,8 +228,9 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
       "  <fieldType name='bytes' class='solr.BinaryField'/>\n" +
       "  <fieldType name='date' class='solr.TrieDateField'/>\n" +
       "  <field name='id'   type='string'   indexed='true'  stored='true'  multiValued='false' required='true'/>\n" +
+      "  <field name='md5'   type='string'   indexed='true'  stored='true'  multiValued='false' required='true'/>\n" +
       "  <field name='blob'      type='bytes'   indexed='false' stored='true'  multiValued='false' />\n" +
-      "  <field name='size'      type='long'   indexed='false' stored='true'  multiValued='false' />\n" +
+      "  <field name='size'      type='long'   indexed='true' stored='true'  multiValued='false' />\n" +
       "  <field name='version'   type='long'     indexed='true'  stored='true'  multiValued='false' />\n" +
       "  <field name='timestamp'   type='date'   indexed='true'  stored='true'  multiValued='false' />\n" +
       "  <field name='blobName'      type='string'   indexed='true'  stored='true'  multiValued='false' />\n" +
