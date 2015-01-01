@@ -86,7 +86,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   /** Sole constructor. */
   public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
-      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) throws IOException {
+      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) throws IOException {
     assert directory != null;
     this.segment = si.name;
     this.compressor = compressionMode.newCompressor();
@@ -112,7 +112,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == fieldsStream.getFilePointer();
       assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
 
-      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream);
+      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream, blockSize);
       indexStream = null;
 
       fieldsStream.writeVInt(chunkSize);

@@ -17,7 +17,7 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.BLOCK_SIZE;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PACKED_BLOCK_SIZE;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_DAT;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.CODEC_SFX_IDX;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.FLAGS_BITS;
@@ -92,7 +92,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     this.decompressor = reader.decompressor.clone();
     this.chunkSize = reader.chunkSize;
     this.numDocs = reader.numDocs;
-    this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, BLOCK_SIZE, 0);
+    this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
     this.version = reader.version;
     this.closed = false;
   }
@@ -150,7 +150,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       packedIntsVersion = vectorsStream.readVInt();
       chunkSize = vectorsStream.readVInt();
       decompressor = compressionMode.newDecompressor();
-      this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, BLOCK_SIZE, 0);
+      this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
 
       success = true;
     } finally {

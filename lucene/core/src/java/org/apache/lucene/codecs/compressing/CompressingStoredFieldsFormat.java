@@ -49,15 +49,16 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   private final CompressionMode compressionMode;
   private final int chunkSize;
   private final int maxDocsPerChunk;
+  private final int blockSize;
 
   /**
    * Create a new {@link CompressingStoredFieldsFormat} with an empty segment 
    * suffix.
    * 
-   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(String, String, CompressionMode, int, int)
+   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(String, String, CompressionMode, int, int, int)
    */
-  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) {
-    this(formatName, "", compressionMode, chunkSize, maxDocsPerChunk);
+  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) {
+    this(formatName, "", compressionMode, chunkSize, maxDocsPerChunk, blockSize);
   }
   
   /**
@@ -92,10 +93,11 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
    * @param maxDocsPerChunk the maximum number of documents in a single chunk
+   * @param blockSize the number of chunks to store in an index block
    * @see CompressionMode
    */
   public CompressingStoredFieldsFormat(String formatName, String segmentSuffix, 
-                                       CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) {
+                                       CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) {
     this.formatName = formatName;
     this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
@@ -107,6 +109,10 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
       throw new IllegalArgumentException("maxDocsPerChunk must be >= 1");
     }
     this.maxDocsPerChunk = maxDocsPerChunk;
+    if (blockSize < 1) {
+      throw new IllegalArgumentException("blockSize must be >= 1");
+    }
+    this.blockSize = blockSize;
   }
 
   @Override
@@ -120,13 +126,13 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
     return new CompressingStoredFieldsWriter(directory, si, segmentSuffix, context,
-        formatName, compressionMode, chunkSize, maxDocsPerChunk);
+        formatName, compressionMode, chunkSize, maxDocsPerChunk, blockSize);
   }
 
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(compressionMode=" + compressionMode
-        + ", chunkSize=" + chunkSize + ", maxDocsPerChunk=" + maxDocsPerChunk + ")";
+        + ", chunkSize=" + chunkSize + ", maxDocsPerChunk=" + maxDocsPerChunk + ", blockSize=" + blockSize + ")";
   }
 
 }

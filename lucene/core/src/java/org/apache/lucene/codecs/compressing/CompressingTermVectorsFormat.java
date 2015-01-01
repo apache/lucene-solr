@@ -40,6 +40,7 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
   private final String segmentSuffix;
   private final CompressionMode compressionMode;
   private final int chunkSize;
+  private final int blockSize;
 
   /**
    * Create a new {@link CompressingTermVectorsFormat}.
@@ -65,10 +66,11 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
    * @param segmentSuffix a suffix to append to files created by this format
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
+   * @param blockSize the number of chunks to store in an index block.
    * @see CompressionMode
    */
   public CompressingTermVectorsFormat(String formatName, String segmentSuffix,
-      CompressionMode compressionMode, int chunkSize) {
+      CompressionMode compressionMode, int chunkSize, int blockSize) {
     this.formatName = formatName;
     this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
@@ -76,6 +78,10 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
       throw new IllegalArgumentException("chunkSize must be >= 1");
     }
     this.chunkSize = chunkSize;
+    if (blockSize < 1) {
+      throw new IllegalArgumentException("blockSize must be >= 1");
+    }
+    this.blockSize = blockSize;
   }
 
   @Override
@@ -90,13 +96,13 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
   public final TermVectorsWriter vectorsWriter(Directory directory,
       SegmentInfo segmentInfo, IOContext context) throws IOException {
     return new CompressingTermVectorsWriter(directory, segmentInfo, segmentSuffix,
-        context, formatName, compressionMode, chunkSize);
+        context, formatName, compressionMode, chunkSize, blockSize);
   }
 
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(compressionMode=" + compressionMode
-        + ", chunkSize=" + chunkSize + ")";
+        + ", chunkSize=" + chunkSize + ", blockSize=" + blockSize + ")";
   }
 
 }
