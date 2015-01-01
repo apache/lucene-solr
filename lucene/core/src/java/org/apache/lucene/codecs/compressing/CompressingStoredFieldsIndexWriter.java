@@ -72,9 +72,8 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingStoredFieldsIndexWriter implements Closeable {
   
-  static final int BLOCK_SIZE = 1024; // number of chunks to serialize at once
-
   final IndexOutput fieldsIndexOut;
+  final int blockSize;
   int totalDocs;
   int blockDocs;
   int blockChunks;
@@ -83,12 +82,16 @@ public final class CompressingStoredFieldsIndexWriter implements Closeable {
   final int[] docBaseDeltas;
   final long[] startPointerDeltas;
 
-  CompressingStoredFieldsIndexWriter(IndexOutput indexOutput) throws IOException {
+  CompressingStoredFieldsIndexWriter(IndexOutput indexOutput, int blockSize) throws IOException {
+    if (blockSize <= 0) {
+      throw new IllegalArgumentException("blockSize must be positive");
+    }
+    this.blockSize = blockSize;
     this.fieldsIndexOut = indexOutput;
     reset();
     totalDocs = 0;
-    docBaseDeltas = new int[BLOCK_SIZE];
-    startPointerDeltas = new long[BLOCK_SIZE];
+    docBaseDeltas = new int[blockSize];
+    startPointerDeltas = new long[blockSize];
     fieldsIndexOut.writeVInt(PackedInts.VERSION_CURRENT);
   }
 
@@ -171,7 +174,7 @@ public final class CompressingStoredFieldsIndexWriter implements Closeable {
   }
 
   void writeIndex(int numDocs, long startPointer) throws IOException {
-    if (blockChunks == BLOCK_SIZE) {
+    if (blockChunks == blockSize) {
       writeBlock();
       reset();
     }

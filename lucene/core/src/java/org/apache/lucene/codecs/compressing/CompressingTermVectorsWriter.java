@@ -68,7 +68,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
-  static final int BLOCK_SIZE = 64;
+  static final int PACKED_BLOCK_SIZE = 64;
 
   static final int POSITIONS = 0x01;
   static final int   OFFSETS = 0x02;
@@ -204,7 +204,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
   /** Sole constructor. */
   public CompressingTermVectorsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
-      String formatName, CompressionMode compressionMode, int chunkSize) throws IOException {
+      String formatName, CompressionMode compressionMode, int chunkSize, int blockSize) throws IOException {
     assert directory != null;
     this.directory = directory;
     this.segment = si.name;
@@ -233,12 +233,12 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == vectorsStream.getFilePointer();
       assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
 
-      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream);
+      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream, blockSize);
       indexStream = null;
 
       vectorsStream.writeVInt(PackedInts.VERSION_CURRENT);
       vectorsStream.writeVInt(chunkSize);
-      writer = new BlockPackedWriter(vectorsStream, BLOCK_SIZE);
+      writer = new BlockPackedWriter(vectorsStream, PACKED_BLOCK_SIZE);
 
       positionsBuf = new int[1024];
       startOffsetsBuf = new int[1024];
