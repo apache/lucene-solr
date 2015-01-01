@@ -46,7 +46,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   
   // first some basic tests for the directory api
   
-  public void testCopy() throws Exception {
+  public void testCopyFrom() throws Exception {
     Directory source = getDirectory(createTempDir("testCopy"));
     Directory dest = newDirectory();
     
@@ -57,7 +57,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output.writeBytes(bytes, bytes.length);
     output.close();
     
-    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    dest.copyFrom(source, "foobar", "foobaz", newIOContext(random()));
     assertTrue(slowFileExists(dest, "foobaz"));
     
     IndexInput input = dest.openInput("foobaz", newIOContext(random()));
@@ -71,7 +71,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     IOUtils.close(source, dest);
   }
   
-  public void testCopyDestination() throws Exception {
+  public void testCopyFromDestination() throws Exception {
     Directory source = newDirectory();
     Directory dest = getDirectory(createTempDir("testCopyDestination"));
     
@@ -82,7 +82,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output.writeBytes(bytes, bytes.length);
     output.close();
     
-    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    dest.copyFrom(source, "foobar", "foobaz", newIOContext(random()));
     assertTrue(slowFileExists(dest, "foobaz"));
     
     IndexInput input = dest.openInput("foobaz", newIOContext(random()));
@@ -141,7 +141,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output2.writeString("bogus!");
     output2.close();
     
-    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    dest.copyFrom(source, "foobar", "foobaz", newIOContext(random()));
     assertTrue(slowFileExists(dest, "foobaz"));
     
     IndexInput input = dest.openInput("foobaz", newIOContext(random()));

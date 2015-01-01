@@ -1048,11 +1048,13 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
 
+  // TODO: why does this class override this method?
+  // we should use the default implementation so all of our checks work?
   @Override
-  public synchronized void copy(Directory to, String src, String dest, IOContext context) throws IOException {
+  public synchronized void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
     maybeYield();
     // randomize the IOContext here?
-    in.copy(to, src, dest, context);
+    in.copyFrom(from, src, dest, context);
   }
   
   /** Use this when throwing fake {@code IOException},

@@ -173,7 +173,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
   public static void copyFiles(Directory source, Directory target, List<String> files) throws IOException {
     if (!source.equals(target)) {
       for (String file : files) {
-        source.copy(target, file, file, IOContext.READONCE);
+        target.copyFrom(source, file, file, IOContext.READONCE);
       }
     }
   }
@@ -232,7 +232,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
       indexDir.sync(files);
       
       // now copy and fsync segmentsFile as pending, then rename (simulating lucene commit)
-      clientDir.copy(indexDir, segmentsFile, pendingSegmentsFile, IOContext.READONCE);
+      indexDir.copyFrom(clientDir, segmentsFile, pendingSegmentsFile, IOContext.READONCE);
       indexDir.sync(Collections.singletonList(pendingSegmentsFile));
       indexDir.renameFile(pendingSegmentsFile, segmentsFile);
       

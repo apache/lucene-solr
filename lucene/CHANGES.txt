@@ -329,6 +329,9 @@ API Changes
 * LUCENE-6150: Remove staleFiles set and onIndexOutputClosed() from FSDirectory.
   (Uwe Schindler, Robert Muir, Mike McCandless)
 
+* LUCENE-6146: Replaced Directory.copy() with Directory.copyFrom().
+  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

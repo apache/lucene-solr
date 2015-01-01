@@ -142,7 +142,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * @throws IOException If there is a low-level I/O error.
    */
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
-    fromDir.copy(toDir, fileName, fileName, ioContext);
+    toDir.copyFrom(fromDir, fileName, fileName, ioContext);
     fromDir.deleteFile(fileName);
   }
   

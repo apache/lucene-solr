@@ -132,9 +132,9 @@ public class IndexAndTaxonomyReplicationHandler implements ReplicationHandler {
       // reader sees a more advanced taxonomy than the index.
       
       if (taxoSegmentsFile != null) {
-        taxoClientDir.copy(taxoDir, taxoSegmentsFile, taxoPendingFile, IOContext.READONCE);
+        taxoDir.copyFrom(taxoClientDir, taxoSegmentsFile, taxoPendingFile, IOContext.READONCE);
       }
-      indexClientDir.copy(indexDir, indexSegmentsFile, indexPendingFile, IOContext.READONCE);
+      indexDir.copyFrom(indexClientDir, indexSegmentsFile, indexPendingFile, IOContext.READONCE);
       
       if (taxoSegmentsFile != null) {
         taxoDir.sync(Collections.singletonList(taxoPendingFile));

@@ -73,8 +73,9 @@ public class BaseDirectoryWrapper extends FilterDirectory {
     return crossCheckTermVectorsOnClose;
   }
 
+  // why does this class override this method?
   @Override
-  public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
-    in.copy(to, src, dest, context);
+  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+    in.copyFrom(from, src, dest, context);
   }
 }
