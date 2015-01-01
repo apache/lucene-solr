@@ -326,6 +326,9 @@ API Changes
 * LUCENE-6147: Make the core Accountables.namedAccountable function public
   (Ryan Ernst)
 
+* LUCENE-6150: Remove staleFiles set and onIndexOutputClosed() from FSDirectory.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary
