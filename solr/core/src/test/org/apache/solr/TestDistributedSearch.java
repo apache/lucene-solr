@@ -315,6 +315,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "fl",i1, "fl", "id","sort",i1 + " desc");
     query("q","*:*", "fl", "id", "fl",nint, "fl",tint,"sort",i1 + " desc");
     query("q","*:*", "fl",nint, "fl", "id", "fl",tint,"sort",i1 + " desc");
+    handle.put("did", SKIPVAL);
+    query("q","*:*", "fl","did:[docid]","sort",i1 + " desc");
+    handle.remove("did");
+    query("q","*:*", "fl","log(" + tlong + "),abs(" + tlong + "),score","sort",i1 + " desc");
+    query("q","*:*", "fl","n_*","sort",i1 + " desc");
 
     // basic spellcheck testing
     query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "spellCheckCompRH_Direct", "shards.qt", "spellCheckCompRH_Direct");

@@ -602,6 +602,9 @@ Other Changes
 * SOLR-6906: Fix typo bug in DistributedDebugComponentTest.testCompareWithNonDistributedRequest
   (Ramkumar Aiyenga via Erick Erickson)
 
+* SOLR-6905: Test pseudo-field retrieval in distributed search.
+  (Ramkumar Aiyengar via shalin)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
