@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -286,7 +287,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     synchronized (this) {
       return Accountables.namedAccountables("segment", cache);
     }

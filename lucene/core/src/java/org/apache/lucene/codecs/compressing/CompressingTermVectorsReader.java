@@ -31,6 +31,7 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -1074,7 +1075,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("term vector index", indexReader));
   }
   

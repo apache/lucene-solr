@@ -122,7 +122,7 @@ public class Accountables {
    * that the passed in children Accountables (and all their descendants) were created
    * with one of the namedAccountable functions.
    */
-  public static Accountable namedAccountable(final String description, final Iterable<Accountable> children, final long bytes) {
+  public static Accountable namedAccountable(final String description, final Collection<Accountable> children, final long bytes) {
     return new Accountable() {
       @Override
       public long ramBytesUsed() {
@@ -130,7 +130,7 @@ public class Accountables {
       }
 
       @Override
-      public Iterable<Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return children;
       }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -85,9 +86,9 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
-      Iterable<Accountable> res = in.getChildResources();
-      TestUtil.checkIterator(res.iterator());
+    public Collection<Accountable> getChildResources() {
+      Collection<Accountable> res = in.getChildResources();
+      TestUtil.checkReadOnly(res);
       return res;
     }
 

@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
@@ -638,7 +638,7 @@ public class MultiDocValues {
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("global ord deltas", globalOrdDeltas));
       resources.add(Accountables.namedAccountable("first segments", firstSegments));

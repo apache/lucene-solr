@@ -21,6 +21,7 @@ import static org.apache.lucene.search.DocIdSet.EMPTY;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -159,7 +160,7 @@ public class CachingWrapperFilter extends Filter implements Accountable {
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     // Sync to pull the current set of values:
     synchronized (cache) {
       // no need to clone, Accountable#namedAccountables already copies the data

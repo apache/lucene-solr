@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
@@ -70,7 +71,7 @@ public abstract class FilteredDocIdSet extends DocIdSet {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return _innerSet.getChildResources();
   }
 

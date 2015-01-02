@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -500,7 +501,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     ensureOpen();
     List<Accountable> resources = new ArrayList<>();
     resources.add(Accountables.namedAccountable("postings", core.fields));
@@ -516,7 +517,7 @@ public final class SegmentReader extends LeafReader implements Accountable {
     if (getTermVectorsReader() != null) {
       resources.add(Accountables.namedAccountable("term vectors", getTermVectorsReader()));
     }
-    return resources;
+    return Collections.unmodifiableList(resources);
   }
 
   @Override

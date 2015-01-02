@@ -17,8 +17,19 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.CONST_COMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.INDIRECT;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_BITSET;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_TABLE;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.TABLE_COMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.UNCOMPRESSED;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.VERSION_START;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,16 +55,6 @@ import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
-
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.VERSION_START;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsFormat.VERSION_CURRENT;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.CONST_COMPRESSED;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.DELTA_COMPRESSED;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.TABLE_COMPRESSED;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.UNCOMPRESSED;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.INDIRECT;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_BITSET;
-import static org.apache.lucene.codecs.lucene50.Lucene50NormsConsumer.PATCHED_TABLE;
 
 /**
  * Reader for {@link Lucene50NormsFormat}
@@ -187,7 +188,7 @@ class Lucene50NormsProducer extends NormsProducer {
   }
   
   @Override
-  public synchronized Iterable<Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", instances);
   }
   
@@ -255,7 +256,7 @@ class Lucene50NormsProducer extends NormsProducer {
           }
 
           @Override
-          public Iterable<Accountable> getChildResources() {
+          public Collection<Accountable> getChildResources() {
             return Collections.singleton(reader);
           }
 
@@ -297,7 +298,7 @@ class Lucene50NormsProducer extends NormsProducer {
           }
 
           @Override
-          public Iterable<Accountable> getChildResources() {
+          public Collection<Accountable> getChildResources() {
             return Collections.singleton(ordsReader);
           }
 
@@ -341,7 +342,7 @@ class Lucene50NormsProducer extends NormsProducer {
           }
 
           @Override
-          public Iterable<Accountable> getChildResources() {
+          public Collection<Accountable> getChildResources() {
             List<Accountable> children = new ArrayList<>();
             children.add(Accountables.namedAccountable("keys", live));
             children.add(Accountables.namedAccountable("values", nestedInstance));
@@ -382,7 +383,7 @@ class Lucene50NormsProducer extends NormsProducer {
           }
 
           @Override
-          public Iterable<Accountable> getChildResources() {
+          public Collection<Accountable> getChildResources() {
             List<Accountable> children = new ArrayList<>();
             children.add(Accountables.namedAccountable("keys", set));
             children.add(Accountables.namedAccountable("values", nestedInstance));
@@ -433,7 +434,7 @@ class Lucene50NormsProducer extends NormsProducer {
           }
 
           @Override
-          public Iterable<Accountable> getChildResources() {
+          public Collection<Accountable> getChildResources() {
             List<Accountable> children = new ArrayList<>();
             children.add(Accountables.namedAccountable("common", ordsReader));
             children.add(Accountables.namedAccountable("uncommon", nestedInstance));

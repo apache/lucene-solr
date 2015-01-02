@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -330,7 +331,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Accountables.namedAccountables("format", formats);
     }
 

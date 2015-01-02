@@ -143,7 +143,7 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("file", fileMap);
   }
   

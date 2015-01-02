@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -37,13 +39,11 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
 
@@ -315,7 +315,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     if (normalCompletion != null) {
       resources.add(Accountables.namedAccountable("fst", normalCompletion.getFST()));
@@ -323,7 +323,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
     if (higherWeightsCompletion != null && (normalCompletion == null || normalCompletion.getFST() != higherWeightsCompletion.getFST())) {
       resources.add(Accountables.namedAccountable("higher weights fst", higherWeightsCompletion.getFST()));
     }
-    return resources;
+    return Collections.unmodifiableList(resources);
   }
 
   @Override

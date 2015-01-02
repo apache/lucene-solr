@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.ramonly;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -98,7 +99,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Accountables.namedAccountables("field", fieldToTerms);
     }
 

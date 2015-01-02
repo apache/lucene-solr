@@ -22,6 +22,7 @@ import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -189,7 +190,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     
     long docBaseDeltaBytes = RamUsageEstimator.shallowSizeOf(docBasesDeltas);

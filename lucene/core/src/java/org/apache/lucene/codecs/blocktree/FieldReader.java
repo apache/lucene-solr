@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.blocktree;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
@@ -186,7 +187,7 @@ public final class FieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     if (index == null) {
       return Collections.emptyList();
     } else {

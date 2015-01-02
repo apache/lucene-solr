@@ -20,6 +20,7 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -603,12 +604,12 @@ class FieldCacheImpl implements FieldCache {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", bytes));
       resources.add(Accountables.namedAccountable("ord -> term", termOrdToBytesOffset));
       resources.add(Accountables.namedAccountable("doc -> ord", docToTermOrd));
-      return resources;
+      return Collections.unmodifiableList(resources);
     }
   }
 
@@ -746,7 +747,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", bytes));
       resources.add(Accountables.namedAccountable("addresses", docToOffset));
