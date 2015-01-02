@@ -22,6 +22,7 @@ import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -189,7 +190,7 @@ public final class Lucene41StoredFieldsIndexReader implements Cloneable, Account
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     
     long docBaseDeltaBytes = RamUsageEstimator.shallowSizeOf(docBasesDeltas);

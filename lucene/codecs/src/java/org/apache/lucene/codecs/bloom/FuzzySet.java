@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.bloom;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.search.DocIdSetIterator;
@@ -313,7 +314,7 @@ public class FuzzySet implements Accountable {
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

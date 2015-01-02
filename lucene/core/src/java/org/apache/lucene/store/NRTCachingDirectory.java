@@ -270,7 +270,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("cache", cache));
   }
 }

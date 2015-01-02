@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -65,7 +66,7 @@ final class Lucene40NormsReader extends NormsProducer {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return impl.getChildResources();
   }
 

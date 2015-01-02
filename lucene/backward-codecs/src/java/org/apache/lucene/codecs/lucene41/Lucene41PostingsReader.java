@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene41;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -1582,7 +1583,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

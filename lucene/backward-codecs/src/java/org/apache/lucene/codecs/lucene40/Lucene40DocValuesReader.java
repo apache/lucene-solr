@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -732,7 +733,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   }
   
   @Override
-  public synchronized Iterable<Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", instanceInfo);
   }
 

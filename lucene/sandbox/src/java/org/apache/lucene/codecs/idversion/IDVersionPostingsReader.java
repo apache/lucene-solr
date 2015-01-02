@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.idversion;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -100,7 +101,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

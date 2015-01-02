@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.blockterms;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -240,7 +241,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Collections.emptyList();
     }
 
@@ -859,7 +860,7 @@ public class BlockTermsReader extends FieldsProducer {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     if (indexReader != null) {
       resources.add(Accountables.namedAccountable("term index", indexReader));

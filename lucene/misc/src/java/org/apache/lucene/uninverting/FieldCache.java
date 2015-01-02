@@ -19,6 +19,7 @@ package org.apache.lucene.uninverting;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.analysis.NumericTokenStream;
@@ -66,7 +67,7 @@ interface FieldCache {
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Collections.emptyList();
     }
   }

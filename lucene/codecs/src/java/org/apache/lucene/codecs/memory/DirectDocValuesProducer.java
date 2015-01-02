@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -259,7 +260,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
   
   @Override
-  public synchronized Iterable<Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("numeric field", numericInstances));
     resources.addAll(Accountables.namedAccountables("binary field", binaryInstances));
@@ -661,7 +662,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (address != null) {
         resources.add(Accountables.namedAccountable("addresses", RamUsageEstimator.sizeOf(address)));
@@ -686,7 +687,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Collections.emptyList();
     }
     
@@ -705,7 +706,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return docToOrd.getChildResources();
     }
     
@@ -729,7 +730,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (docToAddress != null) {
         resources.add(Accountables.namedAccountable("addresses", docToAddress));
@@ -758,7 +759,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (docToOrdAddress != null) {
         resources.add(Accountables.namedAccountable("addresses", docToOrdAddress));

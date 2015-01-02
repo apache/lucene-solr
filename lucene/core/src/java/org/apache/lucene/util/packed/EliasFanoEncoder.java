@@ -18,6 +18,7 @@
 package org.apache.lucene.util.packed;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.util.Accountable;
@@ -365,7 +366,7 @@ public class EliasFanoEncoder implements Accountable {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 }

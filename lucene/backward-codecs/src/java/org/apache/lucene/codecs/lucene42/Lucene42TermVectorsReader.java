@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene42;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -1055,7 +1056,7 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("term vector index", indexReader));
   }
   

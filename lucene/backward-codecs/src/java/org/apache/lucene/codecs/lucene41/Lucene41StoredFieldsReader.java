@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -539,7 +540,7 @@ final class Lucene41StoredFieldsReader extends StoredFieldsReader {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("stored field index", indexReader));
   }
 

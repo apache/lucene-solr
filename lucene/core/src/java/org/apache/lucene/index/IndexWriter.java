@@ -465,7 +465,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

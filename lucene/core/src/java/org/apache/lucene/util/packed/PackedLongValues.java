@@ -20,6 +20,7 @@ package org.apache.lucene.util.packed;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.util.Accountable;
@@ -117,7 +118,7 @@ public class PackedLongValues extends LongValues implements Accountable {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 
@@ -215,7 +216,7 @@ public class PackedLongValues extends LongValues implements Accountable {
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Collections.emptyList();
     }
 

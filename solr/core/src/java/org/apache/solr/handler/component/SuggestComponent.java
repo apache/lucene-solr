@@ -342,7 +342,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", suggesters);
   }
   

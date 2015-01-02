@@ -30,6 +30,7 @@ import static org.apache.lucene.codecs.lucene49.Lucene49DocValuesConsumer.TABLE_
 import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -362,7 +363,7 @@ class Lucene49DocValuesProducer extends DocValuesProducer implements Closeable {
   }
   
   @Override
-  public synchronized Iterable<Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("addresses field", addressInstances));
     resources.addAll(Accountables.namedAccountables("ord index field", ordIndexInstances));

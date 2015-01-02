@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -215,7 +216,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

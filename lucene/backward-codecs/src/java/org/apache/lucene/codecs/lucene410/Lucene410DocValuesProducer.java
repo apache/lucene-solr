@@ -20,23 +20,24 @@ package org.apache.lucene.codecs.lucene410;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BINARY_FIXED_UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BINARY_PREFIX_COMPRESSED;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED;
+import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BLOCK_INTERVAL_MASK;
+import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BLOCK_INTERVAL_SHIFT;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.DELTA_COMPRESSED;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.GCD_COMPRESSED;
+import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.INTERVAL_COUNT;
+import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.INTERVAL_MASK;
+import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.INTERVAL_SHIFT;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.MONOTONIC_COMPRESSED;
+import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.REVERSE_INTERVAL_MASK;
+import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.REVERSE_INTERVAL_SHIFT;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.SORTED_SINGLE_VALUED;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.SORTED_WITH_ADDRESSES;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.TABLE_COMPRESSED;
-import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.INTERVAL_SHIFT;
-import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.INTERVAL_COUNT;
-import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.INTERVAL_MASK;
-import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.REVERSE_INTERVAL_SHIFT;
-import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.REVERSE_INTERVAL_MASK;
-import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BLOCK_INTERVAL_SHIFT;
-import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BLOCK_INTERVAL_MASK;
 
 import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -372,7 +373,7 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
   }
   
   @Override
-  public synchronized Iterable<Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("addresses field", addressInstances));
     resources.addAll(Accountables.namedAccountables("ord index field", ordIndexInstances));
@@ -845,7 +846,7 @@ class Lucene410DocValuesProducer extends DocValuesProducer implements Closeable 
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", terms));
       resources.add(Accountables.namedAccountable("term addresses", termAddresses));

@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -178,7 +179,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -232,7 +233,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -265,7 +266,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -298,7 +299,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };
@@ -337,7 +338,7 @@ public class MergeState {
       }
 
       @Override
-      public Iterable<Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return Collections.emptyList();
       }
     };

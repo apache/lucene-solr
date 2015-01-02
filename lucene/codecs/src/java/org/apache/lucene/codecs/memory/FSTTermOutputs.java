@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
@@ -81,7 +82,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Collections.emptyList();
     }
     

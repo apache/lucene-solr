@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.Collection;
+
 /**
  * An object whose RAM usage can be computed.
  *
@@ -35,6 +37,6 @@ public interface Accountable {
    * @see Accountables
    */
   // TODO: on java8 make this a default method returning emptyList
-  Iterable<Accountable> getChildResources();
+  Collection<Accountable> getChildResources();
 
 }

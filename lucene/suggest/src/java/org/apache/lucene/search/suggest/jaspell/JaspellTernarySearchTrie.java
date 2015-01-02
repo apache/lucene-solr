@@ -35,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
@@ -113,7 +114,7 @@ public class JaspellTernarySearchTrie implements Accountable {
     }
     
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Collections.emptyList();
     }
   }
@@ -905,7 +906,7 @@ public class JaspellTernarySearchTrie implements Accountable {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 }

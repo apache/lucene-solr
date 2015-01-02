@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,7 +77,6 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -631,7 +632,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** Override this method to customize the Object
    *  representing a single highlighted suggestions; the
    *  result is set on each {@link
-   *  LookupResult#highlightKey} member. */
+   *  org.apache.lucene.search.suggest.Lookup.LookupResult#highlightKey} member. */
   protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
     try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
@@ -759,7 +760,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     try {
       if (searcherMgr != null) {
@@ -775,7 +776,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           searcherMgr.release(searcher);
         }
       }
-      return resources;
+      return Collections.unmodifiableList(resources);
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }

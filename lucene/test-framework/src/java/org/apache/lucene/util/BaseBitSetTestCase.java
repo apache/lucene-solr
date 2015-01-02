@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.search.DocIdSet;
@@ -299,7 +300,7 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     }
 
     @Override
-    public Iterable<Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Collections.emptyList();
     }
 

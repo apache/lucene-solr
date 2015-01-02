@@ -18,6 +18,7 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -93,7 +94,7 @@ public class UndeadNormsProducer extends NormsProducer {
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

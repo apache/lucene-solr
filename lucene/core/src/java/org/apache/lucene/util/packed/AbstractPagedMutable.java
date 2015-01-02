@@ -20,6 +20,7 @@ package org.apache.lucene.util.packed;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.util.Accountable;
@@ -118,7 +119,7 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
   }
   
   @Override
-  public Iterable<Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 
