@@ -214,7 +214,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
   
   @Override
   protected void addRandomFields(Document doc) {
-    doc.addStored("foobar", TestUtil.randomSimpleString(random()));
+    doc.addStoredString("foobar", TestUtil.randomSimpleString(random()));
   }
 
   @Override

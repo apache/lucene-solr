@@ -17,20 +17,16 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-// nocommit move to NumericUtils
-
 /** Utility class to convert half-precision 16 bit floating-point number according
  *  to IEEE 754-2008. */
 
-// nocommit need separate test here
-// nocommit does this match the standard?
 public class HalfFloat {
 
   // From https://github.com/ata4/ioutils/blob/master/src/info/ata4/io/util/HalfFloat.java, in turn from http://stackoverflow.com/a/6162687
   private HalfFloat() {
   }
 
-  public static float shortBitsToFloat(short hbits) {
+  public static float shortToFloat(short hbits) {
     int mant = hbits & 0x03ff;          // 10 bits mantissa
     int exp = hbits & 0x7c00;           // 5 bits exponent
     if (exp == 0x7c00) {                // NaN/Inf
@@ -54,8 +50,7 @@ public class HalfFloat {
                                 | (exp | mant) << 13);      // value << ( 23 - 10 )
   }
 
-  // Only uses bottom 16 bits:
-  public static short floatToShortBits(float fval) {
+  public static short floatToShort(float fval) {
     int fbits = Float.floatToIntBits(fval);
     int sign = fbits >>> 16 & 0x8000;           // sign only
     int val = (fbits & 0x7fffffff) + 0x1000;    // rounded value

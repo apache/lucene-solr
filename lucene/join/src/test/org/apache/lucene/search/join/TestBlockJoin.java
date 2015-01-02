@@ -1302,7 +1302,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     Document child = w.newDocument();
     docs.add(child);
-    child.addStored("childID", "0");
+    child.addStoredString("childID", "0");
     child.addLargeText("childText", "text");
 
     // parent last:
@@ -1366,7 +1366,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     Document child = w.newDocument();
     docs.add(child);
-    child.addStored("childID", "0");
+    child.addStoredString("childID", "0");
     child.addLargeText("childText", "text");
 
     // parent last:
@@ -1424,7 +1424,7 @@ public class TestBlockJoin extends LuceneTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document parent = w.newDocument();
-    parent.addStored("parentID", "0");
+    parent.addStoredString("parentID", "0");
     parent.addLargeText("parentText", "text");
     parent.addAtom("isParent", "yes");
 
@@ -1432,7 +1432,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     Document child = w.newDocument();
     docs.add(child);
-    child.addStored("childID", "0");
+    child.addStoredString("childID", "0");
     child.addLargeText("childText", "text");
 
     // parent last:
@@ -1444,7 +1444,7 @@ public class TestBlockJoin extends LuceneTestCase {
     parent = w.newDocument();
     parent.addLargeText("parentText", "text");
     parent.addAtom("isParent", "yes");
-    parent.addStored("parentID", "1");
+    parent.addStoredString("parentID", "1");
 
     // parent last:
     docs.add(parent);

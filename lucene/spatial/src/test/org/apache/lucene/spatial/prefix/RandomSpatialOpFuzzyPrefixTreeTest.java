@@ -214,7 +214,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
         strategy.addFields(doc, shapei);
       }
       if (storeShape)//just for diagnostics
-        doc.addStored(strategy.getFieldName() + "_stored", shape.toString());
+        doc.addStoredString(strategy.getFieldName() + "_stored", shape.toString());
     }
     return doc;
   }

@@ -135,7 +135,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     flushPolicy = config.getFlushPolicy();
     this.writer = writer;
     this.events = new ConcurrentLinkedQueue<>();
-    flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream);
+    flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream, writer.uniqueValuesRAM);
   }
   
   synchronized boolean deleteQueries(final Query... queries) throws IOException {

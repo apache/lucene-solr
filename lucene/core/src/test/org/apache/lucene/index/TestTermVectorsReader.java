@@ -106,8 +106,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     Document doc = writer.newDocument();
     for(int i=0;i<testFields.length;i++) {
-      // nocommit shouldn't it be testTerms[i] not ""?
-      doc.addLargeText(testFields[i], "");
+      doc.addLargeText(testFields[i], testTerms[i]);
     }
 
     //Create 5 documents for testing, they all have the same
@@ -376,7 +375,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     fieldTypes.enableTermVectors("field4");
     Document doc = w.newDocument();
     try {
-      doc.addStored("field4", "foo");
+      doc.addStoredString("field4", "foo");
       w.addDocument(doc);
       fail("did not hit exception");
     } catch (IllegalStateException ise) {

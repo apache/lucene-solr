@@ -96,7 +96,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       if (shape != null) {
         strategy.addFields(document, shape);
         if (storeShape) {//just for diagnostics
-          document.addStored(strategy.getFieldName() + "_stored", shape.toString());
+          document.addStoredString(strategy.getFieldName() + "_stored", shape.toString());
         }
       }
       documents.add(document);
@@ -197,7 +197,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
     if (shape != null) {
       strategy.addFields(doc, shape);
       if (storeShape) {
-        doc.addStored(strategy.getFieldName() + "_stored", shape.toString());
+        doc.addStoredString(strategy.getFieldName() + "_stored", shape.toString());
       }
     }
     return doc;

@@ -107,7 +107,7 @@ public class TestSimilarityBase extends LuceneTestCase {
 
     for (int i = 0; i < docs.length; i++) {
       Document d = writer.newDocument();
-      d.addStored(FIELD_ID, Integer.toString(i));
+      d.addStoredString(FIELD_ID, Integer.toString(i));
       d.addLargeText(FIELD_BODY, docs[i]);
       writer.addDocument(d);
     }

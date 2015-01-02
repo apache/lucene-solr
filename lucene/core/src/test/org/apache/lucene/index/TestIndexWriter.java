@@ -816,8 +816,8 @@ public class TestIndexWriter extends LuceneTestCase {
       fieldTypes.enableSorting("sortedsetdv");
 
       Document doc = w.newDocument();
-      doc.addUniqueInt("id", 500);
-      doc.addStored("field", "some prepackaged text contents");
+      doc.addInt("id", 500);
+      doc.addStoredString("field", "some prepackaged text contents");
       doc.addBinary("binarydv", new BytesRef("500"));
       doc.addInt("numericdv", 500);
       doc.addBinary("sorteddv", new BytesRef("500"));
@@ -828,8 +828,8 @@ public class TestIndexWriter extends LuceneTestCase {
       w.addDocument(doc);
 
       doc = w.newDocument();
-      doc.addUniqueInt("id", 501);
-      doc.addStored("field", "some more contents");
+      doc.addInt("id", 501);
+      doc.addStoredString("field", "some more contents");
       doc.addBinary("binarydv", new BytesRef("501"));
       doc.addInt("numericdv", 501);
       doc.addBinary("sorteddv", new BytesRef("501"));
@@ -900,7 +900,7 @@ public class TestIndexWriter extends LuceneTestCase {
               BytesRef bytes = new BytesRef("" + i);
 
               Document doc = w.newDocument();
-              doc.addLargeText("field", "some text contents");
+              doc.addStoredString("field", "some text contents");
 
               doc.addInt("id", i);
               doc.addBinary("binarydv", bytes);
@@ -2210,34 +2210,6 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(1, r.numDocs());
     r.close();
     dir.close();
-  }
-
-  // nocommit fixme
-  @Ignore
-  public void testHasUncommittedChangesAfterException() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
-    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
-    FieldTypes fieldTypes = iwriter.getFieldTypes();
-    fieldTypes.enableSorting("dv");
-    fieldTypes.setMultiValued("dv");
-    Document doc = iwriter.newDocument();
-    doc.addBinary("dv", new BytesRef("foo!"));
-    doc.addBinary("dv", new BytesRef("bar!"));
-    try {
-      iwriter.addDocument(doc);
-      fail("didn't hit expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
-    iwriter.commit();
-    assertFalse(iwriter.hasUncommittedChanges());
-    iwriter.close();
-    directory.close();
   }
 
   public void testDoubleClose() throws IOException {

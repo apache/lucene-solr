@@ -64,7 +64,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
   }
   
   /**
-   * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
+   * Open a near real time IndexReader from the {@link IndexWriter}.
    *
    * @param writer The IndexWriter to open from
    * @param applyAllDeletes If true, all buffered deletes will
@@ -84,6 +84,19 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    */
   public static DirectoryReader open(final IndexWriter writer, boolean applyAllDeletes) throws IOException {
     return writer.getReader(applyAllDeletes);
+  }
+
+  /** Open a near-real-time IndexReader from {@link IndexWriter}, applying all deletes.
+   * @param writer The IndexWriter to open from
+   * @return The new IndexReader
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @see #open(IndexWriter,boolean)
+   *
+   */
+  public static DirectoryReader open(final IndexWriter writer) throws IOException {
+    return open(writer, true);
   }
 
   /** Expert: returns an IndexReader reading the index in the given

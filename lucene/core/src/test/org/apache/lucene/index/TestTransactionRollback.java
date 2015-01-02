@@ -42,7 +42,6 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestTransactionRollback extends LuceneTestCase {
 
   private static final String FIELD_RECORD_ID = "record_id";
-  private Directory dir;
 
   //Rolls back index to a chosen ID
   private void rollBackLast(int id) throws Exception {
@@ -125,12 +124,12 @@ public class TestTransactionRollback extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    dir = newDirectory();
 
-    //Build index, of records 1 to 100, committing after each batch of 10
-    IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
-    IndexWriter w=new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                          .setIndexDeletionPolicy(sdp));
+    // Build index, of records 1 to 100, committing after each batch of 10
+    IndexDeletionPolicy sdp = new KeepAllDeletionPolicy();
+    IndexWriter w = new IndexWriter(dir,
+                                    newIndexWriterConfig(new MockAnalyzer(random()))
+                                     .setIndexDeletionPolicy(sdp));
 
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc = w.newDocument();
@@ -148,12 +147,6 @@ public class TestTransactionRollback extends LuceneTestCase {
     w.close();
   }
   
-  @Override
-  public void tearDown() throws Exception {
-    dir.close();
-    super.tearDown();
-  }
-
   // Rolls back to previous commit point
   class RollbackDeletionPolicy extends IndexDeletionPolicy {
     private int rollbackPoint;

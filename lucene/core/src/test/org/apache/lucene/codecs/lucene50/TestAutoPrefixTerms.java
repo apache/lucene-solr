@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,12 +26,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
@@ -45,13 +48,17 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -651,4 +658,81 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     }
   }
 
+  public void testDisableAutoPrefix() throws Exception {
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(new Lucene50Codec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.disableFastRanges("num");
+    for(int i=0;i<10000;i++) {
+      Document doc = w.newDocument();
+      doc.addInt("num", i);
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+    IndexReader r = DirectoryReader.open(w);
+    shouldFail(() -> fieldTypes.newIntRangeFilter("num", 0, true, 100, true),
+               "field \"num\": cannot create range filter: this field was not indexed for fast ranges");
+
+    AtomicInteger termCount = new AtomicInteger();
+    TermRangeQuery q = new TermRangeQuery("num",
+                                          NumericUtils.intToBytes(0),
+                                          NumericUtils.intToBytes(9999),
+                                          true,
+                                          false) {
+
+        @Override
+        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+          TermsEnum te = super.getTermsEnum(terms, atts);
+          while (te.next() != null) {
+            termCount.incrementAndGet();
+          }
+          return super.getTermsEnum(terms, atts);
+        }
+      };
+    
+    IndexSearcher s = newSearcher(r);
+    s.search(q, 1);
+    assertEquals(9999, termCount.get());
+    r.close();
+    w.close();
+  }
+
+  public void testEnableAutoPrefix() throws Exception {
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(new Lucene50Codec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.enableFastRanges("num");
+    for(int i=0;i<10000;i++) {
+      Document doc = w.newDocument();
+      doc.addInt("num", i);
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+    IndexReader r = DirectoryReader.open(w);
+
+    AtomicInteger termCount = new AtomicInteger();
+    TermRangeQuery q = new TermRangeQuery("num",
+                                          NumericUtils.intToBytes(0),
+                                          NumericUtils.intToBytes(9999),
+                                          true,
+                                          true) {
+
+        @Override
+        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+          TermsEnum te = super.getTermsEnum(terms, atts);
+          while (te.next() != null) {
+            termCount.incrementAndGet();
+          }
+          return super.getTermsEnum(terms, atts);
+        }
+      };
+    
+    IndexSearcher s = newSearcher(r);
+    s.search(q, 1);
+    assertTrue(termCount.get() < 9999);
+    r.close();
+    w.close();
+  }
 }

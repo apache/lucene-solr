@@ -58,6 +58,44 @@ public abstract class DocIdSetIterator {
       }
     };
   }
+
+  // nocommit does this already exist somewhere?  it's silly...
+  /** A full {@code DocIdSetIterator} instance */
+  public static final DocIdSetIterator full(final int maxDoc) {
+    return new DocIdSetIterator() {
+      int docID = -1;
+      
+      @Override
+      public int advance(int target) {
+        assert target >= 0;
+        if (target >= maxDoc) {
+          docID = NO_MORE_DOCS;
+        } else {
+          docID = target;
+        }
+        return docID;
+      }
+      
+      @Override
+      public int docID() {
+        return docID;
+      }
+
+      @Override
+      public int nextDoc() {
+        docID++;
+        if (docID >= maxDoc) {
+          docID = NO_MORE_DOCS;
+        }
+        return docID;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+    };
+  }
   
   /**
    * When returned by {@link #nextDoc()}, {@link #advance(int)} and

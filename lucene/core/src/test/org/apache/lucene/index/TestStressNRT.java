@@ -228,7 +228,7 @@ public class TestStressNRT extends LuceneTestCase {
                     if (tombstones) {
                       Document d = writer.newDocument();
                       d.addAtom("id", "-"+Integer.toString(id));
-                      d.addStored(field, Long.toString(nextVal));
+                      d.addStoredString(field, Long.toString(nextVal));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
 
@@ -244,7 +244,7 @@ public class TestStressNRT extends LuceneTestCase {
                     if (tombstones) {
                       Document d = writer.newDocument();
                       d.addAtom("id", "-"+Integer.toString(id));
-                      d.addStored(field, Long.toString(nextVal));
+                      d.addStoredString(field, Long.toString(nextVal));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
 
@@ -257,7 +257,7 @@ public class TestStressNRT extends LuceneTestCase {
                     // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
                     Document d = writer.newDocument();
                     d.addAtom("id", Integer.toString(id));
-                    d.addStored(field, Long.toString(nextVal));
+                    d.addStoredString(field, Long.toString(nextVal));
                     if (VERBOSE) {
                       System.out.println("TEST: " + Thread.currentThread().getName() + ": u id:" + id + " val=" + nextVal);
                     }

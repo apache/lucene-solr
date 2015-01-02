@@ -59,7 +59,6 @@ final class StandardDirectoryReader extends DirectoryReader {
       @Override
       protected DirectoryReader doBody(String segmentFileName) throws IOException {
         SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName);
-        // nocommit fixme: can't be passing null analyzers
         FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis.getUserData(), null, null);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
         for (int i = sis.size()-1; i >= 0; i--) {
@@ -93,7 +92,6 @@ final class StandardDirectoryReader extends DirectoryReader {
     // Carry over current schema:
     segmentInfos.getUserData().put(FieldTypes.FIELD_TYPES_KEY, writer.fieldTypes.writeToString());
 
-    // nocommit fixme: can't be passing null analyzers
     FieldTypes fieldTypes = FieldTypes.getFieldTypes(segmentInfos.getUserData(), null, null);
 
     int infosUpto = 0;
@@ -108,7 +106,6 @@ final class StandardDirectoryReader extends DirectoryReader {
         assert info.info.dir == dir;
         final ReadersAndUpdates rld = writer.readerPool.get(info, true);
         try {
-          // nocommit this has writer's fieldTypes, not ours:
           final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
           if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
             // Steal the ref:
@@ -161,7 +158,6 @@ final class StandardDirectoryReader extends DirectoryReader {
     
     SegmentReader[] newReaders = new SegmentReader[infos.size()];
 
-    // nocommit fixme: can't be passing null analyzers
     FieldTypes fieldTypes = FieldTypes.getFieldTypes(infos.getUserData(), null, null);
 
     for (int i = infos.size() - 1; i>=0; i--) {

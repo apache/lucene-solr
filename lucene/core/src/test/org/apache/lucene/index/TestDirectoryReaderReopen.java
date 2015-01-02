@@ -114,7 +114,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
           Document doc = iwriter.newDocument();
           doc.addAtom("id", i+"_"+j);
           doc.addAtom("id2", i+"_"+j);
-          doc.addStored("id3", i+"_"+j);
+          doc.addStoredString("id3", i+"_"+j);
           iwriter.addDocument(doc);
           if (i>0) {
             int k = i-1;
@@ -460,7 +460,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     sb.append(n);
     doc.addLargeText("field1", sb.toString());
     doc.addLargeText("fielda", sb.toString());
-    doc.addStored("fieldb", sb.toString());
+    doc.addStoredString("fieldb", sb.toString());
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {

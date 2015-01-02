@@ -39,10 +39,9 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   OffsetAttribute offsetAttribute;
   PayloadAttribute payloadAttribute;
   boolean hasPayloads; // if enabled, and we actually saw any for this field
-  byte[] scratchBytes;
 
-  public TermVectorsConsumerPerField(FieldInvertState invertState, TermVectorsConsumer termsWriter, FieldInfo fieldInfo, boolean rightJustifyTerms) {
-    super(2, invertState, termsWriter, null, fieldInfo, rightJustifyTerms);
+  public TermVectorsConsumerPerField(FieldInvertState invertState, TermVectorsConsumer termsWriter, FieldInfo fieldInfo) {
+    super(2, invertState, termsWriter, null, fieldInfo);
     this.termsWriter = termsWriter;
   }
 
@@ -57,34 +56,12 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
     termsWriter.addFieldToFlush(this);
   }
 
-  private void maybeLeftZeroPad(BytesRef flushTerm) {
-    if (rightJustifyTerms) {
-      // nocommit need to fix checkIndex to deal w/ this properly (it will be angry that sometimes term vectors terms are not left-padded
-      // "enough") since we may not have seen the max term yet when we write this doc:
-
-      // nocommit we could make this a "per document max term" instead?
-      int prefix = maxTermLength - flushTerm.length;
-      assert prefix >= 0;
-      for(int i=0;i<prefix;i++) {
-        scratchBytes[i] = 0;
-      }
-      System.arraycopy(flushTerm.bytes, flushTerm.offset, scratchBytes, prefix, flushTerm.length);
-      flushTerm.bytes = scratchBytes;
-      flushTerm.offset = 0;
-      flushTerm.length = maxTermLength;
-    }
-  }
-
   void finishDocument() throws IOException {
     if (doVectors == false) {
       return;
     }
 
     doVectors = false;
-
-    if (rightJustifyTerms && (scratchBytes == null || scratchBytes.length < maxTermLength)) {
-      scratchBytes = new byte[maxTermLength];
-    }
 
     final int numPostings = bytesHash.size();
 
@@ -112,7 +89,6 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
       // Get BytesRef
       termBytePool.setBytesRef(flushTerm, postings.textStarts[termID]);
-      maybeLeftZeroPad(flushTerm);
 
       tv.startTerm(flushTerm, freq);
       

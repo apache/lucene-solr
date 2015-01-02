@@ -20,8 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -129,8 +130,7 @@ class ReadersAndUpdates {
   public SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      // nocommit clone the field types?
-      reader = new SegmentReader(writer.getFieldTypes(), info, context);
+      reader = new SegmentReader(writer.fieldTypes, info, context);
       if (liveDocs == null) {
         liveDocs = reader.getLiveDocs();
       }
@@ -188,7 +188,7 @@ class ReadersAndUpdates {
     // force new liveDocs in initWritableLiveDocs even if it's null
     liveDocsShared = true;
     if (liveDocs != null) {
-      return new SegmentReader(writer.fieldTypes, reader.getSegmentInfo(), reader, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
+      return new SegmentReader(new FieldTypes(writer.fieldTypes), reader.getSegmentInfo(), reader, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -476,7 +476,7 @@ class ReadersAndUpdates {
 
       // reader could be null e.g. for a just merged segment (from
       // IndexWriter.commitMergedDeletes).
-      final SegmentReader reader = this.reader == null ? new SegmentReader(writer.getFieldTypes(), info, IOContext.READONCE) : this.reader;
+      final SegmentReader reader = this.reader == null ? new SegmentReader(writer.fieldTypes, info, IOContext.READONCE) : this.reader;
       try {
         // clone FieldInfos so that we can update their dvGen separately from
         // the reader's infos and write them to a new fieldInfos_gen file

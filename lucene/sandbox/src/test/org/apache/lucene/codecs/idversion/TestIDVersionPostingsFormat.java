@@ -199,6 +199,11 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.disableHighlighting("id");
     fieldTypes.disableExistsFilters();
+    if (random().nextBoolean()) {
+      fieldTypes.enableTermVectors("id");
+      fieldTypes.enableTermVectorPositions("id");
+      fieldTypes.enableTermVectorOffsets("id");
+    }
     //IndexWriter w = new IndexWriter(dir, iwc);
     int numDocs = atLeast(1000);
     Map<String,Long> idValues = new HashMap<String,Long>();
@@ -564,31 +569,6 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     // Replaces the doc we just indexed:
     w.updateDocument(new Term("id", "id"), doc);
     w.forceMerge(1);
-    w.close();
-    dir.close();
-  }
-
-  // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted docs, and because our PF only indexes the
-  // non-deleted documents on flush, CheckIndex will see this as corruption:
-  public void testCannotIndexTermVectors() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.disableHighlighting("id");
-    fieldTypes.disableExistsFilters();
-    fieldTypes.enableTermVectors("id");
-    Document doc = w.newDocument();
-    doc.addLargeText("id", makeIDTokenStream("foo", 17));
-    try {
-      w.addDocument(doc);
-      w.commit();
-      fail("didn't hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      // iae.printStackTrace(System.out);
-    }
     w.close();
     dir.close();
   }

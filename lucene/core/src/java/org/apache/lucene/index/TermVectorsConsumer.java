@@ -141,8 +141,8 @@ final class TermVectorsConsumer extends TermsHash {
   }
 
   @Override
-  public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo, boolean rightJustifyTerms) {
-    return new TermVectorsConsumerPerField(invertState, this, fieldInfo, rightJustifyTerms);
+  public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo) {
+    return new TermVectorsConsumerPerField(invertState, this, fieldInfo);
   }
 
   void addFieldToFlush(TermVectorsConsumerPerField fieldToFlush) {

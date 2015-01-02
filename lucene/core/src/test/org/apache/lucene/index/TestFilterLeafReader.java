@@ -177,10 +177,6 @@ public class TestFilterLeafReader extends LuceneTestCase {
       if (subM.getDeclaringClass() == clazz
           && m.getDeclaringClass() != Object.class
           && m.getDeclaringClass() != subM.getDeclaringClass()) {
-        // nocommit remove this exception one we remove default impl:
-        if (m.getName().equals("getFieldTypes")) {
-          continue;
-        }
         fail(clazz + " overrides " + m + " although it has a default impl");
       }
     }

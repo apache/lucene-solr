@@ -69,7 +69,7 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
       }
     }
     if ((flushOnRAM() &&
-        control.getDeleteBytesUsed() > (1024*1024*indexWriterConfig.getRAMBufferSizeMB()))) {
+         control.getDeleteBytesUsed() + control.uniqueValuesRAM.get() > (1024*1024*indexWriterConfig.getRAMBufferSizeMB()))) {
       control.setApplyAllDeletes();
      if (infoStream.isEnabled("FP")) {
        infoStream.message("FP", "force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
@@ -86,7 +86,7 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
       control.setFlushPending(state);
     } else if (flushOnRAM()) {// flush by RAM
       final long limit = (long) (indexWriterConfig.getRAMBufferSizeMB() * 1024.d * 1024.d);
-      final long totalRam = control.activeBytes() + control.getDeleteBytesUsed();
+      final long totalRam = control.activeBytes() + control.getDeleteBytesUsed() + control.uniqueValuesRAM.get();
       if (totalRam >= limit) {
         if (infoStream.isEnabled("FP")) {
           infoStream.message("FP", "trigger flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);

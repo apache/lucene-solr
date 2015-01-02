@@ -57,7 +57,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-import org.junit.Ignore;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
@@ -762,8 +761,6 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   /**
    * Test indexing with facets tasks.
    */
-  // nocommit fixme
-  @Ignore
   public void testIndexingWithFacets() throws Exception {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {

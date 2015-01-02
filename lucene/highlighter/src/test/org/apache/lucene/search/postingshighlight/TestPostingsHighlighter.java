@@ -1005,4 +1005,79 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  public void testWithFieldTypes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.enableHighlighting("yes");
+    fieldTypes.disableFastRanges("yes");
+    
+    Document doc = iw.newDocument();
+    doc.addShortText("title", "highlighting on this title field should.  Be entire.");
+    doc.addLargeText("body", "This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    doc.addAtom("not", "no");
+    doc.addAtom("yes", "highlighting");
+    iw.addDocument(doc);
+
+    doc = iw.newDocument();
+    doc.addShortText("title", "Highlighting the first term. Hope it works.");
+    doc.addLargeText("body", "Highlighting the first term. Hope it works.");
+    doc.addAtom("not", "no");
+    doc.addAtom("yes", "highlighting");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    // body field should be snippets:
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter(searcher.getFieldTypes());
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    String[] snippets = highlighter.highlight("body", query, searcher, topDocs);
+    assertEquals(2, snippets.length);
+    assertEquals("Just a test <b>highlighting</b> from postings. ", snippets[0]);
+    assertEquals("<b>Highlighting</b> the first term. ", snippets[1]);
+
+    // title field should be "whole" highlighted:
+    query = new TermQuery(new Term("title", "highlighting"));
+    topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    snippets = highlighter.highlight("title", query, searcher, topDocs);
+    assertEquals(2, snippets.length);
+    assertEquals("<b>highlighting</b> on this title field should.  Be entire.", snippets[0]);
+    assertEquals("<b>Highlighting</b> the first term. Hope it works.", snippets[1]);
+
+    // this field doesn't exist
+    try {
+      highlighter.highlight("nofield", query, searcher, topDocs);
+      fail("did not hit exception");
+    } catch (Exception e) {
+      assertEquals(e.getMessage(), "field \"nofield\" is not recognized");
+    }
+
+    // we didn't enable highlighting for this atom field
+    try {
+      highlighter.highlight("not", query, searcher, topDocs);
+      fail("did not hit exception");
+    } catch (Exception e) {
+      assertEquals(e.getMessage(), "field=\"not\" was indexed with FieldTypes.enableHighlighting");
+    }
+    
+    // we did enable highlighting for this atom field:
+    query = new TermQuery(new Term("yes", "highlighting"));
+    topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    snippets = highlighter.highlight("yes", query, searcher, topDocs);
+    assertEquals(2, snippets.length);
+    assertEquals("<b>highlighting</b>", snippets[0]);
+    assertEquals("<b>highlighting</b>", snippets[1]);
+
+    ir.close();
+    dir.close();
+  }
 }

@@ -103,8 +103,6 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
         fieldTypes.setMultiValued("stored1");
         fieldTypes.enableTermVectors("text_vectors");
 
-        // nocommit we could just set our analyzer for the payload field?
-
         iw.commit(); // ensure there is always a commit
 
         dir.failOn(failOn);
@@ -121,8 +119,8 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
           doc.addInt("dv5", i-1);
           doc.addLargeText("text1", TestUtil.randomAnalysisString(random(), 20, true));
           // ensure we store something
-          doc.addStored("stored1", "foo");
-          doc.addStored("stored1", "bar");
+          doc.addStoredString("stored1", "foo");
+          doc.addStoredString("stored1", "bar");
           // ensure we get some payloads (analyzer will insert them for this field):
           doc.addLargeText("text_payloads", TestUtil.randomAnalysisString(random(), 6, true));
           // ensure we get some vectors
@@ -150,8 +148,8 @@ public class TestIndexWriterOutOfMemory extends LuceneTestCase {
             Document doc2 = iw.newDocument();
             doc2.addAtom("id", Integer.toString(-i));
             doc2.addLargeText("text1", TestUtil.randomAnalysisString(random(), 20, true));
-            doc2.addStored("stored1", "foo");
-            doc2.addStored("stored1", "bar");
+            doc2.addStoredString("stored1", "foo");
+            doc2.addStoredString("stored1", "bar");
             doc2.addLargeText("text_vectors", TestUtil.randomAnalysisString(random(), 6, true));
             
             try {

@@ -108,7 +108,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
                                                     .setMergePolicy(NoMergePolicy.INSTANCE));
         Document d = writer.newDocument();
         d.addLargeText("f1", "d2 first field");
-        d.addStored("f3", new byte[] { 1, 2, 3 });
+        d.addStoredBinary("f3", new byte[] { 1, 2, 3 });
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -128,7 +128,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         Document d = writer.newDocument();
         d.addLargeText("f1", "d3 first field");
         d.addLargeText("f2", "d3 second field");
-        d.addStored("f3", new byte[] { 1, 2, 3, 4, 5 });
+        d.addStoredBinary("f3", new byte[] { 1, 2, 3, 4, 5 });
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -230,7 +230,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     int mode = number % 16;
     switch (mode) {
     case 0:
-      d.addStored(fieldName, "some text");
+      d.addStoredString(fieldName, "some text");
       return;
     case 1:
       d.addLargeText(fieldName, "some text");

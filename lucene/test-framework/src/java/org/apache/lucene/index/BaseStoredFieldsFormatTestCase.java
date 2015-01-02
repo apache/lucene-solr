@@ -62,7 +62,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     fieldTypes.setMultiValued("f");
     final int numValues = random().nextInt(3);
     for (int i = 0; i < numValues; ++i) {
-      d.addStored("f", TestUtil.randomSimpleString(random(), 100));
+      d.addStoredString("f", TestUtil.randomSimpleString(random(), 100));
     }
   }
 
@@ -99,7 +99,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         final String s;
         if (rand.nextInt(4) != 3) {
           s = TestUtil.randomUnicodeString(rand, 1000);
-          doc.addStored("f"+field, s);
+          doc.addStoredString("f"+field, s);
         } else {
           s = null;
         }
@@ -163,9 +163,9 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("zzz");
 
-    doc.addStored("zzz", "a b c");
-    doc.addStored("aaa", "a b c");
-    doc.addStored("zzz", "1 2 3");
+    doc.addStoredString("zzz", "a b c");
+    doc.addStoredString("aaa", "a b c");
+    doc.addStoredString("zzz", "1 2 3");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     Document doc2 = r.document(0);
@@ -221,7 +221,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = w.newDocument();
-    doc.addStored("field", "value");
+    doc.addStoredString("field", "value");
     doc.addAtom("field2", "value");
     w.addDocument(doc);
     IndexReader r = w.getReader();
@@ -247,8 +247,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
 
     for (int k = 0; k < 100; ++k) {
       Document doc = iw.newDocument();
-      doc.addStored("bytes", bytes);
-      doc.addStored("string", string);
+      doc.addStoredBinary("bytes", bytes);
+      doc.addStoredString("string", string);
       doc.addInt("int", i);
       doc.addLong("long", l);
       doc.addFloat("float", f);
@@ -428,7 +428,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       Document doc = iw.newDocument();
       doc.addInt("id", i);
       for (int j = 0; j < data[i].length; ++j) {
-        doc.addStored("bytes" + j, new BytesRef(data[i][j]));
+        doc.addStoredBinary("bytes" + j, new BytesRef(data[i][j]));
       }
       iw.w.addDocument(doc);
       if (random().nextBoolean() && (i % (data.length / 10) == 0)) {
@@ -509,10 +509,10 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       doc.addAtom("id", "" + i);
       if (x == 1) {
         for (int j = 0; j < numFields; ++j) {
-          doc.addStored("fld", randomByteArray(random().nextInt(10), 256));
+          doc.addStoredBinary("fld", randomByteArray(random().nextInt(10), 256));
         }
       } else {
-        doc.addStored("fld", randomByteArray(RandomInts.randomIntBetween(random(), 1000000, 5000000), 2));
+        doc.addStoredBinary("fld", randomByteArray(RandomInts.randomIntBetween(random(), 1000000, 5000000), 2));
       }
       iw.addDocument(doc);
       if (random().nextInt(numDocs) == 0) {

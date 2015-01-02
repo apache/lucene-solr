@@ -56,21 +56,21 @@ public class GroupingSearchTest extends LuceneTestCase {
     Document doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
     doc.addLargeText("content", "random text");
-    doc.addStored("id", "1");
+    doc.addStoredString("id", "1");
     documents.add(doc);
 
     // 1
     doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
     doc.addLargeText("content", "some more random text");
-    doc.addStored("id", "2");
+    doc.addStoredString("id", "2");
     documents.add(doc);
 
     // 2
     doc = w.newDocument();
     addGroupField(doc, groupField, "author1");
     doc.addLargeText("content", "some more random textual data");
-    doc.addStored("id", "3");
+    doc.addStoredString("id", "3");
     doc.addAtom("groupend", "x");
     documents.add(doc);
     w.addDocuments(documents);
@@ -80,7 +80,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     doc = w.newDocument();
     addGroupField(doc, groupField, "author2");
     doc.addLargeText("content", "some random text");
-    doc.addStored("id", "4");
+    doc.addStoredString("id", "4");
     doc.addAtom("groupend", "x");
     w.addDocument(doc);
 
@@ -88,14 +88,14 @@ public class GroupingSearchTest extends LuceneTestCase {
     doc = w.newDocument();
     addGroupField(doc, groupField, "author3");
     doc.addLargeText("content", "some more random text");
-    doc.addStored("id", "5");
+    doc.addStoredString("id", "5");
     documents.add(doc);
 
     // 5
     doc = w.newDocument();
     addGroupField(doc, groupField, "author3");
     doc.addLargeText("content", "random");
-    doc.addStored("id", "6");
+    doc.addStoredString("id", "6");
     doc.addAtom("groupend", "x");
     documents.add(doc);
     w.addDocuments(documents);
@@ -104,7 +104,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     // 6 -- no author field
     doc = w.newDocument();
     doc.addLargeText("content", "random word stuck in alot of other text");
-    doc.addStored("id", "6");
+    doc.addStoredString("id", "6");
     doc.addAtom("groupend", "x");
 
     w.addDocument(doc);

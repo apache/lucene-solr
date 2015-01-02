@@ -24,10 +24,12 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
  *  Document} containing all stored fields, or only specific
@@ -97,14 +99,21 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     doc.addLargeText(fieldInfo.name, value);
   }
 
-  // nocommit it's odd that this API differentiates which number it was, vs doc values which always uses long:
   @Override
-  public void intField(FieldInfo fieldInfo, int value) {
+  public void intField(FieldInfo fieldInfo, int value) throws CorruptIndexException {
     FieldTypes.FieldType fieldType = getFieldType(fieldInfo.name);
     if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.BOOLEAN) {
-      // nocommit real check?
-      assert value == 0 || value == 1;
-      doc.addBoolean(fieldInfo.name, Boolean.valueOf(value == 1));
+      boolean b;
+      if (value == 0) {
+        b = false;
+      } else if (value == 1) {
+        b = true;
+      } else {
+        throw new CorruptIndexException("boolean field \"" + fieldInfo.name + "\" should have 0 or 1 underlying value but got " + value, "stored fields file");
+      }
+      doc.addBoolean(fieldInfo.name, b);
+    } else if (fieldType != null && fieldType.valueType == FieldTypes.ValueType.HALF_FLOAT) {
+      doc.addHalfFloat(fieldInfo.name, NumericUtils.shortToHalfFloat((short) value));
     } else {
       doc.addInt(fieldInfo.name, value);
     }

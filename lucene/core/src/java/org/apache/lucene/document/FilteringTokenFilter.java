@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-// nocommit forked from analysis module
+// TODO: forked from analysis module; can we share?
 
 /**
  * Abstract base class for TokenFilters that may remove tokens.

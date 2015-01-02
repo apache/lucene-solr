@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -47,6 +48,43 @@ public class TestCustomNorms extends LuceneTestCase {
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
+    final LineFileDocs docs = new LineFileDocs(writer.w, random());
+    int num = atLeast(100);
+    for (int i = 0; i < num; i++) {
+      Document doc = docs.nextDoc();
+      float nextFloat = random().nextFloat();
+      doc.addLargeText(floatTestField, "" + nextFloat, nextFloat);
+      writer.addDocument(doc);
+      if (rarely()) {
+        writer.commit();
+      }
+    }
+    writer.commit();
+    writer.close();
+    LeafReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
+    NumericDocValues norms = open.getNormValues(floatTestField);
+    assertNotNull(norms);
+    for (int i = 0; i < open.maxDoc(); i++) {
+      Document document = open.document(i);
+      float expected = Float.parseFloat(document.getString(floatTestField));
+      assertEquals(expected, Float.intBitsToFloat((int)norms.get(i)), 0.0f);
+    }
+    open.close();
+    dir.close();
+    docs.close();
+  }
+
+  // Use FieldTypes.setSimilarity:
+  public void testPerFieldFloatNorms() throws IOException {
+
+    Directory dir = newDirectory();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    IndexWriterConfig config = newIndexWriterConfig(analyzer);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
+    FieldTypes fieldTypes = writer.getFieldTypes();
+    fieldTypes.setSimilarity(floatTestField, new MySimProvider());
     final LineFileDocs docs = new LineFileDocs(writer.w, random());
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {

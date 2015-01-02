@@ -50,13 +50,7 @@ public class SortedNumericSelector {
    * Wraps a multi-valued SortedNumericDocValues as a single-valued view, using the specified selector 
    * and numericType.
    */
-  public static NumericDocValues wrap(SortedNumericDocValues sortedNumeric, Type selector, SortField.Type numericType) {
-    if (numericType != SortField.Type.INT &&
-        numericType != SortField.Type.LONG && 
-        numericType != SortField.Type.FLOAT &&
-        numericType != SortField.Type.DOUBLE) {
-      throw new IllegalArgumentException("numericType must be a numeric type");
-    }
+  public static NumericDocValues wrap(SortedNumericDocValues sortedNumeric, Type selector) {
     final NumericDocValues view;
     NumericDocValues singleton = DocValues.unwrapSingleton(sortedNumeric);
     if (singleton != null) {
@@ -76,25 +70,8 @@ public class SortedNumericSelector {
           throw new AssertionError();
       }
     }
-    // undo the numericutils sortability
-    switch(numericType) {
-      case FLOAT:
-        return new NumericDocValues() {
-          @Override
-          public long get(int docID) {
-            return (int) view.get(docID);
-          }
-        };
-      case DOUBLE:
-        return new NumericDocValues() {
-          @Override
-          public long get(int docID) {
-            return view.get(docID);
-          }
-        };
-      default:
-        return view;
-    }
+
+    return view;
   }
   
   /** Wraps a SortedNumericDocValues and returns the first value (min) */

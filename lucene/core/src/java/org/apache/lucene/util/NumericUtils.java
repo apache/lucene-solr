@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.FilteredTermsEnum;
@@ -44,7 +45,7 @@ public final class NumericUtils {
   private NumericUtils() {} // no instance!
 
   public static short halfFloatToShort(float value) {
-    return sortableHalfFloatBits((short) HalfFloat.floatToShortBits(value));
+    return sortableHalfFloatBits((short) HalfFloat.floatToShort(value));
   }
 
   /**
@@ -74,7 +75,7 @@ public final class NumericUtils {
   }
 
   public static float shortToHalfFloat(short v) {
-    return HalfFloat.shortBitsToFloat(sortableHalfFloatBits(v));
+    return HalfFloat.shortToFloat(sortableHalfFloatBits(v));
   }
 
   /**
@@ -196,7 +197,7 @@ public final class NumericUtils {
   }
 
   public static float bytesToHalfFloat(BytesRef bytes) {
-    return HalfFloat.shortBitsToFloat(sortableHalfFloatBits(bytesToShort(bytes)));
+    return HalfFloat.shortToFloat(sortableHalfFloatBits(bytesToShort(bytes)));
   }
 
   public static float bytesToFloat(BytesRef bytes) {
@@ -207,11 +208,20 @@ public final class NumericUtils {
     return longToDouble(bytesToLong(bytes));
   }
 
-  public static BytesRef bigIntToBytes(BigInteger value) {
+  public static BytesRef bigIntToBytes(BigInteger value, int maxBytes) {
     byte[] bytes = value.toByteArray();
-    sortableBigIntBytes(bytes);
-    //System.out.println(value + " -> " + new BytesRef(bytes));
-    return new BytesRef(bytes);
+    if (bytes.length > maxBytes) {
+      throw new IllegalArgumentException("BigInt " + value + " exceeds allowed byte width " + maxBytes);
+    }
+    byte[] bytes2 = new byte[maxBytes];
+    System.arraycopy(bytes, 0, bytes2, maxBytes-bytes.length, bytes.length);
+    if (bytes.length < maxBytes && (bytes[0] & 0x80) != 0) {
+      Arrays.fill(bytes2, 0, maxBytes-bytes.length, (byte) 0xff);
+    }
+    sortableBigIntBytes(bytes2);
+    BytesRef br = new BytesRef(bytes2);
+    //System.out.println("BI " + value + " -> " + br);
+    return br;
   }
 
   public static BigInteger bytesToBigInt(BytesRef bytes) {
@@ -222,7 +232,9 @@ public final class NumericUtils {
   }
 
   private static void sortableBigIntBytes(byte[] bytes) {
-    // nocommit does NOT work
-    //    bytes[0] ^= 0x80;
+    bytes[0] ^= 0x80;
+    for(int i=1;i<bytes.length;i++)  {
+      bytes[i] ^= 0;
+    }
   }
 }

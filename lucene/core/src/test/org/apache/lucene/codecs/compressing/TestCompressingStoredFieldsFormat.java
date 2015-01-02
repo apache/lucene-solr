@@ -22,7 +22,9 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.LowSchemaField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -62,12 +64,20 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     
     // make sure that #writeField will fail to trigger an abort
     Document invalidDoc = iw.newDocument();
+    invalidDoc.add(new LowSchemaField(null, "invalid", "", IndexOptions.NONE, false) {
+        @Override
+        public String stringValue() {
+          // TODO: really bad & scary that this causes IW to
+          // abort the segment!!  We should fix this.
+          return null;
+        }
+      });
 
-    // nocommit this no longer aborts....
     try {
-      invalidDoc.addStored("invalid", (String) null);
+      iw.addDocument(invalidDoc);
+      iw.commit();
     } finally {
-      iw.close();
+      // Abort should have closed the deleter:
       dir.close();
     }
   }

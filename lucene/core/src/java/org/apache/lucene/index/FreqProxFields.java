@@ -144,7 +144,6 @@ class FreqProxFields extends Fields {
     final int[] sortedTermIDs;
     final FreqProxPostingsArray postingsArray;
     final BytesRef scratch = new BytesRef();
-    final byte[] scratchBytes;
     final int numTerms;
     final Bits liveDocs;
     int ord;
@@ -156,11 +155,6 @@ class FreqProxFields extends Fields {
       sortedTermIDs = terms.sortedTermIDs;
       assert sortedTermIDs != null;
       postingsArray = (FreqProxPostingsArray) terms.postingsArray;
-      if (terms.rightJustifyTerms) {
-        scratchBytes = new byte[terms.maxTermLength];
-      } else {
-        scratchBytes = null;
-      }
     }
 
     public void reset() {
@@ -178,7 +172,6 @@ class FreqProxFields extends Fields {
         int mid = (lo + hi) >>> 1;
         int textStart = postingsArray.textStarts[sortedTermIDs[mid]];
         terms.bytePool.setBytesRef(scratch, textStart);
-        maybeLeftZeroPad();
         int cmp = scratch.compareTo(text);
         if (cmp < 0) {
           lo = mid + 1;
@@ -199,22 +192,8 @@ class FreqProxFields extends Fields {
       } else {
         int textStart = postingsArray.textStarts[sortedTermIDs[ord]];
         terms.bytePool.setBytesRef(scratch, textStart);
-        maybeLeftZeroPad();
         assert term().compareTo(text) > 0;
         return SeekStatus.NOT_FOUND;
-      }
-    }
-
-    private void maybeLeftZeroPad() {
-      if (terms.rightJustifyTerms) {
-        int prefix = terms.maxTermLength - scratch.length;
-        for(int i=0;i<prefix;i++) {
-          scratchBytes[i] = 0;
-        }
-        System.arraycopy(scratch.bytes, scratch.offset, scratchBytes, prefix, scratch.length);
-        scratch.bytes = scratchBytes;
-        scratch.offset = 0;
-        scratch.length = terms.maxTermLength;
       }
     }
 
@@ -222,7 +201,6 @@ class FreqProxFields extends Fields {
       this.ord = (int) ord;
       int textStart = postingsArray.textStarts[sortedTermIDs[this.ord]];
       terms.bytePool.setBytesRef(scratch, textStart);
-      maybeLeftZeroPad();
     }
 
     @Override
@@ -233,7 +211,6 @@ class FreqProxFields extends Fields {
       } else {
         int textStart = postingsArray.textStarts[sortedTermIDs[ord]];
         terms.bytePool.setBytesRef(scratch, textStart);
-        maybeLeftZeroPad();
         return scratch;
       }
     }

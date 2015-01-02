@@ -200,9 +200,6 @@ public class TestAutomatonQuery extends LuceneTestCase {
     Automaton pfx = Automata.makeString("do");
     Automaton prefixAutomaton = Operations.concatenate(pfx, Automata.makeAnyString());
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), prefixAutomaton);
-    // nocommit not true anymore
-    //Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
-    //assertTrue(aq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     assertEquals(3, automatonQueryNrHits(aq));
   }
   

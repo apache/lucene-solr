@@ -82,7 +82,6 @@ interface FieldCache {
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
 
-  // nocommit rename
   public static final Parser DOCUMENT_INT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
@@ -100,7 +99,6 @@ interface FieldCache {
     }
   };
 
-  // nocommit rename
   public static final Parser DOCUMENT_FLOAT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
@@ -118,7 +116,6 @@ interface FieldCache {
     }
   };
 
-  // nocommit rename
   public static final Parser DOCUMENT_LONG_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
@@ -136,9 +133,6 @@ interface FieldCache {
     }
   };
 
-  // nocommit half floats?
-  
-  // nocommit rename
   public static final Parser DOCUMENT_DOUBLE_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {

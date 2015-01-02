@@ -75,7 +75,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       if (requiresPayload || usually()) {
         // usually have valid payload field in document
         if (usually()) {
-          doc.addStored(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
+          doc.addStoredBinary(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
         } else if (requiresPayload) {
           invalidDoc = true;
         }
@@ -84,7 +84,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       if (requiresContexts || usually()) {
         if (usually()) {
           for (int j = 0; j < atLeast(2); j++) {
-            doc.addStored(CONTEXT_FIELD_NAME, new BytesRef("context_" + i + "_"+ j));
+            doc.addStoredBinary(CONTEXT_FIELD_NAME, new BytesRef("context_" + i + "_"+ j));
           }
         }
         // we should allow entries without context
@@ -340,7 +340,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       BytesRef term;
 
       payloadValue = new BytesRef("payload_" + i);
-      doc.addStored(PAYLOAD_FIELD_NAME, payloadValue);
+      doc.addStoredBinary(PAYLOAD_FIELD_NAME, payloadValue);
 
       if (usually()) {
         numericValue = 100 + i;
@@ -350,14 +350,14 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       int numContexts = atLeast(1);
       for (int j=0; j<numContexts; j++) {
         BytesRef contextValue = new BytesRef("context_" + i + "_" + j);
-        doc.addStored(CONTEXT_FIELD_NAME, contextValue);
+        doc.addStoredBinary(CONTEXT_FIELD_NAME, contextValue);
         contextValues.add(contextValue);
       }
 
       int numSuggestions = atLeast(2);
       for (int j=0; j<numSuggestions; j++) {
         term = new BytesRef("field_" + i + "_" + j);
-        doc.addStored(FIELD_NAME, term);
+        doc.addStoredBinary(FIELD_NAME, term);
 
         Suggestion suggestionValue = new Suggestion();
         suggestionValue.payload = payloadValue;

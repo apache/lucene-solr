@@ -27,6 +27,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 public class TestDateTools extends LuceneTestCase {
   @Rule
   public TestRule testRules = 

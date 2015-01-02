@@ -134,8 +134,6 @@ public class LowSchemaField implements IndexableFieldType, IndexableField {
     return this;
   }
 
-  // nocommit need test trying to do index field with tokenized=false, and Reader value
-
   @Override
   public TokenStream tokenStream(TokenStream reuse) throws IOException {
     if (tokenStream != null) {

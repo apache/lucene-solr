@@ -488,7 +488,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       }
       String contents = sb.toString();
       doc.addLargeText("field", contents);
-      doc.addStored("id", ""+i);
+      doc.addStoredString("id", ""+i);
       if (VERBOSE) {
         System.out.println("  doc " + i + " -> " + contents);
       }

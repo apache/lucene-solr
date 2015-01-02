@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -81,6 +82,12 @@ public class TermVectorLeafReader extends LeafReader {
         true, true, terms.hasPayloads(),
         indexOptions, DocValuesType.NONE, -1, null);
     fieldInfos = new FieldInfos(new FieldInfo[]{fieldInfo});
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    // nocommit todo
+    return null;
   }
 
   @Override

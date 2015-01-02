@@ -39,7 +39,6 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1442
   public void testDoubleOffsetCounting() throws Exception {
     Directory dir = newDirectory();
-    // nocommit sneaky behavior change ...
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setIndexOptions("field", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
@@ -381,12 +380,12 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       fieldTypes.enableTermVectorPositions("termVector");
 
       Document document = writer.newDocument();
-      document.addStored("stored", "stored");
+      document.addStoredString("stored", "stored");
       writer.addDocument(document);
       writer.addDocument(document);
 
       document = writer.newDocument();
-      document.addStored("stored", "stored");
+      document.addStoredString("stored", "stored");
       document.addLargeText("termVector", "termVector");
       writer.addDocument(document);
       writer.forceMerge(1);
@@ -429,12 +428,12 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       fieldTypes.enableTermVectorPositions("termVector");
 
       Document document = writer.newDocument();
-      document.addStored("stored", "stored");
+      document.addStoredString("stored", "stored");
       writer.addDocument(document);
       writer.addDocument(document);
 
       document = writer.newDocument();
-      document.addStored("stored", "stored");
+      document.addStoredString("stored", "stored");
       document.addLargeText("termVector", "termVector");
       writer.addDocument(document);
       writer.forceMerge(1);
@@ -463,7 +462,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorPositions("termVector");
 
     Document document = writer.newDocument();
-    document.addStored("stored", "stored");
+    document.addStoredString("stored", "stored");
     document.addLargeText("termVector", "termVector");
     for(int i=0;i<10;i++) {
       writer.addDocument(document);
@@ -476,7 +475,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
         .setMergeScheduler(new SerialMergeScheduler())
         .setMergePolicy(new LogDocMergePolicy()));
     document = writer.newDocument();
-    document.addStored("stored", "stored");
+    document.addStoredString("stored", "stored");
     document.addLargeText("termVector", "termVector");
     for(int i=0;i<6;i++) {
       writer.addDocument(document);
@@ -505,7 +504,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Document doc = iw.newDocument();
     iw.addDocument(doc);
     try {
-      doc.addStored("field", "value");
+      doc.addStoredString("field", "value");
       fail("should have hit exc");
     } catch (IllegalStateException ise) {
       assertEquals("field \"field\": cannot enable term vectors when indexOptions is NONE", ise.getMessage());

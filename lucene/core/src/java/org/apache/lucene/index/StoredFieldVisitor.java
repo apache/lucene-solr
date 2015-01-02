@@ -56,6 +56,9 @@ public abstract class StoredFieldVisitor {
   public void stringField(FieldInfo fieldInfo, String value) throws IOException {
   }
 
+  // TODO: simplify this API; stored fields can just deal with long and FieldTypes instead of having to implement its own
+  // per-document-per-field baby schema here:
+
   /** Process a int numeric field. */
   public void intField(FieldInfo fieldInfo, int value) throws IOException {
   }

@@ -1,4 +1,4 @@
-package org.apache.lucene.queries;
+package org.apache.lucene.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,6 +37,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -178,4 +179,18 @@ public class TermFilterTest extends LuceneTestCase {
     return new TermFilter(term);
   }
 
+  public void testAllMatches() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = newRandomIndexWriter(dir);
+    int numDocs = atLeast(10000);
+    for(int i=0;i<numDocs;i++) {
+      Document doc = w.newDocument();
+      doc.addAtom("field", "foo");
+      w.addDocument(doc);
+    }
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+    assertEquals(numDocs, s.search(new ConstantScoreQuery(new TermFilter(new Term("field", "foo"))), 1).totalHits);
+    IOUtils.close(r, w, dir);
+  }
 }

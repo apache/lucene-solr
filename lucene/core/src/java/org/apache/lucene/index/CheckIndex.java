@@ -144,6 +144,9 @@ public class CheckIndex implements Closeable {
     /** Holds the userData of the last commit in the index */
     public Map<String, String> userData;
 
+    /** How many docs violate unique field constraints and would be deleted with -exorcise. */
+    public int nonUniqueCount;
+
     /** Holds the status of each segment in the index.
      *  See {@link #segmentInfos}.
      *
@@ -477,10 +480,7 @@ public class CheckIndex implements Closeable {
       return result;
     }
 
-    // nocommit TestIndexWriterReader.testAddIndexesAndDoDeletesThreads one time hit EOFE in here:
     FieldTypes fieldTypes = FieldTypes.getFieldTypes(sis.getUserData(), null, null);
-
-    // nocommit verify unique atom type is in fact unique
 
     // find the oldest and newest segment versions
     Version oldest = null;
@@ -541,9 +541,10 @@ public class CheckIndex implements Closeable {
     result.numSegments = numSegments;
     result.userData = sis.getUserData();
     String userDataString;
-    if (sis.getUserData().size() > 0) {
-      // nocommit don't print fieldTypes string?  it's huge and ugly?
-      userDataString = " userData=" + sis.getUserData();
+    Map<String,String> userData = new HashMap<String,String>(sis.getUserData());
+    userData.remove(FieldTypes.FIELD_TYPES_KEY);
+    if (userData.isEmpty() == false) {
+      userDataString = " userData=" + userData;
     } else {
       userDataString = "";
     }
@@ -580,9 +581,14 @@ public class CheckIndex implements Closeable {
       return result;
     }
 
-
     result.newSegments = sis.clone();
     result.newSegments.clear();
+
+    // Carry over field types:
+    userData = sis.getUserData();
+    if (userData.containsKey(FieldTypes.FIELD_TYPES_KEY)) {
+      result.newSegments.getUserData().put(FieldTypes.FIELD_TYPES_KEY, userData.get(FieldTypes.FIELD_TYPES_KEY));
+    }
     result.maxSegmentName = -1;
 
     IndexReader[] segmentReaders = new IndexReader[numSegments];
@@ -744,6 +750,7 @@ public class CheckIndex implements Closeable {
       try {
         int nonUniqueCount = 0;
         String nonUniqueMessage = null;
+
         for(String fieldName : fieldTypes.getFieldNames()) {
           if (fieldTypes.getIsUnique(fieldName)) {
             Terms terms = MultiFields.getTerms(topReader, fieldName);
@@ -759,7 +766,6 @@ public class CheckIndex implements Closeable {
                     int docID2 = docsEnum.nextDoc();
                     if (docID2 != DocsEnum.NO_MORE_DOCS) {
                       if (nonUniqueCount == 0) {
-                        // nocommit should "isUnique" be in low schema?
                         // nocommit have -fix delete the offenders:
                         nonUniqueMessage = "field=\"" + fieldName + "\" is supposed to be unique, but isn't: e.g. term=" + termsEnum.term() + " matches both docID=" + docID + " and docID=" + docID2;
                         if (failFast) {
@@ -781,21 +787,35 @@ public class CheckIndex implements Closeable {
 
         if (nonUniqueCount != 0) {
           nonUniqueMessage += "; total " + nonUniqueCount + " non-unique documents would be deleted";
+          result.nonUniqueCount = nonUniqueCount;
           msg(infoStream, "FAILED");
           msg(infoStream, nonUniqueMessage);
-          throw new RuntimeException(nonUniqueMessage);
         }
       } finally {
         topReader.close();
       }
     }
 
-    if (0 == result.numBadSegments) {
+    if (0 == result.numBadSegments && 0 == result.nonUniqueCount) {
       result.clean = true;
-    } else
-      msg(infoStream, "WARNING: " + result.numBadSegments + " broken segments (containing " + result.totLoseDocCount + " documents) detected");
+    } else {
+      StringBuilder whatsWrong = new StringBuilder();
+      if (result.numBadSegments != 0) {
+        whatsWrong.append(result.numBadSegments + " broken segments (containing " + result.totLoseDocCount + " documents)");
+      }
+      if (result.nonUniqueCount != 0) {
+        if (whatsWrong.length() != 0) {
+          whatsWrong.append(", and up to ");
+        }
+        whatsWrong.append(result.nonUniqueCount + " non-unique documents");
+      }
+        
+      msg(infoStream, "WARNING: " + whatsWrong.toString());
+    }
 
-    if ( ! (result.validCounter = (result.maxSegmentName < sis.counter))) {
+    result.validCounter = result.maxSegmentName < sis.counter;
+
+    if (result.validCounter == false) {
       result.clean = false;
       result.newSegments.counter = result.maxSegmentName + 1; 
       msg(infoStream, "ERROR: Next segment name counter " + sis.counter + " is not greater than max segment name " + result.maxSegmentName);
@@ -2285,6 +2305,59 @@ public class CheckIndex implements Closeable {
       throw new IllegalArgumentException("can only exorcise an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
     result.newSegments.commit(result.dir);
+
+    if (result.nonUniqueCount != 0) {
+      // Open an IndexWriter to delete all non-unique documents:
+
+      // TODO: messy that we drop & then reacquire write lock; can we xfer to writer somehow?  Or maybe make a filter dir w/ NoLockFactory?
+      IOUtils.close(writeLock);
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+      IndexReader r = null;
+      boolean success = false;
+      try {
+        int delCount = 0;
+        FieldTypes fieldTypes = w.getFieldTypes();
+        r = w.getReader();
+        for (String fieldName : fieldTypes.getFieldNames()) {
+          if (fieldTypes.getIsUnique(fieldName)) {
+            Terms terms = MultiFields.getTerms(r, fieldName);
+            if (terms != null) {
+              Bits liveDocs = MultiFields.getLiveDocs(r);
+              TermsEnum termsEnum = terms.iterator(null);
+              DocsEnum docsEnum = null;
+              while (termsEnum.next() != null) {
+                docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
+                int docID = docsEnum.nextDoc();
+                if (docID != DocsEnum.NO_MORE_DOCS) {
+                  // Delete all but the first document:
+                  while ((docID = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+                    delCount++;
+                    if (w.tryDeleteDocument(r, docID) == false) {
+                      throw new RuntimeException("failed to tryDeleteDocument " + docID);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        if (delCount != result.nonUniqueCount) {
+          throw new RuntimeException("exorcise attempted to delete the wrong number (" + delCount + ") of documents vs expected " + result.nonUniqueCount);
+        }
+        success = true;
+      } finally {
+        if (success == false) {
+          IOUtils.closeWhileHandlingException(r);
+          w.rollback();
+        } else {
+          IOUtils.close(w, r);
+        }
+        // re-obtain write lock
+        if (!writeLock.obtain(IndexWriterConfig.WRITE_LOCK_TIMEOUT)) {
+          throw new LockObtainFailedException("Index locked for write: " + writeLock);
+        }
+      }
+    }
   }
 
   private static boolean assertsOn;

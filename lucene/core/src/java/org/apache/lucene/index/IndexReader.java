@@ -103,12 +103,7 @@ public abstract class IndexReader implements Closeable {
     public void onClose(IndexReader reader) throws IOException;
   }
 
-  // nocommit need getFieldTypes; how should MultiReader impl?
-
-  // nocommit make abstract
-  public FieldTypes getFieldTypes() {
-    return null;
-  }
+  public abstract FieldTypes getFieldTypes();
 
   private final Set<ReaderClosedListener> readerClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<ReaderClosedListener>());

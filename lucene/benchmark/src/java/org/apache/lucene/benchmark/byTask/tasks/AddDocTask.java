@@ -41,10 +41,12 @@ public class AddDocTask extends PerfTask {
   protected String getLogMessage(int recsCount) {
     return String.format(Locale.ROOT, "added %9d docs",recsCount);
   }
+
+  protected Document doc;
   
   @Override
-  public int doLogic() throws Exception {
-    Document doc;
+  public void setup() throws Exception {
+    super.setup();
     DocMaker docMaker = getRunData().getDocMaker();
     IndexWriter iw = getRunData().getIndexWriter();
     if (docSize > 0) {
@@ -52,11 +54,11 @@ public class AddDocTask extends PerfTask {
     } else {
       doc = docMaker.makeDocument(iw);
     }
-    final String docID = doc.getString(DocMaker.ID_FIELD);
-    if (docID == null) {
-      throw new IllegalStateException("document must define the docid field");
-    }
-    iw.addDocument(doc);
+  }
+
+  @Override
+  public int doLogic() throws Exception {
+    getRunData().getIndexWriter().addDocument(doc);
     return 1;
   }
 

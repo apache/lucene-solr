@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -86,8 +87,7 @@ public class ParallelLeafReader extends LeafReader {
       this.maxDoc = first.maxDoc();
       this.numDocs = first.numDocs();
       this.hasDeletions = first.hasDeletions();
-      // nocommit must verify field types are congruent and take union?
-      this.fieldTypes = first.getFieldTypes();
+      this.fieldTypes = new FieldTypes(first.getFieldTypes());
     } else {
       this.maxDoc = this.numDocs = 0;
       this.hasDeletions = false;
@@ -108,6 +108,8 @@ public class ParallelLeafReader extends LeafReader {
     // build FieldInfos and fieldToReader map:
     for (final LeafReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
+      // nocommit we should only add the fields that this reader "wins" on?
+      fieldTypes.addAll(reader.getFieldTypes());
       for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
         if (!fieldToReader.containsKey(fieldInfo.name)) {

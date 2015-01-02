@@ -60,7 +60,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       super(fields, size);
 
       SortField field = fields[0];
-      setComparator(0,field.getComparator(size, 0));
+      setComparator(0, field.getComparator(size, 0));
       oneReverseMul = field.reverse ? -1 : 1;
 
       reverseMul[0] = oneReverseMul;

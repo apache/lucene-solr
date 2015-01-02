@@ -40,8 +40,6 @@ public final class MultiTermsEnum extends TermsEnum {
   private final TermsEnumWithSlice[] top;
   private final MultiDocsEnum.EnumWithSlice[] subDocs;
   private final MultiDocsAndPositionsEnum.EnumWithSlice[] subDocsAndPositions;
-  private final int zeroPadTermLength;
-  private final Comparator<BytesRef> cmp;
 
   private BytesRef lastSeek;
   private boolean lastSeekExact;
@@ -50,7 +48,6 @@ public final class MultiTermsEnum extends TermsEnum {
   private int numTop;
   private int numSubs;
   private BytesRef current;
-  private BytesRef scratch;
 
   static class TermsEnumIndex {
     public final static TermsEnumIndex[] EMPTY_ARRAY = new TermsEnumIndex[0];
@@ -77,19 +74,12 @@ public final class MultiTermsEnum extends TermsEnum {
   /** Sole constructor.
    *  @param slices Which sub-reader slices we should
    *  merge. */
-  public MultiTermsEnum(ReaderSlice[] slices, int zeroPadTermLength) {
+  public MultiTermsEnum(ReaderSlice[] slices) {
     queue = new TermMergeQueue(slices.length);
     top = new TermsEnumWithSlice[slices.length];
     subs = new TermsEnumWithSlice[slices.length];
     subDocs = new MultiDocsEnum.EnumWithSlice[slices.length];
     subDocsAndPositions = new MultiDocsAndPositionsEnum.EnumWithSlice[slices.length];
-    this.zeroPadTermLength = zeroPadTermLength;
-    if (zeroPadTermLength != -1) {
-      scratch = new BytesRef(zeroPadTermLength);
-      scratch.length = zeroPadTermLength;
-    } else {
-      scratch = null;
-    }
     for(int i=0;i<slices.length;i++) {
       subs[i] = new TermsEnumWithSlice(i, slices[i]);
       subDocs[i] = new MultiDocsEnum.EnumWithSlice();
@@ -98,11 +88,6 @@ public final class MultiTermsEnum extends TermsEnum {
       subDocsAndPositions[i].slice = slices[i];
     }
     currentSubs = new TermsEnumWithSlice[slices.length];
-    if (zeroPadTermLength == -1) {
-      cmp = BytesRef.getUTF8SortedAsUnicodeComparator();
-    } else {
-      cmp = BytesRef.getRightJustifiedComparator();
-    }
   }
 
   @Override
@@ -146,7 +131,7 @@ public final class MultiTermsEnum extends TermsEnum {
     numTop = 0;
 
     boolean seekOpt = false;
-    if (lastSeek != null && cmp.compare(lastSeek, term) <= 0) {
+    if (lastSeek != null && lastSeek.compareTo(term) <= 0) {
       seekOpt = true;
     }
 
@@ -164,7 +149,7 @@ public final class MultiTermsEnum extends TermsEnum {
       if (seekOpt) {
         final BytesRef curTerm = currentSubs[i].current;
         if (curTerm != null) {
-          final int x = cmp.compare(term, curTerm);
+          final int x = term.compareTo(curTerm);
           if (x == 0) {
             status = true;
           } else if (x < 0) {
@@ -182,7 +167,6 @@ public final class MultiTermsEnum extends TermsEnum {
       if (status) {
         top[numTop++] = currentSubs[i];
         current = currentSubs[i].current = currentSubs[i].terms.term();
-        maybeLeftZeroPad();
         assert term.equals(currentSubs[i].current);
       }
     }
@@ -192,18 +176,6 @@ public final class MultiTermsEnum extends TermsEnum {
     return numTop > 0;
   }
 
-  private void maybeLeftZeroPad() {
-    if (zeroPadTermLength != -1 && current != null) {
-      int prefix = zeroPadTermLength - current.length;
-      assert prefix >= 0: "prefix=" + prefix + " zeroPadTermLength=" + zeroPadTermLength + " vs " + current.length;
-      for(int i=0;i<prefix;i++) {
-        scratch.bytes[i] = 0;
-      }
-      System.arraycopy(current.bytes, current.offset, scratch.bytes, prefix, current.length);
-      current = scratch;
-    }
-  }
-
   @Override
   public SeekStatus seekCeil(BytesRef term) throws IOException {
     queue.clear();
@@ -211,7 +183,7 @@ public final class MultiTermsEnum extends TermsEnum {
     lastSeekExact = false;
 
     boolean seekOpt = false;
-    if (lastSeek != null && cmp.compare(lastSeek, term) <= 0) {
+    if (lastSeek != null && lastSeek.compareTo(term) <= 0) {
       seekOpt = true;
     }
 
@@ -229,7 +201,7 @@ public final class MultiTermsEnum extends TermsEnum {
       if (seekOpt) {
         final BytesRef curTerm = currentSubs[i].current;
         if (curTerm != null) {
-          final int x = cmp.compare(term, curTerm);
+          final int x = term.compareTo(curTerm);
           if (x == 0) {
             status = SeekStatus.FOUND;
           } else if (x < 0) {
@@ -247,7 +219,6 @@ public final class MultiTermsEnum extends TermsEnum {
       if (status == SeekStatus.FOUND) {
         top[numTop++] = currentSubs[i];
         current = currentSubs[i].current = currentSubs[i].terms.term();
-        maybeLeftZeroPad();
       } else {
         if (status == SeekStatus.NOT_FOUND) {
           currentSubs[i].current = currentSubs[i].terms.term();
@@ -295,7 +266,6 @@ public final class MultiTermsEnum extends TermsEnum {
       }
     } 
     current = top[0].current;
-    maybeLeftZeroPad();
   }
 
   private void pushTop() throws IOException {
@@ -536,7 +506,7 @@ public final class MultiTermsEnum extends TermsEnum {
 
     @Override
     protected boolean lessThan(TermsEnumWithSlice termsA, TermsEnumWithSlice termsB) {
-      final int x = cmp.compare(termsA.current, termsB.current);
+      final int x = termsA.current.compareTo(termsB.current);
       if (x != 0) {
         return x < 0;
       } else {

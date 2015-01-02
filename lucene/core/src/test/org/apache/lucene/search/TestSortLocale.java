@@ -1,6 +1,6 @@
-package org.apache.lucene.collation;
+package org.apache.lucene.search;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,86 +17,67 @@ package org.apache.lucene.collation;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldTypes;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocValuesRangeFilter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * trivial test of CollationDocValuesField
- */
-public class TestCollationDocValuesField extends LuceneTestCase {
+public class TestSortLocale extends LuceneTestCase {
 
-  // nocommit migrate to FieldTypes
-
-  /*
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    IndexWriter w = newIndexWriter(dir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setSortLocale("collated", Locale.ENGLISH);
 
-    Document doc = new Document();
-    Field field = newField("field", "", StringField.TYPE_STORED);
-    CollationDocValuesField collationField = new CollationDocValuesField("collated", Collator.getInstance(Locale.ENGLISH));
-    doc.add(field);
-    doc.add(collationField);
+    Document doc = w.newDocument();
+    doc.addAtom("field", "ABC");
+    doc.addAtom("collated", "ABC");
+    w.addDocument(doc);
 
-    field.setStringValue("ABC");
-    collationField.setStringValue("ABC");
-    iw.addDocument(doc);
-    
-    field.setStringValue("abc");
-    collationField.setStringValue("abc");
-    iw.addDocument(doc);
-    
-    IndexReader ir = iw.getReader();
-    iw.close();
-    
-    IndexSearcher is = newSearcher(ir);
-    
-    SortField sortField = new SortField("collated", SortField.Type.STRING);
-    
-    TopDocs td = is.search(new MatchAllDocsQuery(), 5, new Sort(sortField));
-    assertEquals("abc", ir.document(td.scoreDocs[0].doc).get("field"));
-    assertEquals("ABC", ir.document(td.scoreDocs[1].doc).get("field"));
-    ir.close();
+    doc = w.newDocument();
+    doc.addAtom("field", "abc");
+    doc.addAtom("collated", "abc");
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = newSearcher(r);
+    TopDocs td = s.search(new MatchAllDocsQuery(), 5, fieldTypes.newSort("collated"));
+    assertEquals("abc", r.document(td.scoreDocs[0].doc).get("field"));
+    assertEquals("ABC", r.document(td.scoreDocs[1].doc).get("field"));
+    r.close();
+    w.close();
     dir.close();
   }
-  
+
   public void testRanges() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field field = newField("field", "", StringField.TYPE_STORED);
-    Collator collator = Collator.getInstance(Locale.getDefault()); // uses -Dtests.locale
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.setSortLocale("collated", Locale.getDefault()); // uses -Dtests.locale
+
+    Collator collator = Collator.getInstance(Locale.getDefault());
     if (random().nextBoolean()) {
-      collator.setStrength(Collator.PRIMARY);
+      // nocommit FieldTypes must expose this?
+      // collator.setStrength(Collator.PRIMARY);
     }
-    CollationDocValuesField collationField = new CollationDocValuesField("collated", collator);
-    doc.add(field);
-    doc.add(collationField);
     
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
+      Document doc = iw.newDocument();
       String value = TestUtil.randomSimpleString(random());
-      field.setStringValue(value);
-      collationField.setStringValue(value);
+      doc.addAtom("field", value);
+      doc.addAtom("collated", value);
       iw.addDocument(doc);
     }
     
@@ -108,9 +89,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     for (int i = 0; i < numChecks; i++) {
       String start = TestUtil.randomSimpleString(random());
       String end = TestUtil.randomSimpleString(random());
-      BytesRef lowerVal = new BytesRef(collator.getCollationKey(start).toByteArray());
-      BytesRef upperVal = new BytesRef(collator.getCollationKey(end).toByteArray());
-      Query query = new ConstantScoreQuery(DocValuesRangeFilter.newBytesRefRange("collated", lowerVal, upperVal, true, true));
+      Query query = new ConstantScoreQuery(fieldTypes.newStringDocValuesRangeFilter("collated", start, true, end, true));
       doTestRanges(is, start, end, query, collator);
     }
     
@@ -131,13 +110,12 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     
     // negative test
     BooleanQuery bq = new BooleanQuery();
-    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-    bq.add(query, Occur.MUST_NOT);
+    bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
+    bq.add(query, BooleanClause.Occur.MUST_NOT);
     docs = is.search(bq, is.getIndexReader().maxDoc());
     for (ScoreDoc doc : docs.scoreDocs) {
       String value = is.doc(doc.doc).getString("field");
       assertTrue(collator.compare(value, startPoint) < 0 || collator.compare(value, endPoint) > 0);
     }
   }
-  */
 }

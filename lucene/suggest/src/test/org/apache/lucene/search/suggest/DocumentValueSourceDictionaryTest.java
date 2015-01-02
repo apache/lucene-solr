@@ -61,13 +61,13 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     for(int i = 0; i < ndocs ; i++) {
       Document doc = writer.newDocument();
       doc.addLargeText(FIELD_NAME, "field_" + i);
-      doc.addStored(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
+      doc.addStoredBinary(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
       doc.addInt(WEIGHT_FIELD_NAME_1, 10 + i);
       doc.addInt(WEIGHT_FIELD_NAME_2, 20 + i);
       doc.addInt(WEIGHT_FIELD_NAME_3, 30 + i);
-      doc.addStored(CONTEXTS_FIELD_NAME, new BytesRef("ctx_"  + i + "_0"));
+      doc.addStoredBinary(CONTEXTS_FIELD_NAME, new BytesRef("ctx_"  + i + "_0"));
       for(int j = 1; j < atLeast(3); j++) {
-        doc.addStored(CONTEXTS_FIELD_NAME, new BytesRef("ctx_" + i + "_" + j));
+        doc.addStoredBinary(CONTEXTS_FIELD_NAME, new BytesRef("ctx_" + i + "_" + j));
       }
       docs.put("field_" + i, doc);
     }

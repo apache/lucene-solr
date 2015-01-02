@@ -883,4 +883,201 @@ public class TestAbuseSchema extends LuceneTestCase {
     dir.close();
   }
 
+
+  public void testMixedTypesAfterReopenAppend1() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
+    List<LowSchemaField> doc = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(a, "foo", 0, IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.NUMERIC);
+    doc.add(field);
+    w.addDocument(doc);
+    w.close();
+
+    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    doc = new ArrayList<>();
+    field = new LowSchemaField(a, "foo", new BytesRef("hello"), IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.SORTED);
+    doc.add(field);
+    try {
+      w.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
+
+  public void testMixedTypesAfterReopenAppend2() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
+    List<LowSchemaField> doc = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(a, "foo", new BytesRef("foo"), IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.SORTED_SET);
+    doc.add(field);
+    w.addDocument(doc);
+    w.close();
+
+    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    doc = new ArrayList<>();
+    field = new LowSchemaField(a, "foo", "bar", IndexOptions.DOCS, false);
+    doc.add(field);
+    field = new LowSchemaField(a, "foo", new BytesRef("foo"), IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.BINARY);
+    doc.add(field);
+    try {
+      w.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
+
+  public void testMixedTypesAfterReopenAppend3() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(a));
+    List<LowSchemaField> doc = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(a, "foo", new BytesRef("foo"), IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.SORTED_SET);
+    doc.add(field);
+    w.addDocument(doc);
+    w.close();
+
+    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    doc = new ArrayList<>();
+    field = new LowSchemaField(a, "foo", "bar", IndexOptions.DOCS, false);
+    doc.add(field);
+    field = new LowSchemaField(a, "foo", new BytesRef("foo"), IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.BINARY);
+    doc.add(field);
+    try {
+      w.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    // Also add another document so there is a segment to write here:
+    w.addDocument(w.newDocument());
+    w.close();
+    dir.close();
+  }
+
+  public void testUntokenizedReader() throws Exception {
+    IndexWriter w = newIndexWriter();
+    List<LowSchemaField> doc = new ArrayList<>();
+    doc.add(new LowSchemaField(new MockAnalyzer(random()), "field", new StringReader("string"), IndexOptions.DOCS, false));
+    shouldFail(() -> w.addDocument(doc),
+               "field \"field\" is stored but does not have binaryValue, stringValue nor numericValue");
+    w.close();
+  }
+
+  public void testUpdateNumericDVFieldWithSameNameAsPostingField() throws Exception {
+    // this used to fail because FieldInfos.Builder neglected to update
+    // globalFieldMaps.docValuesTypes map
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriterConfig conf = newIndexWriterConfig(a);
+    IndexWriter writer = new IndexWriter(dir, conf);
+
+    List<LowSchemaField> doc = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(a, "f", "mock-value", IndexOptions.DOCS, false);
+    doc.add(field);
+    
+    field = new LowSchemaField(a, "f", 5, IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.NUMERIC);
+    doc.add(field);
+    writer.addDocument(doc);
+
+    writer.commit();
+    writer.updateNumericDocValue(new Term("f", "mock-value"), "f", 17L);
+    writer.close();
+    
+    DirectoryReader r = DirectoryReader.open(dir);
+    NumericDocValues ndv = r.leaves().get(0).reader().getNumericDocValues("f");
+    assertEquals(17, ndv.get(0));
+    r.close();
+  }
+
+  static BytesRef toBytes(long value) {
+    BytesRef bytes = new BytesRef(10); // negative longs may take 10 bytes
+    while ((value & ~0x7FL) != 0L) {
+      bytes.bytes[bytes.length++] = (byte) ((value & 0x7FL) | 0x80L);
+      value >>>= 7;
+    }
+    bytes.bytes[bytes.length++] = (byte) value;
+    return bytes;
+  }
+
+  static long getValue(BinaryDocValues bdv, int idx) {
+    BytesRef term = bdv.get(idx);
+    idx = term.offset;
+    byte b = term.bytes[idx++];
+    long value = b & 0x7FL;
+    for (int shift = 7; (b & 0x80L) != 0; shift += 7) {
+      b = term.bytes[idx++];
+      value |= (b & 0x7FL) << shift;
+    }
+    return value;
+  }
+
+  public void testUpdateBinaryDVFieldWithSameNameAsPostingField() throws Exception {
+    // this used to fail because FieldInfos.Builder neglected to update
+    // globalFieldMaps.docValuesTypes map
+    Analyzer a = new MockAnalyzer(random());
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    List<LowSchemaField> doc = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(a, "f", "mock-value", IndexOptions.DOCS, false);
+    doc.add(field);
+
+    field = new LowSchemaField(a, "f", toBytes(5L), IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.BINARY);
+    doc.add(field);
+
+    writer.addDocument(doc);
+    writer.commit();
+    writer.updateBinaryDocValue(new Term("f", "mock-value"), "f", toBytes(17L));
+    writer.close();
+    
+    DirectoryReader r = DirectoryReader.open(dir);
+    BinaryDocValues bdv = r.leaves().get(0).reader().getBinaryDocValues("f");
+    assertEquals(17, getValue(bdv, 0));
+    r.close();
+  }
+
+  public void testHasUncommittedChangesAfterException() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    List<LowSchemaField> doc = new ArrayList<>();
+    LowSchemaField field = new LowSchemaField(analyzer, "dv", "foo!", IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.SORTED);
+    doc.add(field);
+
+    field = new LowSchemaField(analyzer, "dv", "bar!", IndexOptions.NONE, false);
+    field.setDocValuesType(DocValuesType.SORTED);
+    doc.add(field);
+
+    try {
+      iwriter.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    iwriter.commit();
+    assertFalse(iwriter.hasUncommittedChanges());
+    iwriter.close();
+    directory.close();
+  }
+
 }

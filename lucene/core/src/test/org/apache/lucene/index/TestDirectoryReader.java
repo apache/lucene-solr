@@ -167,7 +167,7 @@ public class TestDirectoryReader extends LuceneTestCase {
 
     doc.addAtom("keyword", "test1");
     doc.addLargeText("text", "test1");
-    doc.addStored("unindexed", "test1");
+    doc.addStoredString("unindexed", "test1");
     doc.addLargeText("unstored", "test1");
     writer.addDocument(doc);
 
@@ -193,7 +193,7 @@ public class TestDirectoryReader extends LuceneTestCase {
       doc = writer.newDocument();
       doc.addAtom("keyword", "test1");
       doc.addLargeText("text", "test1");
-      doc.addStored("unindexed", "test1");
+      doc.addStoredString("unindexed", "test1");
       doc.addLargeText("unstored", "test1");
       writer.addDocument(doc);
     }
@@ -202,7 +202,7 @@ public class TestDirectoryReader extends LuceneTestCase {
       doc = writer.newDocument();
       doc.addAtom("keyword2", "test1");
       doc.addLargeText("text2", "test1");
-      doc.addStored("unindexed2", "test1");
+      doc.addStoredString("unindexed2", "test1");
       doc.addLargeText("unstored2", "test1");
       writer.addDocument(doc);
     }
@@ -322,7 +322,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     for (int i = 0; i < 5 * mergeFactor; i++) {
       Document doc = writer.newDocument();
       doc.addLargeText("tvnot", "one two two three three three");
-      doc.addStored("termvector", "one two two three three three");
+      doc.addStoredString("termvector", "one two two three three three");
       doc.addLargeText("tvoffset", "one two two three three three");
       doc.addLargeText("tvposition", "one two two three three three");
       doc.addLargeText("tvpositionoffset", "one two two three three three");
@@ -370,7 +370,7 @@ public class TestDirectoryReader extends LuceneTestCase {
                                     .setOpenMode(OpenMode.APPEND)
                                     .setMergePolicy(newLogMergePolicy()));
     Document doc = writer.newDocument();
-    doc.addStored("bin1", new BytesRef(bin));
+    doc.addStoredBinary("bin1", new BytesRef(bin));
     doc.addLargeText("junk", "junk text");
     writer.addDocument(doc);
     writer.close();
@@ -488,7 +488,7 @@ public class TestDirectoryReader extends LuceneTestCase {
       
     doc.addAtom("keyword", "test1");
     doc.addLargeText("text", "test1");
-    doc.addStored("unindexed", "test1");
+    doc.addStoredString("unindexed", "test1");
     doc.addLargeText("unstored","test1");
     writer.addDocument(doc);
   }
@@ -498,7 +498,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     
     doc.addAtom("keyword2", "test1");
     doc.addLargeText("text2", "test1");
-    doc.addStored("unindexed2", "test1");
+    doc.addStoredString("unindexed2", "test1");
     doc.addLargeText("unstored2","test1");
     writer.addDocument(doc);
   }

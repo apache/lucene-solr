@@ -39,9 +39,7 @@ public final class MultiTerms extends Terms {
   private final boolean hasOffsets;
   private final boolean hasPositions;
   private final boolean hasPayloads;
-  private final boolean rightJustifyTerms;
   private final int[] termLengths;
-  private final int maxTermLength;
 
   /** Sole constructor.
    *
@@ -49,10 +47,9 @@ public final class MultiTerms extends Terms {
    * @param subSlices A parallel array (matching {@code
    *        subs}) describing the sub-reader slices.
    */
-  public MultiTerms(Terms[] subs, ReaderSlice[] subSlices, boolean rightJustifyTerms) throws IOException {
+  public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException {
     this.subs = subs;
     this.subSlices = subSlices;
-    this.rightJustifyTerms = rightJustifyTerms;
     
     assert subs.length > 0 : "inefficient: don't use MultiTerms over one sub";
     boolean _hasFreqs = true;
@@ -60,7 +57,6 @@ public final class MultiTerms extends Terms {
     boolean _hasPositions = true;
     boolean _hasPayloads = false;
     termLengths = new int[subs.length];
-    int maxTermLength = Integer.MIN_VALUE;
     for(int i=0;i<subs.length;i++) {
       _hasFreqs &= subs[i].hasFreqs();
       _hasOffsets &= subs[i].hasOffsets();
@@ -68,11 +64,8 @@ public final class MultiTerms extends Terms {
       _hasPayloads |= subs[i].hasPayloads();
       BytesRef minTerm = subs[i].getMin();
       termLengths[i] = minTerm == null ? -1 : minTerm.length;
-      assert rightJustifyTerms == false || (termLengths[i] != -1 && termLengths[i] == subs[i].getMax().length);
-      maxTermLength = Math.max(maxTermLength, termLengths[i]);
     }
 
-    this.maxTermLength = rightJustifyTerms ? maxTermLength : -1;
     hasFreqs = _hasFreqs;
     hasOffsets = _hasOffsets;
     hasPositions = _hasPositions;
@@ -91,7 +84,6 @@ public final class MultiTerms extends Terms {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-    // nocommit doesn't work w/ rightJustifyTerms?
     final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<>();
     for(int i=0;i<subs.length;i++) {
       final TermsEnum termsEnum = subs[i].intersect(compiled, startTerm);
@@ -101,7 +93,7 @@ public final class MultiTerms extends Terms {
     }
 
     if (termsEnums.size() > 0) {
-      return new MultiTermsEnum(subSlices, maxTermLength).reset(termsEnums.toArray(MultiTermsEnum.TermsEnumIndex.EMPTY_ARRAY));
+      return new MultiTermsEnum(subSlices).reset(termsEnums.toArray(MultiTermsEnum.TermsEnumIndex.EMPTY_ARRAY));
     } else {
       return TermsEnum.EMPTY;
     }
@@ -145,7 +137,7 @@ public final class MultiTerms extends Terms {
     }
 
     if (termsEnums.size() > 0) {
-      return new MultiTermsEnum(subSlices, maxTermLength).reset(termsEnums.toArray(MultiTermsEnum.TermsEnumIndex.EMPTY_ARRAY));
+      return new MultiTermsEnum(subSlices).reset(termsEnums.toArray(MultiTermsEnum.TermsEnumIndex.EMPTY_ARRAY));
     } else {
       return TermsEnum.EMPTY;
     }

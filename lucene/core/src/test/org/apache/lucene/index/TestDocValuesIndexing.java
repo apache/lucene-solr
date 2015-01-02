@@ -205,8 +205,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       assertEquals(i, dv.get(i));
       Document d = slow.document(i);
       // cannot use d.get("dv") due to another bug!
-      // nocommit why is this here?
-      // assertNull(d.getString("dv"));
       assertEquals(Integer.toString(i), d.getString("docId"));
     }
     slow.close();
@@ -453,72 +451,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     dir.close();
   }
 
-  public void testMixedTypesAfterReopenAppend1() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    Document doc = w.newDocument();
-    doc.addInt("foo", 0);
-    w.addDocument(doc);
-    w.close();
-
-    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    doc = w.newDocument();
-    try {
-      doc.addAtom("foo", new BytesRef("hello"));
-      fail("did not get expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    w.close();
-    dir.close();
-  }
-
-  public void testMixedTypesAfterReopenAppend2() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
-    Document doc = w.newDocument();
-    doc.addAtom("foo", new BytesRef("foo"));
-    w.addDocument(doc);
-    w.close();
-
-    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    doc = w.newDocument();
-    doc.addAtom("foo", "bar");
-    try {
-      doc.addBinary("foo", new BytesRef("foo"));
-      fail("did not get expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    w.forceMerge(1);
-    w.close();
-    dir.close();
-  }
-
-  public void testMixedTypesAfterReopenAppend3() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))) ;
-    Document doc = w.newDocument();
-    doc.addAtom("foo", new BytesRef("foo"));
-    w.addDocument(doc);
-    w.close();
-
-    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    doc = w.newDocument();
-    doc.addAtom("foo", "bar");
-    try {
-      doc.addBinary("foo", new BytesRef("foo"));
-      fail("did not get expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    // Also add another document so there is a segment to write here:
-    w.addDocument(w.newDocument());
-    w.forceMerge(1);
-    w.close();
-    dir.close();
-  }
-
   // Two documents with same field as different types, added
   // from separate threads:
   public void testMixedTypesDifferentThreads() throws Exception {
@@ -583,7 +515,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     try {
       w.addIndexes(new Directory[] {dir2});
       fail("didn't hit expected exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException iae) {
       // expected
     }
 
@@ -591,7 +523,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     try {
       w.addIndexes(new IndexReader[] {r});
       fail("didn't hit expected exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException iae) {
       // expected
     }
 
@@ -728,9 +660,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     try {
       doc.addAtom("dv", new BytesRef("foo"));
       writer.addIndexes(dir);
-      // nocommit must fix addIndexes to verify schema
-      //fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
       // expected
     }
     writer.close();
@@ -758,7 +689,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     try {
       writer.addIndexes(readers);
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
+    } catch (IllegalStateException ise) {
       // expected
     }
     readers[0].close();

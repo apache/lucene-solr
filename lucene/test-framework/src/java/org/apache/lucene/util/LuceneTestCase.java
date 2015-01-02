@@ -109,7 +109,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterCachingPolicy;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -137,7 +139,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -646,6 +647,8 @@ public abstract class LuceneTestCase extends Assert {
     liveIWCFlushMode = flushMode;
   }
 
+  protected Directory dir;
+
   // -----------------------------------------------------------------
   // Suite and test case setup/ cleanup.
   // -----------------------------------------------------------------
@@ -656,6 +659,7 @@ public abstract class LuceneTestCase extends Assert {
   @Before
   public void setUp() throws Exception {
     parentChainCallRule.setupCalled = true;
+    dir = newDirectory();
   }
 
   /**
@@ -667,6 +671,10 @@ public abstract class LuceneTestCase extends Assert {
 
     // Test is supposed to call this itself, but we do this defensively in case it forgot:
     restoreIndexWriterMaxDocs();
+
+    if (dir != null) {
+      dir.close();
+    }
   }
 
   /** Tells {@link IndexWriter} to enforce the specified limit as the maximum number of documents in one index; call
@@ -882,7 +890,17 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** create a new index writer config with random defaults, using MockAnalyzer */
+  public IndexWriter newIndexWriter() throws IOException {
+    return new IndexWriter(dir, newIndexWriterConfig());
+  }
+
+  /** create a new index writer config with random defaults, using MockAnalyzer */
   public static RandomIndexWriter newRandomIndexWriter(Directory dir) throws IOException {
+    return new RandomIndexWriter(random(), dir, newIndexWriterConfig());
+  }
+
+  /** create a new index writer config with random defaults, using MockAnalyzer */
+  public RandomIndexWriter newRandomIndexWriter() throws IOException {
     return new RandomIndexWriter(random(), dir, newIndexWriterConfig());
   }
 
@@ -2440,5 +2458,31 @@ public abstract class LuceneTestCase extends Assert {
     boolean enabled = false;
     assert enabled = true; // Intentional side-effect!!!
     assertsAreEnabled = enabled;
+  }
+
+  protected interface ThrowableRunnable {
+    public void run() throws Exception;
+  }
+
+  /** Only catches {@code IllegalStateException} and {@code IllegalArgumentException} and checks their message. */
+  protected static void shouldFail(ThrowableRunnable x, String message) throws Exception {
+    try {
+      x.run();
+      fail("did not hit expected exception");
+    } catch (IllegalStateException ise) {
+      assertTrue("wrong message: " + ise.getMessage(), ise.getMessage().startsWith(message));
+    } catch (IllegalArgumentException iae) {
+      assertTrue("wrong message: " + iae.getMessage(), iae.getMessage().startsWith(message));
+    }
+  }
+
+  public static int hitCount(IndexSearcher s, Query q) throws IOException {
+    if (random().nextBoolean()) {
+      return s.search(q, 1).totalHits;
+    } else {
+      TotalHitCountCollector c = new TotalHitCountCollector();
+      s.search(q, c);
+      return c.getTotalHits();
+    }
   }
 }

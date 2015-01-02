@@ -129,7 +129,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         doc.addLargeText("content1", "aaa bbb ccc ddd");
         doc.addLargeText("content6", "aaa bbb ccc ddd");
         doc.addLargeText("content2", "aaa bbb ccc ddd");
-        doc.addStored("content3", "aaa bbb ccc ddd");
+        doc.addStoredString("content3", "aaa bbb ccc ddd");
 
         doc.addLargeText("content4", "aaa bbb ccc ddd");
         doc.addAtom("content5", "aaa bbb ccc ddd");
@@ -1486,7 +1486,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     String value = null;
     try {
       // set to null value
-      doc.addStored("foo", value);
+      doc.addStoredString("foo", value);
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
     }
@@ -1510,7 +1510,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     byte v[] = null;
     try {
       // set to null value
-      doc.addStored("foo", v);
+      doc.addStoredBinary("foo", v);
       fail("didn't get expected exception");
     } catch (NullPointerException expected) {
     }
@@ -1534,7 +1534,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Document doc = iw.newDocument();
     try {
       // set to null value
-      doc.addStored("foo", v);
+      doc.addStoredBinary("foo", v);
       iw.addDocument(doc);
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {

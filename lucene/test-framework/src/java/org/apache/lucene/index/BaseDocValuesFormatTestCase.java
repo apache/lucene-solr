@@ -1280,7 +1280,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
       Arrays.sort(valueArray);
       for (int j = 0; j < valueCount; j++) {
-        doc.addStored("stored", Long.toString(valueArray[j]));
+        doc.addStoredString("stored", Long.toString(valueArray[j]));
       }
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
@@ -1375,7 +1375,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
-      doc.addStored("stored", buffer);
+      doc.addStoredBinary("stored", buffer);
       doc.addBinary("dv", buffer);
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
@@ -1452,7 +1452,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
-      doc.addStored("stored", buffer);
+      doc.addStoredBinary("stored", buffer);
       doc.addBinary("dv", buffer);
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
@@ -2003,7 +2003,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       
       // add ordered to the stored field
       for (String v : values) {
-        doc.addStored("stored", v);
+        doc.addStoredString("stored", v);
       }
 
       // add in any order to the dv field
@@ -2424,11 +2424,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       int length = TestUtil.nextInt(random(), 0, 8);
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
-      doc.addStored("storedBin", buffer);
+      doc.addStoredBinary("storedBin", buffer);
       doc.addBinary("dvBin", buffer);
       doc.addBinary("dvSorted", buffer);
       long numericValue = random().nextLong();
-      doc.addStored("storedNum", Long.toString(numericValue));
+      doc.addStoredString("storedNum", Long.toString(numericValue));
       doc.addLong("dvNum", numericValue);
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
@@ -2512,13 +2512,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       byte buffer[] = new byte[length];
       random().nextBytes(buffer);
       if (random().nextInt(4) > 0) {
-        doc.addStored("storedBin", buffer);
+        doc.addStoredBinary("storedBin", buffer);
         doc.addBinary("dvBin", buffer);
         doc.addBinary("dvSorted", buffer);
       }
       long numericValue = random().nextLong();
       if (random().nextInt(4) > 0) {
-        doc.addStored("storedNum", Long.toString(numericValue));
+        doc.addStoredString("storedNum", Long.toString(numericValue));
         doc.addLong("dvNum", numericValue);
       }
       int numSortedSetFields = random().nextInt(3);
@@ -2528,7 +2528,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
       for (String v : values) {
         doc.addBinary("dvSortedSet", new BytesRef(v));
-        doc.addStored("storedSortedSet", v);
+        doc.addStoredString("storedSortedSet", v);
       }
       int numSortedNumericFields = random().nextInt(3);
       Set<Long> numValues = new TreeSet<>();
@@ -2537,7 +2537,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
       for (Long l : numValues) {
         doc.addLong("dvSortedNumeric", l);
-        doc.addStored("storedSortedNumeric", Long.toString(l));
+        doc.addStoredString("storedSortedNumeric", Long.toString(l));
       }
       writer.addDocument(doc);
       if (random().nextInt(31) == 0) {
@@ -2757,7 +2757,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
         w.addDocument(doc);
       }
       Document doc = w.newDocument();
-      doc.addStored("id", "5");
+      doc.addStoredString("id", "5");
       doc.addBinary("field", new BytesRef());
       w.addDocument(doc);
       IndexReader r = w.getReader();

@@ -65,7 +65,7 @@ public class TestSetupTeardownChaining extends WithNestedTests {
     Assert.assertEquals(1, result.getFailureCount());
     Failure failure = result.getFailures().get(0);
     Assert.assertTrue(failure.getMessage()
-        .contains("One of the overrides of setUp does not propagate the call."));
+                      .contains("One of the overrides of setUp does not propagate the call."));
   }
   
   /**

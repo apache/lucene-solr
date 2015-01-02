@@ -53,6 +53,32 @@ public abstract class DocIdSet implements Accountable {
     }
   };
 
+  /** A full {@code DocIdSet} instance (matches all docs). */
+  // nocommit does this already exist somewhere?
+  public static DocIdSet full(final int maxDoc) {
+    return new DocIdSet() {
+      @Override
+      public DocIdSetIterator iterator() {
+        return DocIdSetIterator.full(maxDoc);
+      }
+    
+      @Override
+      public boolean isCacheable() {
+        return true;
+      }
+    
+      @Override
+      public Bits bits() {
+        return new Bits.MatchAllBits(maxDoc);
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return 0L;
+      }
+    };
+  };
+
   /** Provides a {@link DocIdSetIterator} to access the set.
    * This implementation can return <code>null</code> if there
    * are no docs that match. */

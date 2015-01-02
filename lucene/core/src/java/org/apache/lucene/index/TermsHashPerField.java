@@ -55,12 +55,11 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
 
   ParallelPostingsArray postingsArray;
   private final Counter bytesUsed;
-  final boolean rightJustifyTerms;
 
   /** streamCount: how many streams this field stores per term.
    * E.g. doc(+freq) is 1 stream, prox+offset is a second. */
 
-  public TermsHashPerField(int streamCount, FieldInvertState fieldState, TermsHash termsHash, TermsHashPerField nextPerField, FieldInfo fieldInfo, boolean rightJustifyTerms) {
+  public TermsHashPerField(int streamCount, FieldInvertState fieldState, TermsHash termsHash, TermsHashPerField nextPerField, FieldInfo fieldInfo) {
     intPool = termsHash.intPool;
     bytePool = termsHash.bytePool;
     termBytePool = termsHash.termBytePool;
@@ -72,7 +71,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     numPostingInt = 2*streamCount;
     this.fieldInfo = fieldInfo;
     this.nextPerField = nextPerField;
-    this.rightJustifyTerms = rightJustifyTerms;
     PostingsBytesStartArray byteStarts = new PostingsBytesStartArray(this, bytesUsed);
     bytesHash = new BytesRefHash(termBytePool, HASH_INIT_SIZE, byteStarts);
   }
@@ -99,14 +97,7 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   /** Collapse the hash table and sort in-place; also sets
    * this.sortedTermIDs to the results */
   public int[] sortPostings() {
-    Comparator<BytesRef> cmp;
-    if (rightJustifyTerms) {
-      // Sort by a comparator as if terms were right justified:
-      cmp = BytesRef.getRightJustifiedComparator();
-    } else {
-      cmp = BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-    sortedTermIDs = bytesHash.sort(cmp);
+    sortedTermIDs = bytesHash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     return sortedTermIDs;
   }
 
@@ -169,12 +160,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
 
     if (termID >= 0) {// New posting
       maxTermLength = Math.max(maxTermLength, termBytesRef.length);
-      /*
-      if (rightJustifyTerms && termBytesRef.length > 0 && termBytesRef.bytes[termBytesRef.offset] == 0) {
-        // nocommit catch this earlier so it's not an aborting exception?
-        throw new IllegalArgumentException("left-zero-pad fields cannot lead with 0 bytes");
-      }
-      */
       bytesHash.byteStart(termID);
       // Init stream slices
       if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {

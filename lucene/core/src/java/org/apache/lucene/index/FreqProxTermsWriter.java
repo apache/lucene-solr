@@ -121,7 +121,7 @@ final class FreqProxTermsWriter extends TermsHash {
   }
 
   @Override
-  public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo, boolean rightJustifyTerms) {
-    return new FreqProxTermsWriterPerField(invertState, this, fieldInfo, nextTermsHash.addField(invertState, fieldInfo, rightJustifyTerms), rightJustifyTerms);
+  public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo) {
+    return new FreqProxTermsWriterPerField(invertState, this, fieldInfo, nextTermsHash.addField(invertState, fieldInfo));
   }
 }

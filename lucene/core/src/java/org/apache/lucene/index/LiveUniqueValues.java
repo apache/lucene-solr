@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -41,14 +42,21 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.RamUsageEstimator;
 
-// nocommit javadocs
+/** Tracks the already indexed values in a unique field ({@link FieldTypes.#getIsUnique}. */
+final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closeable {
 
-// nocommit better name
-
-// TODO: should this class handle deletions better...?
-final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closeable, Accountable {
-
+  private final static long BYTES_PER_ENTRY = 
+    // HashMap array @ 50% load
+    2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF +
+    // HashMap Entry
+    3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_INT+
+    // BytesRef
+    RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*RamUsageEstimator.NUM_BYTES_INT + RamUsageEstimator.NUM_BYTES_OBJECT_REF +
+    // byte[] (we count actual bytes based on length of id that's added)
+    RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+    
   // Holds reused TermsEnum/DocsEnum state for faster lookups:
   private final ConcurrentMap<IndexReader,CloseableThreadLocal<PerThreadLookup>> lookupStates = new ConcurrentHashMap<>();
 
@@ -68,15 +76,19 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
   private volatile Map<BytesRef,Boolean> current = newMap();
   private final ReaderManager mgr;
   private final String uidField;
+  private volatile long oldRAMBytesUsed;
+  private volatile long currentRAMBytesUsed;
+  private final AtomicLong ramBytesUsed;
 
   private static Map<BytesRef,Boolean> newMap() {
     return new HashMap<BytesRef,Boolean>();
   }
 
   /** Sole constructor. */
-  public LiveUniqueValues(String uidField, ReaderManager mgr) {
+  public LiveUniqueValues(String uidField, ReaderManager mgr, AtomicLong ramBytesUsed) {
     this.uidField = uidField;
     this.mgr = mgr;
+    this.ramBytesUsed = ramBytesUsed;
     mgr.addListener(this);
   }
 
@@ -93,6 +105,8 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
     // try this new map, then fallback to old, then to the
     // current searcher:
     current = newMap();
+    oldRAMBytesUsed = currentRAMBytesUsed;
+    currentRAMBytesUsed = 0;
   }
 
   @Override
@@ -104,6 +118,8 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
     // actually already included in the previously opened
     // reader.  So we can safely clear old here:
     old = newMap();
+    ramBytesUsed.addAndGet(-oldRAMBytesUsed);
+    oldRAMBytesUsed = 0;
   }
 
   /** Call this to try adding a value; this returns false if the add
@@ -123,6 +139,7 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
     if (v != null) {
       if (v == Boolean.FALSE) {
         current.put(id, Boolean.TRUE);
+        addRAM(BYTES_PER_ENTRY + id.length);
         return true;
       } else {
         return false;
@@ -135,6 +152,7 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
         return false;
       } else {
         current.put(id, Boolean.TRUE);
+        addRAM(BYTES_PER_ENTRY + id.length);
         return true;
       }
     } finally {
@@ -145,7 +163,15 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
   /** Call this after you've successfully deleted a document
    *  from the index. */
   public synchronized void delete(BytesRef id) {
-    current.put(id, Boolean.FALSE);
+    Boolean old = current.put(id, Boolean.FALSE);
+    if (old == null) {
+      addRAM(BYTES_PER_ENTRY + id.length);
+    }
+  }
+
+  private synchronized void addRAM(long bytes) {
+    currentRAMBytesUsed += bytes;
+    ramBytesUsed.addAndGet(bytes);
   }
 
   /** Returns the [approximate] number of id/value pairs
@@ -178,15 +204,6 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
     }
 
     return lookupState;
-  }
-
-  public long ramBytesUsed() {
-    // nocommit todo
-    return 0;
-  }
-
-  public Iterable<? extends Accountable> getChildResources() {
-    return Collections.emptyList();
   }
 
   // TODO: optimize this so that on toplevel reader reopen, we reuse TermsEnum for shared segments:
@@ -235,8 +252,8 @@ final class LiveUniqueValues implements ReferenceManager.RefreshListener, Closea
     public boolean exists(BytesRef id) throws IOException {
       for(int seg=0;seg<numSegs;seg++) {
         if (termsEnums[seg].seekExact(id)) {
-          // nocommit once we remove deleted postings on flush we don't need the live docs:
-          DocsEnum docs = docsEnums[seg] = termsEnums[seg].docs(liveDocs[seg], docsEnums[seg], 0);
+          // NOTE: we don't need to pass live docs because IW now removes them on flush:
+          DocsEnum docs = docsEnums[seg] = termsEnums[seg].docs(null, docsEnums[seg], 0);
           int docID = docs.nextDoc();
           if (docID != DocsEnum.NO_MORE_DOCS) {
             assert docs.nextDoc() == DocsEnum.NO_MORE_DOCS;

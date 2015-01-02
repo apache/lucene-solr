@@ -22,7 +22,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.junit.Ignore;
 import org.junit.Test;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -763,8 +762,6 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     IOUtils.close(reader, dir);
   }
 
-  // nocommit fixme LUCENE-6062
-  @Ignore
   public void testUpdateSegmentWithNoDocValues() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -821,8 +818,6 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     dir.close();
   }
 
-  // nocommit fixme LUCENE-6062
-  @Ignore 
   public void testUpdateSegmentWithPostingButNoDocValues() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -862,32 +857,6 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       }
     }
     reader.close();
-    
-    dir.close();
-  }
-  
-  public void testUpdateBinaryDVFieldWithSameNameAsPostingField() throws Exception {
-    // this used to fail because FieldInfos.Builder neglected to update
-    // globalFieldMaps.docValuesTypes map
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    IndexWriter writer = new IndexWriter(dir, conf);
-    FieldTypes fieldTypes = writer.getFieldTypes();
-    fieldTypes.disableSorting("f");
-    
-    // nocommit use low schema API here:
-    Document doc = writer.newDocument();
-    doc.addAtom("fmock", "mock-value");
-    doc.addBinary("f", toBytes(5L));
-    writer.addDocument(doc);
-    writer.commit();
-    writer.updateBinaryDocValue(new Term("fmock", "mock-value"), "f", toBytes(17L));
-    writer.close();
-    
-    DirectoryReader r = DirectoryReader.open(dir);
-    BinaryDocValues bdv = r.leaves().get(0).reader().getBinaryDocValues("f");
-    assertEquals(17, getValue(bdv, 0));
-    r.close();
     
     dir.close();
   }

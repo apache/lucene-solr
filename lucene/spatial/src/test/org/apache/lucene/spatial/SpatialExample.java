@@ -129,7 +129,7 @@ public class SpatialExample extends LuceneTestCase {
       //store it too; the format is up to you
       //  (assume point in this example)
       Point pt = (Point) shape;
-      doc.addStored(strategy.getFieldName() + "_stored", pt.getX()+" "+pt.getY());
+      doc.addStoredString(strategy.getFieldName() + "_stored", pt.getX()+" "+pt.getY());
     }
 
     return doc;

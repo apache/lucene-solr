@@ -74,7 +74,7 @@ final class BinaryTokenStream extends TokenStream {
     
     @Override
     public void clear() {
-      // nocommit must null bytes here, and reset should re-instate it
+      // NOTE: we should set null bytes here but then we'd have extra BytesRef copy?
     }
     
     @Override

@@ -16,7 +16,6 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -75,589 +74,12 @@ import org.apache.lucene.util.TestUtil;
  *  another machine, it's OK to not copy parallel segments indices,
  *  since they will just be regnerated (at a cost though). */
 
-// @SuppressSysoutChecks(bugUrl="we print stuff")
-
-public class TestDemoParallelLeafReader extends LuceneTestCase {
+public class TestReindexingReader extends LuceneTestCase {
 
   static final boolean DEBUG = false;
 
-  static abstract class ReindexingReader implements Closeable {
-
-    /** Key used to store the current schema gen in the SegmentInfo diagnostics */
-    public final static String SCHEMA_GEN_KEY = "schema_gen";
-
-    public final IndexWriter w;
-    public final ReaderManager mgr;
-
-    private final Directory indexDir;
-    private final Path root;
-    private final Path segsPath;
-
-    /** Which segments have been closed, but their parallel index is not yet not removed. */
-    private final Set<SegmentIDAndGen> closedSegments = Collections.newSetFromMap(new ConcurrentHashMap<SegmentIDAndGen,Boolean>());
-
-    /** Holds currently open parallel readers for each segment. */
-    private final Map<SegmentIDAndGen,LeafReader> parallelReaders = new ConcurrentHashMap<>();
-
-    void printRefCounts() {
-      System.out.println("All refCounts:");
-      for(Map.Entry<SegmentIDAndGen,LeafReader> ent : parallelReaders.entrySet()) {
-        System.out.println("  " + ent.getKey() + " " + ent.getValue() + " refCount=" + ent.getValue().getRefCount());
-      }
-    }
-
-    public ReindexingReader(Path root) throws IOException {
-      this.root = root;
-
-      // Normal index is stored under "index":
-      indexDir = openDirectory(root.resolve("index"));
-
-      // Per-segment parallel indices are stored under subdirs "segs":
-      segsPath = root.resolve("segs");
-      Files.createDirectories(segsPath);
-
-      IndexWriterConfig iwc = getIndexWriterConfig();
-      iwc.setMergePolicy(new ReindexingMergePolicy(iwc.getMergePolicy()));
-      if (DEBUG) {
-        System.out.println("TEST: use IWC:\n" + iwc);
-      }
-      w = new IndexWriter(indexDir, iwc);
-
-      w.getConfig().setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
-          @Override
-          public void warm(LeafReader reader) throws IOException {
-            // This will build the parallel index for the merged segment before the merge becomes visible, so reopen delay is only due to
-            // newly flushed segments:
-            if (DEBUG) System.out.println(Thread.currentThread().getName() +": TEST: now warm " + reader);
-            // TODO: it's not great that we pass false here; it means we close the reader & reopen again for NRT reader; still we did "warm" by
-            // building the parallel index, if necessary
-            getParallelLeafReader(reader, false, getCurrentSchemaGen());
-          }
-        });
-
-      // start with empty commit:
-      w.commit();
-      mgr = new ReaderManager(new ParallelLeafDirectoryReader(DirectoryReader.open(w, true)));
-    }
-
-    protected abstract IndexWriterConfig getIndexWriterConfig() throws IOException;
-
-    /** Optional method to validate that the provided parallell reader in fact reflects the changes in schemaGen. */
-    protected void checkParallelReader(LeafReader reader, LeafReader parallelReader, long schemaGen) throws IOException {
-    }
-
-    /** Override to customize Directory impl. */
-    protected Directory openDirectory(Path path) throws IOException {
-      return FSDirectory.open(path);
-    }
-
-    public void commit() throws IOException {
-      w.commit();
-    }
-    
-    LeafReader getCurrentReader(LeafReader reader, long schemaGen) throws IOException {
-      LeafReader parallelReader = getParallelLeafReader(reader, true, schemaGen);
-      if (parallelReader != null) {
-
-        // We should not be embedding one ParallelLeafReader inside another:
-        assertFalse(parallelReader instanceof ParallelLeafReader);
-        assertFalse(reader instanceof ParallelLeafReader);
-
-        // NOTE: important that parallelReader is first, so if there are field name overlaps, because changes to the schema
-        // overwrote existing field names, it wins:
-        LeafReader newReader = new ParallelLeafReader(false, parallelReader, reader) {
-          @Override
-          public Bits getLiveDocs() {
-            return getParallelReaders()[1].getLiveDocs();
-          }
-          @Override
-          public int numDocs() {
-            return getParallelReaders()[1].numDocs();
-          }
-        };
-
-        // Because ParallelLeafReader does its own (extra) incRef:
-        parallelReader.decRef();
-
-        return newReader;
-
-      } else {
-        // This segment was already current as of currentSchemaGen:
-        return reader;
-      }
-    }
-
-    private class ParallelLeafDirectoryReader extends FilterDirectoryReader {
-      private final FieldTypes fieldTypes;
-      public ParallelLeafDirectoryReader(DirectoryReader in) {
-        super(in, new FilterDirectoryReader.SubReaderWrapper() {
-            final long currentSchemaGen = getCurrentSchemaGen();
-            @Override
-            public LeafReader wrap(LeafReader reader) {
-              try {
-                return getCurrentReader(reader, currentSchemaGen);
-              } catch (IOException ioe) {
-                // TODO: must close on exc here:
-                throw new RuntimeException(ioe);
-              }
-            }
-          });
-
-        // nocommit move this logic "up":
-        fieldTypes = new FieldTypes(in.getFieldTypes());
-        for(LeafReaderContext ctx : leaves()) {
-          LeafReader leafReader = ctx.reader();
-          if (leafReader instanceof ParallelLeafReader) {
-            fieldTypes.addAll(((ParallelLeafReader) leafReader).getParallelReaders()[0].getFieldTypes());
-          }
-        }
-      }
-      
-      @Override
-      public FieldTypes getFieldTypes() {
-        return fieldTypes;
-      }
-
-      @Override
-      protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
-        return new ParallelLeafDirectoryReader(in);
-      }
-
-      @Override
-      protected void doClose() throws IOException {
-        Throwable firstExc = null;
-        for (final LeafReader r : getSequentialSubReaders()) {
-          if (r instanceof ParallelLeafReader) {
-            // try to close each reader, even if an exception is thrown
-            try {
-              r.decRef();
-            } catch (Throwable t) {
-              if (firstExc == null) {
-                firstExc = t;
-              }
-            }
-          }
-        }
-        // Also close in, so it decRef's the SegmentInfos
-        try {
-          in.doClose();
-        } catch (Throwable t) {
-          if (firstExc == null) {
-            firstExc = t;
-          }
-        }
-        // throw the first exception
-        IOUtils.reThrow(firstExc);
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      w.close();
-      if (DEBUG) System.out.println("TEST: after close writer index=" + SegmentInfos.readLatestCommit(indexDir).toString(indexDir));
-
-      /*
-      DirectoryReader r = mgr.acquire();
-      try {
-        TestUtil.checkReader(r);
-      } finally {
-        mgr.release(r);
-      }
-      */
-      mgr.close();
-      pruneOldSegments(true);
-      assertNoExtraSegments();
-      indexDir.close();
-    }
-
-    // Make sure we deleted all parallel indices for segments that are no longer in the main index: 
-    private void assertNoExtraSegments() throws IOException {
-      Set<String> liveIDs = new HashSet<String>();
-      for(SegmentCommitInfo info : SegmentInfos.readLatestCommit(indexDir)) {
-        String idString = StringHelper.idToString(info.info.getId());
-        liveIDs.add(idString);
-      }
-
-      // At this point (closing) the only segments in closedSegments should be the still-live ones:
-      for(SegmentIDAndGen segIDGen : closedSegments) {
-        assertTrue(liveIDs.contains(segIDGen.segID));
-      }
-
-      boolean fail = false;
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(segsPath)) {
-          for (Path path : stream) {
-            SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
-            if (liveIDs.contains(segIDGen.segID) == false) {
-              if (DEBUG) System.out.println("TEST: fail seg=" + path.getFileName() + " is not live but still has a parallel index");
-              fail = true;
-            }
-          }
-        }
-      assertFalse(fail);
-    }
-
-    private static class SegmentIDAndGen {
-      public final String segID;
-      public final long schemaGen;
-
-      public SegmentIDAndGen(String segID, long schemaGen) {
-        this.segID = segID;
-        this.schemaGen = schemaGen;
-      }
-
-      public SegmentIDAndGen(String s) {
-        String[] parts = s.split("_");
-        if (parts.length != 2) {
-          throw new IllegalArgumentException("invalid SegmentIDAndGen \"" + s + "\"");
-        }
-        // TODO: better checking of segID?
-        segID = parts[0];
-        schemaGen = Long.parseLong(parts[1]);
-      }
-
-      @Override
-      public int hashCode() {
-        return (int) (segID.hashCode() * schemaGen);
-      }
-
-      @Override
-      public boolean equals(Object _other) {
-        if (_other instanceof SegmentIDAndGen) {
-          SegmentIDAndGen other = (SegmentIDAndGen) _other;
-          return segID.equals(other.segID) && schemaGen == other.schemaGen;
-        } else {
-          return false;
-        }
-      }
-
-      @Override
-      public String toString() {
-        return segID + "_" + schemaGen;
-      }
-    }
-
-    private class ParallelReaderClosed implements LeafReader.ReaderClosedListener {
-      private final SegmentIDAndGen segIDGen;
-      private final Directory dir;
-
-      public ParallelReaderClosed(SegmentIDAndGen segIDGen, Directory dir) {
-        this.segIDGen = segIDGen;
-        this.dir = dir;
-      }
-
-      @Override
-      public void onClose(IndexReader ignored) {
-        try {
-          // TODO: make this sync finer, i.e. just the segment + schemaGen
-          synchronized(ReindexingReader.this) {
-            if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: now close parallel parLeafReader dir=" + dir + " segIDGen=" + segIDGen);
-            parallelReaders.remove(segIDGen);
-            dir.close();
-            closedSegments.add(segIDGen);
-          }
-        } catch (IOException ioe) {
-          System.out.println("TEST: hit IOExc closing dir=" + dir);
-          ioe.printStackTrace(System.out);
-          throw new RuntimeException(ioe);
-        }
-      }
-    }
-
-    // Returns a ref
-    LeafReader getParallelLeafReader(final LeafReader leaf, boolean doCache, long schemaGen) throws IOException {
-      assert leaf instanceof SegmentReader;
-      SegmentInfo info = ((SegmentReader) leaf).getSegmentInfo().info;
-
-      long infoSchemaGen = getSchemaGen(info);
-
-      if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: getParallelLeafReader: " + leaf + " infoSchemaGen=" + infoSchemaGen + " vs schemaGen=" + schemaGen + " doCache=" + doCache);
-
-      if (infoSchemaGen == schemaGen) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName()+ ": TEST: segment is already current schemaGen=" + schemaGen + "; skipping");
-        return null;
-      }
-
-      if (infoSchemaGen > schemaGen) {
-        throw new IllegalStateException("segment infoSchemaGen (" + infoSchemaGen + ") cannot be greater than requested schemaGen (" + schemaGen + ")");
-      }
-
-      final SegmentIDAndGen segIDGen = new SegmentIDAndGen(StringHelper.idToString(info.getId()), schemaGen);
-
-      // While loop because the parallel reader may be closed out from under us, so we must retry:
-      while (true) {
-
-        // TODO: make this sync finer, i.e. just the segment + schemaGen
-        synchronized (this) {
-          LeafReader parReader = parallelReaders.get(segIDGen);
-      
-          assert doCache || parReader == null;
-
-          if (parReader == null) {
-
-            Path leafIndex = segsPath.resolve(segIDGen.toString());
-
-            final Directory dir = openDirectory(leafIndex);
-
-            if (Files.exists(leafIndex.resolve("done")) == false) {
-              if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: build segment index for " + leaf + " " + segIDGen + " (source: " + info.getDiagnostics().get("source") + ") dir=" + leafIndex);
-
-              if (dir.listAll().length != 0) {
-                // It crashed before finishing last time:
-                if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: remove old incomplete index files: " + leafIndex);
-                IOUtils.rm(leafIndex);
-              }
-
-              reindex(infoSchemaGen, schemaGen, leaf, dir);
-
-              // Marker file, telling us this index is in fact done.  This way if we crash while doing the reindexing for a given segment, we will
-              // later try again:
-              dir.createOutput("done", IOContext.DEFAULT).close();
-            } else {
-              if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: segment index already exists for " + leaf + " " + segIDGen + " (source: " + info.getDiagnostics().get("source") + ") dir=" + leafIndex);
-            }
-
-            if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: now check index " + dir);
-            //TestUtil.checkIndex(dir);
-
-            SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
-            final LeafReader parLeafReader;
-            if (infos.size() == 1) {
-              parLeafReader = new SegmentReader(FieldTypes.getFieldTypes(infos.getUserData(), null, null), infos.info(0), IOContext.DEFAULT);
-            } else {
-              // This just means we didn't forceMerge above:
-              parLeafReader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-            }
-
-            //checkParallelReader(leaf, parLeafReader, schemaGen);
-
-            if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: opened parallel reader: " + parLeafReader);
-            if (doCache) {
-              parallelReaders.put(segIDGen, parLeafReader);
-
-              // Our id+gen could have been previously closed, e.g. if it was a merged segment that was warmed, so we must clear this else
-              // the pruning may remove our directory:
-              closedSegments.remove(segIDGen);
-
-              parLeafReader.addReaderClosedListener(new ParallelReaderClosed(segIDGen, dir));
-
-            } else {
-              // Used only for merged segment warming:
-              // Messy: we close this reader now, instead of leaving open for reuse:
-              if (DEBUG) System.out.println("TEST: now decRef non cached refCount=" + parLeafReader.getRefCount());
-              parLeafReader.decRef();
-              dir.close();
-
-              // Must do this after dir is closed, else another thread could "rm -rf" while we are closing (which makes MDW.close's
-              // checkIndex angry):
-              closedSegments.add(segIDGen);
-              parReader = null;
-            }
-            parReader = parLeafReader;
-
-          } else {
-            if (parReader.tryIncRef() == false) {
-              // We failed: this reader just got closed by another thread, e.g. refresh thread opening a new reader, so this reader is now
-              // closed and we must try again.
-              if (DEBUG) System.out.println(Thread.currentThread().getName()+ ": TEST: tryIncRef failed for " + parReader + "; retry");
-              parReader = null;
-              continue;
-            }
-            if (DEBUG) System.out.println(Thread.currentThread().getName()+ ": TEST: use existing already opened parReader=" + parReader + " refCount=" + parReader.getRefCount());
-            //checkParallelReader(leaf, parReader, schemaGen);
-          }
-
-          // We return the new reference to caller
-          return parReader;
-        }
-      }
-    }
-
-    // TODO: we could pass a writer already opened...?
-    protected abstract void reindex(long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir) throws IOException;
-
-    /** Returns the gen for the current schema. */
-    protected abstract long getCurrentSchemaGen();
-
-    /** Returns the gen that should be merged, meaning those changes will be folded back into the main index. */
-    protected long getMergingSchemaGen() {
-      return getCurrentSchemaGen();
-    }
-
-    /** Removes the parallel index that are no longer in the last commit point.  We can't
-     *  remove this when the parallel reader is closed because it may still be referenced by
-     *  the last commit. */
-    private void pruneOldSegments(boolean removeOldGens) throws IOException {
-      SegmentInfos lastCommit = SegmentInfos.readLatestCommit(indexDir);
-      if (DEBUG) System.out.println("TEST: prune");
-
-      Set<String> liveIDs = new HashSet<String>();
-      for(SegmentCommitInfo info : lastCommit) {
-        String idString = StringHelper.idToString(info.info.getId());
-        liveIDs.add(idString);
-      }
-
-      long currentSchemaGen = getCurrentSchemaGen();
-
-      if (Files.exists(segsPath)) {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(segsPath)) {
-            for (Path path : stream) {
-              if (Files.isDirectory(path)) {
-                SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
-                assert segIDGen.schemaGen <= currentSchemaGen;
-                if (liveIDs.contains(segIDGen.segID) == false && (closedSegments.contains(segIDGen) || (removeOldGens && segIDGen.schemaGen < currentSchemaGen))) {
-                  if (DEBUG) System.out.println("TEST: remove " + segIDGen);
-                  try {
-                    IOUtils.rm(path);
-                    closedSegments.remove(segIDGen);
-                  } catch (IOException ioe) {
-                    // OK, we'll retry later
-                    if (DEBUG) System.out.println("TEST: ignore ioe during delete " + path + ":" + ioe);
-                  }
-                }
-              }
-            }
-          }
-      }
-    }
-
-    /** Just replaces the sub-readers with parallel readers, so reindexed fields are merged into new segments. */
-    private class ReindexingMergePolicy extends MergePolicy {
-
-      class ReindexingOneMerge extends OneMerge {
-
-        List<LeafReader> parallelReaders;
-        final long schemaGen;
-
-        ReindexingOneMerge(List<SegmentCommitInfo> segments) {
-          super(segments);
-          // Commit up front to which schemaGen we will merge; we don't want a schema change sneaking in for some of our leaf readers but not others:
-          schemaGen = getMergingSchemaGen();
-          long currentSchemaGen = getCurrentSchemaGen();
-
-          // Defensive sanity check:
-          if (schemaGen > currentSchemaGen) {
-            throw new IllegalStateException("currentSchemaGen (" + currentSchemaGen + ") must always be >= mergingSchemaGen (" + schemaGen + ")");
-          }
-        }
-
-        @Override
-        public List<LeafReader> getMergeReaders() throws IOException {
-          if (parallelReaders == null) {
-            parallelReaders = new ArrayList<>();
-            for (LeafReader reader : super.getMergeReaders()) {
-              parallelReaders.add(getCurrentReader(reader, schemaGen));
-            }
-          }
-
-          return parallelReaders;
-        }
-
-        @Override
-        public void mergeFinished() throws IOException {
-          Throwable th = null;
-          for(LeafReader r : parallelReaders) {
-            if (r instanceof ParallelLeafReader) {
-              try {
-                r.decRef();
-              } catch (Throwable t) {
-                if (th == null) {
-                  th = t;
-                }
-              }
-            }
-          }
-
-          // If any error occured, throw it.
-          IOUtils.reThrow(th);
-        }
-    
-        @Override
-        public void setInfo(SegmentCommitInfo info) {
-          // Record that this merged segment is current as of this schemaGen:
-          info.info.getDiagnostics().put(SCHEMA_GEN_KEY, Long.toString(schemaGen));
-          super.setInfo(info);
-        }
-
-        @Override
-        public MergePolicy.DocMap getDocMap(final MergeState mergeState) {
-          return super.getDocMap(mergeState);
-        }
-      }
-
-      class ReindexingMergeSpecification extends MergeSpecification {
-        @Override
-        public void add(OneMerge merge) {
-          super.add(new ReindexingOneMerge(merge.segments));
-        }
-
-        @Override
-        public String segString(Directory dir) {
-          return "ReindexingMergeSpec(" + super.segString(dir) + ")";
-        }
-      }
-
-      MergeSpecification wrap(MergeSpecification spec) {
-        MergeSpecification wrapped = null;
-        if (spec != null) {
-          wrapped = new ReindexingMergeSpecification();
-          for (OneMerge merge : spec.merges) {
-            wrapped.add(merge);
-          }
-        }
-        return wrapped;
-      }
-
-      final MergePolicy in;
-
-      /** Create a new {@code MergePolicy} that sorts documents with the given {@code sort}. */
-      public ReindexingMergePolicy(MergePolicy in) {
-        this.in = in;
-      }
-
-      @Override
-      public MergeSpecification findMerges(MergeTrigger mergeTrigger,
-                                           SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-        return wrap(in.findMerges(mergeTrigger, segmentInfos, writer));
-      }
-
-      @Override
-      public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-                                                 int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
-        throws IOException {
-        // TODO: do we need to force-force this?  Ie, wrapped MP may think index is already optimized, yet maybe its schemaGen is old?  need test!
-        return wrap(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer));
-      }
-
-      @Override
-      public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
-        throws IOException {
-        return wrap(in.findForcedDeletesMerges(segmentInfos, writer));
-      }
-
-      @Override
-      public boolean useCompoundFile(SegmentInfos segments,
-                                     SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
-        return in.useCompoundFile(segments, newSegment, writer);
-      }
-
-      @Override
-      public String toString() {
-        return "ReindexingMergePolicy(" + in + ")";
-      }
-    }
-
-    static long getSchemaGen(SegmentInfo info) {
-      String s = info.getDiagnostics().get(SCHEMA_GEN_KEY);
-      if (s == null) {
-        return -1;
-      } else {
-        return Long.parseLong(s);
-      }
-    }
-  }
-
   private ReindexingReader getReindexer(Path root) throws IOException {
-    return new ReindexingReader(root) {
+    return new ReindexingReader(newFSDirectory(root), root.resolve("segs")) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
         IndexWriterConfig iwc = newIndexWriterConfig();
@@ -711,7 +133,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
   /** Schema change by adding a new number_<schemaGen> DV field each time. */
   private ReindexingReader getReindexerNewDVFields(Path root, final AtomicLong currentSchemaGen) throws IOException {
-    return new ReindexingReader(root) {
+    return new ReindexingReader(newFSDirectory(root), root.resolve("segs")) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
         IndexWriterConfig iwc = newIndexWriterConfig();
@@ -802,7 +224,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
   /** Schema change by adding changing how the same "number" DV field is indexed. */
   private ReindexingReader getReindexerSameDVField(Path root, final AtomicLong currentSchemaGen, final AtomicLong mergingSchemaGen) throws IOException {
-    return new ReindexingReader(root) {
+    return new ReindexingReader(newFSDirectory(root), root.resolve("segs")) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
         IndexWriterConfig iwc = newIndexWriterConfig();
@@ -959,6 +381,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     if (DEBUG) System.out.println("TEST: close writer");
     reindexer.close();
+    reindexer.indexDir.close();
   }
 
   public void testRandomMultipleSchemaGens() throws Exception {
@@ -1032,6 +455,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       if (random().nextInt(commitCloseNumDocs) == 17) {
         if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: close writer @ " + (i+1) + " docs");
         reindexer.close();
+        reindexer.indexDir.close();
         reindexer = null;
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
@@ -1039,6 +463,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     if (reindexer != null) {
       reindexer.close();
+      reindexer.indexDir.close();
     }
   }
 
@@ -1122,6 +547,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       if (random().nextInt(commitCloseNumDocs) == 17) {
         if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: close writer @ " + (i+1) + " docs");
         reindexer.close();
+        reindexer.indexDir.close();
         reindexer = null;
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
@@ -1129,11 +555,13 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     if (reindexer != null) {
       reindexer.close();
+      reindexer.indexDir.close();
     }
+    Directory dir = newFSDirectory(root.resolve("index"));
 
-    // Verify main index never reflects schema changes beyond mergingSchemaGen:
-    try (Directory dir = newFSDirectory(root.resolve("index"));
-         IndexReader r = DirectoryReader.open(dir)) {
+    if (DirectoryReader.indexExists(dir)) {
+      // Verify main index never reflects schema changes beyond mergingSchemaGen:
+      try (IndexReader r = DirectoryReader.open(dir)) {
         for (LeafReaderContext ctx : r.leaves()) {
           LeafReader leaf = ctx.reader();
           NumericDocValues numbers = leaf.getNumericDocValues("number");
@@ -1153,6 +581,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           }
         }
       }
+    }
+    dir.close();
   }
 
   public void testBasic() throws Exception {
@@ -1221,6 +651,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     if (DEBUG) System.out.println("TEST: close writer");
     reindexer.close();
+    reindexer.indexDir.close();
   }
 
   public void testRandom() throws Exception {
@@ -1234,6 +665,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     int commitCloseNumDocs = 1000;
     for(int i=0;i<numDocs;i++) {
       if (reindexer == null) {
+        if (DEBUG) System.out.println("TEST: open writer @ " + (i+1) + " docs");
         reindexer = getReindexer(root);
       }
 
@@ -1288,12 +720,14 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       if (random().nextInt(commitCloseNumDocs) == 17) {
         if (DEBUG) System.out.println("TEST: close writer @ " + (i+1) + " docs");
         reindexer.close();
+        reindexer.indexDir.close();
         reindexer = null;
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
     }
     if (reindexer != null) {
       reindexer.close();
+      reindexer.indexDir.close();
     }
   }
 
@@ -1369,4 +803,248 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
   }
 
   // TODO: test exceptions
+
+  public void testSwitchToDocValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // Test relies on doc order:
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    int numDocs = atLeast(1000);
+    long[] numbers = new long[numDocs];
+    if (VERBOSE) {
+      System.out.println("numDocs=" + numDocs);
+    }
+    for(int i=0;i<numDocs;i++) {
+      Document doc = w.newDocument();
+      long number = random().nextLong();
+      numbers[i] = number;
+      doc.addStoredLong("number", number);
+      w.addDocument(doc);
+      // Make sure we have at least 2 segments, else forceMerge won't do anything:
+      if (i == numDocs/2) {
+        w.commit();
+      }
+    }
+    w.close();
+
+    ReindexingReader r = new ReindexingReader(dir, createTempDir()) {
+        @Override
+        protected long getCurrentSchemaGen() {
+          return 0;
+        }
+
+        @Override
+        protected IndexWriterConfig getIndexWriterConfig() {
+          // Test relies on doc order:
+          return newIndexWriterConfig().setMergePolicy(new AlwaysForceMergePolicy(newLogMergePolicy()));
+        }
+
+        @Override
+        protected void reindex(long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir) throws IOException {
+          assertEquals(0L, newSchemaGen);
+          assertEquals(-1L, oldSchemaGen);
+
+          IndexWriterConfig iwc = newIndexWriterConfig();
+          if (VERBOSE) {
+            System.out.println("TEST: build parallel " + reader);
+          }
+
+          // The order of our docIDs must precisely matching incoming reader:
+          iwc.setMergePolicy(new LogByteSizeMergePolicy());
+          IndexWriter w = new IndexWriter(parallelDir, iwc);
+          int maxDoc = reader.maxDoc();
+
+          // Slowly parse the stored field into a new doc values field:
+          for(int i=0;i<maxDoc;i++) {
+            // TODO: is this still O(blockSize^2)?
+            Document oldDoc = reader.document(i);
+            Document newDoc = w.newDocument();
+            newDoc.addLong("numberDV", oldDoc.getLong("number").longValue());
+            w.addDocument(newDoc);
+          }
+
+          if (random().nextBoolean()) {
+            w.forceMerge(1);
+          }
+
+          w.close();
+        }
+      };
+    
+    if (VERBOSE) {
+      System.out.println("TEST: now force merge");
+    }
+
+    r.w.forceMerge(1);
+    // Make sure main + parallel index was fully updated:
+    DirectoryReader dr = r.mgr.acquire();
+    if (VERBOSE) {
+      System.out.println("TEST: dr=" + dr);
+    }
+    try {
+      NumericDocValues dv = MultiDocValues.getNumericValues(dr, "numberDV");
+      for(int i=0;i<numDocs;i++) {
+        assertEquals(numbers[i], dv.get(i));
+      }
+    } finally {
+      r.mgr.release(dr);
+    }
+    r.close();
+
+    // Make sure main index was fully updated:
+    dr = DirectoryReader.open(dir);
+    if (VERBOSE) {
+      System.out.println("TEST: final reader " + dr);
+    }
+    NumericDocValues dv = MultiDocValues.getNumericValues(dr, "numberDV");
+    assertNotNull(dv);
+    for(int i=0;i<numDocs;i++) {
+      assertEquals("docID=" + i, numbers[i], dv.get(i));
+    }
+
+    dr.close();
+    dir.close();
+  }
+
+  public void testSwitchToSortedSetDocValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // Test relies on doc order:
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setMultiValued("field");
+    int numDocs = atLeast(1000);
+    String[] strings = new String[2*numDocs];
+    if (VERBOSE) {
+      System.out.println("numDocs=" + numDocs);
+    }
+    for(int i=0;i<numDocs;i++) {
+      Document doc = w.newDocument();
+      String s = TestUtil.randomRealisticUnicodeString(random());
+      String s2 = TestUtil.randomRealisticUnicodeString(random());
+      strings[2*i] = s;
+      strings[2*i+1] = s2;
+      doc.addStoredString("field", s);
+      doc.addStoredString("field", s2);
+      w.addDocument(doc);
+      // Make sure we have at least 2 segments, else forceMerge won't do anything:
+      if (i == numDocs/2) {
+        w.commit();
+      }
+    }
+    w.close();
+
+    ReindexingReader r = new ReindexingReader(dir, createTempDir()) {
+        @Override
+        protected long getCurrentSchemaGen() {
+          return 0;
+        }
+
+        @Override
+        protected IndexWriterConfig getIndexWriterConfig() {
+          // Test relies on doc order:
+          return newIndexWriterConfig().setMergePolicy(new AlwaysForceMergePolicy(newLogMergePolicy()));
+        }
+
+        @Override
+        protected void reindex(long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir) throws IOException {
+          assertEquals(0L, newSchemaGen);
+          assertEquals(-1L, oldSchemaGen);
+
+          IndexWriterConfig iwc = newIndexWriterConfig();
+          if (VERBOSE) {
+            System.out.println("TEST: build parallel " + reader);
+          }
+
+          // The order of our docIDs must precisely matching incoming reader:
+          iwc.setMergePolicy(new LogByteSizeMergePolicy());
+          IndexWriter w = new IndexWriter(parallelDir, iwc);
+          int maxDoc = reader.maxDoc();
+          FieldTypes fieldTypes = w.getFieldTypes();
+          fieldTypes.setMultiValued("fieldDV");
+
+          // Slowly parse the stored field into a new doc values field:
+          for(int i=0;i<maxDoc;i++) {
+            // TODO: is this still O(blockSize^2)?
+            Document oldDoc = reader.document(i);
+            Document newDoc = w.newDocument();
+            for(String s : oldDoc.getStrings("field")) {
+              newDoc.addAtom("fieldDV", s);
+            }
+            w.addDocument(newDoc);
+          }
+
+          if (random().nextBoolean()) {
+            w.forceMerge(1);
+          }
+
+          w.close();
+        }
+      };
+    
+    if (VERBOSE) {
+      System.out.println("TEST: now force merge");
+    }
+
+    r.w.forceMerge(1);
+    // Make sure main + parallel index was fully updated:
+    DirectoryReader dr = r.mgr.acquire();
+    if (VERBOSE) {
+      System.out.println("TEST: dr=" + dr);
+    }
+    try {
+      SortedSetDocValues dv = MultiDocValues.getSortedSetValues(dr, "fieldDV");
+      assertNotNull(dv);
+      for(int i=0;i<numDocs;i++) {
+        dv.setDocument(i);
+        long ord = dv.nextOrd();
+        assert ord != SortedSetDocValues.NO_MORE_ORDS;
+        String v = dv.lookupOrd(ord).utf8ToString();
+
+        long ord2 = dv.nextOrd();
+        if (ord2 == SortedSetDocValues.NO_MORE_ORDS) {
+          assertTrue(v.equals(strings[2*i]));
+          assertTrue(v.equals(strings[2*i+1]));
+        } else {
+          assert dv.nextOrd() == SortedSetDocValues.NO_MORE_ORDS;
+          String v2 = dv.lookupOrd(ord2).utf8ToString();
+          assertTrue((v.equals(strings[2*i]) && v2.equals(strings[2*i+1])) ||
+                     (v.equals(strings[2*i+1]) && v2.equals(strings[2*i])));
+        }
+      }
+    } finally {
+      r.mgr.release(dr);
+    }
+    r.close();
+
+    // Make sure main index was fully updated:
+    dr = DirectoryReader.open(dir);
+    if (VERBOSE) {
+      System.out.println("TEST: final reader " + dr);
+    }
+    SortedSetDocValues dv = MultiDocValues.getSortedSetValues(dr, "fieldDV");
+    assertNotNull(dv);
+    for(int i=0;i<numDocs;i++) {
+      dv.setDocument(i);
+      long ord = dv.nextOrd();
+      assert ord != SortedSetDocValues.NO_MORE_ORDS;
+      String v = dv.lookupOrd(ord).utf8ToString();
+
+      long ord2 = dv.nextOrd();
+      if (ord2 == SortedSetDocValues.NO_MORE_ORDS) {
+        assertTrue(v.equals(strings[2*i]));
+        assertTrue(v.equals(strings[2*i+1]));
+      } else {
+        assert dv.nextOrd() == SortedSetDocValues.NO_MORE_ORDS;
+        String v2 = dv.lookupOrd(ord2).utf8ToString();
+        assertTrue((v.equals(strings[2*i]) && v2.equals(strings[2*i+1])) ||
+                   (v.equals(strings[2*i+1]) && v2.equals(strings[2*i])));
+      }
+    }
+
+    dr.close();
+    dir.close();
+  }
 }

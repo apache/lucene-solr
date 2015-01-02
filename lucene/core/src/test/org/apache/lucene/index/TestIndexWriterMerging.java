@@ -128,7 +128,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     for(int i=0;i<10;i++) {
       Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
-      doc.addStored("stored", "stored");
+      doc.addStoredString("stored", "stored");
       doc.addAtom("termVector", "termVector");
       writer.addDocument(doc);
     }
@@ -183,7 +183,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     for(int i=0;i<98;i++) {
       Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
-      doc.addStored("stored", "stored");
+      doc.addStoredString("stored", "stored");
       doc.addAtom("termVector", "termVector");
       writer.addDocument(doc);
     }
@@ -241,7 +241,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     for(int i=0;i<98;i++) {
       Document doc = writer.newDocument();
       doc.addUniqueInt("id", i);
-      doc.addStored("stored", "stored");
+      doc.addStoredString("stored", "stored");
       doc.addAtom("termVector", "termVector");
       writer.addDocument(doc);
     }

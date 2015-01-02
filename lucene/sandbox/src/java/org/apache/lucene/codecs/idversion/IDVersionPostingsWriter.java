@@ -67,11 +67,6 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
     if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       throw new IllegalArgumentException("field \"" + fieldInfo.name + "\" must be indexed using IndexOptions.DOCS_AND_FREQS_AND_POSITIONS (got: " + fieldInfo.getIndexOptions() + ")");
     }
-    // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted docs, and because our PF only indexes the
-    // non-deleted documents on flush, CheckIndex will see this as corruption:
-    if (fieldInfo.hasVectors()) {
-      throw new IllegalArgumentException("field cannot index term vectors: CheckIndex will report this as index corruption");
-    }
     lastState = emptyState;
     return 0;
   }
@@ -83,10 +78,6 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-    // TODO: LUCENE-5693: we don't need this check if we fix IW to not send deleted docs to us on flush:
-    if (liveDocs != null && liveDocs.get(docID) == false) {
-      return;
-    }
     if (lastDocID != -1) {
       throw new IllegalArgumentException("term appears in more than one document");
     }

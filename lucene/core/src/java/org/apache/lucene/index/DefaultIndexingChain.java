@@ -558,7 +558,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
     void setInvertState() {
       invertState = new FieldInvertState(fieldInfo.name);
-      termsHashPerField = termsHash.addField(invertState, fieldInfo, docWriter.writer.rightJustifyTerms(fieldInfo.name));
+      termsHashPerField = termsHash.addField(invertState, fieldInfo);
       if (fieldInfo.omitsNorms() == false) {
         assert norms == null;
         // Even if no documents actually succeed in setting a norm, we still write norms for this segment:
@@ -601,7 +601,6 @@ final class DefaultIndexingChain extends DocConsumer {
       }
 
       // only bother checking offsets if something will consume them.
-      // nocommit can't we do this todo now?
       // TODO: after we fix analyzers, also check if termVectorOffsets will be indexed.
       final boolean checkOffsets = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
@@ -653,8 +652,8 @@ final class DefaultIndexingChain extends DocConsumer {
           if (invertState.length < 0) {
             throw new IllegalArgumentException("too many tokens in field '" + field.name() + "'");
           }
-          //System.out.println("  term=" + invertState.termAttribute);
-
+          //System.out.println("  term=" + fieldInfo.name + ":" + invertState.termAttribute);
+          
           // If we hit an exception in here, we abort
           // all buffered documents since the last
           // flush, on the likelihood that the
@@ -681,7 +680,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
           if (uniqueValues != null) {
             BytesRef token = BytesRef.deepCopyOf(invertState.termAttribute.getBytesRef());
-            // nocommit must force reopen if too many values added, account for RAM, etc.
             if (uniqueValues.add(token) == false &&
                 (delTerm == null ||
                  delTerm.field().equals(field.name()) == false ||
@@ -689,9 +687,11 @@ final class DefaultIndexingChain extends DocConsumer {
               // Unique constraint violated; document will be marked deleted above:
               throw new NotUniqueException(field.name(), token);
             }
-            if (stream.incrementToken() != false) {
+            if (stream.incrementToken()) {
+              uniqueValues.delete(token);
               throw new IllegalArgumentException("field \"" + field.name() + "\": unique fields must have a single token");
             }
+            break;
           }
         }
 

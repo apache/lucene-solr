@@ -31,6 +31,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
@@ -77,12 +78,9 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * <b>WARNING</b>: The code is very new and probably still has some exciting bugs!
  * <p>
  * Example usage:
-// nocommit fixme
  * <pre class="prettyprint">
- *   // configure field with offsets at index time
- *   FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
- *   offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
- *   Field body = new Field("body", "foobar", offsetsType);
+ *   // large text and short text fields are indexed with offsets by default:
+ *   doc.addLargeText("body", "foobar");
  *
  *   // retrieve highlights at query time 
  *   PostingsHighlighter highlighter = new PostingsHighlighter();
@@ -116,26 +114,45 @@ public class PostingsHighlighter {
   /** Set the first time {@link #getScorer} is called,
    *  and then reused. */
   private PassageScorer defaultScorer;
+
+  private final FieldTypes fieldTypes;
   
   /**
    * Creates a new highlighter with {@link #DEFAULT_MAX_LENGTH}.
    */
   public PostingsHighlighter() {
-    this(DEFAULT_MAX_LENGTH);
+    this(null, DEFAULT_MAX_LENGTH);
+  }
+
+  /**
+   * Creates a new highlighter with {@link #DEFAULT_MAX_LENGTH}.
+   */
+  public PostingsHighlighter(FieldTypes fieldTypes) {
+    this(fieldTypes, DEFAULT_MAX_LENGTH);
+  }
+
+  /**
+   * Creates a new highlighter, specifying maximum content length.
+   */
+  public PostingsHighlighter(int maxLength) {
+    this(null, maxLength);
   }
   
   /**
    * Creates a new highlighter, specifying maximum content length.
+   * @param fieldTypes {@link FieldTypes} (null is allowed).  If non-null then we default to WholeBreakIterator when highlighting short text
+   *   and atom fields.
    * @param maxLength maximum content size to process.
    * @throws IllegalArgumentException if <code>maxLength</code> is negative or <code>Integer.MAX_VALUE</code>
    */
-  public PostingsHighlighter(int maxLength) {
+  public PostingsHighlighter(FieldTypes fieldTypes, int maxLength) {
     if (maxLength < 0 || maxLength == Integer.MAX_VALUE) {
       // two reasons: no overflow problems in BreakIterator.preceding(offset+1),
       // our sentinel in the offsets queue uses this value to terminate.
       throw new IllegalArgumentException("maxLength must be < Integer.MAX_VALUE");
     }
     this.maxLength = maxLength;
+    this.fieldTypes = fieldTypes;
   }
   
   /** Returns the {@link BreakIterator} to use for
@@ -143,7 +160,16 @@ public class PostingsHighlighter {
    *  {@link BreakIterator#getSentenceInstance(Locale)} by default;
    *  subclasses can override to customize. */
   protected BreakIterator getBreakIterator(String field) {
-    return BreakIterator.getSentenceInstance(Locale.ROOT);
+    if (fieldTypes != null) {
+      FieldTypes.ValueType valueType = fieldTypes.getValueType(field);
+      if (valueType == FieldTypes.ValueType.TEXT) {
+        return BreakIterator.getSentenceInstance(Locale.ROOT);
+      } else {
+        return new WholeBreakIterator();
+      }
+    } else {
+      return BreakIterator.getSentenceInstance(Locale.ROOT);
+    }
   }
 
   /** Returns the {@link PassageFormatter} to use for
@@ -388,6 +414,7 @@ public class PostingsHighlighter {
     Map<String,Object[]> highlights = new HashMap<>();
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
+      checkField(field);
       int numPassages = maxPassages[i];
       Term floor = new Term(field, "");
       Term ceiling = new Term(field, UnicodeUtil.BIG_TERM);
@@ -409,6 +436,12 @@ public class PostingsHighlighter {
       highlights.put(field, result);
     }
     return highlights;
+  }
+
+  private void checkField(String fieldName) {
+    if (fieldTypes != null && fieldTypes.getHighlighted(fieldName) == false) {
+      throw new IllegalArgumentException("field=\"" + fieldName + "\" was indexed with FieldTypes.enableHighlighting");
+    }
   }
 
   /** Loads the String values for each field X docID to be

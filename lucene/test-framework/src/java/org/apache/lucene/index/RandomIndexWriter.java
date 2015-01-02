@@ -105,10 +105,6 @@ public class RandomIndexWriter implements Closeable {
     return w.newDocument();
   }
 
-  public ReferenceManager<DirectoryReader> getReaderManager() {
-    return w.getReaderManager();
-  }
-  
   /**
    * Adds a Document.
    * @see IndexWriter#addDocument(org.apache.lucene.index.IndexDocument)

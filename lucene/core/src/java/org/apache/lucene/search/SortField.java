@@ -34,6 +34,8 @@ import org.apache.lucene.util.StringHelper;
  */
 public class SortField {
 
+  // TODO: remove this eventually (FieldTypes knows the type):
+
   /**
    * Specifies the type of the terms to be sorted, or special types such as CUSTOM
    */
@@ -332,16 +334,16 @@ public class SortField {
       return new FieldComparator.DocComparator(numHits);
 
     case INT:
-      return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
+      return new IntComparator(numHits, field, missingValue == null ? 0 : (Integer) missingValue);
 
     case FLOAT:
-      return new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
+      return new FloatComparator(numHits, field, missingValue == null ? 0 : (Float) missingValue);
 
     case LONG:
-      return new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
+      return new LongComparator(numHits, field, missingValue == null ? 0 : (Long) missingValue);
 
     case DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
+      return new DoubleComparator(numHits, field, missingValue == null ? 0 : (Double) missingValue);
 
     case CUSTOM:
       assert comparatorSource != null;

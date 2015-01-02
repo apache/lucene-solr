@@ -20,12 +20,10 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigInteger;
-import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -33,6 +31,8 @@ import java.util.TimeZone;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.blocktree.Stats;
@@ -82,7 +82,7 @@ public class TestDocument extends LuceneTestCase {
     doc.addLargeText("body", "some text");
     doc.addShortText("title", "a title");
     doc.addAtom("id", "29jafnn");
-    doc.addStored("bytes", new BytesRef(new byte[7]));
+    doc.addStoredBinary("bytes", new BytesRef(new byte[7]));
     doc.addInt("int", 17);
     w.addDocument(doc);
     w.close();
@@ -144,7 +144,7 @@ public class TestDocument extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
 
     Document doc = w.newDocument();
-    doc.addStored("binary", new BytesRef(new byte[5]));
+    doc.addStoredBinary("binary", new BytesRef(new byte[5]));
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
     assertEquals(new BytesRef(new byte[5]), r.document(0).getBinary("binary"));
@@ -188,213 +188,8 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
-  public void testSortedNumericDocValues() throws Exception {
-    Directory dir = newDirectory();
-
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setDocValuesType("sortednumeric", DocValuesType.SORTED_NUMERIC);
-    fieldTypes.setMultiValued("sortednumeric");
-
-    Document doc = w.newDocument();
-    doc.addInt("sortednumeric", 3);
-    doc.addInt("sortednumeric", 1);
-    doc.addInt("sortednumeric", 2);
-    w.addDocument(doc);
-    IndexReader r = DirectoryReader.open(w, true);
-    SortedNumericDocValues sndv = MultiDocValues.getSortedNumericValues(r, "sortednumeric");
-    sndv.setDocument(0);
-
-    assertEquals(3, sndv.count());
-    assertEquals(1, sndv.valueAt(0));
-    assertEquals(2, sndv.valueAt(1));
-    assertEquals(3, sndv.valueAt(2));
-    w.close();
-    r.close();
-    dir.close();
-  }
-
-  public void testHalfFloatRange() throws Exception {
-    Directory dir = newDirectory();
-
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-    //System.out.println("id type: " + fieldTypes.getFieldType("id"));
-
-    Document doc = w.newDocument();
-    doc.addHalfFloat("halffloat", 3f);
-    doc.addAtom("id", "one");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addHalfFloat("halffloat", 2f);
-    doc.addAtom("id", "two");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addHalfFloat("halffloat", 7f);
-    doc.addAtom("id", "three");
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-
-    // Make sure range query hits the right number of hits
-    assertEquals(2, search(s, fieldTypes.newHalfFloatRangeFilter("halffloat", 0f, true, 3f, true), 1).totalHits);
-    assertEquals(3, search(s, fieldTypes.newHalfFloatRangeFilter("halffloat", 0f, true, 10f, true), 1).totalHits);
-    assertEquals(1, search(s, fieldTypes.newHalfFloatRangeFilter("halffloat", 1f, true,2.5f, true), 1).totalHits);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit test multi-valued too
-  // nocommit this passed too easily:
-  public void testHalfFloatSort() throws Exception {
-    Directory dir = newDirectory();
-
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-    //System.out.println("id type: " + fieldTypes.getFieldType("id"));
-
-    Document doc = w.newDocument();
-    doc.addHalfFloat("halffloat", 3f);
-    doc.addAtom("id", "one");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addHalfFloat("halffloat", 2f);
-    doc.addAtom("id", "two");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addHalfFloat("halffloat", 7f);
-    doc.addAtom("id", "three");
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-
-    // Make sure range query hits the right number of hits
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("halffloat"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("two", r.document(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("one", r.document(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("three", r.document(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testFloatRangeQuery() throws Exception {
-    Directory dir = newDirectory();
-
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-    //System.out.println("id type: " + fieldTypes.getFieldType("id"));
-
-    Document doc = w.newDocument();
-    doc.addFloat("float", 3f);
-    doc.addAtom("id", "one");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addFloat("float", 2f);
-    doc.addAtom("id", "two");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addFloat("float", 7f);
-    doc.addAtom("id", "three");
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-
-    // Make sure range query hits the right number of hits
-    assertEquals(2, search(s, fieldTypes.newFloatRangeFilter("float", 0f, true, 3f, true), 1).totalHits);
-    assertEquals(3, search(s, fieldTypes.newFloatRangeFilter("float", 0f, true, 10f, true), 1).totalHits);
-    assertEquals(1, search(s, fieldTypes.newFloatRangeFilter("float", 1f, true,2.5f, true), 1).totalHits);
-
-    // Make sure doc values shows the correct float values:
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("id"));
-    assertEquals(3, hits.totalHits);
-    NumericDocValues ndv = MultiDocValues.getNumericValues(r, "float");
-    assertNotNull(ndv);
-    ScoreDoc hit = hits.scoreDocs[0];
-    Document storedDoc = r.document(hit.doc);
-    assertEquals("one", storedDoc.getString("id"));
-    assertEquals(3f, Float.intBitsToFloat((int) ndv.get(hit.doc)), .001f);
-
-    hit = hits.scoreDocs[1];
-    storedDoc = r.document(hit.doc);
-    assertEquals("three", storedDoc.getString("id"));
-    assertEquals(7f, Float.intBitsToFloat((int) ndv.get(hit.doc)), .001f);
-
-    hit = hits.scoreDocs[2];
-    storedDoc = r.document(hit.doc);
-    assertEquals("two", storedDoc.getString("id"));
-    assertEquals(2f, Float.intBitsToFloat((int) ndv.get(hit.doc)), .001f);
-
-    // Make sure we can sort by the field:
-    hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("float"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("two", r.document(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("one", r.document(hits.scoreDocs[1].doc).get("id"));
-    assertEquals("three", r.document(hits.scoreDocs[2].doc).get("id"));
-
-    w.close();
-    r.close();
-    dir.close();
-  }
-
   private TopDocs search(IndexSearcher s, Filter filter, int count) throws IOException {
     return s.search(new ConstantScoreQuery(filter), count);
-  }
-
-  // Cannot change a field from INT to DOUBLE
-  public void testInvalidNumberTypeChange() throws Exception {
-    Directory dir = newDirectory();
-
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 3);
-    w.addDocument(doc);
-    w.close();
-    dir.close();
-  }
-
-  // nocommit testTermRangeQuery
-  // nocommit test range exc
-  
-
-  public void testIntRangeQuery() throws Exception {
-    Directory dir = newDirectory();
-
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 3);
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", 2);
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", 7);
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-
-    assertEquals(2, search(s, fieldTypes.newIntRangeFilter("int", 0, true, 3, true), 1).totalHits);
-    assertEquals(3, search(s, fieldTypes.newIntRangeFilter("int", 0, true, 10, true), 1).totalHits);
-    w.close();
-    r.close();
-    dir.close();
   }
 
   public void testExcAnalyzerForAtomField() throws Exception {
@@ -403,7 +198,6 @@ public class TestDocument extends LuceneTestCase {
     FieldTypes fieldTypes = w.getFieldTypes();
     Document doc = w.newDocument();
     doc.addAtom("atom", "foo");
-    // nocommit fixme
     shouldFail(() -> fieldTypes.setAnalyzer("atom", new MockAnalyzer(random())),
                "field \"atom\": type ATOM cannot have an indexAnalyzer");
     w.close();
@@ -497,38 +291,6 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
-  public void testMultiValuedNumeric() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-
-    fieldTypes.setMultiValued("numbers");
-    fieldTypes.enableSorting("numbers");
-    fieldTypes.enableStored("id");
-
-    Document doc = w.newDocument();
-    doc.addInt("numbers", 1);
-    doc.addInt("numbers", 2);
-    doc.addAtom("id", "one");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("numbers", -10);
-    doc.addInt("numbers", -20);
-    doc.addAtom("id", "two");
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 2, fieldTypes.newSort("numbers"));
-    assertEquals(2, hits.scoreDocs.length);
-    assertEquals("two", r.document(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("one", r.document(hits.scoreDocs[1].doc).get("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
   public void testMultiValuedString() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
@@ -571,7 +333,7 @@ public class TestDocument extends LuceneTestCase {
                "field \"binary\": DocValuesType=BINARY cannot be multi-valued");
     assertFalse(fieldTypes.getMultiValued("binary"));
     Document doc = w.newDocument();
-    doc.addStored("binary", new BytesRef(new byte[7]));
+    doc.addStoredBinary("binary", new BytesRef(new byte[7]));
     w.addDocument(doc);
     w.close();
     dir.close();
@@ -587,7 +349,7 @@ public class TestDocument extends LuceneTestCase {
                "field \"sorted\": DocValuesType=SORTED cannot be multi-valued");
     assertFalse(fieldTypes.getMultiValued("sorted"));
     Document doc = w.newDocument();
-    doc.addStored("binary", new BytesRef(new byte[7]));
+    doc.addStoredBinary("binary", new BytesRef(new byte[7]));
     w.addDocument(doc);
     w.close();
     dir.close();
@@ -640,57 +402,18 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
-  public void testLongTermQuery() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    IndexWriter w = new IndexWriter(dir, iwc);
-    FieldTypes fieldTypes = w.getFieldTypes();
-
-    Document doc = w.newDocument();
-    doc.addLong("id", 1L);
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newLongTermQuery("id", 1L), 1);
-    assertEquals(1, hits.scoreDocs.length);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testIntTermQuery() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    IndexWriter w = new IndexWriter(dir, iwc);
-    FieldTypes fieldTypes = w.getFieldTypes();
-
-    Document doc = w.newDocument();
-    doc.addInt("id", 1);
-    w.addDocument(doc);
-
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(fieldTypes.newIntTermQuery("id", 1), 1);
-    assertEquals(1, hits.scoreDocs.length);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
   public void testBinaryTermQuery() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setIndexOptions("id", IndexOptions.DOCS);
 
     Document doc = w.newDocument();
-    doc.addStored("id", new BytesRef(new byte[1]));
+    doc.addAtom("id", new BytesRef(new byte[1]));
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w, true);
     IndexSearcher s = newSearcher(r);
+    FieldTypes fieldTypes = s.getFieldTypes();
     TopDocs hits = s.search(fieldTypes.newBinaryTermQuery("id", new byte[1]), 1);
     assertEquals(1, hits.scoreDocs.length);
     r.close();
@@ -802,21 +525,7 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
-  /** Make sure that if we index an ATOM field, at search time we get KeywordAnalyzer for it. */
-  public void testAtomFieldUsesKeywordAnalyzer() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    IndexWriter w = new IndexWriter(dir, iwc);
-    FieldTypes fieldTypes = w.getFieldTypes();
-    Document doc = w.newDocument();
-    doc.addAtom("id", "foo bar");
-    w.addDocument(doc);
-    BaseTokenStreamTestCase.assertTokenStreamContents(fieldTypes.getQueryAnalyzer().tokenStream("id", "foo bar"), new String[] {"foo bar"}, new int[1], new int[] {7});
-    w.close();
-    dir.close();
-  }
-
-  public void testHighlight() throws Exception {
+  public void testHighlightOffsets() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -828,7 +537,6 @@ public class TestDocument extends LuceneTestCase {
     doc.addLargeText("no_highlight", "here is some content");
     w.addDocument(doc);
 
-    // nocommit: we can't actually run highlighter ... w/o being outside core ... maybe this test should be elsewhere?
     IndexReader r = DirectoryReader.open(w, true);
     assertTrue(MultiFields.getTerms(r, "highlight").hasOffsets());
     assertFalse(MultiFields.getTerms(r, "no_highlight").hasOffsets());
@@ -995,428 +703,6 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
-  // nocommit need to test other numeric types:
-  public void testIntSortMissingFirst() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("int");
-    fieldTypes.setSortMissingFirst("int");
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 7);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", -7);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other numeric types:
-  public void testIntSortMissingFirstReversed() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("int", true);
-    fieldTypes.setSortMissingFirst("int");
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 7);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", -7);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other numeric types:
-  public void testIntSortMissingLast() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("int");
-    fieldTypes.setSortMissingLast("int");
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 7);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", -7);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other numeric types:
-  public void testIntSortMissingLastReversed() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("int", true);
-    fieldTypes.setSortMissingLast("int");
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 7);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", -7);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other numeric types:
-  public void testIntSortMissingDefault() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 7);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", -7);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other numeric types:
-  public void testIntSortMissingDefaultReversed() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-
-    Document doc = w.newDocument();
-    doc.addInt("int", 7);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addInt("int", -7);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("int", true));
-    assertEquals(3, hits.totalHits);
-    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-
-
-  // nocommit need to test other string sort types:
-  public void testAtomSortMissingFirst() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("atom");
-    fieldTypes.setSortMissingFirst("atom");
-
-    Document doc = w.newDocument();
-    doc.addAtom("atom", "z");
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("atom", "a");
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other string sort types:
-  public void testAtomSortMissingFirstReversed() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("atom", true);
-    fieldTypes.setSortMissingFirst("atom");
-
-    Document doc = w.newDocument();
-    doc.addAtom("atom", "z");
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("atom", "a");
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("2", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other string sort types:
-  public void testAtomSortMissingLast() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("atom");
-    fieldTypes.setSortMissingLast("atom");
-
-    Document doc = w.newDocument();
-    doc.addAtom("atom", "z");
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("atom", "a");
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other string sort types:
-  public void testAtomSortMissingLastReversed() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.enableSorting("atom", true);
-    fieldTypes.setSortMissingLast("atom");
-
-    Document doc = w.newDocument();
-    doc.addAtom("atom", "z");
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("atom", "a");
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other string sort types:
-  public void testAtomSortMissingDefault() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-
-    Document doc = w.newDocument();
-    doc.addAtom("atom", "z");
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("atom", "a");
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom"));
-    assertEquals(3, hits.totalHits);
-    assertEquals("1", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("0", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  // nocommit need to test other string sort types:
-  public void testAtomSortMissingDefaultReversed() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    w.commit();
-
-    Document doc = w.newDocument();
-    doc.addAtom("atom", "z");
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("atom", "a");
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-    
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 3, fieldTypes.newSort("atom", true));
-    assertEquals(3, hits.totalHits);
-    assertEquals("0", s.doc(hits.scoreDocs[0].doc).getString("id"));
-    assertEquals("1", s.doc(hits.scoreDocs[1].doc).getString("id"));
-    assertEquals("2", s.doc(hits.scoreDocs[2].doc).getString("id"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
   public void testMinMaxTokenLength() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
@@ -1509,186 +795,6 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
-  public void testDateSort() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-
-    SimpleDateFormat parser = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
-    parser.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-    Document doc = w.newDocument();
-    Date date0 = parser.parse("10/22/2014");
-    doc.addDate("date", date0);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    Date date1 = parser.parse("10/21/2015");
-    doc.addDate("date", date1);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    w.getFieldTypes().enableSorting("date", true);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("date"));
-    assertEquals(2, hits.totalHits);
-    Document hit = s.doc(hits.scoreDocs[0].doc);
-    assertEquals("1", hit.getString("id"));
-    assertEquals(date1, hit.getDate("date"));
-    hit = s.doc(hits.scoreDocs[1].doc);
-    assertEquals("0", hit.getString("id"));
-    assertEquals(date0, hit.getDate("date"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testDateRangeFilter() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-
-    SimpleDateFormat parser = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
-    parser.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-    Document doc = w.newDocument();
-    Date date0 = parser.parse("10/22/2014");
-    doc.addDate("date", date0);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    Date date1 = parser.parse("10/21/2015");
-    doc.addDate("date", date1);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-
-    IndexSearcher s = newSearcher(r);
-    assertEquals(2, search(s, fieldTypes.newRangeFilter("date", date0, true, date1, true), 1).totalHits);
-    assertEquals(1, search(s, fieldTypes.newRangeFilter("date", date0, true, date1, false), 1).totalHits);
-    assertEquals(0, search(s, fieldTypes.newRangeFilter("date", date0, false, date1, false), 1).totalHits);
-    assertEquals(1, search(s, fieldTypes.newRangeFilter("date", parser.parse("10/21/2014"), false, parser.parse("10/23/2014"), false), 1).totalHits);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testInetAddressSort() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-
-    Document doc = w.newDocument();
-    InetAddress inet0 = InetAddress.getByName("10.17.4.10");
-    doc.addInetAddress("inet", inet0);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    InetAddress inet1 = InetAddress.getByName("10.17.4.22");
-    doc.addInetAddress("inet", inet1);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 10, fieldTypes.newSort("inet"));
-    assertEquals(2, hits.totalHits);
-    Document hit = s.doc(hits.scoreDocs[0].doc);
-    assertEquals("0", hit.getString("id"));
-    assertEquals(inet0, hit.getInetAddress("inet"));
-    hit = s.doc(hits.scoreDocs[1].doc);
-    assertEquals("1", hit.getString("id"));
-    assertEquals(inet1, hit.getInetAddress("inet"));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testInetAddressRangeFilter() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-
-    Document doc = w.newDocument();
-    InetAddress inet0 = InetAddress.getByName("10.17.4.10");
-    doc.addInetAddress("inet", inet0);
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    InetAddress inet1 = InetAddress.getByName("10.17.4.22");
-    doc.addInetAddress("inet", inet1);
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-
-    IndexSearcher s = newSearcher(r);
-    assertEquals(2, search(s, fieldTypes.newRangeFilter("inet", inet0, true, inet1, true), 1).totalHits);
-    assertEquals(1, search(s, fieldTypes.newRangeFilter("inet", inet0, true, inet1, false), 1).totalHits);
-    assertEquals(0, search(s, fieldTypes.newRangeFilter("inet", inet0, false, inet1, false), 1).totalHits);
-    assertEquals(1, search(s, fieldTypes.newRangeFilter("inet", InetAddress.getByName("10.17.0.0"), true, InetAddress.getByName("10.17.4.20"), false), 1).totalHits);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testMinMaxAtom() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setMinMaxTokenLength("field", 2, 7);
-    fieldTypes.setMultiValued("field");
-    Document doc = w.newDocument();
-    doc.addAtom("field", "a");
-    doc.addAtom("field", "ab");
-    doc.addAtom("field", "goodbyeyou");
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-
-    IndexSearcher s = newSearcher(r);
-    assertEquals(0, hitCount(s, fieldTypes.newStringTermQuery("field", "a")));
-    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "ab")));
-    assertEquals(0, hitCount(s, fieldTypes.newStringTermQuery("field", "goodbyeyou")));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testMinMaxBinaryAtom() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setMinMaxTokenLength("field", 2, 7);
-    fieldTypes.setMultiValued("field");
-    Document doc = w.newDocument();
-    doc.addAtom("field", new BytesRef(new byte[1]));
-    doc.addAtom("field", new BytesRef(new byte[2]));
-    doc.addAtom("field", new BytesRef(new byte[10]));
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    fieldTypes = r.getFieldTypes();
-
-    IndexSearcher s = newSearcher(r);
-    assertEquals(0, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[1])));
-    assertEquals(1, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[2])));
-    assertEquals(0, hitCount(s, fieldTypes.newBinaryTermQuery("field", new byte[10])));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
   public void testExcCannotStoreTokenStream() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
@@ -1709,147 +815,32 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
-  public void testFieldExistsFilter() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    Document doc = w.newDocument();
-    doc.addAtom("field1", "field");
-    doc.addAtom("field2", "field");
-    doc.addAtom("id", "0");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("field1", "field");
-    doc.addAtom("id", "1");
-    w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("field2", "field");
-    doc.addAtom("id", "2");
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    FieldTypes fieldTypes = r.getFieldTypes();
-
-    IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new MatchAllDocsQuery(),
-                            fieldTypes.newFieldExistsFilter("field1"), 2);
-    assertEquals(2, hits.totalHits);
-    Set<String> ids = getIDs(r, hits);
-    assertTrue(ids.contains("0"));
-    assertTrue(ids.contains("1"));
-
-    hits = s.search(new MatchAllDocsQuery(),
-                    fieldTypes.newFieldExistsFilter("field2"), 2);
-    assertEquals(2, hits.totalHits);
-    ids = getIDs(r, hits);
-    assertTrue(ids.contains("0"));
-    assertTrue(ids.contains("2"));
-    assertEquals(0, s.search(new MatchAllDocsQuery(),
-                             fieldTypes.newFieldExistsFilter("field3"), 1).totalHits);;
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  private Set<String> getIDs(IndexReader r, TopDocs hits) throws IOException {
-    Set<String> ids = new HashSet<>();
-    for(ScoreDoc scoreDoc : hits.scoreDocs) {
-      ids.add(r.document(scoreDoc.doc).getString("id"));
-    }
-    return ids;
-  }
-
-  private static int hitCount(IndexSearcher s, Query q) throws IOException {
-    // TODO: use TotalHitCountCollector sometimes
-    return s.search(q, 1).totalHits;
-  }
-
-  public void testMultiValuedUnique() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setMultiValued("field");
-    Document doc = w.newDocument();
-    doc.addUniqueAtom("field", "foo");
-    doc.addUniqueAtom("field", "bar");
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-
-    IndexSearcher s = newSearcher(r);
-    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "foo")));
-    assertEquals(1, hitCount(s, fieldTypes.newStringTermQuery("field", "bar")));
-    r.close();
-    w.close();
-    dir.close();
-  }
-
   public void testExcStoredThenIndexed() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = newIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("field");
     Document doc = w.newDocument();
-    doc.addStored("field", "bar");
-    // nocommit why no exc here?
-    doc.addLargeText("field", "bar");
+    doc.addStoredString("field", "bar");
+    shouldFail(() -> doc.addLargeText("field", "bar"),
+               "field \"field\": this field is already disabled for indexing");
     w.addDocument(doc);
     w.close();
     dir.close();
   }
 
-  public void testDoubleTermQuery() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = newIndexWriter(dir);
-    Document doc = w.newDocument();
-    doc.addDouble("double", 180.0);
-    w.addDocument(doc);
-    DirectoryReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(new TermQuery(new Term("double",
-                                                    NumericUtils.doubleToBytes(180.0))),
-                             1).totalHits);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testSortLocale() throws Exception {
+  public void testExcIndexedThenStored() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = newIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
-    fieldTypes.setSortLocale("collated", Locale.ENGLISH);
-
+    fieldTypes.setMultiValued("field");
     Document doc = w.newDocument();
-    doc.addAtom("field", "ABC");
-    doc.addAtom("collated", "ABC");
+    doc.addLargeText("field", "bar");
+    shouldFail(() -> doc.addStoredString("field", "bar"),
+               "field \"field\": this field is already indexed with indexOptions=DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS");
     w.addDocument(doc);
-
-    doc = w.newDocument();
-    doc.addAtom("field", "abc");
-    doc.addAtom("collated", "abc");
-    w.addDocument(doc);
-
-    DirectoryReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = newSearcher(r);
-    TopDocs td = s.search(new MatchAllDocsQuery(), 5, fieldTypes.newSort("collated"));
-    assertEquals("abc", r.document(td.scoreDocs[0].doc).get("field"));
-    assertEquals("ABC", r.document(td.scoreDocs[1].doc).get("field"));
-    r.close();
     w.close();
     dir.close();
-  }
-
-  private static void shouldFail(Runnable x, String message) {
-    try {
-      x.run();
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      assertTrue("wrong message: " + ise.getMessage(), ise.getMessage().startsWith(message));
-    } catch (IllegalArgumentException iae) {
-      assertTrue("wrong message: " + iae.getMessage(), iae.getMessage().startsWith(message));
-    }
   }
 
   public void testStoredAfterLargeText() throws Exception {
@@ -1858,61 +849,8 @@ public class TestDocument extends LuceneTestCase {
 
     Document doc = w.newDocument();
     doc.addLargeText("field", "ABC");
-    shouldFail(() -> doc.addStored("field", "foo"),
+    shouldFail(() -> doc.addStoredString("field", "foo"),
                "field \"field\": this field is already indexed with indexOptions=DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS");
-    doc.addAtom("collated", "ABC");
-    w.close();
-    dir.close();
-  }
-
-  public void testStoredAfterInt() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = newIndexWriter(dir);
-
-    Document doc = w.newDocument();
-    doc.addInt("field", 17);
-    shouldFail(() -> doc.addStoredInt("field", 18),
-               "field \"field\": cannot addStored: field is already indexed with indexOptions=DOCS");
-    doc.addAtom("collated", "ABC");
-    w.close();
-    dir.close();
-  }
-
-  public void testStoredAfterLong() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = newIndexWriter(dir);
-
-    Document doc = w.newDocument();
-    doc.addLong("field", 17L);
-    shouldFail(() -> doc.addStoredLong("field", 18L),
-               "field \"field\": cannot addStored: field is already indexed with indexOptions=DOCS");
-    doc.addAtom("collated", "ABC");
-    w.close();
-    dir.close();
-  }
-
-  public void testStoredAfterFloat() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = newIndexWriter(dir);
-
-    Document doc = w.newDocument();
-    doc.addFloat("field", 17F);
-    shouldFail(() -> doc.addStoredFloat("field", 18F),
-               "field \"field\": cannot addStored: field is already indexed with indexOptions=DOCS");
-    doc.addAtom("collated", "ABC");
-    w.close();
-    dir.close();
-  }
-
-  public void testStoredAfterDouble() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = newIndexWriter(dir);
-
-    Document doc = w.newDocument();
-    doc.addDouble("field", 17D);
-    shouldFail(() -> doc.addStoredDouble("field", 18D),
-               "field \"field\": cannot addStored: field is already indexed with indexOptions=DOCS");
-    doc.addAtom("collated", "ABC");
     w.close();
     dir.close();
   }
@@ -1974,27 +912,51 @@ public class TestDocument extends LuceneTestCase {
   }
 
   public void testExcMixedBinaryStringAtom() throws Exception {
-    Directory dir = newDirectory();
     IndexWriter w = newIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
     Document doc = w.newDocument();
     doc.addAtom("field", "bar");
 
     Document doc2 = w.newDocument();
-    // nocommit why no failure?
-    //shouldFail(() -> doc2.addAtom("field", new BytesRef("bar")),
-    //"foo");
+    shouldFail(() -> doc2.addAtom("field", new BytesRef("bar")),
+               "field \"field\": cannot change from string to binary ATOM");
+    w.close();
+  }
+
+  public void testPerFieldAnalyzers() throws Exception {
+    IndexWriter w = newIndexWriter(dir);
+    FieldTypes fieldTypes = w.getFieldTypes();
+    fieldTypes.setIndexAnalyzer("foo", new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
+    fieldTypes.setIndexAnalyzer("bar", new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+
+    Document doc = w.newDocument();
+    doc.addShortText("foo", "DOO dah");
+    doc.addShortText("bar", "doo DAH");
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w);
+    fieldTypes = r.getFieldTypes();
+
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("foo", "doo"), 1).totalHits);
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("bar", "doo DAH"), 1).totalHits);
+    r.close();
+    w.close();
+  }
+
+  public void testPreAnalyzed() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    Document doc = w.newDocument();
+    doc.addLargeText("body", new CannedTokenStream(new Token[] {new Token("foo", 0, 3),
+                                                                new Token("BAR", 4, 6)}));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    FieldTypes fieldTypes = r.getFieldTypes();
+    assertEquals(1, s.search(fieldTypes.newStringTermQuery("body", "BAR"), 1).totalHits);
+    r.close();
     w.close();
     dir.close();
   }
-
-  // nocommit test per-field analyzers
-
-  // nocommit test per-field sims
-
-  // nocommit test for pre-analyzed
-
-  // nocommit test multi-valued
-
-  // nocommit multi-valued sort, w/ missings
 }

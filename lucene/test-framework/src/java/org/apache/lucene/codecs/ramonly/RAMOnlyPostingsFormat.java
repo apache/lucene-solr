@@ -108,7 +108,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
   static class RAMField extends Terms implements Accountable {
     final String field;
-    final SortedMap<String,RAMTerm> termToDocs = new TreeMap<>();
+    final SortedMap<BytesRef,RAMTerm> termToDocs = new TreeMap<>();
     long sumTotalTermFreq;
     long sumDocFreq;
     int docCount;
@@ -175,11 +175,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
   }
 
   static class RAMTerm implements Accountable {
-    final String term;
+    final BytesRef term;
     long totalTermFreq;
     final List<RAMDoc> docs = new ArrayList<>();
-    public RAMTerm(String term) {
-      this.term = term;
+    public RAMTerm(BytesRef term) {
+      this.term = BytesRef.deepCopyOf(term);
     }
 
     @Override
@@ -362,8 +362,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
       
     public RAMPostingsWriterImpl startTerm(BytesRef text) {
-      final String term = text.utf8ToString();
-      current = new RAMTerm(term);
+      current = new RAMTerm(text);
       postingsWriter.reset(current);
       return postingsWriter;
     }
@@ -417,8 +416,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
   }
 
   static class RAMTermsEnum extends TermsEnum {
-    Iterator<String> it;
-    String current;
+    Iterator<BytesRef> it;
+    BytesRef current;
     private final RAMField ramField;
 
     public RAMTermsEnum(RAMField field) {
@@ -436,7 +435,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       }
       if (it.hasNext()) {
         current = it.next();
-        return new BytesRef(current);
+        return current;
       } else {
         return null;
       }
@@ -444,7 +443,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
     @Override
     public SeekStatus seekCeil(BytesRef term) {
-      current = term.utf8ToString();
+      current = term;
       it = null;
       if (ramField.termToDocs.containsKey(current)) {
         return SeekStatus.FOUND;
@@ -469,8 +468,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
     @Override
     public BytesRef term() {
-      // TODO: reuse BytesRef
-      return new BytesRef(current);
+      return current;
     }
 
     @Override

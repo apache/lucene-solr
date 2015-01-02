@@ -41,8 +41,8 @@ public class TestBinaryDocument extends LuceneTestCase {
 
     Document doc = writer.newDocument();
     
-    doc.addStored("binaryStored", binaryValStored.getBytes(StandardCharsets.UTF_8));
-    doc.addStored("stringStored", binaryValStored);
+    doc.addStoredBinary("binaryStored", binaryValStored.getBytes(StandardCharsets.UTF_8));
+    doc.addStoredString("stringStored", binaryValStored);
 
     /** test for field count */
     assertEquals(2, doc.getFields().size());
@@ -76,8 +76,8 @@ public class TestBinaryDocument extends LuceneTestCase {
 
     Document doc = writer.newDocument();
     
-    doc.addStored("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes(StandardCharsets.UTF_8)));
-    doc.addStored("stringCompressed", CompressionTools.compressString(binaryValCompressed));
+    doc.addStoredBinary("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes(StandardCharsets.UTF_8)));
+    doc.addStoredBinary("stringCompressed", CompressionTools.compressString(binaryValCompressed));
     
     /** add the doc to a ram index */
     writer.addDocument(doc);

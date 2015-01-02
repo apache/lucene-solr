@@ -46,7 +46,6 @@ public class TermRangeQuery extends MultiTermQuery {
   private final boolean includeUpper;
   private final CompiledAutomaton compiled;
 
-
   /**
    * Constructs a query selecting all terms greater/equal than <code>lowerTerm</code>
    * but less/equal than <code>upperTerm</code>. 
@@ -111,12 +110,15 @@ public class TermRangeQuery extends MultiTermQuery {
       return TermsEnum.EMPTY;
     }
 
+    BytesRef minTerm = terms.getMin();
+    BytesRef maxTerm = terms.getMax();
+
     // Optimization: if our range is outside of the range indexed in this segment, skip it:
-    if (upperTerm != null && terms.getMin().compareTo(upperTerm) > 0) {
+    if (upperTerm != null && minTerm.compareTo(upperTerm) > 0) {
       return TermsEnum.EMPTY;
     }
 
-    if (lowerTerm != null && terms.getMax().compareTo(lowerTerm) < 0) {
+    if (lowerTerm != null && maxTerm.compareTo(lowerTerm) < 0) {
       return TermsEnum.EMPTY;
     }      
      
@@ -126,6 +128,8 @@ public class TermRangeQuery extends MultiTermQuery {
       // Matches all terms:
       return terms.iterator(null);
     }
+
+    // TODO: we can detect when range matches all terms here, but then how to optimize?  It's best to just let auto-prefix take it?
 
     return compiled.getTermsEnum(terms);
   }

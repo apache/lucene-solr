@@ -67,7 +67,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     for (int i = 0; i < keywords.length; i++) {
       Document doc = modifier.newDocument();
       doc.addAtom("id", keywords[i]);
-      doc.addStored("country", unindexed[i]);
+      doc.addStoredString("country", unindexed[i]);
       doc.addLargeText("contents", unstored[i]);
       doc.addLargeText("city", text[i]);
       modifier.addDocument(doc);
@@ -758,7 +758,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           if (!failed) {
             StackTraceElement[] trace = new Exception().getStackTrace();
             for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
+              if ("writeLiveDocs".equals(trace[i].getMethodName()) ||
+                  "applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
                 if (VERBOSE) {
                   System.out.println("TEST: mock failure: saw applyDeletes");
                   new Throwable().printStackTrace(System.out);
@@ -793,7 +794,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     for (int i = 0; i < keywords.length; i++) {
       Document doc = modifier.newDocument();
       doc.addAtom("id", keywords[i]);
-      doc.addStored("country", unindexed[i]);
+      doc.addStoredString("country", unindexed[i]);
       doc.addLargeText("contents", unstored[i]);
       doc.addLargeText("city", text[i]);
       modifier.addDocument(doc);
@@ -913,7 +914,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     for (int i = 0; i < keywords.length; i++) {
       Document doc = modifier.newDocument();
       doc.addAtom("id", keywords[i]);
-      doc.addStored("country", unindexed[i]);
+      doc.addStoredString("country", unindexed[i]);
       doc.addLargeText("contents", unstored[i]);
       doc.addLargeText("city", text[i]);
       try {

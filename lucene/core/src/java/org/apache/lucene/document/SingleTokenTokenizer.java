@@ -23,10 +23,9 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
-// nocommit ... this is privte fork of KeywordTokenizer ... should we move it to ../analysis and make it public?  same deal with
-// LengthFilter and LimitTokenCountFilter:
+// TODO: forked from analysis module; can we share?
 
-final class CoreKeywordTokenizer extends Tokenizer {
+final class SingleTokenTokenizer extends Tokenizer {
   /** Default read buffer size */ 
   public static final int DEFAULT_BUFFER_SIZE = 256;
 
@@ -35,11 +34,11 @@ final class CoreKeywordTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  public CoreKeywordTokenizer() {
+  public SingleTokenTokenizer() {
     this(DEFAULT_BUFFER_SIZE);
   }
 
-  CoreKeywordTokenizer(int bufferSize) {
+  SingleTokenTokenizer(int bufferSize) {
     if (bufferSize <= 0) {
       throw new IllegalArgumentException("bufferSize must be > 0");
     }

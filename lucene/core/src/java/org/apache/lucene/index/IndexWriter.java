@@ -268,8 +268,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   final IndexFileDeleter deleter;
   final Map<String,LiveUniqueValues> uniqueValues = new HashMap<>();
 
-  // nocommit can we change DirectoryReader API so consumers just pull our reader manager instead?  it's "better" than the low-level "open
-  // your own DR" API?
   private final ReaderManager readerManager;
 
   // used by forceMerge to note those needing merging
@@ -390,8 +388,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   DirectoryReader getReader(boolean applyAllDeletes) throws IOException {
     ensureOpen();
 
-    // nocommit fixme so it's only my readerManager that's calling this... or just make this private, so the only way for users is to use ReaderManager
-
     final long tStart = System.currentTimeMillis();
 
     if (infoStream.isEnabled("IW")) {
@@ -428,7 +424,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // just like we do when loading segments_N
           synchronized(this) {
             maybeApplyDeletes(applyAllDeletes);
-            // nocommit must serialize field types into index commit data here?
             r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
@@ -861,14 +856,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         messageState();
       }
 
-      // nocommit what to do here... cannot delegate codecs
+      // nocommit what to do here... can/should we use FilterCodec?
       if ((config.getCodec() instanceof Lucene50Codec) == false) {
         codec = config.getCodec();
       } else {
         codec = fieldTypes.getCodec();
       }
 
-      // nocommit can we make this lazy-open the reader?
       readerManager = new ReaderManager(this, true);
 
       success = true;
@@ -2326,6 +2320,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * <p>This requires this index not be among those to be added.
    *
+   * <p>
+   * <b>NOTE</b>: this call does not check unique fields
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @throws LockObtainFailedException if we were unable to
@@ -2333,8 +2330,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public void addIndexes(Directory... dirs) throws IOException {
     ensureOpen();
-
-    // nocommit must test that unique_atom fields don't conflict:
 
     noDupDirs(dirs);
 
@@ -2375,7 +2370,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             FieldInfos fis = readFieldInfos(info);
             for(FieldInfo fi : fis) {
-              // nocommit how to undo this on exception?
               globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
@@ -2460,17 +2454,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * aborts all running merges, then any thread still running this method might
    * hit a {@link MergePolicy.MergeAbortedException}.
    * 
+   * <p>
+   * <b>NOTE</b>: this call does not check unique fields
+   *
    * @throws CorruptIndexException
    *           if the index is corrupt
    * @throws IOException
    *           if there is a low-level IO error
    */
-  // nocommit what about FieldTypes?
   public void addIndexes(IndexReader... readers) throws IOException {
     ensureOpen();
     int numDocs = 0;
-
-    // nocommit must test that unique_atom fields don't conflict:
 
     try {
       if (infoStream.isEnabled("IW")) {
@@ -2481,7 +2475,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       String mergedName = newSegmentName();
       final List<LeafReader> mergeReaders = new ArrayList<>();
       for (IndexReader indexReader : readers) {
-        // nocommit how to undo this on exc?
         FieldTypes ft = indexReader.getFieldTypes();
         if (ft != null) {
           fieldTypes.addAll(ft);
@@ -3023,8 +3016,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "don't apply deletes now delTermCount=" + bufferedUpdatesStream.numTerms() + " bytesUsed=" + bufferedUpdatesStream.ramBytesUsed());
     }
   }
-
-  // nocommit we can fix IDVPF since it will only see given ID once now?
 
   final synchronized void applyAllDeletesAndUpdates() throws IOException {
     flushDeletesCount.incrementAndGet();
@@ -3890,7 +3881,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // fix the reader's live docs and del count
           assert delCount > reader.numDeletedDocs(); // beware of zombies
 
-          // nocommit we are passing our fieldTypes here:
           SegmentReader newReader = new SegmentReader(fieldTypes, info, reader, liveDocs, info.info.getDocCount() - delCount);
           boolean released = false;
           try {
@@ -4621,25 +4611,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  // nocommit cutover tests to this, remove DirectoryReader(writer) API, remove ReaderManager(writer) ctor
-
-  // nocommit must close this in close?  why are tests not failing...
-
-  /** Returns a {@link ReferenceManager} to get near-real-time readers. */
-  public ReferenceManager<DirectoryReader> getReaderManager() {
+  // TODO: cutover to this, remove DirecotryReader/ReaderManager APIs taking writer directly?
+  /** Returns a {@link ReferenceManager} to get NRT readers. */
+  ReferenceManager<DirectoryReader> getReaderManager() {
     return readerManager;
   }
 
-  // nocommit we could expose this to apps too?  e.g. to check if a given id exists in the index
+  // TODO: we could expose this to apps too?  e.g. to check if a given id exists in the index
 
-  // nocommit explore other optos once we know field is unique
+  // TODO: what other optos can we do when we know field is unique?
+  final AtomicLong uniqueValuesRAM = new AtomicLong();
 
   synchronized LiveUniqueValues getUniqueValues(String fieldName) {
     LiveUniqueValues v;
     if (fieldTypes.getIsUnique(fieldName)) {
       v = uniqueValues.get(fieldName);
       if (v == null) {
-        v = new LiveUniqueValues(fieldName, readerManager);
+        v = new LiveUniqueValues(fieldName, readerManager, uniqueValuesRAM);
         uniqueValues.put(fieldName, v);
       }
     } else {

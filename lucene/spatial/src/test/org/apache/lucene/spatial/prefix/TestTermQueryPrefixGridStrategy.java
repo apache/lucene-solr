@@ -43,7 +43,7 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
     fieldTypes.setMultiValued(prefixGridStrategy.getFieldName());
     prefixGridStrategy.addFields(losAngeles, point);
-    losAngeles.addStored(prefixGridStrategy.getFieldName() + "_stored", point.toString());//just for diagnostics
+    losAngeles.addStoredString(prefixGridStrategy.getFieldName() + "_stored", point.toString());//just for diagnostics
 
     addDocumentsAndCommit(Arrays.asList(losAngeles));
 

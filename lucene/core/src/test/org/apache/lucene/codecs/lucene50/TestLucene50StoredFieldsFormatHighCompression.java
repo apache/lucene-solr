@@ -45,8 +45,8 @@ public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFie
       iwc.setCodec(new Lucene50Codec(RandomPicks.randomFrom(random(), Mode.values())));
       IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig());
       Document doc = iw.newDocument();
-      doc.addStored("field1", "value1");
-      doc.addStored("field2", "value2");
+      doc.addStoredString("field1", "value1");
+      doc.addStoredString("field2", "value2");
       iw.addDocument(doc);
       if (random().nextInt(4) == 0) {
         iw.forceMerge(1);

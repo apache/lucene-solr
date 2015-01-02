@@ -61,7 +61,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
       // random so that even compressing codecs can't compress it
       value[i] = (byte) random().nextInt(256);
     }
-    doc.addStored("fld", value);
+    doc.addStoredBinary("fld", value);
 
     final int numDocs = (int) ((1L << 32) / valueLength + 100);
     for (int i = 0; i < numDocs; ++i) {

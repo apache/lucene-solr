@@ -42,7 +42,7 @@ public class TestBinaryTerms extends LuceneTestCase {
       bytes.bytes[1] = (byte) (255 - i);
       bytes.length = 2;
       Document doc = iw.newDocument();
-      doc.addStored("id", "" + i);
+      doc.addStoredString("id", "" + i);
       doc.addLargeText("bytes", tokenStream);
       iw.addDocument(doc);
     }

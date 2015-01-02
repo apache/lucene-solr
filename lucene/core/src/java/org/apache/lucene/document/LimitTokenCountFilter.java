@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 
-// nocommit forked from analysis module
+// TODO: forked from analysis module; can we share?
 
 /**
  * This TokenFilter limits the number of tokens while indexing. It is

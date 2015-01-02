@@ -359,12 +359,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     indexOut.writeLong(dirStart);    
   }
 
-  // nocommit refactor the other forks to share this:
-
   /** Throws {@code IllegalArgumentException} if any of these settings
    *  is invalid. */
-  public static void validateSettings(int minItemsInBlock,
-                                      int maxItemsInBlock) {
+  public static void validateSettings(int minItemsInBlock, int maxItemsInBlock) {
     if (minItemsInBlock <= 1) {
       throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
     }
@@ -419,9 +416,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         }
         prefixTerms = new AutoPrefixTermsWriter(segment, terms, minItemsInAutoPrefix, maxItemsInAutoPrefix).prefixes;
         //if (DEBUG) {
-        //  for(PrefixTerm term : prefixTerms) {
-        //    System.out.println("field=" + fieldInfo.name + " PREFIX TERM: " + term);
-        //  }
+        //for(PrefixTerm term : prefixTerms) {
+        //System.out.println("field=" + fieldInfo.name + " PREFIX TERM: " + term);
+        //}
         //}
       } else {
         prefixTerms = null;

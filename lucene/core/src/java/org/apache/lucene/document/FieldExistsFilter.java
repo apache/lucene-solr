@@ -1,4 +1,4 @@
-package org.apache.lucene.queries;
+package org.apache.lucene.document;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,55 +17,63 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
+import java.io.IOException;
+
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
+/** A filter that matches docs that indexed the specified field name.  This only works
+ *  if {@link FieldTypes#enableExistsFilters} is true (the default). */
+final class FieldExistsFilter extends Filter {
 
-/**
- * A filter that includes documents that match with a specific term.
- */
-final public class TermFilter extends Filter {
-
-  private final Term term;
+  private final String fieldString;
+  private final BytesRef field;
 
   /**
    * @param term The term documents need to have in order to be a match for this filter.
    */
-  public TermFilter(Term term) {
-    if (term == null) {
-      throw new IllegalArgumentException("Term must not be null");
-    } else if (term.field() == null) {
-      throw new IllegalArgumentException("Field must not be null");
+  public FieldExistsFilter(String field) {
+    if (field == null) {
+      throw new IllegalArgumentException("field must not be null");
     }
-    this.term = term;
-  }
-
-  /**
-   * @return The term this filter includes documents with.
-   */
-  public Term getTerm() {
-    return term;
+    this.fieldString = field;
+    this.field = new BytesRef(field);
   }
 
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
-    Terms terms = context.reader().terms(term.field());
+
+    int maxDoc = context.reader().maxDoc();
+
+    Terms terms = context.reader().terms(fieldString);
+    if (terms != null && terms.getDocCount() == maxDoc) {
+      // All docs have the field
+      return BitsFilteredDocIdSet.wrap(DocIdSet.full(maxDoc), acceptDocs);
+    }
+
+    terms = context.reader().terms(FieldTypes.FIELD_NAMES_FIELD);
     if (terms == null) {
       return null;
     }
 
     final TermsEnum termsEnum = terms.iterator(null);
-    if (!termsEnum.seekExact(term.bytes())) {
+    if (!termsEnum.seekExact(field)) {
       return null;
     }
+
+    // The Terms.getDocCount() above should have kicked in:
+    assert termsEnum.docFreq() < maxDoc;
+
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
@@ -84,21 +92,18 @@ final public class TermFilter extends Filter {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    TermFilter that = (TermFilter) o;
+    FieldExistsFilter that = (FieldExistsFilter) o;
 
-    if (term != null ? !term.equals(that.term) : that.term != null) return false;
-
-    return true;
+    return field.equals(that.field);
   }
 
   @Override
   public int hashCode() {
-    return term != null ? term.hashCode() : 0;
+    return field.hashCode();
   }
 
   @Override
   public String toString() {
-    return term.field() + ":" + term.text();
+    return "FieldExistsFilter(field=" + fieldString + ")";
   }
-
 }

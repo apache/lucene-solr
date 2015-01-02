@@ -383,9 +383,6 @@ public class FacetsConfig {
 
         // For drill down:
         doc.addAtom(drillDownFieldName, fullPath);
-
-        // nocommit why were we doing this...?
-        //doc.add(new StringField(indexFieldName, facetField.dim, Field.Store.NO));
       }
     }
   }

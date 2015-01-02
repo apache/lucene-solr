@@ -19,9 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FilterIterator;
 
@@ -34,18 +36,22 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   private final Set<String> fields;
   private final boolean negate;
   private final FieldInfos fieldInfos;
+  private final FieldTypes fieldTypes;
 
   public FieldFilterLeafReader(LeafReader in, Set<String> fields, boolean negate) {
     super(in);
     this.fields = fields;
     this.negate = negate;
     ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
+    Set<String> actualFields = new HashSet<>();
     for (FieldInfo fi : in.getFieldInfos()) {
       if (hasField(fi.name)) {
-        filteredInfos.add(fi);
+        filteredInfos.add(fi);  
+        actualFields.add(fi.name);
       }
     }
     fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
+    fieldTypes = new FieldTypes(in.getFieldTypes(), actualFields);
   }
   
   boolean hasField(String field) {
@@ -55,6 +61,11 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   @Override
   public FieldInfos getFieldInfos() {
     return fieldInfos;
+  }
+
+  @Override
+  public FieldTypes getFieldTypes() {
+    return fieldTypes;
   }
 
   @Override

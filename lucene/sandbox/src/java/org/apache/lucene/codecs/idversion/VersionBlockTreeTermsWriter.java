@@ -165,6 +165,8 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
   private final List<FieldMetaData> fields = new ArrayList<>();
   // private final String segment;
 
+  // TODO: add auto-prefix support?
+
   /** Create a new writer.  The number of items (terms or
    *  sub-blocks) per block will aim to be between
    *  minItemsPerBlock and maxItemsPerBlock, though in some
@@ -176,18 +178,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
                                      int maxItemsInBlock)
     throws IOException
   {
-    if (minItemsInBlock <= 1) {
-      throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
-    }
-    if (maxItemsInBlock <= 0) {
-      throw new IllegalArgumentException("maxItemsInBlock must be >= 1; got " + maxItemsInBlock);
-    }
-    if (minItemsInBlock > maxItemsInBlock) {
-      throw new IllegalArgumentException("maxItemsInBlock must be >= minItemsInBlock; got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
-    }
-    if (2*(minItemsInBlock-1) > maxItemsInBlock) {
-      throw new IllegalArgumentException("maxItemsInBlock must be at least 2*(minItemsInBlock-1); got maxItemsInBlock=" + maxItemsInBlock + " minItemsInBlock=" + minItemsInBlock);
-    }
+    BlockTreeTermsWriter.validateSettings(minItemsInBlock, maxItemsInBlock);
 
     maxDoc = state.segmentInfo.getDocCount();
 
@@ -745,8 +736,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     public void write(BytesRef text, TermsEnum termsEnum) throws IOException {
 
       BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
-      // TODO: LUCENE-5693: we don't need this check if we fix IW to not send deleted docs to us on flush:
-      if (state != null && ((IDVersionPostingsWriter) postingsWriter).lastDocID != -1) {
+      if (state != null) {
         assert state.docFreq != 0;
         assert fieldInfo.getIndexOptions() == IndexOptions.DOCS || state.totalTermFreq >= state.docFreq: "postingsWriter=" + postingsWriter;
         pushTerm(text);

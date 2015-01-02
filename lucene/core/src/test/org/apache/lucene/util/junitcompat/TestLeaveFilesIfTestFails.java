@@ -39,6 +39,7 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
   }
   
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
+
     static Path file;
     public void testDummy() {
       file = createTempDir("leftover");

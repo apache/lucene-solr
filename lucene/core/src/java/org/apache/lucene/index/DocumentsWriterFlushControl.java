@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.util.Accountable;
@@ -72,8 +73,9 @@ final class DocumentsWriterFlushControl implements Accountable {
   private final LiveIndexWriterConfig config;
   private final BufferedUpdatesStream bufferedUpdatesStream;
   private final InfoStream infoStream;
+  final AtomicLong uniqueValuesRAM;
 
-  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedUpdatesStream bufferedUpdatesStream) {
+  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedUpdatesStream bufferedUpdatesStream, AtomicLong uniqueValuesRAM) {
     this.infoStream = config.getInfoStream();
     this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
@@ -82,6 +84,7 @@ final class DocumentsWriterFlushControl implements Accountable {
     this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
     this.documentsWriter = documentsWriter;
     this.bufferedUpdatesStream = bufferedUpdatesStream;
+    this.uniqueValuesRAM = uniqueValuesRAM;
   }
 
   public synchronized long activeBytes() {

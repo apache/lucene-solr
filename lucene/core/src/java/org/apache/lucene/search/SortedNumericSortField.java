@@ -135,31 +135,31 @@ public class SortedNumericSortField extends SortField {
   public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
     switch(type) {
       case INT:
-        return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
+        return new IntComparator(numHits, getField(), missingValue == null ? 0 : (Integer) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector);
           } 
         };
       case FLOAT:
-        return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
+        return new FloatComparator(numHits, getField(), missingValue == null ? 0 : (Float) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector);
           } 
         };
       case LONG:
-        return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
+        return new LongComparator(numHits, getField(), missingValue == null ? 0 : (Long) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector);
           }
         };
       case DOUBLE:
-        return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
+        return new DoubleComparator(numHits, getField(), missingValue == null ? 0 : (Double) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+            return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector);
           } 
         };
       default:
