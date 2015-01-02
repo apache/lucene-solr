@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -113,6 +114,17 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   }
 
   @Test
+  public void testValidationForToChildBjqWithChildFilterQuery() throws Exception {
+    Query parentQueryWithRandomChild = createParentQuery();
+
+    ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQueryWithRandomChild, parentsFilter, false);
+    Filter childFilter = new QueryWrapperFilter(new TermQuery(new Term("common_field", "1")));
+    thrown.expect(IllegalStateException.class);
+    thrown.expectMessage(ToChildBlockJoinQuery.ILLEGAL_ADVANCE_ON_PARENT);
+    indexSearcher.search(blockJoinQuery, childFilter, 1);
+  }
+
+  @Test
   public void testAdvanceValidationForToChildBjq() throws Exception {
     int randomChildNumber = getRandomChildNumber(0);
     // we need to make advance method meet wrong document, so random child number
@@ -163,6 +175,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     Document result = new Document();
     result.add(newStringField("id", createFieldValue(segmentNumber * AMOUNT_OF_PARENT_DOCS + parentNumber), Field.Store.YES));
     result.add(newStringField("parent", createFieldValue(parentNumber), Field.Store.NO));
+    result.add(newStringField("common_field", "1", Field.Store.NO));
     return result;
   }
 
@@ -170,6 +183,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     Document result = new Document();
     result.add(newStringField("id", createFieldValue(segmentNumber * AMOUNT_OF_PARENT_DOCS + parentNumber, childNumber), Field.Store.YES));
     result.add(newStringField("child", createFieldValue(childNumber), Field.Store.NO));
+    result.add(newStringField("common_field", "1", Field.Store.NO));
     return result;
   }
 
@@ -199,6 +213,10 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     childQueryWithRandomParent.add(new BooleanClause(parentsQuery, BooleanClause.Occur.SHOULD));
     childQueryWithRandomParent.add(new BooleanClause(randomChildQuery(randomChildNumber), BooleanClause.Occur.SHOULD));
     return childQueryWithRandomParent;
+  }
+
+  private static Query createParentQuery() {
+    return new TermQuery(new Term("id", createFieldValue(getRandomParentId())));
   }
 
   private static int getRandomParentId() {
