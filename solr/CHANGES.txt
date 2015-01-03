@@ -381,6 +381,9 @@ Bug Fixes
 
 * SOLR-6779: fix /browse for schemaless example (ehatcher)
 
+* SOLR-6874: There is a race around SocketProxy binding to it's port the way we setup 
+  JettySolrRunner and SocketProxy. (Mark Miller, Timothy Potter)
+
 
 Optimizations
 ----------------------
