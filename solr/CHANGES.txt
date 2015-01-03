@@ -138,6 +138,13 @@ Upgrading from Solr 4.x
 * SolrServer and associated classes have been deprecated.  Applications using
   SolrJ should use the equivalent SolrClient classes instead.
 
+* Spatial fields originating from Solr 4 (e.g. SpatialRecursivePrefixTreeFieldType, BBoxField)
+  have the 'units' attribute deprecated, now replaced with 'distanceUnits'.  If you change it to
+  a unit other than 'degrees' (or if you don't specify it, which will default to kilometers if
+  geo=true), then be sure to update maxDistErr as it's in those units.  If you keep units=degrees
+  then it should be backwards compatible but you'll get a deprecation warning on startup.  See
+  SOLR-6797.
+
 Detailed Change List
 ----------------------
 
@@ -271,6 +278,12 @@ New Features
 * SOLR-6761: Ability to ignore commit and/or optimize requests from clients when running in
   SolrCloud mode using the IgnoreCommitOptimizeUpdateProcessorFactory. (Timothy Potter)
 
+* SOLR-6797: Spatial fields that used to require units=degrees like
+  SpatialRecursivePrefixTreeFieldType (RPT) now take distanceUnits=degrees|kilometers|miles
+  instead.  It is applied to nearly all distance measurements involving the field: maxDistErr,
+  distErr, d, geodist, score=distance|area|area2d. score now accepts these units as well. It does
+  NOT affect distances embedded in WKT strings like BUFFER(POINT(200 10),0.2)).
+  (Ishan Chattopadhyaya, David Smiley)
   
 Bug Fixes
 ----------------------

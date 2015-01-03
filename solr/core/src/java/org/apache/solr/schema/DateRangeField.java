@@ -54,12 +54,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
-    super.init(schema, addDegrees(args));
-  }
-
-  private Map<String, String> addDegrees(Map<String, String> args) {
-    args.put("units", "degrees");//HACK!
-    return args;
+    super.init(schema, args);
   }
 
   @Override

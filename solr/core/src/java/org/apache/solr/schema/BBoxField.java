@@ -17,6 +17,12 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.queries.function.ValueSource;
@@ -26,12 +32,6 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 
 public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements SchemaAware {
   private static final String PARAM_QUERY_TARGET_PROPORTION = "queryTargetProportion";
@@ -140,6 +140,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     if (scoreParam == null) {
       return null;
     }
+
     switch (scoreParam) {
       //TODO move these to superclass after LUCENE-5804 ?
       case OVERLAP_RATIO:
@@ -160,10 +161,12 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
             queryTargetProportion, minSideLength);
 
       case AREA:
-        return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, ctx.isGeo());
+        return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, ctx.isGeo(),
+            distanceUnits.multiplierFromDegreesToThisUnit() * distanceUnits.multiplierFromDegreesToThisUnit());
 
       case AREA2D:
-        return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, false);
+        return new ShapeAreaValueSource(strategy.makeShapeValueSource(), ctx, false,
+            distanceUnits.multiplierFromDegreesToThisUnit() * distanceUnits.multiplierFromDegreesToThisUnit());
 
       default:
         return super.getValueSourceFromSpatialArgs(parser, field, spatialArgs, scoreParam, strategy);

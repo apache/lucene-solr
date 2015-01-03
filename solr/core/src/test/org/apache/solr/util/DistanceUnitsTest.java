@@ -1,4 +1,8 @@
-package org.apache.solr.schema;
+package org.apache.solr.util;
+
+import com.spatial4j.core.distance.DistanceUtils;
+import org.apache.lucene.util.LuceneTestCase;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,21 +20,10 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+public class DistanceUnitsTest extends LuceneTestCase {
 
-import org.apache.lucene.search.Query;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.SpatialOptions;
-
-
-/**
- * Indicate that the implementing class is capable of generating a Query against spatial resources.
- * For example, the LatLonType is capable of creating a query that restricts the document space down
- * to documents that are within a certain distance of a given point on Earth. *
- *
- **/
-public interface SpatialQueryable {
-
-  public Query createSpatialQuery(QParser parser, SpatialOptions options);
-
-  public double getSphereRadius();
+  public void testAddNewUnits() throws Exception {
+    DistanceUnits.addUnits("lightyears", 6.73430542e-12, 9.4605284e12 * DistanceUtils.KM_TO_DEG);
+    assertTrue(DistanceUnits.getSupportedUnits().contains("lightyears"));
+  }
 }

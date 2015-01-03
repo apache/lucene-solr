@@ -17,13 +17,13 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTreeFactory;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.solr.util.MapListener;
-
-import java.util.Map;
 
 /**
  * @see PrefixTreeStrategy
@@ -41,6 +41,13 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+
+    // Convert the maxDistErr to degrees (based on distanceUnits) since Lucene spatial layer depends on degrees
+    if(args.containsKey(SpatialPrefixTreeFactory.MAX_DIST_ERR)) {
+      double maxDistErrOriginal = Double.parseDouble(args.get(SpatialPrefixTreeFactory.MAX_DIST_ERR));
+      args.put(SpatialPrefixTreeFactory.MAX_DIST_ERR, 
+          Double.toString(maxDistErrOriginal * distanceUnits.multiplierFromThisUnitToDegrees()));
+    }
 
     //Solr expects us to remove the parameters we've used.
     MapListener<String, String> argsWrap = new MapListener<>(args);

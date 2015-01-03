@@ -30,28 +30,28 @@
     <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
     <fieldType name="srpt_geohash"   class="solr.SpatialRecursivePrefixTreeFieldType"
-               prefixTree="geohash" units="degrees"
+               prefixTree="geohash" distanceUnits="degrees"
         />
     <fieldType name="srpt_quad"   class="solr.SpatialRecursivePrefixTreeFieldType"
-              prefixTree="quad" units="degrees"
+              prefixTree="quad" distanceUnits="degrees"
         />
     <fieldType name="srpt_100km"   class="solr.SpatialRecursivePrefixTreeFieldType"
-              maxDistErr="0.9" units="degrees"
+              maxDistErr="100" distanceUnits="kilometers"
         />
     <fieldType name="stqpt_geohash"   class="solr.SpatialTermQueryPrefixTreeFieldType"
-              prefixTree="geohash" units="degrees" />
+              prefixTree="geohash" distanceUnits="degrees" />
 
     <fieldType name="stqpt_u"  class="solr.SpatialTermQueryPrefixTreeFieldType"
-        geo="false" distCalculator="cartesian^2" worldBounds="ENVELOPE(0, 1000, 1000, 0)" units="degrees"/>
+        geo="false" distCalculator="cartesian^2" worldBounds="ENVELOPE(0, 1000, 1000, 0)" distanceUnits="degrees"/>
 
     <fieldType name="pointvector" class="solr.SpatialPointVectorFieldType"
-               numberType="tdouble" units="degrees"/>
+               numberType="tdouble" distanceUnits="degrees"/>
 
     <fieldType name="stqpt_u_oldworldbounds"  class="solr.SpatialTermQueryPrefixTreeFieldType"
-               geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
+               geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" distanceUnits="degrees"/>
 
     <fieldType name="bbox" class="solr.BBoxField"
-               numberType="tdoubleDV" units="degrees"/>
+               numberType="tdoubleDV" distanceUnits="degrees"/>
   </types>
 
 

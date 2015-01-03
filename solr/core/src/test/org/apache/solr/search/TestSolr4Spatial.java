@@ -17,6 +17,9 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import java.text.ParseException;
+import java.util.Arrays;
+
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
@@ -32,9 +35,6 @@ import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.text.ParseException;
-import java.util.Arrays;
 
 /**
  * Test Solr 4's new spatial capabilities from the new Lucene spatial module. Don't thoroughly test it here because
@@ -110,19 +110,20 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @Test
   public void testIntersectFilter() throws Exception {
     setupDocs();
+    
     //Try some edge cases
-    checkHits(fieldName, "1,1", 175, 3, 5, 6, 7);
-    checkHits(fieldName, "0,179.8", 200, 2, 8, 9);
-    checkHits(fieldName, "89.8, 50", 200, 2, 10, 11);//this goes over the north pole
-    checkHits(fieldName, "-89.8, 50", 200, 2, 12, 13);//this goes over the south pole
+    checkHits(fieldName, "1,1", 175, DistanceUtils.EARTH_MEAN_RADIUS_KM, 3, 5, 6, 7);
+    checkHits(fieldName, "0,179.8", 200, DistanceUtils.EARTH_MEAN_RADIUS_KM, 2, 8, 9);
+    checkHits(fieldName, "89.8, 50", 200, DistanceUtils.EARTH_MEAN_RADIUS_KM, 2, 10, 11);//this goes over the north pole
+    checkHits(fieldName, "-89.8, 50", 200, DistanceUtils.EARTH_MEAN_RADIUS_KM, 2, 12, 13);//this goes over the south pole
     //try some normal cases
-    checkHits(fieldName, "33.0,-80.0", 300, 2);
+    checkHits(fieldName, "33.0,-80.0", 300, DistanceUtils.EARTH_MEAN_RADIUS_KM, 2);
     //large distance
-    checkHits(fieldName, "1,1", 5000, 3, 5, 6, 7);
+    checkHits(fieldName, "1,1", 5000, DistanceUtils.EARTH_MEAN_RADIUS_KM, 3, 5, 6, 7);
     //Because we are generating a box based on the west/east longitudes and the south/north latitudes, which then
     //translates to a range query, which is slightly more inclusive.  Thus, even though 0.0 is 15.725 kms away,
     //it will be included, b/c of the box calculation.
-    checkHits(fieldName, false, "0.1,0.1", 15, 2, 5, 6);
+    checkHits(fieldName, false, "0.1,0.1", 15, DistanceUtils.EARTH_MEAN_RADIUS_KM, 2, 5, 6);
 
     //try some more
     clearIndex();
@@ -133,18 +134,18 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     assertU(adoc("id", "17", fieldName, "44.043900,-95.436643"));
     assertU(commit());
 
-    checkHits(fieldName, "0,0", 1000, 1, 14);
-    checkHits(fieldName, "0,0", 2000, 2, 14, 15);
-    checkHits(fieldName, false, "0,0", 3000, 3, 14, 15, 16);
-    checkHits(fieldName, "0,0", 3001, 3, 14, 15, 16);
-    checkHits(fieldName, "0,0", 3000.1, 3, 14, 15, 16);
+    checkHits(fieldName, "0,0", 1000, DistanceUtils.EARTH_MEAN_RADIUS_KM, 1, 14);
+    checkHits(fieldName, "0,0", 2000, DistanceUtils.EARTH_MEAN_RADIUS_KM, 2, 14, 15);
+    checkHits(fieldName, false, "0,0", 3000, DistanceUtils.EARTH_MEAN_RADIUS_KM, 3, 14, 15, 16);
+    checkHits(fieldName, "0,0", 3001, DistanceUtils.EARTH_MEAN_RADIUS_KM, 3, 14, 15, 16);
+    checkHits(fieldName, "0,0", 3000.1, DistanceUtils.EARTH_MEAN_RADIUS_KM, 3, 14, 15, 16);
 
     //really fine grained distance and reflects some of the vagaries of how we are calculating the box
-    checkHits(fieldName, "43.517030,-96.789603", 109, 0);
+    checkHits(fieldName, "43.517030,-96.789603", 109, DistanceUtils.EARTH_MEAN_RADIUS_KM, 0);
 
     //falls outside of the real distance, but inside the bounding box
-    checkHits(fieldName, true,  "43.517030,-96.789603", 110, 0);
-    checkHits(fieldName, false, "43.517030,-96.789603", 110, 1, 17);
+    checkHits(fieldName, true,  "43.517030,-96.789603", 110, DistanceUtils.EARTH_MEAN_RADIUS_KM, 0);
+    checkHits(fieldName, false, "43.517030,-96.789603", 110, DistanceUtils.EARTH_MEAN_RADIUS_KM, 1, 17);
   }
 
   @Test
@@ -164,14 +165,14 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   @Test
   public void checkQueryEmptyIndex() throws ParseException {
-    checkHits(fieldName, "0,0", 100, 0);//doesn't error
+    checkHits(fieldName, "0,0", 100, DistanceUtils.EARTH_MEAN_RADIUS_KM, 0);//doesn't error
   }
 
-  private void checkHits(String fieldName, String pt, double distKM, int count, int ... docIds) throws ParseException {
-    checkHits(fieldName, true, pt, distKM, count, docIds);
+  private void checkHits(String fieldName, String pt, double distKM, double sphereRadius, int count, int ... docIds) throws ParseException {
+    checkHits(fieldName, true, pt, distKM, sphereRadius, count, docIds);
   }
 
-  private void checkHits(String fieldName, boolean exact, String ptStr, double distKM, int count, int ... docIds) throws ParseException {
+  private void checkHits(String fieldName, boolean exact, String ptStr, double distKM, double sphereRadius, int count, int ... docIds) throws ParseException {
     if (exact && fieldName.equalsIgnoreCase("bbox")) {
       return; // bbox field only supports rectangular query
     }
@@ -217,7 +218,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     {
       assertQ(req(
           "fl", "id", "q", "*:*", "rows", "1000",
-          "fq", "{!" + (exact ? "geofilt" : "bbox") + " sfield=" + fieldName + " pt='" + ptStr + "' d=" + distKM + "}"),
+          "fq", "{!" + (exact ? "geofilt" : "bbox") + " sfield=" + fieldName + " pt='" + ptStr + "' d=" + distKM + " sphere_radius=" + sphereRadius + "}"),
           tests);
     }
 
@@ -332,7 +333,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
           "sfield=" + fieldName + " "
           + (score != null ? "score="+score : "") + " "
           + (filter != null ? "filter="+filter : "") + " "
-          + "pt=" + lat + "," + lon + " d=" + (dDEG * DistanceUtils.DEG_TO_KM) + "}";
+          + "pt=" + lat + "," + lon + " d=" + (dDEG /* DistanceUtils.DEG_TO_KM*/) + "}";
     } else {
       return "{! "
           + (score != null ? "score="+score : "") + " "
