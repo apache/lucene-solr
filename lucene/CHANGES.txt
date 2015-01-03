@@ -408,6 +408,10 @@ Bug Fixes
   
 * LUCENE-6152: Fix double close problems in OutputStreamIndexOutput.
   (Uwe Schindler)
+
+* LUCENE-6139: Highlighter: TokenGroup start & end offset getters should have
+  been returning the offsets of just the matching tokens in the group when
+  there's a distinction. (David Smiley)
   
 Documentation
 
