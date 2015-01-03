@@ -19,6 +19,13 @@ package org.apache.lucene.spatial.bbox;
 
 import java.io.IOException;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.impl.RectangleImpl;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -30,13 +37,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
 import org.junit.Ignore;
 import org.junit.Test;
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.impl.RectangleImpl;
 
 public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
@@ -301,9 +301,11 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     adoc("100", ctx.makeRectangle(0, 20, 40, 80));
     adoc("999", (Shape) null);
     commit();
-    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, false),
+    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, false, 1.0),
         new float[]{800f, 0f}, 0f);
-    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true),//geo
+    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true, 1.0),//geo
         new float[]{391.93f, 0f}, 0.01f);
+    checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true, 2.0),
+        new float[]{783.86f, 0f}, 0.01f); // testing with a different multiplier
   }
 }

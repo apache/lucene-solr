@@ -17,16 +17,18 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.io.GeohashUtils;
+import com.spatial4j.core.shape.Point;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
-
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.io.GeohashUtils;
-import com.spatial4j.core.shape.Point;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrConstantScoreQuery;
@@ -34,9 +36,6 @@ import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.search.function.distance.GeohashHaversineFunction;
 import org.apache.solr.util.SpatialUtils;
-
-
-import java.io.IOException;
 
 /**
  * This is a class that represents a <a
@@ -92,6 +91,11 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     field.checkFieldCacheSource(parser);
     return new StrFieldSource(field.name);
+  }
+
+  @Override
+  public double getSphereRadius() {
+    return DistanceUtils.EARTH_MEAN_RADIUS_KM;
   }
 
 }

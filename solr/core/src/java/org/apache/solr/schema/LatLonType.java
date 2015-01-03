@@ -22,11 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
-
+import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -49,11 +51,6 @@ import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
-
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Rectangle;
-
 import org.apache.solr.util.SpatialUtils;
 
 
@@ -254,6 +251,11 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   @Override
   public IndexableField createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
+  }
+
+  @Override
+  public double getSphereRadius() {
+    return DistanceUtils.EARTH_MEAN_RADIUS_KM;
   }
 
 }
