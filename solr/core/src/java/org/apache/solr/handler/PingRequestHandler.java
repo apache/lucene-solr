@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * 
  * <p> 
- * In it's simplest form, the PingRequestHandler should be
+ * In its simplest form, the PingRequestHandler should be
  * configured with some defaults indicating a request that should be
  * executed.  If the request succeeds, then the PingRequestHandler
  * will respond back with a simple "OK" status.  If the request fails,

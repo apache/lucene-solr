@@ -22,7 +22,7 @@ import java.util.List;
 import java.io.IOException;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -178,7 +178,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     //
     // This is tricky, here's what i think is happening.... 
     // - "company:honda" only exists on twoShard, and only w/ "place:cardiff"
-    // - twoShard has no other places in it's docs
+    // - twoShard has no other places in its docs
     // - twoShard can't return any other places to w/ honda as a count=0 sub-value
     // - if we refined all other companies places, would twoShard return honda==0 ?
     //   ... but there's no refinement since mincount==0
@@ -207,7 +207,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // basic check w/ limit & index sort
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether local params are used
+           // results should be the same regardless of whether local params are used
            new SolrParams[] {
              // Broken: SOLR-6193
              // params("facet.pivot","{!facet.limit=4 facet.sort=index}place_s,company_t"),
@@ -476,7 +476,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // Negative facet limit
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether facet.limit is global, 
+           // results should be the same regardless of whether facet.limit is global,
            // a local param, or specified as a per-field override for both fields
            new SolrParams[] {
              params(FacetParams.FACET_LIMIT, "-1",
@@ -508,7 +508,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // Negative per-field facet limit (outer)
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether per-field facet.limit is 
+           // results should be the same regardless of whether per-field facet.limit is
            // a global or a local param
            new SolrParams[] {
              // Broken: SOLR-6193
@@ -535,7 +535,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     // Negative per-field facet limit (inner)
     for (SolrParams facetParams : 
-           // results should be the same regardless of wether per-field facet.limit is 
+           // results should be the same regardless of whether per-field facet.limit is
            // a global or a local param
            new SolrParams[] {
              // Broken: SOLR-6193
@@ -763,10 +763,10 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     commit();
 
     final int maxDocs = 50;
-    final SolrServer zeroShard = clients.get(0);
-    final SolrServer oneShard = clients.get(1);
-    final SolrServer twoShard = clients.get(2);
-    final SolrServer threeShard = clients.get(3); // edge case: never gets any matching docs
+    final SolrClient zeroShard = clients.get(0);
+    final SolrClient oneShard = clients.get(1);
+    final SolrClient twoShard = clients.get(2);
+    final SolrClient threeShard = clients.get(3); // edge case: never gets any matching docs
 
     for(Integer i=0;i<maxDocs;i++){//50 entries
       addPivotDoc(zeroShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft polecat bbc","pay_i",2400,"hiredate_dt", "2012-07-01T12:30:00Z","real_b","true");
@@ -817,10 +817,10 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   /**
    * Builds up a SolrInputDocument using the specified fields, then adds it to the 
    * specified client as well as the control client 
-   * @see #indexDoc(SolrServer,SolrParams,SolrInputDocument...)
+   * @see #indexDoc(org.apache.solr.client.solrj.SolrClient,SolrParams,SolrInputDocument...)
    * @see #sdoc
    */
-  private void addPivotDoc(SolrServer client, Object... fields) 
+  private void addPivotDoc(SolrClient client, Object... fields)
     throws IOException, SolrServerException {
 
     indexDoc(client, params(), sdoc(fields));

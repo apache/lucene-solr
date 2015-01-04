@@ -17,22 +17,23 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.SimplePostTool.PageFetcher;
+import org.apache.solr.util.SimplePostTool.PageFetcherResult;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.SimplePostTool.PageFetcher;
-import org.apache.solr.util.SimplePostTool.PageFetcherResult;
-import org.junit.Before;
-import org.junit.Test;
 
 /**
  * NOTE: do *not* use real hostnames, not even "example.com", in this test.
@@ -48,6 +49,11 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   @Before
   public void initVariousPostTools() throws Exception {
     String[] args = {"-"};
+    
+    // Add a dummy core/collection property so that the SimplePostTool
+    // doesn't fail fast. 
+    System.setProperty("c", "testcollection");
+    
     System.setProperty("data", "files");
     t_file = SimplePostTool.parseArgsAndInit(args);
 
@@ -225,7 +231,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       }
       res.httpStatus = 200;
       res.contentType = "text/html";
-      res.content = htmlMap.get(u.toString()).getBytes(StandardCharsets.UTF_8);
+      res.content = ByteBuffer.wrap( htmlMap.get(u.toString()).getBytes(StandardCharsets.UTF_8));
       return res;
     }
     

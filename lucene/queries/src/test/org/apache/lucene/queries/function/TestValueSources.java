@@ -299,7 +299,7 @@ public class TestValueSources extends LuceneTestCase {
       ValueSource vs = new NormValueSource("byte");
       assertHits(new FunctionQuery(vs), new float[] { 0f, 0f });
 
-      // regardless of wether norms exist, value source exists == 0
+      // regardless of whether norms exist, value source exists == 0
       assertAllExist(vs);
 
       vs = new NormValueSource("text");
@@ -444,7 +444,7 @@ public class TestValueSources extends LuceneTestCase {
     assertHits(new FunctionQuery(vs), new float[] { 0f, 1f });
     assertAllExist(vs);
                
-    // regardless of wether norms exist, value source exists == 0
+    // regardless of whether norms exist, value source exists == 0
     vs = new TermFreqValueSource("bogus", "bogus", "bogus", new BytesRef("bogus"));
     assertHits(new FunctionQuery(vs), new float[] { 0F, 0F });
     assertAllExist(vs);
@@ -465,7 +465,7 @@ public class TestValueSources extends LuceneTestCase {
       assertHits(new FunctionQuery(vs), new float[] { 0f, 1f });
       assertAllExist(vs);
       
-      // regardless of wether norms exist, value source exists == 0
+      // regardless of whether norms exist, value source exists == 0
       vs = new TFValueSource("bogus", "bogus", "bogus", new BytesRef("bogus"));
       assertHits(new FunctionQuery(vs), new float[] { 0F, 0F });
       assertAllExist(vs);

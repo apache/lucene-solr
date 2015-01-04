@@ -18,10 +18,10 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -313,7 +313,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     assertEquals(8, nClients);
 
     int expectedVal = 0;
-    for (SolrServer client : clients) {
+    for (SolrClient client : clients) {
       client.add(sdoc("id", "b!doc", "foo_i", map("inc",1)));
       expectedVal++;
 

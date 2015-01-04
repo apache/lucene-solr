@@ -92,7 +92,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     int count = 0;
     for (int i = 0; i < currentUpto; i++) {
       int termID = currentValues[i];
-      // if its not a duplicate
+      // if it's not a duplicate
       if (termID != lastValue) {
         pending.add(termID); // record the term id
         count++;

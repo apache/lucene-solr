@@ -19,12 +19,13 @@ package org.apache.lucene.codecs.bloom;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -407,7 +408,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.addAll(Accountables.namedAccountables("field", bloomsByFieldName));
       if (delegateFieldsProducer != null) {
@@ -483,9 +484,14 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
 
+    private boolean closed;
+    
     @Override
     public void close() throws IOException {
-
+      if (closed) {
+        return;
+      }
+      closed = true;
       delegateFieldsConsumer.close();
 
       // Now we are done accumulating values for these fields
@@ -499,9 +505,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       String bloomFileName = IndexFileNames.segmentFileName(
           state.segmentInfo.name, state.segmentSuffix, BLOOM_EXTENSION);
-      IndexOutput bloomOutput = null;
-      try {
-        bloomOutput = state.directory.createOutput(bloomFileName, state.context);
+      try (IndexOutput bloomOutput = state.directory.createOutput(bloomFileName, state.context)) {
         CodecUtil.writeIndexHeader(bloomOutput, BLOOM_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         // remember the name of the postings format we will delegate to
         bloomOutput.writeString(delegatePostingsFormat.getName());
@@ -515,8 +519,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           saveAppropriatelySizedBloomFilter(bloomOutput, bloomFilter, fieldInfo);
         }
         CodecUtil.writeFooter(bloomOutput);
-      } finally {
-        IOUtils.close(bloomOutput);
       }
       //We are done with large bitsets so no need to keep them hanging around
       bloomFilters.clear(); 

@@ -37,7 +37,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   
   @SuppressWarnings("unchecked")
   @Test
-  public void testInitalization()
+  public void testInitialization()
   {
     SolrCore core = h.getCore();
     

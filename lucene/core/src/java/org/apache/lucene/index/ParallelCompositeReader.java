@@ -82,13 +82,14 @@ public class ParallelCompositeReader extends BaseCompositeReader<IndexReader> {
     }
     if (readers.length > 0) {
       // Merge all field types; this will throw exc if any field types are not congurent:
-      fieldTypes = new FieldTypes(readers[0].getFieldTypes());
+      fieldTypes = new FieldTypes(null);
       for (final IndexReader reader : completeReaderSet) {
-        // nocommit we should only add the fields that this reader "wins" on?
-        fieldTypes.addAll(reader.getFieldTypes());
+        FieldTypes readerFieldTypes = reader.getFieldTypes();
+        assert readerFieldTypes != null;
+        fieldTypes.addAll(readerFieldTypes);
       }
     } else {
-      fieldTypes = null;
+      fieldTypes = new FieldTypes(null);
     }
 
     // finally add our own synthetic readers, so we close or decRef them, too (it does not matter what we do)

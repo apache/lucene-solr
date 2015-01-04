@@ -512,4 +512,25 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="ignore-commit-from-client-403">
+    <processor class="solr.IgnoreCommitOptimizeUpdateProcessorFactory"/>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-commit-from-client-200">
+    <processor class="solr.IgnoreCommitOptimizeUpdateProcessorFactory">
+      <int name="statusCode">200</int>
+      <str name="responseMessage">Thou shall not issue a commit!</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-optimize-only-from-client-403">
+    <processor class="solr.IgnoreCommitOptimizeUpdateProcessorFactory">
+      <str name="responseMessage">Thou shall not issue an optimize, but commits are OK!</str>
+      <bool name="ignoreOptimizeOnly">true</bool>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
 </config>

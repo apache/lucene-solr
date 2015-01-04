@@ -24,23 +24,23 @@
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
     <!-- basic text field: no offsets -->
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.ASCIIFoldingFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
 
     <!-- basic text field: except it will use the keyword analyzer -->
-    <fieldtype name="text-keyword" class="solr.TextField">
+    <fieldType name="text-keyword" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
 
     <!-- basic text field: except it will use the keyword analyzer -->
-    <fieldtype name="text-query" class="solr.TextField">
+    <fieldType name="text-query" class="solr.TextField">
       <analyzer type="index">
         <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
       </analyzer>
@@ -49,7 +49,7 @@
         <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
   </types>
 
   <fields>

@@ -548,7 +548,7 @@ public class SolrRequestParsers
       while (iter.hasNext()) {
           FileItem item = (FileItem) iter.next();
 
-          // If its a form field, put it in our parameter map
+          // If it's a form field, put it in our parameter map
           if (item.isFormField()) {
             MultiMapSolrParams.addParam( 
               item.getFieldName(), 
@@ -592,7 +592,7 @@ public class SolrRequestParsers
         parseQueryString(qs, map);
       }
       
-      // may be -1, so we check again later. But if its already greater we can stop processing!
+      // may be -1, so we check again later. But if it's already greater we can stop processing!
       final long totalLength = req.getContentLength();
       final long maxLength = ((long) uploadLimitKB) * 1024L;
       if (totalLength > maxLength) {
@@ -681,10 +681,7 @@ public class SolrRequestParsers
         if (ServletFileUpload.isMultipartContent(req)) {
           return multipart.parseParamsAndFillStreams(req, streams);
         }
-        if (req.getContentType() != null) {
-          return raw.parseParamsAndFillStreams(req, streams);
-        }
-        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Must specify a Content-Type header with POST requests");
+        return raw.parseParamsAndFillStreams(req, streams);
       }
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported method: " + method + " for request " + req);
     }

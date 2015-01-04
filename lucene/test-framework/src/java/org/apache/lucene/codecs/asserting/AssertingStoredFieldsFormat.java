@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -64,6 +65,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override
@@ -85,9 +87,9 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      Iterable<? extends Accountable> res = in.getChildResources();
-      TestUtil.checkIterator(res.iterator());
+    public Collection<Accountable> getChildResources() {
+      Collection<Accountable> res = in.getChildResources();
+      TestUtil.checkReadOnly(res);
       return res;
     }
 
@@ -152,6 +154,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
 }

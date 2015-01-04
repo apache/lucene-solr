@@ -22,7 +22,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.analytics.util.AnalyticsParams;
 
 /**
- * <code>AddDoubleFunction</code> returns the sum of it's components.
+ * <code>AddDoubleFunction</code> returns the sum of its components.
  */
 public class AddDoubleFunction extends MultiDoubleFunction {
   public final static String NAME = AnalyticsParams.ADD;

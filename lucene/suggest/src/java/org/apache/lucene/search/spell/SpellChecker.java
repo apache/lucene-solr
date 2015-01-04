@@ -583,7 +583,7 @@ public class SpellChecker implements java.io.Closeable {
 
   private static Document createDocument(IndexWriter w, String text, int ng1, int ng2) {
     Document doc = w.newDocument();
-    // the word field is never queried on... its indexed so it can be quickly
+    // the word field is never queried on... it's indexed so it can be quickly
     // checked for rebuild (and stored for retrieval). Doesn't need norms or TF/pos
     // orig term
     doc.addAtom(F_WORD, text);

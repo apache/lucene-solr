@@ -17,15 +17,6 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -37,21 +28,30 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   JettySolrRunner masterJetty;
   TestReplicationHandler.SolrInstance master = null;
-  SolrServer masterClient;
+  SolrClient masterClient;
   
   private static final String CONF_DIR = "solr"
       + File.separator + "collection1" + File.separator + "conf"
@@ -70,15 +70,15 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     return jetty;
   }
 
-  private static SolrServer createNewSolrServer(int port) {
+  private static SolrClient createNewSolrClient(int port) {
     try {
-      // setup the server...
-      HttpSolrServer s = new HttpSolrServer(buildUrl(port, context));
-      s.setConnectionTimeout(15000);
-      s.setSoTimeout(60000);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
+      // setup the client...
+      HttpSolrClient client = new HttpSolrClient(buildUrl(port, context));
+      client.setConnectionTimeout(15000);
+      client.setSoTimeout(60000);
+      client.setDefaultMaxConnectionsPerHost(100);
+      client.setMaxTotalConnections(100);
+      return client;
     }
     catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -101,7 +101,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
     masterJetty = createJetty(master);
-    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+    masterClient = createNewSolrClient(masterJetty.getLocalPort());
   }
 
   @Override

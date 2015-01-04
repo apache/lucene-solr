@@ -71,7 +71,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       if (factory instanceof MultiTermAwareComponent) {
         AbstractAnalysisFactory mtc = ((MultiTermAwareComponent) factory).getMultiTermComponent();
         assertNotNull(mtc);
-        // its not ok to return e.g. a charfilter here: but a tokenizer could wrap a filter around it
+        // it's not ok to return e.g. a charfilter here: but a tokenizer could wrap a filter around it
         assertFalse(mtc instanceof CharFilterFactory);
       }
       
@@ -91,7 +91,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       if (factory instanceof MultiTermAwareComponent) {
         AbstractAnalysisFactory mtc = ((MultiTermAwareComponent) factory).getMultiTermComponent();
         assertNotNull(mtc);
-        // its not ok to return a charfilter or tokenizer here, this makes no sense
+        // it's not ok to return a charfilter or tokenizer here, this makes no sense
         assertTrue(mtc instanceof TokenFilterFactory);
       }
       
@@ -111,7 +111,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       if (factory instanceof MultiTermAwareComponent) {
         AbstractAnalysisFactory mtc = ((MultiTermAwareComponent) factory).getMultiTermComponent();
         assertNotNull(mtc);
-        // its not ok to return a tokenizer or tokenfilter here, this makes no sense
+        // it's not ok to return a tokenizer or tokenfilter here, this makes no sense
         assertTrue(mtc instanceof CharFilterFactory);
       }
       
@@ -141,7 +141,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       throw new RuntimeException(e);
     } catch (InvocationTargetException e) {
       if (e.getCause() instanceof IllegalArgumentException) {
-        // its ok if we dont provide the right parameters to throw this
+        // it's ok if we dont provide the right parameters to throw this
         return null;
       }
     }
@@ -150,7 +150,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
       try {
         ((ResourceLoaderAware) factory).inform(new StringMockResourceLoader(""));
       } catch (IOException ignored) {
-        // its ok if the right files arent available or whatever to throw this
+        // it's ok if the right files arent available or whatever to throw this
       } catch (IllegalArgumentException ignored) {
         // is this ok? I guess so
       }

@@ -224,7 +224,7 @@ class DocumentsWriterFlushQueue {
     protected void publish(IndexWriter writer) throws IOException {
       assert !published : "ticket was already publised - can not publish twice";
       published = true;
-      // its a global ticket - no segment to publish
+      // it's a global ticket - no segment to publish
       finishFlush(writer, null, frozenUpdates);
     }
 

@@ -324,7 +324,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     @Override
     public void onEvent(Context ctx) {
       executed = true;
-      lastException = ((ContextImpl) ctx).lastException;
+      lastException = ((ContextImpl) ctx).getLastException();
     }
   }
 

@@ -81,7 +81,6 @@ public class LikeThisQueryBuilder implements QueryBuilder {
             stopWordsSet.add(termAtt.toString());
           }
           ts.end();
-          ts.close();
         } catch (IOException ioe) {
           throw new ParserException("IoException parsing stop words list in "
               + getClass().getName() + ":" + ioe.getLocalizedMessage());

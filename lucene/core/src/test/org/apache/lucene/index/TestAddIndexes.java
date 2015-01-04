@@ -712,10 +712,10 @@ public class TestAddIndexes extends LuceneTestCase {
     void close(boolean doWait) throws Throwable {
       didClose = true;
       if (doWait == false) {
-        writer2.abortMerges();
+        writer2.rollback();
+      } else {
+        writer2.close();
       }
-      //writer2.close();
-      writer2.rollback();
     }
 
     void closeDir() throws Throwable {

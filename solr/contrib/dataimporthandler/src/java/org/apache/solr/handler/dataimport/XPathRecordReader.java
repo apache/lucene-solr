@@ -566,7 +566,7 @@ public class XPathRecordReader {
       for (Node n : searchList)
         if (n.xpathName.equals(xpathName)) return n;
       // new territory! add a new node for this Xpath bitty
-      Node n = new Node(xpathName, this); // a minimal Node initalization
+      Node n = new Node(xpathName, this); // a minimal Node initialization
       Matcher m = ATTRIB_PRESENT_WITHVAL.matcher(xpathName);
       if (m.find()) {
         n.name = m.group(1);

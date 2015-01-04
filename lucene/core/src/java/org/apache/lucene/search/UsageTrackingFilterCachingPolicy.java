@@ -36,6 +36,9 @@ import org.apache.lucene.util.FrequencyTrackingRingBuffer;
  */
 public final class UsageTrackingFilterCachingPolicy implements FilterCachingPolicy {
 
+  // the hash code that we use as a sentinel in the ring buffer.
+  private static final int SENTINEL = Integer.MIN_VALUE;
+
   static boolean isCostly(Filter filter) {
     // This does not measure the cost of iterating over the filter (for this we
     // already have the DocIdSetIterator#cost API) but the cost to build the
@@ -51,7 +54,7 @@ public final class UsageTrackingFilterCachingPolicy implements FilterCachingPoli
   }
 
   private final FilterCachingPolicy.CacheOnLargeSegments segmentPolicy;
-  private final FrequencyTrackingRingBuffer<Integer> recentlyUsedFilters;
+  private final FrequencyTrackingRingBuffer recentlyUsedFilters;
   private final int minFrequencyCostlyFilters;
   private final int minFrequencyCheapFilters;
   private final int minFrequencyOtherFilters;
@@ -96,17 +99,18 @@ public final class UsageTrackingFilterCachingPolicy implements FilterCachingPoli
     if (minFrequencyCheapFilters > historySize || minFrequencyCostlyFilters > historySize || minFrequencyOtherFilters > historySize) {
       throw new IllegalArgumentException("The minimum frequencies should be less than the size of the history of filters that are being tracked");
     }
-    this.recentlyUsedFilters = new FrequencyTrackingRingBuffer<>(historySize);
+    this.recentlyUsedFilters = new FrequencyTrackingRingBuffer(historySize, SENTINEL);
     this.minFrequencyCostlyFilters = minFrequencyCostlyFilters;
     this.minFrequencyCheapFilters = minFrequencyCheapFilters;
     this.minFrequencyOtherFilters = minFrequencyOtherFilters;
   }
 
   @Override
-  public void onCache(Filter filter) {
-    // Using the filter hash codes might help keep memory usage a bit lower
-    // since some filters might have non-negligible memory usage?
-    recentlyUsedFilters.add(filter.hashCode());
+  public void onUse(Filter filter) {
+    // we only track hash codes, which
+    synchronized (this) {
+      recentlyUsedFilters.add(filter.hashCode());
+    }
   }
 
   @Override
@@ -114,7 +118,10 @@ public final class UsageTrackingFilterCachingPolicy implements FilterCachingPoli
     if (segmentPolicy.shouldCache(filter, context, set) == false) {
       return false;
     }
-    final int frequency = recentlyUsedFilters.frequency(filter.hashCode());
+    final int frequency;
+    synchronized (this) {
+      frequency = recentlyUsedFilters.frequency(filter.hashCode());
+    }
     if (frequency >= minFrequencyOtherFilters) {
       return true;
     } else if (isCostly(filter) && frequency >= minFrequencyCostlyFilters) {

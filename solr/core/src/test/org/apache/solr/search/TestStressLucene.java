@@ -317,7 +317,7 @@ public class TestStressLucene extends TestRTGBase {
               int docid = getFirstMatch(r, new Term("id",Integer.toString(id)));
 
               if (docid < 0 && tombstones) {
-                // if we couldn't find the doc, look for it's tombstone
+                // if we couldn't find the doc, look for its tombstone
                 docid = getFirstMatch(r, new Term("id","-"+Integer.toString(id)));
                 if (docid < 0) {
                   if (val == -1L) {
@@ -336,7 +336,7 @@ public class TestStressLucene extends TestRTGBase {
                 if (docid < 0) {
                   verbose("ERROR: Couldn't find a doc for id", id, "using reader",r);
                 }
-                assertTrue(docid >= 0);   // we should have found the document, or it's tombstone
+                assertTrue(docid >= 0);   // we should have found the document, or its tombstone
                 StoredDocument doc = r.document(docid);
                 long foundVal = Long.parseLong(doc.get(field));
                 if (foundVal < Math.abs(val)) {

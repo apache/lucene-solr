@@ -58,7 +58,7 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
     int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
     if (hourOfDay < 6 || 
         hourOfDay > 20 || 
-        // its 5 o'clock somewhere
+        // it's 5 o'clock somewhere
         random.nextInt(23) == 5) {
       
       Drink[] values = Drink.values();

@@ -149,7 +149,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *      Otherwise, the binary values are of variable size, and packed integer metadata (PackedVersion,BlockSize)
  *      is written for the addresses.
  *   <p>MissingOffset points to a byte[] containing a bitset of all documents that had a value for the field.
- *      If its -1, then there are no missing values. If its -2, all values are missing.
+ *      If it's -1, then there are no missing values. If it's -2, all values are missing.
  *   <li><a name="dvd" id="dvd"></a>
  *   <p>The DocValues data or .dvd file.</p>
  *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>

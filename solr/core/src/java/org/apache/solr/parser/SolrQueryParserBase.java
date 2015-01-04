@@ -791,7 +791,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
       }
       return new AutomatonQuery(term, automaton) {
-        // override toString so its completely transparent
+        // override toString so it's completely transparent
         @Override
         public String toString(String field) {
           StringBuilder buffer = new StringBuilder();

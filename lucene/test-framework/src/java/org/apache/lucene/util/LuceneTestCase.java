@@ -72,8 +72,8 @@ import org.apache.lucene.index.FieldFilterLeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -85,6 +85,8 @@ import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MismatchedDirectoryReader;
+import org.apache.lucene.index.MismatchedLeafReader;
 import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
@@ -100,8 +102,8 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSet;
@@ -117,12 +119,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.FlushInfo;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
@@ -149,16 +151,16 @@ import com.carrotsearch.randomizedtesting.annotations.Listeners;
 import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
 import com.carrotsearch.randomizedtesting.annotations.TestGroup;
 import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
@@ -470,7 +472,7 @@ public abstract class LuceneTestCase extends Assert {
   public static final FilterCachingPolicy MAYBE_CACHE_POLICY = new FilterCachingPolicy() {
 
     @Override
-    public void onCache(Filter filter) {}
+    public void onUse(Filter filter) {}
 
     @Override
     public boolean shouldCache(Filter filter, LeafReaderContext context, DocIdSet set) throws IOException {
@@ -931,8 +933,6 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
-      int maxThreadCount = TestUtil.nextInt(r, 1, 4);
-      int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
       ConcurrentMergeScheduler cms;
       if (r.nextBoolean()) {
         cms = new ConcurrentMergeScheduler();
@@ -943,9 +943,22 @@ public abstract class LuceneTestCase extends Assert {
             }
           };
       }
+      int maxThreadCount = TestUtil.nextInt(r, 1, 4);
+      int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
+    } else {
+      // Always use consistent settings, else CMS's dynamic (SSD or not)
+      // defaults can change, hurting reproducibility:
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+
+      // Only 1 thread can run at once (should maybe help reproducibility),
+      // with up to 3 pending merges before segment-producing threads are
+      // stalled:
+      cms.setMaxMergesAndThreads(3, 1);
+      c.setMergeScheduler(cms);
     }
+
     if (r.nextBoolean()) {
       if (rarely(r)) {
         // crazy value
@@ -1349,7 +1362,7 @@ public abstract class LuceneTestCase extends Assert {
   public static BaseDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
-     d.copy(impl, file, file, newIOContext(r));
+     impl.copyFrom(d, file, file, newIOContext(r));
     }
     return wrapDirectory(r, impl, rarely(r));
   }
@@ -1498,7 +1511,7 @@ public abstract class LuceneTestCase extends Assert {
       // TODO: remove this, and fix those tests to wrap before putting slow around:
       final boolean wasOriginallyAtomic = r instanceof LeafReader;
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-        switch(random.nextInt(5)) {
+        switch(random.nextInt(6)) {
           case 0:
             r = SlowCompositeReaderWrapper.wrap(r);
             break;
@@ -1537,6 +1550,13 @@ public abstract class LuceneTestCase extends Assert {
               r = new AssertingLeafReader((LeafReader)r);
             } else if (r instanceof DirectoryReader) {
               r = new AssertingDirectoryReader((DirectoryReader)r);
+            }
+            break;
+          case 5:
+            if (r instanceof LeafReader) {
+              r = new MismatchedLeafReader((LeafReader)r, random);
+            } else if (r instanceof DirectoryReader) {
+              r = new MismatchedDirectoryReader((DirectoryReader)r, random);
             }
             break;
           default:

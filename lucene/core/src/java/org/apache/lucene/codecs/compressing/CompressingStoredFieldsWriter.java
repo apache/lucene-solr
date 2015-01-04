@@ -23,9 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.ChunkIterator;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.SerializedDocument;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -37,10 +35,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.GrowableByteArrayDataOutput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -70,13 +70,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
-  private final Directory directory;
   private final String segment;
-  private final String segmentSuffix;
   private CompressingStoredFieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
-  private final CompressionMode compressionMode;
   private final Compressor compressor;
   private final int chunkSize;
   private final int maxDocsPerChunk;
@@ -89,12 +86,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   /** Sole constructor. */
   public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
-      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk) throws IOException {
+      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) throws IOException {
     assert directory != null;
-    this.directory = directory;
     this.segment = si.name;
-    this.segmentSuffix = segmentSuffix;
-    this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
     this.chunkSize = chunkSize;
     this.maxDocsPerChunk = maxDocsPerChunk;
@@ -118,7 +112,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == fieldsStream.getFilePointer();
       assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
 
-      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream);
+      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream, blockSize);
       indexStream = null;
 
       fieldsStream.writeVInt(chunkSize);
@@ -195,10 +189,12 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
   }
 
-  private void writeHeader(int docBase, int numBufferedDocs, int[] numStoredFields, int[] lengths) throws IOException {
+  private void writeHeader(int docBase, int numBufferedDocs, int[] numStoredFields, int[] lengths, boolean sliced) throws IOException {
+    final int slicedBit = sliced ? 1 : 0;
+    
     // save docBase and numBufferedDocs
     fieldsStream.writeVInt(docBase);
-    fieldsStream.writeVInt(numBufferedDocs);
+    fieldsStream.writeVInt((numBufferedDocs) << 1 | slicedBit);
 
     // save numStoredFields
     saveInts(numStoredFields, numBufferedDocs, fieldsStream);
@@ -221,10 +217,11 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       lengths[i] = endOffsets[i] - endOffsets[i - 1];
       assert lengths[i] >= 0;
     }
-    writeHeader(docBase, numBufferedDocs, numStoredFields, lengths);
+    final boolean sliced = bufferedDocs.length >= 2 * chunkSize;
+    writeHeader(docBase, numBufferedDocs, numStoredFields, lengths, sliced);
 
     // compress stored fields to fieldsStream
-    if (bufferedDocs.length >= 2 * chunkSize) {
+    if (sliced) {
       // big chunk, slice it
       for (int compressed = 0; compressed < bufferedDocs.length; compressed += chunkSize) {
         compressor.compress(bufferedDocs.bytes, compressed, Math.min(chunkSize, bufferedDocs.length - compressed), fieldsStream);
@@ -238,6 +235,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     numBufferedDocs = 0;
     bufferedDocs.length = 0;
   }
+  
+  byte scratchBytes[] = new byte[16];
 
   @Override
   public void writeField(FieldInfo info, IndexableField field)
@@ -285,19 +284,174 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       bufferedDocs.writeVInt(bytes.length);
       bufferedDocs.writeBytes(bytes.bytes, bytes.offset, bytes.length);
     } else if (string != null) {
-      bufferedDocs.writeString(field.stringValue());
+      // this is just an optimized writeString() that re-uses scratchBytes.
+      scratchBytes = ArrayUtil.grow(scratchBytes, string.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR);
+      int length = UnicodeUtil.UTF16toUTF8(string, 0, string.length(), scratchBytes);
+      bufferedDocs.writeVInt(length);
+      bufferedDocs.writeBytes(scratchBytes, length);
     } else {
       if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
-        bufferedDocs.writeInt(number.intValue());
+        bufferedDocs.writeZInt(number.intValue());
       } else if (number instanceof Long) {
-        bufferedDocs.writeLong(number.longValue());
+        writeTLong(bufferedDocs, number.longValue());
       } else if (number instanceof Float) {
-        bufferedDocs.writeInt(Float.floatToIntBits(number.floatValue()));
+        writeZFloat(bufferedDocs, number.floatValue());
       } else if (number instanceof Double) {
-        bufferedDocs.writeLong(Double.doubleToLongBits(number.doubleValue()));
+        writeZDouble(bufferedDocs, number.doubleValue());
       } else {
         throw new AssertionError("Cannot get here");
       }
+    }
+  }
+
+  // -0 isn't compressed.
+  static final int NEGATIVE_ZERO_FLOAT = Float.floatToIntBits(-0f);
+  static final long NEGATIVE_ZERO_DOUBLE = Double.doubleToLongBits(-0d);
+
+  // for compression of timestamps
+  static final long SECOND = 1000L;
+  static final long HOUR = 60 * 60 * SECOND;
+  static final long DAY = 24 * HOUR;
+  static final int SECOND_ENCODING = 0x40;
+  static final int HOUR_ENCODING = 0x80;
+  static final int DAY_ENCODING = 0xC0;
+
+  /** 
+   * Writes a float in a variable-length format.  Writes between one and 
+   * five bytes. Small integral values typically take fewer bytes.
+   * <p>
+   * ZFloat --&gt; Header, Bytes*?
+   * <ul>
+   *    <li>Header --&gt; {@link DataOutput#writeByte Uint8}. When it is
+   *       equal to 0xFF then the value is negative and stored in the next
+   *       4 bytes. Otherwise if the first bit is set then the other bits
+   *       in the header encode the value plus one and no other
+   *       bytes are read. Otherwise, the value is a positive float value
+   *       whose first byte is the header, and 3 bytes need to be read to
+   *       complete it.
+   *    <li>Bytes --&gt; Potential additional bytes to read depending on the
+   *       header.
+   * </ul>
+   * <p>
+   */
+  static void writeZFloat(DataOutput out, float f) throws IOException {
+    int intVal = (int) f;
+    final int floatBits = Float.floatToIntBits(f);
+
+    if (f == intVal
+        && intVal >= -1
+        && intVal <= 0x7D
+        && floatBits != NEGATIVE_ZERO_FLOAT) {
+      // small integer value [-1..125]: single byte
+      out.writeByte((byte) (0x80 | (1 + intVal)));
+    } else if ((floatBits >>> 31) == 0) {
+      // other positive floats: 4 bytes
+      out.writeInt(floatBits);
+    } else {
+      // other negative float: 5 bytes
+      out.writeByte((byte) 0xFF);
+      out.writeInt(floatBits);
+    }
+  }
+  
+  /** 
+   * Writes a float in a variable-length format.  Writes between one and 
+   * five bytes. Small integral values typically take fewer bytes.
+   * <p>
+   * ZFloat --&gt; Header, Bytes*?
+   * <ul>
+   *    <li>Header --&gt; {@link DataOutput#writeByte Uint8}. When it is
+   *       equal to 0xFF then the value is negative and stored in the next
+   *       8 bytes. When it is equal to 0xFE then the value is stored as a
+   *       float in the next 4 bytes. Otherwise if the first bit is set
+   *       then the other bits in the header encode the value plus one and
+   *       no other bytes are read. Otherwise, the value is a positive float
+   *       value whose first byte is the header, and 7 bytes need to be read
+   *       to complete it.
+   *    <li>Bytes --&gt; Potential additional bytes to read depending on the
+   *       header.
+   * </ul>
+   * <p>
+   */
+  static void writeZDouble(DataOutput out, double d) throws IOException {
+    int intVal = (int) d;
+    final long doubleBits = Double.doubleToLongBits(d);
+    
+    if (d == intVal &&
+        intVal >= -1 && 
+        intVal <= 0x7C &&
+        doubleBits != NEGATIVE_ZERO_DOUBLE) {
+      // small integer value [-1..124]: single byte
+      out.writeByte((byte) (0x80 | (intVal + 1)));
+      return;
+    } else if (d == (float) d) {
+      // d has an accurate float representation: 5 bytes
+      out.writeByte((byte) 0xFE);
+      out.writeInt(Float.floatToIntBits((float) d));
+    } else if ((doubleBits >>> 63) == 0) {
+      // other positive doubles: 8 bytes
+      out.writeLong(doubleBits);
+    } else {
+      // other negative doubles: 9 bytes
+      out.writeByte((byte) 0xFF);
+      out.writeLong(doubleBits);
+    }
+  }
+
+  /** 
+   * Writes a long in a variable-length format.  Writes between one and 
+   * ten bytes. Small values or values representing timestamps with day,
+   * hour or second precision typically require fewer bytes.
+   * <p>
+   * ZLong --&gt; Header, Bytes*?
+   * <ul>
+   *    <li>Header --&gt; The first two bits indicate the compression scheme:
+   *       <ul>
+   *          <li>00 - uncompressed
+   *          <li>01 - multiple of 1000 (second)
+   *          <li>10 - multiple of 3600000 (hour)
+   *          <li>11 - multiple of 86400000 (day)
+   *       </ul>
+   *       Then the next bit is a continuation bit, indicating whether more
+   *       bytes need to be read, and the last 5 bits are the lower bits of
+   *       the encoded value. In order to reconstruct the value, you need to
+   *       combine the 5 lower bits of the header with a vLong in the next
+   *       bytes (if the continuation bit is set to 1). Then
+   *       {@link BitUtil#zigZagDecode(int) zigzag-decode} it and finally
+   *       multiply by the multiple corresponding to the compression scheme.
+   *    <li>Bytes --&gt; Potential additional bytes to read depending on the
+   *       header.
+   * </ul>
+   * <p>
+   */
+  // T for "timestamp"
+  static void writeTLong(DataOutput out, long l) throws IOException {
+    int header; 
+    if (l % SECOND != 0) {
+      header = 0;
+    } else if (l % DAY == 0) {
+      // timestamp with day precision
+      header = DAY_ENCODING;
+      l /= DAY;
+    } else if (l % HOUR == 0) {
+      // timestamp with hour precision, or day precision with a timezone
+      header = HOUR_ENCODING;
+      l /= HOUR;
+    } else {
+      // timestamp with second precision
+      header = SECOND_ENCODING;
+      l /= SECOND;
+    }
+
+    final long zigZagL = BitUtil.zigZagEncode(l);
+    header |= (zigZagL & 0x1F); // last 5 bits
+    final long upperBits = zigZagL >>> 5;
+    if (upperBits != 0) {
+      header |= 0x20;
+    }
+    out.writeByte((byte) header);
+    if (upperBits != 0) {
+      out.writeVLong(upperBits);
     }
   }
 
@@ -324,6 +478,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     MatchingReaders matching = new MatchingReaders(mergeState);
     
     for (int readerIndex=0;readerIndex<numReaders;readerIndex++) {
+      MergeVisitor visitor = new MergeVisitor(mergeState, readerIndex);
       CompressingStoredFieldsReader matchingFieldsReader = null;
       if (matching.matchingReaders[readerIndex]) {
         final StoredFieldsReader fieldsReader = mergeState.storedFieldsReaders[readerIndex];
@@ -336,71 +491,42 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       final int maxDoc = mergeState.maxDocs[readerIndex];
       final Bits liveDocs = mergeState.liveDocs[readerIndex];
 
-      if (matchingFieldsReader == null
-          || matchingFieldsReader.getVersion() != VERSION_CURRENT // means reader version is not the same as the writer version
-          || matchingFieldsReader.getCompressionMode() != compressionMode
-          || matchingFieldsReader.getChunkSize() != chunkSize) { // the way data is decompressed depends on the chunk size
+      // if its some other format, or an older version of this format:
+      if (matchingFieldsReader == null || matchingFieldsReader.getVersion() != VERSION_CURRENT) {
         // naive merge...
         StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[readerIndex];
         if (storedFieldsReader != null) {
           storedFieldsReader.checkIntegrity();
         }
-        for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
-          DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(mergeState.fieldTypes);
-          storedFieldsReader.visitDocument(i, visitor);
-          addDocument(visitor.getDocument(), mergeState.mergeFieldInfos);
+        for (int docID = 0; docID < maxDoc; docID++) {
+          if (liveDocs != null && liveDocs.get(docID) == false) {
+            continue;
+          }
+          startDocument();
+          storedFieldsReader.visitDocument(docID, visitor);
+          finishDocument();
           ++docCount;
           mergeState.checkAbort.work(300);
         }
       } else {
-        int docID = nextLiveDoc(0, liveDocs, maxDoc);
-        if (docID < maxDoc) {
-          // not all docs were deleted
-          final ChunkIterator it = matchingFieldsReader.chunkIterator(docID);
-          int[] startOffsets = new int[0];
-          do {
-            // go to the next chunk that contains docID
-            it.next(docID);
-            // transform lengths into offsets
-            if (startOffsets.length < it.chunkDocs) {
-              startOffsets = new int[ArrayUtil.oversize(it.chunkDocs, 4)];
-            }
-            for (int i = 1; i < it.chunkDocs; ++i) {
-              startOffsets[i] = startOffsets[i - 1] + it.lengths[i - 1];
-            }
-
-            // decompress
-            it.decompress();
-            if (startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] != it.bytes.length) {
-              throw new CorruptIndexException("Corrupted: expected chunk size=" + startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] + ", got " + it.bytes.length, it.fieldsStream);
-            }
-            // copy non-deleted docs
-            for (; docID < it.docBase + it.chunkDocs; docID = nextLiveDoc(docID + 1, liveDocs, maxDoc)) {
-              final int diff = docID - it.docBase;
-              startDocument();
-              bufferedDocs.writeBytes(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
-              numStoredFieldsInDoc = it.numStoredFields[diff];
-              finishDocument();
-              ++docCount;
-              mergeState.checkAbort.work(300);
-            }
-          } while (docID < maxDoc);
-
-          it.checkIntegrity();
+        // optimized merge, we copy serialized (but decompressed) bytes directly
+        // even on simple docs (1 stored field), it seems to help by about 20%
+        matchingFieldsReader.checkIntegrity();
+        for (int docID = 0; docID < maxDoc; docID++) {
+          if (liveDocs != null && liveDocs.get(docID) == false) {
+            continue;
+          }
+          SerializedDocument doc = matchingFieldsReader.document(docID);
+          startDocument();
+          bufferedDocs.copyBytes(doc.in, doc.length);
+          numStoredFieldsInDoc = doc.numStoredFields;
+          finishDocument();
+          ++docCount;
+          mergeState.checkAbort.work(300);
         }
       }
     }
     finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
-  }
-
-  private static int nextLiveDoc(int doc, Bits liveDocs, int maxDoc) {
-    if (liveDocs == null) {
-      return doc;
-    }
-    while (doc < maxDoc && !liveDocs.get(doc)) {
-      ++doc;
-    }
-    return doc;
   }
 }

@@ -245,7 +245,7 @@ public class ConcurrentLRUCache<K,V> {
             // this entry is guaranteed not to be in the bottom
             // group, so do nothing but remove it from the eset.
             numKept++;
-            // remove the entry by moving the last element to it's position
+            // remove the entry by moving the last element to its position
             eset[i] = eset[eSize-1];
             eSize--;
 
@@ -258,7 +258,7 @@ public class ConcurrentLRUCache<K,V> {
             evictEntry(ce.key);
             numRemoved++;
 
-            // remove the entry by moving the last element to it's position
+            // remove the entry by moving the last element to its position
             eset[i] = eset[eSize-1];
             eSize--;
           } else {

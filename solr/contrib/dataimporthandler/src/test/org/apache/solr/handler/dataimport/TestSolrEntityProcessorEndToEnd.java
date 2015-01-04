@@ -27,10 +27,9 @@ import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -281,7 +280,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       sidl.add(sd);
     }
     
-    HttpSolrServer solrServer = new HttpSolrServer(getSourceUrl());
+    HttpSolrClient solrServer = new HttpSolrClient(getSourceUrl());
     try {
       solrServer.setConnectionTimeout(15000);
       solrServer.setSoTimeout(30000);

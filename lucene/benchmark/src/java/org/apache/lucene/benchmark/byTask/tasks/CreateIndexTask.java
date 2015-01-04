@@ -24,7 +24,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.ParseException;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -35,8 +34,8 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
@@ -102,8 +101,9 @@ public class CreateIndexTask extends PerfTask {
     iwConf.setOpenMode(mode);
     IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
     iwConf.setIndexDeletionPolicy(indexDeletionPolicy);
-    if(commit != null)
+    if (commit != null) {
       iwConf.setIndexCommit(commit);
+    }
     
 
     final String mergeScheduler = config.get("merge.scheduler",
@@ -119,8 +119,8 @@ public class CreateIndexTask extends PerfTask {
       
       if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
         ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) iwConf.getMergeScheduler();
-        int maxThreadCount = config.get("concurrent.merge.scheduler.max.thread.count", ConcurrentMergeScheduler.DEFAULT_MAX_THREAD_COUNT);
-        int maxMergeCount = config.get("concurrent.merge.scheduler.max.merge.count", ConcurrentMergeScheduler.DEFAULT_MAX_MERGE_COUNT);
+        int maxThreadCount = config.get("concurrent.merge.scheduler.max.thread.count", ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS);
+        int maxMergeCount = config.get("concurrent.merge.scheduler.max.merge.count", ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS);
         cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       }
     }

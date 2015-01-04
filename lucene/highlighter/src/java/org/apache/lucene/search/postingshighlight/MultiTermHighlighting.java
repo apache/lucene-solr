@@ -157,7 +157,7 @@ class MultiTermHighlighting {
         final CharsRef scratch = new CharsRef();
         final Comparator<CharsRef> comparator = CharsRef.getUTF16SortedAsUTF8Comparator();
         
-        // this is *not* an automaton, but its very simple
+        // this is *not* an automaton, but it's very simple
         list.add(new CharacterRunAutomaton(Automata.makeEmpty()) {
           @Override
           public boolean run(char[] s, int offset, int length) {

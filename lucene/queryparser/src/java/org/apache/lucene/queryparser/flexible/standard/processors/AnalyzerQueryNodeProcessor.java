@@ -130,9 +130,9 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
       
       try {
         try (TokenStream source = this.analyzer.tokenStream(field, text)) {
-          source.reset();
           buffer = new CachingTokenFilter(source);
-  
+          buffer.reset();
+
           if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
             posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
           }
@@ -155,13 +155,13 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
           } catch (IOException e) {
             // ignore
           }
+
+          // rewind the buffer stream
+          buffer.reset();//will never through on subsequent reset calls
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-        
-        // rewind the buffer stream
-        buffer.reset();
-  
+
         if (!buffer.hasAttribute(CharTermAttribute.class)) {
           return new NoTokenFoundQueryNode();
         }

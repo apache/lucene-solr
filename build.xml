@@ -62,7 +62,7 @@
   </target>
 
   <target name="pitest" description="Run PITest on both Lucene and Solr">
-    <subant target="pitest" inheritall="false" failonerror="false">
+    <subant target="pitest" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
     </subant>
@@ -481,7 +481,7 @@ File | Project Structure | Platform Settings | SDKs):
   </target>
 
   <target name="regenerate" description="Runs all code regenerators">
-    <subant target="regenerate" inheritall="false" failonerror="false">
+    <subant target="regenerate" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <!-- todo:
       <fileset dir="solr" includes="build.xml" />-->

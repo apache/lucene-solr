@@ -29,7 +29,7 @@
   <types>
 
     <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
   </types>
 

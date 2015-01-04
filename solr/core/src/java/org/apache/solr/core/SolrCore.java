@@ -17,43 +17,6 @@
 
 package org.apache.solr.core;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -64,10 +27,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -75,10 +41,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapPuller;
-import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.ExpandComponent;
@@ -111,11 +76,14 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.stats.LocalStatsCache;
+import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCoreState;
@@ -135,11 +103,51 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -161,6 +169,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   private boolean isReloaded = false;
 
+  private StatsCache statsCache;
+
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
@@ -178,6 +188,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
+
+  private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
   
   private final ReentrantLock ruleExpiryLock;
   
@@ -815,6 +827,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // Handle things that should eventually go away
       initDeprecatedSupport();
       
+      statsCache = initStatsCache();
+      
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
@@ -931,6 +945,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 //    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
 
     ruleExpiryLock = new ReentrantLock();
+    registerConfListener();
   }
     
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
@@ -966,6 +981,27 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
     return factory.getCodec();
+  }
+  
+  private StatsCache initStatsCache() {
+    final StatsCache cache;
+    PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
+    if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
+      cache = createInitInstance(pluginInfo, StatsCache.class, null,
+          LocalStatsCache.class.getName());
+      log.info("Using statsCache impl: " + cache.getClass().getName());
+    } else {
+      log.info("Using default statsCache cache: " + LocalStatsCache.class.getName());
+      cache = new LocalStatsCache();
+    }
+    return cache;
+  }
+
+  /**
+   * Get the StatsCache.
+   */
+  public StatsCache getStatsCache() {
+    return statsCache;
   }
 
   /**
@@ -1066,6 +1102,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
 
+    if(reqHandlers != null) reqHandlers.close();
 
 
     try {
@@ -1445,7 +1482,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
 
-  /** Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with it's reference incremented.
+  /** Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with its reference incremented.
    *
    * "realtime" means that we need to open quickly for a realtime view of the index, hence don't do any
    * autowarming and add to the _realtimeSearchers queue rather than the _searchers queue (so it won't
@@ -1752,7 +1789,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           });
         }
         
-        if (currSearcher == null && firstSearcherListeners.size() > 0) {
+        if (currSearcher == null) {
           future = searcherExecutor.submit(new Callable() {
             @Override
             public Object call() throws Exception {
@@ -1771,7 +1808,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           });
         }
         
-        if (currSearcher != null && newSearcherListeners.size() > 0) {
+        if (currSearcher != null) {
           future = searcherExecutor.submit(new Callable() {
             @Override
             public Object call() throws Exception {
@@ -2091,7 +2128,27 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     m.put("csv", new CSVResponseWriter());
     m.put("xsort", new SortingResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
+    m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
+  }
+
+  private static BinaryResponseWriter getFileStreamWriter() {
+    return new BinaryResponseWriter(){
+      @Override
+      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        if(rawWriter!=null) rawWriter.write(out);
+      }
+
+      @Override
+      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+        return BinaryResponseParser.BINARY_CONTENT_TYPE;
+      }
+    };
+  }
+
+  public interface RawWriter {
+    public void write(OutputStream os) throws IOException ;
   }
   
   /** Configure the query response writers. There will always be a default writer; additional
@@ -2570,6 +2627,117 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       return getWrappedWriter().getContentType(request, response);
     }
   }
+
+  /**Register to notify for any file change in the conf directory.
+   * If the file change results in a core reload , then the listener
+   * is not fired
+   */
+  public void addConfListener(Runnable runnable) {
+    confListeners.add(runnable);
+  }
+
+  /**Remove a listener
+   * */
+  public boolean removeConfListener(Runnable runnable) {
+    return confListeners.remove(runnable);
+  }
+
+  /**This registers one listener for the entire conf directory. In zookeeper
+   * there is no event fired when children are modified. So , we expect everyone
+   * to 'touch' the /conf directory by setting some data  so that events are triggered.
+   */
+  private void registerConfListener() {
+    if( ! (resourceLoader instanceof ZkSolrResourceLoader)) return;
+    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
+    if(zkSolrResourceLoader != null)
+      zkSolrResourceLoader.getZkController().registerConfListenerForCore(
+          zkSolrResourceLoader.getConfigSetZkPath(),
+          this,
+          getListener(this, zkSolrResourceLoader));
+
+  }
+
+
+  private static Runnable getListener(SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader) {
+    final String coreName = core.getName();
+    final CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
+    final String overlayPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;
+    final String solrConfigPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
+    String schemaRes = null;
+    if (core.getLatestSchema().isMutable() && core.getLatestSchema() instanceof ManagedIndexSchema) {
+      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+      schemaRes = mis.getResourceName();
+    }
+    final String managedSchmaResourcePath = schemaRes == null ? null : zkSolrResourceLoader.getConfigSetZkPath() + "/" + schemaRes;
+    return new Runnable() {
+      @Override
+      public void run() {
+        log.info("config update listener called for core {}", coreName);
+        SolrZkClient zkClient = cc.getZkController().getZkClient();
+        int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
+        SolrConfig cfg = null;
+        try (SolrCore core = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+          if (core == null || core.isClosed()) return;
+          cfg = core.getSolrConfig();
+          solrConfigversion = core.getSolrConfig().getOverlay().getZnodeVersion();
+          overlayVersion = core.getSolrConfig().getZnodeVersion();
+          if (managedSchmaResourcePath != null) {
+            managedSchemaVersion = ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion();
+          }
+
+        }
+        if (cfg != null) {
+          cfg.refreshRequestParams() ;
+        }
+        if (checkStale(zkClient, overlayPath, solrConfigversion) ||
+            checkStale(zkClient, solrConfigPath, overlayVersion) ||
+            checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
+          log.info("core reload {}", coreName);
+          cc.reload(coreName);
+          return;
+        }
+        //some files in conf directoy has changed other than schema.xml,
+        // solrconfig.xml. so fire event listeners
+
+        try (SolrCore core = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+          if (core == null || core.isClosed()) return;
+          for (Runnable listener : core.confListeners) {
+            try {
+              listener.run();
+            } catch (Exception e) {
+              log.error("Error in listener ", e);
+            }
+          }
+        }
+
+      }
+    };
+  }
+
+  private static boolean checkStale(SolrZkClient zkClient,  String zkPath, int currentVersion)  {
+    if(zkPath == null) return false;
+    try {
+      Stat stat = zkClient.exists(zkPath, null, true);
+      if(stat == null){
+        if(currentVersion > -1) return true;
+        return false;
+      }
+      if (stat.getVersion() >  currentVersion) {
+        log.info(zkPath+" is stale will need an update from {} to {}", currentVersion,stat.getVersion());
+        return true;
+      }
+      return false;
+    } catch (KeeperException.NoNodeException nne){
+      //no problem
+    } catch (KeeperException e) {
+      log.error("error refreshing solrconfig ", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().isInterrupted();
+    }
+    return false;
+  }
+
+
 }
 
 

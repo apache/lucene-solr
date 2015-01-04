@@ -17,7 +17,7 @@
 
 <schema name="test" version="1.0">
   <types>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true" multiValued="false"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" multiValued="false"/>
 
     <fieldType name="text" class="solr.TextField" multiValued="false">
       <analyzer>
@@ -221,8 +221,8 @@
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-    <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
+    <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldType name="date" class="solr.TrieDateField" precisionStep="0"/>
   </types>
 
   <fields>

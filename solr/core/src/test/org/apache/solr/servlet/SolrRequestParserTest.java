@@ -17,6 +17,7 @@
 
 package org.apache.solr.servlet;
 
+import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
@@ -386,15 +387,14 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getMethod()).andReturn("POST").anyTimes();
     expect(request.getContentType()).andReturn(null).anyTimes();
     expect(request.getQueryString()).andReturn(null).anyTimes();
+    expect(request.getHeader(anyObject())).andReturn(null).anyTimes();
     replay(request);
 
     SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
     try {
       parsers.parse(h.getCore(), "/select", request);
-      fail("should throw SolrException");
     } catch (SolrException e) {
-      assertTrue(e.getMessage().startsWith("Must specify a Content-Type header with POST requests"));
-      assertEquals(415, e.code());
+      fail("should not throw SolrException");
     }
   }
 }

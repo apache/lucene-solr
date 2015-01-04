@@ -79,7 +79,7 @@ public class InitParams {
   }
 
   public void apply(PluginInfo info) {
-    if (info.isFromSolrConfig) {
+    if (!info.isFromSolrConfig()) {
       //if this is a component implicitly defined in code it should be overridden by initPrams
       merge(defaults, (NamedList) info.initArgs.get(PluginInfo.DEFAULTS) ,info.initArgs, PluginInfo.DEFAULTS, false);
     } else {

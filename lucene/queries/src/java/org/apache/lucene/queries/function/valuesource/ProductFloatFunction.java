@@ -21,7 +21,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
- * <code>ProductFloatFunction</code> returns the product of it's components.
+ * <code>ProductFloatFunction</code> returns the product of its components.
  */
 public class ProductFloatFunction extends MultiFloatFunction {
   public ProductFloatFunction(ValueSource[] sources) {

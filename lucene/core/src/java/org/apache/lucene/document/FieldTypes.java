@@ -135,6 +135,7 @@ import org.apache.lucene.util.Version;
 
 // LATER
 //   - time intervals
+//   - BigDecimal
 //   - fold in compressing stored fields format params...how
 //   - add array of atom values?  fieldnamesfield would use it?
 //   - sugar for more/less ranges (where one end is null)
@@ -148,7 +149,6 @@ import org.apache.lucene.util.Version;
 //   - highlight proxy field (LUCENE-6061)
 //   - sugar API to retrieve values from DVs or stored fields or whatever?
 //   - we could track here which fields are actually searched/filtered on ... and e.g. make use of this during warmers ...
-//   - BigDecimal?
 //   - index-time sorting should be here too
 //   - make LiveFieldValues easier to use?
 //   - can we have test infra that randomly reopens writer?
@@ -378,6 +378,7 @@ public class FieldTypes {
       this.sortKey = other.sortKey;
     }
 
+    /** If this throws exc, caller must restore the previous state. */
     public synchronized void merge(FieldType other) {
       assert name.equals(other.name);
 
@@ -811,8 +812,6 @@ public class FieldTypes {
         }
       }
 
-      // nocommit must check that if fastRanges is on, you have a PF that supports it
-      
       if (fastRanges == Boolean.TRUE && indexOptions != IndexOptions.DOCS) {
         illegalState(name, "fastRanges is only possible when indexOptions=DOCS; got: " + indexOptions);
       }
@@ -837,6 +836,10 @@ public class FieldTypes {
 
       if (postingsFormat != null && blockTreeMinItemsInBlock != null) {
         illegalState(name, "cannot use both setTermsDictBlockSize and setPostingsFormat");
+      }
+
+      if (postingsFormat != null && fastRanges == Boolean.TRUE) {
+        illegalState(name, "cannot use both enableFastRanges and setPostingsFormat");
       }
 
       if (postingsFormat != null && blockTreeMinItemsInAutoPrefix != null) {
@@ -1975,7 +1978,9 @@ public class FieldTypes {
   synchronized FieldType getFieldType(String fieldName) {
     FieldType fieldType = fields.get(fieldName);
     if (fieldType == null) {
-      throw new IllegalArgumentException("field \"" + fieldName + "\" is not recognized");
+      List<String> fieldNames = new ArrayList<>(fields.keySet());
+      Collections.sort(fieldNames);
+      throw new IllegalArgumentException("field \"" + fieldName + "\" is not recognized; known fields: " + fieldNames);
     }
     return fieldType;
   }
@@ -2452,8 +2457,6 @@ public class FieldTypes {
     // nocommit can we prevent this, if our codec isn't used by IW?
     ensureWritable();
 
-    // nocommit must check that field is in fact using block tree?
-
     try {
       BlockTreeTermsWriter.validateSettings(minItemsInBlock, maxItemsInBlock);
     } catch (IllegalArgumentException iae) {
@@ -2500,8 +2503,6 @@ public class FieldTypes {
    *  heap in the IndexReader but slows down term lookups. */
   public synchronized void setTermsDictAutoPrefixSize(String fieldName, int minItemsInAutoPrefix, int maxItemsInAutoPrefix) {
     ensureWritable();
-
-    // nocommit must check that field is in fact using block tree?
 
     try {
       BlockTreeTermsWriter.validateAutoPrefixSettings(minItemsInAutoPrefix, maxItemsInAutoPrefix);
@@ -4594,6 +4595,30 @@ public class FieldTypes {
 
   public Iterable<String> getFieldNames() {
     return Collections.unmodifiableSet(fields.keySet());
+  }
+
+  public synchronized void mergeOneField(FieldTypes in, String fieldName) {
+    FieldType current = fields.get(fieldName);
+    FieldType sav;
+
+    // Field must exist:
+    FieldType toMerge = in.getFieldType(fieldName);
+
+    if (current != null) {
+      sav = new FieldType(current);
+      boolean success = false;
+      try {
+        current.merge(toMerge);
+        success = true;
+      } finally {
+        if (success == false) {
+          fields.put(fieldName, sav);
+        }
+      }
+    } else {
+      sav = null;
+      fields.put(fieldName, toMerge);
+    }
   }
 
   // nocommit on exception (mismatched schema), this should ensure no changes were actually made:

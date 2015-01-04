@@ -64,7 +64,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
           new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1"));
       assertFalse("First requests can always be batched", writer.maybeFlushBefore(c1));
 
-      ClusterState clusterState = writer.enqueueUpdate(reader.getClusterState(), c1);
+      ClusterState clusterState = writer.enqueueUpdate(reader.getClusterState(), c1, null);
 
       ZkWriteCommand c2 = new ZkWriteCommand("c2",
           new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c2"));
@@ -91,7 +91,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       // create a collection in stateFormat = 1 i.e. inside the main cluster state
       ZkWriteCommand c3 = new ZkWriteCommand("c3",
           new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE));
-      clusterState = writer.enqueueUpdate(clusterState, c3);
+      clusterState = writer.enqueueUpdate(clusterState, c3, null);
 
       // simulate three state changes in c3, all should be batched
       for (int i=0; i<3; i++) {

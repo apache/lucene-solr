@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -16,14 +16,15 @@
 # limitations under the License.
 
 SOLR_PORT=$1
-SOLR_PID=`ps waux | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
-if [ "$SOLR_PID" == "" ]; then
+SOLR_LOGS_DIR=$2
+SOLR_PID=`ps auxww | grep start.jar | grep $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+if [ -z "$SOLR_PID" ]; then
   echo "Couldn't find Solr process running on port $SOLR_PORT!"
   exit
 fi
-NOW=$(date +"%F%T")
+NOW=$(date +"%F_%H_%M_%S")
 (
 echo "Running OOM killer script for process $SOLR_PID for Solr on port $SOLR_PORT"
 kill -9 $SOLR_PID
 echo "Killed process $SOLR_PID"
-) | tee solr_oom_killer-$SOLR_PORT-$NOW.log
+) | tee $SOLR_LOGS_DIR/solr_oom_killer-$SOLR_PORT-$NOW.log

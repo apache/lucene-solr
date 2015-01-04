@@ -92,7 +92,7 @@ final class DefaultIndexingChain extends DocConsumer {
     writeNorms(state);
     writeDocValues(state);
     
-    // its possible all docs hit non-aborting exceptions...
+    // it's possible all docs hit non-aborting exceptions...
     initStoredFieldsWriter();
     fillStoredFields(numDocs);
     storedFieldsWriter.finish(state.fieldInfos, numDocs);
@@ -152,7 +152,7 @@ final class DefaultIndexingChain extends DocConsumer {
       // TODO: catch missing DV fields here?  else we have
       // null/"" depending on how docs landed in segments?
       // but we can't detect all cases, and we should leave
-      // this behavior undefined. dv is not "schemaless": its column-stride.
+      // this behavior undefined. dv is not "schemaless": it's column-stride.
       success = true;
     } finally {
       if (success) {
@@ -258,7 +258,7 @@ final class DefaultIndexingChain extends DocConsumer {
       initStoredFieldsWriter();
       storedFieldsWriter.startDocument();
     } catch (Throwable th) {
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
     lastStoredDocID++;
   }
@@ -269,7 +269,7 @@ final class DefaultIndexingChain extends DocConsumer {
     try {
       storedFieldsWriter.finishDocument();
     } catch (Throwable th) {
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
   }
 
@@ -317,7 +317,7 @@ final class DefaultIndexingChain extends DocConsumer {
     } catch (Throwable th) {
       // Must abort, on the possibility that on-disk term
       // vectors are now corrupt:
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
   }
 
@@ -360,7 +360,7 @@ final class DefaultIndexingChain extends DocConsumer {
         try {
           storedFieldsWriter.writeField(fp.fieldInfo, field);
         } catch (Throwable th) {
-          throw new AbortingException(th);
+          throw AbortingException.wrap(th);
         }
       }
     }
@@ -673,7 +673,7 @@ final class DefaultIndexingChain extends DocConsumer {
             // Document will be deleted above:
             throw new IllegalArgumentException(msg, e);
           } catch (Throwable th) {
-            throw new AbortingException(th);
+            throw AbortingException.wrap(th);
           }
 
           // maybe low-schema should know "isUnique"?
@@ -698,7 +698,7 @@ final class DefaultIndexingChain extends DocConsumer {
         // trigger streams to perform end-of-stream operations
         stream.end();
 
-        // TODO: maybe add some safety? then again, its already checked 
+        // TODO: maybe add some safety? then again, it's already checked 
         // when we come back around to the field...
         invertState.position += invertState.posIncrAttribute.getPositionIncrement();
         invertState.offset += invertState.offsetAttribute.endOffset();

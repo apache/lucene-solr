@@ -17,8 +17,6 @@ package org.apache.lucene.spatial.prefix.tree;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Shape;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -27,11 +25,13 @@ import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import com.spatial4j.core.shape.Shape;
+
 /**
  * A PrefixTree for date ranges in which the levels of the tree occur at natural periods of time (e.g. years,
  * months, ...). You pass in {@link Calendar} objects with the desired fields set and the unspecified
- * fields unset, which conveys the precision.  The implementation tries to be generic to the Calendar
- * abstraction, making some optimizations when a Gregorian is used, but no others have been tested.
+ * fields unset, which conveys the precision.  The implementation makes some optimization assumptions about a
+ * {@link java.util.GregorianCalendar}; others could probably be supported easily.
  * <p/>
  * Warning: If you construct a Calendar and then get something from the object like a field (e.g. year) or
  * milliseconds, then every field is fully set by side-effect. So after setting the fields, pass it to this
@@ -42,7 +42,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
 
   /*
     WARNING  java.util.Calendar is tricky to work with:
-    * If you "get" any field value, every fields because "set". This can introduce a Heisenbug effect,
+    * If you "get" any field value, every field becomes "set". This can introduce a Heisenbug effect,
         when in a debugger in some cases. Fortunately, Calendar.toString() doesn't apply.
     * Beware Calendar underflow of the underlying long.  If you create a Calendar from LONG.MIN_VALUE, and clear
      a field, it will underflow and appear close to LONG.MAX_VALUE (BC to AD).
@@ -94,10 +94,10 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
 
   public static final DateRangePrefixTree INSTANCE = new DateRangePrefixTree();
 
-  private final LevelledValue minLV, maxLV;
-  private final LevelledValue gregorianChangeDateLV;
+  private final UnitNRShape minLV, maxLV;
+  private final UnitNRShape gregorianChangeDateLV;
 
-  private DateRangePrefixTree() {
+  protected DateRangePrefixTree() {
     super(new int[]{//sublevels by level
         NUM_MYEARS,
         1000,//1 thousand thousand-years in a million years
@@ -109,27 +109,27 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
         calFieldLen(Calendar.SECOND),
         calFieldLen(Calendar.MILLISECOND),
     });
-    maxLV = (LevelledValue) toShape((Calendar)MAXCAL.clone());
-    minLV = (LevelledValue) toShape((Calendar)MINCAL.clone());
+    maxLV = toShape((Calendar)MAXCAL.clone());
+    minLV = toShape((Calendar)MINCAL.clone());
     if (MAXCAL instanceof GregorianCalendar) {
-      //TODO this should be a configurable param by passing a Calendar surving as a template.
+      //TODO this should be a configurable param by passing a Calendar serving as a template.
       GregorianCalendar gCal = (GregorianCalendar)MAXCAL;
-      gregorianChangeDateLV = (LevelledValue) toShape(gCal.getGregorianChange());
+      gregorianChangeDateLV = toUnitShape(gCal.getGregorianChange());
     } else {
       gregorianChangeDateLV = null;
     }
   }
 
   @Override
-  protected int getNumSubCells(LevelledValue lv) {
-    int cmp = comparePrefixLV(lv, maxLV);
+  public int getNumSubCells(UnitNRShape lv) {
+    int cmp = comparePrefix(lv, maxLV);
     assert cmp <= 0;
     if (cmp == 0)//edge case (literally!)
       return maxLV.getValAtLevel(lv.getLevel()+1);
 
     // if using GregorianCalendar and we're after the "Gregorian change date" then we'll compute
     //  the sub-cells ourselves more efficiently without the need to construct a Calendar.
-    cmp = gregorianChangeDateLV != null ? comparePrefixLV(lv, gregorianChangeDateLV) : -1;
+    cmp = gregorianChangeDateLV != null ? comparePrefix(lv, gregorianChangeDateLV) : -1;
     //TODO consider also doing fast-path if field is <= hours even if before greg change date
     if (cmp >= 0) {
       int result = fastSubCells(lv);
@@ -140,7 +140,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     }
   }
 
-  private int fastSubCells(LevelledValue lv) {
+  private int fastSubCells(UnitNRShape lv) {
     if (lv.getLevel() == yearLevel+1) {//month
       switch (lv.getValAtLevel(lv.getLevel())) {
         case Calendar.SEPTEMBER:
@@ -166,12 +166,12 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     }
   }
 
-  private int slowSubCells(LevelledValue lv) {
+  private int slowSubCells(UnitNRShape lv) {
     int field = FIELD_BY_LEVEL[lv.getLevel()+1];
     //short-circuit optimization (GregorianCalendar assumptions)
     if (field == -1 || field == Calendar.YEAR || field >= Calendar.HOUR_OF_DAY)//TODO make configurable
       return super.getNumSubCells(lv);
-    Calendar cal = toCalendarLV(lv);//somewhat heavyweight op; ideally should be stored on LevelledValue somehow
+    Calendar cal = toCalendar(lv);//somewhat heavyweight op; ideally should be stored on UnitNRShape somehow
     return cal.getActualMaximum(field) - cal.getActualMinimum(field) + 1;
   }
 
@@ -179,6 +179,21 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
    * Returns a new {@link Calendar} in UTC TimeZone, ROOT Locale, with all fields cleared. */
   public Calendar newCal() {
     return (Calendar) CAL_TMP.clone();
+  }
+
+  /** Calendar utility method:
+   * Returns the spatial prefix tree level for the corresponding {@link java.util.Calendar} field, such as
+   * {@link java.util.Calendar#YEAR}.  If there's no match, the next greatest level is returned as a negative value.
+   */
+  public int getTreeLevelForCalendarField(int calField) {
+    for (int i = yearLevel; i < FIELD_BY_LEVEL.length; i++) {
+      if (FIELD_BY_LEVEL[i] == calField) {
+        return i;
+      } else if (FIELD_BY_LEVEL[i] > calField) {
+        return -1 * i;
+      }
+    }
+    throw new IllegalArgumentException("Bad calendar field?: " + calField);
   }
 
   /** Calendar utility method:
@@ -214,7 +229,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
    * result in a {@link java.lang.IllegalArgumentException}.
    */
   @Override
-  public Shape toShape(Object value) {
+  public UnitNRShape toUnitShape(Object value) {
     if (value instanceof Calendar) {
       return toShape((Calendar) value);
     } else if (value instanceof Date) {
@@ -227,7 +242,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
 
   /** Converts the Calendar into a Shape.
    * The isSet() state of the Calendar is re-instated when done. */
-  public Shape toShape(Calendar cal) {
+  public UnitNRShape toShape(Calendar cal) {
     // Convert a Calendar into a stack of cell numbers
     final int calPrecField = getCalPrecisionField(cal);//must call first; getters set all fields
     try {
@@ -256,19 +271,21 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     }
   }
 
-  public Calendar toCalendar(Shape shape) {
-    if (shape instanceof LevelledValue)
-      return toCalendarLV((LevelledValue) shape);
-    throw new IllegalArgumentException("Can't be converted to Calendar: "+shape);
+  /** Calls {@link #toCalendar(org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape)}. */
+  @Override
+  public Object toObject(UnitNRShape shape) {
+    return toCalendar(shape);
   }
 
-  private Calendar toCalendarLV(LevelledValue lv) {
+  /** Converts the {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape} shape to a
+   * corresponding Calendar that is cleared below its level. */
+  public Calendar toCalendar(UnitNRShape lv) {
     if (lv.getLevel() == 0)
       return newCal();
-    if (comparePrefixLV(lv, minLV) <= 0) {//shouldn't typically happen; sometimes in a debugger
+    if (comparePrefix(lv, minLV) <= 0) {//shouldn't typically happen; sometimes in a debugger
       return (Calendar) MINCAL.clone();//full precision; truncation would cause underflow
     }
-    assert comparePrefixLV(lv, maxLV) <= 0;
+    assert comparePrefix(lv, maxLV) <= 0;
     Calendar cal = newCal();
 
     int yearAdj = lv.getValAtLevel(1) * 1_000_000;
@@ -294,23 +311,23 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   }
 
   @Override
-  protected String toStringLV(LevelledValue lv) {
-    return toString(toCalendarLV(lv));
+  protected String toString(UnitNRShape lv) {
+    return toString(toCalendar(lv));
   }
 
   /** Calendar utility method:
-   * Converts to calendar to ISO-8601, to include proper BC handling (1BC is "0000", 2BC is "-0001", etc.);
+   * Formats the calendar to ISO-8601 format, to include proper BC handling (1BC is "0000", 2BC is "-0001", etc.);
    * and WITHOUT a trailing 'Z'.
    * A fully cleared calendar will yield the string "*".
    * The isSet() state of the Calendar is re-instated when done. */
    @SuppressWarnings("fallthrough")
-   public String toString(Calendar cal) {
+  public String toString(Calendar cal) {
     final int calPrecField = getCalPrecisionField(cal);//must call first; getters set all fields
     if (calPrecField == -1)
       return "*";
     try {
-      //TODO not fully optimized because I only expect this to be used in tests / debugging.
-      //  Borrow code from Solr DateUtil, and have it reference this back?
+      //TODO not fully optimized; but it's at least not used in 'search'.
+      //TODO maybe borrow code from Solr DateUtil (put in Lucene util somewhere), and have it reference this back?
       String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS";
       int ptnLen = 0;
       switch (calPrecField) {//switch fall-through is deliberate
@@ -352,8 +369,8 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   }
 
   @Override
-  protected LevelledValue parseShapeLV(String str) throws ParseException {
-    return (LevelledValue) toShape(parseCalendar(str));
+  protected UnitNRShape parseUnitShape(String str) throws ParseException {
+    return toShape(parseCalendar(str));
   }
 
   /** Calendar utility method:

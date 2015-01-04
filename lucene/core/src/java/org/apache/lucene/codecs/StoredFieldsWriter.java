@@ -18,14 +18,18 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Reader;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Codec API for writing stored fields:
@@ -81,6 +85,7 @@ public abstract class StoredFieldsWriter implements Closeable {
     for (int i=0;i<mergeState.storedFieldsReaders.length;i++) {
       StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[i];
       storedFieldsReader.checkIntegrity();
+      MergeVisitor visitor = new MergeVisitor(mergeState, i);
       int maxDoc = mergeState.maxDocs[i];
       Bits liveDocs = mergeState.liveDocs[i];
       for (int docID=0;docID<maxDoc;docID++) {
@@ -88,16 +93,9 @@ public abstract class StoredFieldsWriter implements Closeable {
           // skip deleted docs
           continue;
         }
-        // TODO: this could be more efficient using
-        // FieldVisitor instead of loading/writing entire
-        // doc; ie we just have to renumber the field number
-        // on the fly?
-        // NOTE: it's very important to first assign to doc then pass it to
-        // fieldsWriter.addDocument; see LUCENE-1282
-        DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(null);
+        startDocument();
         storedFieldsReader.visitDocument(docID, visitor);
-        Document doc = visitor.getDocument();
-        addDocument(doc, mergeState.mergeFieldInfos);
+        finishDocument();
         docCount++;
         mergeState.checkAbort.work(300);
       }
@@ -105,16 +103,137 @@ public abstract class StoredFieldsWriter implements Closeable {
     finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
   }
-  
-  /** sugar method for startDocument() + writeField() for every stored field in the document */
-  protected final void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException {
-    startDocument();
 
-    for (IndexableField field : doc) {
-      writeField(fieldInfos.fieldInfo(field.name()), field);
+  final static IndexableFieldType STORED_TYPE = new IndexableFieldType() {
+    @Override
+    public boolean stored() {
+      return true;
+    }
+  };
+  
+  /** 
+   * A visitor that adds every field it sees.
+   * <p>
+   * Use like this:
+   * <pre>
+   * MergeVisitor visitor = new MergeVisitor(mergeState, readerIndex);
+   * for (...) {
+   *   startDocument();
+   *   storedFieldsReader.visitDocument(docID, visitor);
+   *   finishDocument();
+   * }
+   * </pre>
+   */
+  protected class MergeVisitor extends StoredFieldVisitor implements IndexableField {
+    BytesRef binaryValue;
+    String stringValue;
+    Number numericValue;
+    FieldInfo currentField;
+    FieldInfos remapper;
+    
+    /**
+     * Create new merge visitor.
+     */
+    public MergeVisitor(MergeState mergeState, int readerIndex) {
+      // if field numbers are aligned, we can save hash lookups
+      // on every field access. Otherwise, we need to lookup
+      // fieldname each time, and remap to a new number.
+      for (FieldInfo fi : mergeState.fieldInfos[readerIndex]) {
+        FieldInfo other = mergeState.mergeFieldInfos.fieldInfo(fi.number);
+        if (other == null || !other.name.equals(fi.name)) {
+          remapper = mergeState.mergeFieldInfos;
+          break;
+        }
+      }
+    }
+    
+    @Override
+    public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+      reset(fieldInfo);
+      binaryValue = new BytesRef(value);
+      write();
     }
 
-    finishDocument();
+    @Override
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+      reset(fieldInfo);
+      stringValue = value;
+      write();
+    }
+
+    @Override
+    public void intField(FieldInfo fieldInfo, int value) throws IOException {
+      reset(fieldInfo);
+      numericValue = value;
+      write();
+    }
+
+    @Override
+    public void longField(FieldInfo fieldInfo, long value) throws IOException {
+      reset(fieldInfo);
+      numericValue = value;
+      write();
+    }
+
+    @Override
+    public void floatField(FieldInfo fieldInfo, float value) throws IOException {
+      reset(fieldInfo);
+      numericValue = value;
+      write();
+    }
+
+    @Override
+    public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
+      reset(fieldInfo);
+      numericValue = value;
+      write();
+    }
+
+    @Override
+    public Status needsField(FieldInfo fieldInfo) throws IOException {
+      return Status.YES;
+    }
+
+    @Override
+    public String name() {
+      return currentField.name;
+    }
+
+    @Override
+    public IndexableFieldType fieldType() {
+      return STORED_TYPE;
+    }
+
+    @Override
+    public BytesRef binaryValue() {
+      return binaryValue;
+    }
+
+    @Override
+    public String stringValue() {
+      return stringValue;
+    }
+
+    @Override
+    public Number numericValue() {
+      return numericValue;
+    }
+
+    void reset(FieldInfo field) {
+      if (remapper != null) {
+        // field numbers are not aligned, we need to remap to the new field number
+        currentField = remapper.fieldInfo(field.name);
+      } else {
+        currentField = field;
+      }
+      binaryValue = null;
+      stringValue = null;
+      numericValue = null;
+    }
+    
+    void write() throws IOException {
+      writeField(currentField, this);
+    }
   }
 
   @Override

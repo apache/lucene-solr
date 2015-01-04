@@ -402,7 +402,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
       logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
-      # Forward any GPG warnings, except the expected one (since its a clean world)
+      # Forward any GPG warnings, except the expected one (since it's a clean world)
       f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
@@ -1132,7 +1132,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
       logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
-      # Forward any GPG warnings, except the expected one (since its a clean world)
+      # Forward any GPG warnings, except the expected one (since it's a clean world)
       f = open(logFile, encoding='UTF-8')
       for line in f.readlines():
         if line.lower().find('warning') != -1 \

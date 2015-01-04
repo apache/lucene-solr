@@ -18,10 +18,8 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.CursorPagingTest;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -636,7 +634,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a QueryResponse returned by SolrServer.query, asserts that the
    * numFound on the doc list matches the expectation
-   * @see SolrServer#query
+   * @see org.apache.solr.client.solrj.SolrClient#query
    */
   private void assertNumFound(int expected, QueryResponse rsp) {
     assertEquals(expected, extractDocList(rsp).getNumFound());
@@ -645,7 +643,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a QueryResponse returned by SolrServer.query, asserts that the
    * start on the doc list matches the expectation
-   * @see SolrServer#query
+   * @see org.apache.solr.client.solrj.SolrClient#query
    */
   private void assertStartsAt(int expected, QueryResponse rsp) {
     assertEquals(expected, extractDocList(rsp).getStart());
@@ -654,7 +652,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a QueryResponse returned by SolrServer.query, asserts that the
    * "id" of the list of documents returned matches the expected list
-   * @see SolrServer#query
+   * @see org.apache.solr.client.solrj.SolrClient#query
    */
   private void assertDocList(QueryResponse rsp, Object... ids) {
     SolrDocumentList docs = extractDocList(rsp);
@@ -669,7 +667,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   /**
    * Given a QueryResponse returned by SolrServer.query, asserts that the
    * response does include {@link #CURSOR_MARK_NEXT} key and returns it
-   * @see SolrServer#query
+   * @see org.apache.solr.client.solrj.SolrClient#query
    */
   private String assertHashNextCursorMark(QueryResponse rsp) {
     String r = rsp.getNextCursorMark();

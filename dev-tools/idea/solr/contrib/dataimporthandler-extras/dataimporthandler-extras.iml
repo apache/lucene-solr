@@ -31,6 +31,7 @@
     <orderEntry type="module" module-name="solr-core" />
     <orderEntry type="module" module-name="solrj" />
     <orderEntry type="module" module-name="dataimporthandler" />
+    <orderEntry type="module" module-name="analysis-common" />
   </component>
 </module>
 

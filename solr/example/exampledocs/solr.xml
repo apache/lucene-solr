@@ -29,7 +29,7 @@
   <field name="features">Scalability - Efficient Replication to other Solr Search Servers</field>
   <field name="features">Flexible and Adaptable with XML configuration and Schema</field>
   <field name="features">Good unicode support: h&#xE9;llo (hello with an accent over the e)</field>
-  <field name="price">0</field>
+  <field name="price">0.0</field>
   <field name="popularity">10</field>
   <field name="inStock">true</field>
   <field name="incubationdate_dt">2006-01-17T00:00:00.000Z</field>

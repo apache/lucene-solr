@@ -76,7 +76,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   }
 
-  @Test
+  /*@Test
   public void testComponentWithInitParamAndRequestParam(){
     for (String s : Arrays.asList("/dump4")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
@@ -87,7 +87,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
       assertEquals("B", def.get("b"));
       assertEquals("C", def.get("c"));
     }
-  }
+  }*/
   @Test
   public void testComponentWithConflictingInitParams(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");
@@ -107,6 +107,16 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertNotNull(h.getCore().getRequestHandler("/greedypath/some/path"));
     assertNotNull( h.getCore().getRequestHandler("/greedypath/some/other/path"));
     assertNull(h.getCore().getRequestHandler("/greedypath/unknownpath"));
+  }
+
+  public void testElevateExample(){
+    SolrRequestHandler handler = h.getCore().getRequestHandler("/elevate");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequest(req("initArgs", "true"), rsp);
+    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+    assertEquals("text" ,def.get("df"));
+
   }
 
 

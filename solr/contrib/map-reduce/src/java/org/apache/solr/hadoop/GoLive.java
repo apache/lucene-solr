@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.hadoop.MapReduceIndexerTool.Options;
 import org.slf4j.Logger;
@@ -91,7 +91,7 @@ class GoLive {
             public Request call() {
               Request req = new Request();
               LOG.info("Live merge " + dir.getPath() + " into " + mergeUrl);
-              final HttpSolrServer server = new HttpSolrServer(mergeUrl);
+              final HttpSolrClient server = new HttpSolrClient(mergeUrl);
               try {
                 CoreAdminRequest.MergeIndexes mergeRequest = new CoreAdminRequest.MergeIndexes();
                 mergeRequest.setCoreName(name);
@@ -149,7 +149,7 @@ class GoLive {
       try {
         LOG.info("Committing live merge...");
         if (options.zkHost != null) {
-          CloudSolrServer server = new CloudSolrServer(options.zkHost);
+          CloudSolrClient server = new CloudSolrClient(options.zkHost);
           server.setDefaultCollection(options.collection);
           server.commit();
           server.shutdown();
@@ -157,7 +157,7 @@ class GoLive {
           for (List<String> urls : options.shardUrls) {
             for (String url : urls) {
               // TODO: we should do these concurrently
-              HttpSolrServer server = new HttpSolrServer(url);
+              HttpSolrClient server = new HttpSolrClient(url);
               server.commit();
               server.shutdown();
             }

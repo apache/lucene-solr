@@ -52,8 +52,8 @@ public class SolrPingTest extends SolrJettyTestBase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
-    getSolrServer().add(doc);
-    getSolrServer().commit(true, true);
+    getSolrClient().add(doc);
+    getSolrClient().commit(true, true);
   }
   
   @Test
@@ -61,9 +61,9 @@ public class SolrPingTest extends SolrJettyTestBase {
     SolrPing ping = new SolrPing();
     SolrPingResponse rsp = null;
     ping.setActionEnable();
-    ping.process(getSolrServer());
+    ping.process(getSolrClient());
     ping.removeAction();
-    rsp = ping.process(getSolrServer());
+    rsp = ping.process(getSolrClient());
     Assert.assertNotNull(rsp);
   }
   
@@ -73,12 +73,12 @@ public class SolrPingTest extends SolrJettyTestBase {
     SolrPingResponse rsp = null;
     ping.setActionDisable();
     try {
-      ping.process(getSolrServer());
+      ping.process(getSolrClient());
     } catch (Exception e) {
       throw new Exception("disable action failed!");
     }
     ping.setActionPing();
-    rsp = ping.process(getSolrServer());
+    rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
     Assert.assertNotNull(rsp);
   }

@@ -171,7 +171,7 @@ public class DocBuilder {
       currentProcess = Context.FULL_DUMP;
     }
     ContextImpl ctx = new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this);
-    ctx.lastException = lastException;
+    ctx.setLastException(lastException);
     listener.onEvent(ctx);
   }
 
@@ -400,7 +400,7 @@ public class DocBuilder {
   }
 
   private void resetEntity(EntityProcessorWrapper epw) {
-    epw.setInitalized(false);
+    epw.setInitialized(false);
     for (EntityProcessorWrapper child : epw.getChildren()) {
       resetEntity(child);
     }
@@ -432,9 +432,9 @@ public class DocBuilder {
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
             session, parentCtx, this);
     epw.init(ctx);
-    if (!epw.isInitalized()) {
+    if (!epw.isInitialized()) {
       entitiesToDestroy.add(epw);
-      epw.setInitalized(true);
+      epw.setInitialized(true);
     }
     
     if (reqParams.getStart() > 0) {

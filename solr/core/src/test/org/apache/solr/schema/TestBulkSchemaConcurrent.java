@@ -19,8 +19,8 @@ package org.apache.solr.schema;
 
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -60,11 +60,11 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
   }
 
   private void setupHarnesses() {
-    for (final SolrServer client : clients) {
+    for (final SolrClient client : clients) {
       RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return ((HttpSolrServer)client).getBaseURL();
+          return ((HttpSolrClient)client).getBaseURL();
         }
       });
       restTestHarnesses.add(harness);
@@ -105,6 +105,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     boolean success = true;
 
     for (List e : collectErrors) {
+      if(e== null) continue;
       if(!e.isEmpty()){
         success = false;
         log.error(e.toString());

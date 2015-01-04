@@ -120,7 +120,7 @@ public class SolrSynonymParser extends SynonymMap.Parser {
       
       // currently we include the term itself in the map,
       // and use includeOrig = false always.
-      // this is how the existing filter does it, but its actually a bug,
+      // this is how the existing filter does it, but it's actually a bug,
       // especially if combined with ignoreCase = true
       for (int i = 0; i < inputs.length; i++) {
         for (int j = 0; j < outputs.length; j++) {

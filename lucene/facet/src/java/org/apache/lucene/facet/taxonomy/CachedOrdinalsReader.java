@@ -18,13 +18,13 @@ package org.apache.lucene.facet.taxonomy;
  */
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
@@ -161,7 +161,7 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("segment", ordsCache);
   }
 }

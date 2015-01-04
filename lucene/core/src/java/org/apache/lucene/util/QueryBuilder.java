@@ -200,10 +200,9 @@ public class QueryBuilder {
     int numTokens = 0;
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
-    boolean hasMoreTokens = false;    
-    
+    boolean hasMoreTokens = false;
+
     try (TokenStream source = analyzer.tokenStream(field, queryText)) {
-      source.reset();
       buffer = new CachingTokenFilter(source);
       buffer.reset();
 
@@ -230,15 +229,21 @@ public class QueryBuilder {
     } catch (IOException e) {
       throw new RuntimeException("Error analyzing query text", e);
     }
-    
+
     // rewind the buffer stream
-    buffer.reset();
+    try {
+      if (numTokens > 0) {
+        buffer.reset();//will never throw; the buffer is cached
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
 
     BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
 
-    if (numTokens == 0)
+    if (numTokens == 0) {
       return null;
-    else if (numTokens == 1) {
+    } else if (numTokens == 1) {
       try {
         boolean hasNext = buffer.incrementToken();
         assert hasNext == true;

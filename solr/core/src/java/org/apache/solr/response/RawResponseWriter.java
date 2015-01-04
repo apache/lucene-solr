@@ -35,7 +35,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * This writer is a special case that extends and alters the
  * QueryResponseWriter contract.  If SolrQueryResponse contains a
  * ContentStream added with the key {@link #CONTENT}
- * then this writer will output that stream exactly as is (with it's
+ * then this writer will output that stream exactly as is (with its
  * Content-Type).  if no such ContentStream has been added, then a
  * "base" QueryResponseWriter will be used to write the response
  * according to the usual contract.  The name of the "base" writer can

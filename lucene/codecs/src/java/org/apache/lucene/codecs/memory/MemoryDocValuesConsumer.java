@@ -196,7 +196,7 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
       int numBlocks = maxDoc / BLOCK_SIZE;
       float avgBPV = blockSum / (float)numBlocks;
       // just a heuristic, with tiny amounts of blocks our estimate is skewed as we ignore the final "incomplete" block.
-      // with at least 4 blocks its pretty accurate. The difference must also be significant (according to acceptable overhead).
+      // with at least 4 blocks it's pretty accurate. The difference must also be significant (according to acceptable overhead).
       if (numBlocks >= 4 && (avgBPV+avgBPV*acceptableOverheadRatio) < deltaBPV.bitsPerValue) {
         doBlock = true;
       }
@@ -335,7 +335,7 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     meta.writeVInt(minLength);
     meta.writeVInt(maxLength);
     
-    // if minLength == maxLength, its a fixed-length byte[], we are done (the addresses are implicit)
+    // if minLength == maxLength, it's a fixed-length byte[], we are done (the addresses are implicit)
     // otherwise, we need to record the length fields...
     if (minLength != maxLength) {
       meta.writeVInt(PackedInts.VERSION_CURRENT);
@@ -432,7 +432,7 @@ class MemoryDocValuesConsumer extends DocValuesConsumer {
     }
   }
 
-  // note: this might not be the most efficient... but its fairly simple
+  // note: this might not be the most efficient... but it's fairly simple
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);

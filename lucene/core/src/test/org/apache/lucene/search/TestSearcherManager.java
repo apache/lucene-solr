@@ -145,7 +145,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   @Override
   protected IndexSearcher getCurrentSearcher() throws Exception {
     if (random().nextInt(10) == 7) {
-      // NOTE: not best practice to call maybeReopen
+      // NOTE: not best practice to call maybeRefresh
       // synchronous to your search threads, but still we
       // test as apps will presumably do this for
       // simplicity:
@@ -250,7 +250,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         try {
           triedReopen.set(true);
           if (VERBOSE) {
-            System.out.println("NOW call maybeReopen");
+            System.out.println("NOW call maybeRefresh");
           }
           searcherManager.maybeRefresh();
           success.set(true);
@@ -461,7 +461,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
             new FilterDirectoryReader.SubReaderWrapper() {
               @Override
               public LeafReader wrap(LeafReader reader) {
-                return new MyFilterLeafReader(reader);
+                FilterLeafReader wrapped = new MyFilterLeafReader(reader);
+                assertEquals(reader, wrapped.getDelegate());
+                return wrapped;
               }
             });
     }
@@ -476,7 +478,12 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   public void testCustomDirectoryReader() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    DirectoryReader reader = new MyFilterDirectoryReader(w.getReader());
+    DirectoryReader nrtReader = w.getReader();
+
+    FilterDirectoryReader reader = new MyFilterDirectoryReader(nrtReader);
+    assertEquals(nrtReader, reader.getDelegate());
+    assertEquals(nrtReader, FilterDirectoryReader.unwrap(reader));
+
     SearcherManager mgr = new SearcherManager(reader, null);
     for(int i=0;i<10;i++) {
       w.addDocument(w.newDocument());

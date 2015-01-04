@@ -17,22 +17,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
@@ -44,7 +38,12 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slow
 @SuppressSSL
@@ -253,7 +252,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         zkServer.run();
       }
       
-      CloudSolrServer client = createCloudClient("collection1");
+      CloudSolrClient client = createCloudClient("collection1");
       try {
           createCollection(null, "testcollection",
               1, 1, 1, client, null, "conf1");
@@ -294,11 +293,11 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     private HttpClient httpClient = HttpClientUtil.createClient(null);
     private volatile boolean stop = false;
     int clientIndex = 0;
-    private ConcurrentUpdateSolrServer suss;
-    private List<SolrServer> clients;  
+    private ConcurrentUpdateSolrClient cusc;
+    private List<SolrClient> clients;
     private AtomicInteger fails = new AtomicInteger();
     
-    public FullThrottleStopableIndexingThread(List<SolrServer> clients,
+    public FullThrottleStopableIndexingThread(List<SolrClient> clients,
         String id, boolean doDeletes) {
       super(controlClient, cloudClient, id, doDeletes);
       setName("FullThrottleStopableIndexingThread");
@@ -306,12 +305,12 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       this.clients = clients;
       HttpClientUtil.setConnectionTimeout(httpClient, 15000);
       HttpClientUtil.setSoTimeout(httpClient, 15000);
-      suss = new ConcurrentUpdateSolrServer(
-          ((HttpSolrServer) clients.get(0)).getBaseURL(), httpClient, 8,
+      cusc = new ConcurrentUpdateSolrClient(
+          ((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8,
           2) {
         @Override
         public void handleError(Throwable ex) {
-          log.warn("suss error", ex);
+          log.warn("cusc error", ex);
         }
       };
     }
@@ -330,7 +329,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
           String delete = deletes.remove(0);
           try {
             numDeletes++;
-            suss.deleteById(delete);
+            cusc.deleteById(delete);
           } catch (Exception e) {
             changeUrlOnError(e);
             //System.err.println("REQUEST FAILED:");
@@ -350,7 +349,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
               50,
               t1,
               "Saxon heptarchies that used to rip around so in old times and raise Cain.  My, you ought to seen old Henry the Eight when he was in bloom.  He WAS a blossom.  He used to marry a new wife every day, and chop off her head next morning.  And he would do it just as indifferent as if ");
-          suss.add(doc);
+          cusc.add(doc);
         } catch (Exception e) {
           changeUrlOnError(e);
           //System.err.println("REQUEST FAILED:");
@@ -373,13 +372,13 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         if (clientIndex > clients.size() - 1) {
           clientIndex = 0;
         }
-        suss.shutdownNow();
-        suss = new ConcurrentUpdateSolrServer(
-            ((HttpSolrServer) clients.get(clientIndex)).getBaseURL(),
+        cusc.shutdownNow();
+        cusc = new ConcurrentUpdateSolrClient(
+            ((HttpSolrClient) clients.get(clientIndex)).getBaseURL(),
             httpClient, 30, 3) {
           @Override
           public void handleError(Throwable ex) {
-            log.warn("suss error", ex);
+            log.warn("cusc error", ex);
           }
         };
       }
@@ -388,8 +387,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     @Override
     public void safeStop() {
       stop = true;
-      suss.blockUntilFinished();
-      suss.shutdownNow();
+      cusc.blockUntilFinished();
+      cusc.shutdownNow();
       httpClient.getConnectionManager().shutdown();
     }
 

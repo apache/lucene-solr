@@ -45,8 +45,11 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
 /**
  * Base class aiming at testing {@link StoredFieldsFormat stored fields formats}.
@@ -483,7 +486,94 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.close();
     dir.close();
   }
-  
+
+  /** A dummy filter reader that reverse the order of documents in stored fields. */
+  private static class DummyFilterLeafReader extends FilterLeafReader {
+
+    public DummyFilterLeafReader(LeafReader in) {
+      super(in);
+    }
+
+    @Override
+    public void document(int docID, StoredFieldVisitor visitor) throws IOException {
+      super.document(maxDoc() - 1 - docID, visitor);
+    }
+
+  }
+
+  private static class DummyFilterDirectoryReader extends FilterDirectoryReader {
+
+    public DummyFilterDirectoryReader(DirectoryReader in) {
+      super(in, new SubReaderWrapper() {
+        @Override
+        public LeafReader wrap(LeafReader reader) {
+          return new DummyFilterLeafReader(reader);
+        }
+      });
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+      return new DummyFilterDirectoryReader(in);
+    }
+    
+  }
+
+  public void testMergeFilterReader() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    final int numDocs = atLeast(200);
+    final String[] stringValues = new String[10];
+    for (int i = 0; i < stringValues.length; ++i) {
+      stringValues[i] = RandomStrings.randomRealisticUnicodeOfLength(random(), 10);
+    }
+    Document[] docs = new Document[numDocs];
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = w.newDocument();
+      doc.addAtom("to_delete", random().nextBoolean() ? "yes" : "no");
+      doc.addStoredInt("id", i);
+      doc.addStoredInt("i", random().nextInt(50));
+      doc.addStoredLong("l", random().nextLong());
+      doc.addStoredDouble("d", random().nextDouble());
+      doc.addStoredFloat("f", random().nextFloat());
+      doc.addStoredString("s", RandomPicks.randomFrom(random(), stringValues));
+      doc.addStoredBinary("b", new BytesRef(RandomPicks.randomFrom(random(), stringValues)));
+      docs[i] = doc;
+      w.addDocument(doc);
+    }
+    if (random().nextBoolean()) {
+      w.deleteDocuments(new Term("to_delete", "yes"));
+    }
+    w.commit();
+    w.close();
+    
+    DirectoryReader reader = new DummyFilterDirectoryReader(DirectoryReader.open(dir));
+    
+    Directory dir2 = newDirectory();
+    w = new RandomIndexWriter(random(), dir2);
+    w.addIndexes(reader);
+    reader.close();
+    dir.close();
+
+    reader = w.getReader();
+    for (int i = 0; i < reader.maxDoc(); ++i) {
+      final Document doc = reader.document(i);
+      final int id = doc.getField("id").numericValue().intValue();
+      final Document expected = docs[id];
+      assertEquals(expected.get("s"), doc.get("s"));
+      assertEquals(expected.getField("i").numericValue(), doc.getField("i").numericValue());
+      assertEquals(expected.getField("l").numericValue(), doc.getField("l").numericValue());
+      assertEquals(expected.getField("d").numericValue(), doc.getField("d").numericValue());
+      assertEquals(expected.getField("f").numericValue(), doc.getField("f").numericValue());
+      assertEquals(expected.getField("b").binaryValue(), doc.getField("b").binaryValue());
+    }
+
+    reader.close();
+    w.close();
+    TestUtil.checkIndex(dir2);
+    dir2.close();
+  }
+
   @Nightly
   public void testBigDocuments() throws IOException {
     // "big" as "much bigger than the chunk size"
@@ -566,4 +656,51 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     dir.close();
   }
 
+  /** mix up field numbers, merge, and check that data is correct */
+  public void testMismatchedFields() throws Exception {
+    Directory dirs[] = new Directory[10];
+    for (int i = 0; i < dirs.length; i++) {
+      Directory dir = newDirectory();
+      IndexWriterConfig iwc = new IndexWriterConfig(null);
+      IndexWriter iw = new IndexWriter(dir, iwc);
+      Document doc = iw.newDocument();
+      for (int j = 0; j < 10; j++) {
+        // add fields where name=value (e.g. 3=3) so we can detect if stuff gets screwed up.
+        doc.addAtom(Integer.toString(j), Integer.toString(j));
+      }
+      for (int j = 0; j < 10; j++) {
+        iw.addDocument(doc);
+      }
+      
+      DirectoryReader reader = DirectoryReader.open(iw, true);
+      // mix up fields explicitly
+      if (random().nextBoolean()) {
+        reader = new MismatchedDirectoryReader(reader, random());
+      }
+      dirs[i] = newDirectory();
+      IndexWriter adder = new IndexWriter(dirs[i], new IndexWriterConfig(null));
+      adder.addIndexes(reader);
+      adder.commit();
+      adder.close();
+      
+      IOUtils.close(reader, iw, dir);
+    }
+    
+    Directory everything = newDirectory();
+    IndexWriter iw = new IndexWriter(everything, new IndexWriterConfig(null));
+    iw.addIndexes(dirs);
+    iw.forceMerge(1);
+    
+    LeafReader ir = getOnlySegmentReader(DirectoryReader.open(iw, true));
+    for (int i = 0; i < ir.maxDoc(); i++) {
+      Document doc = ir.document(i);
+      assertEquals(10, doc.getFields().size());
+      for (int j = 0; j < 10; j++) {
+        assertEquals(Integer.toString(j), doc.getString(Integer.toString(j)));
+      }
+    }
+
+    IOUtils.close(iw, ir, everything);
+    IOUtils.close(dirs);
+  }
 }

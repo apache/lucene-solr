@@ -258,7 +258,7 @@ public final class SynonymFilter extends TokenFilter {
    * @param input input tokenstream
    * @param synonyms synonym map
    * @param ignoreCase case-folds input for matching with {@link Character#toLowerCase(int)}.
-   *                   Note, if you set this to true, its your responsibility to lowercase
+   *                   Note, if you set this to true, it's your responsibility to lowercase
    *                   the input entries when you create the {@link SynonymMap}
    */
   public SynonymFilter(TokenStream input, SynonymMap synonyms, boolean ignoreCase) {

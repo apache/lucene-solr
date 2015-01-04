@@ -395,6 +395,22 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     d.close();
   }
 
+  public void testInvalidMaxMergeCountAndThreads() throws Exception {
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    try {
+      cms.setMaxMergesAndThreads(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, 3);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+    try {
+      cms.setMaxMergesAndThreads(3, ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+  }
+
   public void testLiveMaxMergeCount() throws Exception {
     Directory d = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
@@ -429,6 +445,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
         }
       };
+
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxMergeCount());
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxThreadCount());
 
     cms.setMaxMergesAndThreads(5, 3);
 
@@ -550,5 +569,76 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     w.rollback();
     dir.close();
+  }
+
+  public void testDynamicDefaults() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxMergeCount());
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxThreadCount());
+    iwc.setMergeScheduler(cms);
+    iwc.setMaxBufferedDocs(2);
+    LogMergePolicy lmp = newLogMergePolicy();
+    lmp.setMergeFactor(2);
+    iwc.setMergePolicy(lmp);
+
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.addDocument(w.newDocument());
+    w.addDocument(w.newDocument());
+    // flush
+
+    w.addDocument(w.newDocument());
+    w.addDocument(w.newDocument());
+    // flush + merge
+
+    // CMS should have now set true values:
+    assertTrue(cms.getMaxMergeCount() != ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS);
+    assertTrue(cms.getMaxThreadCount() != ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS);
+    w.close();
+    dir.close();
+  }
+
+  public void testResetToAutoDefault() throws Exception {
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxMergeCount());
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxThreadCount());
+    cms.setMaxMergesAndThreads(4, 3);
+    assertEquals(4, cms.getMaxMergeCount());
+    assertEquals(3, cms.getMaxThreadCount());
+
+    try {
+      cms.setMaxMergesAndThreads(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, 4);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    try {
+      cms.setMaxMergesAndThreads(4, ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    cms.setMaxMergesAndThreads(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS);
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxMergeCount());
+    assertEquals(ConcurrentMergeScheduler.AUTO_DETECT_MERGES_AND_THREADS, cms.getMaxThreadCount());
+  }
+
+  public void testSpinningDefaults() throws Exception {
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    cms.setDefaultMaxMergesAndThreads(true);
+    assertEquals(1, cms.getMaxThreadCount());
+    assertEquals(2, cms.getMaxMergeCount());
+  }
+
+  public void testNonSpinningDefaults() throws Exception {
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    cms.setDefaultMaxMergesAndThreads(false);
+    int threadCount = cms.getMaxThreadCount();
+    assertTrue(threadCount >= 1);
+    assertTrue(threadCount <= 3);
+    assertEquals(cms.getMaxMergeCount(), 2+threadCount);
   }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.solr;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,10 +24,10 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
@@ -316,6 +315,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "fl",i1, "fl", "id","sort",i1 + " desc");
     query("q","*:*", "fl", "id", "fl",nint, "fl",tint,"sort",i1 + " desc");
     query("q","*:*", "fl",nint, "fl", "id", "fl",tint,"sort",i1 + " desc");
+    handle.put("did", SKIPVAL);
+    query("q","*:*", "fl","did:[docid]","sort",i1 + " desc");
+    handle.remove("did");
+    query("q","*:*", "fl","log(" + tlong + "),abs(" + tlong + "),score","sort",i1 + " desc");
+    query("q","*:*", "fl","n_*","sort",i1 + " desc");
 
     // basic spellcheck testing
     query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "spellCheckCompRH_Direct", "shards.qt", "spellCheckCompRH_Direct");
@@ -471,7 +475,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     for(int numDownServers = 0; numDownServers < jettys.size()-1; numDownServers++)
     {
       List<JettySolrRunner> upJettys = new ArrayList<>(jettys);
-      List<SolrServer> upClients = new ArrayList<>(clients);
+      List<SolrClient> upClients = new ArrayList<>(clients);
       List<JettySolrRunner> downJettys = new ArrayList<>();
       List<String> upShards = new ArrayList<>(Arrays.asList(shardsArr));
       for(int i=0; i<numDownServers; i++)
@@ -554,7 +558,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             "stats.field", tdate_a, 
             "stats.field", tdate_b,
             "stats.calcdistinct", "true");
-    } catch (HttpSolrServer.RemoteSolrException e) {
+    } catch (HttpSolrClient.RemoteSolrException e) {
       if (e.getMessage().startsWith("java.lang.NullPointerException"))  {
         fail("NullPointerException with stats request on empty index");
       } else  {
@@ -590,7 +594,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   protected void queryPartialResults(final List<String> upShards,
-                                     final List<SolrServer> upClients, 
+                                     final List<SolrClient> upClients,
                                      Object... q) throws Exception {
     
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -622,7 +626,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           public void run() {
             for (int j = 0; j < stress; j++) {
               int which = r.nextInt(upClients.size());
-              SolrServer client = upClients.get(which);
+              SolrClient client = upClients.get(which);
               try {
                 QueryResponse rsp = client.query(new ModifiableSolrParams(params));
                 if (verifyStress) {
@@ -643,10 +647,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
 
-  protected QueryResponse queryRandomUpServer(ModifiableSolrParams params, List<SolrServer> upClients) throws SolrServerException {
+  protected QueryResponse queryRandomUpServer(ModifiableSolrParams params, List<SolrClient> upClients) throws SolrServerException {
     // query a random "up" server
     int which = r.nextInt(upClients.size());
-    SolrServer client = upClients.get(which);
+    SolrClient client = upClients.get(which);
     QueryResponse rsp = client.query(params);
     return rsp;
   }

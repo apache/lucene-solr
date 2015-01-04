@@ -17,25 +17,6 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -61,9 +42,9 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -77,6 +58,25 @@ import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Command-line utility for working with Solr.
@@ -93,7 +93,7 @@ public class SolrCLI {
   }
   
   /**
-   * Helps build SolrCloud aware tools by initializing a CloudSolrServer
+   * Helps build SolrCloud aware tools by initializing a CloudSolrClient
    * instance before running the tool.
    */
   public static abstract class SolrCloudTool implements Tool {
@@ -111,31 +111,41 @@ public class SolrCLI {
       String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
       
       log.debug("Connecting to Solr cluster: " + zkHost);
-      CloudSolrServer cloudSolrServer = null;
+      int exitStatus = 0;
+      CloudSolrClient cloudSolrClient = null;
       try {
-        cloudSolrServer = new CloudSolrServer(zkHost);
+        cloudSolrClient = new CloudSolrClient(zkHost);
         
         String collection = cli.getOptionValue("collection");
         if (collection != null)
-          cloudSolrServer.setDefaultCollection(collection);
+          cloudSolrClient.setDefaultCollection(collection);
         
-        cloudSolrServer.connect();        
-        runCloudTool(cloudSolrServer, cli);
+        cloudSolrClient.connect();
+        exitStatus = runCloudTool(cloudSolrClient, cli);
+      } catch (Exception exc) {
+        // since this is a CLI, spare the user the stacktrace
+        String excMsg = exc.getMessage();
+        if (excMsg != null) {
+          System.err.println("\nERROR:"+excMsg+"\n");
+          exitStatus = 1;
+        } else {
+          throw exc;
+        }
       } finally {
-        if (cloudSolrServer != null) {
+        if (cloudSolrClient != null) {
           try {
-            cloudSolrServer.shutdown();
+            cloudSolrClient.shutdown();
           } catch (Exception ignore) {}
         }
       }
       
-      return 0;
+      return exitStatus;
     }
     
     /**
      * Runs a SolrCloud tool with CloudSolrServer initialized
      */
-    protected abstract void runCloudTool(CloudSolrServer cloudSolrServer, CommandLine cli) 
+    protected abstract int runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception;
   }
   
@@ -182,9 +192,7 @@ public class SolrCLI {
         processCommandLineArgs(joinCommonAndToolOptions(tool.getOptions()), toolArgs);
 
     // run the tool
-    int exitCode = tool.runTool(cli);
-    
-    System.exit(exitCode);    
+    System.exit(tool.runTool(cli));
   }
   
   /**
@@ -327,9 +335,8 @@ public class SolrCLI {
       
       for (String classInPackage : classes) {
         Class<?> theClass = Class.forName(classInPackage);
-        if (Tool.class.isAssignableFrom(theClass)) {
+        if (Tool.class.isAssignableFrom(theClass))
           toolClasses.add((Class<Tool>) theClass);
-        }
       }
     } catch (Exception e) {
       // safe to squelch this as it's just looking for tools to run
@@ -350,9 +357,8 @@ public class SolrCLI {
         if (entry.getName().endsWith(".class")) {
           String className = entry.getName().replaceAll("[$].*", "")
               .replaceAll("[.]class", "").replace('/', '.');
-          if (className.startsWith(packageName)) {
+          if (className.startsWith(packageName))
             classes.add(className);
-          }
         }
       }
     }
@@ -367,9 +373,9 @@ public class SolrCLI {
     Throwable rootCause = SolrException.getRootCause(exc);
     boolean wasCommError =
         (rootCause instanceof ConnectException ||
-            rootCause instanceof ConnectTimeoutException ||
-            rootCause instanceof NoHttpResponseException ||
-            rootCause instanceof SocketException);
+         rootCause instanceof ConnectTimeoutException ||
+         rootCause instanceof NoHttpResponseException ||
+         rootCause instanceof SocketException);
     return wasCommError;
   }
   
@@ -470,7 +476,7 @@ public class SolrCLI {
       String errMsg = asString("/error/msg", json);
       if (errMsg == null)
         errMsg = String.valueOf(json);
-      throw new SolrServerException("Request to "+getUrl+" failed due to: "+errMsg);
+      throw new SolrServerException(errMsg);
     }
     return json;
   }  
@@ -623,7 +629,9 @@ public class SolrCLI {
         throws Exception
     {
       Map<String,Object> status = new LinkedHashMap<String,Object>();
-      
+
+      String solrHome = (String)info.get("solr_home");
+      status.put("solr_home", solrHome != null ? solrHome : "?");
       status.put("version", asString("/lucene/solr-impl-version", info));      
       status.put("startTime", asString("/jvm/jmx/startTime", info));
       status.put("uptime", uptime(asLong("/jvm/jmx/upTimeMS", info)));
@@ -705,198 +713,6 @@ public class SolrCLI {
   } // end ApiTool class
 
   private static final String DEFAULT_CONFIG_SET = "data_driven_schema_configs";
-
-  /**
-   * Supports create_collection command in the bin/solr script.
-   */
-  public static class CreateCollectionTool implements Tool {
-
-    @Override
-    public String getName() {
-      return "create_collection";
-    }
-
-    @SuppressWarnings("static-access")
-    @Override
-    public Option[] getOptions() {
-      return new Option[] {
-          OptionBuilder
-              .withArgName("HOST")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
-              .create("zkHost"),
-          OptionBuilder
-              .withArgName("HOST")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
-              .create("solrUrl"),
-          OptionBuilder
-              .withArgName("NAME")
-              .hasArg()
-              .isRequired(true)
-              .withDescription("Name of collection to create.")
-              .create("name"),
-          OptionBuilder
-              .withArgName("#")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Number of shards; default is 1")
-              .create("shards"),
-          OptionBuilder
-              .withArgName("#")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Number of copies of each document across the collection (replicas per shard); default is 1")
-              .create("replicationFactor"),
-          OptionBuilder
-              .withArgName("#")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
-              .create("maxShardsPerNode"),
-          OptionBuilder
-              .withArgName("NAME")
-              .hasArg()
-              .isRequired(false)
-              .withDescription("Name of the configuration for this collection; default is "+DEFAULT_CONFIG_SET)
-              .create("config"),
-          OptionBuilder
-              .withArgName("DIR")
-              .hasArg()
-              .isRequired(true)
-              .withDescription("Path to configsets directory on the local system.")
-              .create("configsetsDir")
-      };
-    }
-
-    public int runTool(CommandLine cli) throws Exception {
-
-      // quiet down the ZK logging for cli tools
-      LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
-      LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
-
-      String zkHost = cli.getOptionValue("zkHost");
-      if (zkHost == null) {
-        // find it using the localPort
-        String solrUrl = cli.getOptionValue("solrUrl");
-        if (solrUrl == null)
-          throw new IllegalStateException(
-              "Must provide either the -zkHost or -solrUrl parameters to use the create_collection command!");
-
-        if (!solrUrl.endsWith("/"))
-          solrUrl += "/";
-
-        String systemInfoUrl = solrUrl+"admin/info/system";
-        HttpClient httpClient = getHttpClient();
-        try {
-          // hit Solr to get system info
-          Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
-
-          // convert raw JSON into user-friendly output
-          StatusTool statusTool = new StatusTool();
-          Map<String,Object> status = statusTool.reportStatus(solrUrl, systemInfo, httpClient);
-
-          Map<String,Object> cloud = (Map<String, Object>)status.get("cloud");
-          if (cloud == null) {
-            System.err.println("\nERROR: Solr at "+solrUrl+
-                " is running in standalone server mode, please use the create_core command instead;\n" +
-                "create_collection can only be used when running in SolrCloud mode.\n");
-            return 1;
-          }
-
-          String zookeeper = (String) cloud.get("ZooKeeper");
-          if (zookeeper.endsWith("(embedded)")) {
-            zookeeper = zookeeper.substring(0,zookeeper.length()-"(embedded)".length());
-          }
-          zkHost = zookeeper;
-        } finally {
-          closeHttpClient(httpClient);
-        }
-      }
-
-      CloudSolrServer cloudSolrServer = null;
-      try {
-        cloudSolrServer = new CloudSolrServer(zkHost);
-        System.out.println("Connecting to ZooKeeper at "+zkHost);
-        cloudSolrServer.connect();
-        runCloudTool(cloudSolrServer, cli);
-      } finally {
-        if (cloudSolrServer != null) {
-          try {
-            cloudSolrServer.shutdown();
-          } catch (Exception ignore) {}
-        }
-      }
-
-      return 0;
-    }
-
-    protected void runCloudTool(CloudSolrServer cloudSolrServer, CommandLine cli) throws Exception {
-      Set<String> liveNodes = cloudSolrServer.getZkStateReader().getClusterState().getLiveNodes();
-      if (liveNodes.isEmpty())
-        throw new IllegalStateException("No live nodes found! Cannot create a collection until " +
-            "there is at least 1 live node in the cluster.");
-      String firstLiveNode = liveNodes.iterator().next();
-
-      // build a URL to create the collection
-      int numShards = optionAsInt(cli, "shards", 1);
-      int replicationFactor = optionAsInt(cli, "replicationFactor", 1);
-      int maxShardsPerNode = -1;
-
-      if (cli.hasOption("maxShardsPerNode")) {
-        maxShardsPerNode = Integer.parseInt(cli.getOptionValue("maxShardsPerNode"));
-      } else {
-        // need number of live nodes to determine maxShardsPerNode if it is not set
-        int numNodes = liveNodes.size();
-        maxShardsPerNode = ((numShards*replicationFactor)+numNodes-1)/numNodes;
-      }
-
-      String configSet = cli.getOptionValue("config", DEFAULT_CONFIG_SET);
-      // first, test to see if that config exists in ZK
-      if (!cloudSolrServer.getZkStateReader().getZkClient().exists("/configs/"+configSet, true)) {
-        File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
-        if (!configsetsDir.isDirectory())
-          throw new FileNotFoundException(configsetsDir.getAbsolutePath()+" not found!");
-
-        // upload the configset if it exists
-        File configSetDir = new File(configsetsDir, configSet);
-        if (!configSetDir.isDirectory())
-          throw new FileNotFoundException("Specified config "+configSet+
-              " not found in "+configsetsDir.getAbsolutePath());
-
-        File confDir = new File(configSetDir,"conf");
-        System.out.println("Uploading "+confDir.getAbsolutePath()+
-            " for config "+configSet+" to ZooKeeper at "+cloudSolrServer.getZkHost());
-        ZkController.uploadConfigDir(cloudSolrServer.getZkStateReader().getZkClient(), confDir, configSet);
-      }
-
-      String baseUrl = cloudSolrServer.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
-      String collectionName = cli.getOptionValue("name");
-      String createCollectionUrl =
-          String.format(Locale.ROOT,
-              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&collection.configName=%s",
-              baseUrl,
-              collectionName,
-              numShards,
-              replicationFactor,
-              maxShardsPerNode,
-              configSet);
-
-      System.out.println("Creating new collection '"+collectionName+"' using command:\n\n"+createCollectionUrl+"\n");
-
-      Map<String,Object> json = getJson(createCollectionUrl);
-      CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(json);
-      System.out.println(arr.toString());
-      System.out.println();
-    }
-
-    protected int optionAsInt(CommandLine cli, String option, int defaultVal) {
-      return Integer.parseInt(cli.getOptionValue(option, String.valueOf(defaultVal)));
-    }
-  } // end CreateCollectionTool class
 
   private static final long MS_IN_MIN = 60 * 1000L;
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
@@ -1056,7 +872,7 @@ public class SolrCLI {
     }
         
     @Override
-    protected void runCloudTool(CloudSolrServer cloudSolrServer, CommandLine cli) throws Exception {
+    protected int runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
       
       String collection = cli.getOptionValue("collection");
       if (collection == null)
@@ -1064,7 +880,7 @@ public class SolrCLI {
       
       log.info("Running healthcheck for "+collection);
       
-      ZkStateReader zkStateReader = cloudSolrServer.getZkStateReader();
+      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -1074,7 +890,7 @@ public class SolrCLI {
       
       SolrQuery q = new SolrQuery("*:*");
       q.setRows(0);      
-      QueryResponse qr = cloudSolrServer.query(q);
+      QueryResponse qr = cloudSolrClient.query(q);
       String collErr = null;
       long docCount = -1;
       try {
@@ -1108,13 +924,13 @@ public class SolrCLI {
           String coreUrl = replicaCoreProps.getCoreUrl();
           boolean isLeader = coreUrl.equals(leaderUrl);
 
-          // if replica's node is not live, it's status is DOWN
+          // if replica's node is not live, its status is DOWN
           String nodeName = replicaCoreProps.getNodeName();
           if (nodeName == null || !liveNodes.contains(nodeName)) {
             replicaStatus = ZkStateReader.DOWN;
           } else {
             // query this replica directly to get doc count and assess health
-            HttpSolrServer solr = new HttpSolrServer(coreUrl);
+            HttpSolrClient solr = new HttpSolrClient(coreUrl);
             String solrUrl = solr.getBaseURL();
             q = new SolrQuery("*:*");
             q.setRows(0);
@@ -1171,8 +987,272 @@ public class SolrCLI {
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(report);
       System.out.println(arr.toString());
+
+      return 0;
     }
   } // end HealthcheckTool
+
+  /**
+   * Supports create_collection command in the bin/solr script.
+   */
+  public static class CreateCollectionTool implements Tool {
+
+    @Override
+    public String getName() {
+      return "create_collection";
+    }
+
+    @SuppressWarnings("static-access")
+    @Override
+    public Option[] getOptions() {
+      return new Option[] {
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
+              .create("zkHost"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Base Solr URL, which can be used to determine the zkHost if that's not known")
+              .create("solrUrl"),
+          OptionBuilder
+              .withArgName("NAME")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Name of collection to create.")
+              .create("name"),
+          OptionBuilder
+              .withArgName("#")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Number of shards; default is 1")
+              .create("shards"),
+          OptionBuilder
+              .withArgName("#")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Number of copies of each document across the collection (replicas per shard); default is 1")
+              .create("replicationFactor"),
+          OptionBuilder
+              .withArgName("#")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Maximum number of shards per Solr node; default is determined based on the number of shards, replication factor, and live nodes.")
+              .create("maxShardsPerNode"),
+          OptionBuilder
+              .withArgName("NAME")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Name of the configuration for this collection; default is "+DEFAULT_CONFIG_SET)
+              .create("config"),
+          OptionBuilder
+              .withArgName("DIR")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Path to configsets directory on the local system.")
+              .create("configsetsDir")
+      };
+    }
+
+    public int runTool(CommandLine cli) throws Exception {
+
+      // quiet down the ZK logging for cli tools
+      LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
+      LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
+
+      String zkHost = cli.getOptionValue("zkHost");
+      if (zkHost == null) {
+        // find it using the localPort
+        String solrUrl = cli.getOptionValue("solrUrl");
+        if (solrUrl == null)
+          throw new IllegalStateException(
+              "Must provide either the -zkHost or -solrUrl parameters to use the create_collection command!");
+
+        if (!solrUrl.endsWith("/"))
+          solrUrl += "/";
+
+        String systemInfoUrl = solrUrl+"admin/info/system";
+        HttpClient httpClient = getHttpClient();
+        try {
+          // hit Solr to get system info
+          Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2);
+
+          // convert raw JSON into user-friendly output
+          StatusTool statusTool = new StatusTool();
+          Map<String,Object> status = statusTool.reportStatus(solrUrl, systemInfo, httpClient);
+
+          Map<String,Object> cloud = (Map<String, Object>)status.get("cloud");
+          if (cloud == null) {
+            System.err.println("\nERROR: Solr at "+solrUrl+
+                " is running in standalone server mode, please use the create_core command instead;\n" +
+                "create_collection can only be used when running in SolrCloud mode.\n");
+            return 1;
+          }
+
+          String zookeeper = (String) cloud.get("ZooKeeper");
+          if (zookeeper.endsWith("(embedded)")) {
+            zookeeper = zookeeper.substring(0,zookeeper.length()-"(embedded)".length());
+          }
+          zkHost = zookeeper;
+        } finally {
+          closeHttpClient(httpClient);
+        }
+      }
+
+      int toolExitStatus = 0;
+      CloudSolrClient cloudSolrServer = null;
+      try {
+        cloudSolrServer = new CloudSolrClient(zkHost);
+        System.out.println("Connecting to ZooKeeper at " + zkHost);
+        cloudSolrServer.connect();
+        toolExitStatus = runCloudTool(cloudSolrServer, cli);
+      } catch (Exception exc) {
+        // since this is a CLI, spare the user the stacktrace
+        String excMsg = exc.getMessage();
+        if (excMsg != null) {
+          System.err.println("\nERROR: "+excMsg+"\n");
+          toolExitStatus = 1;
+        } else {
+          throw exc;
+        }
+      } finally {
+        if (cloudSolrServer != null) {
+          try {
+            cloudSolrServer.shutdown();
+          } catch (Exception ignore) {}
+        }
+      }
+
+      return toolExitStatus;
+    }
+
+    protected int runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
+      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+      if (liveNodes.isEmpty())
+        throw new IllegalStateException("No live nodes found! Cannot create a collection until " +
+            "there is at least 1 live node in the cluster.");
+      String firstLiveNode = liveNodes.iterator().next();
+
+      // build a URL to create the collection
+      int numShards = optionAsInt(cli, "shards", 1);
+      int replicationFactor = optionAsInt(cli, "replicationFactor", 1);
+      int maxShardsPerNode = -1;
+
+      if (cli.hasOption("maxShardsPerNode")) {
+        maxShardsPerNode = Integer.parseInt(cli.getOptionValue("maxShardsPerNode"));
+      } else {
+        // need number of live nodes to determine maxShardsPerNode if it is not set
+        int numNodes = liveNodes.size();
+        maxShardsPerNode = ((numShards*replicationFactor)+numNodes-1)/numNodes;
+      }
+
+      String configSet = cli.getOptionValue("config", DEFAULT_CONFIG_SET);
+      String configSetNameInZk = configSet;
+      File configSetDir = null;
+      // we try to be flexible and allow the user to specify a configuration directory instead of a configset name
+      File possibleConfigDir = new File(configSet);
+      if (possibleConfigDir.isDirectory()) {
+        configSetDir = possibleConfigDir;
+        configSetNameInZk = possibleConfigDir.getName();
+      } else {
+        File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
+        if (!configsetsDir.isDirectory())
+          throw new FileNotFoundException(configsetsDir.getAbsolutePath()+" not found!");
+
+        // upload the configset if it exists
+        configSetDir = new File(configsetsDir, configSet);
+        if (!configSetDir.isDirectory()) {
+          throw new FileNotFoundException("Specified config " + configSet +
+              " not found in " + configsetsDir.getAbsolutePath());
+        }
+      }
+
+      File confDir = new File(configSetDir, "conf");
+      if (!confDir.isDirectory()) {
+        // config dir should contain a conf sub-directory but if not and there's a solrconfig.xml, then use it
+        if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
+          confDir = configSetDir;
+        } else {
+          System.err.println("Specified configuration directory "+configSetDir.getAbsolutePath()+
+              " is invalid;\nit should contain either conf sub-directory or solrconfig.xml");
+          return 1;
+        }
+      }
+
+      // test to see if that config exists in ZK
+      if (!cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/"+configSetNameInZk, true)) {
+        System.out.println("Uploading "+confDir.getAbsolutePath()+
+            " for config "+configSetNameInZk+" to ZooKeeper at "+cloudSolrClient.getZkHost());
+        ZkController.uploadConfigDir(cloudSolrClient.getZkStateReader().getZkClient(), confDir, configSetNameInZk);
+      }
+
+      String baseUrl = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
+      String collectionName = cli.getOptionValue("name");
+
+      // since creating a collection is a heavy-weight operation, check for existence first
+      String collectionListUrl = baseUrl+"/admin/collections?action=list";
+      if (safeCheckCollectionExists(collectionListUrl, collectionName)) {
+        System.err.println("\nCollection '"+collectionName+"' already exists!");
+        System.err.println("\nChecked collection existence using Collections API command:\n"+collectionListUrl);
+        System.err.println();
+        return 1;
+      }
+
+      // doesn't seem to exist ... try to create
+      String createCollectionUrl =
+          String.format(Locale.ROOT,
+              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&collection.configName=%s",
+              baseUrl,
+              collectionName,
+              numShards,
+              replicationFactor,
+              maxShardsPerNode,
+              configSetNameInZk);
+
+      System.out.println("\nCreating new collection '"+collectionName+"' using command:\n"+createCollectionUrl+"\n");
+
+      Map<String,Object> json = null;
+      try {
+        json = getJson(createCollectionUrl);
+      } catch (SolrServerException sse) {
+        // check if already exists
+        if (safeCheckCollectionExists(collectionListUrl, collectionName)) {
+          System.err.println("Collection '"+collectionName+"' already exists!");
+          System.err.println("\nChecked collection existence using Collections API command:\n"+collectionListUrl);
+        } else {
+          System.err.println("Failed to create collection '"+collectionName+"' due to: "+sse.getMessage());
+        }
+        System.err.println();
+        return 1;
+      }
+
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2).write(json);
+      System.out.println(arr.toString());
+      System.out.println();
+
+      return 0;
+    }
+
+    protected boolean safeCheckCollectionExists(String url, String collection) {
+      boolean exists = false;
+      try {
+        Map<String,Object> existsCheckResult = getJson(url);
+        List<String> collections = (List<String>) existsCheckResult.get("collections");
+        exists = collections != null && collections.contains(collection);
+      } catch (Exception exc) {
+        // just ignore it since we're only interested in a positive result here
+      }
+      return exists;
+    }
+
+    protected int optionAsInt(CommandLine cli, String option, int defaultVal) {
+      return Integer.parseInt(cli.getOptionValue(option, String.valueOf(defaultVal)));
+    }
+  } // end CreateCollectionTool class
 
   public static class CreateCoreTool implements Tool {
 
@@ -1221,15 +1301,20 @@ public class SolrCLI {
 
       File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
       if (!configsetsDir.isDirectory())
-        throw new FileNotFoundException(configsetsDir.getAbsolutePath()+" not found!");
+        throw new FileNotFoundException(configsetsDir.getAbsolutePath() + " not found!");
 
       String configSet = cli.getOptionValue("config", DEFAULT_CONFIG_SET);
       File configSetDir = new File(configsetsDir, configSet);
-      if (!configSetDir.isDirectory())
-        throw new FileNotFoundException("Specified config "+configSet+
-            " not found in "+configsetsDir.getAbsolutePath());
-
-      File confDir = new File(configSetDir,"conf");
+      if (!configSetDir.isDirectory()) {
+        // we allow them to pass a directory instead of a configset name
+        File possibleConfigDir = new File(configSet);
+        if (possibleConfigDir.isDirectory()) {
+          configSetDir = possibleConfigDir;
+        } else {
+          throw new FileNotFoundException("Specified config " + configSet +
+              " not found in " + configsetsDir.getAbsolutePath());
+        }
+      }
 
       String coreName = cli.getOptionValue("name");
 
@@ -1246,21 +1331,42 @@ public class SolrCLI {
 
         // convert raw JSON into user-friendly output
         solrHome = (String)systemInfo.get("solr_home");
-        if (solrHome == null) {
+        if (solrHome == null)
           solrHome = configsetsDir.getParentFile().getAbsolutePath();
-        }
+
       } finally {
         closeHttpClient(httpClient);
       }
 
+      String coreStatusUrl = solrUrl+"admin/cores?action=STATUS&core="+coreName;
+      if (safeCheckCoreExists(coreStatusUrl, coreName)) {
+        System.err.println("\nCore '"+coreName+"' already exists!");
+        System.err.println("\nChecked core existence using Core API command:\n"+coreStatusUrl);
+        System.err.println();
+        return 1;
+      }
+
       File coreInstanceDir = new File(solrHome, coreName);
+      File confDir = new File(configSetDir,"conf");
       if (!coreInstanceDir.isDirectory()) {
         coreInstanceDir.mkdirs();
         if (!coreInstanceDir.isDirectory())
           throw new IOException("Failed to create new core instance directory: "+coreInstanceDir.getAbsolutePath());
-      }
 
-      FileUtils.copyDirectoryToDirectory(confDir, coreInstanceDir);
+        if (confDir.isDirectory()) {
+          FileUtils.copyDirectoryToDirectory(confDir, coreInstanceDir);
+        } else {
+          // hmmm ... the configset we're cloning doesn't have a conf sub-directory,
+          // we'll just assume it is OK if it has solrconfig.xml
+          if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
+            FileUtils.copyDirectory(configSetDir, new File(coreInstanceDir, "conf"));
+          } else {
+            System.err.println("\n"+configSetDir.getAbsolutePath()+" doesn't contain a conf subdirectory or solrconfig.xml\n");
+            return 1;
+          }
+        }
+        System.out.println("\nSetup new core instance directory:\n"+coreInstanceDir.getAbsolutePath());
+      }
 
       String createCoreUrl =
           String.format(Locale.ROOT,
@@ -1269,15 +1375,43 @@ public class SolrCLI {
               coreName,
               coreName);
 
-      System.out.println("Creating new core '"+coreName+"' using command:\n\n"+createCoreUrl+"\n");
+      System.out.println("\nCreating new core '"+coreName+"' using command:\n"+createCoreUrl+"\n");
 
-      Map<String,Object> json = getJson(createCoreUrl);
+      Map<String,Object> json = null;
+      try {
+        json = getJson(createCoreUrl);
+      } catch (SolrServerException sse) {
+        // mostly likely the core already exists ...
+        if (safeCheckCoreExists(coreStatusUrl, coreName)) {
+          // core already exists
+          System.err.println("Core '"+coreName+"' already exists!");
+          System.err.println("\nChecked core existence using Core API command:\n"+coreStatusUrl);
+        } else {
+          System.err.println("Failed to create core '"+coreName+"' due to: "+sse.getMessage());
+        }
+        System.err.println();
+        return 1;
+      }
+
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(json);
       System.out.println(arr.toString());
       System.out.println();
 
       return 0;
+    }
+
+    protected boolean safeCheckCoreExists(String coreStatusUrl, String coreName) {
+      boolean exists = false;
+      try {
+        Map<String,Object> existsCheckResult = getJson(coreStatusUrl);
+        Map<String,Object> status = (Map<String, Object>)existsCheckResult.get("status");
+        Map<String,Object> coreStatus = (Map<String, Object>)status.get(coreName);
+        exists = coreStatus != null && coreStatus.containsKey("name");
+      } catch (Exception exc) {
+        // just ignore it since we're only interested in a positive result here
+      }
+      return exists;
     }
   } // end CreateCoreTool class
 }

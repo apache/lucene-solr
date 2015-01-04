@@ -36,6 +36,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.update.SolrIndexConfig;
@@ -44,6 +45,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RegexFileFilter;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -90,6 +93,7 @@ public class SolrConfig extends Config implements MapSerializable{
   public static final Logger log = LoggerFactory.getLogger(SolrConfig.class);
   
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
+  private RequestParams requestParams;
 
   static enum PluginOpts {
     MULTI_OK, 
@@ -175,6 +179,7 @@ public class SolrConfig extends Config implements MapSerializable{
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     getOverlay();//just in case it is not initialized
+    getRequestParams();
     initLibs();
     luceneMatchVersion = getLuceneVersion("luceneMatchVersion");
     String indexConfigPrefix;
@@ -251,7 +256,7 @@ public class SolrConfig extends Config implements MapSerializable{
       jmxConfig = new JmxConfiguration(false, null, null, null);
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
-     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
+    slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
      updateHandlerInfo = loadUpdatehandlerInfo();
      
@@ -312,6 +317,7 @@ public class SolrConfig extends Config implements MapSerializable{
       .add(new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(RestManager.class, "restManager"))
       .add(new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK))
+      .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
       .build();
 
   public static class SolrPluginInfo{
@@ -789,5 +795,18 @@ public class SolrConfig extends Config implements MapSerializable{
     return overlay;
   }
 
+  public RequestParams getRequestParams() {
+    if(requestParams == null){
+      return refreshRequestParams();
+    }
+    return requestParams;
+  }
+
+
+  public RequestParams refreshRequestParams(){
+    requestParams = RequestParams.getFreshRequestParams(getResourceLoader(),requestParams);
+    log.info("current version of requestparams : {}", requestParams.getZnodeVersion());
+    return requestParams;
+  }
 
 }

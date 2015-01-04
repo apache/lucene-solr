@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.Collection;
 import java.util.Collections;
 
 /**
@@ -36,7 +37,7 @@ public interface Accountable {
    * The result should be a point-in-time snapshot (to avoid race conditions).
    * @see Accountables
    */
-  default Iterable<? extends Accountable> getChildResources() {
+  default Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
 

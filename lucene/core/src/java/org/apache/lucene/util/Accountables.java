@@ -112,15 +112,17 @@ public class Accountables {
   }
   
   /** 
-   * Returns an accountable with the provided description, bytes, and children.
+   * Returns an accountable with the provided description, children and bytes.
    * <p>
    * The resource descriptions are constructed in this format:
    * {@code description [toString()]}
    * <p>
    * This is a point-in-time type safe view: consumers 
-   * will not be able to cast or manipulate the resources in any way..
+   * will not be able to cast or manipulate the resources in any way, provided
+   * that the passed in children Accountables (and all their descendants) were created
+   * with one of the namedAccountable functions.
    */
-  private static Accountable namedAccountable(final String description, final Iterable<? extends Accountable> children, final long bytes) {
+  public static Accountable namedAccountable(final String description, final Collection<Accountable> children, final long bytes) {
     return new Accountable() {
       @Override
       public long ramBytesUsed() {
@@ -128,7 +130,7 @@ public class Accountables {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return children;
       }
 

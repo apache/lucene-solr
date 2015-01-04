@@ -17,6 +17,19 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -50,19 +63,6 @@ import org.apache.solr.util.MapListener;
 import org.apache.solr.util.SpatialUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
@@ -159,7 +159,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   @Override
   public List<StorableField> createFields(SchemaField field, Object val, float boost) {
     String shapeStr = null;
-    Shape shape = null;
+    Shape shape;
     if (val instanceof Shape) {
       shape = ((Shape) val);
     } else {
@@ -178,12 +178,15 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
 
     if (field.stored()) {
-      if (shapeStr == null)
-        shapeStr = shapeToString(shape);
-      result.add(new StoredField(field.getName(), shapeStr));
+      result.add(new StoredField(field.getName(), getStoredValue(shape, shapeStr)));
     }
 
     return result;
+  }
+
+  /** Called by {@link #createFields(SchemaField, Object, float)} to get the stored value. */
+  protected String getStoredValue(Shape shape, String shapeStr) {
+    return (shapeStr == null) ? shapeToString(shape) : shapeStr;
   }
 
   protected Shape parseShape(String str) {

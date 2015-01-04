@@ -268,11 +268,8 @@ public class RoaringDocIdSet extends DocIdSet {
 
     Iterator() throws IOException {
       doc = -1;
-      block = 0;
-      while (docIdSets[block] == null) {
-        block += 1;
-      }
-      sub = docIdSets[block].iterator();
+      block = -1;
+      sub = DocIdSetIterator.empty();
     }
 
     @Override
@@ -337,4 +334,8 @@ public class RoaringDocIdSet extends DocIdSet {
     return cardinality;
   }
 
+  @Override
+  public String toString() {
+    return "RoaringDocIdSet(cardinality=" + cardinality + ")";
+  }
 }

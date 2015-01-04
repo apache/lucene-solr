@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.blocktreeords;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
@@ -175,7 +176,7 @@ final class OrdsFieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     if (index == null) {
       return Collections.emptyList();
     } else {

@@ -50,6 +50,7 @@ public class ToChildBlockJoinQuery extends Query {
    *  ToChildBlockJoinScorer#validateParentDoc} on mis-use,
    *  when the parent query incorrectly returns child docs. */
   static final String INVALID_QUERY_MESSAGE = "Parent query yields document which is not matched by parents filter, docID=";
+  static final String ILLEGAL_ADVANCE_ON_PARENT = "Expect to be advanced on child docs only. got docID=";
 
   private final BitDocIdSetFilter parentsFilter;
   private final Query parentQuery;
@@ -279,12 +280,15 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public int advance(int childTarget) throws IOException {
-      assert childTarget >= parentBits.length() || !parentBits.get(childTarget);
       
       //System.out.println("Q.advance childTarget=" + childTarget);
       if (childTarget == NO_MORE_DOCS) {
         //System.out.println("  END");
         return childDoc = parentDoc = NO_MORE_DOCS;
+      }
+
+      if (parentBits.get(childTarget)) {
+        throw new IllegalStateException(ILLEGAL_ADVANCE_ON_PARENT + childTarget);
       }
 
       assert childDoc == -1 || childTarget != parentDoc: "childTarget=" + childTarget;

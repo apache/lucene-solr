@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 
@@ -165,7 +166,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       if (fst == null) {
         return Collections.emptyList();
       } else {
@@ -208,7 +209,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", fields);
   }
 

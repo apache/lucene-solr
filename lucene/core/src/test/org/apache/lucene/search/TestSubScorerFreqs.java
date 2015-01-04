@@ -171,7 +171,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       boolean includeOptional = occur.contains("SHOULD");
       for (int i = 0; i < maxDocs; i++) {
         Map<Query, Float> doc0 = c.docCounts.get(i);
-        // Y doesnt exist in the index, so its not in the scorer tree
+        // Y doesnt exist in the index, so it's not in the scorer tree
         assertEquals(4, doc0.size());
         assertEquals(1.0F, doc0.get(aQuery), FLOAT_TOLERANCE);
         assertEquals(4.0F, doc0.get(dQuery), FLOAT_TOLERANCE);
@@ -180,7 +180,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
         }
 
         Map<Query, Float> doc1 = c.docCounts.get(++i);
-        // Y doesnt exist in the index, so its not in the scorer tree
+        // Y doesnt exist in the index, so it's not in the scorer tree
         assertEquals(4, doc1.size());
         assertEquals(1.0F, doc1.get(aQuery), FLOAT_TOLERANCE);
         assertEquals(1.0F, doc1.get(dQuery), FLOAT_TOLERANCE);

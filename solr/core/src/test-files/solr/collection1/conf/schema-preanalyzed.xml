@@ -18,7 +18,7 @@
 <schema name="tiny" version="1.1">
 
   <types>
-    <fieldtype name="preanalyzed" class="solr.PreAnalyzedField" parserImpl="json"/>
+    <fieldType name="preanalyzed" class="solr.PreAnalyzedField" parserImpl="json"/>
     <fieldType name="string" class="solr.StrField"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   </types>

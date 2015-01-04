@@ -49,10 +49,10 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -383,7 +383,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     MapReduceIndexerTool tool;
     int res;
     QueryResponse results;
-    HttpSolrServer server = new HttpSolrServer(cloudJettys.get(0).url);
+    HttpSolrClient server = new HttpSolrClient(cloudJettys.get(0).url);
     String[] args = new String[]{};
 
     args = new String[] {
@@ -699,7 +699,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     }
   }
   
-  private SolrDocumentList executeSolrQuery(SolrServer collection, String queryString) throws SolrServerException {
+  private SolrDocumentList executeSolrQuery(SolrClient collection, String queryString) throws SolrServerException {
     SolrQuery query = new SolrQuery(queryString).setRows(2 * RECORD_COUNT).addSort("id", ORDER.asc);
     QueryResponse response = collection.query(query);
     return response.getResults();
@@ -713,7 +713,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       Collection<Replica> replicas = slice.getReplicas();
       long found = -1;
       for (Replica replica : replicas) {
-        HttpSolrServer client = new HttpSolrServer(
+        HttpSolrClient client = new HttpSolrClient(
             new ZkCoreNodeProps(replica).getCoreUrl());
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);

@@ -17,18 +17,13 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -38,12 +33,16 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Super basic testing, no shard restarting or anything.
@@ -130,9 +129,9 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     
     docId = testIndexQueryDeleteHierarchical(docId);
     
-    docId = testIndexingDocPerRequestWithHttpSolrServer(docId);
+    docId = testIndexingDocPerRequestWithHttpSolrClient(docId);
     
-    testIndexingWithSuss(docId);
+    testConcurrentIndexing(docId);
     
     // TODO: testOptimisticUpdate(results);
     
@@ -141,7 +140,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     docId = testThatCantForwardToLeaderFails(docId);
     
     
-    docId = testIndexingBatchPerRequestWithHttpSolrServer(docId);
+    docId = testIndexingBatchPerRequestWithHttpSolrClient(docId);
   }
 
   private long testThatCantForwardToLeaderFails(long docId) throws Exception {
@@ -316,7 +315,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   }
   
   
-  private long testIndexingDocPerRequestWithHttpSolrServer(long docId) throws Exception {
+  private long testIndexingDocPerRequestWithHttpSolrClient(long docId) throws Exception {
     int docs = random().nextInt(TEST_NIGHTLY ? 4013 : 97) + 1;
     for (int i = 0; i < docs; i++) {
       UpdateRequest uReq;
@@ -335,7 +334,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     return docId++;
   }
   
-  private long testIndexingBatchPerRequestWithHttpSolrServer(long docId) throws Exception {
+  private long testIndexingBatchPerRequestWithHttpSolrClient(long docId) throws Exception {
     
     // remove collection
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -432,25 +431,25 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     return -1;
   }
   
-  private long testIndexingWithSuss(long docId) throws Exception {
-    ConcurrentUpdateSolrServer suss = new ConcurrentUpdateSolrServer(
-        ((HttpSolrServer) clients.get(0)).getBaseURL(), 10, 2);
+  private long testConcurrentIndexing(long docId) throws Exception {
+    ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(
+        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2);
     QueryResponse results = query(cloudClient);
     long beforeCount = results.getResults().getNumFound();
     int cnt = TEST_NIGHTLY ? 2933 : 313;
     try {
-      suss.setConnectionTimeout(120000);
+      concurrentClient.setConnectionTimeout(120000);
       for (int i = 0; i < cnt; i++) {
-        index_specific(suss, id, docId++, "text_t", "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
+        index_specific(concurrentClient, id, docId++, "text_t", "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
       }
-      suss.blockUntilFinished();
+      concurrentClient.blockUntilFinished();
       
       commit();
 
       checkShardConsistency();
       assertDocCounts(VERBOSE);
     } finally {
-      suss.shutdown();
+      concurrentClient.shutdown();
     }
     results = query(cloudClient);
     assertEquals(beforeCount + cnt, results.getResults().getNumFound());
@@ -497,9 +496,9 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     assertEquals(1, res.getResults().getNumFound());
   }
 
-  private QueryResponse query(SolrServer server) throws SolrServerException {
+  private QueryResponse query(SolrClient client) throws SolrServerException {
     SolrQuery query = new SolrQuery("*:*");
-    return server.query(query);
+    return client.query(query);
   }
   
   @Override

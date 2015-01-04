@@ -18,14 +18,15 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.AssertingLeafReader.AssertingRandomAccessOrds;
 import org.apache.lucene.index.AssertingLeafReader.AssertingSortedSetDocValues;
-import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -213,6 +214,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
   
@@ -285,6 +287,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override
@@ -295,9 +298,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      Iterable<? extends Accountable> res = in.getChildResources();
-      TestUtil.checkIterator(res.iterator());
+    public Collection<Accountable> getChildResources() {
+      Collection<Accountable> res = in.getChildResources();
+      TestUtil.checkReadOnly(res);
       return res;
     }
 

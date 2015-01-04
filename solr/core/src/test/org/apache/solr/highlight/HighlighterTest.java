@@ -17,6 +17,10 @@
 
 package org.apache.solr.highlight;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
@@ -28,10 +32,6 @@ import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -170,16 +170,15 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testTermOffsetsTokenStream() throws Exception {
+  public void testOffsetWindowTokenFilter() throws Exception {
     String[] multivalued = { "a b c d", "e f g", "h", "i j k l m n" };
     Analyzer a1 = new WhitespaceAnalyzer();
     TokenStream tokenStream = a1.tokenStream("", "a b c d e f g h i j k l m n");
-    tokenStream.reset();
 
-    TermOffsetsTokenStream tots = new TermOffsetsTokenStream(
-        tokenStream);
+    OffsetWindowTokenFilter tots = new OffsetWindowTokenFilter(tokenStream);
     for( String v : multivalued ){
-      TokenStream ts1 = tots.getMultiValuedTokenStream( v.length() );
+      TokenStream ts1 = tots.advanceToNextWindowOfLength(v.length());
+      ts1.reset();
       Analyzer a2 = new WhitespaceAnalyzer();
       TokenStream ts2 = a2.tokenStream("", v);
       ts2.reset();

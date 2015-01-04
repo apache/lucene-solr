@@ -31,7 +31,7 @@
     <!-- field type definitions... note that the "name" attribute is
          just a label to be used by field definitions.  The "class"
          attribute and any other attributes determine the real type and
-         behavior of the fieldtype.
+         behavior of the fieldType.
       -->
 
     <!-- numeric field types that store and index the text
@@ -46,10 +46,10 @@
     <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
          seconds part (.999) is optional.
       -->
-    <fieldtype name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldtype name="boolean" class="solr.BoolField" />
-    <fieldtype name="string" class="solr.StrField" />
+    <fieldType name="boolean" class="solr.BoolField" />
+    <fieldType name="string" class="solr.StrField" />
 
     <fieldType name="uuid" class="solr.UUIDField" />
 

@@ -187,7 +187,6 @@ public class Highlighter
 
     CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
-    tokenStream.reset();
     TextFragment currentFrag =  new TextFragment(newText,newText.length(), docFrags.size());
 
     if (fragmentScorer instanceof QueryScorer) {
@@ -214,6 +213,7 @@ public class Highlighter
 
       TokenGroup tokenGroup=new TokenGroup(tokenStream);
 
+      tokenStream.reset();
       for (boolean next = tokenStream.incrementToken(); next && (offsetAtt.startOffset()< maxDocCharsToAnalyze);
             next = tokenStream.incrementToken())
       {

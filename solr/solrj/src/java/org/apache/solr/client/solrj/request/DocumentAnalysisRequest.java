@@ -18,7 +18,7 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.DocumentAnalysisResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -87,10 +87,10 @@ public class DocumentAnalysisRequest extends SolrRequest {
    * {@inheritDoc}
    */
   @Override
-  public DocumentAnalysisResponse process(SolrServer server) throws SolrServerException, IOException {
+  public DocumentAnalysisResponse process(SolrClient client) throws SolrServerException, IOException {
     long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     DocumentAnalysisResponse res = new DocumentAnalysisResponse();
-    res.setResponse(server.request(this));
+    res.setResponse(client.request(this));
     long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     res.setElapsedTime(endTime - startTime);
     return res;

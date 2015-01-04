@@ -534,7 +534,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
     
     public void remove() {
-      throw new UnsupportedOperationException("Its read only mode...");
+      throw new UnsupportedOperationException("It's read only mode...");
     }
     
     private void getTopLevelFolders(Store mailBox) {
@@ -544,7 +544,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
         try {
           folders.add(mailbox.getFolder(topLevelFolders.get(i)));
         } catch (MessagingException e) {
-          // skip bad ones unless its the last one and still no good folder
+          // skip bad ones unless it's the last one and still no good folder
           if (folders.size() == 0 && i == topLevelFolders.size() - 1) throw new DataImportHandlerException(
               DataImportHandlerException.SEVERE, "Folder retreival failed");
         }
@@ -705,7 +705,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
     
     public void remove() {
-      throw new UnsupportedOperationException("Its read only mode...");
+      throw new UnsupportedOperationException("It's read only mode...");
     }
     
     private SearchTerm getSearchTerm() {

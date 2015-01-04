@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
@@ -75,6 +76,7 @@ public class AssertingNormsFormat extends NormsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
   
@@ -102,6 +104,7 @@ public class AssertingNormsFormat extends NormsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override
@@ -112,9 +115,9 @@ public class AssertingNormsFormat extends NormsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      Iterable<? extends Accountable> res = in.getChildResources();
-      TestUtil.checkIterator(res.iterator());
+    public Collection<Accountable> getChildResources() {
+      Collection<Accountable> res = in.getChildResources();
+      TestUtil.checkReadOnly(res);
       return res;
     }
 

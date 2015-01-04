@@ -48,7 +48,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
@@ -65,6 +64,7 @@ import java.net.URLClassLoader;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -162,7 +162,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    * Adds every file/dir found in the baseDir which passes the specified Filter
    * to the ClassLoader used by this ResourceLoader.  This method <b>MUST</b>
    * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * it's behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
+   * its behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
    * before using this ResourceLoader.
    * 
    * <p>This method will quietly ignore missing or non-directory <code>baseDir</code>
@@ -424,7 +424,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   }
   
   /**
-   * This method loads a class either with it's FQN or a short-name (solr.class-simplename or class-simplename).
+   * This method loads a class either with its FQN or a short-name (solr.class-simplename or class-simplename).
    * It tries to load the class with the name that is given first and if it fails, it tries all the known
    * solr packages. This method caches the FQN of a short-name in a static map in-order to make subsequent lookups
    * for the same class faster. The caching is done only if the class is loaded by the webapp classloader and it
@@ -856,5 +856,9 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
         log.error(msg, e);
       }
     }
+  }
+
+  public String resolve(String pathToResolve) {
+    return Paths.get(instanceDir).resolve(pathToResolve).toString();
   }
 }

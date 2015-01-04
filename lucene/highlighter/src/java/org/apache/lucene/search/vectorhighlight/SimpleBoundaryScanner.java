@@ -66,7 +66,7 @@ public class SimpleBoundaryScanner implements BoundaryScanner {
       if( boundaryChars.contains( buffer.charAt( offset - 1 ) ) ) return offset;
       offset--;
     }
-    // if we scanned up to the start of the text, return it, its a "boundary"
+    // if we scanned up to the start of the text, return it, it's a "boundary"
     if (offset == 0) {
       return 0;
     }

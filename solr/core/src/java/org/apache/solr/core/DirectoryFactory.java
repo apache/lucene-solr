@@ -51,7 +51,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   private static final Logger log = LoggerFactory.getLogger(DirectoryFactory.class.getName());
   
   /**
-   * Indicates a Directory will no longer be used, and when it's ref count
+   * Indicates a Directory will no longer be used, and when its ref count
    * hits 0, it can be closed. On close all directories will be closed
    * whether this has been called or not. This is simply to allow early cleanup.
    * 
@@ -142,7 +142,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * @throws IOException If there is a low-level I/O error.
    */
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
-    fromDir.copy(toDir, fileName, fileName, ioContext);
+    toDir.copyFrom(fromDir, fileName, fileName, ioContext);
     fromDir.deleteFile(fileName);
   }
   

@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
@@ -193,7 +194,7 @@ public class RAMOutputStream extends IndexOutput implements Accountable {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("file", file));
   }
 

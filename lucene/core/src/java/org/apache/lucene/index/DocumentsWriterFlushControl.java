@@ -585,7 +585,7 @@ final class DocumentsWriterFlushControl implements Accountable {
         assert !flushingWriters.containsKey(blockedFlush.dwpt) : "DWPT is already flushing";
         // Record the flushing DWPT to reduce flushBytes in doAfterFlush
         flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
-        // don't decr pending here - its already done when DWPT is blocked
+        // don't decr pending here - it's already done when DWPT is blocked
         flushQueue.add(blockedFlush.dwpt);
       }
     }

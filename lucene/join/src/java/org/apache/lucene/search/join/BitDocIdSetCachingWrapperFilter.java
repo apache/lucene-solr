@@ -18,6 +18,7 @@ package org.apache.lucene.search.join;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -90,7 +91,7 @@ public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter implement
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     return filter.getChildResources();
   }
 

@@ -200,7 +200,7 @@ public class TestHarness extends BaseTestHarness {
     return container;
   }
 
-  /** Gets a core that does not have it's refcount incremented (i.e. there is no need to
+  /** Gets a core that does not have its refcount incremented (i.e. there is no need to
    * close when done).  This is not MT safe in conjunction with reloads!
    */
   public SolrCore getCore() {
@@ -212,7 +212,7 @@ public class TestHarness extends BaseTestHarness {
     return core;
   }
 
-  /** Gets the core with it's reference count incremented.
+  /** Gets the core with its reference count incremented.
    * You must call core.close() when done!
    */
   public SolrCore getCoreInc() {

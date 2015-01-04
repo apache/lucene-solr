@@ -74,7 +74,7 @@ public class RandomCodec extends AssertingCodec {
   public final Set<String> avoidCodecs;
 
   /** memorized field to postingsformat mappings */
-  // note: we have to sync this map even though its just for debugging/toString, 
+  // note: we have to sync this map even though it's just for debugging/toString, 
   // otherwise DWPT's .toString() calls that iterate over the map can 
   // cause concurrentmodificationexception if indexwriter's infostream is on
   private Map<String,PostingsFormat> previousMappings = Collections.synchronizedMap(new HashMap<String,PostingsFormat>());

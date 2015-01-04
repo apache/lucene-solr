@@ -143,7 +143,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // we need to wait for the Writer to fall out of use
       // first lets stop it from being lent out
       pauseWriter = true;
-      // then lets wait until its out of use
+      // then lets wait until it's out of use
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
       
       while (!writerFree) {
@@ -201,7 +201,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // we need to wait for the Writer to fall out of use
       // first lets stop it from being lent out
       pauseWriter = true;
-      // then lets wait until its out of use
+      // then lets wait until it's out of use
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
       
       while (!writerFree) {

@@ -30,6 +30,7 @@ public class OutputStreamIndexOutput extends IndexOutput {
   private final BufferedOutputStream os;
   
   private long bytesWritten = 0L;
+  private boolean flushedOnClose = false;
 
   /**
    * Creates a new {@link OutputStreamIndexOutput} with the given buffer size. 
@@ -58,9 +59,14 @@ public class OutputStreamIndexOutput extends IndexOutput {
     try (final OutputStream o = os) {
       // We want to make sure that os.flush() was running before close:
       // BufferedOutputStream may ignore IOExceptions while flushing on close().
-      // TODO: this is no longer an issue in Java 8:
-      // http://hg.openjdk.java.net/jdk8/tl/jdk/rev/759aa847dcaf
-      o.flush();
+      // We keep this also in Java 8, although it claims to be fixed there,
+      // because there are more bugs around this! See:
+      // # https://bugs.openjdk.java.net/browse/JDK-7015589
+      // # https://bugs.openjdk.java.net/browse/JDK-8054565
+      if (!flushedOnClose) {
+        flushedOnClose = true; // set this BEFORE calling flush!
+        o.flush();
+      }
     }
   }
   

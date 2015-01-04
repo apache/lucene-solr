@@ -50,7 +50,7 @@ import org.apache.lucene.util.BytesRef;
 public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
   //for caching classes this will be the classification class list
   private ArrayList<BytesRef> cclasses = new ArrayList<>();
-  // its a term-inmap style map, where the inmap contains class-hit pairs to the
+  // it's a term-inmap style map, where the inmap contains class-hit pairs to the
   // upper term
   private Map<String, Map<BytesRef, Integer>> termCClassHitCache = new HashMap<>();
   // the term frequency in classes
@@ -185,7 +185,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
 
     Map<BytesRef, Integer> searched = new ConcurrentHashMap<>();
 
-    // if we dont get the answer, but its relevant we must search it and insert to the cache
+    // if we dont get the answer, but it's relevant we must search it and insert to the cache
     if (insertPoint != null || !justCachedTerms) {
       for (BytesRef cclass : cclasses) {
         BooleanQuery booleanQuery = new BooleanQuery();

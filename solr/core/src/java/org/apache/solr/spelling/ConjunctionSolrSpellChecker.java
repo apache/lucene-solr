@@ -47,10 +47,10 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   private String dictionaryName = null;
   private Analyzer queryAnalyzer = null;
   private List<SolrSpellChecker> checkers = new ArrayList<>();
-  private boolean initalized = false;
+  private boolean initialized = false;
   
   public void addChecker(SolrSpellChecker checker) {
-    if (initalized) {
+    if (initialized) {
       throw new IllegalStateException(
           "Need to add checkers before calling init()");
     }
@@ -102,7 +102,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
     if (dictionaryName == null) {
       dictionaryName = DEFAULT_DICTIONARY_NAME;
     }
-    initalized = true;
+    initialized = true;
     return dictionaryName;
   }
   

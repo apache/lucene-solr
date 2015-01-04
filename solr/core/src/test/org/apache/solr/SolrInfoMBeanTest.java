@@ -78,7 +78,7 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
         }
         catch( InstantiationException ex ) {
           // expected...
-          //System.out.println( "unable to initalize: "+clazz );
+          //System.out.println( "unable to initialize: "+clazz );
         }
       }
     }

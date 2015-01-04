@@ -110,7 +110,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
     //System.out.println("ATE.nextSeekTerm term=" + term);
     if (term == null) {
       assert seekBytesRef.length() == 0;
-      // return the empty term, as its valid
+      // return the empty term, as it's valid
       if (runAutomaton.isAccept(runAutomaton.getInitialState())) {   
         return seekBytesRef.get();
       }
@@ -310,7 +310,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
   private int backtrack(int position) {
     while (position-- > 0) {
       int nextChar = seekBytesRef.byteAt(position) & 0xff;
-      // if a character is 0xff its a dead-end too,
+      // if a character is 0xff it's a dead-end too,
       // because there is no higher character in binary sort order.
       if (nextChar++ != 0xff) {
         seekBytesRef.setByteAt(position, (byte) nextChar);

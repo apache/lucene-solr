@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -72,6 +73,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
 
     @Override
@@ -100,9 +102,9 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
-      Iterable<? extends Accountable> res = in.getChildResources();
-      TestUtil.checkIterator(res.iterator());
+    public Collection<Accountable> getChildResources() {
+      Collection<Accountable> res = in.getChildResources();
+      TestUtil.checkReadOnly(res);
       return res;
     }
 
@@ -240,6 +242,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      in.close(); // close again
     }
   }
 }

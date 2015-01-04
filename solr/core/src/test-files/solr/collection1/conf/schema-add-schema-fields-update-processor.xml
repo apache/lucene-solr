@@ -23,8 +23,8 @@
   <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
   <fieldType name="tdate" class="solr.TrieDateField" precisionStep="6" multiValued="true" positionIncrementGap="0"/>
-  <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
-  <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="text" class="solr.TextField" multiValued="true" positionIncrementGap="100">
     <analyzer>

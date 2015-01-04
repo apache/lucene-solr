@@ -24,9 +24,9 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -331,13 +331,13 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     @Override
     public Integer call() throws Exception {
-      HttpSolrServer solr = new HttpSolrServer(coreUrl);
+      HttpSolrClient solr = new HttpSolrClient(coreUrl);
       int remoteVersion = -1;
       try {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
           try {
-            HttpSolrServer.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
+            HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
             NamedList<Object> zkversionResp = mrr.future.get();
             if (zkversionResp != null)
               remoteVersion = (Integer)zkversionResp.get("zkversion");
@@ -371,7 +371,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     @Override
-    public SolrResponse process(SolrServer server) throws SolrServerException, IOException {
+    public SolrResponse process(SolrClient server) throws SolrServerException, IOException {
       return null;
     }
   }

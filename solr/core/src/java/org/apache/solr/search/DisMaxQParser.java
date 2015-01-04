@@ -168,7 +168,7 @@ public class DisMaxQParser extends QParser {
     }
   }
 
-  /** Adds the main query to the query argument. If its blank then false is returned. */
+  /** Adds the main query to the query argument. If it's blank then false is returned. */
   protected boolean addMainQuery(BooleanQuery query, SolrParams solrParams) throws SyntaxError {
     Map<String, Float> phraseFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
     float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);

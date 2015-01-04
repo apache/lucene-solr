@@ -19,10 +19,12 @@ package org.apache.lucene.analysis;
 
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -38,11 +40,18 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = writer.newDocument();
+    AtomicInteger resetCount = new AtomicInteger(0);
     TokenStream stream = new TokenStream() {
       private int index = 0;
       private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-      
+
+      @Override
+      public void reset() throws IOException {
+        super.reset();
+        resetCount.incrementAndGet();
+      }
+
       @Override
       public boolean incrementToken() {
         if (index == tokens.length) {
@@ -56,16 +65,20 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
       }
       
     };
-    
+
     stream = new CachingTokenFilter(stream);
-    
+
     doc.addLargeText("preanalyzed", stream);
-    
+
     // 1) we consume all tokens twice before we add the doc to the index
+    assertFalse(((CachingTokenFilter)stream).isCached());
+    stream.reset();
+    assertFalse(((CachingTokenFilter) stream).isCached());
     checkTokens(stream);
     stream.reset();  
     checkTokens(stream);
-    
+    assertTrue(((CachingTokenFilter)stream).isCached());
+
     // 2) now add the document to the index and verify if all tokens are indexed
     //    don't reset the stream here, the DocumentWriter should do that implicitly
     writer.addDocument(doc);
@@ -100,7 +113,23 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     // 3) reset stream and consume tokens again
     stream.reset();
     checkTokens(stream);
+
+    assertEquals(1, resetCount.get());
+
     dir.close();
+  }
+
+  public void testDoubleResetFails() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+    final TokenStream input = analyzer.tokenStream("field", "abc");
+    CachingTokenFilter buffer = new CachingTokenFilter(input);
+    buffer.reset();//ok
+    try {
+      buffer.reset();//bad (this used to work which we don't want)
+      fail("didn't get expected exception");
+    } catch (IllegalStateException e) {
+      assertEquals("double reset()", e.getMessage());
+    }
   }
   
   private void checkTokens(TokenStream stream) throws IOException {

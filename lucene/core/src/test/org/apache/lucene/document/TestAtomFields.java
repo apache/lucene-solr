@@ -18,6 +18,7 @@ package org.apache.lucene.document;
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -383,7 +384,8 @@ public class TestAtomFields extends LuceneTestCase {
   }
 
   public void testMultiValuedSort() throws Exception {
-    Directory dir = newDirectory();
+    assumeTrue("DV format not supported", Arrays.asList("Memory", "SimpleText").contains(TestUtil.getDocValuesFormat("field")) == false);
+
     RandomIndexWriter w = newRandomIndexWriter(dir);
     FieldTypes fieldTypes = w.getFieldTypes();
     fieldTypes.setMultiValued("field");
@@ -423,6 +425,5 @@ public class TestAtomFields extends LuceneTestCase {
 
     r.close();
     w.close();
-    dir.close();
   }
 }

@@ -230,7 +230,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
         "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "2");
     ElectionContext context = new ShardLeaderElectionContextBase(second,
-        "slice1", "collection2", "dummynode1", props, zkStateReader);
+        "slice1", "collection2", "dummynode2", props, zkStateReader);
     second.setup(context);
     second.joinElection(context, false);
     Thread.sleep(1000);

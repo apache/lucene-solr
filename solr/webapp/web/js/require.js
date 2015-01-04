@@ -4618,7 +4618,7 @@ jQuery.extend({
 					jQuery.error( "type property can't be changed" );
 				} else if ( !jQuery.support.radioValue && value === "radio" && jQuery.nodeName(elem, "input") ) {
 					// Setting the type on a radio button after the value resets the value in IE6-9
-					// Reset value to it's default in case type is set after value
+					// Reset value to its default in case type is set after value
 					// This is for element creation
 					var val = elem.value;
 					elem.setAttribute( "type", value );
@@ -6277,7 +6277,7 @@ var getText = Sizzle.getText = function( elem ) {
 				// Replace IE's carriage returns
 				return elem.innerText.replace( rReturn, '' );
 			} else {
-				// Traverse it's children
+				// Traverse its children
 				for ( elem = elem.firstChild; elem; elem = elem.nextSibling) {
 					ret += getText( elem );
 				}

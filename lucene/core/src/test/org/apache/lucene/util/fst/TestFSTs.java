@@ -1410,10 +1410,10 @@ public class TestFSTs extends LuceneTestCase {
       Util.TopResults<Long> r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minLongComparator, topN, true);
       assertTrue(r.isComplete);
 
-      // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
+      // 2. go thru whole treemap (slowCompletor) and check it's actually the best suggestion
       final List<Result<Long>> matches = new ArrayList<>();
 
-      // TODO: could be faster... but its slowCompletor for a reason
+      // TODO: could be faster... but it's slowCompletor for a reason
       for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
@@ -1531,10 +1531,10 @@ public class TestFSTs extends LuceneTestCase {
 
       Util.TopResults<Pair<Long,Long>> r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minPairWeightComparator, topN, true);
       assertTrue(r.isComplete);
-      // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
+      // 2. go thru whole treemap (slowCompletor) and check it's actually the best suggestion
       final List<Result<Pair<Long,Long>>> matches = new ArrayList<>();
 
-      // TODO: could be faster... but its slowCompletor for a reason
+      // TODO: could be faster... but it's slowCompletor for a reason
       for (Map.Entry<String,TwoLongs> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
@@ -1586,4 +1586,51 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
+  public void testIllegallyModifyRootArc() throws Exception {
+    assumeTrue("test relies on assertions", assertsAreEnabled);
+
+    Set<BytesRef> terms = new HashSet<>();
+    for(int i=0;i<100;i++) {
+      String prefix = Character.toString((char) ('a' + i));
+      terms.add(new BytesRef(prefix));
+      if (prefix.equals("m") == false) {
+        for(int j=0;j<20;j++) {
+          // Make a big enough FST that the root cache will be created:
+          String suffix = TestUtil.randomRealisticUnicodeString(random(), 10, 20);
+          terms.add(new BytesRef(prefix + suffix));
+        }
+      }
+    }
+
+    List<BytesRef> termsList = new ArrayList<>(terms);
+    Collections.sort(termsList);
+
+    ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
+    Builder<BytesRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    IntsRefBuilder input = new IntsRefBuilder();
+    for(BytesRef term : termsList) {
+      Util.toIntsRef(term, input);
+      builder.add(input.get(), term);
+    }
+
+    FST<BytesRef> fst = builder.finish();
+    
+    Arc<BytesRef> arc = new FST.Arc<>();
+    fst.getFirstArc(arc);
+    FST.BytesReader reader = fst.getBytesReader();
+    arc = fst.findTargetArc((int) 'm', arc, arc, reader);
+    assertNotNull(arc);
+    assertEquals(new BytesRef("m"), arc.output);
+
+    // NOTE: illegal:
+    arc.output.length = 0;
+
+    fst.getFirstArc(arc);
+    try {
+      arc = fst.findTargetArc((int) 'm', arc, arc, reader);
+    } catch (AssertionError ae) {
+      // expected
+    }
+  }
 }

@@ -32,6 +32,14 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  */
 public class AssertingLeafReader extends FilterLeafReader {
 
+  private static void assertThread(String object, Thread creationThread) {
+    if (creationThread != Thread.currentThread()) {
+      throw new AssertionError(object + " are only supposed to be consumed in "
+          + "the thread in which they have been acquired. But was acquired in "
+          + creationThread + " and consumed in " + Thread.currentThread() + ".");
+    }
+  }
+
   public AssertingLeafReader(LeafReader in) {
     super(in);
     // check some basic reader sanity
@@ -120,6 +128,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   static final VirtualMethod<TermsEnum> SEEK_EXACT = new VirtualMethod<>(TermsEnum.class, "seekExact", BytesRef.class);
 
   static class AssertingTermsEnum extends FilterTermsEnum {
+    private final Thread creationThread = Thread.currentThread();
     private enum State {INITIAL, POSITIONED, UNPOSITIONED};
     private State state = State.INITIAL;
     private final boolean delegateOverridesSeekExact;
@@ -131,6 +140,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
@@ -144,6 +154,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED: "docsAndPositions(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
@@ -159,6 +170,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     // someone should not call next() after it returns null!!!!
     @Override
     public BytesRef next() throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.INITIAL || state == State.POSITIONED: "next() called on unpositioned TermsEnum";
       BytesRef result = super.next();
       if (result == null) {
@@ -172,24 +184,28 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long ord() throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED : "ord() called on unpositioned TermsEnum";
       return super.ord();
     }
 
     @Override
     public int docFreq() throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED : "docFreq() called on unpositioned TermsEnum";
       return super.docFreq();
     }
 
     @Override
     public long totalTermFreq() throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED : "totalTermFreq() called on unpositioned TermsEnum";
       return super.totalTermFreq();
     }
 
     @Override
     public BytesRef term() throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED : "term() called on unpositioned TermsEnum";
       BytesRef ret = super.term();
       assert ret == null || ret.isValid();
@@ -198,12 +214,14 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void seekExact(long ord) throws IOException {
+      assertThread("Terms enums", creationThread);
       super.seekExact(ord);
       state = State.POSITIONED;
     }
 
     @Override
     public SeekStatus seekCeil(BytesRef term) throws IOException {
+      assertThread("Terms enums", creationThread);
       assert term.isValid();
       SeekStatus result = super.seekCeil(term);
       if (result == SeekStatus.END) {
@@ -216,6 +234,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public boolean seekExact(BytesRef text) throws IOException {
+      assertThread("Terms enums", creationThread);
       assert text.isValid();
       boolean result;
       if (delegateOverridesSeekExact) {
@@ -233,12 +252,14 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public TermState termState() throws IOException {
+      assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED : "termState() called on unpositioned TermsEnum";
       return in.termState();
     }
 
     @Override
     public void seekExact(BytesRef term, TermState state) throws IOException {
+      assertThread("Terms enums", creationThread);
       assert term.isValid();
       in.seekExact(term, state);
       this.state = State.POSITIONED;
@@ -254,6 +275,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
   /** Wraps a docsenum with additional checks */
   public static class AssertingDocsEnum extends FilterDocsEnum {
+    private final Thread creationThread = Thread.currentThread();
     private DocsEnumState state = DocsEnumState.START;
     private int doc;
     
@@ -276,6 +298,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int nextDoc() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
       int nextDoc = super.nextDoc();
       assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc + " " + in;
@@ -290,6 +313,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int advance(int target) throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.FINISHED : "advance() called after NO_MORE_DOCS";
       assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
       int advanced = super.advance(target);
@@ -305,12 +329,14 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int docID() {
+      assertThread("Docs enums", creationThread);
       assert doc == super.docID() : " invalid docID() in " + in.getClass() + " " + super.docID() + " instead of " + doc;
       return doc;
     }
 
     @Override
     public int freq() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "freq() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "freq() called after NO_MORE_DOCS";
       int freq = super.freq();
@@ -320,6 +346,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   }
   
   static class AssertingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
+    private final Thread creationThread = Thread.currentThread();
     private DocsEnumState state = DocsEnumState.START;
     private int positionMax = 0;
     private int positionCount = 0;
@@ -334,6 +361,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int nextDoc() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
       int nextDoc = super.nextDoc();
       assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc;
@@ -351,6 +379,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int advance(int target) throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.FINISHED : "advance() called after NO_MORE_DOCS";
       assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
       int advanced = super.advance(target);
@@ -369,12 +398,14 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int docID() {
+      assertThread("Docs enums", creationThread);
       assert doc == super.docID() : " invalid docID() in " + in.getClass() + " " + super.docID() + " instead of " + doc;
       return doc;
     }
 
     @Override
     public int freq() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "freq() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "freq() called after NO_MORE_DOCS";
       int freq = super.freq();
@@ -384,6 +415,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int nextPosition() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "nextPosition() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "nextPosition() called after NO_MORE_DOCS";
       assert positionCount < positionMax : "nextPosition() called more than freq() times!";
@@ -395,6 +427,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int startOffset() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "startOffset() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "startOffset() called after NO_MORE_DOCS";
       assert positionCount > 0 : "startOffset() called before nextPosition()!";
@@ -403,6 +436,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int endOffset() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "endOffset() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "endOffset() called after NO_MORE_DOCS";
       assert positionCount > 0 : "endOffset() called before nextPosition()!";
@@ -411,6 +445,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public BytesRef getPayload() throws IOException {
+      assertThread("Docs enums", creationThread);
       assert state != DocsEnumState.START : "getPayload() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "getPayload() called after NO_MORE_DOCS";
       assert positionCount > 0 : "getPayload() called before nextPosition()!";
@@ -422,6 +457,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   
   /** Wraps a NumericDocValues but with additional asserts */
   public static class AssertingNumericDocValues extends NumericDocValues {
+    private final Thread creationThread = Thread.currentThread();
     private final NumericDocValues in;
     private final int maxDoc;
     
@@ -432,6 +468,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long get(int docID) {
+      assertThread("Numeric doc values", creationThread);
       assert docID >= 0 && docID < maxDoc;
       return in.get(docID);
     }    
@@ -439,6 +476,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   
   /** Wraps a BinaryDocValues but with additional asserts */
   public static class AssertingBinaryDocValues extends BinaryDocValues {
+    private final Thread creationThread = Thread.currentThread();
     private final BinaryDocValues in;
     private final int maxDoc;
     
@@ -449,6 +487,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public BytesRef get(int docID) {
+      assertThread("Binary doc values", creationThread);
       assert docID >= 0 && docID < maxDoc;
       final BytesRef result = in.get(docID);
       assert result.isValid();
@@ -458,6 +497,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   
   /** Wraps a SortedDocValues but with additional asserts */
   public static class AssertingSortedDocValues extends SortedDocValues {
+    private final Thread creationThread = Thread.currentThread();
     private final SortedDocValues in;
     private final int maxDoc;
     private final int valueCount;
@@ -471,6 +511,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int getOrd(int docID) {
+      assertThread("Sorted doc values", creationThread);
       assert docID >= 0 && docID < maxDoc;
       int ord = in.getOrd(docID);
       assert ord >= -1 && ord < valueCount;
@@ -479,6 +520,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public BytesRef lookupOrd(int ord) {
+      assertThread("Sorted doc values", creationThread);
       assert ord >= 0 && ord < valueCount;
       final BytesRef result = in.lookupOrd(ord);
       assert result.isValid();
@@ -487,6 +529,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int getValueCount() {
+      assertThread("Sorted doc values", creationThread);
       int valueCount = in.getValueCount();
       assert valueCount == this.valueCount; // should not change
       return valueCount;
@@ -494,6 +537,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public BytesRef get(int docID) {
+      assertThread("Sorted doc values", creationThread);
       assert docID >= 0 && docID < maxDoc;
       final BytesRef result = in.get(docID);
       assert result.isValid();
@@ -502,6 +546,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int lookupTerm(BytesRef key) {
+      assertThread("Sorted doc values", creationThread);
       assert key.isValid();
       int result = in.lookupTerm(key);
       assert result < valueCount;
@@ -512,6 +557,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   
   /** Wraps a SortedSetDocValues but with additional asserts */
   public static class AssertingSortedNumericDocValues extends SortedNumericDocValues {
+    private final Thread creationThread = Thread.currentThread();
     private final SortedNumericDocValues in;
     private final int maxDoc;
     
@@ -522,6 +568,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void setDocument(int doc) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert doc >= 0 && doc < maxDoc;
       in.setDocument(doc);
       // check the values are actually sorted
@@ -535,18 +582,21 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long valueAt(int index) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert index < in.count();
       return in.valueAt(index);
     }
 
     @Override
     public int count() {
+      assertThread("Sorted numeric doc values", creationThread);
       return in.count();
     } 
   }
   
   /** Wraps a RandomAccessOrds but with additional asserts */
   public static class AssertingRandomAccessOrds extends RandomAccessOrds {
+    private final Thread creationThread = Thread.currentThread();
     private final RandomAccessOrds in;
     private final int maxDoc;
     private final long valueCount;
@@ -561,6 +611,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     
     @Override
     public long nextOrd() {
+      assertThread("Sorted numeric doc values", creationThread);
       assert lastOrd != NO_MORE_ORDS;
       long ord = in.nextOrd();
       assert ord < valueCount;
@@ -571,6 +622,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void setDocument(int docID) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert docID >= 0 && docID < maxDoc : "docid=" + docID + ",maxDoc=" + maxDoc;
       in.setDocument(docID);
       lastOrd = -2;
@@ -578,6 +630,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public BytesRef lookupOrd(long ord) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert ord >= 0 && ord < valueCount;
       final BytesRef result = in.lookupOrd(ord);
       assert result.isValid();
@@ -586,6 +639,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long getValueCount() {
+      assertThread("Sorted numeric doc values", creationThread);
       long valueCount = in.getValueCount();
       assert valueCount == this.valueCount; // should not change
       return valueCount;
@@ -593,6 +647,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long lookupTerm(BytesRef key) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert key.isValid();
       long result = in.lookupTerm(key);
       assert result < valueCount;
@@ -602,6 +657,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long ordAt(int index) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert index < in.cardinality();
       long ord = in.ordAt(index);
       assert ord >= 0 && ord < valueCount;
@@ -610,6 +666,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int cardinality() {
+      assertThread("Sorted numeric doc values", creationThread);
       int cardinality = in.cardinality();
       assert cardinality >= 0;
       return cardinality;
@@ -618,6 +675,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   
   /** Wraps a SortedSetDocValues but with additional asserts */
   public static class AssertingSortedSetDocValues extends SortedSetDocValues {
+    private final Thread creationThread = Thread.currentThread();
     private final SortedSetDocValues in;
     private final int maxDoc;
     private final long valueCount;
@@ -632,6 +690,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     
     @Override
     public long nextOrd() {
+      assertThread("Sorted numeric doc values", creationThread);
       assert lastOrd != NO_MORE_ORDS;
       long ord = in.nextOrd();
       assert ord < valueCount;
@@ -642,6 +701,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void setDocument(int docID) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert docID >= 0 && docID < maxDoc : "docid=" + docID + ",maxDoc=" + maxDoc;
       in.setDocument(docID);
       lastOrd = -2;
@@ -649,6 +709,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public BytesRef lookupOrd(long ord) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert ord >= 0 && ord < valueCount;
       final BytesRef result = in.lookupOrd(ord);
       assert result.isValid();
@@ -657,6 +718,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long getValueCount() {
+      assertThread("Sorted numeric doc values", creationThread);
       long valueCount = in.getValueCount();
       assert valueCount == this.valueCount; // should not change
       return valueCount;
@@ -664,6 +726,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long lookupTerm(BytesRef key) {
+      assertThread("Sorted numeric doc values", creationThread);
       assert key.isValid();
       long result = in.lookupTerm(key);
       assert result < valueCount;
@@ -671,7 +734,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       return result;
     }
   }
-
+  
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     NumericDocValues dv = super.getNumericDocValues(field);
@@ -762,6 +825,7 @@ public class AssertingLeafReader extends FilterLeafReader {
   
   /** Wraps a Bits but with additional asserts */
   public static class AssertingBits implements Bits {
+    private final Thread creationThread = Thread.currentThread();
     final Bits in;
     
     public AssertingBits(Bits in) {
@@ -770,12 +834,14 @@ public class AssertingLeafReader extends FilterLeafReader {
     
     @Override
     public boolean get(int index) {
+      assertThread("Bits", creationThread);
       assert index >= 0 && index < length();
       return in.get(index);
     }
 
     @Override
     public int length() {
+      assertThread("Bits", creationThread);
       return in.length();
     }
   }

@@ -48,7 +48,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    // for now its SimpleText vs Default(random postings format)
+    // for now it's SimpleText vs Default(random postings format)
     // as this gives the best overall coverage. when we have more
     // codecs we should probably pick 2 from Codec.availableCodecs()
     
@@ -123,7 +123,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
    */
   public static void createRandomIndex(int numdocs, RandomIndexWriter writer, long seed) throws IOException {
     Random random = new Random(seed);
-    // primary source for our data is from linefiledocs, its realistic.
+    // primary source for our data is from linefiledocs, it's realistic.
     LineFileDocs lineFileDocs = new LineFileDocs(writer.w, random);
     FieldTypes fieldTypes = writer.getFieldTypes();
     fieldTypes.setMultiValued("sortedset");

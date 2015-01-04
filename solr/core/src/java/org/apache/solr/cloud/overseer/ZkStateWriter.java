@@ -59,12 +59,19 @@ public class ZkStateWriter {
     this.stats = stats;
   }
 
-  public ClusterState enqueueUpdate(ClusterState prevState, ZkWriteCommand cmd) throws KeeperException, InterruptedException {
+  public ClusterState enqueueUpdate(ClusterState prevState, ZkWriteCommand cmd, ZkWriteCallback callback) throws Exception {
     if (cmd == NO_OP) return prevState;
 
     if (maybeFlushBefore(cmd)) {
       // we must update the prev state to the new one
       prevState = clusterState = writePendingUpdates();
+      if (callback != null) {
+        callback.onWrite();
+      }
+    }
+
+    if (callback != null) {
+      callback.onEnqueue();
     }
 
     if (cmd.collection == null) {
@@ -81,7 +88,11 @@ public class ZkStateWriter {
     }
 
     if (maybeFlushAfter(cmd)) {
-      return writePendingUpdates();
+      ClusterState state = writePendingUpdates();
+      if (callback != null) {
+        callback.onWrite();
+      }
+      return state;
     }
 
     return clusterState;
@@ -202,6 +213,18 @@ public class ZkStateWriter {
    */
   public ClusterState getClusterState() {
     return clusterState;
+  }
+
+  public interface ZkWriteCallback {
+    /**
+     * Called by ZkStateWriter if a ZkWriteCommand is queued
+     */
+    public void onEnqueue() throws Exception;
+
+    /**
+     * Called by ZkStateWriter if state is flushed to ZK
+     */
+    public void onWrite() throws Exception;
   }
 }
 

@@ -29,7 +29,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -115,7 +115,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
     }
     //Create new SolrServer to configure new HttpClient w/ SSL config
-    new LBHttpSolrServer(urls.toArray(new String[]{})).request(request);
+    new LBHttpSolrClient(urls.toArray(new String[]{})).request(request);
   }
   
 }

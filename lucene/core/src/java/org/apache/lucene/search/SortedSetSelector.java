@@ -77,7 +77,7 @@ public class SortedSetSelector {
       return new MinValue(sortedSet);
     } else {
       if (sortedSet instanceof RandomAccessOrds == false) {
-        throw new UnsupportedOperationException("codec does not support random access ordinals, cannot use selector: " + selector);
+        throw new UnsupportedOperationException("codec does not support random access ordinals, cannot use selector: " + selector + "; sortedSet=" + sortedSet);
       }
       RandomAccessOrds randomOrds = (RandomAccessOrds) sortedSet;
       switch(selector) {

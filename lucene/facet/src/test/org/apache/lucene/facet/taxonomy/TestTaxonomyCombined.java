@@ -224,7 +224,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     // Now, open the same taxonomy and add the same categories again.
     // After a few categories, the LuceneTaxonomyWriter implementation
     // will stop looking for each category on disk, and rather read them
-    // all into memory and close it's reader. The bug was that it closed
+    // all into memory and close its reader. The bug was that it closed
     // the reader, but forgot that it did (because it didn't set the reader
     // reference to null).
     tw = new DirectoryTaxonomyWriter(indexDir);
@@ -743,7 +743,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
   private void assertConsistentYoungestChild(final FacetLabel abPath,
       final int abOrd, final int abYoungChildBase1, final int abYoungChildBase2, final int retry, int numCategories)
       throws Exception {
-    SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for intialization
+    SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for initialization
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
     tw.addCategory(new FacetLabel("a", "0"));
     tw.addCategory(abPath);

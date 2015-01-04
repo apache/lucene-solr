@@ -104,7 +104,7 @@ public class JavascriptCompiler {
     return org.objectweb.asm.commons.Method.getMethod(method);
   }
   
-  // This maximum length is theoretically 65535 bytes, but as its CESU-8 encoded we dont know how large it is in bytes, so be safe
+  // This maximum length is theoretically 65535 bytes, but as it's CESU-8 encoded we dont know how large it is in bytes, so be safe
   // rcmuir: "If your ranking function is that large you need to check yourself into a mental institution!"
   private static final int MAX_SOURCE_LENGTH = 16384;
   

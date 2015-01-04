@@ -17,7 +17,19 @@
 
 package org.apache.solr.core;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.security.BasicPermission;
+import java.security.CodeSource;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
+import java.security.SecureClassLoader;
+import java.security.cert.Certificate;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,13 +37,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarFile;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -51,8 +67,10 @@ public final class RequestHandlers {
       new ConcurrentHashMap<>() ;
   private final Map<String, SolrRequestHandler> immutableHandlers = Collections.unmodifiableMap(handlers) ;
 
+  public static final boolean disableExternalLib = Boolean.parseBoolean(System.getProperty("disable.external.lib", "false"));
+
   /**
-   * Trim the trailing '/' if its there, and convert null to empty string.
+   * Trim the trailing '/' if it's there, and convert null to empty string.
    * 
    * we want:
    *  /update/csv   and
@@ -101,8 +119,8 @@ public final class RequestHandlers {
    */
   public SolrRequestHandler register( String handlerName, SolrRequestHandler handler ) {
     String norm = normalize( handlerName );
-    if( handler == null ) {
-      return handlers.remove( norm );
+    if (handler == null) {
+      return handlers.remove(norm);
     }
     SolrRequestHandler old = handlers.put(norm, handler);
     if (0 != norm.length() && handler instanceof SolrInfoMBean) {
@@ -147,7 +165,7 @@ public final class RequestHandlers {
     //deduping implicit and explicit requesthandlers
     for (PluginInfo info : implicits) infoMap.put(info.name,info);
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName()))
-      if(infoMap.containsKey(info.name)) infoMap.remove(info.name);
+      if (infoMap.containsKey(info.name)) infoMap.remove(info.name);
     for (Map.Entry e : core.getSolrConfig().getOverlay().getReqHandlers().entrySet())
       infoMap.put((String)e.getKey(), new PluginInfo(SolrRequestHandler.TYPE, (Map)e.getValue()));
 
@@ -156,28 +174,32 @@ public final class RequestHandlers {
     for (PluginInfo info : infos) {
       try {
         SolrRequestHandler requestHandler;
-        String startup = info.attributes.get("startup") ;
-        if( startup != null ) {
-          if( "lazy".equals(startup) ) {
+        String startup = info.attributes.get("startup");
+        String lib = info.attributes.get("lib");
+        if (lib != null) {
+          requestHandler = new DynamicLazyRequestHandlerWrapper(core);
+        } else if (startup != null) {
+          if ("lazy".equals(startup)) {
             log.info("adding lazy requestHandler: " + info.className);
-            requestHandler = new LazyRequestHandlerWrapper( core, info.className, info.initArgs );
+            requestHandler = new LazyRequestHandlerWrapper(core);
           } else {
-            throw new Exception( "Unknown startup value: '"+startup+"' for: "+info.className );
+            throw new Exception("Unknown startup value: '" + startup + "' for: " + info.className);
           }
         } else {
           requestHandler = core.createRequestHandler(info.className);
         }
-        handlers.put(info,requestHandler);
+        if (requestHandler instanceof RequestHandlerBase) ((RequestHandlerBase) requestHandler).setPluginInfo(info);
+        
+        handlers.put(info, requestHandler);
         SolrRequestHandler old = register(info.name, requestHandler);
-        if(old != null) {
+        if (old != null) {
           log.warn("Multiple requestHandler registered to the same name: " + info.name + " ignoring: " + old.getClass().getName());
         }
-        if(info.isDefault()){
-          old = register("",requestHandler);
-          if(old != null)
-            log.warn("Multiple default requestHandler registered" + " ignoring: " + old.getClass().getName()); 
+        if (info.isDefault()) {
+          old = register("", requestHandler);
+          if (old != null) log.warn("Multiple default requestHandler registered" + " ignoring: " + old.getClass().getName());
         }
-        log.info("created "+info.name+": " + info.className);
+        log.info("created " + info.name + ": " + info.className);
       } catch (Exception ex) {
           throw new SolrException
             (ErrorCode.SERVER_ERROR, "RequestHandler init failure", ex);
@@ -214,7 +236,7 @@ public final class RequestHandlers {
     for (InitParams args : config.getInitParams().values())
       if(args.matchPath(info.name)) ags.add(args);
     if(!ags.isEmpty()){
-      info = new PluginInfo(info.type, info.attributes, info.initArgs.clone(), info.children);
+      info = info.copy();
       for (InitParams initParam : ags) {
         initParam.apply(info);
       }
@@ -242,29 +264,22 @@ public final class RequestHandlers {
    * 
    * @since solr 1.2
    */
-  public static final class LazyRequestHandlerWrapper implements SolrRequestHandler
+  public static class LazyRequestHandlerWrapper implements SolrRequestHandler , AutoCloseable, PluginInfoInitialized
   {
     private final SolrCore core;
-    private String _className;
-    private NamedList _args;
-    private SolrRequestHandler _handler;
+    String _className;
+    SolrRequestHandler _handler;
+    PluginInfo _pluginInfo;
     
-    public LazyRequestHandlerWrapper( SolrCore core, String className, NamedList args )
+    public LazyRequestHandlerWrapper( SolrCore core)
     {
       this.core = core;
-      _className = className;
-      _args = args;
       _handler = null; // don't initialize
     }
-    
-    /**
-     * In normal use, this function will not be called
-     */
+
     @Override
-    public void init(NamedList args) {
-      // do nothing
-    }
-    
+    public void init(NamedList args) { }
+
     /**
      * Wait for the first request before initializing the wrapped handler 
      */
@@ -281,12 +296,24 @@ public final class RequestHandlers {
     {
       if( _handler == null ) {
         try {
-          SolrRequestHandler handler = core.createRequestHandler(_className);
-          handler.init( _args );
+          SolrRequestHandler handler = createRequestHandler();
+          if (handler instanceof PluginInfoInitialized) {
+            ((PluginInfoInitialized) handler).init(_pluginInfo);
+          } else {
+            handler.init( _pluginInfo.initArgs );
+          }
+
+          if (handler instanceof PluginInfoInitialized) {
+            ((PluginInfoInitialized) handler).init(_pluginInfo);
+          } else {
+            handler.init( _pluginInfo.initArgs );
+          }
+
 
           if( handler instanceof SolrCoreAware ) {
             ((SolrCoreAware)handler).inform( core );
           }
+          if (handler instanceof RequestHandlerBase) ((RequestHandlerBase) handler).setPluginInfo(_pluginInfo);
           _handler = handler;
         }
         catch( Exception ex ) {
@@ -294,6 +321,10 @@ public final class RequestHandlers {
         }
       }
       return _handler;
+    }
+
+    protected SolrRequestHandler createRequestHandler() {
+      return core.createRequestHandler(_className);
     }
 
     public String getHandlerClass()
@@ -353,6 +384,193 @@ public final class RequestHandlers {
       lst.add("note", "not initialized yet" );
       return lst;
     }
+
+    @Override
+    public void close() throws Exception {
+      if (_handler == null) return;
+      if (_handler instanceof AutoCloseable && !(_handler instanceof DynamicLazyRequestHandlerWrapper)) {
+        ((AutoCloseable) _handler).close();
+      }
+    }
+
+    @Override
+    public void init(PluginInfo info) {
+      _pluginInfo = info;
+      _className = info.className;
+    }
+  }
+
+  public static class DynamicLazyRequestHandlerWrapper extends LazyRequestHandlerWrapper {
+    private String lib;
+    private String key;
+    private String version;
+    private CoreContainer coreContainer;
+    private SolrResourceLoader solrResourceLoader;
+    private MemClassLoader classLoader;
+    private boolean _closed = false;
+    boolean unrecoverable = false;
+    String errMsg = null;
+    private Exception exception;
+
+
+    public DynamicLazyRequestHandlerWrapper(SolrCore core) {
+      super(core);
+      this.coreContainer = core.getCoreDescriptor().getCoreContainer();
+      this.solrResourceLoader = core.getResourceLoader();
+
+    }
+
+    @Override
+    public void init(PluginInfo info) {
+      super.init(info);
+      this.lib = _pluginInfo.attributes.get("lib");
+
+      if(disableExternalLib){
+        errMsg = "ERROR external library loading is disabled";
+        unrecoverable = true;
+        _handler = this;
+        log.error(errMsg);
+        return;
+      }
+
+      version = _pluginInfo.attributes.get("version");
+      if (version == null) {
+        errMsg = "ERROR 'lib' attribute must be accompanied with version also";
+        unrecoverable = true;
+        _handler = this;
+        log.error(errMsg);
+        return;
+      }
+      classLoader = new MemClassLoader(this);
+    }
+
+    @Override
+    public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+      if(unrecoverable) {
+        rsp.add("error", errMsg);
+        if(exception != null) rsp.setException(exception);
+        return;
+      }
+      try {
+        classLoader.checkJarAvailable();
+      } catch (SolrException e) {
+        rsp.add("error", "Jar could not be loaded");
+        rsp.setException(e);
+        return;
+      } catch (IOException e) {
+        unrecoverable = true;
+        errMsg = "Could not load jar";
+        exception = e;
+        handleRequest(req,rsp);
+        return;
+      }
+
+      super.handleRequest(req, rsp);
+    }
+
+    @Override
+    protected SolrRequestHandler createRequestHandler() {
+      try {
+        Class clazz =  classLoader.findClass(_className);
+        Constructor<?>[] cons =  clazz.getConstructors();
+        for (Constructor<?> con : cons) {
+          Class<?>[] types = con.getParameterTypes();
+          if(types.length == 1 && types[0] == SolrCore.class){
+            return SolrRequestHandler.class.cast(con.newInstance(this));
+          }
+        }
+        return (SolrRequestHandler)clazz.newInstance();
+      } catch (Exception e) {
+        unrecoverable = true;
+        errMsg = MessageFormat.format("class {0} could not be loaded ",_className);
+        this.exception = e;
+        return this;
+
+      }
+
+    }
+
+    @Override
+    public void close() throws Exception {
+      super.close();
+      if (_closed) return;
+      classLoader.releaseJar();
+      _closed = true;
+    }
+  }
+
+
+  public static class MemClassLoader extends ClassLoader {
+    private JarRepository.JarContentRef jarContent;
+    private final DynamicLazyRequestHandlerWrapper handlerWrapper;
+    public MemClassLoader(DynamicLazyRequestHandlerWrapper handlerWrapper) {
+      super(handlerWrapper.solrResourceLoader.classLoader);
+      this.handlerWrapper = handlerWrapper;
+
+    }
+
+    boolean checkJarAvailable() throws IOException {
+      if (jarContent != null) return true;
+
+      try {
+        synchronized (this) {
+          jarContent = handlerWrapper.coreContainer.getJarRepository().getJarIncRef(handlerWrapper.lib+"/"+handlerWrapper.version);
+          return true;
+        }
+      } catch (SolrException se) {
+        throw se;
+      }
+
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+      try {
+        return super.findClass(name);
+      } catch (ClassNotFoundException e) {
+        String path = name.replace('.', '/').concat(".class");
+        ByteBuffer buf = null;
+        try {
+          if(jarContent == null) checkJarAvailable();
+          buf = jarContent.jar.getFileContent(path);
+          if(buf==null) throw new ClassNotFoundException("class not found in loaded jar"+ name ) ;
+        } catch (IOException e1) {
+          throw new ClassNotFoundException("class not found "+ name ,e1) ;
+
+        }
+
+        ProtectionDomain defaultDomain = null;
+
+        //using the default protection domain, with no permissions
+        try {
+          defaultDomain = new ProtectionDomain(new CodeSource(new URL("http://localhost/.system/blob/"+handlerWrapper.lib), (Certificate[]) null),
+              null);
+        } catch (MalformedURLException e1) {
+          //should not happen
+        }
+        return defineClass(name,buf.array(),buf.arrayOffset(),buf.limit(), defaultDomain);
+      }
+    }
+
+
+    private void releaseJar(){
+      handlerWrapper.coreContainer.getJarRepository().decrementJarRefCount(jarContent);
+    }
+
+  }
+
+  public void close() {
+    for (Map.Entry<String, SolrRequestHandler> e : handlers.entrySet()) {
+      if (e.getValue() instanceof AutoCloseable) {
+        try {
+          ((AutoCloseable) e.getValue()).close();
+        } catch (Exception exp) {
+          log.error("Error closing requestHandler "+e.getKey() , exp);
+        }
+      }
+
+    }
+
   }
 }
 

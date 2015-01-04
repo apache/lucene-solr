@@ -17,9 +17,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
-
 import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -29,12 +26,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Future;
 
-import static java.util.Collections.synchronizedSet;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Base class for Directory implementations that store index
@@ -116,7 +112,6 @@ import static java.util.Collections.synchronizedSet;
 public abstract class FSDirectory extends BaseDirectory {
 
   protected final Path directory; // The underlying filesystem directory
-  protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
 
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * @param path the path of the directory
@@ -126,7 +121,7 @@ public abstract class FSDirectory extends BaseDirectory {
    */
   protected FSDirectory(Path path, LockFactory lockFactory) throws IOException {
     super(lockFactory);
-    Files.createDirectories(path);  // create directory, if it doesnt exist
+    Files.createDirectories(path);  // create directory, if it doesn't exist
     directory = path.toRealPath();
   }
 
@@ -208,7 +203,6 @@ public abstract class FSDirectory extends BaseDirectory {
   public void deleteFile(String name) throws IOException {
     ensureOpen();
     Files.delete(directory.resolve(name));
-    staleFiles.remove(name);
   }
 
   /** Creates an IndexOutput for the file with the given name. */
@@ -224,25 +218,13 @@ public abstract class FSDirectory extends BaseDirectory {
     Files.deleteIfExists(directory.resolve(name)); // delete existing, if any
   }
 
-  /**
-   * Sub classes should call this method on closing an open {@link IndexOutput}, reporting the name of the file
-   * that was closed. {@code FSDirectory} needs this information to take care of syncing stale files.
-   */
-  protected void onIndexOutputClosed(String name) {
-    staleFiles.add(name);
-  }
-
   @Override
   public void sync(Collection<String> names) throws IOException {
     ensureOpen();
-    Set<String> toSync = new HashSet<>(names);
-    toSync.retainAll(staleFiles);
 
-    for (String name : toSync) {
+    for (String name : names) {
       fsync(name);
     }
-    
-    staleFiles.removeAll(toSync);
   }
   
   @Override
@@ -279,8 +261,6 @@ public abstract class FSDirectory extends BaseDirectory {
      */
     static final int CHUNK_SIZE = 8192;
     
-    private final String name;
-
     public FSIndexOutput(String name) throws IOException {
       super("FSIndexOutput(path=\"" + directory.resolve(name) + "\")", new FilterOutputStream(Files.newOutputStream(directory.resolve(name))) {
         // This implementation ensures, that we never write more than CHUNK_SIZE bytes:
@@ -294,16 +274,6 @@ public abstract class FSDirectory extends BaseDirectory {
           }
         }
       }, CHUNK_SIZE);
-      this.name = name;
-    }
-    
-    @Override
-    public void close() throws IOException {
-      try {
-        onIndexOutputClosed(name);
-      } finally {
-        super.close();
-      }
     }
   }
 

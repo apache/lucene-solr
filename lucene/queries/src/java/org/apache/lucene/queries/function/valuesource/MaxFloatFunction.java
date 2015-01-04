@@ -21,7 +21,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
- * <code>MaxFloatFunction</code> returns the max of it's components.
+ * <code>MaxFloatFunction</code> returns the max of its components.
  */
 public class MaxFloatFunction extends MultiFloatFunction {
   public MaxFloatFunction(ValueSource[] sources) {

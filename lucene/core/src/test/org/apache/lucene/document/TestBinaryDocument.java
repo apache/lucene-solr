@@ -55,13 +55,13 @@ public class TestBinaryDocument extends LuceneTestCase {
     Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
-    /** fetch the binary stored field and compare it's content with the original one */
+    /** fetch the binary stored field and compare its content with the original one */
     BytesRef bytes = docFromReader.getBinary("binaryStored");
     assertNotNull(bytes);
     String binaryFldStoredTest = new String(bytes.bytes, bytes.offset, bytes.length, StandardCharsets.UTF_8);
     assertTrue(binaryFldStoredTest.equals(binaryValStored));
     
-    /** fetch the string field and compare it's content with the original one */
+    /** fetch the string field and compare its content with the original one */
     String stringFldStoredTest = docFromReader.getString("stringStored");
     assertTrue(stringFldStoredTest.equals(binaryValStored));
     
@@ -87,7 +87,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
-    /** fetch the binary compressed field and compare it's content with the original one */
+    /** fetch the binary compressed field and compare its content with the original one */
     String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinary("binaryCompressed")), StandardCharsets.UTF_8);
     assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
     assertTrue(CompressionTools.decompressString(docFromReader.getBinary("stringCompressed")).equals(binaryValCompressed));

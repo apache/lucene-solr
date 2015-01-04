@@ -28,7 +28,7 @@ import java.io.IOException;
  * This filter folds Scandinavian characters åÅäæÄÆ-&gt;a and öÖøØ-&gt;o.
  * It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
  * <p/>
- * It's is a semantically more destructive solution than {@link ScandinavianNormalizationFilter} but
+ * It's a semantically more destructive solution than {@link ScandinavianNormalizationFilter} but
  * can in addition help with matching raksmorgas as räksmörgås.
  * <p/>
  * blåbærsyltetøj == blåbärsyltetöj == blaabaarsyltetoej == blabarsyltetoj

@@ -141,7 +141,7 @@ public final class Passage {
   /**
    * End offsets of the term matches, corresponding with {@link #getMatchStarts}. 
    * <p>
-   * Only {@link #getNumMatches} are valid. Note that its possible that an end offset 
+   * Only {@link #getNumMatches} are valid. Note that it's possible that an end offset 
    * could exceed beyond the bounds of the passage ({@link #getEndOffset()}), if the 
    * Analyzer produced a term which spans a passage boundary.
    */

@@ -87,7 +87,7 @@ public class ParallelLeafReader extends LeafReader {
       this.maxDoc = first.maxDoc();
       this.numDocs = first.numDocs();
       this.hasDeletions = first.hasDeletions();
-      this.fieldTypes = new FieldTypes(first.getFieldTypes());
+      this.fieldTypes = new FieldTypes(null);
     } else {
       this.maxDoc = this.numDocs = 0;
       this.hasDeletions = false;
@@ -109,7 +109,8 @@ public class ParallelLeafReader extends LeafReader {
     for (final LeafReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
       // nocommit we should only add the fields that this reader "wins" on?
-      fieldTypes.addAll(reader.getFieldTypes());
+      FieldTypes readerFieldTypes = reader.getFieldTypes();
+      assert readerFieldTypes != null;
       for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
         if (!fieldToReader.containsKey(fieldInfo.name)) {
@@ -118,6 +119,7 @@ public class ParallelLeafReader extends LeafReader {
           if (fieldInfo.hasVectors()) {
             tvFieldToReader.put(fieldInfo.name, reader);
           }
+          fieldTypes.mergeOneField(readerFieldTypes, fieldInfo.name);
         }
       }
     }

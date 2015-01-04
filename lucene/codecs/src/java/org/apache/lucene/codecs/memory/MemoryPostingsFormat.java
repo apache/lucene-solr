@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,10 +34,10 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
@@ -404,14 +405,19 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       }
     }
 
+    private boolean closed;
+    
     @Override
     public void close() throws IOException {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      
       // EOF marker:
-      try {
+      try (IndexOutput out = this.out) {
         out.writeVInt(0);
         CodecUtil.writeFooter(out);
-      } finally {
-        out.close();
       }
     }
   }
@@ -955,7 +961,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       if (fst == null) {
         return Collections.emptyList();
       } else {
@@ -1030,7 +1036,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public Iterable<? extends Accountable> getChildResources() {
+      public Collection<Accountable> getChildResources() {
         return Accountables.namedAccountables("field", fields);
       }
 

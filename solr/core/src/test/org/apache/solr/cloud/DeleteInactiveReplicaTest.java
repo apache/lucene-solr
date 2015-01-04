@@ -17,16 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.setClusterProp;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-
-import java.net.URL;
-import java.util.Map;
-
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -37,6 +31,12 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
+
+import java.net.URL;
+import java.util.Map;
+
+import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.setClusterProp;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 //@Ignore("Not currently valid see SOLR-5580")
 public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
@@ -57,7 +57,7 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
   }
   
   private void deleteInactiveReplicaTest() throws Exception {
-    CloudSolrServer client = createCloudClient(null);
+    CloudSolrClient client = createCloudClient(null);
 
     String collectionName = "delDeadColl";
 
@@ -131,12 +131,12 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
 
     Map m = makeMap("qt", "/admin/cores", "action", "status");
 
-    SolrServer server = new HttpSolrServer(replica1.getStr(ZkStateReader.BASE_URL_PROP));
-    NamedList<Object> resp = server.request(new QueryRequest(new MapSolrParams(m)));
+    SolrClient queryClient = new HttpSolrClient(replica1.getStr(ZkStateReader.BASE_URL_PROP));
+    NamedList<Object> resp = queryClient.request(new QueryRequest(new MapSolrParams(m)));
     assertNull("The core is up and running again",
         ((NamedList) resp.get("status")).get(replica1.getStr("core")));
-    server.shutdown();
-    server = null;
+    queryClient.shutdown();
+    queryClient = null;
 
 
     Exception exp = null;

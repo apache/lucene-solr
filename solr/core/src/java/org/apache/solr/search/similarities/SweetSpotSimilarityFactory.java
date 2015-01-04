@@ -61,9 +61,9 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  *  <li>If any individual settings from one of the above mentioned sets 
  *      are specified, then all settings from that set must be specified.
  *  </li>
- *  <li>If Baseline TF settings are spcified, then Hyperbolic TF settings 
+ *  <li>If Baseline TF settings are specified, then Hyperbolic TF settings
  *      are not permitted, and vice versa. (The settings specified will 
- *      determine wether {@link SweetSpotSimilarity#baselineTf} or 
+ *      determine whether {@link SweetSpotSimilarity#baselineTf} or
  *      {@link SweetSpotSimilarity#hyperbolicTf} will be used.
  *  </li>
  * </ul>
@@ -139,7 +139,7 @@ public class SweetSpotSimilarityFactory extends DefaultSimilarityFactory {
       throw new SolrException(SERVER_ERROR, "Can not mix hyperbolicTf settings with baselineTf settings");
     }
 
-    // pick Similarity impl based on wether hyper tf settings are set
+    // pick Similarity impl based on whether hyper tf settings are set
     sim = (null != hyper_min) ? new HyperbolicSweetSpotSimilarity() 
       : new SweetSpotSimilarity();
     
@@ -159,7 +159,7 @@ public class SweetSpotSimilarityFactory extends DefaultSimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    assert sim != null : "SweetSpotSimilarityFactory was not initalized";
+    assert sim != null : "SweetSpotSimilarityFactory was not initialized";
     return sim;
   }
   
@@ -183,5 +183,5 @@ public class SweetSpotSimilarityFactory extends DefaultSimilarityFactory {
     public float tf(float freq) {
       return hyperbolicTf(freq);
     }
-  };
+  }
 }

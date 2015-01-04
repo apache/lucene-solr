@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,16 +47,17 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
-import org.apache.lucene.index.sorter.SortingMergePolicy;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
@@ -75,6 +78,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
+// javadocs
 
 // TODO:
 //   - a PostingsFormat that stores super-high-freq terms as
@@ -302,7 +306,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** Updates a previous suggestion, matching the exact same
    *  text as before.  Use this to change the weight or
-   *  payload of an already added suggstion.  If you know
+   *  payload of an already added suggestion.  If you know
    *  this text is not already present you can use {@link
    *  #add} instead.  After adding or updating a batch of
    *  new suggestions, you must call {@link #refresh} in the
@@ -514,7 +518,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:
-    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
+    final MergePolicy mergePolicy = writer.getConfig().getMergePolicy();
+    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num, (SortingMergePolicy) mergePolicy);
     IndexSearcher searcher = searcherMgr.acquire();
     List<LookupResult> results = null;
     try {
@@ -605,7 +610,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** Override this method to customize the Object
    *  representing a single highlighted suggestions; the
    *  result is set on each {@link
-   *  LookupResult#highlightKey} member. */
+   *  org.apache.lucene.search.suggest.Lookup.LookupResult#highlightKey} member. */
   protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
     try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
@@ -733,7 +738,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     try {
       if (searcherMgr != null) {
@@ -749,7 +754,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           searcherMgr.release(searcher);
         }
       }
-      return resources;
+      return Collections.unmodifiableList(resources);
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }

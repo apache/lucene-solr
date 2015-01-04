@@ -20,6 +20,7 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -603,12 +604,12 @@ class FieldCacheImpl implements FieldCache {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", bytes));
       resources.add(Accountables.namedAccountable("ord -> term", termOrdToBytesOffset));
       resources.add(Accountables.namedAccountable("doc -> ord", docToTermOrd));
-      return resources;
+      return Collections.unmodifiableList(resources);
     }
   }
 
@@ -746,7 +747,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("term bytes", bytes));
       resources.add(Accountables.namedAccountable("addresses", docToOffset));
@@ -911,8 +912,8 @@ class FieldCacheImpl implements FieldCache {
       return DocValues.emptySortedSet();
     } else {
       // if #postings = #docswithfield we know that the field is "single valued enough".
-      // its possible the same term might appear twice in the same document, but SORTED_SET discards frequency.
-      // its still ok with filtering (which we limit to numerics), it just means precisionStep = Inf
+      // it's possible the same term might appear twice in the same document, but SORTED_SET discards frequency.
+      // it's still ok with filtering (which we limit to numerics), it just means precisionStep = Inf
       long numPostings = terms.getSumDocFreq();
       if (numPostings != -1 && numPostings == terms.getDocCount()) {
         return DocValues.singleton(getTermsIndex(reader, field));

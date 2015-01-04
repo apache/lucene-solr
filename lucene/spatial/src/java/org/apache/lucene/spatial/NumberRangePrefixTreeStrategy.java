@@ -17,17 +17,31 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeFacets;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
+import org.apache.lucene.util.Bits;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 
+import static org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
+
 /** A PrefixTree based on Number/Date ranges. This isn't very "spatial" on the surface (to the user) but
- * it's implemented using spatial so that's why it's here extending a SpatialStrategy.
+ * it's implemented using spatial so that's why it's here extending a SpatialStrategy. When using this class, you will
+ * use various utility methods on the prefix tree implementation to convert objects/strings to/from shapes.
+ *
+ * To use with dates, pass in {@link org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree}.
  *
  * @lucene.experimental
  */
@@ -52,25 +66,97 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
     doc.addLargeText(getFieldName(), createTokenStream(shape, grid.getMaxLevels()));
   }
 
-  /** For a Date based tree, pass in a Calendar, with unspecified fields marked as cleared.
-   * See {@link NumberRangePrefixTree#toShape(Object)}. */
-  public Shape toShape(Object value) {
-    return getGrid().toShape(value);
-  }
-
-  /** See {@link NumberRangePrefixTree#toRangeShape(Shape, Shape)}. */
-  public Shape toRangeShape(Shape min, Shape max) {
-    return getGrid().toRangeShape(min, max);
-  }
-
-  /** See {@link NumberRangePrefixTree#parseShape(String)}. */
-  public Shape parseShape(String str) throws ParseException {
-    return getGrid().parseShape(str);
-  }
-
   /** Unsupported. */
   @Override
   public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     throw new UnsupportedOperationException();
   }
+
+  /** Calculates facets between {@code start} and {@code end} to a detail level one greater than that provided by the
+   * arguments. For example providing March to October of 2014 would return facets to the day level of those months.
+   * This is just a convenience method.
+   * @see #calcFacets(IndexReaderContext, Bits, Shape, int)
+   */
+  public Facets calcFacets(IndexReaderContext context, final Bits acceptDocs, UnitNRShape start, UnitNRShape end)
+      throws IOException {
+    Shape filter = getGrid().toRangeShape(start, end);
+    int detailLevel = Math.max(start.getLevel(), end.getLevel()) + 1;
+    return calcFacets(context, acceptDocs, filter, detailLevel);
+  }
+
+  /**
+   * Calculates facets (aggregated counts) given a range shape (start-end span) and a level, which specifies the detail.
+   * To get the level of an existing shape, say a Calendar, call
+   * {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree#toUnitShape(Object)} then call
+   * {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape#getLevel()}.
+   * Facet computation is implemented by navigating the underlying indexed terms efficiently.
+   */
+  public Facets calcFacets(IndexReaderContext context, final Bits acceptDocs, Shape facetRange, int level)
+      throws IOException {
+    return NumberRangePrefixTreeFacets.compute(this, context, acceptDocs, facetRange, level);
+  }
+
+  /** Facet response information */
+  public static class Facets {
+    //TODO consider a variable-level structure -- more general purpose.
+
+    public Facets(int detailLevel) {
+      this.detailLevel = detailLevel;
+    }
+
+    /** The bottom-most detail-level counted, as requested. */
+    public final int detailLevel;
+
+    /**
+     * The count of documents with ranges that completely spanned the parents of the detail level. In more technical
+     * terms, this is the count of leaf cells 2 up and higher from the bottom. Usually you only care about counts at
+     * detailLevel, and so you will add this number to all other counts below, including to omitted/implied children
+     * counts of 0. If there are no indexed ranges (just instances, i.e. fully specified dates) then this value will
+     * always be 0.
+     */
+    public int topLeaves;
+
+    /** Holds all the {@link FacetParentVal} instances in order of the key. This is sparse; there won't be an
+     * instance if it's count and children are all 0. The keys are {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape} shapes, which can be
+     * converted back to the original Object (i.e. a Calendar) via
+     * {@link NumberRangePrefixTree#toObject(org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape)}. */
+    public final SortedMap<UnitNRShape,FacetParentVal> parents = new TreeMap<>();
+
+    /** Holds a block of detailLevel counts aggregated to their parent level. */
+    public static class FacetParentVal {
+
+      /** The count of ranges that span all of the childCounts.  In more technical terms, this is the number of leaf
+       * cells found at this parent.  Treat this like {@link Facets#topLeaves}. */
+      public int parentLeaves;
+
+      /** The length of {@link #childCounts}. If childCounts is not null then this is childCounts.length, otherwise it
+       * says how long it would have been if it weren't null. */
+      public int childCountsLen;
+
+      /** The detail level counts. It will be null if there are none, and thus they are assumed 0. Most apps, when
+       * presenting the information, will add {@link #topLeaves} and {@link #parentLeaves} to each count. */
+      public int[] childCounts;
+      //assert childCountsLen == childCounts.length
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder buf = new StringBuilder(2048);
+      buf.append("Facets: level=" + detailLevel + " topLeaves=" + topLeaves + " parentCount=" + parents.size());
+      for (Map.Entry<UnitNRShape, FacetParentVal> entry : parents.entrySet()) {
+        buf.append('\n');
+        if (buf.length() > 1000) {
+          buf.append("...");
+          break;
+        }
+        final FacetParentVal pVal = entry.getValue();
+        buf.append(' ').append(entry.getKey()+" leafCount=" + pVal.parentLeaves);
+        if (pVal.childCounts != null) {
+          buf.append(' ').append(Arrays.toString(pVal.childCounts));
+        }
+      }
+      return buf.toString();
+    }
+  }
+
 }

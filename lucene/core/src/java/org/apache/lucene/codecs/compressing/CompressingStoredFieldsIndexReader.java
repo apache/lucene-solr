@@ -22,6 +22,8 @@ import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -188,7 +190,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     
     long docBaseDeltaBytes = RamUsageEstimator.shallowSizeOf(docBasesDeltas);
@@ -203,7 +205,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
     }
     resources.add(Accountables.namedAccountable("start pointer deltas", startPointerDeltaBytes));
     
-    return resources;
+    return Collections.unmodifiableList(resources);
   }
 
   @Override

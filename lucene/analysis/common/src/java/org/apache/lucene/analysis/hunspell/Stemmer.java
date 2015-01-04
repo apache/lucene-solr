@@ -46,7 +46,7 @@ final class Stemmer {
   private final StringBuilder scratchSegment = new StringBuilder();
   private char scratchBuffer[] = new char[32];
   
-  // its '1' if we have no stem exceptions, otherwise every other form
+  // it's '1' if we have no stem exceptions, otherwise every other form
   // is really an ID pointing to the exception table
   private final int formStep;
   
@@ -134,7 +134,7 @@ final class Stemmer {
       return EXACT_CASE;
     }
     
-    // determine if we are title or lowercase (or something funky, in which its exact)
+    // determine if we are title or lowercase (or something funky, in which it's exact)
     boolean seenUpper = false;
     boolean seenLower = false;
     for (int i = 1; i < length; i++) {
@@ -183,7 +183,7 @@ final class Stemmer {
           if (checkKeepCase && Dictionary.hasFlag(wordFlags, (char)dictionary.keepcase)) {
             continue;
           }
-          // we can't add this form, its a pseudostem requiring an affix
+          // we can't add this form, it's a pseudostem requiring an affix
           if (checkNeedAffix && Dictionary.hasFlag(wordFlags, (char)dictionary.needaffix)) {
             continue;
           }
@@ -280,12 +280,12 @@ final class Stemmer {
    * @param word Word to generate the stems for
    * @param previous previous affix that was removed (so we dont remove same one twice)
    * @param prevFlag Flag from a previous stemming step that need to be cross-checked with any affixes in this recursive step
-   * @param prefixFlag flag of the most inner removed prefix, so that when removing a suffix, its also checked against the word
+   * @param prefixFlag flag of the most inner removed prefix, so that when removing a suffix, it's also checked against the word
    * @param recursionDepth current recursiondepth
    * @param doPrefix true if we should remove prefixes
    * @param doSuffix true if we should remove suffixes
    * @param previousWasPrefix true if the previous removal was a prefix:
-   *        if we are removing a suffix, and it has no continuation requirements, its ok.
+   *        if we are removing a suffix, and it has no continuation requirements, it's ok.
    *        but two prefixes (COMPLEXPREFIXES) or two suffixes must have continuation requirements to recurse. 
    * @param circumfix true if the previous prefix removal was signed as a circumfix
    *        this means inner most suffix must also contain circumfix flag.
@@ -501,7 +501,7 @@ final class Stemmer {
    * @param prefixFlag when we already stripped a prefix, we cant simply recurse and check the suffix, unless both are compatible
    *                   so we must check dictionary form against both to add it as a stem!
    * @param recursionDepth current recursion depth
-   * @param prefix true if we are removing a prefix (false if its a suffix)
+   * @param prefix true if we are removing a prefix (false if it's a suffix)
    * @return List of stems for the word, or an empty list if none are found
    */
   List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int prefixFlag, int recursionDepth, boolean prefix, boolean circumfix, boolean caseVariant) throws IOException {    

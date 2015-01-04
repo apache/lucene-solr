@@ -59,7 +59,7 @@ public class FilterFileSystemProvider extends FileSystemProvider {
   /** 
    * The underlying {@code FileSystem} instance. 
    */
-  protected final FileSystem fileSystem;
+  protected FileSystem fileSystem;
   /** 
    * The URI scheme for this provider.
    */
@@ -78,6 +78,18 @@ public class FilterFileSystemProvider extends FileSystemProvider {
     this.delegate = delegateInstance.provider();
     this.fileSystem = new FilterFileSystem(this, delegateInstance);
   }
+  
+  /**
+   * Construct a {@code FilterFileSystemProvider} indicated by
+   * the specified {@code scheme} and wrapping functionality of the
+   * provider. You must set the singleton {@code filesystem} yourself.
+   * @param scheme URI scheme
+   * @param delegate specified base provider.
+   */
+  public FilterFileSystemProvider(String scheme, FileSystemProvider delegate) {
+    this.scheme = Objects.requireNonNull(scheme);
+    this.delegate = Objects.requireNonNull(delegate);
+  }
 
   @Override
   public String getScheme() {
@@ -86,21 +98,33 @@ public class FilterFileSystemProvider extends FileSystemProvider {
 
   @Override
   public FileSystem newFileSystem(URI uri, Map<String,?> env) throws IOException {
+    if (fileSystem == null) {
+      throw new IllegalStateException("subclass did not initialize singleton filesystem");
+    }
     return fileSystem;
   }
   
   @Override
   public FileSystem newFileSystem(Path path, Map<String,?> env) throws IOException {
+    if (fileSystem == null) {
+      throw new IllegalStateException("subclass did not initialize singleton filesystem");
+    }
     return fileSystem;
   }
 
   @Override
   public FileSystem getFileSystem(URI uri) {
+    if (fileSystem == null) {
+      throw new IllegalStateException("subclass did not initialize singleton filesystem");
+    }
     return fileSystem;
   }
 
   @Override
   public Path getPath(URI uri) {
+    if (fileSystem == null) {
+      throw new IllegalStateException("subclass did not initialize singleton filesystem");
+    }
     Path path = delegate.getPath(toDelegate(uri));
     return new FilterPath(path, fileSystem);
   }

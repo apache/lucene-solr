@@ -91,7 +91,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       minSkipInterval = 2;
     }
 
-    // we pull this before the seed intentionally: because its not consumed at runtime
+    // we pull this before the seed intentionally: because it's not consumed at runtime
     // (the skipInterval is written into postings header).
     // NOTE: Currently not passed to postings writer.
     //       before, it was being passed in wrongly as acceptableOverhead!

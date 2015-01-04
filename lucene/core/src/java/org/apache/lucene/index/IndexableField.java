@@ -48,7 +48,7 @@ public interface IndexableField {
    *              custom field types (like StringField and NumericField) that do not use
    *              an analyzer to still have good performance. Note: the passed-in type
    *              may be inappropriate, for example if you mix up different types of Fields
-   *              for the same field name. So its the responsibility of the implementation to
+   *              for the same field name. So it's the responsibility of the implementation to
    *              check.
    * @return TokenStream value for indexing the document.  Should always return
    *         a non-null value if the field is to be indexed

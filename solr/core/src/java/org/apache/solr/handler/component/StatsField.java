@@ -361,7 +361,7 @@ public class StatsField {
   }
 
   /**
-   * Wether or not the effective value of the {@link StatsParams#STATS_CALC_DISTINCT} param
+   * Whether or not the effective value of the {@link StatsParams#STATS_CALC_DISTINCT} param
    * is true or false for this StatsField
    */
   public boolean getCalcDistinct() {

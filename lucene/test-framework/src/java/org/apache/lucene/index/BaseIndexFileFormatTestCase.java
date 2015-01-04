@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,17 +30,34 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RamUsageTester;
+import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 /**
  * Common tests to all index formats.
@@ -84,7 +100,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       this.root = root;
     }
 
-    public long accumulateObject(Object o, long shallowSize, Map<Field, Object> fieldValues, Collection<Object> queue) {
+    public long accumulateObject(Object o, long shallowSize, Map<java.lang.reflect.Field, Object> fieldValues, Collection<Object> queue) {
       for (Class<?> clazz = o.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
         if (EXCLUDED_CLASSES.contains(clazz) && o != root) {
           return 0;
@@ -262,6 +278,105 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     reader1.close();
     reader2.close();
     dir.close();
+  }
+  
+  /** Calls close multiple times on closeable codec apis */
+  public void testMultiClose() throws IOException {
+    // first make a one doc index
+    Directory oneDocIndex = newDirectory();
+    IndexWriter iw = new IndexWriter(oneDocIndex, new IndexWriterConfig(new MockAnalyzer(random())));
+    FieldTypes fieldTypes = iw.getFieldTypes();
+    fieldTypes.disableExistsFilters();
+    Document oneDoc = iw.newDocument();
+    fieldTypes.enableTermVectors("field");
+    oneDoc.addLargeText("field", "contents");
+    iw.addDocument(oneDoc);
+    LeafReader oneDocReader = getOnlySegmentReader(DirectoryReader.open(iw, true));
+    iw.close();
+    
+    // now feed to codec apis manually
+    // we use FSDir, things like ramdir are not guaranteed to cause fails if you write to them after close(), etc
+    Directory dir = newFSDirectory(createTempDir("justSoYouGetSomeChannelErrors"));
+    Codec codec = getCodec();
+    
+    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", 1, false, codec, null, StringHelper.randomId(), new HashMap<>());
+    FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
+    FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
+                                    proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), null);
+
+    FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { field } );
+
+    SegmentWriteState writeState = new SegmentWriteState(null, dir,
+                                                         segmentInfo, fieldInfos,
+                                                         null, new IOContext(new FlushInfo(1, 20)));
+    
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, IOContext.READ);
+
+    // PostingsFormat
+    try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
+      consumer.write(oneDocReader.fields());
+      IOUtils.close(consumer);
+      IOUtils.close(consumer);
+    }
+    try (FieldsProducer producer = codec.postingsFormat().fieldsProducer(readState)) {
+      IOUtils.close(producer);
+      IOUtils.close(producer);
+    }
+    
+    // DocValuesFormat
+    try (DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(writeState)) {
+      consumer.addNumericField(field, Collections.singleton(5));
+      IOUtils.close(consumer);
+      IOUtils.close(consumer);
+    }
+    try (DocValuesProducer producer = codec.docValuesFormat().fieldsProducer(readState)) {
+      IOUtils.close(producer);
+      IOUtils.close(producer);
+    }
+    
+    // NormsFormat
+    try (NormsConsumer consumer = codec.normsFormat().normsConsumer(writeState)) {
+      consumer.addNormsField(field, Collections.singleton(5));
+      IOUtils.close(consumer);
+      IOUtils.close(consumer);
+    }
+    try (NormsProducer producer = codec.normsFormat().normsProducer(readState)) {
+      IOUtils.close(producer);
+      IOUtils.close(producer);
+    }
+    
+    // TermVectorsFormat
+    try (TermVectorsWriter consumer = codec.termVectorsFormat().vectorsWriter(dir, segmentInfo, writeState.context)) {
+      consumer.startDocument(1);
+      consumer.startField(field, 1, false, false, false);
+      consumer.startTerm(new BytesRef("testing"), 2);
+      consumer.finishTerm();
+      consumer.finishField();
+      consumer.finishDocument();
+      consumer.finish(fieldInfos, 1);
+      IOUtils.close(consumer);
+      IOUtils.close(consumer);
+    }
+    try (TermVectorsReader producer = codec.termVectorsFormat().vectorsReader(dir, segmentInfo, fieldInfos, readState.context)) {
+      IOUtils.close(producer);
+      IOUtils.close(producer);
+    }
+    
+    // StoredFieldsFormat
+    try (StoredFieldsWriter consumer = codec.storedFieldsFormat().fieldsWriter(dir, segmentInfo, writeState.context)) {
+      consumer.startDocument();
+      consumer.writeField(field, oneDoc.getField("field"));
+      consumer.finishDocument();
+      consumer.finish(fieldInfos, 1);
+      IOUtils.close(consumer);
+      IOUtils.close(consumer);
+    }
+    try (StoredFieldsReader producer = codec.storedFieldsFormat().fieldsReader(dir, segmentInfo, fieldInfos, readState.context)) {
+      IOUtils.close(producer);
+      IOUtils.close(producer);
+    }
+            
+    IOUtils.close(oneDocReader, oneDocIndex, dir);
   }
 
 }

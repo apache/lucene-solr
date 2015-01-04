@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.icu;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.charfilter.BaseCharFilter;
 
@@ -28,8 +29,6 @@ import com.ibm.icu.text.Normalizer2;
  * Normalize token text with ICU's {@link Normalizer2}.
  */
 public final class ICUNormalizer2CharFilter extends BaseCharFilter {
-
-  private static final int IO_BUFFER_SIZE = 128;
 
   private final Normalizer2 normalizer;
   private final StringBuilder inputBuffer = new StringBuilder();
@@ -55,11 +54,14 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
    * @param normalizer normalizer to use
    */
   public ICUNormalizer2CharFilter(Reader in, Normalizer2 normalizer) {
+    this(in, normalizer, 128);
+  }
+  
+  // for testing ONLY
+  ICUNormalizer2CharFilter(Reader in, Normalizer2 normalizer, int bufferSize) {
     super(in);
-    if (normalizer == null) {
-      throw new NullPointerException("normalizer == null");
-    }
-    this.normalizer = normalizer;
+    this.normalizer = Objects.requireNonNull(normalizer);
+    this.tmpBuffer = new char[bufferSize];
   }
 
   @Override
@@ -92,7 +94,7 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
     return -1;
   }
 
-  private final char[] tmpBuffer = new char[IO_BUFFER_SIZE];
+  private final char[] tmpBuffer;
 
   private int readInputToBuffer() throws IOException {
     final int len = input.read(tmpBuffer);

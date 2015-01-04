@@ -53,6 +53,8 @@ import org.apache.lucene.util.InfoStream;
 
 class BufferedUpdatesStream implements Accountable {
 
+  // TODO: if IW knows the field is unique, we can be faster here
+
   // TODO: maybe linked list?
   private final List<FrozenBufferedUpdates> updates = new ArrayList<>();
 

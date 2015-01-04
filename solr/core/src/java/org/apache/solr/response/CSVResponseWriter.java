@@ -88,7 +88,7 @@ class CSVWriter extends TextResponseWriter {
 
   char[] sharedCSVBuf = new char[8192];
 
-  // prevent each instance from creating it's own buffer
+  // prevent each instance from creating its own buffer
   class CSVSharedBufPrinter extends CSVPrinter {
     public CSVSharedBufPrinter(Writer out, CSVStrategy strategy) {
       super(out, strategy);

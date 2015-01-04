@@ -20,7 +20,7 @@ package org.apache.solr.client.solrj.embedded;
 import java.io.File;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.junit.After;
 import org.junit.Before;
@@ -79,15 +79,15 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
 
   }
 
-  protected SolrServer getSolrCore0() {
+  protected SolrClient getSolrCore0() {
     return getSolrCore("core0");
   }
 
-  protected SolrServer getSolrCore1() {
+  protected SolrClient getSolrCore1() {
     return getSolrCore("core1");
   }
 
-  protected SolrServer getSolrCore(String name) {
+  protected SolrClient getSolrCore(String name) {
     return new EmbeddedSolrServer(cores, name);
   }
 

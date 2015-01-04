@@ -21,7 +21,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
- * <code>SumFloatFunction</code> returns the sum of it's components.
+ * <code>SumFloatFunction</code> returns the sum of its components.
  */
 public class SumFloatFunction extends MultiFloatFunction {
   public SumFloatFunction(ValueSource[] sources) {

@@ -18,9 +18,8 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
@@ -82,7 +81,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return impl.getChildResources();
     }
 

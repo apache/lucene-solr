@@ -17,6 +17,21 @@
 
 package org.apache.solr.core;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,21 +43,6 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * Incorporate the open/close stress tests into unit tests.
@@ -69,8 +69,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   File solrHomeDirectory;
 
-  List<HttpSolrServer> indexingServers = new ArrayList<>(indexingThreads);
-  List<HttpSolrServer> queryServers = new ArrayList<>(queryThreads);
+  List<HttpSolrClient> indexingClients = new ArrayList<>(indexingThreads);
+  List<HttpSolrClient> queryingClients = new ArrayList<>(queryThreads);
 
   static String savedFactory;
   
@@ -93,14 +93,14 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   @After
   public void tearDownServer() throws Exception {
     if (jetty != null) jetty.stop();
-    for(SolrServer server:indexingServers) {
-      server.shutdown();
+    for(SolrClient client: indexingClients) {
+      client.shutdown();
     }
-    for(SolrServer server:queryServers) {
-      server.shutdown();
+    for(SolrClient client: queryingClients) {
+      client.shutdown();
     }
-    indexingServers.clear();
-    queryServers.clear();
+    indexingClients.clear();
+    queryingClients.clear();
   }
 
   @Test
@@ -145,25 +145,25 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   }
 
 
-  private void getServers() throws Exception {
+  private void buildClients() throws Exception {
     jetty.start();
     url = buildUrl(jetty.getLocalPort(), "/solr/");
 
     // Mostly to keep annoying logging messages from being sent out all the time.
 
     for (int idx = 0; idx < indexingThreads; ++idx) {
-      HttpSolrServer server = new HttpSolrServer(url);
-      server.setDefaultMaxConnectionsPerHost(25);
-      server.setConnectionTimeout(30000);
-      server.setSoTimeout(60000);
-      indexingServers.add(server);
+      HttpSolrClient client = new HttpSolrClient(url);
+      client.setDefaultMaxConnectionsPerHost(25);
+      client.setConnectionTimeout(30000);
+      client.setSoTimeout(60000);
+      indexingClients.add(client);
     }
     for (int idx = 0; idx < queryThreads; ++idx) {
-      HttpSolrServer server = new HttpSolrServer(url);
-      server.setDefaultMaxConnectionsPerHost(25);
-      server.setConnectionTimeout(30000);
-      server.setSoTimeout(30000);
-      queryServers.add(server);
+      HttpSolrClient client = new HttpSolrClient(url);
+      client.setDefaultMaxConnectionsPerHost(25);
+      client.setConnectionTimeout(30000);
+      client.setSoTimeout(30000);
+      queryingClients.add(client);
     }
 
   }
@@ -173,7 +173,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     makeCores(solrHomeDirectory, oldStyle);
 
     //MUST start the server after the cores are made.
-    getServers();
+    buildClients();
 
     try {
 
@@ -187,9 +187,9 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
         log.info(String.format(Locale.ROOT, "\n\n\n\n\nStarting a %,d second cycle, seconds left: %,d. Seconds run so far: %,d.",
             cycleSeconds, secondsRemaining, secondsRun));
 
-        Indexer idxer = new Indexer(this, url, indexingServers, indexingThreads, cycleSeconds, random());
+        Indexer idxer = new Indexer(this, url, indexingClients, indexingThreads, cycleSeconds, random());
 
-        Queries queries = new Queries(this, url, queryServers, queryThreads, random());
+        Queries queries = new Queries(this, url, queryingClients, queryThreads, random());
 
         idxer.waitOnThreads();
 
@@ -197,12 +197,12 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
         secondsRemaining = Math.max(secondsRemaining - resetInterval, 0);
 
-        checkResults(queryServers.get(0), queries, idxer);
+        checkResults(queryingClients.get(0), queries, idxer);
 
         secondsRun += cycleSeconds;
 
         if (secondsRemaining > 0) {
-          deleteAllDocuments(queryServers.get(0), queries);
+          deleteAllDocuments(queryingClients.get(0), queries);
         }
       } while (secondsRemaining > 0);
 
@@ -251,14 +251,14 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   }
 
 
-  void deleteAllDocuments(HttpSolrServer server, Queries queries) {
+  void deleteAllDocuments(HttpSolrClient client, Queries queries) {
     log.info("Deleting data from last cycle, this may take a few minutes.");
 
     for (String core : coreNames) {
       try {
-        server.setBaseURL(url + core);
-        server.deleteByQuery("*:*");
-        server.optimize(true, true); // should be close to a no-op.
+        client.setBaseURL(url + core);
+        client.deleteByQuery("*:*");
+        client.optimize(true, true); // should be close to a no-op.
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -269,7 +269,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     long foundDocs = 0;
     for (String core : coreNames) {
       try {
-        long found = queries.getCount(server, core);
+        long found = queries.getCount(client, core);
         assertEquals("Cores should be empty", found, 0L);
         foundDocs += found;
       } catch (Exception e) {
@@ -287,21 +287,21 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void checkResults(HttpSolrServer server, Queries queries, Indexer idxer) throws InterruptedException {
+  private void checkResults(HttpSolrClient client, Queries queries, Indexer idxer) throws InterruptedException {
     log.info("Checking if indexes have all the documents they should...");
     long totalDocsFound = 0;
     for (Map.Entry<String, Long> ent : coreCounts.entrySet()) {
-      server.setBaseURL(url + ent.getKey());
+      client.setBaseURL(url + ent.getKey());
       for (int idx = 0; idx < 3; ++idx) {
         try {
-          server.commit(true, true);
+          client.commit(true, true);
           break; // retry loop
         } catch (Exception e) {
           log.warn("Exception when committing core " + ent.getKey() + " " + e.getMessage());
           Thread.sleep(100L);
         }
       }
-      long numFound = queries.getCount(server, ent.getKey());
+      long numFound = queries.getCount(client, ent.getKey());
       totalDocsFound += numFound;
       assertEquals(String.format(Locale.ROOT, "Core %s bad!", ent.getKey()), (long) ent.getValue(), numFound);
     }
@@ -341,14 +341,14 @@ class Indexer {
 
   ArrayList<OneIndexer> _threads = new ArrayList<>();
 
-  public Indexer(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads, int secondsToRun, Random random) {
+  public Indexer(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrClient> clients, int numThreads, int secondsToRun, Random random) {
     stopTime = System.currentTimeMillis() + (secondsToRun * 1000);
     nextTime = System.currentTimeMillis() + 60000;
     docsThisCycle.set(0);
     qTimesAccum.set(0);
     updateCounts.set(0);
     for (int idx = 0; idx < numThreads; ++idx) {
-      OneIndexer one = new OneIndexer(OCCST, url, servers.get(idx), random.nextLong());
+      OneIndexer one = new OneIndexer(OCCST, url, clients.get(idx), random.nextLong());
       _threads.add(one);
       one.start();
     }
@@ -385,13 +385,13 @@ class Indexer {
 
 class OneIndexer extends Thread {
   private final OpenCloseCoreStressTest OCCST;
-  private final HttpSolrServer server;
+  private final HttpSolrClient client;
   private final String baseUrl;
   private final Random random;
 
-  OneIndexer(OpenCloseCoreStressTest OCCST, String url, HttpSolrServer server, long seed) {
+  OneIndexer(OpenCloseCoreStressTest OCCST, String url, HttpSolrClient client, long seed) {
     this.OCCST = OCCST;
-    this.server = server;
+    this.client = client;
     this.baseUrl = url;
     this.random = new Random(seed);
   }
@@ -414,8 +414,8 @@ class OneIndexer extends Thread {
         update.add(doc);
 
         try {
-          server.setBaseURL(baseUrl + core);
-          UpdateResponse response = server.add(doc, OpenCloseCoreStressTest.COMMIT_WITHIN);
+          client.setBaseURL(baseUrl + core);
+          UpdateResponse response = client.add(doc, OpenCloseCoreStressTest.COMMIT_WITHIN);
           if (response.getStatus() != 0) {
             SolrTestCaseJ4.log.warn("Failed to index a document to core " + core + " with status " + response.getStatus());
           } else {
@@ -451,10 +451,10 @@ class Queries {
   static AtomicInteger _errors = new AtomicInteger(0);
   String baseUrl;
 
-  public Queries(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads, Random random) {
+  public Queries(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrClient> clients, int numThreads, Random random) {
     baseUrl = url;
     for (int idx = 0; idx < numThreads; ++idx) {
-      Thread one = new OneQuery(OCCST, url, servers.get(idx), random.nextLong());
+      Thread one = new OneQuery(OCCST, url, clients.get(idx), random.nextLong());
       _threads.add(one);
       one.start();
     }
@@ -472,14 +472,14 @@ class Queries {
     }
   }
 
-  public long getCount(HttpSolrServer server, String core) {
+  public long getCount(HttpSolrClient client, String core) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/select");
     params.set("q", "*:*");
     long numFound = 0;
-    server.setBaseURL(baseUrl + core);
+    client.setBaseURL(baseUrl + core);
     try {
-      QueryResponse response = server.query(params);
+      QueryResponse response = client.query(params);
       numFound = response.getResults().getNumFound();
     } catch (Exception e) {
       e.printStackTrace();
@@ -490,13 +490,13 @@ class Queries {
 
 class OneQuery extends Thread {
   OpenCloseCoreStressTest OCCST;
-  private final HttpSolrServer server;
+  private final HttpSolrClient client;
   private final String baseUrl;
   private final Random random;
 
-  OneQuery(OpenCloseCoreStressTest OCCST, String url, HttpSolrServer server, long seed) {
+  OneQuery(OpenCloseCoreStressTest OCCST, String url, HttpSolrClient client, long seed) {
     this.OCCST = OCCST;
-    this.server = server;
+    this.client = client;
     this.baseUrl = url;
     this.random = new Random(seed);
   }
@@ -514,8 +514,8 @@ class OneQuery extends Thread {
         try {
           // sleep between 250ms and 10000 ms
           Thread.sleep(100L); // Let's not go crazy here.
-          server.setBaseURL(baseUrl + core);
-          QueryResponse response = server.query(params);
+          client.setBaseURL(baseUrl + core);
+          QueryResponse response = client.query(params);
 
           if (response.getStatus() != 0) {
             SolrTestCaseJ4.log.warn("Failed to query core " + core + " with status " + response.getStatus());

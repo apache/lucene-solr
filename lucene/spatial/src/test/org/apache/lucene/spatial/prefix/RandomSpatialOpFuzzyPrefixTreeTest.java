@@ -177,7 +177,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
         new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(38, 192, -72, 56))
     ), 1).numFound==0);//no-match
 
-    //this time the rect is a little bigger and is considered a match. It's a
+    //this time the rect is a little bigger and is considered a match. It's
     // an acceptable false-positive because of the grid approximation.
     assertTrue(executeQuery(strategy.makeQuery(fieldTypes, 
         new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(38, 192, -72, 80))
@@ -458,7 +458,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
         return r;
       //test all 4 corners
       // Note: awkwardly, we use a non-geo context for this because in geo, -180 & +180 are the same place, which means
-      //  that "other" might wrap the world horizontally and yet all it's corners could be in shape1 (or shape2) even
+      //  that "other" might wrap the world horizontally and yet all its corners could be in shape1 (or shape2) even
       //  though shape1 is only adjacent to the dateline. I couldn't think of a better way to handle this.
       Rectangle oRect = (Rectangle)other;
       if (cornerContainsNonGeo(oRect.getMinX(), oRect.getMinY())

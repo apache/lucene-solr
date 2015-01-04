@@ -33,7 +33,7 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
  * Tokenizer for testing.
  * <p>
  * This tokenizer is a replacement for {@link #WHITESPACE}, {@link #SIMPLE}, and {@link #KEYWORD}
- * tokenizers. If you are writing a component such as a TokenFilter, its a great idea to test
+ * tokenizers. If you are writing a component such as a TokenFilter, it's a great idea to test
  * it wrapping this tokenizer instead for extra checks. This tokenizer has the following behavior:
  * <ul>
  *   <li>An internal state-machine is used for checking consumer consistency. These checks can
@@ -66,7 +66,7 @@ public class MockTokenizer extends Tokenizer {
   int off = 0;
   
   // buffered state (previous codepoint and offset). we replay this once we
-  // hit a reject state in case its permissible as the start of a new term.
+  // hit a reject state in case it's permissible as the start of a new term.
   int bufferedCodePoint = -1; // -1 indicates empty buffer
   int bufferedOff = -1;
 
@@ -83,7 +83,7 @@ public class MockTokenizer extends Tokenizer {
   };
   
   private State streamState = State.CLOSE;
-  private int lastOffset = 0; // only for asserting
+  private int lastOffset = 0; // only for checks
   private boolean enableChecks = true;
   
   // evil: but we don't change the behavior with this random, we only switch up how we read
@@ -118,11 +118,25 @@ public class MockTokenizer extends Tokenizer {
   public MockTokenizer(AttributeFactory factory) {
     this(factory, WHITESPACE, true);
   }
+  
+  // we allow some checks (e.g. state machine) to be turned off.
+  // turning off checks just means we suppress exceptions from them
+  private void fail(String message) {
+    if (enableChecks) {
+      throw new IllegalStateException(message);
+    }
+  }
+  
+  private void failAlways(String message) {
+    throw new IllegalStateException(message);
+  }
 
   @Override
   public final boolean incrementToken() throws IOException {
-    assert !enableChecks || (streamState == State.RESET || streamState == State.INCREMENT) 
-                            : "incrementToken() called while in wrong state: " + streamState;
+    if (streamState != State.RESET && streamState != State.INCREMENT) {
+      fail("incrementToken() called while in wrong state: " + streamState);
+    }
+
     clearAttributes();
     for (;;) {
       int startOffset;
@@ -155,16 +169,24 @@ public class MockTokenizer extends Tokenizer {
           bufferedCodePoint = cp;
           bufferedOff = endOffset;
         } else {
-          // otherwise, its because we hit term limit.
+          // otherwise, it's because we hit term limit.
           bufferedCodePoint = -1;
         }
         int correctedStartOffset = correctOffset(startOffset);
         int correctedEndOffset = correctOffset(endOffset);
-        assert correctedStartOffset >= 0;
-        assert correctedEndOffset >= 0;
-        assert correctedStartOffset >= lastOffset;
+        if (correctedStartOffset < 0) {
+          failAlways("invalid start offset: " + correctedStartOffset + ", before correction: " + startOffset);
+        }
+        if (correctedEndOffset < 0) {
+          failAlways("invalid end offset: " + correctedEndOffset + ", before correction: " + endOffset);
+        }
+        if (correctedStartOffset < lastOffset) {
+          failAlways("start offset went backwards: " + correctedStartOffset + ", before correction: " + startOffset + ", lastOffset: " + lastOffset);
+        }
         lastOffset = correctedStartOffset;
-        assert correctedEndOffset >= correctedStartOffset;
+        if (correctedEndOffset < correctedStartOffset) {
+          failAlways("end offset: " + correctedEndOffset + " is before start offset: " + correctedStartOffset);
+        }
         offsetAtt.setOffset(correctedStartOffset, correctedEndOffset);
         if (state == -1 || runAutomaton.isAccept(state)) {
           // either we hit a reject state (longest match), or end-of-text, but in an accept state
@@ -182,16 +204,20 @@ public class MockTokenizer extends Tokenizer {
     if (ch < 0) {
       return ch;
     } else {
-      assert !Character.isLowSurrogate((char) ch) : "unpaired low surrogate: " + Integer.toHexString(ch);
+      if (Character.isLowSurrogate((char) ch)) {
+        failAlways("unpaired low surrogate: " + Integer.toHexString(ch));
+      }
       off++;
       if (Character.isHighSurrogate((char) ch)) {
         int ch2 = readChar();
         if (ch2 >= 0) {
           off++;
-          assert Character.isLowSurrogate((char) ch2) : "unpaired high surrogate: " + Integer.toHexString(ch) + ", followed by: " + Integer.toHexString(ch2);
+          if (!Character.isLowSurrogate((char) ch2)) {
+            failAlways("unpaired high surrogate: " + Integer.toHexString(ch) + ", followed by: " + Integer.toHexString(ch2));
+          }
           return Character.toCodePoint((char) ch, (char) ch2);
         } else {
-          assert false : "stream ends with unpaired high surrogate: " + Integer.toHexString(ch);
+          failAlways("stream ends with unpaired high surrogate: " + Integer.toHexString(ch));
         }
       }
       return ch;
@@ -243,40 +269,56 @@ public class MockTokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
-    super.reset();
-    state = runAutomaton.getInitialState();
-    lastOffset = off = 0;
-    bufferedCodePoint = -1;
-    assert !enableChecks || streamState != State.RESET : "double reset()";
-    streamState = State.RESET;
+    try {
+      super.reset();
+      state = runAutomaton.getInitialState();
+      lastOffset = off = 0;
+      bufferedCodePoint = -1;
+      if (streamState == State.RESET) {
+        fail("double reset()");
+      }
+    } finally {
+      streamState = State.RESET;
+    }
   }
   
   @Override
   public void close() throws IOException {
-    super.close();
-    // in some exceptional cases (e.g. TestIndexWriterExceptions) a test can prematurely close()
-    // these tests should disable this check, by default we check the normal workflow.
-    // TODO: investigate the CachingTokenFilter "double-close"... for now we ignore this
-    assert !enableChecks || streamState == State.END || streamState == State.CLOSE : "close() called in wrong state: " + streamState;
-    streamState = State.CLOSE;
+    try {
+      super.close();
+      // in some exceptional cases (e.g. TestIndexWriterExceptions) a test can prematurely close()
+      // these tests should disable this check, by default we check the normal workflow.
+      // TODO: investigate the CachingTokenFilter "double-close"... for now we ignore this
+      if (!(streamState == State.END || streamState == State.CLOSE)) {
+        fail("close() called in wrong state: " + streamState);
+      }
+    } finally {
+      streamState = State.CLOSE;
+    }
   }
 
   @Override
-  boolean setReaderTestPoint() {
-    assert !enableChecks || streamState == State.CLOSE : "setReader() called in wrong state: " + streamState;
-    streamState = State.SETREADER;
-    return true;
+  void setReaderTestPoint() {
+    try {
+      if (streamState != State.CLOSE) {
+        fail("setReader() called in wrong state: " + streamState);
+      }
+    } finally {
+      streamState = State.SETREADER;
+    }
   }
 
   @Override
   public void end() throws IOException {
-    super.end();
-    int finalOffset = correctOffset(off);
-    offsetAtt.setOffset(finalOffset, finalOffset);
-    // some tokenizers, such as limiting tokenizers, call end() before incrementToken() returns false.
-    // these tests should disable this check (in general you should consume the entire stream)
     try {
-      assert !enableChecks || streamState == State.INCREMENT_FALSE : "end() called before incrementToken() returned false!";
+      super.end();
+      int finalOffset = correctOffset(off);
+      offsetAtt.setOffset(finalOffset, finalOffset);
+      // some tokenizers, such as limiting tokenizers, call end() before incrementToken() returns false.
+      // these tests should disable this check (in general you should consume the entire stream)
+      if (streamState != State.INCREMENT_FALSE) {
+        fail("end() called before incrementToken() returned false!");
+      }
     } finally {
       streamState = State.END;
     }

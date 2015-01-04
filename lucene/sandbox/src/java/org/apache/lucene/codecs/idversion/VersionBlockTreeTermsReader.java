@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.idversion;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -232,7 +233,7 @@ public final class VersionBlockTreeTermsReader extends FieldsProducer {
   }
   
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("field", fields));
     resources.add(Accountables.namedAccountable("delegate", postingsReader));

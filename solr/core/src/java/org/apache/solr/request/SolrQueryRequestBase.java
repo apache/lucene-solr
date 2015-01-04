@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
@@ -24,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
+import java.io.Closeable;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -40,7 +42,7 @@ import java.util.HashMap;
  *
  *
  */
-public abstract class SolrQueryRequestBase implements SolrQueryRequest {
+public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   protected final SolrCore core;
   protected final SolrParams origParams;
   protected volatile IndexSchema schema;
@@ -148,6 +150,14 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   @Override
   public String toString() {
     return this.getClass().getSimpleName() + '{' + params + '}';
+  }
+
+  @Override
+  public void forward(String handler ,SolrParams params, SolrQueryResponse rsp){
+    try(LocalSolrQueryRequest r = new LocalSolrQueryRequest(getCore(), params)) {
+      getCore().getRequestHandler(handler).handleRequest(r, rsp);
+    }
+
   }
 
 }

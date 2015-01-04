@@ -372,7 +372,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         doDefensiveChecks(phase);
 
         // if request is coming from another collection then we want it to be sent to all replicas
-        // even if it's phase is FROMLEADER
+        // even if its phase is FROMLEADER
         String fromCollection = updateCommand.getReq().getParams().get(DISTRIB_FROM_COLLECTION);
 
         if (DistribPhase.FROMLEADER == phase && !isSubShardLeader && fromCollection == null) {
@@ -774,7 +774,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     List<Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
     
-    // if its a forward, any fail is a problem - 
+    // if it's a forward, any fail is a problem - 
     // otherwise we assume things are fine if we got it locally
     // until we start allowing min replication param
     if (errors.size() > 0) {

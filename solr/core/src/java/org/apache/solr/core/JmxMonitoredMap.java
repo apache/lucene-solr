@@ -335,13 +335,13 @@ public class JmxMonitoredMap<K, V> extends
       }
 
       if (val != null) {
-        // Its String or one of the simple types, just return it as JMX suggests direct support for such types
+        // It's String or one of the simple types, just return it as JMX suggests direct support for such types
         for (String simpleTypeName : SimpleType.ALLOWED_CLASSNAMES_LIST) {
           if (val.getClass().getName().equals(simpleTypeName)) {
             return val;
           }
         }
-        // Its an arbitrary object which could be something complex and odd, return its toString, assuming that is
+        // It's an arbitrary object which could be something complex and odd, return its toString, assuming that is
         // a workable representation of the object
         return val.toString();
       }

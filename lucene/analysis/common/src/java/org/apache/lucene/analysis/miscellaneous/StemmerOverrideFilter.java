@@ -168,7 +168,7 @@ public final class StemmerOverrideFilter extends TokenFilter {
     }
     
     /**
-     * Adds an input string and it's stemmer override output to this builder.
+     * Adds an input string and its stemmer override output to this builder.
      * 
      * @param input the input char sequence 
      * @param output the stemmer override output char sequence

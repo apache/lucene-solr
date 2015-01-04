@@ -69,7 +69,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     sims.add(new LMJelinekMercerSimilarity(0.7f));
   }
   
-  /** because of stupid things like querynorm, its possible we computeStats on a field that doesnt exist at all
+  /** because of stupid things like querynorm, it's possible we computeStats on a field that doesnt exist at all
    *  test this against a totally empty index, to make sure sims handle it
    */
   public void testEmptyIndex() throws Exception {

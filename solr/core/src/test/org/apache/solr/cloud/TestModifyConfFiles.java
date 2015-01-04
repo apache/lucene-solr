@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -27,6 +27,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+
+import static org.junit.internal.matchers.StringContains.containsString;
 
 public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
@@ -37,7 +39,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
   @Override
   public void doTest() throws Exception {
     int which = r.nextInt(clients.size());
-    HttpSolrServer client = (HttpSolrServer) clients.get(which);
+    HttpSolrClient client = (HttpSolrClient) clients.get(which);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("op", "write");
@@ -48,7 +50,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       client.request(request);
       fail("Should have caught exception");
     } catch (Exception e) {
-      assertEquals(e.getMessage(), "Input stream list was null for admin file write operation.");
+      assertThat(e.getMessage(), containsString("Input stream list was null for admin file write operation."));
     }
 
     params.remove("file");
@@ -60,7 +62,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       client.request(request);
       fail("Should have caught exception");
     } catch (Exception e) {
-      assertEquals(e.getMessage(), "No file name specified for write operation.");
+      assertThat(e.getMessage(), containsString("No file name specified for write operation."));
     }
 
     params.set("op", "write");
@@ -71,7 +73,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
       client.request(request);
       fail("Should have caught exception");
     } catch (Exception e) {
-      assertEquals(e.getMessage(), "Can not access: bogus.txt");
+      assertThat(e.getMessage(), containsString("Can not access: bogus.txt"));
     }
 
     try {

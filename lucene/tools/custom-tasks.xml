@@ -47,7 +47,7 @@
     
     <replaceregex pattern="[-]tests$" replace="-tests" flags="gi" />
 
-    <!-- git hashcode pattern: its always 40 chars right? -->
+    <!-- git hashcode pattern: it's always 40 chars right? -->
     <replaceregex pattern="\-[a-z0-9]{40,40}$" replace="" flags="gi" />
   </filtermapper>
 

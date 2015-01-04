@@ -17,21 +17,27 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestFilterDirectory extends LuceneTestCase {
+public class TestFilterDirectory extends BaseDirectoryTestCase {
 
+  @Override
+  protected Directory getDirectory(Path path) throws IOException {
+    return new FilterDirectory(new RAMDirectory());
+  }
+  
   @Test
   public void testOverrides() throws Exception {
     // verify that all methods of Directory are overridden by FilterDirectory,
     // except those under the 'exclude' list
     Set<Method> exclude = new HashSet<>();
-    exclude.add(Directory.class.getMethod("copy", Directory.class, String.class, String.class, IOContext.class));
+    exclude.add(Directory.class.getMethod("copyFrom", Directory.class, String.class, String.class, IOContext.class));
     exclude.add(Directory.class.getMethod("openChecksumInput", String.class, IOContext.class));
     for (Method m : FilterDirectory.class.getMethods()) {
       if (m.getDeclaringClass() == Directory.class) {
@@ -39,5 +45,12 @@ public class TestFilterDirectory extends LuceneTestCase {
       }
     }
   }
-  
+
+  public void testUnwrap() throws IOException {
+    Directory dir = FSDirectory.open(createTempDir());
+    FilterDirectory dir2 = new FilterDirectory(dir);
+    assertEquals(dir, dir2.getDelegate());
+    assertEquals(dir, FilterDirectory.unwrap(dir2));
+    dir2.close();
+  }
 }

@@ -44,11 +44,13 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.InitParams;
+import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -97,7 +99,7 @@ public class SolrPluginUtils {
   static {
       Map<Integer, String> map = new TreeMap<>();
       map.put(ShardRequest.PURPOSE_PRIVATE, "PRIVATE");
-      map.put(ShardRequest.PURPOSE_GET_TERM_DFS, "GET_TERM_DFS");
+      map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
       map.put(ShardRequest.PURPOSE_GET_TOP_IDS, "GET_TOP_IDS");
       map.put(ShardRequest.PURPOSE_REFINE_TOP_IDS, "REFINE_TOP_IDS");
       map.put(ShardRequest.PURPOSE_GET_FACETS, "GET_FACETS");
@@ -109,6 +111,7 @@ public class SolrPluginUtils {
       map.put(ShardRequest.PURPOSE_GET_TERMS, "GET_TERMS");
       map.put(ShardRequest.PURPOSE_GET_TOP_GROUPS, "GET_TOP_GROUPS");
       map.put(ShardRequest.PURPOSE_GET_MLT_RESULTS, "GET_MLT_RESULTS");
+      map.put(ShardRequest.PURPOSE_SET_TERM_STATS, "SET_TERM_STATS");
       purposes = Collections.unmodifiableMap(map);
   }
 
@@ -125,14 +128,16 @@ public class SolrPluginUtils {
    */
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults,
                                  SolrParams appends, SolrParams invariants) {
-      String useParams = req.getParams().get("useParam");
-      if(useParams !=null){
-        for (String name : StrUtils.splitSmart(useParams,',')) {
-          InitParams initParams = req.getCore().getSolrConfig().getInitParams().get(name);
-          if(initParams !=null){
-            if(initParams.defaults != null) defaults = SolrParams.wrapDefaults(SolrParams.toSolrParams(initParams.defaults) , defaults);
-            if(initParams.invariants != null) invariants = SolrParams.wrapDefaults(invariants, SolrParams.toSolrParams(initParams.invariants));
-            if(initParams.appends != null)  appends = SolrParams.wrapAppended(appends, SolrParams.toSolrParams(initParams.appends));
+
+    List<String> paramNames =null;
+    String useParams = req.getParams().get(RequestParams.USEPARAM);
+    if(useParams == null) useParams = (String) req.getContext().get(RequestParams.USEPARAM);
+    if(useParams !=null) paramNames = StrUtils.splitSmart(useParams, ',');
+    if(paramNames != null){
+        for (String name : paramNames) {
+          SolrParams requestParams = req.getCore().getSolrConfig().getRequestParams().getParams(name);
+          if(requestParams !=null){
+            defaults = SolrParams.wrapDefaults(requestParams , defaults);
           }
         }
       }
@@ -265,7 +270,7 @@ public class SolrPluginUtils {
    * <li>parsedquery - the main query executed formated by the Solr
    *     QueryParsing utils class (which knows about field types)
    * </li>
-   * <li>parsedquery_toString - the main query executed formated by it's
+   * <li>parsedquery_toString - the main query executed formatted by its
    *     own toString method (in case it has internal state Solr
    *     doesn't know about)
    * </li>
@@ -700,7 +705,7 @@ public class SolrPluginUtils {
   }
 
   /**
-   * Returns it's input if there is an even (ie: balanced) number of
+   * Returns its input if there is an even (ie: balanced) number of
    * '"' characters -- otherwise returns a String in which all '"'
    * characters are striped out.
    */
@@ -757,7 +762,7 @@ public class SolrPluginUtils {
     protected Map<String,Alias> aliases = new HashMap<>(3);
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp,defaultField);
-      // don't trust that our parent class won't ever change it's default
+      // don't trust that our parent class won't ever change its default
       setDefaultOperator(QueryParser.Operator.OR);
     }
 

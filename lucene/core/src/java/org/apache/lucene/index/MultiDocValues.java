@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
@@ -374,7 +374,7 @@ public class MultiDocValues {
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: we could also have a utility method to merge Terms[] and use size() as a weight when we need it
   // TODO: use more efficient packed ints structures?
-  // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
+  // TODO: pull this out? it's pretty generic (maps between N ord()-enabled TermsEnums) 
   public static class OrdinalMap implements Accountable {
 
     private static class SegmentMap implements Accountable {
@@ -638,7 +638,7 @@ public class MultiDocValues {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       resources.add(Accountables.namedAccountable("global ord deltas", globalOrdDeltas));
       resources.add(Accountables.namedAccountable("first segments", firstSegments));

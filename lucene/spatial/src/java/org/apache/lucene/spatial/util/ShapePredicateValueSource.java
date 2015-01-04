@@ -42,7 +42,7 @@ public class ShapePredicateValueSource extends ValueSource {
 
   /**
    *
-   * @param shapeValuesource Must yield {@link Shape} instances from it's objectVal(doc). If null
+   * @param shapeValuesource Must yield {@link Shape} instances from its objectVal(doc). If null
    *                         then the result is false. This is the left-hand (indexed) side.
    * @param op the predicate
    * @param queryShape The shape on the right-hand (query) side.

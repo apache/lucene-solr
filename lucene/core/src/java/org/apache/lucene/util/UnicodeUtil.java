@@ -123,7 +123,7 @@ public final class UnicodeUtil {
     (UNI_SUR_HIGH_START << HALF_SHIFT) - UNI_SUR_LOW_START;
 
   /** Maximum number of UTF8 bytes per UTF16 character. */
-  public static final int MAX_UTF8_BYTES_PER_CHAR = 4;
+  public static final int MAX_UTF8_BYTES_PER_CHAR = 3;
 
   /** Encode characters from a char[] source, starting at
    *  offset for length chars. It is the responsibility of the

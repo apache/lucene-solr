@@ -17,14 +17,12 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.File;
-import java.util.Map;
-
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,7 +39,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.util.Map;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -214,26 +213,26 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", Charsets.UTF_8.toString());
     JettySolrRunner runner = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0);
-    HttpSolrServer server = null;
+    HttpSolrClient client = null;
     try {
       runner.start();
-      server = new HttpSolrServer("http://localhost:" + runner.getLocalPort() + "/solr/corex");
-      server.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
-      server.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      client = new HttpSolrClient("http://localhost:" + runner.getLocalPort() + "/solr/corex");
+      client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "123");
-      server.add(doc);
-      server.commit();
-      server.shutdown();
+      client.add(doc);
+      client.commit();
+      client.shutdown();
 
-      server = new HttpSolrServer("http://localhost:" + runner.getLocalPort() + "/solr");
-      server.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
-      server.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      client = new HttpSolrClient("http://localhost:" + runner.getLocalPort() + "/solr");
+      client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
       req.setDeleteInstanceDir(true);
       req.setCoreName("corex");
-      req.process(server);
-      server.shutdown();
+      req.process(client);
+      client.shutdown();
 
       runner.stop();
 
@@ -242,8 +241,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     } catch (Exception e) {
       log.error("Exception testing core unload with deleteInstanceDir=true", e);
     } finally {
-      if (server != null) {
-        server.shutdown();
+      if (client != null) {
+        client.shutdown();
       }
       if (!runner.isStopped())  {
         runner.stop();

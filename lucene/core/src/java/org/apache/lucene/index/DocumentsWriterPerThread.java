@@ -154,16 +154,17 @@ class DocumentsWriterPerThread {
   private final LiveIndexWriterConfig indexWriterConfig;
   final FieldTypes fieldTypes;
   final IndexWriter writer;
-
+  private final boolean enableTestPoints;
+  
   public DocumentsWriterPerThread(String segmentName, IndexWriter writer, Directory directory,
-                                  InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
-                                  FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs) throws IOException {
+                                  DocumentsWriterDeleteQueue deleteQueue,
+                                  FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
     this.directoryOrig = directory;
     this.writer = writer;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
     this.indexWriterConfig = writer.config;
-    this.infoStream = infoStream;
+    this.infoStream = indexWriterConfig.getInfoStream();
     this.codec = writer.codec;
     this.fieldTypes = writer.fieldTypes;
     this.docState = new DocState(this, infoStream);
@@ -186,6 +187,7 @@ class DocumentsWriterPerThread {
     // this should be the last call in the ctor 
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
+    this.enableTestPoints = enableTestPoints;
   }
   
   public FieldInfos.Builder getFieldInfosBuilder() {
@@ -193,7 +195,8 @@ class DocumentsWriterPerThread {
   }
 
   final void testPoint(String message) {
-    if (infoStream.isEnabled("TP")) {
+    if (enableTestPoints) {
+      assert infoStream.isEnabled("TP"); // don't enable unless you need them.
       infoStream.message("TP", message);
     }
   }
@@ -468,7 +471,7 @@ class DocumentsWriterPerThread {
       return fs;
     } catch (Throwable th) {
       abort();
-      throw new AbortingException(th);
+      throw AbortingException.wrap(th);
     }
   }
   

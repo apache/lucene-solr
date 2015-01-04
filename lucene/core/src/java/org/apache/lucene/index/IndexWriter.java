@@ -216,6 +216,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   static int getActualMaxDocs() {
     return IndexWriter.actualMaxDocs;
   }
+  
+  /** Used only for testing. */
+  boolean enableTestPoints = false;
 
   private static final int UNBOUNDED_MAX_MERGE_SEGMENTS = -1;
 
@@ -1515,7 +1518,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  /** If non-null, information about merges will be printed to this.
+  /** If enabled, information about merges will be printed to this.
    */
   final InfoStream infoStream;
 
@@ -1568,11 +1571,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * still adding documents and flushing segments, those
    * newly created segments will not be merged unless you
    * call forceMerge again.</p>
-   *
-   * <p><b>NOTE</b>: if you call {@link #abortMerges}, which
-   * aborts all running merges, then any thread still
-   * running this method might hit a {@link
-   * MergePolicy.MergeAbortedException}.
    *
    * @param maxNumSegments maximum number of segments left
    * in the index after merging finishes
@@ -1686,12 +1684,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  specify whether the call should block until the
    *  operation completes.  This is only meaningful with a
    *  {@link MergeScheduler} that is able to run merges in
-   *  background threads.
-   *
-   * <p><b>NOTE</b>: if you call {@link #abortMerges}, which
-   * aborts all running merges, then any thread still
-   * running this method might hit a {@link
-   * MergePolicy.MergeAbortedException}. */
+   *  background threads. */
   public void forceMergeDeletes(boolean doWait)
     throws IOException {
     ensureOpen();
@@ -2103,7 +2096,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /** Aborts running merges.  Be careful when using this
    *  method: when you abort a long-running merge, you lose
    *  a lot of work that must later be redone. */
-  public synchronized void abortMerges() {
+  private synchronized void abortMerges() {
     stopMerges = true;
 
     // Abort all pending & running merges:
@@ -2151,7 +2144,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * <p>It is guaranteed that any merges started prior to calling this method
    *    will have completed once this method completes.</p>
    */
-  public void waitForMerges() throws IOException {
+  void waitForMerges() throws IOException {
 
     // Give merge scheduler last chance to run, in case
     // any pending merges are waiting. We can't hold IW's lock
@@ -2450,11 +2443,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * call.
    * 
    * <p>
-   * <b>NOTE</b>: if you call {@link #abortMerges}, which
-   * aborts all running merges, then any thread still running this method might
-   * hit a {@link MergePolicy.MergeAbortedException}.
-   * 
-   * <p>
    * <b>NOTE</b>: this call does not check unique fields
    *
    * @throws CorruptIndexException
@@ -2607,7 +2595,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         assert !slowFileExists(directory, newFileName): "file \"" + newFileName + "\" already exists; newInfo.files=" + newInfo.files();
 
-        info.info.dir.copy(directory, file, newFileName, context);
+        directory.copyFrom(info.info.dir, file, newFileName, context);
       }
       success = true;
     } finally {
@@ -3911,6 +3899,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       merge.checkAborted(directory);
 
+      long mergeStartTime = 0;
+      if (infoStream.isEnabled("IW")) {
+        mergeStartTime = System.nanoTime();
+      }
+
       // This is where all the work happens:
       boolean success3 = false;
       try {
@@ -3933,12 +3926,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       if (infoStream.isEnabled("IW")) {
         if (merger.shouldMerge()) {
+          long t1 = System.nanoTime();
+          double sec = (t1-mergeStartTime)/1000000000.;
+          double segmentMB = (merge.info.sizeInBytes()/1024./1024.);
           infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
-                           (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
-                           (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
-                           (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
-                           (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
-                           (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs"));
+                             (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
+                             (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
+                             (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
+                             (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
+                             (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs") + "; " +
+                             String.format(Locale.ROOT,
+                                           "%d msec to merge segment [%.2f MB, %.2f MB/sec]",
+                                           ((t1-mergeStartTime)/1000000),
+                                           segmentMB,
+                                           segmentMB / sec));
         } else {
           infoStream.message("IW", "skip merging fully deleted segments");
         }
@@ -4381,8 +4382,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         try {
           rollback();
         } catch (Throwable ignored) {
-          // it would be confusing to addSuppressed here, its unrelated to the disaster,
-          // and its possible our internal state is amiss anyway.
+          // it would be confusing to addSuppressed here, it's unrelated to the disaster,
+          // and it's possible our internal state is amiss anyway.
         }
       }
     }
@@ -4402,7 +4403,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   //   startMergeInit
   //   DocumentsWriter.ThreadState.init start
   private final void testPoint(String message) {
-    if (infoStream.isEnabled("TP")) {
+    if (enableTestPoints) {
+      assert infoStream.isEnabled("TP"); // don't enable unless you need them.
       infoStream.message("TP", message);
     }
   }
@@ -4565,7 +4567,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   
   /**
    * Interface for internal atomic events. See {@link DocumentsWriter} for details. Events are executed concurrently and no order is guaranteed.
-   * Each event should only rely on the serializeability within it's process method. All actions that must happen before or after a certain action must be
+   * Each event should only rely on the serializeability within its process method. All actions that must happen before or after a certain action must be
    * encoded inside the {@link #process(IndexWriter, boolean, boolean)} method.
    *
    */

@@ -58,6 +58,8 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
    * for effectiveness the array is used internally. */
   private final List<R> subReadersList;
 
+  private final FieldTypes fieldTypes;
+
   /**
    * Constructs a {@code BaseCompositeReader} on the given subReaders.
    * @param subReaders the wrapped sub-readers. This array is returned by
@@ -69,11 +71,13 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   protected BaseCompositeReader(R[] subReaders) {
     this.subReaders = subReaders;
     this.subReadersList = Collections.unmodifiableList(Arrays.asList(subReaders));
+    fieldTypes = new FieldTypes(null);
     starts = new int[subReaders.length + 1];    // build starts array
     int maxDoc = 0, numDocs = 0;
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       final IndexReader r = subReaders[i];
+      fieldTypes.addAll(r.getFieldTypes());
       maxDoc += r.maxDoc();      // compute maxDocs
       if (maxDoc < 0 /* overflow */ || maxDoc > IndexWriter.getActualMaxDocs()) {
         throw new IllegalArgumentException("Too many documents, composite IndexReaders cannot exceed " + IndexWriter.getActualMaxDocs());
@@ -89,12 +93,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   @Override
   public FieldTypes getFieldTypes() {
     // nocommit must validate they are the same?
-    if (subReaders.length == 0) {
-      // nocommit FieldTypes.EMPTY?
-      return null;
-    } else {
-      return subReaders[0].getFieldTypes();
-    }
+    return fieldTypes;
   }
 
   @Override

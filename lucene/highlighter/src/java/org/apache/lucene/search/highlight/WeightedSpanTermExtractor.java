@@ -394,7 +394,6 @@ public class WeightedSpanTermExtractor {
           indexer.addField(DelegatingLeafReader.FIELD_NAME,
               new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
         }
-        tokenStream.reset();//reset to beginning when we return
         final IndexSearcher searcher = indexer.createSearcher();
         // MEM index has only atomic ctx
         internalReader = ((LeafReaderContext) searcher.getTopReaderContext()).reader();

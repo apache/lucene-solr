@@ -180,11 +180,9 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     fieldTypes.enableTermVectorPositions("field");
     fieldTypes.setMultiValued("field");
     Document doc = w.newDocument();
-    try (TokenStream stream = analyzer.tokenStream("field", "abcd   ")) {
-      stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
-      TokenStream cachedStream = new CachingTokenFilter(stream);
-      doc.addLargeText("field", cachedStream);
-      doc.addLargeText("field", cachedStream);
+    try (TokenStream stream = new CachingTokenFilter(analyzer.tokenStream("field", "abcd   "))) {
+      doc.addLargeText("field", stream);
+      doc.addLargeText("field", stream);
       w.addDocument(doc);
     }
     w.close();

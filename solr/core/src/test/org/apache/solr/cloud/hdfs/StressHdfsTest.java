@@ -33,9 +33,9 @@ import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.ChaosMonkey;
@@ -162,8 +162,8 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     List<String> dataDirs = new ArrayList<>();
     
     int i = 0;
-    for (SolrServer client : clients) {
-      HttpSolrServer c = new HttpSolrServer(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION);
+    for (SolrClient client : clients) {
+      HttpSolrClient c = new HttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION);
       try {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {

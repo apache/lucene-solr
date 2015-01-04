@@ -17,16 +17,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.util.List;
-
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.junit.After;
 import org.junit.Before;
+
+import java.io.File;
+import java.util.List;
 
 public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest {
 
@@ -84,15 +84,15 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
             + printClusterStateInfo(),
         notLeaders.size() == 1);
 
-    // let's put the leader in it's own partition, no replicas can contact it now
+    // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     SocketProxy leaderProxy = getProxyForReplica(leader);
     leaderProxy.close();
 
     // let's find the leader of shard2 and ask him to commit
     Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard2");
-    HttpSolrServer server = new HttpSolrServer(ZkCoreNodeProps.getCoreUrl(shard2Leader.getStr("base_url"), shard2Leader.getStr("core")));
-    server.commit();
+    HttpSolrClient client = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(shard2Leader.getStr("base_url"), shard2Leader.getStr("core")));
+    client.commit();
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
@@ -105,7 +105,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     // try to clean up
     try {
-      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
       req.setCollectionName(testCollectionName);
       req.process(cloudClient);
     } catch (Exception e) {
@@ -127,14 +127,14 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
             + printClusterStateInfo(),
         notLeaders.size() == 2);
 
-    // let's put the leader in it's own partition, no replicas can contact it now
+    // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     SocketProxy leaderProxy = getProxyForReplica(leader);
     leaderProxy.close();
 
     Replica replica = notLeaders.get(0);
-    HttpSolrServer server = new HttpSolrServer(ZkCoreNodeProps.getCoreUrl(replica.getStr("base_url"), replica.getStr("core")));
-    server.commit();
+    HttpSolrClient client = new HttpSolrClient(ZkCoreNodeProps.getCoreUrl(replica.getStr("base_url"), replica.getStr("core")));
+    client.commit();
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
@@ -147,7 +147,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     // try to clean up
     try {
-      CollectionAdminRequest req = new CollectionAdminRequest.Delete();
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
       req.setCollectionName(testCollectionName);
       req.process(cloudClient);
     } catch (Exception e) {

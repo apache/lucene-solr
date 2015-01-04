@@ -19,7 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -113,14 +113,14 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = ((HttpSolrServer) shardToJetty.get(SHARD1).get(0).client.solrClient)
+    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient)
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    HttpSolrServer baseServer = null;
+    HttpSolrClient baseServer = null;
 
     try {
-      baseServer = new HttpSolrServer(baseUrl);
+      baseServer = new HttpSolrClient(baseUrl);
       baseServer.setConnectionTimeout(15000);
       return baseServer.request(request);
     } finally {

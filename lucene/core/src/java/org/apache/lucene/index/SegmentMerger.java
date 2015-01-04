@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.document.FieldTypes;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -154,32 +153,14 @@ final class SegmentMerger {
   }
 
   private void mergeDocValues(SegmentWriteState segmentWriteState) throws IOException {
-    DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(segmentWriteState);
-    boolean success = false;
-    try {
+    try (DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(segmentWriteState)) {
       consumer.merge(mergeState);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(consumer);
-      } else {
-        IOUtils.closeWhileHandlingException(consumer);            
-      }
     }
   }
 
   private void mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
-    NormsConsumer consumer = codec.normsFormat().normsConsumer(segmentWriteState);
-    boolean success = false;
-    try {
+    try (NormsConsumer consumer = codec.normsFormat().normsConsumer(segmentWriteState)) {
       consumer.merge(mergeState);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(consumer);
-      } else {
-        IOUtils.closeWhileHandlingException(consumer);            
-      }
     }
   }
   
@@ -199,21 +180,9 @@ final class SegmentMerger {
    * @throws IOException if there is a low-level IO error
    */
   private int mergeFields() throws IOException {
-    final StoredFieldsWriter fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, mergeState.segmentInfo, context);
-    
-    boolean success = false;
-    int numDocs;
-    try {
-      numDocs = fieldsWriter.merge(mergeState);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(fieldsWriter);
-      } else {
-        IOUtils.closeWhileHandlingException(fieldsWriter);
-      }
+    try (StoredFieldsWriter fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, mergeState.segmentInfo, context)) {
+      return fieldsWriter.merge(mergeState);
     }
-    return numDocs;
   }
 
   /**
@@ -221,35 +190,14 @@ final class SegmentMerger {
    * @throws IOException if there is a low-level IO error
    */
   private int mergeVectors() throws IOException {
-    final TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, mergeState.segmentInfo, context);
-    
-    boolean success = false;
-    int numDocs;
-    try {
-      numDocs = termVectorsWriter.merge(mergeState);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(termVectorsWriter);
-      } else {
-        IOUtils.closeWhileHandlingException(termVectorsWriter);
-      }
+    try (TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, mergeState.segmentInfo, context)) {
+      return termVectorsWriter.merge(mergeState);
     }
-    return numDocs;
   }
 
   private void mergeTerms(SegmentWriteState segmentWriteState) throws IOException {
-    FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);
-    boolean success = false;
-    try {
+    try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState)) {
       consumer.merge(mergeState);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(consumer);
-      } else {
-        IOUtils.closeWhileHandlingException(consumer);
-      }
     }
   }
 }

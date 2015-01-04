@@ -20,6 +20,6 @@
     <entity name="sep" processor="SolrEntityProcessor"
             url="http://127.0.0.1:8983/solr/db "
             query="*:*"
-            fl="*,orig_version_l:_version_"/>
+            fl="*,orig_version_l:_version_,ignored_price_c:price_c"/>
   </document>
 </dataConfig>

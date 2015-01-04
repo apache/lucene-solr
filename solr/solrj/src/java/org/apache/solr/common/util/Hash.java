@@ -118,7 +118,7 @@ public class Hash {
 
   /**
    * <p>The hash value of a character sequence is defined to be the hash of
-   * it's unicode code points, according to {@link #lookup3ycs(int[] k, int offset, int length, int initval)}
+   * its unicode code points, according to {@link #lookup3ycs(int[] k, int offset, int length, int initval)}
    * </p>
    * <p>If you know the number of code points in the {@code CharSequence}, you can
    * generate the same hash as the original lookup3

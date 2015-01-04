@@ -47,7 +47,7 @@ import org.apache.lucene.util.BytesRef;
 public class FilterLeafReader extends LeafReader {
 
   /** Get the wrapped instance by <code>reader</code> as long as this reader is
-   *  an intance of {@link FilterLeafReader}.  */
+   *  an instance of {@link FilterLeafReader}.  */
   public static LeafReader unwrap(LeafReader reader) {
     while (reader instanceof FilterLeafReader) {
       reader = ((FilterLeafReader) reader).in;
@@ -474,5 +474,10 @@ public class FilterLeafReader extends LeafReader {
   public FieldTypes getFieldTypes() {
     ensureOpen();
     return in.getFieldTypes();
+  }
+
+  /** Returns the wrapped {@link LeafReader}. */
+  public LeafReader getDelegate() {
+    return in;
   }
 }

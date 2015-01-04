@@ -348,7 +348,7 @@ final class FieldCacheSanityChecker {
     public CacheEntry[] getCacheEntries() { return entries; }
     /**
      * Multi-Line representation of this Insanity object, starting with 
-     * the Type and Msg, followed by each CacheEntry.toString() on it's 
+     * the Type and Msg, followed by each CacheEntry.toString() on its 
      * own line prefaced by a tab character
      */
     @Override

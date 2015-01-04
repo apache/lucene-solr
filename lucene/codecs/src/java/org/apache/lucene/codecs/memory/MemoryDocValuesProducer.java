@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -296,7 +297,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   }
   
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("numeric field", numericInfo));
     resources.addAll(Accountables.namedAccountables("pagedbytes field", pagedBytesInstances));
@@ -799,7 +800,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       List<Accountable> resources = new ArrayList<>();
       if (addresses != null) {
         resources.add(Accountables.namedAccountable("addresses", addresses));

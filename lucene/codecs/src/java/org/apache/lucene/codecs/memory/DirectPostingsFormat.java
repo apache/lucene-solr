@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.memory;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -162,7 +163,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       return Accountables.namedAccountables("field", fields);
     }
 

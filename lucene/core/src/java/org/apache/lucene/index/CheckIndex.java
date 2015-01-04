@@ -766,7 +766,6 @@ public class CheckIndex implements Closeable {
                     int docID2 = docsEnum.nextDoc();
                     if (docID2 != DocsEnum.NO_MORE_DOCS) {
                       if (nonUniqueCount == 0) {
-                        // nocommit have -fix delete the offenders:
                         nonUniqueMessage = "field=\"" + fieldName + "\" is supposed to be unique, but isn't: e.g. term=" + termsEnum.term() + " matches both docID=" + docID + " and docID=" + docID2;
                         if (failFast) {
                           msg(infoStream, "FAILED");
@@ -860,7 +859,7 @@ public class CheckIndex implements Closeable {
       } else {
         Bits liveDocs = reader.getLiveDocs();
         if (liveDocs != null) {
-          // its ok for it to be non-null here, as long as none are set right?
+          // it's ok for it to be non-null here, as long as none are set right?
           for (int j = 0; j < liveDocs.length(); j++) {
             if (!liveDocs.get(j)) {
               throw new RuntimeException("liveDocs mismatch: info says no deletions but doc " + j + " is deleted.");

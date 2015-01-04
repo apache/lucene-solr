@@ -63,7 +63,7 @@ public class CoreContainer {
 
   protected static final Logger log = LoggerFactory.getLogger(CoreContainer.class);
 
-  private final SolrCores solrCores = new SolrCores(this);
+  final SolrCores solrCores = new SolrCores(this);
 
   public static class CoreLoadFailure {
 
@@ -102,6 +102,7 @@ public class CoreContainer {
   protected final CoresLocator coresLocator;
   
   private String hostName;
+  private final JarRepository jarRepository = new JarRepository(this);
   
   private Map<String ,SolrRequestHandler> containerHandlers = new HashMap<>();
 
@@ -788,6 +789,10 @@ public class CoreContainer {
     }
 
     return core;
+  }
+
+  public JarRepository getJarRepository(){
+    return jarRepository;
   }
 
   // ---------------- CoreContainer request handlers --------------

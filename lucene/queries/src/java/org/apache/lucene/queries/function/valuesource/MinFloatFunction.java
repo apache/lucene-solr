@@ -21,7 +21,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
- * <code>MinFloatFunction</code> returns the min of it's components.
+ * <code>MinFloatFunction</code> returns the min of its components.
  */
 public class MinFloatFunction extends MultiFloatFunction {
   public MinFloatFunction(ValueSource[] sources) {

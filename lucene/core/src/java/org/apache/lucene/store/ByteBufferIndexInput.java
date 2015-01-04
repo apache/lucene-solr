@@ -213,7 +213,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
     try {
       return buffers[bi].getShort((int) (pos & chunkSizeMask));
     } catch (IndexOutOfBoundsException ioobe) {
-      // either its a boundary, or read past EOF, fall back:
+      // either it's a boundary, or read past EOF, fall back:
       setPos(pos, bi);
       return readShort();
     } catch (NullPointerException npe) {
@@ -227,7 +227,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
     try {
       return buffers[bi].getInt((int) (pos & chunkSizeMask));
     } catch (IndexOutOfBoundsException ioobe) {
-      // either its a boundary, or read past EOF, fall back:
+      // either it's a boundary, or read past EOF, fall back:
       setPos(pos, bi);
       return readInt();
     } catch (NullPointerException npe) {
@@ -241,7 +241,7 @@ abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessIn
     try {
       return buffers[bi].getLong((int) (pos & chunkSizeMask));
     } catch (IndexOutOfBoundsException ioobe) {
-      // either its a boundary, or read past EOF, fall back:
+      // either it's a boundary, or read past EOF, fall back:
       setPos(pos, bi);
       return readLong();
     } catch (NullPointerException npe) {

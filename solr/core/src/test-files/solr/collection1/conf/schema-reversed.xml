@@ -25,18 +25,18 @@
   <types>
 
 
-    <fieldtype name="long" class="solr.TrieLongField" />
+    <fieldType name="long" class="solr.TrieLongField" />
     <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
-    <fieldtype name="string" class="solr.StrField" />
+    <fieldType name="string" class="solr.StrField" />
 
-    <fieldtype name="text" class="solr.TextField">
+    <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
     
-    <fieldtype name="srev" class="solr.TextField">
+    <fieldType name="srev" class="solr.TextField">
       <analyzer type="index">
         <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
@@ -49,8 +49,8 @@
         <filter class="solr.LowerCaseFilterFactory"/>
 
       </analyzer>
-    </fieldtype>
-    <fieldtype name="rev" class="solr.TextField">
+    </fieldType>
+    <fieldType name="rev" class="solr.TextField">
       <analyzer type="index">
         <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
@@ -64,7 +64,7 @@
         <filter class="solr.LowerCaseFilterFactory"/>
 
       </analyzer>
-    </fieldtype>
+    </fieldType>
  </types>
 
 

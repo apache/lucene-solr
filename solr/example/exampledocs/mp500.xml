@@ -33,7 +33,7 @@
   <field name="features">Printing speed up to 29ppm black, 19ppm color</field>
   <field name="features">Hi-Speed USB</field>
   <field name="features">memory card: CompactFlash, Micro Drive, SmartMedia, Memory Stick, Memory Stick Pro, SD Card, and MultiMediaCard</field>
-  <field name="weight">352</field>
+  <field name="weight">352.0</field>
   <field name="price">179.99</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>

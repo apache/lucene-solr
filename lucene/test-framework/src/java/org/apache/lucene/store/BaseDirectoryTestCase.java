@@ -46,7 +46,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   
   // first some basic tests for the directory api
   
-  public void testCopy() throws Exception {
+  public void testCopyFrom() throws Exception {
     Directory source = getDirectory(createTempDir("testCopy"));
     Directory dest = newDirectory();
     
@@ -57,7 +57,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output.writeBytes(bytes, bytes.length);
     output.close();
     
-    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    dest.copyFrom(source, "foobar", "foobaz", newIOContext(random()));
     assertTrue(slowFileExists(dest, "foobaz"));
     
     IndexInput input = dest.openInput("foobaz", newIOContext(random()));
@@ -71,7 +71,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     IOUtils.close(source, dest);
   }
   
-  public void testCopyDestination() throws Exception {
+  public void testCopyFromDestination() throws Exception {
     Directory source = newDirectory();
     Directory dest = getDirectory(createTempDir("testCopyDestination"));
     
@@ -82,7 +82,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output.writeBytes(bytes, bytes.length);
     output.close();
     
-    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    dest.copyFrom(source, "foobar", "foobaz", newIOContext(random()));
     assertTrue(slowFileExists(dest, "foobaz"));
     
     IndexInput input = dest.openInput("foobaz", newIOContext(random()));
@@ -141,7 +141,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output2.writeString("bogus!");
     output2.close();
     
-    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    dest.copyFrom(source, "foobar", "foobaz", newIOContext(random()));
     assertTrue(slowFileExists(dest, "foobaz"));
     
     IndexInput input = dest.openInput("foobaz", newIOContext(random()));
@@ -735,7 +735,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     
     // this test backdoors the directory via the filesystem. so it must be an FSDir (for now)
     // TODO: figure a way to test this better/clean it up. E.g. we should be testing for FileSwitchDir,
-    // if its using two FSdirs and so on
+    // if it's using two FSdirs and so on
     if (fsdir instanceof FSDirectory == false) {
       fsdir.close();
       assumeTrue("test only works for FSDirectory subclasses", false);
@@ -1038,6 +1038,36 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     IndexOutput out = dir.createOutput("camelCase.txt", newIOContext(random()));
     assertTrue(out.toString(), out.toString().contains("camelCase.txt"));
     out.close();
+    dir.close();
+  }
+  
+  public void testDoubleCloseDirectory() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
+    out.writeString("testing");
+    out.close();
+    dir.close();
+    dir.close(); // close again
+  }
+  
+  public void testDoubleCloseOutput() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
+    out.writeString("testing");
+    out.close();
+    out.close(); // close again
+    dir.close();
+  }
+  
+  public void testDoubleCloseInput() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
+    out.writeString("testing");
+    out.close();
+    IndexInput in = dir.openInput("foobar", newIOContext(random()));
+    assertEquals("testing", in.readString());
+    in.close();
+    in.close(); // close again
     dir.close();
   }
 }

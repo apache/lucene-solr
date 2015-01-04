@@ -17,35 +17,9 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -90,6 +64,39 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /**
  * Handle ZooKeeper interactions.
@@ -774,7 +781,7 @@ public final class ZkController {
       }
       zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
     } catch (KeeperException e) {
-      // its okay if the node already exists
+      // it's okay if the node already exists
       if (e.code() != KeeperException.Code.NODEEXISTS) {
         throw e;
       }
@@ -1022,7 +1029,7 @@ public final class ZkController {
  
     ZkNodeProps ourProps = new ZkNodeProps(props);
 
-    
+
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
         collection, coreNodeName, ourProps, this, cc);
 
@@ -1314,7 +1321,7 @@ public final class ZkController {
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
 
         } catch (KeeperException e) {
-          // its okay if the node already exists
+          // it's okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
             throw e;
           }
@@ -1324,7 +1331,7 @@ public final class ZkController {
       }
       
     } catch (KeeperException e) {
-      // its okay if another beats us creating the node
+      // it's okay if another beats us creating the node
       if (e.code() == KeeperException.Code.NODEEXISTS) {
         return;
       }
@@ -1629,11 +1636,11 @@ public final class ZkController {
         log.info("Replica "+myCoreNodeName+
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
             
-        HttpSolrServer server = null;
-        server = new HttpSolrServer(leaderBaseUrl);
+        HttpSolrClient client = null;
+        client = new HttpSolrClient(leaderBaseUrl);
         try {
-          server.setConnectionTimeout(15000);
-          server.setSoTimeout(120000);
+          client.setConnectionTimeout(15000);
+          client.setSoTimeout(120000);
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
           prepCmd.setNodeName(getNodeName());
@@ -1649,7 +1656,7 @@ public final class ZkController {
                   "We have been closed");
             }
             try {
-              server.request(prepCmd);
+              client.request(prepCmd);
               break;
             } catch (Exception e) {
 
@@ -1683,7 +1690,7 @@ public final class ZkController {
             }
           }
         } finally {
-          server.shutdown();
+          client.shutdown();
         }
       }
     }
@@ -1707,7 +1714,7 @@ public final class ZkController {
         zkClient.makePath(path, ZkStateReader.toJSON(props),
             CreateMode.PERSISTENT, null, true);
       } catch (KeeperException e2) {
-        // its okay if the node already exists
+        // it's okay if the node already exists
         if (e2.code() != KeeperException.Code.NODEEXISTS) {
           throw e;
         }
@@ -1811,7 +1818,7 @@ public final class ZkController {
   
   /**
    * Utility method for trimming and leading and/or trailing slashes from 
-   * it's input.  May return the empty string.  May return null if and only 
+   * its input.  May return the empty string.  May return null if and only 
    * if the input is null.
    */
   public static String trimLeadingAndTrailingSlashes(final String in) {
@@ -1854,6 +1861,31 @@ public final class ZkController {
       }else {
         overseerElector.retryElection(overseerElector.getContext(), joinAtHead);
       }
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
+    }
+
+  }
+
+  public void rejoinShardLeaderElection(SolrParams params) {
+    try {
+      String collectionName = params.get(COLLECTION_PROP);
+      String shardId = params.get(SHARD_ID_PROP);
+      String nodeName = params.get(NODE_NAME_PROP);
+      String coreName = params.get(CORE_NAME_PROP);
+      String electionNode = params.get(ELECTION_NODE_PROP);
+      String baseUrl = params.get(BASE_URL_PROP);
+
+      ZkNodeProps zkProps = new ZkNodeProps(CORE_NAME_PROP, coreName, NODE_NAME_PROP, nodeName, COLLECTION_PROP, collectionName,
+          SHARD_ID_PROP, shardId, ELECTION_NODE_PROP, electionNode, BASE_URL_PROP, baseUrl);
+
+      ShardLeaderElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId, collectionName,
+          nodeName, zkProps, this, getCoreContainer());
+      LeaderElector elect = new LeaderElector(this.zkClient);
+      context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
+      elect.setup(context);
+
+      elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP));
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
     }
@@ -2057,7 +2089,7 @@ public final class ZkController {
       stateObj = ZkNodeProps.makeMap();
 
     stateObj.put("state", state);
-    // only update the createdBy value if its not set
+    // only update the createdBy value if it's not set
     if (stateObj.get("createdByNodeName") == null)
       stateObj.put("createdByNodeName", String.valueOf(this.nodeName));
 
@@ -2280,7 +2312,7 @@ public final class ZkController {
 
   private void setConfWatcher(String zkDir, Watcher watcher) {
     try {
-      zkClient.exists(zkDir,watcher,true);
+      zkClient.exists(zkDir, watcher, true);
     } catch (KeeperException e) {
       log.error("failed to set watcher for conf dir {} ", zkDir);
     } catch (InterruptedException e) {

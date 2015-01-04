@@ -18,7 +18,7 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -84,11 +84,11 @@ public class QueryRequest extends SolrRequest
   }
 
   @Override
-  public QueryResponse process( SolrServer server ) throws SolrServerException 
+  public QueryResponse process( SolrClient client ) throws SolrServerException
   {
     try {
       long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
-      QueryResponse res = new QueryResponse( server.request( this ), server );
+      QueryResponse res = new QueryResponse( client.request( this ), client );
       long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
       res.setElapsedTime(endTime - startTime);
       return res;

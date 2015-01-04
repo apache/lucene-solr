@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.update.SolrCmdDistributor;
@@ -172,7 +172,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
       zkServer.run();
     }
     
-    CloudSolrServer client = createCloudClient("collection1");
+    CloudSolrClient client = createCloudClient("collection1");
     try {
         createCollection(null, "testcollection",
             1, 1, 1, client, null, "conf1");

@@ -88,7 +88,7 @@ public abstract class Analyzer implements Closeable {
   /**
    * Expert: create a new Analyzer with a custom {@link ReuseStrategy}.
    * <p>
-   * NOTE: if you just want to reuse on a per-field basis, its easier to
+   * NOTE: if you just want to reuse on a per-field basis, it's easier to
    * use a subclass of {@link AnalyzerWrapper} such as 
    * <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">
    * PerFieldAnalyerWrapper</a> instead.

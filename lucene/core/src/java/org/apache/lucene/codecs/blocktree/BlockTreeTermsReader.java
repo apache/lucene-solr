@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +49,7 @@ import org.apache.lucene.util.fst.Outputs;
  *  approach is that seekExact is often able to
  *  determine a term cannot exist without doing any IO, and
  *  intersection with Automata is very fast.  Note that this
- *  terms dictionary has it's own fixed terms index (ie, it
+ *  terms dictionary has its own fixed terms index (ie, it
  *  does not support a pluggable terms index
  *  implementation).
  *
@@ -284,7 +285,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   @Override
-  public Iterable<? extends Accountable> getChildResources() {
+  public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
     resources.addAll(Accountables.namedAccountables("field", fields));
     resources.add(Accountables.namedAccountable("delegate", postingsReader));

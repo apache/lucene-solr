@@ -21,6 +21,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.RequestHandlers;
+import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
@@ -35,6 +38,8 @@ import org.apache.solr.util.stats.TimerContext;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
  *
@@ -53,6 +58,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private final AtomicLong numTimeouts = new AtomicLong();
   private final Timer requestTimes = new Timer();
   private final long handlerStart = System.currentTimeMillis();
+  private PluginInfo pluginInfo;
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
@@ -131,7 +137,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numRequests.incrementAndGet();
     TimerContext timer = requestTimes.time();
     try {
+      if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
       SolrPluginUtils.setDefaults(req,defaults,appends,invariants);
+      req.getContext().remove(USEPARAM);
       rsp.setHttpCaching(httpCaching);
       handleRequestBody( req, rsp );
       // count timeouts
@@ -218,6 +226,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
           String firstPart = handlerName.substring(0, idx);
           handler = reqHandlers.get(firstPart);
           if (handler == null) continue;
+          if(handler instanceof RequestHandlers.LazyRequestHandlerWrapper) {
+            handler = ((RequestHandlers.LazyRequestHandlerWrapper)handler).getWrappedHandler();
+          }
           if (handler instanceof NestedRequestHandler) {
             return ((NestedRequestHandler) handler).getSubHandler(handlerName.substring(idx));
           }
@@ -227,6 +238,14 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       }
     }
     return handler;
+  }
+
+  public void setPluginInfo(PluginInfo pluginInfo){
+    if(this.pluginInfo==null) this.pluginInfo = pluginInfo;
+  }
+
+  public PluginInfo getPluginInfo(){
+    return  pluginInfo;
   }
 
 

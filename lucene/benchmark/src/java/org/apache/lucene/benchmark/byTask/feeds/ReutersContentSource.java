@@ -129,7 +129,6 @@ public class ReutersContentSource extends ContentSource {
       while ((line = reader.readLine()) != null) {
         bodyBuf.append(line).append(' ');
       }
-      reader.close();
       
       addBytes(Files.size(f));
       

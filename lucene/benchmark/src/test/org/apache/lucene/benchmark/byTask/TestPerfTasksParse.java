@@ -112,6 +112,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
   }
   
   /** Test the parsing of example scripts **/
+  @SuppressWarnings("try")
   public void testParseExamples() throws Exception {
     // hackedy-hack-hack
     boolean foundFiles = false;

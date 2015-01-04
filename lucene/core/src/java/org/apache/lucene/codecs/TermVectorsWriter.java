@@ -116,7 +116,7 @@ public abstract class TermVectorsWriter implements Closeable {
    * @lucene.internal
    */
   // TODO: we should probably nuke this and make a more efficient 4.x format
-  // PreFlex-RW could then be slow and buffer (its only used in tests...)
+  // PreFlex-RW could then be slow and buffer (it's only used in tests...)
   public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
     int position = 0;
     int lastOffset = 0;

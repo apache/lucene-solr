@@ -17,28 +17,6 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.Random;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -56,6 +34,27 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Run solr using jetty
@@ -254,7 +253,7 @@ public class JettySolrRunner {
       // Connectors by default inherit server's thread pool.
       QueuedThreadPool qtp = new QueuedThreadPool();
       qtp.setMaxThreads(10000);
-      qtp.setMaxIdleTimeMs((int) TimeUnit.SECONDS.toMillis(5));
+      qtp.setMaxIdleTimeMs((int) TimeUnit.MILLISECONDS.toMillis(200));
       qtp.setMaxStopTimeMs((int) TimeUnit.MINUTES.toMillis(1));
       server.setThreadPool(qtp);
 

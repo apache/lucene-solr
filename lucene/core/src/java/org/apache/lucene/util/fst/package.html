@@ -46,7 +46,7 @@ FST Construction example:
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     Builder&lt;Long&gt; builder = new Builder&lt;Long&gt;(INPUT_TYPE.BYTE1, outputs);
     BytesRef scratchBytes = new BytesRef();
-    IntsRef scratchInts = new IntsRef();
+    IntsRefBuilder scratchInts = new IntsRefBuilder();
     for (int i = 0; i &lt; inputValues.length; i++) {
       scratchBytes.copyChars(inputValues[i]);
       builder.add(Util.toIntsRef(scratchBytes, scratchInts), outputValues[i]);

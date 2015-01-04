@@ -74,7 +74,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
   public void testSimple() throws Exception {
     SolrParams params = params("q", "*:*", 
                                "echoParams", "all");
-    QueryResponse res = getSolrServer().query(params);
+    QueryResponse res = getSolrClient().query(params);
     assertEquals(0, res.getResults().getNumFound());
 
     NamedList echoedParams = (NamedList) res.getHeader().get("params");

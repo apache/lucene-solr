@@ -17,18 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
@@ -41,6 +29,18 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 
 public abstract class ConfigSolr {
@@ -105,7 +105,11 @@ public abstract class ConfigSolr {
    * @return core root directory
    */
   public String getCoreRootDirectory() {
-    return SolrResourceLoader.normalizeDir( get(CfgProp.SOLR_COREROOTDIRECTORY, config.getResourceLoader().getInstanceDir()) );
+    SolrResourceLoader loader = config.getResourceLoader();
+    String relativeDir = get(CfgProp.SOLR_COREROOTDIRECTORY, null);
+    if (relativeDir != null)
+      return loader.resolve(relativeDir);
+    return loader.getInstanceDir();
   }
 
   public PluginInfo getShardHandlerFactoryPluginInfo() {
@@ -141,7 +145,7 @@ public abstract class ConfigSolr {
 
   protected static final String DEFAULT_CORE_ADMIN_PATH = "/admin/cores";
 
-  public String getZkHostPort() {
+  public String getSolrHostPort() {
     return get(CfgProp.SOLR_HOSTPORT, null);
   }
 

@@ -30,7 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -128,7 +128,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
         doWork();
       } catch (Exception e) {
         SolrException.log(log, this.getClass().getSimpleName()
-            + " had an error it's thread work loop.", e);
+            + " had an error in its thread work loop.", e);
       }
       
       if (!this.isClosed) {
@@ -145,6 +145,11 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     
     // TODO: extract to configurable strategy class ??
     ClusterState clusterState = zkStateReader.getClusterState();
+    //check if we have disabled autoAddReplicas cluster wide
+    String autoAddReplicas = (String) zkStateReader.getClusterProps().get(ZkStateReader.AUTO_ADD_REPLICAS);
+    if (autoAddReplicas !=null && autoAddReplicas.equals("false")) {
+      return;
+    }
     if (clusterState != null) {
       if (lastClusterStateVersion == clusterState.getZkClusterStateVersion() && baseUrlForBadNodes.size() == 0) {
         // nothing has changed, no work to do
@@ -242,7 +247,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       });
       
       // wait to see state for core we just created
-      boolean success = ClusterStateUtil.waitToSeeLive(zkStateReader, collection, coreNodeName, createUrl, 30);
+      boolean success = ClusterStateUtil.waitToSeeLive(zkStateReader, collection, coreNodeName, createUrl, 30000);
       if (!success) {
         log.error("Creating new replica appears to have failed, timed out waiting to see created SolrCore register in the clusterstate.");
         return false;
@@ -413,10 +418,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private boolean createSolrCore(final String collection,
       final String createUrl, final String dataDir, final String ulogDir,
       final String coreNodeName, final String coreName) {
-    HttpSolrServer server = null;
+    HttpSolrClient server = null;
     try {
       log.debug("create url={}", createUrl);
-      server = new HttpSolrServer(createUrl);
+      server = new HttpSolrClient(createUrl);
       server.setConnectionTimeout(30000);
       server.setSoTimeout(60000);
       Create createCmd = new Create();

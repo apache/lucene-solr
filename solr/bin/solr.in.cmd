@@ -58,10 +58,10 @@ REM set SOLR_HOST=192.168.1.1
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
 
-REM By default the start script enables some RMI related parameters to allow attaching
-REM JMX savvy tools like VisualVM remotely, set to "false" to disable that behavior
-REM (recommended in production environments)
-set ENABLE_REMOTE_JMX_OPTS=true
+REM Set to true to activate the JMX RMI connector to allow remote JMX client applications
+REM to monitor the JVM hosting Solr; set to "false" to disable that behavior
+REM (false is recommended in production environments)
+set ENABLE_REMOTE_JMX_OPTS=false
 
 REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
@@ -73,3 +73,9 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
 
+REM Path to a directory where Solr creates index files, the specified directory
+REM must contain a solr.xml; by default, Solr will use server/solr
+REM set SOLR_HOME=
+
+REM Sets the port Solr binds to, default is 8983
+REM set SOLR_PORT=8983

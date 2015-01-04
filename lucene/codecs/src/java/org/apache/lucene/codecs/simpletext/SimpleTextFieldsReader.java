@@ -17,8 +17,19 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.DOC;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END_OFFSET;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.FIELD;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.FREQ;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.PAYLOAD;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.POS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.START_OFFSET;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.TERM;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,16 +67,6 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
-
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.DOC;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END_OFFSET;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.FIELD;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.FREQ;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.PAYLOAD;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.POS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.START_OFFSET;
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.TERM;
 
 class SimpleTextFieldsReader extends FieldsProducer {
 
@@ -595,7 +596,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public Iterable<? extends Accountable> getChildResources() {
+    public Collection<Accountable> getChildResources() {
       if (fst == null) {
         return Collections.emptyList();
       } else {
@@ -700,7 +701,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   @Override
-  public synchronized Iterable<? extends Accountable> getChildResources() {
+  public synchronized Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", termsCache);
   }
 

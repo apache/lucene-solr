@@ -51,7 +51,7 @@ import org.apache.lucene.search.Explanation;
  * Originally based on Geoportal's
  * <a href="http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialRankingValueSource.java">
  *   SpatialRankingValueSource</a> but modified quite a bit. GeoPortal's algorithm will yield a score of 0
- * if either a line or point is compared, and it's doesn't output a 0-1 normalized score (it multiplies the factors),
+ * if either a line or point is compared, and it doesn't output a 0-1 normalized score (it multiplies the factors),
  * and it doesn't support minSideLength, and it had dateline bugs.
  *
  * @lucene.experimental

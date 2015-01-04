@@ -234,7 +234,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     }
 
     // Test Similarity: 
-    // we shouldnt assert what the default is, just that its not null.
+    // we shouldnt assert what the default is, just that it's not null.
     assertTrue(IndexSearcher.getDefaultSimilarity() == conf.getSimilarity());
     conf.setSimilarity(new MySimilarity());
     assertEquals(MySimilarity.class, conf.getSimilarity().getClass());

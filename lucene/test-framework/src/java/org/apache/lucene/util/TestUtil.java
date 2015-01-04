@@ -30,6 +30,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -188,7 +190,48 @@ public final class TestUtil {
       // ok
     }
   }
-  
+
+  /**
+   * Checks that the provided collection is read-only.
+   * @see #checkIterator(Iterator)
+   */
+  public static <T> void checkReadOnly(Collection<T> coll) {
+    int size = 0;
+    for (Iterator<?> it = coll.iterator(); it.hasNext(); ) {
+      it.next();
+      size += 1;
+    }
+    if (size != coll.size()) {
+      throw new AssertionError("broken collection, reported size is "
+          + coll.size() + " but iterator has " + size + " elements: " + coll);
+    }
+
+    if (coll.isEmpty() == false) {
+      try {
+        coll.remove(coll.iterator().next());
+        throw new AssertionError("broken collection (supports remove): " + coll);
+      } catch (UnsupportedOperationException e) {
+        // ok
+      }
+    }
+
+    try {
+      coll.add(null);
+      throw new AssertionError("broken collection (supports add): " + coll);
+    } catch (UnsupportedOperationException e) {
+      // ok
+    }
+
+    try {
+      coll.addAll(Collections.singleton(null));
+      throw new AssertionError("broken collection (supports addAll): " + coll);
+    } catch (UnsupportedOperationException e) {
+      // ok
+    }
+
+    checkIterator(coll.iterator());
+  }
+
   public static void syncConcurrentMerges(IndexWriter writer) {
     syncConcurrentMerges(writer.getConfig().getMergeScheduler());
   }
@@ -845,7 +888,7 @@ public final class TestUtil {
     }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
-      // wtf... shouldnt it be even lower since its 1 by default?!?!
+      // wtf... shouldnt it be even lower since it's 1 by default?!?!
       ((ConcurrentMergeScheduler) ms).setMaxMergesAndThreads(3, 2);
     }
   }

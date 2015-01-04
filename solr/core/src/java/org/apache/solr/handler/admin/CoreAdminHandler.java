@@ -288,6 +288,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
         case LOAD:
           break;
+
+        case REJOINLEADERELECTION:
+          ZkController zkController = coreContainer.getZkController();
+
+          if (zkController != null) {
+            zkController.rejoinShardLeaderElection(req.getParams());
+          } else {
+            log.warn("zkController is null in CoreAdminHandler.handleRequestInternal:REJOINLEADERELCTIONS. No action taken.");
+          }
+          break;
       }
     }
     rsp.setHttpCaching(false);

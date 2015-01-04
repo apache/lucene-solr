@@ -2111,6 +2111,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     iwc.setInfoStream(evilInfoStream);
     IndexWriter iw = new IndexWriter(dir, iwc);
+    // TODO: cutover to RandomIndexWriter.mockIndexWriter?
+    iw.enableTestPoints = true;
     Document doc = iw.newDocument();
     for (int i = 0; i < 10; i++) {
       iw.addDocument(doc);
