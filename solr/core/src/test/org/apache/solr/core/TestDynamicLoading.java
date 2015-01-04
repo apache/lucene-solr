@@ -142,7 +142,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
         "2",10);
 
     success= false;
-    for(int i=0;i<50;i++) {
+    for(int i=0;i<100;i++) {
       map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
       if(BlobStoreTestRequestHandlerV2.class.getName().equals(map.get("class"))) {
         success = true;
@@ -153,7 +153,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
     assertTrue("New version of class is not loaded " + new String(ZkStateReader.toJSON(map), StandardCharsets.UTF_8), success);
 
-    for(int i=0;i<50;i++) {
+    for(int i=0;i<100;i++) {
       map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
       if("X val".equals(map.get("x"))){
          success = true;
