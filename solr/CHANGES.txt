@@ -397,6 +397,8 @@ Bug Fixes
 * SOLR-6874: There is a race around SocketProxy binding to it's port the way we setup 
   JettySolrRunner and SocketProxy. (Mark Miller, Timothy Potter)
 
+* SOLR-6735: Make CloneFieldUpdateProcessorFactory null safe (Steve Davids via ehatcher)
+
 
 Optimizations
 ----------------------
