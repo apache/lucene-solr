@@ -62,5 +62,5 @@ curl http://localhost:8983/solr/films/schema/fields -X POST -H 'Content-type:app
 
 Exploring the data further - 
 
-  * Increase the MAX_ITERATIONS value, put in your freebase API_KEY and run the exampledocs_generator.py script using Python 3.
+  * Increase the MAX_ITERATIONS value, put in your freebase API_KEY and run the film_data_generator.py script using Python 3.
     Now re-index Solr with the new data.
