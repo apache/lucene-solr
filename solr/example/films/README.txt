@@ -46,9 +46,9 @@ curl http://localhost:8983/solr/films/schema/fields -X POST -H 'Content-type:app
 
    * Now let's index the data, using one of these three commands:
 
-     - JSON: bin/post films example/exampledocs/films.json
-     - XML: bin/post films example/exampledocs/films.xml
-     - CSV: bin/post films example/exampledocs/films.csv params=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|
+     - JSON: bin/post films example/films/films.json
+     - XML: bin/post films example/films/films.xml
+     - CSV: bin/post films example/films/films.csv params=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|
 
    * Let's get searching.
      - Search for 'Batman':
