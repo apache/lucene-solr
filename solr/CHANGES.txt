@@ -399,6 +399,9 @@ Bug Fixes
 
 * SOLR-6735: Make CloneFieldUpdateProcessorFactory null safe (Steve Davids via ehatcher)
 
+* SOLR-6907: URLEncode documents directory in MorphlineMapperTest to handle spaces etc.
+  in file name. (Ramkumar Aiyengar via Erick Erickson)
+
 
 Optimizations
 ----------------------
