@@ -380,7 +380,7 @@ public class SimplePostTool {
     (USAGE_STRING_SHORT+"\n\n" +
      "Supported System Properties and their defaults:\n"+
      "  -Dc=<core/collection>\n"+
-     "  -Durl=<solr-update-url> \n"+
+     "  -Durl=<solr-update-url> (overrides -Dc option if specified)\n"+
      "  -Ddata=files|web|args|stdin (default=" + DEFAULT_DATA_MODE + ")\n"+
      "  -Dtype=<content-type> (default=" + DEFAULT_CONTENT_TYPE + ")\n"+
      "  -Dhost=<host> (default: " + DEFAULT_POST_HOST+ ")\n"+
@@ -404,7 +404,7 @@ public class SimplePostTool {
      "  java -Ddata=web -Dc=gettingstarted -jar post.jar http://example.com/\n"+
      "  java -Dtype=text/csv -Dc=gettingstarted -jar post.jar *.csv\n"+
      "  java -Dtype=application/json -Dc=gettingstarted -jar post.jar *.json\n"+
-     "  java -Durl=http://localhost:8983/solr/update/extract -Dparams=literal.id=a -Dtype=application/pdf -jar post.jar a.pdf\n"+
+     "  java -Durl=http://localhost:8983/solr/techproducts/update/extract -Dparams=literal.id=a -jar post.jar solr-word.pdf\n"+
      "  java -Dauto -Dc=gettingstarted -jar post.jar *\n"+
      "  java -Dauto -Dc=gettingstarted -Drecursive -jar post.jar afolder\n"+
      "  java -Dauto -Dc=gettingstarted -Dfiletypes=ppt,html -jar post.jar afolder\n"+
