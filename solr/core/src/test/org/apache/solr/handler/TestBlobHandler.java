@@ -87,7 +87,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     url = baseUrl + "/.system/blob/test/1";
     map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
     List l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
-    assertNotNull(l);
+    assertNotNull(""+map, l);
+    assertTrue(""+map, l.size()>0);
     map = (Map) l.get(0);
     assertEquals(""+bytarr.length,String.valueOf(map.get("size")));
 
