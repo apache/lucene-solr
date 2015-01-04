@@ -353,6 +353,9 @@ Bug Fixes
 
 * SOLR-6779: fix /browse for schemaless example (ehatcher)
 
+* SOLR-6735: Make CloneFieldUpdateProcessorFactory null safe (Steve Davids via ehatcher)
+
+
 Optimizations
 ----------------------
 

@@ -823,6 +823,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                        f("editors", "John W. Campbell"),
                        f("store1_price", 87),
                        f("store2_price", 78),
+                       f("store3_price", (Object) null),
                        f("list_price", 1000)));
     assertNotNull(d);
     assertEquals("misc",d.getFieldValue("category"));
