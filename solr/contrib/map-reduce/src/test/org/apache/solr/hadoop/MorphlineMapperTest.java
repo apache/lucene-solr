@@ -48,7 +48,8 @@ public class MorphlineMapperTest extends MRUnitBase {
     setupHadoopConfig(config);
 
     mapDriver.withInput(new LongWritable(0L), new Text("hdfs://localhost/" +
-        URLEncoder.encode(DOCUMENTS_DIR, "UTF-8") + "/sample-statuses-20120906-141433.avro"));
+        URLEncoder.encode(DOCUMENTS_DIR, "UTF-8").replace("+", "%20") +
+        "/sample-statuses-20120906-141433.avro"));
 
     SolrInputDocument sid = new SolrInputDocument();
     sid.addField("id", "uniqueid1");
