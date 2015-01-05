@@ -393,7 +393,7 @@ class BufferedUpdatesStream implements Accountable {
     TermsEnum termsEnum = null;
 
     String currentField = null;
-    DocsEnum docs = null;
+    DocsEnum docsEnum = null;
 
     assert checkDeleteTerm(null);
 
@@ -416,36 +416,38 @@ class BufferedUpdatesStream implements Accountable {
       }
 
       if (termsEnum == null) {
+        // no terms in this field
         continue;
       }
+
       assert checkDeleteTerm(term);
 
       // System.out.println("  term=" + term);
 
       if (termsEnum.seekExact(term.bytes())) {
         // we don't need term frequencies for this
-        DocsEnum docsEnum = termsEnum.docs(rld.getLiveDocs(), docs, DocsEnum.FLAG_NONE);
+        docsEnum = termsEnum.docs(rld.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
         //System.out.println("BDS: got docsEnum=" + docsEnum);
 
-        if (docsEnum != null) {
-          while (true) {
-            final int docID = docsEnum.nextDoc();
-            //System.out.println(Thread.currentThread().getName() + " del term=" + term + " doc=" + docID);
-            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-              break;
-            }   
-            if (!any) {
-              rld.initWritableLiveDocs();
-              any = true;
-            }
-            // NOTE: there is no limit check on the docID
-            // when deleting by Term (unlike by Query)
-            // because on flush we apply all Term deletes to
-            // each segment.  So all Term deleting here is
-            // against prior segments:
-            if (rld.delete(docID)) {
-              delCount++;
-            }
+        assert docsEnum != null;
+
+        while (true) {
+          final int docID = docsEnum.nextDoc();
+          //System.out.println(Thread.currentThread().getName() + " del term=" + term + " doc=" + docID);
+          if (docID == DocIdSetIterator.NO_MORE_DOCS) {
+            break;
+          }   
+          if (!any) {
+            rld.initWritableLiveDocs();
+            any = true;
+          }
+          // NOTE: there is no limit check on the docID
+          // when deleting by Term (unlike by Query)
+          // because on flush we apply all Term deletes to
+          // each segment.  So all Term deleting here is
+          // against prior segments:
+          if (rld.delete(docID)) {
+            delCount++;
           }
         }
       }
@@ -475,7 +477,7 @@ class BufferedUpdatesStream implements Accountable {
     
     String currentField = null;
     TermsEnum termsEnum = null;
-    DocsEnum docs = null;
+    DocsEnum docsEnum = null;
     
     //System.out.println(Thread.currentThread().getName() + " numericDVUpdate reader=" + reader);
     for (DocValuesUpdate update : updates) {
@@ -501,19 +503,19 @@ class BufferedUpdatesStream implements Accountable {
           termsEnum = terms.iterator(termsEnum);
         } else {
           termsEnum = null;
-          continue; // no terms in that field
         }
       }
 
       if (termsEnum == null) {
+        // no terms in this field
         continue;
       }
+
       // System.out.println("  term=" + term);
 
       if (termsEnum.seekExact(term.bytes())) {
         // we don't need term frequencies for this
-        DocsEnum docsEnum = termsEnum.docs(rld.getLiveDocs(), docs, DocsEnum.FLAG_NONE);
-      
+        docsEnum = termsEnum.docs(rld.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
         //System.out.println("BDS: got docsEnum=" + docsEnum);
 
         DocValuesFieldUpdates dvUpdates = dvUpdatesContainer.getUpdates(update.field, update.type);
