@@ -99,7 +99,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     private void handleGET() {
       if(parts.size() == 1) {
-        resp.add("solrConfig", req.getCore().getSolrConfig().toMap());
+        resp.add("config", req.getCore().getSolrConfig().toMap());
       } else {
         if(ConfigOverlay.NAME.equals(parts.get(1))){
           resp.add(ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().toMap());
@@ -119,7 +119,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
         } else {
           Map<String, Object> m = req.getCore().getSolrConfig().toMap();
-          resp.add("solrConfig", ZkNodeProps.makeMap(parts.get(1),m.get(parts.get(1))));
+          resp.add("config", ZkNodeProps.makeMap(parts.get(1),m.get(parts.get(1))));
         }
       }
     }
@@ -236,8 +236,13 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
-        ZkController.persistConfigResourceToZooKeeper(loader,params.getZnodeVersion(),
-            RequestParams.RESOURCE,params.toByteArray(),true);
+        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+        if(ops.isEmpty()) {
+          ZkController.touchConfDir(zkLoader);
+        }else {
+          ZkController.persistConfigResourceToZooKeeper(zkLoader, params.getZnodeVersion(),
+              RequestParams.RESOURCE, params.toByteArray(), true);
+        }
 
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, params.toByteArray());
@@ -278,7 +283,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     SolrResourceLoader loader = req.getCore().getResourceLoader();
     if (loader instanceof ZkSolrResourceLoader) {
-      ZkController.persistConfigResourceToZooKeeper(loader,overlay.getZnodeVersion(),
+      ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader,overlay.getZnodeVersion(),
           ConfigOverlay.RESOURCE_NAME,overlay.toByteArray(),true);
 
     } else {
