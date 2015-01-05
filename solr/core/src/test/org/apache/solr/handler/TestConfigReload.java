@@ -81,7 +81,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     log.info("live_nodes_count :  " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
     String confPath = ZkController.CONFIGS_ZKNODE+"/conf1/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
-    checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"solrConfig", "/config");
+    checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
 
   }
 

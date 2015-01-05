@@ -2151,10 +2151,9 @@ public final class ZkController {
    *
    * @return true on success
    */
-  public static boolean persistConfigResourceToZooKeeper( SolrResourceLoader loader, int znodeVersion ,
+  public static boolean persistConfigResourceToZooKeeper( ZkSolrResourceLoader zkLoader, int znodeVersion ,
                                                           String resourceName, byte[] content,
                                                           boolean createIfNotExists) {
-    final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     final String resourceLocation = zkLoader.getConfigSetZkPath() + "/" + resourceName;
@@ -2162,12 +2161,12 @@ public final class ZkController {
     try {
       try {
         zkClient.setData(resourceLocation , content,znodeVersion, true);
-        zkClient.setData(zkLoader.getConfigSetZkPath(),new byte[]{0},true);
+        touchConfDir(zkLoader);
       } catch (NoNodeException e) {
         if(createIfNotExists){
           try {
             zkClient.create(resourceLocation,content, CreateMode.PERSISTENT,true);
-            zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
+            touchConfDir(zkLoader);
           } catch (KeeperException.NodeExistsException nee) {
             try {
               Stat stat = zkClient.exists(resourceLocation, null, true);
@@ -2204,6 +2203,21 @@ public final class ZkController {
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
     return true;
+  }
+
+  public static void touchConfDir(ZkSolrResourceLoader zkLoader)  {
+    SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+    try {
+      zkClient.setData(zkLoader.getConfigSetZkPath(),new byte[]{0},true);
+    } catch (Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt(); // Restore the interrupted status
+      }
+      final String msg = "Error 'touching' conf location " + zkLoader.getConfigSetZkPath();
+      log.error(msg, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+
+    }
   }
 
   public static  class ResourceModifiedInZkException extends SolrException {
