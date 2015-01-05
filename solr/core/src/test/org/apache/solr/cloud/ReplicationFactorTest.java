@@ -55,9 +55,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final transient Logger log = 
       LoggerFactory.getLogger(ReplicationFactorTest.class);
-  
-  private Map<URI,SocketProxy> proxies = new HashMap<URI,SocketProxy>();
-  
+
   public ReplicationFactorTest() {
     super();
     sliceCount = 3;
@@ -103,25 +101,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   public JettySolrRunner createJetty(File solrHome, String dataDir,
       String shardList, String solrConfigOverride, String schemaOverride)
       throws Exception {
-    
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context,
-        0, solrConfigOverride, schemaOverride, false,
-        getExtraServlets(), sslConfig, getExtraRequestFilters());
-    jetty.setShards(shardList);
-    jetty.setDataDir(getDataDir(dataDir));
-    
-    // setup to proxy Http requests to this server unless it is the control
-    // server
-    int proxyPort = getNextAvailablePort();
-    jetty.setProxyPort(proxyPort);
-    
-    jetty.start();
-    
-    // create a socket proxy for the jetty server ...
-    SocketProxy proxy = new SocketProxy(proxyPort, jetty.getBaseUrl().toURI());
-    proxies.put(proxy.getUrl(), proxy);
-    
-    return jetty;
+
+    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
   }
   
   protected int getNextAvailablePort() throws Exception {    
@@ -320,21 +301,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(2000);
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);    
   } 
-    
-  protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
-    String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-    assertNotNull(replicaBaseUrl);
-    URL baseUrl = new URL(replicaBaseUrl);
-    
-    SocketProxy proxy = proxies.get(baseUrl.toURI());
-    if (proxy == null && !baseUrl.toExternalForm().endsWith("/")) {
-      baseUrl = new URL(baseUrl.toExternalForm() + "/");
-      proxy = proxies.get(baseUrl.toURI());
-    }
-    assertNotNull("No proxy found for " + baseUrl + "!", proxy);
-    return proxy;
-  }
-      
+
   protected int sendDoc(int docId, int minRf) throws Exception {
     UpdateRequest up = new UpdateRequest();
     up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));

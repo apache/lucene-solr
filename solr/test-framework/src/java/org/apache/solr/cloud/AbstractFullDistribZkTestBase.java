@@ -536,16 +536,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
 
-    // setup to proxy Http requests to this server unless it is the control
-    // server
-    int proxyPort = getNextAvailablePort();
-    jetty.setProxyPort(proxyPort);
+    SocketProxy proxy = new SocketProxy(0, sslConfig == null ? false : sslConfig.isSSLMode());
+    jetty.setProxyPort(proxy.getListenPort());
     jetty.start();
-
-    // create a socket proxy for the jetty server ...
-    SocketProxy proxy = new SocketProxy(proxyPort, jetty.getBaseUrl().toURI());
+    proxy.open(jetty.getBaseUrl().toURI());
     proxies.put(proxy.getUrl(), proxy);
-
     return jetty;
   }
 
