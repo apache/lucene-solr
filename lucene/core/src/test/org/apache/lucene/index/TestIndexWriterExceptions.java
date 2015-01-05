@@ -57,15 +57,15 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterExceptions extends LuceneTestCase {
@@ -1951,16 +1951,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (ms instanceof ConcurrentMergeScheduler) {
           final ConcurrentMergeScheduler suppressFakeIOE = new ConcurrentMergeScheduler() {
               @Override
-              protected void handleMergeException(Throwable exc) {
+              protected void handleMergeException(Directory dir, Throwable exc) {
                 // suppress only FakeIOException:
                 if (!(exc instanceof FakeIOException)) {
-                  super.handleMergeException(exc);
+                  super.handleMergeException(dir, exc);
                 }
               }
             };
           final ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) ms;
           suppressFakeIOE.setMaxMergesAndThreads(cms.getMaxMergeCount(), cms.getMaxThreadCount());
-          suppressFakeIOE.setMergeThreadPriority(cms.getMergeThreadPriority());
           iwc.setMergeScheduler(suppressFakeIOE);
         }
         

@@ -485,7 +485,7 @@ class DocumentsWriterPerThread {
     try {
       
       if (indexWriterConfig.getUseCompoundFile()) {
-        filesToDelete.addAll(IndexWriter.createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info, context));
+        filesToDelete.addAll(IndexWriter.createCompoundFile(infoStream, directory, newSegment.info, context));
         newSegment.info.setUseCompoundFile(true);
       }
 

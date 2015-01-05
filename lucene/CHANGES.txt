@@ -130,6 +130,10 @@ New Features
 * LUCENE-5914: Add an option to Lucene50Codec to support either BEST_SPEED
   or BEST_COMPRESSION for stored fields. (Adrien Grand, Robert Muir)
 
+* LUCENE-6119: Add auto-IO-throttling to ConcurrentMergeScheduler, to
+  rate limit IO writes for each merge depending on incoming merge
+  rate.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to

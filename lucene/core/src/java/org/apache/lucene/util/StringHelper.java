@@ -253,7 +253,7 @@ public abstract class StringHelper {
       x0 = Long.parseLong(prop, 16);
       x1 = x0;
     } else {
-      // "Ghetto randomess" from 3 different sources:
+      // Randomess from 3 different sources:
       x0 = System.nanoTime();
       x1 = StringHelper.class.hashCode() << 32;
       StringBuilder sb = new StringBuilder();

@@ -20,7 +20,6 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -47,8 +46,7 @@ public abstract class CompoundFormat {
   /**
    * Packs the provided files into a compound format.
    */
-  // TODO: get checkAbort out of here, and everywhere, and have iw do it at a higher level
-  public abstract void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException;
+  public abstract void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException;
 
   /**
    * Returns the compound file names used by this segment.

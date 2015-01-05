@@ -123,13 +123,11 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -914,13 +912,17 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         cms = new ConcurrentMergeScheduler() {
             @Override
-            protected synchronized void maybeStall() {
+            protected synchronized void maybeStall(IndexWriter writer) {
             }
           };
       }
       int maxThreadCount = TestUtil.nextInt(r, 1, 4);
       int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+      if (random().nextBoolean()) {
+        cms.disableAutoIOThrottle();
+      }
+      cms.setForceMergeMBPerSec(10 + 10*random().nextDouble());
       c.setMergeScheduler(cms);
     } else {
       // Always use consistent settings, else CMS's dynamic (SSD or not)
@@ -1347,27 +1349,6 @@ public abstract class LuceneTestCase extends Assert {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
     
-    if (TEST_NIGHTLY && rarely(random) && !bare) { 
-      final double maxMBPerSec = TestUtil.nextInt(random, 20, 40);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
-      }
-      final RateLimitedDirectoryWrapper rateLimitedDirectoryWrapper = new RateLimitedDirectoryWrapper(directory);
-      switch (random.nextInt(10)) {
-        case 3: // sometimes rate limit on flush
-          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.FLUSH);
-          break;
-        case 2: // sometimes rate limit flush & merge
-          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.FLUSH);
-          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.MERGE);
-          break;
-        default:
-          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.MERGE);
-      }
-      directory =  rateLimitedDirectoryWrapper;
-      
-    }
-
     if (bare) {
       BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
       closeAfterSuite(new CloseableDirectory(base, suiteFailureMarker));

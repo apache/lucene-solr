@@ -29,7 +29,6 @@ import java.util.Locale;
 
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -157,7 +156,7 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException {
     String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
     
     int numFiles = files.size();
@@ -181,8 +180,6 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
           out.copyBytes(in, in.length());
         }
         endOffsets[i] = out.getFilePointer();
-        
-        checkAbort.work(endOffsets[i] - startOffsets[i]);
       }
       
       long tocPos = out.getFilePointer();

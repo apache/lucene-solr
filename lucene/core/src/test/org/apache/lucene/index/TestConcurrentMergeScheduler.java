@@ -293,7 +293,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
 
       @Override
-      protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
+      protected void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
         try {
           // Stall all incoming merges until we see
           // maxMergeCount:
@@ -312,7 +312,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             // Then sleep a bit to give a chance for the bug
             // (too many pending merges) to appear:
             Thread.sleep(20);
-            super.doMerge(merge);
+            super.doMerge(writer, merge);
           } finally {
             runningMergeCount.decrementAndGet();
           }
@@ -358,10 +358,10 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     @Override
-    public void doMerge(MergePolicy.OneMerge merge) throws IOException {
+    public void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
       totMergedBytes += merge.totalBytesSize();
       atLeastOneMerge.countDown();
-      super.doMerge(merge);
+      super.doMerge(writer, merge);
     }
   }
 
@@ -428,7 +428,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         final AtomicInteger runningMergeCount = new AtomicInteger();
 
         @Override
-        public void doMerge(MergePolicy.OneMerge merge) throws IOException {
+        public void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
           int count = runningMergeCount.incrementAndGet();
           // evil?
           synchronized (this) {
@@ -437,7 +437,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             }
           }
           try {
-            super.doMerge(merge);
+            super.doMerge(writer, merge);
           } finally {
             runningMergeCount.decrementAndGet();
           }
@@ -489,7 +489,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
         @Override
-        protected void maybeStall() {
+        protected void maybeStall(IndexWriter writer) {
           wasCalled.set(true);
         }
       });
@@ -514,14 +514,14 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     final CountDownLatch mergeFinish = new CountDownLatch(1);
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
         @Override
-        protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
+        protected void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
           mergeStart.countDown();
           try {
             mergeFinish.await();
           } catch (InterruptedException ie) {
             throw new RuntimeException(ie);
           }
-          super.doMerge(merge);
+          super.doMerge(writer, merge);
         }
       };
     cms.setMaxMergesAndThreads(1, 1);
@@ -629,7 +629,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
     cms.setDefaultMaxMergesAndThreads(true);
     assertEquals(1, cms.getMaxThreadCount());
-    assertEquals(2, cms.getMaxMergeCount());
+    assertEquals(6, cms.getMaxMergeCount());
   }
 
   public void testNonSpinningDefaults() throws Exception {
@@ -637,7 +637,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     cms.setDefaultMaxMergesAndThreads(false);
     int threadCount = cms.getMaxThreadCount();
     assertTrue(threadCount >= 1);
-    assertTrue(threadCount <= 3);
-    assertEquals(cms.getMaxMergeCount(), 2+threadCount);
+    assertTrue(threadCount <= 4);
+    assertEquals(5+threadCount, cms.getMaxMergeCount());
   }
 }

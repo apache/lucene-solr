@@ -23,7 +23,6 @@ import java.util.Collection;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -73,7 +72,7 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException {
     String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
     String entriesFile = IndexFileNames.segmentFileName(si.name, "", ENTRIES_EXTENSION);
     
@@ -99,8 +98,6 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
         entries.writeString(IndexFileNames.stripSegmentName(file));
         entries.writeLong(startOffset);
         entries.writeLong(length);
-        
-        checkAbort.work(length);
       }
       
       CodecUtil.writeFooter(data);

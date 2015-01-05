@@ -16,6 +16,7 @@ package org.apache.lucene;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -56,21 +57,20 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     @Override
     protected MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
       MergeThread thread = new MyMergeThread(writer, merge);
-      thread.setThreadPriority(getMergeThreadPriority());
       thread.setDaemon(true);
       thread.setName("MyMergeThread");
       return thread;
     }
 
     @Override
-    protected void handleMergeException(Throwable t) {
+    protected void handleMergeException(Directory dir, Throwable t) {
       excCalled = true;
     }
 
-    @Override
-    protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
+    ;@Override
+    protected void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
       mergeCalled = true;
-      super.doMerge(merge);
+      super.doMerge(writer, merge);
     }
   }
 
@@ -118,7 +118,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
       OneMerge merge = null;
       while ((merge = writer.getNextMerge()) != null) {
         if (VERBOSE) {
-          System.out.println("executing merge " + merge.segString(writer.getDirectory()));
+          System.out.println("executing merge " + merge.segString());
         }
         writer.merge(merge);
       }

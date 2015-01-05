@@ -37,7 +37,6 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.English;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;

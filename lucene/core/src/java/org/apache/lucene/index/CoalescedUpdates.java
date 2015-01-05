@@ -18,15 +18,15 @@ package org.apache.lucene.index;
  */
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.index.BufferedUpdatesStream.QueryAndLimit;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MergedIterator;
 
@@ -35,16 +35,19 @@ class CoalescedUpdates {
   final List<Iterable<Term>> iterables = new ArrayList<>();
   final List<NumericDocValuesUpdate> numericDVUpdates = new ArrayList<>();
   final List<BinaryDocValuesUpdate> binaryDVUpdates = new ArrayList<>();
+  int totalTermCount;
   
   @Override
   public String toString() {
     // note: we could add/collect more debugging information
-    return "CoalescedUpdates(termSets=" + iterables.size() + ",queries="
-        + queries.size() + ",numericDVUpdates=" + numericDVUpdates.size()
-        + ",binaryDVUpdates=" + binaryDVUpdates.size() + ")";
+    return "CoalescedUpdates(termSets=" + iterables.size()
+      + ",totalTermCount=" + totalTermCount
+      + ",queries=" + queries.size() + ",numericDVUpdates=" + numericDVUpdates.size()
+      + ",binaryDVUpdates=" + binaryDVUpdates.size() + ")";
   }
 
   void update(FrozenBufferedUpdates in) {
+    totalTermCount += in.termCount;
     iterables.add(in.termsIterable());
 
     for (int queryIdx = 0; queryIdx < in.queries.length; queryIdx++) {

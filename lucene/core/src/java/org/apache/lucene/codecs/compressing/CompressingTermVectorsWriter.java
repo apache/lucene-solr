@@ -751,7 +751,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
           }
           addAllDocVectors(vectors, mergeState);
           ++docCount;
-          mergeState.checkAbort.work(300);
         }
       } else {
         final CompressingStoredFieldsIndexReader index = matchingVectorsReader.getIndex();
@@ -781,7 +780,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
               this.vectorsStream.copyBytes(vectorsStream, chunkLength);
               docCount += chunkDocs;
               this.numDocs += chunkDocs;
-              mergeState.checkAbort.work(300 * chunkDocs);
               i = nextLiveDoc(docBase + chunkDocs, liveDocs, maxDoc);
             } else {
               for (; i < docBase + chunkDocs; i = nextLiveDoc(i + 1, liveDocs, maxDoc)) {
@@ -793,7 +791,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
                 }
                 addAllDocVectors(vectors, mergeState);
                 ++docCount;
-                mergeState.checkAbort.work(300);
               }
             }
           } else {
@@ -805,7 +802,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
             }
             addAllDocVectors(vectors, mergeState);
             ++docCount;
-            mergeState.checkAbort.work(300);
             i = nextLiveDoc(i + 1, liveDocs, maxDoc);
           }
         }

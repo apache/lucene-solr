@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -173,16 +174,19 @@ class BufferedUpdatesStream implements Accountable {
     Collections.sort(infos2, sortSegInfoByDelGen);
 
     CoalescedUpdates coalescedDeletes = null;
-    boolean anyNewDeletes = false;
 
     int infosIDX = infos2.size()-1;
     int delIDX = updates.size()-1;
+
+    long totDelCount = 0;
+    long totTermVisitedCount = 0;
 
     List<SegmentCommitInfo> allDeleted = null;
 
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
 
+      final long segStartNS = System.nanoTime();
       final FrozenBufferedUpdates packet = delIDX >= 0 ? updates.get(delIDX) : null;
       final SegmentCommitInfo info = infos2.get(infosIDX);
       final long segGen = info.getBufferedDeletesGen();
@@ -213,12 +217,14 @@ class BufferedUpdatesStream implements Accountable {
         final ReadersAndUpdates rld = readerPool.get(info, true);
         final SegmentReader reader = rld.getReader(IOContext.READ);
         int delCount = 0;
+        long termVisitedCount = 0;
         final boolean segAllDeletes;
         try {
           final DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
           if (coalescedDeletes != null) {
-            //System.out.println("    del coalesced");
-            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
+            TermDeleteCounts counts = applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
+            delCount += counts.delCount;
+            termVisitedCount += counts.termVisitedCount;
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
             applyDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, dvUpdates);
             applyDocValuesUpdates(coalescedDeletes.binaryDVUpdates, rld, reader, dvUpdates);
@@ -239,7 +245,8 @@ class BufferedUpdatesStream implements Accountable {
           rld.release(reader);
           readerPool.release(rld);
         }
-        anyNewDeletes |= delCount > 0;
+        totDelCount += delCount;
+        totTermVisitedCount += termVisitedCount;
 
         if (segAllDeletes) {
           if (allDeleted == null) {
@@ -249,7 +256,7 @@ class BufferedUpdatesStream implements Accountable {
         }
 
         if (infoStream.isEnabled("BD")) {
-          infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+          infoStream.message("BD", String.format(Locale.ROOT, "%.3fs", ((System.nanoTime() - segStartNS)/1000000000.0)) + " seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + " termVisitedCount=" + termVisitedCount + (segAllDeletes ? " 100% deleted" : ""));
         }
 
         if (coalescedDeletes == null) {
@@ -274,9 +281,12 @@ class BufferedUpdatesStream implements Accountable {
           final ReadersAndUpdates rld = readerPool.get(info, true);
           final SegmentReader reader = rld.getReader(IOContext.READ);
           int delCount = 0;
+          long termVisitedCount = 0;
           final boolean segAllDeletes;
           try {
-            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
+            TermDeleteCounts counts = applyTermDeletes(coalescedDeletes.termsIterable(), rld, reader);
+            delCount += counts.delCount;
+            termVisitedCount += counts.termVisitedCount;
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), rld, reader);
             DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
             applyDocValuesUpdates(coalescedDeletes.numericDVUpdates, rld, reader, dvUpdates);
@@ -291,7 +301,9 @@ class BufferedUpdatesStream implements Accountable {
             rld.release(reader);
             readerPool.release(rld);
           }
-          anyNewDeletes |= delCount > 0;
+
+          totDelCount += delCount;
+          totTermVisitedCount += termVisitedCount;
 
           if (segAllDeletes) {
             if (allDeleted == null) {
@@ -301,7 +313,7 @@ class BufferedUpdatesStream implements Accountable {
           }
 
           if (infoStream.isEnabled("BD")) {
-            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + coalescedDeletes + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+            infoStream.message("BD", String.format(Locale.ROOT, "%.3fs", ((System.nanoTime() - segStartNS)/1000000000.0)) + " seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + coalescedDeletes + "] newDelCount=" + delCount + " termVisitedCount=" + termVisitedCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
         info.setBufferedDeletesGen(gen);
@@ -312,11 +324,11 @@ class BufferedUpdatesStream implements Accountable {
 
     assert checkDeleteStats();
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");
+      infoStream.message("BD", "applyDeletes took " + (System.currentTimeMillis()-t0) + " msec for " + infos.size() + " segments, " + totDelCount + " deleted docs, " + totTermVisitedCount + " visited terms");
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
 
-    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted);
+    return new ApplyDeletesResult(totDelCount > 0, gen, allDeleted);
   }
 
   synchronized long getNextGen() {
@@ -374,9 +386,23 @@ class BufferedUpdatesStream implements Accountable {
     }
   }
 
+  private static class TermDeleteCounts {
+    /** How many documents were actually deleted. */
+    public final int delCount;
+
+    /** How many terms we checked. */
+    public final long termVisitedCount;
+
+    public TermDeleteCounts(int delCount, long termVisitedCount) {
+      this.delCount = delCount;
+      this.termVisitedCount = termVisitedCount;
+    }
+  }
+
   // Delete by Term
-  private synchronized long applyTermDeletes(Iterable<Term> termsIter, ReadersAndUpdates rld, SegmentReader reader) throws IOException {
-    long delCount = 0;
+  private synchronized TermDeleteCounts applyTermDeletes(Iterable<Term> termsIter, ReadersAndUpdates rld, SegmentReader reader) throws IOException {
+    int delCount = 0;
+    long termVisitedCount = 0;
     Fields fields = reader.fields();
 
     TermsEnum termsEnum = null;
@@ -388,8 +414,10 @@ class BufferedUpdatesStream implements Accountable {
 
     boolean any = false;
 
-    //System.out.println(Thread.currentThread().getName() + " del terms reader=" + reader);
+    long ns = System.nanoTime();
+
     for (Term term : termsIter) {
+      termVisitedCount++;
       // Since we visit terms sorted, we gain performance
       // by re-using the same TermsEnum and seeking only
       // forwards
@@ -440,7 +468,7 @@ class BufferedUpdatesStream implements Accountable {
       }
     }
 
-    return delCount;
+    return new TermDeleteCounts(delCount, termVisitedCount);
   }
 
   // DocValues updates

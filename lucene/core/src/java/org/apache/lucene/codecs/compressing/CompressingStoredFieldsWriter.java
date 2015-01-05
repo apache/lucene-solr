@@ -506,7 +506,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           storedFieldsReader.visitDocument(docID, visitor);
           finishDocument();
           ++docCount;
-          mergeState.checkAbort.work(300);
         }
       } else {
         // optimized merge, we copy serialized (but decompressed) bytes directly
@@ -522,7 +521,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           numStoredFieldsInDoc = doc.numStoredFields;
           finishDocument();
           ++docCount;
-          mergeState.checkAbort.work(300);
         }
       }
     }
