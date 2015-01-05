@@ -245,7 +245,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
         }
 
       } else {
-        SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, params.toByteArray());
+        SolrResourceLoader.persistConfLocally(loader, RequestParams.RESOURCE, params.toByteArray());
         req.getCore().getSolrConfig().refreshRequestParams();
       }
 
