@@ -224,6 +224,9 @@ goto done
 
 REM Really basic command-line arg parsing
 :parse_args
+
+set "arg=%~1"
+set "firstTwo=%arg:~0,2%"
 IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
 IF [%1]==[] goto process_script_cmd
 IF "%1"=="-help" goto usage
@@ -255,6 +258,7 @@ IF "%1"=="-noprompt" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="-key" goto set_stop_key
 IF "%1"=="-all" goto set_stop_all
+IF "%firstTwo%"=="-D" goto set_passthru
 IF NOT "%1"=="" goto invalid_cmd_line
 
 :set_script_cmd
@@ -440,6 +444,17 @@ SHIFT
 SHIFT
 goto parse_args
 
+:set_passthru
+set "PASSTHRU=%~1=%~2"
+IF NOT "%SOLR_OPTS%"=="" (
+  set "SOLR_OPTS=%SOLR_OPTS% %PASSTHRU%"
+) ELSE (
+  set "SOLR_OPTS=%PASSTHRU%"
+)
+SHIFT
+SHIFT
+goto parse_args
+
 :set_noprompt
 set NO_USER_PROMPT=1
 SHIFT
@@ -535,7 +550,7 @@ IF "%SCRIPT_CMD%"=="stop" (
           for /f "tokens=2,5" %%j in ('netstat -aon ^| find /i "listening" ^| find ":!SOME_SOLR_PORT!"') do (
             @echo Stopping Solr running on port !SOME_SOLR_PORT!
             set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
-            "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+            "%JAVA%" -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
             del %SOLR_TIP%\bin\solr-!SOME_SOLR_PORT!.port
             timeout /T 5
             REM Kill it if it is still running after the graceful shutdown
@@ -553,7 +568,7 @@ IF "%SCRIPT_CMD%"=="stop" (
       set found_it=1
       @echo Stopping Solr running on port %SOLR_PORT%
       set /A STOP_PORT=%SOLR_PORT% - 1000
-      "%JAVA%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+      "%JAVA%" -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
       del %SOLR_TIP%\bin\solr-%SOLR_PORT%.port
       timeout /T 5
       REM Kill it if it is still running after the graceful shutdown
@@ -699,6 +714,10 @@ IF NOT EXIST "!SOLR_LOGS_DIR!" (
   mkdir "!SOLR_LOGS_DIR!"
 )
 
+IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
+  mkdir "%SOLR_SERVER_DIR%\tmp"
+)
+
 @echo.
 @echo Starting Solr on port %SOLR_PORT% from %SOLR_SERVER_DIR%
 @echo.
@@ -707,10 +726,10 @@ IF "%FG%"=="1" (
   title "Solr-%SOLR_PORT%"
   echo %SOLR_PORT%>%SOLR_TIP%\bin\solr-%SOLR_PORT%.port
   "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -jar start.jar
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar
 ) ELSE (
   START /B "Solr-%SOLR_PORT%" "%JAVA%" -server -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -jar start.jar > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
+    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>%SOLR_TIP%\bin\solr-%SOLR_PORT%.port
 )
 
@@ -842,8 +861,8 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
       set "DASHZ="
     )
     @echo Starting node1 on port !NODE_PORT! using command:
-    @echo solr -cloud -p !NODE_PORT! !DASHZ! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node1\solr
-    START "Solr-!NODE_PORT!" "%SDIR%\solr" -f -cloud -p !NODE_PORT! !DASHZ! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node1\solr
+    @echo solr -cloud -p !NODE_PORT! -s example\node1\solr !DASHZ! !DASHM!
+    START "Solr-!NODE_PORT!" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -s %CLOUD_EXAMPLE_DIR%\node1\solr !DASHZ! !DASHM!
     set NODE1_PORT=!NODE_PORT!
     echo !NODE_PORT!>%SOLR_TIP%\bin\solr-!NODE_PORT!.port
   ) ELSE (
@@ -852,8 +871,8 @@ for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
       set "ZK_HOST=localhost:!ZK_PORT!"
     )
     @echo Starting node%%x on port !NODE_PORT! using command:
-    @echo solr -cloud -p !NODE_PORT! -z !ZK_HOST! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node%%x\solr
-    START "Solr-!NODE_PORT!" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -z !ZK_HOST! !DASHM! -s %CLOUD_EXAMPLE_DIR%\node%%x\solr
+    @echo solr -cloud -p !NODE_PORT! -s example\node%%x\solr -z !ZK_HOST! !DASHM!
+    START "Solr-!NODE_PORT!" "%SDIR%\solr" -f -cloud -p !NODE_PORT! -s %CLOUD_EXAMPLE_DIR%\node%%x\solr -z !ZK_HOST! !DASHM!
     echo !NODE_PORT!>%SOLR_TIP%\bin\solr-!NODE_PORT!.port
   )
 
