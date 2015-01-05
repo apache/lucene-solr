@@ -419,6 +419,10 @@ Optimizations
   hl.usePhraseHighlighter, and can be more efficient handling data from term vectors.
   (David Smiley)
 
+* SOLR-6666: Dynamic copy fields are considering all dynamic fields, causing
+  a significant performance impact on indexing documents. (Liram Vardi via Erick
+  Erickson, Steve Rowe)
+
 Other Changes
 ----------------------
 
