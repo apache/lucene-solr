@@ -1138,6 +1138,7 @@ function launch_solr() {
 
   SOLR_START_OPTS="-server -Xss256k $SOLR_JAVA_MEM $GC_TUNE $GC_LOG_OPTS $REMOTE_JMX_OPTS \
  $CLOUD_MODE_OPTS \
+-Djetty.home=$SOLR_SERVER_DIR
 -DSTOP.PORT=$stop_port -DSTOP.KEY=$STOP_KEY \
 $SOLR_HOST_ARG -Djetty.port=$SOLR_PORT \
 -Dsolr.solr.home=$SOLR_HOME \

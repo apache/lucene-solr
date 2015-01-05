@@ -40,9 +40,12 @@
     <dependency org="org.eclipse.jetty" name="jetty-security" rev="${/org.eclipse.jetty/jetty-security}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-server" rev="${/org.eclipse.jetty/jetty-server}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="${/org.eclipse.jetty/jetty-servlet}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-servlets" rev="${/org.eclipse.jetty/jetty-servlets}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${/org.eclipse.jetty/jetty-webapp}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${/org.eclipse.jetty/jetty-xml}" conf="jetty"/>
+
+    <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="jetty"/>
 
     <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start"/>
 

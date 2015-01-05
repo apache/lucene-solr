@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -11,54 +11,6 @@
 
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
-    <!-- =========================================================== -->
-    <!-- Server Thread Pool                                          -->
-    <!-- =========================================================== -->
-    <Set name="ThreadPool">
-      <!-- Default queued blocking threadpool -->
-      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Set name="minThreads">10</Set>
-        <Set name="maxThreads">10000</Set>
-        <Set name="detailedDump">false</Set>
-      </New>
-    </Set>
-
-    <!-- =========================================================== -->
-    <!-- Set connectors                                              -->
-    <!-- =========================================================== -->
-
-  <!--
-    <Call name="addConnector">
-      <Arg>
-          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
-            <Set name="host"><SystemProperty name="jetty.host" /></Set>
-            <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
-            <Set name="maxIdleTime">50000</Set>
-            <Set name="Acceptors">2</Set>
-            <Set name="statsOn">false</Set>
-            <Set name="confidentialPort">8443</Set>
-	    <Set name="lowResourcesConnections">5000</Set>
-	    <Set name="lowResourcesMaxIdleTime">5000</Set>
-          </New>
-      </Arg>
-    </Call>
-  -->
-
-    <!-- This connector is currently being used for Solr because it
-          showed better performance than nio.SelectChannelConnector
-          for typical Solr requests.  -->
-    <Call name="addConnector">
-      <Arg>
-          <New class="org.eclipse.jetty.server.bio.SocketConnector">
-            <Set name="host"><SystemProperty name="jetty.host" /></Set>
-            <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
-            <Set name="maxIdleTime">50000</Set>
-            <Set name="lowResourceMaxIdleTime">1500</Set>
-            <Set name="statsOn">false</Set>
-          </New>
-      </Arg>
-    </Call>
 
     <!-- if the connector below is uncommented, then jetty will also accept SSL
          connections on port 8984, using a self signed certificate and can 
@@ -121,7 +73,7 @@
     <!-- =========================================================== -->
     <!-- Configure Request Log                                       -->
     <!-- =========================================================== -->
-    <!-- 
+    <!--
     <Ref id="Handlers">
       <Call name="addHandler">
         <Arg>
@@ -149,26 +101,28 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
-    <Set name="sendServerVersion">false</Set>
-    <Set name="sendDateHeader">false</Set>
-    <Set name="gracefulShutdown">1000</Set>
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
-
-
-
 
     <Call name="addBean">
       <Arg>
         <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
           <Set name="contexts">
-            <Ref id="Contexts" />
+            <Ref refid="Contexts" />
           </Set>
           <Call name="setContextAttribute">
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
             <Arg>.*/servlet-api-[^/]*\.jar$</Arg>
           </Call>
-          
+
+          <Call name="addAppProvider">
+            <Arg>
+              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+                <Set name="monitoredDirName"><Property name="jetty.home" default="."/>/contexts</Set>
+                <Set name="scanInterval">0</Set>
+              </New>
+            </Arg>
+          </Call>
           
           <!-- Add a customize step to the deployment lifecycle -->
           <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
@@ -190,15 +144,4 @@
       </Arg>
     </Call>
     
-    <Ref id="DeploymentManager">
-      <Call name="addAppProvider">
-        <Arg>
-          <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
-            <Set name="monitoredDirName"><SystemProperty name="jetty.home" default="."/>/contexts</Set>
-            <Set name="scanInterval">0</Set>
-          </New>
-        </Arg>
-      </Call>
-    </Ref>
-
 </Configure>

@@ -22,7 +22,9 @@ import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
@@ -225,10 +228,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       expect(request.getContentType()).andReturn( contentType ).anyTimes();
       expect(request.getQueryString()).andReturn(getParams).anyTimes();
       expect(request.getContentLength()).andReturn(postBytes.length).anyTimes();
-      expect(request.getInputStream()).andReturn(new ServletInputStream() {
-        private final ByteArrayInputStream in = new ByteArrayInputStream(postBytes);
-        @Override public int read() { return in.read(); }
-      });
+      expect(request.getInputStream()).andReturn(new ByteServletInputStream(postBytes));
       replay(request);
       
       MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
@@ -241,6 +241,39 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertEquals( "contentType: "+contentType, "hello", p.get("q") );
       assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt") );
       assertArrayEquals( "contentType: "+contentType, new String[]{"foo","bar"}, p.getParams("dup") );
+    }
+  }
+
+  static class ByteServletInputStream extends ServletInputStream  {
+    final BufferedInputStream in;
+    final int len;
+    int readCount = 0;
+
+    public ByteServletInputStream(byte[] data) {
+      this.len = data.length;
+      this.in = new BufferedInputStream(new ByteArrayInputStream(data));
+    }
+
+    @Override
+    public boolean isFinished() {
+      return readCount == len;
+    }
+
+    @Override
+    public boolean isReady() {
+      return true;
+    }
+
+    @Override
+    public void setReadListener(ReadListener readListener) {
+      throw new IllegalStateException("Not supported");
+    }
+
+    @Override
+    public int read() throws IOException {
+      int read = in.read();
+      readCount += read;
+      return read;
     }
   }
   
@@ -257,10 +290,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getContentType()).andReturn( contentType ).anyTimes();
     expect(request.getQueryString()).andReturn(getParams).anyTimes();
     expect(request.getContentLength()).andReturn(postBytes.length).anyTimes();
-    expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      private final ByteArrayInputStream in = new ByteArrayInputStream(postBytes);
-      @Override public int read() { return in.read(); }
-    });
+    expect(request.getInputStream()).andReturn(new ByteServletInputStream(postBytes));
     replay(request);
     
     MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
@@ -292,10 +322,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     // we dont pass a content-length to let the security mechanism limit it:
     expect(request.getContentLength()).andReturn(-1).anyTimes();
     expect(request.getQueryString()).andReturn(null).anyTimes();
-    expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes(StandardCharsets.US_ASCII));
-      @Override public int read() { return in.read(); }
-    });
+    expect(request.getInputStream()).andReturn(new ByteServletInputStream(large.toString().getBytes(StandardCharsets.US_ASCII)));
     replay(request);
     
     FormDataRequestParser formdata = new FormDataRequestParser( limitKBytes );    
@@ -319,6 +346,21 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     // we emulate Jetty that returns empty stream when parameters were parsed before:
     expect(request.getInputStream()).andReturn(new ServletInputStream() {
       @Override public int read() { return -1; }
+
+      @Override
+      public boolean isFinished() {
+        return true;
+      }
+
+      @Override
+      public boolean isReady() {
+        return true;
+      }
+
+      @Override
+      public void setReadListener(ReadListener readListener) {
+
+      }
     });
     replay(request);
     

@@ -1036,7 +1036,6 @@
                 <propertyref prefix="tests.badapples" />
                 <propertyref prefix="tests.bwcdir" />
                 <propertyref prefix="tests.timeoutSuite" />
-                <propertyref prefix="tests.jettyConnector" />
                 <propertyref prefix="tests.disableHdfs" />
                 <propertyref prefix="tests.filter" />
                 <propertyref prefix="tests.leavetmpdir" />

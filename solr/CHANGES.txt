@@ -62,6 +62,7 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
+Jetty 9.2.6.v20141205
 
 Upgrading from Solr 4.x
 ----------------------
@@ -625,6 +626,9 @@ Other Changes
 
 * SOLR-6905: Test pseudo-field retrieval in distributed search.
   (Ramkumar Aiyengar via shalin)
+
+* SOLR-4839: Upgrade Jetty to 9.2.6.v20141205 and restlet-jee to 2.3.0
+  (Bill Bell, Timothy Potter, Uwe Schindler, shalin)
 
 ==================  4.10.3 ==================
 
