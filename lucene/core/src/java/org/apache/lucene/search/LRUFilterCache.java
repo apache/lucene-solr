@@ -49,6 +49,38 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * {@link FilterCachingPolicy caching policies} that only cache on "large"
  * segments, and it is advised to not share this cache across too many indices.
  *
+ * Typical usage looks like this:
+ * <pre class="prettyprint">
+ *   final int maxNumberOfCachedFilters = 256;
+ *   final long maxRamBytesUsed = 50 * 1024L * 1024L; // 50MB
+ *   // these cache and policy instances can be shared across several filters and readers
+ *   // it is fine to eg. store them into static variables
+ *   final FilterCache filterCache = new LRUFilterCache(maxNumberOfCachedFilters, maxRamBytesUsed);
+ *   final FilterCachingPolicy defaultCachingPolicy = new UsageTrackingFilterCachingPolicy();
+ *   
+ *   // ...
+ *   
+ *   // Then at search time
+ *   Filter myFilter = ...;
+ *   Filter myCacheFilter = filterCache.doCache(myFilter, defaultCachingPolicy);
+ *   // myCacheFilter is now a wrapper around the original filter that will interact with the cache
+ *   IndexSearcher searcher = ...;
+ *   TopDocs topDocs = searcher.search(new ConstantScoreQuery(myCacheFilter), 10);
+ * </pre>
+ *
+ * This cache exposes some global statistics ({@link #getHitCount() hit count},
+ * {@link #getMissCount() miss count}, {@link #getCacheSize() number of cache
+ * entries}, {@link #getCacheCount() total number of DocIdSets that have ever
+ * been cached}, {@link #getEvictionCount() number of evicted entries}). In
+ * case you would like to have more fine-grained statistics, such as per-index
+ * or per-filter-class statistics, it is possible to override various callbacks:
+ * {@link #onHit}, {@link #onMiss},
+ * {@link #onFilterCache}, {@link #onFilterEviction},
+ * {@link #onDocIdSetCache}, {@link #onDocIdSetEviction} and {@link #onClear}.
+ * It is better to not perform heavy computations in these methods though since
+ * they are called synchronously and under a lock.
+ *
+ * @see FilterCachingPolicy
  * @lucene.experimental
  */
 public class LRUFilterCache implements FilterCache, Accountable {
@@ -96,6 +128,80 @@ public class LRUFilterCache implements FilterCache, Accountable {
     ramBytesUsed = 0;
   }
 
+  /**
+   * Expert: callback when there is a cache hit on a given filter.
+   * Implementing this method is typically useful in order to compute more
+   * fine-grained statistics about the filter cache.
+   * @see #onMiss
+   * @lucene.experimental
+   */
+  protected void onHit(Object readerCoreKey, Filter filter) {
+    hitCount += 1;
+  }
+
+  /**
+   * Expert: callback when there is a cache miss on a given filter.
+   * @see #onHit
+   * @lucene.experimental
+   */
+  protected void onMiss(Object readerCoreKey, Filter filter) {
+    assert filter != null;
+    missCount += 1;
+  }
+
+  /**
+   * Expert: callback when a filter is added to this cache.
+   * Implementing this method is typically useful in order to compute more
+   * fine-grained statistics about the filter cache.
+   * @see #onFilterEviction
+   * @lucene.experimental
+   */
+  protected void onFilterCache(Filter filter, long ramBytesUsed) {
+    this.ramBytesUsed += ramBytesUsed;
+  }
+
+  /**
+   * Expert: callback when a filter is evicted from this cache.
+   * @see #onFilterCache
+   * @lucene.experimental
+   */
+  protected void onFilterEviction(Filter filter, long ramBytesUsed) {
+    this.ramBytesUsed -= ramBytesUsed;
+  }
+
+  /**
+   * Expert: callback when a {@link DocIdSet} is added to this cache.
+   * Implementing this method is typically useful in order to compute more
+   * fine-grained statistics about the filter cache.
+   * @see #onDocIdSetEviction
+   * @lucene.experimental
+   */
+  protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
+    cacheSize += 1;
+    cacheCount += 1;
+    this.ramBytesUsed += ramBytesUsed;
+  }
+  
+  /**
+   * Expert: callback when one or more {@link DocIdSet}s are removed from this
+   * cache.
+   * @see #onDocIdSetCache
+   * @lucene.experimental
+   */
+  protected void onDocIdSetEviction(Object readerCoreKey, int numEntries, long sumRamBytesUsed) {
+    this.ramBytesUsed -= sumRamBytesUsed;
+    cacheSize -= numEntries;
+  }
+
+  /**
+   * Expert: callback when the cache is completely cleared.
+   * @lucene.experimental
+   */
+  protected void onClear() {
+    ramBytesUsed = 0;
+    cacheSize = 0;
+  }
+
   /** Whether evictions are required. */
   boolean requiresEviction() {
     final int size = mostRecentlyUsedFilters.size();
@@ -107,22 +213,23 @@ public class LRUFilterCache implements FilterCache, Accountable {
   }
 
   synchronized DocIdSet get(Filter filter, LeafReaderContext context) {
-    final LeafCache leafCache = cache.get(context.reader().getCoreCacheKey());
+    final Object readerKey = context.reader().getCoreCacheKey();
+    final LeafCache leafCache = cache.get(readerKey);
     if (leafCache == null) {
-      missCount += 1;
+      onMiss(readerKey, filter);
       return null;
     }
     // this get call moves the filter to the most-recently-used position
     final Filter singleton = uniqueFilters.get(filter);
     if (singleton == null) {
-      missCount += 1;
+      onMiss(readerKey, filter);
       return null;
     }
     final DocIdSet cached = leafCache.get(singleton);
     if (cached == null) {
-      missCount += 1;
+      onMiss(readerKey, singleton);
     } else {
-      hitCount += 1;
+      onHit(readerKey, singleton);
     }
     return cached;
   }
@@ -133,13 +240,14 @@ public class LRUFilterCache implements FilterCache, Accountable {
     Filter singleton = uniqueFilters.get(filter);
     if (singleton == null) {
       uniqueFilters.put(filter, filter);
-      ramBytesUsed += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(filter);
+      onFilterCache(singleton, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(filter));
     } else {
       filter = singleton;
     }
-    LeafCache leafCache = cache.get(context.reader().getCoreCacheKey());
+    final Object key = context.reader().getCoreCacheKey();
+    LeafCache leafCache = cache.get(key);
     if (leafCache == null) {
-      leafCache = new LeafCache();
+      leafCache = new LeafCache(key);
       final LeafCache previous = cache.put(context.reader().getCoreCacheKey(), leafCache);
       ramBytesUsed += HASHTABLE_RAM_BYTES_PER_ENTRY;
       assert previous == null;
@@ -173,8 +281,8 @@ public class LRUFilterCache implements FilterCache, Accountable {
   public synchronized void clearCoreCacheKey(Object coreKey) {
     final LeafCache leafCache = cache.remove(coreKey);
     if (leafCache != null) {
-      ramBytesUsed -= leafCache.ramBytesUsed + HASHTABLE_RAM_BYTES_PER_ENTRY;
-      cacheSize -= leafCache.cache.size();
+      ramBytesUsed -= HASHTABLE_RAM_BYTES_PER_ENTRY;
+      onDocIdSetEviction(coreKey, leafCache.cache.size(), leafCache.ramBytesUsed);
     }
   }
 
@@ -189,7 +297,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
   }
 
   private void onEviction(Filter singleton) {
-    ramBytesUsed -= LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(singleton);
+    onFilterEviction(singleton, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(singleton));
     for (LeafCache leafCache : cache.values()) {
       leafCache.remove(singleton);
     }
@@ -201,8 +309,7 @@ public class LRUFilterCache implements FilterCache, Accountable {
   public synchronized void clear() {
     cache.clear();
     mostRecentlyUsedFilters.clear();
-    ramBytesUsed = 0;
-    cacheSize = 0;
+    onClear();
   }
 
   // pkg-private for testing
@@ -389,17 +496,24 @@ public class LRUFilterCache implements FilterCache, Accountable {
   // this class is not thread-safe, everything but ramBytesUsed needs to be called under a lock
   private class LeafCache implements Accountable {
 
+    private final Object key;
     private final Map<Filter, DocIdSet> cache;
     private volatile long ramBytesUsed;
 
-    LeafCache() {
+    LeafCache(Object key) {
+      this.key = key;
       cache = new IdentityHashMap<>();
       ramBytesUsed = 0;
     }
 
-    private void incrementRamBytesUsed(long inc) {
-      ramBytesUsed += inc;
-      LRUFilterCache.this.ramBytesUsed += inc;
+    private void onDocIdSetCache(long ramBytesUsed) {
+      this.ramBytesUsed += ramBytesUsed;
+      LRUFilterCache.this.onDocIdSetCache(key, ramBytesUsed);
+    }
+
+    private void onDocIdSetEviction(long ramBytesUsed) {
+      this.ramBytesUsed -= ramBytesUsed;
+      LRUFilterCache.this.onDocIdSetEviction(key, 1, ramBytesUsed);
     }
 
     DocIdSet get(Filter filter) {
@@ -409,17 +523,14 @@ public class LRUFilterCache implements FilterCache, Accountable {
     void putIfAbsent(Filter filter, DocIdSet set) {
       if (cache.containsKey(filter) == false) {
         cache.put(filter, set);
-        cacheCount += 1;
-        cacheSize += 1;
-        incrementRamBytesUsed(HASHTABLE_RAM_BYTES_PER_ENTRY + set.ramBytesUsed());
+        onDocIdSetCache(HASHTABLE_RAM_BYTES_PER_ENTRY + set.ramBytesUsed());
       }
     }
 
     void remove(Filter filter) {
       DocIdSet removed = cache.remove(filter);
       if (removed != null) {
-        cacheSize -= 1;
-        incrementRamBytesUsed(-(HASHTABLE_RAM_BYTES_PER_ENTRY + removed.ramBytesUsed()));
+        onDocIdSetEviction(HASHTABLE_RAM_BYTES_PER_ENTRY + removed.ramBytesUsed());
       }
     }
 
