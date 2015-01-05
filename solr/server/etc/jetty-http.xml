@@ -49,7 +49,7 @@
             </Item>
           </Array>
         </Arg>
-        <Set name="port"><Property name="jetty.port" /></Set>
+        <Set name="port"><Property name="jetty.port" default="8983" /></Set>
         <Set name="host"><Property name="jetty.host" /></Set>
       </New>
     </Arg>
