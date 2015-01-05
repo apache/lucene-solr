@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 /**
  * A cache for filters.
  *
+ * @see LRUFilterCache
  * @lucene.experimental
  */
 public interface FilterCache {

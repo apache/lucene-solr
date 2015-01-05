@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.document.Document;
@@ -542,6 +543,171 @@ public class TestLRUFilterCache extends LuceneTestCase {
     assertEquals(0, filterCache.getCacheSize());
 
     dir.close();
+  }
+
+  public void testFineGrainedStats() throws IOException {
+    Directory dir1 = newDirectory();
+    final RandomIndexWriter w1 = new RandomIndexWriter(random(), dir1);
+    Directory dir2 = newDirectory();
+    final RandomIndexWriter w2 = new RandomIndexWriter(random(), dir2);
+
+    final List<String> colors = Arrays.asList("blue", "red", "green", "yellow");
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "", Store.NO);
+    doc.add(f);
+    for (RandomIndexWriter w : Arrays.asList(w1, w2)) {
+      for (int i = 0; i < 10; ++i) {
+        f.setStringValue(RandomPicks.randomFrom(random(), colors));
+        w.addDocument(doc);
+        if (random().nextBoolean()) {
+          w.getReader().close();
+        }
+      }
+    }
+
+    final DirectoryReader reader1 = w1.getReader();
+    final int segmentCount1 = reader1.leaves().size();
+    final IndexSearcher searcher1 = new IndexSearcher(reader1);
+
+    final DirectoryReader reader2 = w2.getReader();
+    final int segmentCount2 = reader2.leaves().size();
+    final IndexSearcher searcher2 = new IndexSearcher(reader2);
+
+    final Map<Object, Integer> indexId = new HashMap<>();
+    for (LeafReaderContext ctx : reader1.leaves()) {
+      indexId.put(ctx.reader().getCoreCacheKey(), 1);
+    }
+    for (LeafReaderContext ctx : reader2.leaves()) {
+      indexId.put(ctx.reader().getCoreCacheKey(), 2);
+    }
+
+    final AtomicLong hitCount1 = new AtomicLong();
+    final AtomicLong hitCount2 = new AtomicLong();
+    final AtomicLong missCount1 = new AtomicLong();
+    final AtomicLong missCount2 = new AtomicLong();
+
+    final AtomicLong ramBytesUsage = new AtomicLong();
+    final AtomicLong cacheSize = new AtomicLong();
+
+    final LRUFilterCache filterCache = new LRUFilterCache(2, 10000000) {
+      @Override
+      protected void onHit(Object readerCoreKey, Filter filter) {
+        super.onHit(readerCoreKey, filter);
+        switch(indexId.get(readerCoreKey).intValue()) {
+          case 1:
+            hitCount1.incrementAndGet();
+            break;
+          case 2:
+            hitCount2.incrementAndGet();
+            break;
+          default:
+            throw new AssertionError();
+        }
+      }
+
+      @Override
+      protected void onMiss(Object readerCoreKey, Filter filter) {
+        super.onMiss(readerCoreKey, filter);
+        switch(indexId.get(readerCoreKey).intValue()) {
+          case 1:
+            missCount1.incrementAndGet();
+            break;
+          case 2:
+            missCount2.incrementAndGet();
+            break;
+          default:
+            throw new AssertionError();
+        }
+      }
+
+      @Override
+      protected void onFilterCache(Filter filter, long ramBytesUsed) {
+        super.onFilterCache(filter, ramBytesUsed);
+        ramBytesUsage.addAndGet(ramBytesUsed);
+      }
+
+      @Override
+      protected void onFilterEviction(Filter filter, long ramBytesUsed) {
+        super.onFilterEviction(filter, ramBytesUsed);
+        ramBytesUsage.addAndGet(-ramBytesUsed);
+      }
+
+      @Override
+      protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
+        super.onDocIdSetCache(readerCoreKey, ramBytesUsed);
+        ramBytesUsage.addAndGet(ramBytesUsed);
+        cacheSize.incrementAndGet();
+      }
+
+      @Override
+      protected void onDocIdSetEviction(Object readerCoreKey, int numEntries, long sumRamBytesUsed) {
+        super.onDocIdSetEviction(readerCoreKey, numEntries, sumRamBytesUsed);
+        ramBytesUsage.addAndGet(-sumRamBytesUsed);
+        cacheSize.addAndGet(-numEntries);
+      }
+
+      @Override
+      protected void onClear() {
+        super.onClear();
+        ramBytesUsage.set(0);
+        cacheSize.set(0);
+      }
+    };
+
+    final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("color", "red")));
+    final Filter filter2 = new QueryWrapperFilter(new TermQuery(new Term("color", "blue")));
+    final Filter filter3 = new QueryWrapperFilter(new TermQuery(new Term("color", "green")));
+
+    // search on searcher1
+    Filter cached = filterCache.doCache(filter, FilterCachingPolicy.ALWAYS_CACHE);
+    for (int i = 0; i < 10; ++i) {
+      searcher1.search(new ConstantScoreQuery(cached), 1);
+    }
+    assertEquals(9 * segmentCount1, hitCount1.longValue());
+    assertEquals(0, hitCount2.longValue());
+    assertEquals(segmentCount1, missCount1.longValue());
+    assertEquals(0, missCount2.longValue());
+
+    // then on searcher2
+    cached = filterCache.doCache(filter2, FilterCachingPolicy.ALWAYS_CACHE);
+    for (int i = 0; i < 20; ++i) {
+      searcher2.search(new ConstantScoreQuery(cached), 1);
+    }
+    assertEquals(9 * segmentCount1, hitCount1.longValue());
+    assertEquals(19 * segmentCount2, hitCount2.longValue());
+    assertEquals(segmentCount1, missCount1.longValue());
+    assertEquals(segmentCount2, missCount2.longValue());
+
+    // now on searcher1 again to trigger evictions
+    cached = filterCache.doCache(filter3, FilterCachingPolicy.ALWAYS_CACHE);
+    for (int i = 0; i < 30; ++i) {
+      searcher1.search(new ConstantScoreQuery(cached), 1);
+    }
+    assertEquals(segmentCount1, filterCache.getEvictionCount());
+    assertEquals(38 * segmentCount1, hitCount1.longValue());
+    assertEquals(19 * segmentCount2, hitCount2.longValue());
+    assertEquals(2 * segmentCount1, missCount1.longValue());
+    assertEquals(segmentCount2, missCount2.longValue());
+
+    // check that the recomputed stats are the same as those reported by the cache
+    assertEquals(filterCache.ramBytesUsed(), (segmentCount1 + segmentCount2) * LRUFilterCache.HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsage.longValue());
+    assertEquals(filterCache.getCacheSize(), cacheSize.longValue());
+
+    reader1.close();
+    reader2.close();
+    w1.close();
+    w2.close();
+
+    assertEquals(filterCache.ramBytesUsed(), ramBytesUsage.longValue());
+    assertEquals(0, cacheSize.longValue());
+
+    filterCache.clear();
+    assertEquals(0, ramBytesUsage.longValue());
+    assertEquals(0, cacheSize.longValue());
+
+    dir1.close();
+    dir2.close();
   }
 
 }
