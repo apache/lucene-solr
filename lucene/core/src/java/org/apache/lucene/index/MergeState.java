@@ -28,7 +28,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
@@ -76,19 +75,11 @@ public class MergeState {
   /** Max docs per reader */
   public final int[] maxDocs;
 
-  /** Holds the CheckAbort instance, which is invoked
-   *  periodically to see if the merge has been aborted. */
-  public final CheckAbort checkAbort;
-
   /** InfoStream for debugging messages. */
   public final InfoStream infoStream;
 
-  /** Counter used for periodic calls to checkAbort
-   * @lucene.internal */
-  public int checkAbortCount;
-
   /** Sole constructor. */
-  MergeState(List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) throws IOException {
+  MergeState(List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream) throws IOException {
 
     int numReaders = readers.size();
     docMaps = new DocMap[numReaders];
@@ -151,7 +142,6 @@ public class MergeState {
 
     this.segmentInfo = segmentInfo;
     this.infoStream = infoStream;
-    this.checkAbort = checkAbort;
 
     setDocMaps(readers);
   }
@@ -360,47 +350,6 @@ public class MergeState {
 
     segmentInfo.setDocCount(docBase);
   }
-
-  /**
-   * Class for recording units of work when merging segments.
-   */
-  public static class CheckAbort {
-    private double workCount;
-    private final MergePolicy.OneMerge merge;
-    private final Directory dir;
-
-    /** Creates a #CheckAbort instance. */
-    public CheckAbort(MergePolicy.OneMerge merge, Directory dir) {
-      this.merge = merge;
-      this.dir = dir;
-    }
-
-    /**
-     * Records the fact that roughly units amount of work
-     * have been done since this method was last called.
-     * When adding time-consuming code into SegmentMerger,
-     * you should test different values for units to ensure
-     * that the time in between calls to merge.checkAborted
-     * is up to ~ 1 second.
-     */
-    public void work(double units) throws MergePolicy.MergeAbortedException {
-      workCount += units;
-      if (workCount >= 10000.0) {
-        merge.checkAborted(dir);
-        workCount = 0;
-      }
-    }
-
-    /** If you use this: IW.close(false) cannot abort your merge!
-     * @lucene.internal */
-    static final MergeState.CheckAbort NONE = new MergeState.CheckAbort(null, null) {
-      @Override
-      public void work(double units) {
-        // do nothing
-      }
-    };
-  }
-
 
   /**
    * Remaps docids around deletes during merge

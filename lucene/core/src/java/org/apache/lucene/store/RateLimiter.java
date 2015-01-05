@@ -17,6 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Abstract base class to rate limit IO.  Typically implementations are
@@ -27,14 +29,14 @@ import org.apache.lucene.util.ThreadInterruptedException;
 public abstract class RateLimiter {
 
   /**
-   * Sets an updated mb per second rate limit.
+   * Sets an updated MB per second rate limit.
    */
-  public abstract void setMbPerSec(double mbPerSec);
+  public abstract void setMBPerSec(double mbPerSec);
 
   /**
-   * The current mb per second rate limit.
+   * The current MB per second rate limit.
    */
-  public abstract double getMbPerSec();
+  public abstract double getMBPerSec();
   
   /** Pauses, if necessary, to keep the instantaneous IO
    *  rate at or below the target. 
@@ -43,7 +45,7 @@ public abstract class RateLimiter {
    *  </p>
    *  @return the pause time in nano seconds 
    * */
-  public abstract long pause(long bytes);
+  public abstract long pause(long bytes) throws IOException;
   
   /** How many bytes caller should add up itself before invoking {@link #pause}. */
   public abstract long getMinPauseCheckBytes();
@@ -65,7 +67,7 @@ public abstract class RateLimiter {
 
     /** mbPerSec is the MB/sec max IO rate */
     public SimpleRateLimiter(double mbPerSec) {
-      setMbPerSec(mbPerSec);
+      setMBPerSec(mbPerSec);
       lastNS = System.nanoTime();
     }
 
@@ -73,7 +75,7 @@ public abstract class RateLimiter {
      * Sets an updated mb per second rate limit.
      */
     @Override
-    public void setMbPerSec(double mbPerSec) {
+    public void setMBPerSec(double mbPerSec) {
       this.mbPerSec = mbPerSec;
       minPauseCheckBytes = (long) ((MIN_PAUSE_CHECK_MSEC / 1000.0) * mbPerSec * 1024 * 1024);
     }
@@ -87,7 +89,7 @@ public abstract class RateLimiter {
      * The current mb per second rate limit.
      */
     @Override
-    public double getMbPerSec() {
+    public double getMBPerSec() {
       return this.mbPerSec;
     }
     

@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -45,12 +44,11 @@ public final class Lucene40CompoundFormat extends CompoundFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, Collection<String> files, CheckAbort checkAbort, IOContext context) throws IOException {
+  public void write(Directory dir, SegmentInfo si, Collection<String> files, IOContext context) throws IOException {
     String fileName = IndexFileNames.segmentFileName(si.name, "", COMPOUND_FILE_EXTENSION);
     try (Directory cfs = new Lucene40CompoundReader(dir, fileName, context, true)) {
       for (String file : files) {
         cfs.copyFrom(dir, file, file, context);
-        checkAbort.work(dir.fileLength(file));
       }
     }
   }

@@ -98,7 +98,6 @@ public abstract class StoredFieldsWriter implements Closeable {
         storedFieldsReader.visitDocument(docID, visitor);
         finishDocument();
         docCount++;
-        mergeState.checkAbort.work(300);
       }
     }
     finish(mergeState.mergeFieldInfos, docCount);

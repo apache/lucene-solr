@@ -432,7 +432,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     if (ms instanceof ConcurrentMergeScheduler) {
       final ConcurrentMergeScheduler suppressFakeFail = new ConcurrentMergeScheduler() {
           @Override
-          protected void handleMergeException(Throwable exc) {
+          protected void handleMergeException(Directory dir, Throwable exc) {
             // suppress only FakeIOException:
             if (exc instanceof RuntimeException && exc.getMessage().equals("fake fail")) {
               // ok to ignore
@@ -440,13 +440,12 @@ public class TestIndexFileDeleter extends LuceneTestCase {
                         && exc.getCause() != null && "fake fail".equals(exc.getCause().getMessage())) {
               // also ok to ignore
             } else {
-              super.handleMergeException(exc);
+              super.handleMergeException(dir, exc);
             }
           }
         };
       final ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) ms;
       suppressFakeFail.setMaxMergesAndThreads(cms.getMaxMergeCount(), cms.getMaxThreadCount());
-      suppressFakeFail.setMergeThreadPriority(cms.getMergeThreadPriority());
       iwc.setMergeScheduler(suppressFakeFail);
     }
 

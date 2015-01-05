@@ -28,7 +28,6 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
@@ -113,8 +112,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
    * carefully - some Directory wrappers will
    * cache files for example.
    * 
-   * This implementation works with two wrappers:
-   * NRTCachingDirectory and RateLimitedDirectoryWrapper.
+   * This implementation works with NRTCachingDirectory.
    * 
    * You should first {@link Directory#sync(java.util.Collection)} any file that will be 
    * moved or avoid cached files through settings.
@@ -143,13 +141,11 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     super.move(fromDir, toDir, fileName, ioContext);
   }
 
-  // special hack to work with NRTCachingDirectory and RateLimitedDirectoryWrapper
+  // special hack to work with NRTCachingDirectory
   private Directory getBaseDir(Directory dir) {
     Directory baseDir;
     if (dir instanceof NRTCachingDirectory) {
       baseDir = ((NRTCachingDirectory)dir).getDelegate();
-    } else if (dir instanceof RateLimitedDirectoryWrapper) {
-      baseDir = ((RateLimitedDirectoryWrapper)dir).getDelegate();
     } else {
       baseDir = dir;
     }

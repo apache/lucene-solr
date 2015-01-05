@@ -19,7 +19,10 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -32,6 +35,8 @@ public class PrintStreamInfoStream extends InfoStream {
   // Used for printing messages
   private static final AtomicInteger MESSAGE_ID = new AtomicInteger();
   protected final int messageID;
+
+  private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT);
   
   protected final PrintStream stream;
   
@@ -46,7 +51,7 @@ public class PrintStreamInfoStream extends InfoStream {
   
   @Override
   public void message(String component, String message) {
-    stream.println(component + " " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);    
+    stream.println(component + " " + messageID + " [" + dateFormat.format(new Date()) + "; " + Thread.currentThread().getName() + "]: " + message);    
   }
 
   @Override

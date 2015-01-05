@@ -568,7 +568,7 @@ public class TieredMergePolicy extends MergePolicy {
       final int numToMerge = end - maxSegmentCount + 1;
       final OneMerge merge = new OneMerge(eligible.subList(end-numToMerge, end));
       if (verbose(writer)) {
-        message("add final merge=" + merge.segString(writer.getDirectory()), writer);
+        message("add final merge=" + merge.segString(), writer);
       }
       spec = new MergeSpecification();
       spec.add(merge);

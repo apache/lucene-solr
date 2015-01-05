@@ -2485,7 +2485,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
         @Override
-        public void doMerge(MergePolicy.OneMerge merge) throws IOException {
+        public void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
           mergeStarted.countDown();
           try {
             closeStarted.await();
@@ -2493,7 +2493,7 @@ public class TestIndexWriter extends LuceneTestCase {
             Thread.currentThread().interrupt();
             throw new RuntimeException(ie);
           }
-          super.doMerge(merge);
+          super.doMerge(writer, merge);
         }
 
         @Override

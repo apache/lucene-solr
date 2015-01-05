@@ -17,8 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.MultiDocsAndPositionsEnum.EnumWithSlice;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -97,13 +97,6 @@ final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
       int doc = current.nextDoc();
       if (doc != NO_MORE_DOCS) {
-
-        mergeState.checkAbortCount++;
-        if (mergeState.checkAbortCount > 60000) {
-          mergeState.checkAbort.work(mergeState.checkAbortCount/5.0);
-          mergeState.checkAbortCount = 0;
-        }
-
         // compact deletions
         doc = currentMap.get(doc);
         if (doc == -1) {
