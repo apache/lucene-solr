@@ -829,10 +829,10 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
-    File managedSchemaFile = new File(loader.getConfigDir(), resourceName);
+    File confFile = new File(loader.getConfigDir(), resourceName);
     OutputStreamWriter writer = null;
     try {
-      File parentDir = managedSchemaFile.getParentFile();
+      File parentDir = confFile.getParentFile();
       if ( ! parentDir.isDirectory()) {
         if ( ! parentDir.mkdirs()) {
           final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
@@ -840,19 +840,19 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
       }
-      final FileOutputStream out = new FileOutputStream(managedSchemaFile);
+      final FileOutputStream out = new FileOutputStream(confFile);
       out.write(content);
-      log.info("Upgraded to managed schema at " + managedSchemaFile.getPath());
+      log.info("Written confile " + resourceName);
     } catch (IOException e) {
-      final String msg = "Error persisting managed schema " + managedSchemaFile;
+      final String msg = "Error persisting conf file " + resourceName;
       log.error(msg, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
     } finally {
       org.apache.commons.io.IOUtils.closeQuietly(writer);
       try {
-        FileUtils.sync(managedSchemaFile);
+        FileUtils.sync(confFile);
       } catch (IOException e) {
-        final String msg = "Error syncing the managed schema file " + managedSchemaFile;
+        final String msg = "Error syncing conf file " + resourceName;
         log.error(msg, e);
       }
     }

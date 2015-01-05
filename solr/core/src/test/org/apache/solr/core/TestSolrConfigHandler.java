@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,9 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.util.RestTestBase;
@@ -229,6 +233,208 @@ public class TestSolrConfigHandler extends RestTestBase {
     }
 
     assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, new String(ZkStateReader.toJSON(m), StandardCharsets.UTF_8)), success);
+  }
+
+  public void testReqParams() throws Exception{
+    RestTestHarness harness = restTestHarness;
+    String payload = " {\n" +
+        "  'set' : {'x': {" +
+        "                    'a':'A val',\n" +
+        "                    'b': 'B val'}\n" +
+        "             }\n" +
+        "  }";
+
+
+    TestSolrConfigHandler.runConfigCommand(harness,"/config/params?wt=json", payload);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "x", "a"),
+        "A val",
+        10);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "x", "b"),
+        "B val",
+        10);
+
+    payload = "{\n" +
+        "'create-requesthandler' : { 'name' : '/dump', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
+        "}";
+
+    TestSolrConfigHandler.runConfigCommand(harness, "/config?wt=json", payload);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/overlay?wt=json",
+        null,
+        Arrays.asList("overlay", "requestHandler", "/dump", "name"),
+        "/dump",
+        10);
+
+    TestSolrConfigHandler.testForResponseElement(harness,
+        null,
+        "/dump?wt=json&useParams=x",
+        null,
+        Arrays.asList("params", "a"),
+        "A val",
+        5);
+    TestSolrConfigHandler.testForResponseElement(harness,
+        null,
+        "/dump?wt=json&useParams=x&a=fomrequest",
+        null,
+        Arrays.asList("params", "a"),
+        "fomrequest",
+        5);
+
+    payload = "{\n" +
+        "'create-requesthandler' : { 'name' : '/dump1', 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
+        "}";
+
+    TestSolrConfigHandler.runConfigCommand(harness,"/config?wt=json", payload);
+
+    TestSolrConfigHandler.testForResponseElement(harness,
+        null,
+        "/config/overlay?wt=json",
+        null,
+        Arrays.asList("overlay", "requestHandler", "/dump1", "name"),
+        "/dump1",
+        10);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/dump1?wt=json",
+        null,
+        Arrays.asList("params", "a"),
+        "A val",
+        5);
+
+
+
+    payload = " {\n" +
+        "  'set' : {'y':{\n" +
+        "                'c':'CY val',\n" +
+        "                'b': 'BY val'}\n" +
+        "             }\n" +
+        "  }";
+
+
+    TestSolrConfigHandler.runConfigCommand(harness,"/config/params?wt=json", payload);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "y", "c"),
+        "CY val",
+        10);
+
+    TestSolrConfigHandler.testForResponseElement(harness,
+        null,
+        "/dump?wt=json&useParams=y",
+        null,
+        Arrays.asList("params", "c"),
+        "CY val",
+        5);
+
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/dump1?wt=json&useParams=y",
+        null,
+        Arrays.asList("params", "b"),
+        "BY val",
+        5);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/dump1?wt=json&useParams=y",
+        null,
+        Arrays.asList("params", "a"),
+        null,
+        5);
+
+    payload = " {\n" +
+        "  'update' : {'y': {\n" +
+        "                'c':'CY val modified',\n" +
+        "                'e':'EY val',\n" +
+        "                'b': 'BY val'" +
+        "}\n" +
+        "             }\n" +
+        "  }";
+
+
+    TestSolrConfigHandler.runConfigCommand(harness,"/config/params?wt=json", payload);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "y", "c"),
+        "CY val modified",
+        10);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "y", "e"),
+        "EY val",
+        10);
+
+    payload = " {\n" +
+        "  'set' : {'y': {\n" +
+        "                'p':'P val',\n" +
+        "                'q': 'Q val'" +
+        "}\n" +
+        "             }\n" +
+        "  }";
+
+
+    TestSolrConfigHandler.runConfigCommand(harness,"/config/params?wt=json", payload);
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "y", "p"),
+        "P val",
+        10);
+
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "y", "c"),
+        null,
+        10);
+    payload = " {'delete' : 'y'}";
+    TestSolrConfigHandler.runConfigCommand(harness,"/config/params?wt=json", payload);
+    TestSolrConfigHandler.testForResponseElement(
+        harness,
+        null,
+        "/config/params?wt=json",
+        null,
+        Arrays.asList("response", "params", "y", "p"),
+        null,
+        10);
+
+
   }
 
 

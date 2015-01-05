@@ -135,9 +135,9 @@ public class RequestParams implements MapSerializable{
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
-    } else if(requestParams == null) {
+    } else  {
       Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
-      requestParams = new RequestParams((Map) o[0],(Integer)o[1]);
+      requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
     }
 
     return requestParams;
