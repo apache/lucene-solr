@@ -17,6 +17,8 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,10 +30,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockPayloadAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -44,19 +53,42 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
-import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
 import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
 import org.apache.lucene.search.join.BitDocIdSetFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
-import org.apache.lucene.search.spans.*;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanNotQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanPayloadCheckQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -1890,7 +1922,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     reader.close();
   }
 
-  /** If we have term vectors, we can highlight based on payloads */
+  /** We can highlight based on payloads. It's supported both via term vectors and MemoryIndex since Lucene 5. */
   public void testPayloadQuery() throws IOException, InvalidTokenOffsetsException {
     final String text = "random words and words";//"words" at positions 1 & 4
 
@@ -1899,7 +1931,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       writer.deleteAll();
       Document doc = new Document();
 
-      doc.add(new Field(FIELD_NAME, text, FIELD_TYPE_TV));
+      doc.add(new Field(FIELD_NAME, text, fieldType));
       writer.addDocument(doc);
       writer.commit();
     }
@@ -1907,12 +1939,16 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       Query query = new SpanPayloadCheckQuery(new SpanTermQuery(new Term(FIELD_NAME, "words")),
           Collections.singleton("pos: 1".getBytes("UTF-8")));//just match the first "word" occurrence
       IndexSearcher searcher = newSearcher(reader);
-      Scorer scorer = new QueryScorer(query, searcher.getIndexReader(), FIELD_NAME);
+      QueryScorer scorer = new QueryScorer(query, searcher.getIndexReader(), FIELD_NAME);
+      scorer.setUsePayloads(true);
       Highlighter h = new Highlighter(scorer);
 
       TopDocs hits = searcher.search(query, null, 10);
       assertEquals(1, hits.scoreDocs.length);
       TokenStream stream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), 0, FIELD_NAME, analyzer);
+      if (random().nextBoolean()) {
+        stream = new CachingTokenFilter(stream);//conceals detection of TokenStreamFromTermVector
+      }
       String result = h.getBestFragment(stream, text);
       assertEquals("random <B>words</B> and words", result);//only highlight first "word"
     }
