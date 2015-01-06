@@ -413,6 +413,8 @@ Bug Fixes
 * SOLR-6907: URLEncode documents directory in MorphlineMapperTest to handle spaces etc.
   in file name. (Ramkumar Aiyengar via Erick Erickson)
 
+* SOLR-6880: Harden ZkStateReader to expect that getCollectionLive may return null
+  as it's contract states. (Mark Miller, shalin)
 
 Optimizations
 ----------------------
