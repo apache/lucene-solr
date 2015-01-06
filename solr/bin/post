@@ -22,6 +22,8 @@
 #  bin/post records article*.xml
 #  bin/post wizbang events.json
 
+# TODO: handle stdin as well, such that `cat foo.csv | bin/post my_collection` works
+
 # ====== Common code copied from bin/solr (TODO: centralize/share this kind of thing)
 if [ -n "$SOLR_JAVA_HOME" ]; then
   JAVA=$SOLR_JAVA_HOME/bin/java
@@ -41,16 +43,35 @@ $JAVA -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool!
 
 
 # ===== post specific code
-SPT_JAR=dist/solr-core-*.jar
+
+function print_usage() {
+  echo ""
+  echo "Usage: post <collection/core> <file|directory|url> [OPTIONS]"
+  echo "    or post -help"
+  echo ""
+} # end print_usage
+
+if [[ $# -eq 1 && ("$1" == "-help" || "$1" == "-h" || "$1" == "-usage") ]]; then
+  print_usage
+  exit
+fi
+
+
+TOOL_JAR=dist/solr-core-*.jar
 
 COLLECTION=$1; shift
+
+# TODO: fix globbing issues... bin/post collection *.xml doens't work as expected (only first file indexed?)
+# TODO: fix bin/post *.xml issues, where collection isn't specified, so it assumes first passed file name is collection name
+
+# TODO: Check that $COLLECTION actually exists?   How to determine if user omitted collection name as first param?
+# "$JAVA" -classpath "$TOOL_JAR" org.apache.solr.util.SolrCLI $* # except can't easily check for core existence with SolrCLI?
+# TODO: also need a more general way to set the URL (or just server or port) rather than passing url=... at the end.
 
 echo "Collection:" $COLLECTION
 
 PROPS="-Dc=$COLLECTION"
 PARAMS=""
-
-# TODO: Check that $COLLECTION actually exists?   How to determine if user omitted collection name as first param?
 
 echo -n "Data mode: "
 if [[ $1 == http* ]]; then
@@ -92,5 +113,6 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-echo $JAVA -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
-$JAVA -classpath $SPT_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
+echo "$JAVA" -classpath "$TOOL_JAR" $PROPS org.apache.solr.util.SimplePostTool $PARAMS
+$JAVA -classpath $TOOL_JAR $PROPS org.apache.solr.util.SimplePostTool $PARAMS
+
