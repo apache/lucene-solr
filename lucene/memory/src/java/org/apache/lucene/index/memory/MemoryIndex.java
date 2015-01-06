@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.BinaryDocValues;
@@ -60,6 +61,8 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.Counter;
@@ -187,17 +190,19 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
  */
 public class MemoryIndex {
 
+  private static final boolean DEBUG = false;
+
   /** info for each field: Map&lt;String fieldName, Info field&gt; */
   private final SortedMap<String,Info> fields = new TreeMap<>();
   
   private final boolean storeOffsets;
-  
-  private static final boolean DEBUG = false;
+  private final boolean storePayloads;
 
   private final ByteBlockPool byteBlockPool;
   private final IntBlockPool intBlockPool;
 //  private final IntBlockPool.SliceReader postingsReader;
   private final IntBlockPool.SliceWriter postingsWriter;
+  private final BytesRefArray payloadsBytesRefs;//non null only when storePayloads
 
   private Counter bytesUsed;
 
@@ -206,7 +211,7 @@ public class MemoryIndex {
   private Similarity normSimilarity = IndexSearcher.getDefaultSimilarity();
 
   /**
-   * Constructs an empty instance.
+   * Constructs an empty instance that will not store offsets or payloads.
    */
   public MemoryIndex() {
     this(false);
@@ -215,25 +220,37 @@ public class MemoryIndex {
   /**
    * Constructs an empty instance that can optionally store the start and end
    * character offset of each token term in the text. This can be useful for
-   * highlighting of hit locations with the Lucene highlighter package.
-   * Protected until the highlighter package matures, so that this can actually
-   * be meaningfully integrated.
+   * highlighting of hit locations with the Lucene highlighter package.  But
+   * it will not store payloads; use another constructor for that.
    * 
    * @param storeOffsets
    *            whether or not to store the start and end character offset of
    *            each token term in the text
    */
   public MemoryIndex(boolean storeOffsets) {
-    this(storeOffsets, 0);
+    this(storeOffsets, false);
   }
-  
+
+  /**
+   * Constructs an empty instance with the option of storing offsets and payloads.
+   *
+   * @param storeOffsets store term offsets at each position
+   * @param storePayloads store term payloads at each position
+   */
+  public MemoryIndex(boolean storeOffsets, boolean storePayloads) {
+    this(storeOffsets, storePayloads, 0);
+  }
+
   /**
    * Expert: This constructor accepts an upper limit for the number of bytes that should be reused if this instance is {@link #reset()}.
+   * The payload storage, if used, is unaffected by maxReusuedBytes, however.
    * @param storeOffsets <code>true</code> if offsets should be stored
+   * @param storePayloads <code>true</code> if payloads should be stored
    * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
    */
-  MemoryIndex(boolean storeOffsets, long maxReusedBytes) {
+  MemoryIndex(boolean storeOffsets, boolean storePayloads, long maxReusedBytes) {
     this.storeOffsets = storeOffsets;
+    this.storePayloads = storePayloads;
     this.bytesUsed = Counter.newCounter();
     final int maxBufferedByteBlocks = (int)((maxReusedBytes/2) / ByteBlockPool.BYTE_BLOCK_SIZE );
     final int maxBufferedIntBlocks = (int) ((maxReusedBytes - (maxBufferedByteBlocks*ByteBlockPool.BYTE_BLOCK_SIZE))/(IntBlockPool.INT_BLOCK_SIZE * RamUsageEstimator.NUM_BYTES_INT));
@@ -241,6 +258,8 @@ public class MemoryIndex {
     byteBlockPool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, maxBufferedByteBlocks, bytesUsed));
     intBlockPool = new IntBlockPool(new RecyclingIntBlockAllocator(IntBlockPool.INT_BLOCK_SIZE, maxBufferedIntBlocks, bytesUsed));
     postingsWriter = new SliceWriter(intBlockPool);
+    //TODO refactor BytesRefArray to allow us to apply maxReusedBytes option
+    payloadsBytesRefs = storePayloads ? new BytesRefArray(bytesUsed) : null;
   }
   
   /**
@@ -381,8 +400,8 @@ public class MemoryIndex {
    *
    * @param fieldName
    *            a name to be associated with the text
-   * @param stream
-   *            the token stream to retrieve tokens from.
+   * @param tokenStream
+   *            the token stream to retrieve tokens from. It's guaranteed to be closed no matter what.
    * @param boost
    *            the boost factor for hits for this field
    * @param positionIncrementGap
@@ -391,16 +410,17 @@ public class MemoryIndex {
    *            the offset gap if fields with the same name are added more than once
    * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream stream, float boost, int positionIncrementGap, int offsetGap) {
-    try {
+  public void addField(String fieldName, TokenStream tokenStream, float boost, int positionIncrementGap,
+                       int offsetGap) {
+    try (TokenStream stream = tokenStream) {
       if (frozen)
         throw new IllegalArgumentException("Cannot call addField() when MemoryIndex is frozen");
       if (fieldName == null)
         throw new IllegalArgumentException("fieldName must not be null");
       if (stream == null)
-          throw new IllegalArgumentException("token stream must not be null");
+        throw new IllegalArgumentException("token stream must not be null");
       if (boost <= 0.0f)
-          throw new IllegalArgumentException("boost factor must be greater than 0.0");
+        throw new IllegalArgumentException("boost factor must be greater than 0.0");
       int numTokens = 0;
       int numOverlapTokens = 0;
       int pos = -1;
@@ -421,8 +441,9 @@ public class MemoryIndex {
         sliceArray = info.sliceArray;
         sumTotalTermFreq = info.sumTotalTermFreq;
       } else {
-        fieldInfo = new FieldInfo(fieldName, fields.size(), false, false, false,
-            this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
+        fieldInfo = new FieldInfo(fieldName, fields.size(), false, false, this.storePayloads,
+            this.storeOffsets
+                ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
             DocValuesType.NONE, -1, null);
         sliceArray = new SliceByteStartArray(BytesRefHash.DEFAULT_CAPACITY);
         terms = new BytesRefHash(byteBlockPool, BytesRefHash.DEFAULT_CAPACITY, sliceArray);
@@ -431,6 +452,7 @@ public class MemoryIndex {
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+      PayloadAttribute payloadAtt = storePayloads ? stream.addAttribute(PayloadAttribute.class) : null;
       BytesRef ref = termAtt.getBytesRef();
       stream.reset();
       
@@ -451,12 +473,15 @@ public class MemoryIndex {
         }
         sliceArray.freq[ord]++;
         sumTotalTermFreq++;
-        if (!storeOffsets) {
-          postingsWriter.writeInt(pos);
-        } else {
-          postingsWriter.writeInt(pos);
+        postingsWriter.writeInt(pos);
+        if (storeOffsets) {
           postingsWriter.writeInt(offsetAtt.startOffset() + offset);
           postingsWriter.writeInt(offsetAtt.endOffset() + offset);
+        }
+        if (storePayloads) {
+          final BytesRef payload = payloadAtt.getPayload();
+          int pIndex = payload == null ? -1 : payloadsBytesRefs.append(payload);
+          postingsWriter.writeInt(pIndex);
         }
         sliceArray.end[ord] = postingsWriter.getCurrentOffset();
       }
@@ -466,16 +491,8 @@ public class MemoryIndex {
       if (numTokens > 0) {
         fields.put(fieldName, new Info(fieldInfo, terms, sliceArray, numTokens, numOverlapTokens, boost, pos, offsetAtt.endOffset() + offset, sumTotalTermFreq));
       }
-    } catch (Exception e) { // can never happen
+    } catch (IOException e) {
       throw new RuntimeException(e);
-    } finally {
-      try {
-        if (stream != null) {
-          stream.close();
-        }
-      } catch (IOException e2) {
-        throw new RuntimeException(e2);
-      }
     }
   }
 
@@ -861,7 +878,7 @@ public class MemoryIndex {
 
           @Override
           public boolean hasPayloads() {
-            return false;
+            return storePayloads;
           }
         };
       }
@@ -1043,17 +1060,20 @@ public class MemoryIndex {
     }
     
     private class MemoryDocsAndPositionsEnum extends DocsAndPositionsEnum {
+      private final SliceReader sliceReader;
       private int posUpto; // for assert
       private boolean hasNext;
       private Bits liveDocs;
       private int doc = -1;
-      private SliceReader sliceReader;
       private int freq;
       private int startOffset;
       private int endOffset;
-      
+      private int payloadIndex;
+      private final BytesRefBuilder payloadBuilder;//only non-null when storePayloads
+
       public MemoryDocsAndPositionsEnum() {
         this.sliceReader = new SliceReader(intBlockPool);
+        this.payloadBuilder = storePayloads ? new BytesRefBuilder() : null;
       }
 
       public DocsAndPositionsEnum reset(Bits liveDocs, int start, int end, int freq) {
@@ -1096,14 +1116,15 @@ public class MemoryIndex {
       public int nextPosition() {
         assert posUpto++ < freq;
         assert !sliceReader.endOfSlice() : " stores offsets : " + startOffset;
+        int pos = sliceReader.readInt();
         if (storeOffsets) {
-          int pos = sliceReader.readInt();
           startOffset = sliceReader.readInt();
           endOffset = sliceReader.readInt();
-          return pos;
-        } else {
-          return sliceReader.readInt();
         }
+        if (storePayloads) {
+          payloadIndex = sliceReader.readInt();
+        }
+        return pos;
       }
 
       @Override
@@ -1118,7 +1139,10 @@ public class MemoryIndex {
 
       @Override
       public BytesRef getPayload() {
-        return null;
+        if (payloadBuilder == null || payloadIndex == -1) {
+          return null;
+        }
+        return payloadsBytesRefs.get(payloadBuilder, payloadIndex);
       }
       
       @Override
@@ -1178,6 +1202,9 @@ public class MemoryIndex {
     this.normSimilarity = IndexSearcher.getDefaultSimilarity();
     byteBlockPool.reset(false, false); // no need to 0-fill the buffers
     intBlockPool.reset(true, false); // here must must 0-fill since we use slices
+    if (payloadsBytesRefs != null) {
+      payloadsBytesRefs.clear();
+    }
     this.frozen = false;
   }
   

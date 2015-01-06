@@ -134,6 +134,10 @@ New Features
   rate limit IO writes for each merge depending on incoming merge
   rate.  (Mike McCandless)
 
+* LUCENE-6155: Add payload support to MemoryIndex. The default highlighter's
+  QueryScorer and WeighedSpanTermExtractor now have setUsePayloads(bool).
+  (David Smiley)
+
 Optimizations
 
 * LUCENE-5960: Use a more efficient bitset, not a Set<Integer>, to
