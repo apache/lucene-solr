@@ -188,7 +188,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         req.forward(null,
             new MapSolrParams((Map) makeMap(
                 "q", MessageFormat.format(q,blobName,version),
-                "fl", "id,size,version,timestamp,blobName",
+                "fl", "id,size,version,timestamp,blobName,md5",
                 "sort", "version desc"))
             ,rsp);
       }
