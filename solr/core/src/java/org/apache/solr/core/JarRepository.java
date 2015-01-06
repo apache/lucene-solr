@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
@@ -50,6 +51,18 @@ import org.slf4j.LoggerFactory;
  */
 public class JarRepository {
   public static Logger log = LoggerFactory.getLogger(JarRepository.class);
+
+  static final Random RANDOM;
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }
   
   private final CoreContainer coreContainer;
   
@@ -75,7 +88,7 @@ public class JarRepository {
         if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, ".system collection not available");
         ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
         if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, ".no active slices for .system collection");
-        Collections.shuffle(slices); //do load balancing
+        Collections.shuffle(slices, RANDOM); //do load balancing
         Slice slice = slices.get(0) ;
         Replica replica = slice.getReplicas().iterator().next();
         if (replica == null) throw new SolrException(SERVICE_UNAVAILABLE, ".no active replica available for .system collection");
