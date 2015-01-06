@@ -89,6 +89,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   /** Floor for IO write rate limit (we will never go any lower than this) */
   private static final double MIN_MERGE_MB_PER_SEC = 5.0;
 
+  /** Ceiling for IO write rate limit (we will never go any higher than this) */
+  private static final double MAX_MERGE_MB_PER_SEC = 10240.0;
+
   /** Initial value for IO write rate limit when doAutoIOThrottle is true */
   private static final double START_MB_PER_SEC = 20.0;
 
@@ -409,6 +412,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
     initDynamicDefaults(writer);
 
+    if (trigger == MergeTrigger.CLOSING) {
+      // Disable throttling on close:
+      targetMBPerSec = MAX_MERGE_MB_PER_SEC;
+      updateMergeThreads();
+    }
+
     // First, quickly run through the newly proposed merges
     // and add any orthogonal merges (ie a merge not
     // involving segments already pending to be merged) to
@@ -681,8 +690,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     if (newBacklog) {
       // This new merge adds to the backlog: increase IO throttle by 20%
       targetMBPerSec *= 1.20;
-      if (targetMBPerSec > 10000) {
-        targetMBPerSec = 10000;
+      if (targetMBPerSec > MAX_MERGE_MB_PER_SEC) {
+        targetMBPerSec = MAX_MERGE_MB_PER_SEC;
       }
       if (verbose()) {
         if (curMBPerSec == targetMBPerSec) {
