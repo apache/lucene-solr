@@ -21,6 +21,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -94,7 +95,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
     for (GroupHead groupHead : groups.values()) {
-      for (FieldComparator<?> comparator : groupHead.comparators) {
+      for (LeafFieldComparator comparator : groupHead.leafComparators) {
         comparator.setScorer(scorer);
       }
     }
@@ -109,7 +110,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
     for (GroupHead groupHead : groups.values()) {
       for (int i = 0; i < groupHead.comparators.length; i++) {
-        groupHead.comparators[i] = groupHead.comparators[i].setNextReader(context);
+        groupHead.leafComparators[i] = groupHead.comparators[i].getLeafComparator(context);
       }
     }
   }
@@ -120,28 +121,31 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
   public class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<MutableValue> {
 
     final FieldComparator<?>[] comparators;
+    final LeafFieldComparator[] leafComparators;
 
     @SuppressWarnings({"unchecked","rawtypes"})
     private GroupHead(MutableValue groupValue, Sort sort, int doc) throws IOException {
       super(groupValue, doc + readerContext.docBase);
       final SortField[] sortFields = sort.getSort();
       comparators = new FieldComparator[sortFields.length];
+      leafComparators = new LeafFieldComparator[sortFields.length];
       for (int i = 0; i < sortFields.length; i++) {
-        comparators[i] = sortFields[i].getComparator(1, i).setNextReader(readerContext);
-        comparators[i].setScorer(scorer);
-        comparators[i].copy(0, doc);
-        comparators[i].setBottom(0);
+        comparators[i] = sortFields[i].getComparator(1, i);
+        leafComparators[i] = comparators[i].getLeafComparator(readerContext);
+        leafComparators[i].setScorer(scorer);
+        leafComparators[i].copy(0, doc);
+        leafComparators[i].setBottom(0);
       }
     }
 
     @Override
     public int compare(int compIDX, int doc) throws IOException {
-      return comparators[compIDX].compareBottom(doc);
+      return leafComparators[compIDX].compareBottom(doc);
     }
 
     @Override
     public void updateDocHead(int doc) throws IOException {
-      for (FieldComparator<?> comparator : comparators) {
+      for (LeafFieldComparator comparator : leafComparators) {
         comparator.copy(0, doc);
         comparator.setBottom(0);
       }

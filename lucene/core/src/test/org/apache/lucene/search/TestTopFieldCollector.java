@@ -171,14 +171,14 @@ public class TestTopFieldCollector extends LuceneTestCase {
         new boolean[] { true, true, true },
     };
     String[] actualTFCClasses = new String[] {
-        "OutOfOrderOneComparatorNonScoringCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorNonScoringCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderOneComparatorScoringMaxScoreCollector" 
+        "OutOfOrderNonScoringCollector", 
+        "OutOfOrderScoringMaxScoreCollector", 
+        "OutOfOrderScoringNoMaxScoreCollector", 
+        "OutOfOrderScoringMaxScoreCollector", 
+        "OutOfOrderNonScoringCollector", 
+        "OutOfOrderScoringMaxScoreCollector", 
+        "OutOfOrderScoringNoMaxScoreCollector", 
+        "OutOfOrderScoringMaxScoreCollector" 
     };
     
     BooleanQuery bq = new BooleanQuery();
@@ -220,14 +220,14 @@ public class TestTopFieldCollector extends LuceneTestCase {
         new boolean[] { true, true, true },
     };
     String[] actualTFCClasses = new String[] {
-        "OutOfOrderMultiComparatorNonScoringCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorNonScoringCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringNoMaxScoreCollector", 
-        "OutOfOrderMultiComparatorScoringMaxScoreCollector" 
+        "OutOfOrderNonScoringCollector", 
+        "OutOfOrderScoringMaxScoreCollector", 
+        "OutOfOrderScoringNoMaxScoreCollector", 
+        "OutOfOrderScoringMaxScoreCollector", 
+        "OutOfOrderNonScoringCollector", 
+        "OutOfOrderScoringMaxScoreCollector", 
+        "OutOfOrderScoringNoMaxScoreCollector", 
+        "OutOfOrderScoringMaxScoreCollector" 
     };
     
     BooleanQuery bq = new BooleanQuery();

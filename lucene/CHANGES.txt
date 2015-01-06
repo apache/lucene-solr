@@ -225,6 +225,9 @@ API Changes
 * LUCENE-5527: The Collector API has been refactored to use a dedicated Collector
   per leaf. (Shikhar Bhushan, Adrien Grand)
 
+* LUCENE-5702: The FieldComparator API has been refactor to a per-leaf API, just
+  like Collectors. (Adrien Grand)
+
 * LUCENE-4246: IndexWriter.close now always closes, even if it throws
   an exception.  The new IndexWriterConfig.setCommitOnClose (default
   true) determines whether close() should commit before closing.

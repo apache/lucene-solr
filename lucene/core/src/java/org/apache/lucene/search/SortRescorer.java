@@ -61,6 +61,7 @@ public class SortRescorer extends Rescorer {
     int endDoc = 0;
     int docBase = 0;
 
+    LeafCollector leafCollector = null;
     FakeScorer fakeScorer = new FakeScorer();
 
     while (hitUpto < hits.length) {
@@ -75,15 +76,15 @@ public class SortRescorer extends Rescorer {
 
       if (readerContext != null) {
         // We advanced to another segment:
-        collector.getLeafCollector(readerContext);
-        collector.setScorer(fakeScorer);
+        leafCollector = collector.getLeafCollector(readerContext);
+        leafCollector.setScorer(fakeScorer);
         docBase = readerContext.docBase;
       }
 
       fakeScorer.score = hit.score;
       fakeScorer.doc = docID - docBase;
 
-      collector.collect(fakeScorer.doc);
+      leafCollector.collect(fakeScorer.doc);
 
       hitUpto++;
     }

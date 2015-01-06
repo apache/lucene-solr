@@ -26,7 +26,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.common.params.SolrParams;
 
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -129,22 +128,32 @@ public class ExportQParserPlugin extends QParserPlugin {
   private class ExportCollector extends TopDocsCollector  {
 
     private FixedBitSet[] sets;
-    private FixedBitSet set;
 
     public ExportCollector(FixedBitSet[] sets) {
       super(null);
       this.sets = sets;
     }
-    
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.set = new FixedBitSet(context.reader().maxDoc());
-      this.sets[context.ord] = set;
 
-    }
-    
-    public void collect(int docId) throws IOException{
-      ++totalHits;
-      set.set(docId);
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      final FixedBitSet set = new FixedBitSet(context.reader().maxDoc());
+      this.sets[context.ord] = set;
+      return new LeafCollector() {
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {}
+        
+        @Override
+        public void collect(int docId) throws IOException{
+          ++totalHits;
+          set.set(docId);
+        }
+        
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return false;
+        }
+      };
     }
 
     private ScoreDoc[] getScoreDocs(int howMany) {
@@ -170,12 +179,5 @@ public class ExportQParserPlugin extends QParserPlugin {
       return new TopDocs(totalHits, scoreDocs, 0.0f);
     }
 
-    public void setScorer(Scorer scorer) throws IOException {
-
-    }
-    
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
   }
 }

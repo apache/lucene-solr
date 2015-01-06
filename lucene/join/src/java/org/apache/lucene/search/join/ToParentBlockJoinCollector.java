@@ -74,7 +74,7 @@ import java.util.*;
  *
  * @lucene.experimental
  */
-public class ToParentBlockJoinCollector extends SimpleCollector {
+public class ToParentBlockJoinCollector implements Collector {
 
   private final Sort sort;
 
@@ -83,16 +83,11 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
   private final Map<Query,Integer> joinQueryID = new HashMap<>();
   private final int numParentHits;
   private final FieldValueHitQueue<OneGroup> queue;
-  private final FieldComparator[] comparators;
-  private final int[] reverseMul;
-  private final int compEnd;
+  private final FieldComparator<?>[] comparators;
   private final boolean trackMaxScore;
   private final boolean trackScores;
 
-  private int docBase;
   private ToParentBlockJoinQuery.BlockJoinScorer[] joinScorers = new ToParentBlockJoinQuery.BlockJoinScorer[0];
-  private LeafReaderContext currentReaderContext;
-  private Scorer scorer;
   private boolean queueFull;
 
   private OneGroup bottom;
@@ -116,8 +111,6 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
     this.numParentHits = numParentHits;
     queue = FieldValueHitQueue.create(sort.getSort(), numParentHits);
     comparators = queue.getComparators();
-    reverseMul = queue.getReverseMul();
-    compEnd = comparators.length - 1;
   }
   
   private static final class OneGroup extends FieldValueHitQueue.Entry {
@@ -143,143 +136,172 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
   }
 
   @Override
-  public void collect(int parentDoc) throws IOException {
-    //System.out.println("\nC parentDoc=" + parentDoc);
-    totalHitCount++;
+  public LeafCollector getLeafCollector(final LeafReaderContext context)
+      throws IOException {
+    final LeafFieldComparator[] comparators = queue.getComparators(context);
+    final int[] reverseMul = queue.getReverseMul();
+    final int docBase = context.docBase;
+    return new LeafCollector() {
 
-    float score = Float.NaN;
+      private Scorer scorer;
 
-    if (trackMaxScore) {
-      score = scorer.score();
-      maxScore = Math.max(maxScore, score);
-    }
-
-    // TODO: we could sweep all joinScorers here and
-    // aggregate total child hit count, so we can fill this
-    // in getTopGroups (we wire it to 0 now)
-
-    if (queueFull) {
-      //System.out.println("  queueFull");
-      // Fastmatch: return if this hit is not competitive
-      for (int i = 0;; i++) {
-        final int c = reverseMul[i] * comparators[i].compareBottom(parentDoc);
-        if (c < 0) {
-          // Definitely not competitive.
-          //System.out.println("    skip");
-          return;
-        } else if (c > 0) {
-          // Definitely competitive.
-          break;
-        } else if (i == compEnd) {
-          // Here c=0. If we're at the last comparator, this doc is not
-          // competitive, since docs are visited in doc Id order, which means
-          // this doc cannot compete with any other document in the queue.
-          //System.out.println("    skip");
-          return;
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        //System.out.println("C.setScorer scorer=" + scorer);
+        // Since we invoke .score(), and the comparators likely
+        // do as well, cache it so it's only "really" computed
+        // once:
+        if (scorer instanceof ScoreCachingWrappingScorer == false) {
+          scorer = new ScoreCachingWrappingScorer(scorer);
         }
-      }
-
-      //System.out.println("    competes!  doc=" + (docBase + parentDoc));
-
-      // This hit is competitive - replace bottom element in queue & adjustTop
-      for (int i = 0; i < comparators.length; i++) {
-        comparators[i].copy(bottom.slot, parentDoc);
-      }
-      if (!trackMaxScore && trackScores) {
-        score = scorer.score();
-      }
-      bottom.doc = docBase + parentDoc;
-      bottom.readerContext = currentReaderContext;
-      bottom.score = score;
-      copyGroups(bottom);
-      bottom = queue.updateTop();
-
-      for (int i = 0; i < comparators.length; i++) {
-        comparators[i].setBottom(bottom.slot);
-      }
-    } else {
-      // Startup transient: queue is not yet full:
-      final int comparatorSlot = totalHitCount - 1;
-
-      // Copy hit into queue
-      for (int i = 0; i < comparators.length; i++) {
-        comparators[i].copy(comparatorSlot, parentDoc);
-      }
-      //System.out.println("  startup: new OG doc=" + (docBase+parentDoc));
-      if (!trackMaxScore && trackScores) {
-        score = scorer.score();
-      }
-      final OneGroup og = new OneGroup(comparatorSlot, docBase+parentDoc, score, joinScorers.length, trackScores);
-      og.readerContext = currentReaderContext;
-      copyGroups(og);
-      bottom = queue.add(og);
-      queueFull = totalHitCount == numParentHits;
-      if (queueFull) {
-        // End of startup transient: queue just filled up:
-        for (int i = 0; i < comparators.length; i++) {
-          comparators[i].setBottom(bottom.slot);
+        this.scorer = scorer;
+        for (LeafFieldComparator comparator : comparators) {
+          comparator.setScorer(scorer);
         }
-      }
-    }
-  }
+        Arrays.fill(joinScorers, null);
 
-  // Pulls out child doc and scores for all join queries:
-  private void copyGroups(OneGroup og) {
-    // While rare, it's possible top arrays could be too
-    // short if join query had null scorer on first
-    // segment(s) but then became non-null on later segments
-    final int numSubScorers = joinScorers.length;
-    if (og.docs.length < numSubScorers) {
-      // While rare, this could happen if join query had
-      // null scorer on first segment(s) but then became
-      // non-null on later segments
-      og.docs = ArrayUtil.grow(og.docs);
-    }
-    if (og.counts.length < numSubScorers) {
-      og.counts = ArrayUtil.grow(og.counts);
-    }
-    if (trackScores && og.scores.length < numSubScorers) {
-      og.scores = ArrayUtil.grow(og.scores);
-    }
-
-    //System.out.println("\ncopyGroups parentDoc=" + og.doc);
-    for(int scorerIDX = 0;scorerIDX < numSubScorers;scorerIDX++) {
-      final ToParentBlockJoinQuery.BlockJoinScorer joinScorer = joinScorers[scorerIDX];
-      //System.out.println("  scorer=" + joinScorer);
-      if (joinScorer != null && docBase + joinScorer.getParentDoc() == og.doc) {
-        og.counts[scorerIDX] = joinScorer.getChildCount();
-        //System.out.println("    count=" + og.counts[scorerIDX]);
-        og.docs[scorerIDX] = joinScorer.swapChildDocs(og.docs[scorerIDX]);
-        assert og.docs[scorerIDX].length >= og.counts[scorerIDX]: "length=" + og.docs[scorerIDX].length + " vs count=" + og.counts[scorerIDX];
-        //System.out.println("    len=" + og.docs[scorerIDX].length);
-        /*
-          for(int idx=0;idx<og.counts[scorerIDX];idx++) {
-          System.out.println("    docs[" + idx + "]=" + og.docs[scorerIDX][idx]);
+        Queue<Scorer> queue = new LinkedList<>();
+        //System.out.println("\nqueue: add top scorer=" + scorer);
+        queue.add(scorer);
+        while ((scorer = queue.poll()) != null) {
+          //System.out.println("  poll: " + scorer + "; " + scorer.getWeight().getQuery());
+          if (scorer instanceof ToParentBlockJoinQuery.BlockJoinScorer) {
+            enroll((ToParentBlockJoinQuery) scorer.getWeight().getQuery(), (ToParentBlockJoinQuery.BlockJoinScorer) scorer);
           }
-        */
-        if (trackScores) {
-          //System.out.println("    copy scores");
-          og.scores[scorerIDX] = joinScorer.swapChildScores(og.scores[scorerIDX]);
-          assert og.scores[scorerIDX].length >= og.counts[scorerIDX]: "length=" + og.scores[scorerIDX].length + " vs count=" + og.counts[scorerIDX];
+
+          for (ChildScorer sub : scorer.getChildren()) {
+            //System.out.println("  add sub: " + sub.child + "; " + sub.child.getWeight().getQuery());
+            queue.add(sub.child);
+          }
         }
-      } else {
-        og.counts[scorerIDX] = 0;
       }
-    }
-  }
+      
+      @Override
+      public void collect(int parentDoc) throws IOException {
+      //System.out.println("\nC parentDoc=" + parentDoc);
+        totalHitCount++;
 
-  @Override
-  protected void doSetNextReader(LeafReaderContext context) throws IOException {
-    currentReaderContext = context;
-    docBase = context.docBase;
-    for (int compIDX = 0; compIDX < comparators.length; compIDX++) {
-      queue.setComparator(compIDX, comparators[compIDX].setNextReader(context));
-    }
-  }
+        float score = Float.NaN;
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
+        if (trackMaxScore) {
+          score = scorer.score();
+          maxScore = Math.max(maxScore, score);
+        }
+
+        // TODO: we could sweep all joinScorers here and
+        // aggregate total child hit count, so we can fill this
+        // in getTopGroups (we wire it to 0 now)
+
+        if (queueFull) {
+          //System.out.println("  queueFull");
+          // Fastmatch: return if this hit is not competitive
+          int c = 0;
+          for (int i = 0; i < comparators.length; ++i) {
+            c = reverseMul[i] * comparators[i].compareBottom(parentDoc);
+            if (c != 0) {
+              break;
+            }
+          }
+          if (c <= 0) { // in case of equality, this hit is not competitive as docs are visited in order
+            // Definitely not competitive.
+            //System.out.println("    skip");
+            return;
+          }
+
+          //System.out.println("    competes!  doc=" + (docBase + parentDoc));
+
+          // This hit is competitive - replace bottom element in queue & adjustTop
+          for (LeafFieldComparator comparator : comparators) {
+            comparator.copy(bottom.slot, parentDoc);
+          }
+          if (!trackMaxScore && trackScores) {
+            score = scorer.score();
+          }
+          bottom.doc = docBase + parentDoc;
+          bottom.readerContext = context;
+          bottom.score = score;
+          copyGroups(bottom);
+          bottom = queue.updateTop();
+
+          for (LeafFieldComparator comparator : comparators) {
+            comparator.setBottom(bottom.slot);
+          }
+        } else {
+          // Startup transient: queue is not yet full:
+          final int comparatorSlot = totalHitCount - 1;
+
+          // Copy hit into queue
+          for (LeafFieldComparator comparator : comparators) {
+            comparator.copy(comparatorSlot, parentDoc);
+          }
+          //System.out.println("  startup: new OG doc=" + (docBase+parentDoc));
+          if (!trackMaxScore && trackScores) {
+            score = scorer.score();
+          }
+          final OneGroup og = new OneGroup(comparatorSlot, docBase+parentDoc, score, joinScorers.length, trackScores);
+          og.readerContext = context;
+          copyGroups(og);
+          bottom = queue.add(og);
+          queueFull = totalHitCount == numParentHits;
+          if (queueFull) {
+            // End of startup transient: queue just filled up:
+            for (LeafFieldComparator comparator : comparators) {
+              comparator.setBottom(bottom.slot);
+            }
+          }
+        }
+      }
+      
+      // Pulls out child doc and scores for all join queries:
+      private void copyGroups(OneGroup og) {
+        // While rare, it's possible top arrays could be too
+        // short if join query had null scorer on first
+        // segment(s) but then became non-null on later segments
+        final int numSubScorers = joinScorers.length;
+        if (og.docs.length < numSubScorers) {
+          // While rare, this could happen if join query had
+          // null scorer on first segment(s) but then became
+          // non-null on later segments
+          og.docs = ArrayUtil.grow(og.docs);
+        }
+        if (og.counts.length < numSubScorers) {
+          og.counts = ArrayUtil.grow(og.counts);
+        }
+        if (trackScores && og.scores.length < numSubScorers) {
+          og.scores = ArrayUtil.grow(og.scores);
+        }
+
+        //System.out.println("\ncopyGroups parentDoc=" + og.doc);
+        for(int scorerIDX = 0;scorerIDX < numSubScorers;scorerIDX++) {
+          final ToParentBlockJoinQuery.BlockJoinScorer joinScorer = joinScorers[scorerIDX];
+          //System.out.println("  scorer=" + joinScorer);
+          if (joinScorer != null && docBase + joinScorer.getParentDoc() == og.doc) {
+            og.counts[scorerIDX] = joinScorer.getChildCount();
+            //System.out.println("    count=" + og.counts[scorerIDX]);
+            og.docs[scorerIDX] = joinScorer.swapChildDocs(og.docs[scorerIDX]);
+            assert og.docs[scorerIDX].length >= og.counts[scorerIDX]: "length=" + og.docs[scorerIDX].length + " vs count=" + og.counts[scorerIDX];
+            //System.out.println("    len=" + og.docs[scorerIDX].length);
+            /*
+              for(int idx=0;idx<og.counts[scorerIDX];idx++) {
+              System.out.println("    docs[" + idx + "]=" + og.docs[scorerIDX][idx]);
+              }
+            */
+            if (trackScores) {
+              //System.out.println("    copy scores");
+              og.scores[scorerIDX] = joinScorer.swapChildScores(og.scores[scorerIDX]);
+              assert og.scores[scorerIDX].length >= og.counts[scorerIDX]: "length=" + og.scores[scorerIDX].length + " vs count=" + og.counts[scorerIDX];
+            }
+          } else {
+            og.counts[scorerIDX] = 0;
+          }
+        }
+      }
+      
+      @Override
+      public boolean acceptsDocsOutOfOrder() {
+        return false;
+      }
+    };
   }
 
   private void enroll(ToParentBlockJoinQuery query, ToParentBlockJoinQuery.BlockJoinScorer scorer) {
@@ -294,34 +316,6 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
       joinScorers[joinScorers.length-1] = scorer;
     } else {
       joinScorers[slot] = scorer;
-    }
-  }
-  
-  @Override
-  public void setScorer(Scorer scorer) {
-    //System.out.println("C.setScorer scorer=" + scorer);
-    // Since we invoke .score(), and the comparators likely
-    // do as well, cache it so it's only "really" computed
-    // once:
-    this.scorer = new ScoreCachingWrappingScorer(scorer);
-    for (int compIDX = 0; compIDX < comparators.length; compIDX++) {
-      comparators[compIDX].setScorer(this.scorer);
-    }
-    Arrays.fill(joinScorers, null);
-
-    Queue<Scorer> queue = new LinkedList<>();
-    //System.out.println("\nqueue: add top scorer=" + scorer);
-    queue.add(scorer);
-    while ((scorer = queue.poll()) != null) {
-      //System.out.println("  poll: " + scorer + "; " + scorer.getWeight().getQuery());
-      if (scorer instanceof ToParentBlockJoinQuery.BlockJoinScorer) {
-        enroll((ToParentBlockJoinQuery) scorer.getWeight().getQuery(), (ToParentBlockJoinQuery.BlockJoinScorer) scorer);
-      }
-
-      for (ChildScorer sub : scorer.getChildren()) {
-        //System.out.println("  add sub: " + sub.child + "; " + sub.child.getWeight().getQuery());
-        queue.add(sub.child);
-      }
     }
   }
 
@@ -420,8 +414,8 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
         collector = TopFieldCollector.create(withinGroupSort, numDocsInGroup, fillSortFields, trackScores, trackMaxScore, true);
       }
 
-      collector.setScorer(fakeScorer);
-      collector.getLeafCollector(og.readerContext);
+      LeafCollector leafCollector = collector.getLeafCollector(og.readerContext);
+      leafCollector.setScorer(fakeScorer);
       for(int docIDX=0;docIDX<numChildDocs;docIDX++) {
         //System.out.println("docIDX=" + docIDX + " vs " + og.docs[slot].length);
         final int doc = og.docs[slot][docIDX];
@@ -429,7 +423,7 @@ public class ToParentBlockJoinCollector extends SimpleCollector {
         if (trackScores) {
           fakeScorer.score = og.scores[slot][docIDX];
         }
-        collector.collect(doc);
+        leafCollector.collect(doc);
       }
       totalGroupedHitCount += numChildDocs;
 

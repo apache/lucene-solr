@@ -27,6 +27,7 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -146,9 +147,50 @@ class ElevationComparatorSource extends FieldComparatorSource {
   public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
    return new FieldComparator<Integer>() {
 
-     SortedDocValues idIndex;
      private final int[] values = new int[numHits];
      int bottomVal;
+
+     @Override
+    public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+        throws IOException {
+      final SortedDocValues idIndex = DocValues.getSorted(context.reader(), fieldname);
+      return new LeafFieldComparator() {
+
+        @Override
+        public void setBottom(int slot) {
+          bottomVal = values[slot];
+        }
+
+        @Override
+        public int compareTop(int doc) {
+          throw new UnsupportedOperationException();
+        }
+
+        private int docVal(int doc) {
+          int ord = idIndex.getOrd(doc);
+          if (ord == -1) {
+            return 0;
+          } else {
+            final BytesRef term = idIndex.lookupOrd(ord);
+            Integer prio = priority.get(term);
+            return prio == null ? 0 : prio.intValue();
+          }
+        }
+
+        @Override
+        public int compareBottom(int doc) {
+          return docVal(doc) - bottomVal;
+        }
+
+        @Override
+        public void copy(int slot, int doc) {
+          values[slot] = docVal(doc);
+        }
+
+        @Override
+        public void setScorer(Scorer scorer) {}
+      };
+    }
 
      @Override
      public int compare(int slot1, int slot2) {
@@ -156,40 +198,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public void setBottom(int slot) {
-       bottomVal = values[slot];
-     }
-
-     @Override
      public void setTopValue(Integer value) {
        throw new UnsupportedOperationException();
-     }
-
-     private int docVal(int doc) {
-       int ord = idIndex.getOrd(doc);
-       if (ord == -1) {
-         return 0;
-       } else {
-         final BytesRef term = idIndex.lookupOrd(ord);
-         Integer prio = priority.get(term);
-         return prio == null ? 0 : prio.intValue();
-       }
-     }
-
-     @Override
-     public int compareBottom(int doc) {
-       return docVal(doc) - bottomVal;
-     }
-
-     @Override
-     public void copy(int slot, int doc) {
-       values[slot] = docVal(doc);
-     }
-
-     @Override
-     public FieldComparator<Integer> setNextReader(LeafReaderContext context) throws IOException {
-       idIndex = DocValues.getSorted(context.reader(), fieldname);
-       return this;
      }
 
      @Override
@@ -197,10 +207,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
        return Integer.valueOf(values[slot]);
      }
 
-     @Override
-     public int compareTop(int doc) {
-       throw new UnsupportedOperationException();
-     }
+
    };
  }
 }

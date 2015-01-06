@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -214,12 +212,11 @@ final class Sorter {
   DocMap sort(LeafReader reader) throws IOException {
     SortField fields[] = sort.getSort();
     final int reverseMul[] = new int[fields.length];
-    final FieldComparator<?> comparators[] = new FieldComparator[fields.length];
+    final LeafFieldComparator comparators[] = new LeafFieldComparator[fields.length];
     
     for (int i = 0; i < fields.length; i++) {
       reverseMul[i] = fields[i].getReverse() ? -1 : 1;
-      comparators[i] = fields[i].getComparator(1, i);
-      comparators[i].setNextReader(reader.getContext());
+      comparators[i] = fields[i].getComparator(1, i).getLeafComparator(reader.getContext());
       comparators[i].setScorer(FAKESCORER);
     }
     final DocComparator comparator = new DocComparator() {

@@ -23,6 +23,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
@@ -598,7 +599,8 @@ public class QueryComponent extends SearchComponent
         // :TODO: would be simpler to always serialize every position of SortField[]
         if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
-        FieldComparator comparator = null;
+        FieldComparator<?> comparator = null;
+        LeafFieldComparator leafComparator = null;
         Object[] vals = new Object[nDocs];
 
         int lastIdx = -1;
@@ -621,12 +623,12 @@ public class QueryComponent extends SearchComponent
 
           if (comparator == null) {
             comparator = sortField.getComparator(1,0);
-            comparator = comparator.setNextReader(currentLeaf);
+            leafComparator = comparator.getLeafComparator(currentLeaf);
           }
 
           doc -= currentLeaf.docBase;  // adjust for what segment this is in
-          comparator.setScorer(new FakeScorer(doc, score));
-          comparator.copy(0, doc);
+          leafComparator.setScorer(new FakeScorer(doc, score));
+          leafComparator.copy(0, doc);
           Object val = comparator.value(0);
           if (null != ft) val = ft.marshalSortValue(val);
           vals[position] = val;
