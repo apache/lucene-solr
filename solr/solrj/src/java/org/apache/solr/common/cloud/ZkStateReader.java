@@ -270,6 +270,7 @@ public class ZkStateReader implements Closeable {
     if (collection.getZNodeVersion() < version) {
       log.debug("server older than client {}<{}", collection.getZNodeVersion(), version);
       DocCollection nu = getCollectionLive(this, coll);
+      if (nu == null) return null;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         updateWatchedCollection(nu);
         collection = nu;
@@ -451,9 +452,12 @@ public class ZkStateReader implements Closeable {
       synchronized (this) {
         if (watchedCollections.contains(s)) {
           DocCollection live = getCollectionLive(this, s);
-          watchedCollectionStates.put(s, live);
-          // if it is a watched collection, add too
-          result.put(s, new ClusterState.CollectionRef(live));
+          assert live != null;
+          if (live != null) {
+            watchedCollectionStates.put(s, live);
+            // if it is a watched collection, add too
+            result.put(s, new ClusterState.CollectionRef(live));
+          }
         } else {
           // if it is not collection, then just create a reference which can fetch
           // the collection object just in time from ZK
@@ -524,7 +528,11 @@ public class ZkStateReader implements Closeable {
       }
       synchronized (ZkStateReader.this) {
         for (String watchedCollection : watchedCollections) {
-          updateWatchedCollection(getCollectionLive(this, watchedCollection));
+          DocCollection live = getCollectionLive(this, watchedCollection);
+          assert live != null;
+          if (live != null) {
+            updateWatchedCollection(live);
+          }
         }
       }
 
@@ -582,7 +590,11 @@ public class ZkStateReader implements Closeable {
 
             synchronized (ZkStateReader.this) {
               for (String watchedCollection : watchedCollections) {
-                updateWatchedCollection(getCollectionLive(ZkStateReader.this, watchedCollection));
+                DocCollection live = getCollectionLive(ZkStateReader.this, watchedCollection);
+                assert live != null;
+                if (live != null) {
+                  updateWatchedCollection(live);
+                }
               }
             }
           }
@@ -865,7 +877,10 @@ public class ZkStateReader implements Closeable {
       };
       zkClient.exists(fullpath, watcher, true);
     }
-    updateWatchedCollection(getCollectionLive(this, coll));
+    DocCollection collection = getCollectionLive(this, coll);
+    if (collection != null) {
+      updateWatchedCollection(collection);
+    }
   }
   
   private void updateWatchedCollection(DocCollection newState) {
