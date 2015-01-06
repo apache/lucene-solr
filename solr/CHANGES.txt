@@ -643,6 +643,8 @@ Other Changes
 
 * SOLR-6897: Nuke non-NRT mode from code and configuration. (Hossman, shalin)
 
+* SOLR-6830: Update Woodstox to 4.4.1 and StAX to 3.1.4. (ab)
+
 ==================  4.10.3 ==================
 
 Bug Fixes
