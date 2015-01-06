@@ -20,12 +20,10 @@ package org.apache.solr.update;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.Version;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.Config;
 import org.apache.solr.core.MapSerializable;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.PluginInfo;
@@ -34,11 +32,10 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.solr.core.Config.assertWarnOrFail;
 
 /**
  * This config object encapsulates IndexWriter config params,
@@ -127,13 +124,13 @@ public class SolrIndexConfig implements MapSerializable {
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        !((solrConfig.getNode(prefix+"/mergeScheduler",false) != null) && (solrConfig.get(prefix+"/mergeScheduler/@class",null) == null)),
+        !((solrConfig.getNode(prefix + "/mergeScheduler", false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
         true);
     assertWarnOrFail("The <mergePolicy>myclass</mergePolicy> syntax is no longer supported in solrconfig.xml. Please use syntax <mergePolicy class=\"myclass\"/> instead.",
-        !((solrConfig.getNode(prefix+"/mergePolicy",false) != null) && (solrConfig.get(prefix+"/mergePolicy/@class",null) == null)),
+        !((solrConfig.getNode(prefix + "/mergePolicy", false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
-        solrConfig.get(prefix+"/luceneAutoCommit", null) == null,
+        solrConfig.get(prefix + "/luceneAutoCommit", null) == null,
         true);
 
     defaultMergePolicyClassName = def.defaultMergePolicyClassName;
@@ -167,13 +164,10 @@ public class SolrIndexConfig implements MapSerializable {
       }
     }
     mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
-    if (mergedSegmentWarmerInfo != null && solrConfig.nrtMode == false) {
-      throw new IllegalArgumentException("Supplying a mergedSegmentWarmer will do nothing since nrtMode is false");
-    }
 
     assertWarnOrFail("Begining with Solr 5.0, <checkIntegrityAtMerge> option is no longer supported and should be removed from solrconfig.xml (these integrity checks are now automatic)",
-                     (null == solrConfig.getNode(prefix+"/checkIntegrityAtMerge",false)),
-                     true);
+        (null == solrConfig.getNode(prefix + "/checkIntegrityAtMerge", false)),
+        true);
   }
   @Override
   public Map<String, Object> toMap() {
@@ -187,21 +181,6 @@ public class SolrIndexConfig implements MapSerializable {
     if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo.toMap());
     if(mergePolicyInfo != null) m.put("mergeScheduler",mergePolicyInfo.toMap());
     return m;
-  }
-
-  /*
-   * Assert that assertCondition is true.
-   * If not, prints reason as log warning.
-   * If failCondition is true, then throw exception instead of warning 
-   */
-  private void assertWarnOrFail(String reason, boolean assertCondition, boolean failCondition) {
-    if(assertCondition) {
-      return;
-    } else if(failCondition) {
-      throw new SolrException(ErrorCode.FORBIDDEN, reason);
-    } else {
-      log.warn(reason);
-    }
   }
 
   private PluginInfo getPluginInfo(String path, SolrConfig solrConfig, PluginInfo def)  {

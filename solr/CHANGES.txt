@@ -146,6 +146,10 @@ Upgrading from Solr 4.x
   then it should be backwards compatible but you'll get a deprecation warning on startup.  See
   SOLR-6797.
 
+* The <nrtMode> configuration in solrconfig.xml has been discontinued and should be removed from
+  solrconfig.xml. Solr defaults to using NRT searchers regardless of the value in configuration
+  and a warning is logged on startup if the solrconfig.xml has <nrtMode> specified.
+
 Detailed Change List
 ----------------------
 
@@ -633,6 +637,8 @@ Other Changes
 
 * SOLR-4839: Upgrade Jetty to 9.2.6.v20141205 and restlet-jee to 2.3.0
   (Bill Bell, Timothy Potter, Uwe Schindler, shalin)
+
+* SOLR-6897: Nuke non-NRT mode from code and configuration. (Hossman, shalin)
 
 ==================  4.10.3 ==================
 
