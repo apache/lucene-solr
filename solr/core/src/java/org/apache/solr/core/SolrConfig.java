@@ -194,7 +194,7 @@ public class SolrConfig extends Config implements MapSerializable{
       indexConfigPrefix = "indexConfig";
     }
     assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
-            " This config will be removed in future versions.", getNode(indexConfigPrefix + "/nrtMode", false) != null,
+            " This config will be removed in future versions.", getNode(indexConfigPrefix + "/nrtMode", false) == null,
         false
     );
 
