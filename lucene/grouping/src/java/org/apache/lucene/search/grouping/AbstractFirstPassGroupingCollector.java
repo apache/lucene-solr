@@ -37,6 +37,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
 
   private final Sort groupSort;
   private final FieldComparator<?>[] comparators;
+  private final LeafFieldComparator[] leafComparators;
   private final int[] reversed;
   private final int topNGroups;
   private final HashMap<GROUP_VALUE_TYPE, CollectedSearchGroup<GROUP_VALUE_TYPE>> groupMap;
@@ -60,7 +61,6 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    *  @param topNGroups How many top groups to keep.
    *  @throws IOException If I/O related errors occur
    */
-  @SuppressWarnings({"unchecked","rawtypes"})
   public AbstractFirstPassGroupingCollector(Sort groupSort, int topNGroups) throws IOException {
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
@@ -74,6 +74,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
 
     final SortField[] sortFields = groupSort.getSort();
     comparators = new FieldComparator[sortFields.length];
+    leafComparators = new LeafFieldComparator[sortFields.length];
     compIDXEnd = comparators.length - 1;
     reversed = new int[sortFields.length];
     for (int i = 0; i < sortFields.length; i++) {
@@ -137,7 +138,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
 
   @Override
   public void setScorer(Scorer scorer) throws IOException {
-    for (FieldComparator<?> comparator : comparators) {
+    for (LeafFieldComparator comparator : leafComparators) {
       comparator.setScorer(scorer);
     }
   }
@@ -157,7 +158,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
     // wasted effort as we will most likely be updating an existing group.
     if (orderedGroups != null) {
       for (int compIDX = 0;; compIDX++) {
-        final int c = reversed[compIDX] * comparators[compIDX].compareBottom(doc);
+        final int c = reversed[compIDX] * leafComparators[compIDX].compareBottom(doc);
         if (c < 0) {
           // Definitely not competitive. So don't even bother to continue
           return;
@@ -197,7 +198,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
         sg.groupValue = copyDocGroupValue(groupValue, null);
         sg.comparatorSlot = groupMap.size();
         sg.topDoc = docBase + doc;
-        for (FieldComparator<?> fc : comparators) {
+        for (LeafFieldComparator fc : leafComparators) {
           fc.copy(sg.comparatorSlot, doc);
         }
         groupMap.put(sg.groupValue, sg);
@@ -223,7 +224,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
       bottomGroup.groupValue = copyDocGroupValue(groupValue, bottomGroup.groupValue);
       bottomGroup.topDoc = docBase + doc;
 
-      for (FieldComparator<?> fc : comparators) {
+      for (LeafFieldComparator fc : leafComparators) {
         fc.copy(bottomGroup.comparatorSlot, doc);
       }
 
@@ -232,7 +233,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
       assert orderedGroups.size() == topNGroups;
 
       final int lastComparatorSlot = orderedGroups.last().comparatorSlot;
-      for (FieldComparator<?> fc : comparators) {
+      for (LeafFieldComparator fc : leafComparators) {
         fc.setBottom(lastComparatorSlot);
       }
 
@@ -241,17 +242,16 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
 
     // Update existing group:
     for (int compIDX = 0;; compIDX++) {
-      final FieldComparator<?> fc = comparators[compIDX];
-      fc.copy(spareSlot, doc);
+      leafComparators[compIDX].copy(spareSlot, doc);
 
-      final int c = reversed[compIDX] * fc.compare(group.comparatorSlot, spareSlot);
+      final int c = reversed[compIDX] * comparators[compIDX].compare(group.comparatorSlot, spareSlot);
       if (c < 0) {
         // Definitely not competitive.
         return;
       } else if (c > 0) {
         // Definitely competitive; set remaining comparators:
         for (int compIDX2=compIDX+1; compIDX2<comparators.length; compIDX2++) {
-          comparators[compIDX2].copy(spareSlot, doc);
+          leafComparators[compIDX2].copy(spareSlot, doc);
         }
         break;
       } else if (compIDX == compIDXEnd) {
@@ -288,7 +288,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
       final CollectedSearchGroup<?> newLast = orderedGroups.last();
       // If we changed the value of the last group, or changed which group was last, then update bottom:
       if (group == newLast || prevLast != newLast) {
-        for (FieldComparator<?> fc : comparators) {
+        for (LeafFieldComparator fc : leafComparators) {
           fc.setBottom(newLast.comparatorSlot);
         }
       }
@@ -315,7 +315,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
     orderedGroups.addAll(groupMap.values());
     assert orderedGroups.size() > 0;
 
-    for (FieldComparator<?> fc : comparators) {
+    for (LeafFieldComparator fc : leafComparators) {
       fc.setBottom(orderedGroups.last().comparatorSlot);
     }
   }
@@ -329,7 +329,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
   protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     docBase = readerContext.docBase;
     for (int i=0; i<comparators.length; i++) {
-      comparators[i] = comparators[i].setNextReader(readerContext);
+      leafComparators[i] = comparators[i].getLeafComparator(readerContext);
     }
   }
 

@@ -2054,16 +2054,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     int end=0;
     int readerIndex = 0;
 
+    LeafCollector leafCollector = null;
     while (iter.hasNext()) {
       int doc = iter.nextDoc();
       while (doc>=end) {
         LeafReaderContext leaf = leafContexts.get(readerIndex++);
         base = leaf.docBase;
         end = base + leaf.reader().maxDoc();
-        topCollector.getLeafCollector(leaf);
+        leafCollector = topCollector.getLeafCollector(leaf);
         // we should never need to set the scorer given the settings for the collector
       }
-      topCollector.collect(doc-base);
+      leafCollector.collect(doc-base);
     }
     
     TopDocs topDocs = topCollector.topDocs(0, nDocs);

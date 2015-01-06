@@ -83,7 +83,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     for (SearchGroupDocs<GROUP_VALUE_TYPE> group : groupMap.values()) {
-      group.collector.setScorer(scorer);
+      group.leafCollector.setScorer(scorer);
     }
   }
 
@@ -93,7 +93,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
     SearchGroupDocs<GROUP_VALUE_TYPE> group = retrieveGroup(doc);
     if (group != null) {
       totalGroupedHitCount++;
-      group.collector.collect(doc);
+      group.leafCollector.collect(doc);
     }
   }
 
@@ -110,7 +110,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     //System.out.println("SP.setNextReader");
     for (SearchGroupDocs<GROUP_VALUE_TYPE> group : groupMap.values()) {
-      group.collector.getLeafCollector(readerContext);
+      group.leafCollector = group.collector.getLeafCollector(readerContext);
     }
   }
 
@@ -151,6 +151,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
 
     public final GROUP_VALUE_TYPE groupValue;
     public final TopDocsCollector<?> collector;
+    public LeafCollector leafCollector;
 
     public SearchGroupDocs(GROUP_VALUE_TYPE groupValue, TopDocsCollector<?> collector) {
       this.groupValue = groupValue;

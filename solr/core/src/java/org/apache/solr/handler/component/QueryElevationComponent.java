@@ -36,6 +36,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -631,7 +632,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   @Override
   public FieldComparator<Integer> newComparator(String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
-    return new FieldComparator<Integer>() {
+    return new SimpleFieldComparator<Integer>() {
       private final int[] values = new int[numHits];
       private int bottomVal;
       private int topVal;
@@ -677,13 +678,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       @Override
-      public FieldComparator setNextReader(LeafReaderContext context) throws IOException {
+      protected void doSetNextReader(LeafReaderContext context) throws IOException {
         //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
         ordSet.clear();
         Fields fields = context.reader().fields();
-        if (fields == null) return this;
+        if (fields == null) return;
         Terms terms = fields.terms(idField);
-        if (terms == null) return this;
+        if (terms == null) return;
         termsEnum = terms.iterator(termsEnum);
         BytesRefBuilder term = new BytesRefBuilder();
         Bits liveDocs = context.reader().getLiveDocs();
@@ -701,7 +702,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             }
           }
         }
-        return this;
       }
 
       @Override

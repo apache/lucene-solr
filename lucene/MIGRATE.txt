@@ -58,6 +58,14 @@ per segment. It is possible to migrate existing collectors painlessly by
 extending SimpleCollector instead of Collector: SimpleCollector is a
 specialization of Collector that returns itself as a per-segment Collector.
 
+## Refactored FieldComparator API (LUCENE-5702)
+
+Like collectors (see above), field comparators have been refactored to
+produce a new comparator (called LeafFieldComparator) per segment. It is
+possible to migrate existing comparators painlessly by extending
+SimpleFieldComparator, which will implements both FieldComparator and
+LeafFieldComparator and return itself as a per-segment comparator.
+
 ## Removed ChainedFilter (LUCENE-5984)
 
 Users are advised to switch to BooleanFilter instead.

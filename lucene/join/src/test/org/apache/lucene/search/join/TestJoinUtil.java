@@ -52,9 +52,12 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -482,30 +485,25 @@ public class TestJoinUtil extends LuceneTestCase {
         // Need to know all documents that have matches. TopDocs doesn't give me that and then I'd be also testing TopDocsCollector...
         final BitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
         final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10, false);
-        indexSearcher.search(joinQuery, new SimpleCollector() {
-
-          int docBase;
+        indexSearcher.search(joinQuery, new Collector() {
 
           @Override
-          public void collect(int doc) throws IOException {
-            actualResult.set(doc + docBase);
-            topScoreDocCollector.collect(doc);
-          }
+          public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+            final int docBase = context.docBase;
+            final LeafCollector in = topScoreDocCollector.getLeafCollector(context);
+            return new FilterLeafCollector(in) {
 
-          @Override
-          protected void doSetNextReader(LeafReaderContext context) throws IOException {
-            docBase = context.docBase;
-            topScoreDocCollector.getLeafCollector(context);
-          }
-
-          @Override
-          public void setScorer(Scorer scorer) throws IOException {
-            topScoreDocCollector.setScorer(scorer);
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return scoreDocsInOrder;
+              @Override
+              public void collect(int doc) throws IOException {
+                super.collect(doc);
+                actualResult.set(doc + docBase);
+              }
+              
+              @Override
+              public boolean acceptsDocsOutOfOrder() {
+                return scoreDocsInOrder;
+              }
+            };
           }
         });
         // Asserting bit set...

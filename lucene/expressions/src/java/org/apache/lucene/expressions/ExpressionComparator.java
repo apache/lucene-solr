@@ -24,10 +24,11 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 
 /** A custom comparator for sorting documents by an expression */
-class ExpressionComparator extends FieldComparator<Double> {
+class ExpressionComparator extends FieldComparator<Double> implements LeafFieldComparator {
   private final double[] values;
   private double bottom;
   private double topValue;
@@ -44,7 +45,6 @@ class ExpressionComparator extends FieldComparator<Double> {
   // TODO: change FieldComparator.setScorer to throw IOException and remove this try-catch
   @Override
   public void setScorer(Scorer scorer) {
-    super.setScorer(scorer);
     // TODO: might be cleaner to lazy-init 'source' and set scorer after?
     assert readerContext != null;
     try {
@@ -83,7 +83,7 @@ class ExpressionComparator extends FieldComparator<Double> {
   }
   
   @Override
-  public FieldComparator<Double> setNextReader(LeafReaderContext context) throws IOException {
+  public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
     this.readerContext = context;
     return this;
   }

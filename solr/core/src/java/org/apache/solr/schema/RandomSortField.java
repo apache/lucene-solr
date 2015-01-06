@@ -109,7 +109,7 @@ public class RandomSortField extends FieldType {
   private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {
     @Override
     public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) {
-      return new FieldComparator<Integer>() {
+      return new SimpleFieldComparator<Integer>() {
         int seed;
         private final int[] values = new int[numHits];
         int bottomVal;
@@ -141,9 +141,8 @@ public class RandomSortField extends FieldType {
         }
 
         @Override
-        public FieldComparator setNextReader(LeafReaderContext context) {
+        protected void doSetNextReader(LeafReaderContext context) {
           seed = getSeed(fieldname, context);
-          return this;
         }
 
         @Override
