@@ -32,7 +32,8 @@
     <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile"/>
     <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
-    <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="${/org.codehaus.woodstox/wstx-asl}" conf="compile"/>
+    <dependency org="org.codehaus.woodstox" name="woodstox-core-asl" rev="${/org.codehaus.woodstox/woodstox-core-asl}" conf="compile"/>
+    <dependency org="org.codehaus.woodstox" name="stax2-api" rev="${/org.codehaus.woodstox/stax2-api}" conf="compile"/>
     <dependency org="org.noggit" name="noggit" rev="${/org.noggit/noggit}" conf="compile"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile"/>
 
