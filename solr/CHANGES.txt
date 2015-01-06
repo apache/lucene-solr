@@ -292,6 +292,9 @@ New Features
   distErr, d, geodist, score=distance|area|area2d. score now accepts these units as well. It does
   NOT affect distances embedded in WKT strings like BUFFER(POINT(200 10),0.2)).
   (Ishan Chattopadhyaya, David Smiley)
+
+* SOLR-6766: Expose HdfsDirectoryFactory Block Cache statistics via JMX.
+  (Mike Drob, Mark Miller)
   
 Bug Fixes
 ----------------------
