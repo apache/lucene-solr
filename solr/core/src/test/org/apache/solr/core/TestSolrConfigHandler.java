@@ -172,7 +172,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         10);
 
     payload = "{\n" +
-        "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy' , 'a':'b'}\n" +
+        "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy' , 'a':'b' , 'defaults': {'def_a':'def A val'}}\n" +
         "}";
     runConfigCommand(writeHarness,"/config?wt=json", payload);
 
@@ -182,6 +182,14 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrServer,
         Arrays.asList("overlay", "requestHandler", "/x", "a"),
         "b",
+        10);
+
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/x?wt=json&getdefaults=true&json.nl=map",
+        cloudSolrServer,
+        Arrays.asList("getdefaults", "def_a"),
+        "def A val",
         10);
 
     payload = "{\n" +
