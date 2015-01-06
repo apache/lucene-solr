@@ -346,46 +346,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
   /**
-   * Verify that things still work if an IW has not been opened (and hence the CommitPoints have not been communicated to the deletion policy)
-   */
-  public void testNoWriter() throws Exception {
-    useFactory(null);    // force a persistent directory
-
-    // read-only setting (no opening from indexwriter)
-    System.setProperty("solr.tests.nrtMode", "false");
-    try {
-    // stop and start so they see the new directory setting
-    slaveJetty.stop();
-    masterJetty.stop();
-    slaveJetty.start(true);
-    masterJetty.start(true);
-
-    index(slaveClient, "id", "123456");
-    slaveClient.commit();
-    slaveJetty.stop();
-    slaveJetty.start(true);
-    } finally {
-      System.clearProperty("solr.tests.nrtMode"); // dont mess with other tests
-    }
-
-    // Currently we open a writer on-demand.  This is to test that we are correctly testing
-    // the code path when SolrDeletionPolicy.getLatestCommit() returns null.
-    // When we are using an ephemeral directory, an IW will always be opened to create the index and hence
-    // getLatestCommit will always be non-null.
-    CoreContainer cores = ((SolrDispatchFilter) slaveJetty.getDispatchFilter().getFilter()).getCores();
-    Collection<SolrCore> theCores = cores.getCores();
-    assertEquals(1, theCores.size());
-    SolrCore core = (SolrCore)theCores.toArray()[0];
-    assertNull( core.getDeletionPolicy().getLatestCommit() );
-
-
-    pullFromMasterToSlave();  // this will cause SnapPuller to be invoked and we will test when SolrDeletionPolicy.getLatestCommit() returns null
-
-    resetFactory();
-  }
-
-  /**
-   * Verify that empty commits and/or commits with openSearcher=false 
+   * Verify that empty commits and/or commits with openSearcher=false
    * on the master do not cause subsequent replication problems on the slave 
    */
   public void testEmptyCommits() throws Exception {

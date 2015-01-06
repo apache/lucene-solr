@@ -205,7 +205,11 @@ public class SolrConfig extends Config implements MapSerializable{
       defaultIndexConfig = mainIndexConfig = null;
       indexConfigPrefix = "indexConfig";
     }
-    nrtMode = getBool(indexConfigPrefix+"/nrtMode", true);
+    assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
+            " This config will be removed in future versions.", getNode(indexConfigPrefix + "/nrtMode", false) != null,
+        false
+    );
+
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", mainIndexConfig);
 
@@ -431,7 +435,6 @@ public class SolrConfig extends Config implements MapSerializable{
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
-  public final boolean nrtMode;
   // DocSet
   public final float hashSetInverseLoadFactor;
   public final int hashDocSetMaxSize;

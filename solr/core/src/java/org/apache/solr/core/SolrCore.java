@@ -441,7 +441,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     solrCoreState.increfSolrCoreState();
     SolrCore currentCore;
     boolean indexDirChange = !getNewIndexDir().equals(getIndexDir());
-    if (indexDirChange || !coreConfig.getSolrConfig().nrtMode) {
+    if (indexDirChange) {
       // the directory is changing, don't pass on state
       currentCore = null;
     } else {
@@ -459,13 +459,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     core.getSearcher(true, false, null, true);
     
     return core;
-  }
-
-
-  // gets a non-caching searcher
-  public SolrIndexSearcher newSearcher(String name) throws IOException {
-    return new SolrIndexSearcher(this, getNewIndexDir(), getLatestSchema(), getSolrConfig().indexConfig, 
-                                 name, false, directoryFactory);
   }
 
 
@@ -852,13 +845,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
             @Override
             public DirectoryReader call() throws Exception {
-              if(getSolrConfig().nrtMode) {
-                // if in NRT mode, need to open from the previous writer
-                return indexReaderFactory.newReader(iw, core);
-              } else {
-                // if not NRT, need to create a new reader from the directory
-                return indexReaderFactory.newReader(iw.getDirectory(), core);
-              }
+              return indexReaderFactory.newReader(iw, core);
             }
           };
         }
@@ -1500,7 +1487,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     SolrIndexSearcher tmp;
     RefCounted<SolrIndexSearcher> newestSearcher = null;
-    boolean nrt = solrConfig.nrtMode && updateHandlerReopens;
 
     openSearcherLock.lock();
     try {
@@ -1509,7 +1495,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       String newIndexDirFile = null;
 
       // if it's not a normal near-realtime update, check that paths haven't changed.
-      if (!nrt) {
+      if (!updateHandlerReopens) {
         indexDirFile = getDirectoryFactory().normalize(getIndexDir());
         newIndexDirFile = getDirectoryFactory().normalize(newIndexDir);
       }
@@ -1521,7 +1507,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         }
       }
 
-      if (newestSearcher != null && (nrt || indexDirFile.equals(newIndexDirFile))) {
+      if (newestSearcher != null && (updateHandlerReopens || indexDirFile.equals(newIndexDirFile))) {
 
         DirectoryReader newReader;
         DirectoryReader currentReader = newestSearcher.get().getRawReader();
@@ -1531,12 +1517,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState()
             .getIndexWriter(null);
         try {
-          if (writer != null && solrConfig.nrtMode) {
+          if (writer != null) {
             // if in NRT mode, open from the writer
             newReader = DirectoryReader.openIfChanged(currentReader, writer.get(), true);
           } else {
             // verbose("start reopen without writer, reader=", currentReader);
-            // if not in NRT mode, just re-open the reader
             newReader = DirectoryReader.openIfChanged(currentReader);
             // verbose("reopen result", newReader);
           }
@@ -1583,7 +1568,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           DirectoryReader newReader = newReaderCreator.call();
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), 
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
-        } else if (solrConfig.nrtMode) {
+        } else  {
           RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
           try {
@@ -1593,12 +1578,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           }
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
-        } else {
-         // normal open that happens at startup
-        // verbose("non-reopen START:");
-        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig,
-                                    "main", true, directoryFactory);
-        // verbose("non-reopen DONE: searcher=",tmp);
         }
       }
 
