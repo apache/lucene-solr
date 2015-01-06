@@ -40,6 +40,9 @@ Upgrading from Solr 5.x
 * The deprecated SolrServer and subclasses have been removed, use SolrClient
   instead.
 
+* The deprecated <nrtMode> configuration in solrconfig.xml has been removed.
+  Please remove it from solrconfig.xml.
+
 Detailed Change List
 ----------------------
 
