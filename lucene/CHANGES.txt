@@ -343,6 +343,10 @@ API Changes
 * LUCENE-6146: Replaced Directory.copy() with Directory.copyFrom().
   (Robert Muir)
 
+* LUCENE-6149: Infix suggesters' highlighting and allTermsRequired can
+  be set at the constructor for non-contextual lookup.
+  (Boon Low, Tomás Fernández Löbbe)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

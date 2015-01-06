@@ -117,7 +117,27 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
     this.blenderType = blenderType;
     this.numFactor = numFactor;
   }
-
+  
+  /**
+   * Create a new instance, loading from a previously built
+   * directory, if it exists.
+   *
+   * @param blenderType Type of blending strategy, see BlenderType for more precisions
+   * @param numFactor   Factor to multiply the number of searched elements before ponderate
+   * @param commitOnBuild Call commit after the index has finished building. This would persist the
+   *                      suggester index to disk and future instances of this suggester can use this pre-built dictionary.
+   * @param allTermsRequired All terms in the suggest query must be matched.
+   * @param highlight Highlight suggest query in suggestions.
+   * @throws IOException If there are problems opening the underlying Lucene index.
+   */
+  public BlendedInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer,
+                               int minPrefixChars, BlenderType blenderType, int numFactor, 
+                               boolean commitOnBuild, boolean allTermsRequired, boolean highlight) throws IOException {
+    super(dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild, allTermsRequired, highlight);
+    this.blenderType = blenderType;
+    this.numFactor = numFactor;
+  }
+  
   @Override
   public List<Lookup.LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) throws IOException {
     // here we multiply the number of searched element by the defined factor
