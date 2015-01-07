@@ -111,15 +111,15 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     assertEquals("a penny saved is a penny earned", results.get(0).key);
     assertNull(results.get(0).highlightKey);
     
-    testConstructorDefatuls(suggester, keys, a, true, true);
-    testConstructorDefatuls(suggester, keys, a, true, false);
-    testConstructorDefatuls(suggester, keys, a, false, false);
-    testConstructorDefatuls(suggester, keys, a, false, true);
+    testConstructorDefaults(suggester, keys, a, true, true);
+    testConstructorDefaults(suggester, keys, a, true, false);
+    testConstructorDefaults(suggester, keys, a, false, false);
+    testConstructorDefaults(suggester, keys, a, false, true);
     
     suggester.close();
   }
 
-  private void testConstructorDefatuls(AnalyzingInfixSuggester suggester, Input[] keys, Analyzer a, 
+  private void testConstructorDefaults(AnalyzingInfixSuggester suggester, Input[] keys, Analyzer a, 
       boolean allTermsRequired, boolean highlight) throws IOException {
     AnalyzingInfixSuggester suggester2 = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false, allTermsRequired, highlight);
     suggester2.build(new InputArrayIterator(keys));
