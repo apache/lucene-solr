@@ -462,6 +462,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         }
 
         merger.start();
+        updateMergeThreads();
 
         success = true;
       } finally {
@@ -649,12 +650,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   /** Tunes IO throttle when a new merge starts. */
-  private synchronized void updateIOThrottle(OneMerge merge) throws IOException {
+  private synchronized void updateIOThrottle(OneMerge newMerge) throws IOException {
     if (doAutoIOThrottle == false) {
       return;
     }
 
-    double mergeMB = bytesToMB(merge.estimatedMergeBytes);
+    double mergeMB = bytesToMB(newMerge.estimatedMergeBytes);
     if (mergeMB < MIN_BIG_MERGE_MB) {
       // Only watch non-trivial merges for throttling; this is safe because the MP must eventually
       // have to do larger merges:
@@ -666,7 +667,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     // Simplistic closed-loop feedback control: if we find any other similarly
     // sized merges running, then we are falling behind, so we bump up the
     // IO throttle, else we lower it:
-    boolean newBacklog = isBacklog(now, merge);
+    boolean newBacklog = isBacklog(now, newMerge);
 
     boolean curBacklog = false;
 
@@ -721,8 +722,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       }
     }
 
+    newMerge.rateLimiter.setMBPerSec(targetMBPerSec);
     targetMBPerSecChanged();
-    updateMergeThreads();
   }
 
   /** Subclass can override to tweak targetMBPerSec. */
