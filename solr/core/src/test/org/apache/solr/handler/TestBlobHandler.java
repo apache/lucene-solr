@@ -37,13 +37,17 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.SimplePostTool;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +92,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     map = TestSolrConfigHandlerConcurrent.getAsMap(url,cloudClient);
     List l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
     assertNotNull(""+map, l);
-    assertTrue(""+map, l.size()>0);
+    assertTrue("" + map, l.size() > 0);
     map = (Map) l.get(0);
     assertEquals(""+bytarr.length,String.valueOf(map.get("size")));
 
@@ -120,27 +124,30 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   public static void postAndCheck(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytes, int count) throws Exception {
     postData(cloudClient, baseUrl, bytes);
+
     String url;
-    Map map;
+    Map map = null;
     List l;
-    long startTime = System.nanoTime();
-    long maxTimeoutSeconds = 10;
-    while ( true) {
+
+    for(int i=0;i<100;i++) {//10secs
       url = baseUrl + "/.system/blob/test";
       map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
       String numFound = String.valueOf(ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "numFound")));
       if(!(""+count).equals(numFound)) {
-        if (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
-          Thread.sleep(100);
-          continue;
-        }
+        Thread.sleep(100);
+        continue;
       }
       l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
       assertNotNull(l);
       map = (Map) l.get(0);
       assertEquals("" + bytes.limit(), String.valueOf(map.get("size")));
-      break;
+      return;
     }
+    fail("Could not successfully add blob " + getAsString(map));
+  }
+
+  public static String getAsString(Map map) {
+    return new String(ZkStateReader.toJSON(map), StandardCharsets.UTF_8);
   }
 
   private void compareInputAndOutput(String url, byte[] bytarr) throws IOException {
@@ -161,16 +168,23 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
   }
 
-  public static String postData(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytarr) throws IOException {
+  public static void postData(CloudSolrClient cloudClient, String baseUrl, ByteBuffer bytarr) throws IOException {
     HttpPost httpPost = null;
     HttpEntity entity;
-    String response;
+    String response = null;
     try {
       httpPost = new HttpPost(baseUrl+"/.system/blob/test");
       httpPost.setHeader("Content-Type","application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
-      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
+      try {
+        response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+        Map m = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+        assertFalse("Error in posting blob "+ getAsString(m),m.containsKey("error"));
+      } catch (JSONParser.ParseException e) {
+        log.error(response);
+        fail();
+      }
     } finally {
       httpPost.releaseConnection();
     }

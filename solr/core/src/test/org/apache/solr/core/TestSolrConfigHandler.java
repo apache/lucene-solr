@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
@@ -54,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+import static org.apache.solr.handler.TestBlobHandler.getAsString;
 
 public class TestSolrConfigHandler extends RestTestBase {
   public static final Logger log = LoggerFactory.getLogger(TestSolrConfigHandler.class);
@@ -251,7 +253,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     }
 
-    assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, new String(ZkStateReader.toJSON(m), StandardCharsets.UTF_8)), success);
+    assertTrue(MessageFormat.format("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(m)), success);
   }
 
   public void testReqParams() throws Exception{
