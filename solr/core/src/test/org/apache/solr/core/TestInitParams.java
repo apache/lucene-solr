@@ -76,18 +76,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   }
 
-  /*@Test
-  public void testComponentWithInitParamAndRequestParam(){
-    for (String s : Arrays.asList("/dump4")) {
-      SolrRequestHandler handler = h.getCore().getRequestHandler(s);
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      handler.handleRequest(req("param", "a","param","b" ,"param","c", "useParam","a"), rsp);
-      NamedList def = (NamedList) rsp.getValues().get("params");
-      assertEquals("A", def.get("a"));
-      assertEquals("B", def.get("b"));
-      assertEquals("C", def.get("c"));
-    }
-  }*/
+
   @Test
   public void testComponentWithConflictingInitParams(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");
@@ -119,7 +108,10 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   }
 
-
-
+  public void testMatchPath(){
+    InitParams initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/json/docs")));
+    assertFalse(initParams.matchPath("/update"));
+    assertTrue(initParams.matchPath("/update/json/docs"));
+  }
 
 }

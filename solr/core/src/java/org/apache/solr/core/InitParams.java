@@ -74,7 +74,7 @@ public class InitParams {
       if("**".equals(ps)) return true;
       return false;
     }
-    return true;
+    return false;
 
   }
 
