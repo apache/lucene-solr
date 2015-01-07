@@ -96,6 +96,17 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   public void testProperty() throws Exception{
     RestTestHarness harness = restTestHarness;
+    Map confMap =  getRespMap("/config?wt=json" ,harness);
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/luke")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/system")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/mbeans")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/plugins")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/threads")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/properties")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/logging")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/file")));
+    assertNotNull( getObjectByPath(confMap,false,Arrays.asList("config","requestHandler","/admin/ping")));
+
     String payload= "{\n" +
         " 'set-property' : { 'updateHandler.autoCommit.maxDocs':100, 'updateHandler.autoCommit.maxTime':10 } \n" +
         " }";
