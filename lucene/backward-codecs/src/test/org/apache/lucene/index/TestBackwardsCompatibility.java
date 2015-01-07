@@ -540,11 +540,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testAddOldIndexesReader() throws IOException {
     for (String name : oldNames) {
-      IndexReader reader = DirectoryReader.open(oldIndexDirs.get(name));
+      DirectoryReader reader = DirectoryReader.open(oldIndexDirs.get(name));
       
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
-      w.addIndexes(reader);
+      TestUtil.addIndexesSlowly(w, reader);
       w.close();
       reader.close();
             

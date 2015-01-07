@@ -38,6 +38,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * 
@@ -612,9 +613,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       // expected
     }
 
-    IndexReader r = DirectoryReader.open(dir2);
+    DirectoryReader r = DirectoryReader.open(dir2);
     try {
-      w.addIndexes(new IndexReader[] {r});
+      TestUtil.addIndexesSlowly(w, r);
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -781,14 +782,14 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
     writer.addDocument(doc);
-    IndexReader[] readers = new IndexReader[] {DirectoryReader.open(dir)};
+    DirectoryReader reader = DirectoryReader.open(dir);
     try {
-      writer.addIndexes(readers);
+      TestUtil.addIndexesSlowly(writer, reader);
       fail("did not hit exception");
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    readers[0].close();
+    reader.close();
     writer.close();
 
     dir.close();
@@ -833,9 +834,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory dir2 = newDirectory();
     conf = newIndexWriterConfig(new MockAnalyzer(random()));
     writer = new IndexWriter(dir2, conf);
-    IndexReader[] readers = new IndexReader[] {DirectoryReader.open(dir)};
-    writer.addIndexes(readers);
-    readers[0].close();
+    DirectoryReader reader = DirectoryReader.open(dir);
+    TestUtil.addIndexesSlowly(writer, reader);
+    reader.close();
     doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
     try {

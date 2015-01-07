@@ -399,7 +399,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final Thread[] threads = new Thread[numThreads];
     IndexWriter mainWriter;
     final List<Throwable> failures = new ArrayList<>();
-    IndexReader[] readers;
+    DirectoryReader[] readers;
     boolean didClose = false;
     AtomicInteger count = new AtomicInteger(0);
     AtomicInteger numaddIndexes = new AtomicInteger(0);
@@ -418,7 +418,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
         
       writer.close();
       
-      readers = new IndexReader[numDirs];
+      readers = new DirectoryReader[numDirs];
       for (int i = 0; i < numDirs; i++)
         readers[i] = DirectoryReader.open(addDir);
     }
@@ -498,7 +498,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
           numaddIndexes.incrementAndGet();
           break;
         case 2:
-          mainWriter.addIndexes(readers);
+          TestUtil.addIndexesSlowly(mainWriter, readers);
           break;
         case 3:
           mainWriter.commit();

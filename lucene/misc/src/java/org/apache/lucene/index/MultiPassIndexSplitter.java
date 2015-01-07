@@ -33,7 +33,7 @@ import org.apache.lucene.util.Version;
 
 /**
  * This tool splits input index into multiple equal parts. The method employed
- * here uses {@link IndexWriter#addIndexes(IndexReader[])} where the input data
+ * here uses {@link IndexWriter#addIndexes(LeafReader[])} where the input data
  * comes from the input index with artificially applied deletes to the document
  * id-s that fall outside the selected partition.
  * <p>Note 1: Deletes are only applied to a buffered list of deleted docs and
@@ -102,7 +102,7 @@ public class MultiPassIndexSplitter {
       System.err.println("Writing part " + (i + 1) + " ...");
       // pass the subreaders directly, as our wrapper's numDocs/hasDeletetions are not up-to-date
       final List<? extends FakeDeleteLeafIndexReader> sr = input.getSequentialSubReaders();
-      w.addIndexes(sr.toArray(new IndexReader[sr.size()])); // TODO: maybe take List<IR> here?
+      w.addIndexes(sr.toArray(new LeafReader[sr.size()])); // TODO: maybe take List<IR> here?
       w.close();
     }
     System.err.println("Done.");

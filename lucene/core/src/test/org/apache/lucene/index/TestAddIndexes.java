@@ -652,7 +652,7 @@ public class TestAddIndexes extends LuceneTestCase {
     IndexWriter writer2;
     final List<Throwable> failures = new ArrayList<>();
     volatile boolean didClose;
-    final IndexReader[] readers;
+    final DirectoryReader[] readers;
     final int NUM_COPY;
     final static int NUM_THREADS = 5;
     final Thread[] threads = new Thread[NUM_THREADS];
@@ -671,7 +671,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer2.commit();
       
 
-      readers = new IndexReader[NUM_COPY];
+      readers = new DirectoryReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
         readers[i] = DirectoryReader.open(dir);
     }
@@ -770,9 +770,9 @@ public class TestAddIndexes extends LuceneTestCase {
         break;
       case 2:
         if (VERBOSE) {
-          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(IndexReader[])");
+          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(LeafReader[])");
         }
-        writer2.addIndexes(readers);
+        TestUtil.addIndexesSlowly(writer2, readers);
         break;
       case 3:
         if (VERBOSE) {
@@ -875,9 +875,9 @@ public class TestAddIndexes extends LuceneTestCase {
         break;
       case 2:
         if (VERBOSE) {
-          System.out.println("TEST: " + Thread.currentThread().getName() + ": addIndexes(IR[])");
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": addIndexes(LR[])");
         }
-        writer2.addIndexes(readers);
+        TestUtil.addIndexesSlowly(writer2, readers);
         break;
       case 3:
         if (VERBOSE) {
@@ -982,11 +982,8 @@ public class TestAddIndexes extends LuceneTestCase {
 
     // Now delete the document
     writer.deleteDocuments(new Term("id", "myid"));
-    IndexReader r = DirectoryReader.open(dirs[1]);
-    try {
-      writer.addIndexes(r);
-    } finally {
-      r.close();
+    try (DirectoryReader r = DirectoryReader.open(dirs[1])) {
+      TestUtil.addIndexesSlowly(writer, r);
     }
     writer.commit();
     assertEquals("Documents from the incoming index should not have been deleted", 1, writer.numDocs());
@@ -1101,7 +1098,7 @@ public class TestAddIndexes extends LuceneTestCase {
       w.close();
     }
     
-    IndexReader[] readers = new IndexReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
+    DirectoryReader[] readers = new DirectoryReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
     dir.setEnableVirusScanner(false); // we check for specific list of files
@@ -1111,7 +1108,7 @@ public class TestAddIndexes extends LuceneTestCase {
     lmp.setNoCFSRatio(1.0);
     lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     IndexWriter w3 = new IndexWriter(dir, conf);
-    w3.addIndexes(readers);
+    TestUtil.addIndexesSlowly(w3, readers);
     w3.close();
     // we should now see segments_X,
     // _Y.cfs,_Y.cfe, _Z.si
@@ -1182,7 +1179,7 @@ public class TestAddIndexes extends LuceneTestCase {
     doc.add(newStringField("f1", "doc1 field1", Field.Store.YES));
     doc.add(newStringField("id", "1", Field.Store.YES));
     w.addDocument(doc);
-    IndexReader r1 = w.getReader();
+    DirectoryReader r1 = w.getReader();
     w.close();
 
     Directory d2 = newDirectory();
@@ -1191,12 +1188,12 @@ public class TestAddIndexes extends LuceneTestCase {
     doc.add(newStringField("f2", "doc2 field2", Field.Store.YES));
     doc.add(newStringField("id", "2", Field.Store.YES));
     w.addDocument(doc);
-    IndexReader r2 = w.getReader();
+    DirectoryReader r2 = w.getReader();
     w.close();
 
     Directory d3 = newDirectory();
     w = new RandomIndexWriter(random(), d3);
-    w.addIndexes(r1, r2);
+    TestUtil.addIndexesSlowly(w.w, r1, r2);
     r1.close();
     d1.close();
     r2.close();
@@ -1220,8 +1217,7 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testAddEmpty() throws Exception {
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
-    MultiReader empty = new MultiReader();
-    w.addIndexes(empty);
+    w.addIndexes(new LeafReader[0]);
     w.close();
     DirectoryReader dr = DirectoryReader.open(d1);
     for (LeafReaderContext ctx : dr.leaves()) {
@@ -1239,7 +1235,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory src = newDirectory(), dest = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), src);
     w.addDocument(new Document());
-    IndexReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
+    LeafReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
     w.close();
     
     w = new RandomIndexWriter(random(), dest);

@@ -138,11 +138,11 @@ public class TestFilterLeafReader extends LuceneTestCase {
     ((BaseDirectoryWrapper) target).setCrossCheckTermVectorsOnClose(false);
 
     writer = new IndexWriter(target, newIndexWriterConfig(new MockAnalyzer(random())));
-    IndexReader reader = new TestReader(DirectoryReader.open(directory));
-    writer.addIndexes(reader);
+    try (LeafReader reader = new TestReader(DirectoryReader.open(directory))) {
+      writer.addIndexes(reader);
+    }
     writer.close();
-    reader.close();
-    reader = DirectoryReader.open(target);
+    IndexReader reader = DirectoryReader.open(target);
     
     TermsEnum terms = MultiFields.getTerms(reader, "default").iterator(null);
     while (terms.next() != null) {

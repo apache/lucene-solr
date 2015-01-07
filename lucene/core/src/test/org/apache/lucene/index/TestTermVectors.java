@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -154,8 +155,8 @@ public class TestTermVectors extends LuceneTestCase {
     
     IndexWriter writer = createWriter(target);
     for (Directory dir : input) {
-      IndexReader r = DirectoryReader.open(dir);
-      writer.addIndexes(r);
+      DirectoryReader r = DirectoryReader.open(dir);
+      TestUtil.addIndexesSlowly(writer, r);
       r.close();
     }
     writer.forceMerge(1);

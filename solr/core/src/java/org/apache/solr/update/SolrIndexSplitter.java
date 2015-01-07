@@ -129,7 +129,7 @@ public class SolrIndexSplitter {
         // This removes deletions but optimize might still be needed because sub-shards will have the same number of segments as the parent shard.
         for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
           log.info("SolrIndexSplitter: partition #" + partitionNumber + " partitionCount=" + numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : "") + " segment #"+segmentNumber + " segmentCount=" + leaves.size());
-          IndexReader subReader = new LiveDocsReader( leaves.get(segmentNumber), segmentDocSets.get(segmentNumber)[partitionNumber] );
+          LeafReader subReader = new LiveDocsReader( leaves.get(segmentNumber), segmentDocSets.get(segmentNumber)[partitionNumber] );
           iw.addIndexes(subReader);
         }
         success = true;

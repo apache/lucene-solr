@@ -56,7 +56,7 @@ public abstract class TaxonomyMergeUtils {
       for (int i = 0; i < numReaders; i++) {
         wrappedLeaves[i] = new OrdinalMappingLeafReader(leaves.get(i).reader(), ordinalMap, srcConfig);
       }
-      destIndexWriter.addIndexes(new MultiReader(wrappedLeaves));
+      destIndexWriter.addIndexes(wrappedLeaves);
       
       // commit changes to taxonomy and index respectively.
       destTaxoWriter.commit();
