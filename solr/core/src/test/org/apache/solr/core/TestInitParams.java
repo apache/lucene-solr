@@ -108,10 +108,10 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   }
 
-  public void testMatchPath(){
+ /* public void testMatchPath(){
     InitParams initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/json/docs")));
     assertFalse(initParams.matchPath("/update"));
     assertTrue(initParams.matchPath("/update/json/docs"));
-  }
+  }*/
 
 }
