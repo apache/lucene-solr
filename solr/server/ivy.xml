@@ -49,9 +49,6 @@
 
     <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start"/>
 
-    <dependency org="org.eclipse.jetty.orbit" name="javax.servlet" rev="${/org.eclipse.jetty.orbit/javax.servlet}" conf="servlet">
-      <artifact name="javax.servlet" type="orbit" ext="jar"/>
-    </dependency>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

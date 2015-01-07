@@ -644,7 +644,7 @@ Other Changes
   (Ramkumar Aiyengar via shalin)
 
 * SOLR-4839: Upgrade Jetty to 9.2.6.v20141205 and restlet-jee to 2.3.0
-  (Bill Bell, Timothy Potter, Uwe Schindler, shalin)
+  (Bill Bell, Timothy Potter, Uwe Schindler, Mark Miller, shalin)
 
 * SOLR-6897: Nuke non-NRT mode from code and configuration. (Hossman, shalin)
 
