@@ -874,8 +874,8 @@ public class TestIndexWriter extends LuceneTestCase {
     writer2.addDocument(doc);
     writer2.close();
 
-    IndexReader r1 = DirectoryReader.open(dir2);
-    writer.addIndexes(r1, r1);
+    DirectoryReader r1 = DirectoryReader.open(dir2);
+    TestUtil.addIndexesSlowly(writer, r1, r1);
     writer.close();
 
     IndexReader r3 = DirectoryReader.open(dir);

@@ -165,9 +165,9 @@ public class TrackingIndexWriter {
     return indexingGen.get();
   }
 
-  /** Calls {@link IndexWriter#addIndexes(IndexReader...)}
+  /** Calls {@link IndexWriter#addIndexes(LeafReader...)}
    *  and returns the generation that reflects this change. */
-  public long addIndexes(IndexReader... readers) throws IOException {
+  public long addIndexes(LeafReader... readers) throws IOException {
     writer.addIndexes(readers);
     // Return gen as of when indexing finished:
     return indexingGen.get();

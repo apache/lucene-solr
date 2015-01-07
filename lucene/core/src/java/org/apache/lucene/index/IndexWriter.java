@@ -235,8 +235,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public static final String SOURCE_MERGE = "merge";
   /** Source of a segment which results from a flush. */
   public static final String SOURCE_FLUSH = "flush";
-  /** Source of a segment which results from a call to {@link #addIndexes(IndexReader...)}. */
-  public static final String SOURCE_ADDINDEXES_READERS = "addIndexes(IndexReader...)";
+  /** Source of a segment which results from a call to {@link #addIndexes(LeafReader...)}. */
+  public static final String SOURCE_ADDINDEXES_READERS = "addIndexes(LeafReader...)";
 
   /**
    * Absolute hard maximum length for a term, in bytes once
@@ -2099,7 +2099,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * 
    * <p>
    * NOTE: this method will forcefully abort all merges in progress. If other
-   * threads are running {@link #forceMerge}, {@link #addIndexes(IndexReader[])}
+   * threads are running {@link #forceMerge}, {@link #addIndexes(LeafReader[])}
    * or {@link #forceMergeDeletes} methods, they may receive
    * {@link MergePolicy.MergeAbortedException}s.
    */
@@ -2497,7 +2497,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * index.
    * 
    * <p>
-   * <b>NOTE:</b> this method merges all given {@link IndexReader}s in one
+   * <b>NOTE:</b> this method merges all given {@link LeafReader}s in one
    * merge. If you intend to merge a large number of readers, it may be better
    * to call this method multiple times, each time with a small set of readers.
    * In principle, if you use a merge policy with a {@code mergeFactor} or
@@ -2509,23 +2509,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException
    *           if there is a low-level IO error
    */
-  public void addIndexes(IndexReader... readers) throws IOException {
+  public void addIndexes(LeafReader... readers) throws IOException {
     ensureOpen();
     int numDocs = 0;
 
     try {
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "flush at addIndexes(IndexReader...)");
+        infoStream.message("IW", "flush at addIndexes(LeafReader...)");
       }
       flush(false, true);
 
       String mergedName = newSegmentName();
-      final List<LeafReader> mergeReaders = new ArrayList<>();
-      for (IndexReader indexReader : readers) {
-        numDocs += indexReader.numDocs();
-        for (LeafReaderContext ctx : indexReader.leaves()) {
-          mergeReaders.add(ctx.reader());
-        }
+      for (LeafReader leaf : readers) {
+        numDocs += leaf.numDocs();
       }
 
       // Make sure adding the new documents to this index won't
@@ -2541,7 +2537,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       SegmentInfo info = new SegmentInfo(directory, Version.LATEST, mergedName, -1,
                                          false, codec, null, StringHelper.randomId(), new HashMap<>());
 
-      SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
+      SegmentMerger merger = new SegmentMerger(Arrays.asList(readers), info, infoStream, trackingDir,
                                                globalFieldNumberMap, 
                                                context);
       

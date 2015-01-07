@@ -39,7 +39,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
     dir.setRandomIOExceptionRateOnOpen(rate);
     int iters = atLeast(20);
     LineFileDocs docs = new LineFileDocs(random());
-    IndexReader r = null;
+    DirectoryReader r = null;
     DirectoryReader r2 = null;
     boolean any = false;
     MockDirectoryWrapper dirCopy = null;
@@ -68,9 +68,9 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         if (r != null && random().nextInt(5) == 3) {
           if (random().nextBoolean()) {
             if (VERBOSE) {
-              System.out.println("TEST: addIndexes IR[]");
+              System.out.println("TEST: addIndexes LR[]");
             }
-            w.addIndexes(new IndexReader[] {r});
+            TestUtil.addIndexesSlowly(w, r);
           } else {
             if (VERBOSE) {
               System.out.println("TEST: addIndexes Directory[]");

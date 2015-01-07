@@ -347,6 +347,9 @@ API Changes
   be set at the constructor for non-contextual lookup.
   (Boon Low, Tomás Fernández Löbbe)
 
+* LUCENE-6158: IndexWriter.addIndexes(IndexReader...) changed to
+  addIndexes(LeafReader...) (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-5650: Enforce read-only access to any path outside the temporary

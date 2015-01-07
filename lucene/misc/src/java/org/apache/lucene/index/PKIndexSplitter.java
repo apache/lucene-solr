@@ -103,7 +103,7 @@ public class PKIndexSplitter {
     final IndexWriter w = new IndexWriter(target, config);
     try {
       final List<LeafReaderContext> leaves = reader.leaves();
-      final IndexReader[] subReaders = new IndexReader[leaves.size()];
+      final LeafReader[] subReaders = new LeafReader[leaves.size()];
       int i = 0;
       for (final LeafReaderContext ctx : leaves) {
         subReaders[i++] = new DocumentFilteredLeafIndexReader(ctx, preserveFilter, negateFilter);

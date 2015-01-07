@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -65,11 +67,11 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
         DirectoryReader.open(rd2));
     
     // When unpatched, Lucene crashes here with a NoSuchElementException (caused by ParallelTermEnum)
-    iwOut.addIndexes(cpr);
-    iwOut.forceMerge(1);
-    
-    // 2nd try with a readerless parallel reader
-    iwOut.addIndexes(new ParallelCompositeReader());
+    List<LeafReader> leaves = new ArrayList<>();
+    for (LeafReaderContext leaf : cpr.leaves()) {
+      leaves.add(leaf.reader());
+    }
+    iwOut.addIndexes(leaves.toArray(new LeafReader[0]));
     iwOut.forceMerge(1);
     
     iwOut.close();

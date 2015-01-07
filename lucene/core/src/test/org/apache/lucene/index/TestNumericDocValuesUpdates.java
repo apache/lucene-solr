@@ -1196,7 +1196,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.addIndexes(dir1);
     } else {
       DirectoryReader reader = DirectoryReader.open(dir1);
-      writer.addIndexes(reader);
+      TestUtil.addIndexesSlowly(writer, reader);
       reader.close();
     }
     writer.close();

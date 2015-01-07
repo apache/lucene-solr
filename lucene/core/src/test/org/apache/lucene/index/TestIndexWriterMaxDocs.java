@@ -30,7 +30,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
+
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
@@ -275,9 +277,9 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
         // expected
       }
       assertEquals(1, w2.maxDoc());
-      IndexReader ir = DirectoryReader.open(dir);
+      DirectoryReader ir = DirectoryReader.open(dir);
       try {
-        w2.addIndexes(new IndexReader[] {ir});
+        TestUtil.addIndexesSlowly(w2, ir);
         fail("didn't hit exception");
       } catch (IllegalStateException ise) {
         // expected

@@ -29,6 +29,7 @@ import java.nio.CharBuffer;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -68,6 +69,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -871,6 +873,16 @@ public final class TestUtil {
     } else {
       return false;
     }
+  }
+  
+  public static void addIndexesSlowly(IndexWriter writer, DirectoryReader... readers) throws IOException {
+    List<LeafReader> leaves = new ArrayList<>();
+    for (DirectoryReader reader : readers) {
+      for (LeafReaderContext context : reader.leaves()) {
+        leaves.add(context.reader());
+      }
+    }
+    writer.addIndexes(leaves.toArray(new LeafReader[leaves.size()]));
   }
 
   /** just tries to configure things to keep the open file
