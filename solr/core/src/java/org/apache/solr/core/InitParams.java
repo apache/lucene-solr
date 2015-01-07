@@ -65,7 +65,8 @@ public class InitParams {
   private static boolean matchPath(String path, String name){
     List<String> pathSplit = StrUtils.splitSmart(path, '/');
     List<String> nameSplit = StrUtils.splitSmart(name, '/');
-    for (int i = 0; i < nameSplit.size(); i++) {
+    int i = 0;
+    for (;i < nameSplit.size(); i++) {
       String s = nameSplit.get(i);
       String ps = pathSplit.size()>i ?  pathSplit.get(i) :null;
       if(ps == null) return false;
@@ -74,7 +75,8 @@ public class InitParams {
       if("**".equals(ps)) return true;
       return false;
     }
-    return true;
+    String ps = pathSplit.size()>i ?  pathSplit.get(i) :null;
+    return "*".equals(ps) || "**".equals(ps);
 
   }
 

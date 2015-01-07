@@ -108,10 +108,18 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   }
 
- /* public void testMatchPath(){
+  public void testMatchPath(){
     InitParams initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/json/docs")));
     assertFalse(initParams.matchPath("/update"));
     assertTrue(initParams.matchPath("/update/json/docs"));
-  }*/
+    initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/**")));
+    assertTrue(initParams.matchPath("/update/json/docs"));
+    assertTrue(initParams.matchPath("/update/json"));
+    assertTrue(initParams.matchPath("/update"));
+    initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/*")));
+    assertFalse(initParams.matchPath("/update/json/docs"));
+    assertTrue(initParams.matchPath("/update/json"));
+    assertTrue(initParams.matchPath("/update"));
+  }
 
 }
