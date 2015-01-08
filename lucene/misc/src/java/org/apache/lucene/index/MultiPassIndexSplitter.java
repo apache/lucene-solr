@@ -33,7 +33,7 @@ import org.apache.lucene.util.Version;
 
 /**
  * This tool splits input index into multiple equal parts. The method employed
- * here uses {@link IndexWriter#addIndexes(LeafReader[])} where the input data
+ * here uses {@link IndexWriter#addIndexes(CodecReader[])} where the input data
  * comes from the input index with artificially applied deletes to the document
  * id-s that fall outside the selected partition.
  * <p>Note 1: Deletes are only applied to a buffered list of deleted docs and
@@ -59,7 +59,7 @@ public class MultiPassIndexSplitter {
    * assigned in a deterministic round-robin fashion to one of the output splits.
    * @throws IOException If there is a low-level I/O error
    */
-  public void split(Version version, IndexReader in, Directory[] outputs, boolean seq) throws IOException {
+  public void split(IndexReader in, Directory[] outputs, boolean seq) throws IOException {
     if (outputs == null || outputs.length < 2) {
       throw new IOException("Invalid number of outputs.");
     }
@@ -102,7 +102,7 @@ public class MultiPassIndexSplitter {
       System.err.println("Writing part " + (i + 1) + " ...");
       // pass the subreaders directly, as our wrapper's numDocs/hasDeletetions are not up-to-date
       final List<? extends FakeDeleteLeafIndexReader> sr = input.getSequentialSubReaders();
-      w.addIndexes(sr.toArray(new LeafReader[sr.size()])); // TODO: maybe take List<IR> here?
+      w.addIndexes(sr.toArray(new CodecReader[sr.size()])); // TODO: maybe take List<IR> here?
       w.close();
     }
     System.err.println("Done.");
@@ -170,7 +170,7 @@ public class MultiPassIndexSplitter {
     } else {
       input = new MultiReader(indexes.toArray(new IndexReader[indexes.size()]));
     }
-    splitter.split(Version.LATEST, input, dirs, seq);
+    splitter.split(input, dirs, seq);
   }
   
   /**
@@ -178,16 +178,16 @@ public class MultiPassIndexSplitter {
    */
   private static final class FakeDeleteIndexReader extends BaseCompositeReader<FakeDeleteLeafIndexReader> {
 
-    public FakeDeleteIndexReader(IndexReader reader) {
+    public FakeDeleteIndexReader(IndexReader reader) throws IOException {
       super(initSubReaders(reader));
     }
     
-    private static FakeDeleteLeafIndexReader[] initSubReaders(IndexReader reader) {
+    private static FakeDeleteLeafIndexReader[] initSubReaders(IndexReader reader) throws IOException {
       final List<LeafReaderContext> leaves = reader.leaves();
       final FakeDeleteLeafIndexReader[] subs = new FakeDeleteLeafIndexReader[leaves.size()];
       int i = 0;
       for (final LeafReaderContext ctx : leaves) {
-        subs[i++] = new FakeDeleteLeafIndexReader(ctx.reader());
+        subs[i++] = new FakeDeleteLeafIndexReader(SlowCodecReaderWrapper.wrap(ctx.reader()));
       }
       return subs;
     }
@@ -210,10 +210,10 @@ public class MultiPassIndexSplitter {
     // as we pass the subreaders directly to IW.addIndexes().
   }
   
-  private static final class FakeDeleteLeafIndexReader extends FilterLeafReader {
+  private static final class FakeDeleteLeafIndexReader extends FilterCodecReader {
     FixedBitSet liveDocs;
 
-    public FakeDeleteLeafIndexReader(LeafReader reader) {
+    public FakeDeleteLeafIndexReader(CodecReader reader) {
       super(reader);
       undeleteAll(); // initialize main bitset
     }

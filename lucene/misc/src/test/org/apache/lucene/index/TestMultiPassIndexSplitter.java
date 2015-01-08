@@ -66,7 +66,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
             newDirectory(),
             newDirectory()
     };
-    splitter.split(Version.LATEST, input, dirs, false);
+    splitter.split(input, dirs, false);
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
@@ -111,7 +111,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
             newDirectory(),
             newDirectory()
     };
-    splitter.split(Version.LATEST, input, dirs, true);
+    splitter.split(input, dirs, true);
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);

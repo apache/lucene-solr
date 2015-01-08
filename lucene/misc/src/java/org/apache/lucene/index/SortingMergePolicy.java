@@ -65,7 +65,7 @@ public final class SortingMergePolicy extends MergePolicy {
   
   class SortingOneMerge extends OneMerge {
 
-    List<LeafReader> unsortedReaders;
+    List<CodecReader> unsortedReaders;
     Sorter.DocMap docMap;
     LeafReader sortedView;
     final InfoStream infoStream;
@@ -76,7 +76,7 @@ public final class SortingMergePolicy extends MergePolicy {
     }
 
     @Override
-    public List<LeafReader> getMergeReaders() throws IOException {
+    public List<CodecReader> getMergeReaders() throws IOException {
       if (unsortedReaders == null) {
         unsortedReaders = super.getMergeReaders();
         if (infoStream.isEnabled("SMP")) {
@@ -117,7 +117,7 @@ public final class SortingMergePolicy extends MergePolicy {
         if (infoStream.isEnabled("SMP")) {
           infoStream.message("SMP", "sorting readers by " + sort);
         }
-        return Collections.singletonList(sortedView);
+        return Collections.singletonList(SlowCodecReaderWrapper.wrap(sortedView));
       }
     }
     
@@ -128,7 +128,7 @@ public final class SortingMergePolicy extends MergePolicy {
       super.setInfo(info);
     }
 
-    private PackedLongValues getDeletes(List<LeafReader> readers) {
+    private PackedLongValues getDeletes(List<CodecReader> readers) {
       PackedLongValues.Builder deletes = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
       int deleteCount = 0;
       for (LeafReader reader : readers) {

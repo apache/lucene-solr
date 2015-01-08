@@ -72,7 +72,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     Directory d3 = newDirectory();
     w = new RandomIndexWriter(random(), d3);
-    w.addIndexes(SlowCompositeReaderWrapper.wrap(r1), SlowCompositeReaderWrapper.wrap(r2));
+    w.addIndexes(SlowCodecReaderWrapper.wrap(SlowCompositeReaderWrapper.wrap(r1)), SlowCodecReaderWrapper.wrap(SlowCompositeReaderWrapper.wrap(r2)));
     r1.close();
     d1.close();
     r2.close();

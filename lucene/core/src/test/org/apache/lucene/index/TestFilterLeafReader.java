@@ -139,7 +139,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
 
     writer = new IndexWriter(target, newIndexWriterConfig(new MockAnalyzer(random())));
     try (LeafReader reader = new TestReader(DirectoryReader.open(directory))) {
-      writer.addIndexes(reader);
+      writer.addIndexes(SlowCodecReaderWrapper.wrap(reader));
     }
     writer.close();
     IndexReader reader = DirectoryReader.open(target);

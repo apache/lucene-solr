@@ -72,7 +72,7 @@ public class IndexSortingTest extends SorterTestBase {
     Directory target = newDirectory();
     IndexWriter writer = new IndexWriter(target, newIndexWriterConfig(null));
     LeafReader reader = SortingLeafReader.wrap(unsortedReader, sorter);
-    writer.addIndexes(reader);
+    writer.addIndexes(SlowCodecReaderWrapper.wrap(reader));
     writer.close();
     // NOTE: also closes unsortedReader
     reader.close();

@@ -222,7 +222,7 @@ public class TestDoc extends LuceneTestCase {
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(si1.info.dir);
     final SegmentInfo si = new SegmentInfo(si1.info.dir, Version.LATEST, merged, -1, false, codec, null, StringHelper.randomId(), new HashMap<String,String>());
 
-    SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(r1, r2),
+    SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(r1, r2),
                                              si, InfoStream.getDefault(), trackingDir,
                                              new FieldInfos.FieldNumbers(), context);
 

@@ -1217,7 +1217,7 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testAddEmpty() throws Exception {
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
-    w.addIndexes(new LeafReader[0]);
+    w.addIndexes(new CodecReader[0]);
     w.close();
     DirectoryReader dr = DirectoryReader.open(d1);
     for (LeafReaderContext ctx : dr.leaves()) {
@@ -1239,7 +1239,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.close();
     
     w = new RandomIndexWriter(random(), dest);
-    w.addIndexes(allDeletedReader);
+    w.addIndexes(SlowCodecReaderWrapper.wrap(allDeletedReader));
     w.close();
     DirectoryReader dr = DirectoryReader.open(src);
     for (LeafReaderContext ctx : dr.leaves()) {

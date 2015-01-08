@@ -145,12 +145,12 @@ public abstract class MergePolicy {
      *  reorders doc IDs, it must override {@link #getDocMap} too so that
      *  deletes that happened during the merge can be applied to the newly
      *  merged segment. */
-    public List<LeafReader> getMergeReaders() throws IOException {
+    public List<CodecReader> getMergeReaders() throws IOException {
       if (readers == null) {
         throw new IllegalStateException("IndexWriter has not initialized readers from the segment infos yet");
       }
-      final List<LeafReader> readers = new ArrayList<>(this.readers.size());
-      for (LeafReader reader : this.readers) {
+      final List<CodecReader> readers = new ArrayList<>(this.readers.size());
+      for (SegmentReader reader : this.readers) {
         if (reader.numDocs() > 0) {
           readers.add(reader);
         }

@@ -26,13 +26,15 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 /**
  * Adds an input index to an existing index, using
  * {@link IndexWriter#addIndexes(Directory...)} or
- * {@link IndexWriter#addIndexes(LeafReader...)}. The location of the input
+ * {@link IndexWriter#addIndexes(CodecReader...)}. The location of the input
  * index is specified by the parameter {@link #ADDINDEXES_INPUT_DIR} and is
  * assumed to be a directory on the file system.
  * <p>
@@ -67,10 +69,10 @@ public class AddIndexesTask extends PerfTask {
       writer.addIndexes(inputDir);
     } else {
       try (IndexReader r = DirectoryReader.open(inputDir)) {
-        LeafReader leaves[] = new LeafReader[r.leaves().size()];
+        CodecReader leaves[] = new CodecReader[r.leaves().size()];
         int i = 0;
         for (LeafReaderContext leaf : r.leaves()) {
-          leaves[i++] = leaf.reader();
+          leaves[i++] = SlowCodecReaderWrapper.wrap(leaf.reader());
         }
         writer.addIndexes(leaves);
       }
@@ -84,7 +86,7 @@ public class AddIndexesTask extends PerfTask {
    * @param params
    *          {@code useAddIndexesDir=true} for using
    *          {@link IndexWriter#addIndexes(Directory...)} or {@code false} for
-   *          using {@link IndexWriter#addIndexes(LeafReader...)}. Defaults to
+   *          using {@link IndexWriter#addIndexes(CodecReader...)}. Defaults to
    *          {@code true}.
    */
   @Override
