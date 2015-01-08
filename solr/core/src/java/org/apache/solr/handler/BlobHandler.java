@@ -51,6 +51,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.SimplePostTool;
@@ -201,9 +202,9 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
     UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(req.getParams().get(UpdateParams.UPDATE_CHAIN));
     UpdateRequestProcessor processor = processorChain.createProcessor(req,null);
     AddUpdateCommand cmd = new AddUpdateCommand(req);
-    cmd.commitWithin =1;
     cmd.solrDoc = solrDoc;
     processor.processAdd(cmd);
+    processorChain.createProcessor(req,null).processCommit(new CommitUpdateCommand(req,false));
 
   }
 
