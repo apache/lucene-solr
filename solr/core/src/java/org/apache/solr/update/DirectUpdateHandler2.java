@@ -21,11 +21,11 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -469,15 +469,15 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     
     List<DirectoryReader> readers = cmd.readers;
     if (readers != null && readers.size() > 0) {
-      List<LeafReader> leaves = new ArrayList<>();
+      List<CodecReader> mergeReaders = new ArrayList<>();
       for (DirectoryReader reader : readers) {
         for (LeafReaderContext leaf : reader.leaves()) {
-          leaves.add(leaf.reader());
+          mergeReaders.add(SlowCodecReaderWrapper.wrap(leaf.reader()));
         }
       }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(leaves.toArray(new LeafReader[leaves.size()]));
+        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[mergeReaders.size()]));
       } finally {
         iw.decref();
       }

@@ -48,20 +48,11 @@ final class SegmentMerger {
   private final FieldInfos.Builder fieldInfosBuilder;
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
-  SegmentMerger(List<LeafReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
+  SegmentMerger(List<CodecReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
                 FieldInfos.FieldNumbers fieldNumbers, IOContext context) throws IOException {
     if (context.context != IOContext.Context.MERGE) {
       throw new IllegalArgumentException("IOContext.context should be MERGE; got: " + context.context);
     }
-    // validate incoming readers
-    for (LeafReader reader : readers) {
-      if ((reader instanceof SegmentReader) == false) {
-        // We only validate foreign readers up front: each index component
-        // calls .checkIntegrity itself for each incoming producer
-        reader.checkIntegrity();
-      }
-    }
-
     mergeState = new MergeState(readers, segmentInfo, infoStream);
     directory = dir;
     this.codec = segmentInfo.getCodec();

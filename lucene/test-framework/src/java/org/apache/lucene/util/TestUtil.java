@@ -82,8 +82,10 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -876,13 +878,13 @@ public final class TestUtil {
   }
   
   public static void addIndexesSlowly(IndexWriter writer, DirectoryReader... readers) throws IOException {
-    List<LeafReader> leaves = new ArrayList<>();
+    List<CodecReader> leaves = new ArrayList<>();
     for (DirectoryReader reader : readers) {
       for (LeafReaderContext context : reader.leaves()) {
-        leaves.add(context.reader());
+        leaves.add(SlowCodecReaderWrapper.wrap(context.reader()));
       }
     }
-    writer.addIndexes(leaves.toArray(new LeafReader[leaves.size()]));
+    writer.addIndexes(leaves.toArray(new CodecReader[leaves.size()]));
   }
 
   /** just tries to configure things to keep the open file

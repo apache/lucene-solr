@@ -84,7 +84,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     final Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, null, StringHelper.randomId(), new HashMap<>());
 
-    SegmentMerger merger = new SegmentMerger(Arrays.<LeafReader>asList(reader1, reader2),
+    SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(reader1, reader2),
                                              si, InfoStream.getDefault(), mergedDir,
                                              new FieldInfos.FieldNumbers(),
                                              newIOContext(random(), new IOContext(new MergeInfo(-1, -1, false, -1))));

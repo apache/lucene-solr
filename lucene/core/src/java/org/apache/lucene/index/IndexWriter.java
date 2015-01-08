@@ -235,8 +235,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public static final String SOURCE_MERGE = "merge";
   /** Source of a segment which results from a flush. */
   public static final String SOURCE_FLUSH = "flush";
-  /** Source of a segment which results from a call to {@link #addIndexes(LeafReader...)}. */
-  public static final String SOURCE_ADDINDEXES_READERS = "addIndexes(LeafReader...)";
+  /** Source of a segment which results from a call to {@link #addIndexes(CodecReader...)}. */
+  public static final String SOURCE_ADDINDEXES_READERS = "addIndexes(CodecReader...)";
 
   /**
    * Absolute hard maximum length for a term, in bytes once
@@ -2099,7 +2099,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * 
    * <p>
    * NOTE: this method will forcefully abort all merges in progress. If other
-   * threads are running {@link #forceMerge}, {@link #addIndexes(LeafReader[])}
+   * threads are running {@link #forceMerge}, {@link #addIndexes(CodecReader[])}
    * or {@link #forceMergeDeletes} methods, they may receive
    * {@link MergePolicy.MergeAbortedException}s.
    */
@@ -2509,18 +2509,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException
    *           if there is a low-level IO error
    */
-  public void addIndexes(LeafReader... readers) throws IOException {
+  public void addIndexes(CodecReader... readers) throws IOException {
     ensureOpen();
     int numDocs = 0;
 
     try {
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "flush at addIndexes(LeafReader...)");
+        infoStream.message("IW", "flush at addIndexes(CodecReader...)");
       }
       flush(false, true);
 
       String mergedName = newSegmentName();
-      for (LeafReader leaf : readers) {
+      for (CodecReader leaf : readers) {
         numDocs += leaf.numDocs();
       }
 

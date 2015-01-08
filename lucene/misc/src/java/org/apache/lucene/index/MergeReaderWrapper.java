@@ -38,7 +38,7 @@ class MergeReaderWrapper extends LeafReader {
   MergeReaderWrapper(SegmentReader in) throws IOException {
     this.in = in;
     
-    FieldsProducer fields = in.fields();
+    FieldsProducer fields = in.getPostingsReader();
     if (fields != null) {
       fields = fields.getMergeInstance();
     }
