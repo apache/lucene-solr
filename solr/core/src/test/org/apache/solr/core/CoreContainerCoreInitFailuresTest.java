@@ -315,6 +315,103 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
   }
 
+  public void testJavaLangErrorFromHandlerOnStartup() throws Exception {
+
+    // reused state
+    Map<String,CoreContainer.CoreLoadFailure> failures = null;
+    Collection<String> cores = null;
+    Exception fail = null;
+
+    init("java_lang_error_handler");
+
+    // start with two collections: 1 ok, and 1 that throws java.lang.Error on startup
+    File solrXml = new File(solrHome, "solr.xml");
+    FileUtils.write(solrXml, BAD_SOLR_XML, IOUtils.UTF_8);
+
+    // our "ok" collection
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
+                       FileUtils.getFile(solrHome, "col_ok", "conf", "solrconfig.xml"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
+                       FileUtils.getFile(solrHome, "col_ok", "conf", "schema.xml"));
+
+    // our "bad" collection
+    ignoreException(Pattern.quote("my_error_handler"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/bad-error-solrconfig.xml"),
+                       FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
+                       FileUtils.getFile(solrHome, "col_bad", "conf", "schema.xml"));
+
+
+    // -----
+    // init the  CoreContainer with the mix of ok/bad cores
+    cc = new CoreContainer(solrHome.getAbsolutePath());
+    cc.load();
+    
+    // check that we have the cores we expect
+    cores = cc.getCoreNames();
+    assertNotNull("core names is null", cores);
+    assertEquals("wrong number of cores", 1, cores.size());
+    assertTrue("col_ok not found", cores.contains("col_ok"));
+    
+    // check that we have the failures we expect
+    failures = cc.getCoreInitFailures();
+    assertNotNull("core failures is a null map", failures);
+    assertEquals("wrong number of core failures", 1, failures.size());
+    fail = failures.get("col_bad").exception;
+    assertNotNull("null failure for test core", fail);
+    assertTrue("init failure doesn't mention root problem: " + fail.getMessage(),
+               0 < fail.getMessage().indexOf("throwing a java.lang.Error"));
+  }
+
+  public void testJavaLangErrorFromSchemaOnStartup() throws Exception {
+
+    // reused state
+    Map<String,CoreContainer.CoreLoadFailure> failures = null;
+    Collection<String> cores = null;
+    Exception fail = null;
+
+    init("java_lang_error_schema");
+
+    // start with two collections: 1 ok, and 1 that throws java.lang.Error on startup
+    File solrXml = new File(solrHome, "solr.xml");
+    FileUtils.write(solrXml, BAD_SOLR_XML, IOUtils.UTF_8);
+
+    // our "ok" collection
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
+                       FileUtils.getFile(solrHome, "col_ok", "conf", "solrconfig.xml"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
+                       FileUtils.getFile(solrHome, "col_ok", "conf", "schema.xml"));
+
+    // our "bad" collection
+    ignoreException(Pattern.quote("error_ft"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
+                       FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
+    FileUtils.copyFile(getFile("solr/collection1/conf/bad-schema-init-error.xml"),
+                       FileUtils.getFile(solrHome, "col_bad", "conf", "schema.xml"));
+
+
+    // -----
+    // init the  CoreContainer with the mix of ok/bad cores
+    cc = new CoreContainer(solrHome.getAbsolutePath());
+    cc.load();
+    
+    // check that we have the cores we expect
+    cores = cc.getCoreNames();
+    assertNotNull("core names is null", cores);
+    assertEquals("wrong number of cores", 1, cores.size());
+    assertTrue("col_ok not found", cores.contains("col_ok"));
+    
+    // check that we have the failures we expect
+    failures = cc.getCoreInitFailures();
+    assertNotNull("core failures is a null map", failures);
+    assertEquals("wrong number of core failures", 1, failures.size());
+    fail = failures.get("col_bad").exception;
+    assertNotNull("null failure for test core", fail);
+    assertTrue("init failure doesn't mention root problem: " + fail.getMessage(),
+               0 < fail.getMessage().indexOf("throwing java.lang.Error"));
+
+  }
+
   private long getCoreStartTime(final CoreContainer cc, final String name) {
     try (SolrCore tmp = cc.getCore(name)) {
       return tmp.getStartTime();

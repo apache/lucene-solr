@@ -406,6 +406,9 @@ Bug Fixes
 * SOLR-6880: Harden ZkStateReader to expect that getCollectionLive may return null
   as it's contract states. (Mark Miller, shalin)
 
+* SOLR-6643: Fix error reporting & logging of low level JVM Errors that occur when 
+  loading/reloading a SolrCore (hossman)
+
 Optimizations
 ----------------------
 

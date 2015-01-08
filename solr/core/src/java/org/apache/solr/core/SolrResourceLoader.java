@@ -519,41 +519,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     return newInstance(name, expectedType, empty);
   }
 
-  public <T> T newInstance(String cname, Class<T> expectedType, String ... subpackages) {
-    Class<? extends T> clazz = findClass(cname, expectedType, subpackages);
-    if( clazz == null ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: "+cname + " in " + classLoader);
-    }
-    
-    T obj = null;
-    try {
-      obj = clazz.newInstance();
-    } 
-    catch (Exception e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName()+"'", e);
-    }
+  private static final Class[] NO_CLASSES = new Class[0];
+  private static final Object[] NO_OBJECTS = new Object[0];
 
-    if (!live) {
-      if( obj instanceof SolrCoreAware ) {
-        assertAwareCompatibility( SolrCoreAware.class, obj );
-        waitingForCore.add( (SolrCoreAware)obj );
-      }
-      if (org.apache.solr.util.plugin.ResourceLoaderAware.class.isInstance(obj)) {
-        log.warn("Class [{}] uses org.apache.solr.util.plugin.ResourceLoaderAware " +
-            "which is deprecated. Change to org.apache.lucene.analysis.util.ResourceLoaderAware.", cname);
-      }
-      if( obj instanceof ResourceLoaderAware ) {
-        assertAwareCompatibility( ResourceLoaderAware.class, obj );
-        waitingForResources.add( (ResourceLoaderAware)obj );
-      }
-      if (obj instanceof SolrInfoMBean){
-        //TODO: Assert here?
-        infoMBeans.add((SolrInfoMBean) obj);
-      }
-    }
-    return obj;
+  public <T> T newInstance(String cname, Class<T> expectedType, String ... subpackages) {
+    return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
 
   public CoreAdminHandler newAdminHandlerInstance(final CoreContainer coreContainer, String cname, String ... subpackages) {
@@ -603,8 +573,13 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
       Constructor<? extends T> constructor = clazz.getConstructor(params);
       obj = constructor.newInstance(args);
-    }
-    catch (Exception e) {
+
+    } catch (Error err) {
+      log.error("Loading Class " + cName + " ("+clazz.getName() + ") triggered serious java error: "
+                + err.getClass().getName(), err);
+      throw err;
+
+    } catch (Exception e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
           "Error instantiating class: '" + clazz.getName()+"'", e);
     }
