@@ -159,16 +159,6 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-5287: You can edit files in the conf directory from the admin UI.
-  (Erick Erickson, Stefan Matheis)
-  Additional work:
-  - SOLR-5446: Admin UI - Allow changing Schema and Config (steffkes)
-  - SOLR-5458: Admin UI - Remove separated Pages for Config & Schema (steffkes)
-  - SOLR-5456: Admin UI - Allow creating new Files (steffkes)
-  - SOLR-5518: Added EditFileRequestHandler to deal with security issues around
-    modifying solr configuration files.  (Erick Erickson)
-  - SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
-
 * SOLR-6103: Added DateRangeField for indexing date ranges, especially multi-valued ones.
   Supports facet.range, DateMath, and is mostly interoperable with TrieDateField.
   Based on LUCENE-5648. (David Smiley)
