@@ -5,4 +5,5 @@
   <Set name="war"><Property name="jetty.base"/>/webapps/solr.war</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.base"/>/etc/webdefault.xml</Set>
   <Set name="tempDirectory"><Property name="jetty.base" default="."/>/solr-webapp</Set>
+  <Set name="persistTempDirectory">true</Set>
 </Configure>
