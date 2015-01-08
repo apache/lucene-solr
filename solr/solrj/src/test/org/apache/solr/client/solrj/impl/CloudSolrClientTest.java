@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -123,6 +124,52 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     allTests();
     stateVersionParamTest();
     customHttpClientTest();
+    testOverwriteOption();
+  }
+
+  private void testOverwriteOption() throws Exception, SolrServerException,
+      IOException {
+    String collectionName = "overwriteCollection";
+    createCollection(collectionName, controlClientCloud, 1, 1);
+    waitForRecoveriesToFinish(collectionName, false);
+    CloudSolrClient cloudClient = createCloudClient(collectionName);
+    try {
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField(id, "0");
+      doc1.addField("a_t", "hello1");
+      SolrInputDocument doc2 = new SolrInputDocument();
+      doc2.addField(id, "0");
+      doc2.addField("a_t", "hello2");
+      
+      UpdateRequest request = new UpdateRequest();
+      request.add(doc1);
+      request.add(doc2);
+      request.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
+      NamedList<Object> response = cloudClient.request(request);
+      QueryResponse resp = cloudClient.query(new SolrQuery("*:*"));
+      
+      assertEquals("There should be one document because overwrite=true", 1, resp.getResults().getNumFound());
+      
+      doc1 = new SolrInputDocument();
+      doc1.addField(id, "1");
+      doc1.addField("a_t", "hello1");
+      doc2 = new SolrInputDocument();
+      doc2.addField(id, "1");
+      doc2.addField("a_t", "hello2");
+      
+      request = new UpdateRequest();
+      // overwrite=false
+      request.add(doc1, false);
+      request.add(doc2, false);
+      request.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false);
+      response = cloudClient.request(request);
+      
+      resp = cloudClient.query(new SolrQuery("*:*"));
+
+      assertEquals("There should be 3 documents because there should be two id=1 docs due to overwrite=false", 3, resp.getResults().getNumFound());
+    } finally {
+      cloudClient.shutdown();
+    }
   }
 
   private void allTests() throws Exception {

@@ -208,7 +208,16 @@ public class UpdateRequest extends AbstractUpdateRequest {
           routes.put(leaderUrl, request);
         }
         UpdateRequest urequest = (UpdateRequest) request.getRequest();
-        urequest.add(doc);
+        Map<String,Object> value = entry.getValue();
+        Boolean ow = null;
+        if (value != null) {
+          ow = (Boolean) value.get(OVERWRITE);
+        }
+        if (ow != null) {
+          urequest.add(doc, ow);
+        } else {
+          urequest.add(doc);
+        }
       }
     }
     

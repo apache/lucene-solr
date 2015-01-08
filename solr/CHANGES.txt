@@ -409,6 +409,9 @@ Bug Fixes
 * SOLR-6643: Fix error reporting & logging of low level JVM Errors that occur when 
   loading/reloading a SolrCore (hossman)
 
+* SOLR-6839: Direct routing with CloudSolrServer will ignore the Overwrite document option.
+  (Mark Miller)
+
 Optimizations
 ----------------------
 
