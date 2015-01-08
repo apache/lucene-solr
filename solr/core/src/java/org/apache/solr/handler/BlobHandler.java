@@ -86,10 +86,12 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
       }
       String err = SolrConfigHandler.validateName(blobName);
       if(err!=null){
+        log.warn("no blob name");
         rsp.add("error", err);
         return;
       }
       if(req.getContentStreams() == null )  {
+        log.warn("no content stream");
         rsp.add("error","No stream");
         return;
       }
@@ -109,6 +111,7 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
               "q", "md5:" + md5,
               "fl", "id,size,version,timestamp,blobName")),
               rsp);
+          log.warn("duplicate entry for blob :"+blobName);
           return;
         }
 
@@ -123,7 +126,8 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
         }
         version++;
         String id = blobName+"/"+version;
-        indexMap(req, makeMap(
+        log.info(MessageFormat.format("New blob inserting {0} ,size {1}, md5 {2}",id, payload.limit(),md5));
+        indexMap(req, rsp, makeMap(
             "id", id,
             "md5", md5,
             "blobName", blobName,
@@ -131,6 +135,8 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
             "timestamp", new Date(),
             "size", payload.limit(),
             "blob", payload));
+        log.info(" Successfully Added and committed a blob with id {} and size {} ",id, payload.limit());
+
         break;
       }
 
@@ -188,24 +194,25 @@ public class BlobHandler extends RequestHandlerBase  implements PluginInfoInitia
 
         req.forward(null,
             new MapSolrParams((Map) makeMap(
-                "q", MessageFormat.format(q,blobName,version),
+                "q", MessageFormat.format(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
                 "sort", "version desc"))
-            ,rsp);
+            , rsp);
       }
     }
   }
 
-  public static void indexMap(SolrQueryRequest req, Map<String, Object> doc) throws IOException {
+  public static void indexMap(SolrQueryRequest req, SolrQueryResponse rsp, Map<String, Object> doc) throws IOException {
     SolrInputDocument solrDoc = new SolrInputDocument();
     for (Map.Entry<String, Object> e : doc.entrySet()) solrDoc.addField(e.getKey(),e.getValue());
     UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(req.getParams().get(UpdateParams.UPDATE_CHAIN));
-    UpdateRequestProcessor processor = processorChain.createProcessor(req,null);
+    UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = solrDoc;
+    log.info("Adding doc "+doc);
     processor.processAdd(cmd);
-    processorChain.createProcessor(req,null).processCommit(new CommitUpdateCommand(req,false));
-
+    log.info("committing doc"+doc);
+    processor.processCommit(new CommitUpdateCommand(req, false));
   }
 
   @Override

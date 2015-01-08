@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -128,8 +129,9 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     String url;
     Map map = null;
     List l;
-
-    for(int i=0;i<100;i++) {//10secs
+    long start = System.currentTimeMillis();
+    int i=0;
+    for(;i<150;i++) {//10secs
       url = baseUrl + "/.system/blob/test";
       map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
       String numFound = String.valueOf(ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "numFound")));
@@ -143,7 +145,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       assertEquals("" + bytes.limit(), String.valueOf(map.get("size")));
       return;
     }
-    fail("Could not successfully add blob " + getAsString(map));
+    fail(MessageFormat.format("Could not successfully add blob after {0} attempts. Expecting {1} items. time elapsed {2}  output  for url is {3}",
+        i,count, System.currentTimeMillis()-start,  getAsString(map)));
   }
 
   public static String getAsString(Map map) {
