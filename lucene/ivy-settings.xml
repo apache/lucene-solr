@@ -33,7 +33,6 @@
   <resolvers>
     <ibiblio name="sonatype-releases" root="https://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
-    <ibiblio name="cloudera" root="http://repository.cloudera.com/artifactory/repo" m2compatible="true" />
     <ibiblio name="releases.cloudera.com" root="http://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
     
     <!-- needed only for newer svnkit releases, e.g. 1.8.x -->
@@ -57,7 +56,6 @@
       <resolver ref="main"/>
       <resolver ref="maven.restlet.org" />
       <resolver ref="sonatype-releases" />
-      <resolver ref="cloudera"/>
       <resolver ref="releases.cloudera.com"/>
       <!-- <resolver ref="svnkit-releases" /> -->
       <resolver ref="working-chinese-mirror" />
