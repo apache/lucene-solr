@@ -519,11 +519,15 @@ public class CoreContainer {
 
       return core;
 
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       log.error("Error creating core [{}]: {}", dcore.getName(), e.getMessage(), e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
+    } catch (Throwable t) {
+      SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
+      log.error("Error creating core [{}]: {}", dcore.getName(), t.getMessage(), t);
+      coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
+      throw t;
     }
 
   }
