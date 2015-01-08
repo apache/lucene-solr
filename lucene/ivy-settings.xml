@@ -55,10 +55,10 @@
       <resolver ref="local"/>
       <!-- <resolver ref="local-maven-2" /> -->
       <resolver ref="main"/>
+      <resolver ref="maven.restlet.org" />
+      <resolver ref="sonatype-releases" />
       <resolver ref="cloudera"/>
       <resolver ref="releases.cloudera.com"/>
-      <resolver ref="sonatype-releases" />
-      <resolver ref="maven.restlet.org" />
       <!-- <resolver ref="svnkit-releases" /> -->
       <resolver ref="working-chinese-mirror" />
     </chain>
